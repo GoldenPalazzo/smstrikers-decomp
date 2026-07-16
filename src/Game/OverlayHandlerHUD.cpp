@@ -1,4 +1,5 @@
 #define BASICSTRING_DELEGATING_CTOR
+#define BASICSTRING_SELECTIVE_NO_COPY_REREAD
 #define NL_SINGLETON_NO_DEFINE
 #define NL_NO_LEXICALCAST_NLSTRING_INT
 #include "Game/OverlayHandlerHUD.h"
@@ -413,6 +414,23 @@ void HUDOverlay::Update(float fDeltaT)
 
     DisplayPowerUps();
 }
+
+static inline void ResetHUDOverlayScores(HUDOverlay* overlay)
+{
+    for (int i = 0; i < 2; i++)
+    {
+        overlay->mScore[i] = 0;
+        overlay->mNewScore[i] = 0;
+        BasicString<char, Detail::TempStringAllocator> scoreStr(
+            LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(overlay->mScore[i]),
+            false);
+        nlStrToWcs(scoreStr.c_str(), overlay->mScoreBuffer[i], 0x20);
+        overlay->m_pTextInstanceScore[0][i]->SetString(overlay->mScoreBuffer[i]);
+        overlay->m_pTextInstanceScore[1][i]->SetString(overlay->mScoreBuffer[i]);
+    }
+    overlay->mStartScoreAnimation = false;
+}
+
 /**
  * Offset/Address/Size: 0x2120 | 0x800F8400 | size: 0x8FC
  */
@@ -448,8 +466,7 @@ void HUDOverlay::SceneCreated()
     }
     m_pTextInstanceScore[0][0] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pScoreComp->GetActiveSlide(),
-        InlineHasher(nlStringLowerHash("left_score")),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("left_score")));
 
     pScoreComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
         presentation,
@@ -462,8 +479,7 @@ void HUDOverlay::SceneCreated()
     }
     m_pTextInstanceScore[0][1] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pScoreComp->GetActiveSlide(),
-        InlineHasher(nlStringLowerHash("right_score")),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("right_score")));
 
     m_pTextInstanceScore[1][0] = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
@@ -539,7 +555,7 @@ void HUDOverlay::SceneCreated()
 
     m_pFEScene->m_pFEPackage->GetPresentation()->SetActiveSlide("OUT");
     mIsHUDSlideIn = false;
-    ResetScores();
+    ResetHUDOverlayScores(this);
 }
 
 /**

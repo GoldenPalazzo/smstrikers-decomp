@@ -1060,7 +1060,7 @@ config.libs = [
             Object(NonMatching, "Game/FE/BraggingRights.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/FE/Cup/CupTickerManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/FE/Overlay/OverlayHandlerSummary.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/FE/Overlay/OverlayHandlerWinner.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/FE/Overlay/OverlayHandlerWinner.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             Object(Matching, "Game/FE/tlSlide.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/FE/tlComponent.cpp", extra_cflags=["-inline auto"]),
@@ -1316,7 +1316,7 @@ config.libs = [
 
             # DB
             Object(NonMatching, "Game/DB/SaveLoad.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/DB/UserOptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/DB/UserOptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/DB/StatsTracker.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/DB/Simmer.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/DB/CustomTournament.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

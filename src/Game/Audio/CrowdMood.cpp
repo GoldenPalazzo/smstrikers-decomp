@@ -335,6 +335,38 @@ static inline void ScaleAndAddVocalDef(CROWD_VOCAL_DEFINITION& Dest, const CROWD
     Dest.DelayRange += Src.DelayRange * Scale;
 }
 
+static inline void ScaleAndAddVocalDef2(CROWD_VOCAL_DEFINITION& Dest, const CROWD_VOCAL_DEFINITION& Src, float Scale)
+{
+    Dest.Volume += Src.Volume * Scale;
+    Dest.VolumeRange += Src.VolumeRange * Scale;
+    if (Src.Volume)
+    {
+        float delayAdd;
+        if (Src.Delay)
+        {
+            delayAdd = (1.0f / Src.Delay) * Scale;
+        }
+        else
+        {
+            delayAdd = 1000000.0f;
+        }
+        Dest.Delay += delayAdd;
+    }
+    else
+    {
+        Dest.Delay += 0.000001;
+    }
+    Dest.DelayRange += Src.DelayRange * Scale;
+}
+
+static void FixValueRange(float& Value, float& Range)
+{
+    float temp = Range;
+    temp = Value - temp;
+    Value = temp;
+    Range *= 2.0f;
+}
+
 static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
 {
     float Zero;
@@ -356,39 +388,29 @@ static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
             continue;
         }
 
-        float blendVal = MoodBlend[mood];
-
         float* pBlend;
-
-        if (blendVal > *pMaxBlend)
-        {
-            pBlend = &MoodBlend[mood];
-        }
-        else
-        {
-            pBlend = pMaxBlend;
-        }
+        float blendVal = MoodBlend[mood];
+        pBlend = blendVal > *pMaxBlend ? &MoodBlend[mood] : pMaxBlend;
         pMaxBlend = pBlend;
 
         AccountedFor += g_CrowdState.CurrentMoodBlend[mood];
-        MoodDef.NeutralVol += g_MoodDefs[mood].NeutralVol * blendVal;
+        MoodDef.NeutralVol += g_MoodDefs[mood].NeutralVol * MoodBlend[mood];
 
         MoodDef.PositiveVol += g_MoodDefs[mood].PositiveVol * MoodBlend[mood];
         MoodDef.NegativeVol += g_MoodDefs[mood].NegativeVol * MoodBlend[mood];
 
-        ScaleAndAddVocalDef(MoodDef.Chant, g_MoodDefs[mood].Chant, MoodBlend[mood]);
-        ScaleAndAddVocalDef(MoodDef.Heckle, g_MoodDefs[mood].Heckle, MoodBlend[mood]);
+        ScaleAndAddVocalDef2(MoodDef.Chant, g_MoodDefs[mood].Chant, MoodBlend[mood]);
+        ScaleAndAddVocalDef2(MoodDef.Heckle, g_MoodDefs[mood].Heckle, MoodBlend[mood]);
     }
 
-    float remainWeight = 1.0f - AccountedFor;
-    remainWeight = (remainWeight >= 0.0f) ? remainWeight : 0.0f;
+    float remainWeight = (1.0f - AccountedFor >= 0.0f) ? 1.0f - AccountedFor : 0.0f;
 
     const MOOD_DEFINITION& SatMoodDef = g_MoodDefs[CrowdMood::CM_Neutral];
     MoodDef.NeutralVol += SatMoodDef.NeutralVol * remainWeight;
     MoodDef.PositiveVol += SatMoodDef.PositiveVol * remainWeight;
     MoodDef.NegativeVol += SatMoodDef.NegativeVol * remainWeight;
-    ScaleAndAddVocalDef(MoodDef.Chant, SatMoodDef.Chant, remainWeight);
-    ScaleAndAddVocalDef(MoodDef.Heckle, SatMoodDef.Heckle, remainWeight);
+    ScaleAndAddVocalDef2(MoodDef.Chant, g_MoodDefs[CrowdMood::CM_Neutral].Chant, remainWeight);
+    ScaleAndAddVocalDef2(MoodDef.Heckle, g_MoodDefs[CrowdMood::CM_Neutral].Heckle, remainWeight);
 
     MoodDef.Chant.Delay = MoodDef.Chant.Delay ? (1.0f / MoodDef.Chant.Delay) : 0.0f;
     MoodDef.Heckle.Delay = MoodDef.Heckle.Delay ? (1.0f / MoodDef.Heckle.Delay) : 0.0f;
@@ -398,14 +420,10 @@ static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
         pMaxBlend = MoodBlend + CrowdMood::CM_Neutral;
     }
 
-    MoodDef.Chant.Volume -= MoodDef.Chant.VolumeRange;
-    MoodDef.Chant.VolumeRange *= 2.0f;
-    MoodDef.Chant.Delay -= MoodDef.Chant.DelayRange;
-    MoodDef.Chant.DelayRange *= 2.0f;
-    MoodDef.Heckle.Volume -= MoodDef.Heckle.VolumeRange;
-    MoodDef.Heckle.VolumeRange *= 2.0f;
-    MoodDef.Heckle.Delay -= MoodDef.Heckle.DelayRange;
-    MoodDef.Heckle.DelayRange *= 2.0f;
+    FixValueRange(MoodDef.Chant.Volume, MoodDef.Chant.VolumeRange);
+    FixValueRange(MoodDef.Chant.Delay, MoodDef.Chant.DelayRange);
+    FixValueRange(MoodDef.Heckle.Volume, MoodDef.Heckle.VolumeRange);
+    FixValueRange(MoodDef.Heckle.Delay, MoodDef.Heckle.DelayRange);
 
     if (*pMaxBlend > 0.0f)
     {

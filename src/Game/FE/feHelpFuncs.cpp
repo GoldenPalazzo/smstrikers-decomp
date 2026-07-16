@@ -287,7 +287,7 @@ TakeGameMemSnapshot::Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStr
 
 /**
  * Offset/Address/Size: 0xED8 | 0x800A579C | size: 0xD74
- * TODO: 99.37% match - r27/r28/r29 register roles differ in the erase and insert COW paths.
+ * TODO: 99.79% match - insert copy-on-write allocation and pointer roles use different registers.
  */
 
 // /**
@@ -1083,6 +1083,36 @@ public:
 template <typename StringType, typename T1, typename T2, typename T3>
 StringType Format(const StringType& format, const T1& value1, const T2& value2, const T3& value3);
 
+typedef BasicString<char, ::Detail::TempStringAllocator> SnapshotFormatString;
+
+static inline void SnapshotEraseRange(SnapshotFormatString& string, const char* begin, const char* end)
+{
+    string[0];
+    BasicStringData<char>* data = string.m_data;
+    int size = end - begin;
+    int offset = begin - data->mData;
+    char* at = data->mData + offset;
+    while (end != data->mData + data->mSize)
+    {
+        *at = *end;
+        end++;
+        at++;
+    }
+    data->mSize -= size;
+}
+
+static inline char* SnapshotBegin(SnapshotFormatString& string)
+{
+    string[0];
+    return string.m_data ? string.m_data->mData : (char*)0;
+}
+
+static inline char* SnapshotEnd(SnapshotFormatString& string)
+{
+    string[(int)(string.m_data ? string.m_data->mSize - 1 : 0)];
+    return string.m_data ? string.m_data->mData + string.m_data->mSize - 1 : (char*)0;
+}
+
 template <typename StringType>
 template <typename T>
 FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
@@ -1108,31 +1138,12 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
         if (matchStringEnd[2] != '}')
             continue;
 
-        typename StringType::value_type* eraseBegin;
-        typename StringType::value_type* eraseEnd;
         mString[0];
-        eraseEnd = (mString.m_data ? mString.m_data->mData : (typename StringType::value_type*)0) + i + 3;
-        mString[0];
-        eraseBegin = (mString.m_data ? mString.m_data->mData : (typename StringType::value_type*)0) + i;
-        mString[0];
-        BasicStringData<typename StringType::value_type>* eraseData = mString.m_data;
-        int eraseSize = eraseEnd - eraseBegin;
-        int eraseOffset = eraseBegin - eraseData->mData;
-        typename StringType::value_type* eraseAt = eraseData->mData + eraseOffset;
-        while (eraseEnd != eraseData->mData + eraseData->mSize)
-        {
-            *eraseAt = *eraseEnd;
-            eraseEnd++;
-            eraseAt++;
-        }
-        eraseData->mSize -= eraseSize;
-        StringType& insertRef = insert;
-        mString[i];
-        typename StringType::value_type* mStringData = mString.m_data ? mString.m_data->mData : 0;
-        insertRef[0];
-        typename StringType::value_type* insertBegin = insertRef.m_data ? insertRef.m_data->mData : 0;
-        insertRef[(int)(insertRef.m_data ? insertRef.m_data->mSize - 1 : 0)];
-        mString.insert(mStringData + i, insertBegin, insertRef.m_data ? insertRef.m_data->mData + insertRef.m_data->mSize - 1 : (typename StringType::value_type*)0);
+        SnapshotEraseRange(
+            mString,
+            ((void)mString[0], (mString.m_data ? mString.m_data->mData : (typename StringType::value_type*)0) + i),
+            (mString.m_data ? mString.m_data->mData : (typename StringType::value_type*)0) + i + 3);
+        mString.insert(SnapshotBegin(mString) + i, SnapshotBegin(insert), SnapshotEnd(insert));
     }
 
     mCurrentPos++;

@@ -2,6 +2,7 @@
 #define FEPOPUPMENU_FUNCTION_ASSIGN_DONT_INLINE
 #define BASICSTRING_INLINE_ERASE
 #define BASICSTRING_OUTLINE_CTOR
+#define BASICSTRING_DELEGATING_CTOR
 #define BASICSTRING_INDEX_EMPTY_COPY_BYTE_OFFSET
 #define BASICSTRING_ERASE_AT_FIRST
 #include "Game/FE/fePopupMenu.h"
@@ -1058,6 +1059,7 @@ BasicString<unsigned short, Detail::TempStringAllocator>::operator=(BasicString<
 /**
  * Offset/Address/Size: 0xA8 | 0x8009C4A4 | size: 0xF8
  */
+#if 0
 template <>
 BasicString<unsigned short, Detail::TempStringAllocator>::BasicString(const unsigned short* str)
 {
@@ -1089,6 +1091,7 @@ BasicString<unsigned short, Detail::TempStringAllocator>::BasicString(const unsi
     }
     m_data = data;
 }
+#endif
 
 // /**
 //  * Offset/Address/Size: 0x854 | 0x8009CC50 | size: 0x1EC

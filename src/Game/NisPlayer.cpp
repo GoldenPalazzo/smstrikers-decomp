@@ -1,3 +1,5 @@
+#define BASICSTRING_DELEGATING_CTOR
+#define BASICSTRING_DELEGATING_CTOR_SRC_CURSOR
 #include "Game/NisPlayer.h"
 #include "Game/Camera/CameraMan.h"
 #include "Game/Character.h"
@@ -869,9 +871,35 @@ static inline char* TriggerMutableBegin(TriggerString& s)
     return s.m_data ? s.m_data->mData : (char*)0;
 }
 
+static inline BasicStringData<char>* MakeAllTriggerStringData()
+{
+    BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(sizeof(BasicStringData<char>), 8, true);
+    if (data != NULL)
+    {
+        const char* text = "all";
+        data->mData = NULL;
+        data->mSize = 0;
+        data->mCapacity = 0;
+        const char* scan = text;
+        while (*scan++ != '\0')
+        {
+            data->mSize++;
+        }
+        data->mSize++;
+        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+        data->mCapacity = data->mSize;
+        for (int i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *text++;
+        }
+        data->mRefCount = 1;
+    }
+    return data;
+}
+
 /**
  * Offset/Address/Size: 0x1AE0 | 0x801167BC | size: 0xD08
- * TODO: 99.42% match - remaining register allocation differs in BasicString construction and copy-on-write paths.
+ * TODO: 99.59% match - erase range pointers and insert copy allocation use different registers.
  */
 void NisPlayer::LoadTriggers(Nis& nis)
 {
@@ -897,9 +925,13 @@ void NisPlayer::LoadTriggers(Nis& nis)
         {
             if (name[i] == '_')
             {
-                EraseTriggerPrefix(name, ((void)name[0], name.m_data ? name.m_data->mData : (char*)0), ((void)name[0], (name.m_data ? name.m_data->mData : (char*)0) + i));
+                {
+                    char* eraseBegin = ((void)name[0], name.m_data ? name.m_data->mData : (char*)0);
+                    EraseTriggerPrefix(name, eraseBegin,
+                        ((void)name[0], (name.m_data ? name.m_data->mData : (char*)0) + i));
+                }
 
-                BasicString<char, Detail::TempStringAllocator> all("all");
+                BasicString<char, Detail::TempStringAllocator> all(MakeAllTriggerStringData());
                 char* at = TriggerMutableBegin(name);
                 BasicStringData<char>* allData = all.m_data;
                 const char* begin;
@@ -970,6 +1002,40 @@ static inline const char* GetStadiumFilterName(eStadiumID stadium)
         return "super_stadium";
     }
     if (stadium == STAD_FORBIDDEN_DOME)
+    {
+        return "forbidden_dome";
+    }
+    return "";
+}
+
+static inline char* GetNisStadiumName()
+{
+    eStadiumID id = GameInfoManager::s_pInstance->GetStadium();
+    if (id == STAD_PEACH_TOAD_STADIUM)
+    {
+        return "the_palace";
+    }
+    if (id == STAD_MARIO_STADIUM)
+    {
+        return "pipeline_central";
+    }
+    if (id == STAD_WARIO_STADIUM)
+    {
+        return "wario_stadium";
+    }
+    if (id == STAD_DK_DAISY)
+    {
+        return "dk_daisy";
+    }
+    if (id == STAD_YOSHI_STADIUM)
+    {
+        return "yoshi_stadium";
+    }
+    if (id == STAD_SUPER_STADIUM)
+    {
+        return "super_stadium";
+    }
+    if (id == STAD_FORBIDDEN_DOME)
     {
         return "forbidden_dome";
     }
@@ -1076,7 +1142,6 @@ BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTar
 
 /**
  * Offset/Address/Size: 0x610 | 0x801152EC | size: 0x99C
- * TODO: 94.27% match - remaining r30/r31/r28 register rotation and BasicString temporary stack-slot differences
  */
 void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset useStadiumOffset, NisUseFilter useFilter, NisWinnerType winnerType)
 {
@@ -1086,7 +1151,7 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
 
     if (filter == "myst_sidekick" && strstr(nisType, "goal_winner") != NULL)
     {
-        filter = BasicString<char, Detail::TempStringAllocator>("mystery");
+        filter = BasicString<char, Detail::TempStringAllocator>(((void)0, "mystery"));
     }
 
     if (nlStrCmp(nisType, "trophy") == 0 && cupTrophyHash == 0)
@@ -1097,19 +1162,30 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
     int numAvailableNis = 0;
     NisHeader* availableNis[10] = { 0 };
 
-    for (int e = 0; e < mDictSize && numAvailableNis < 10; e++)
+    int e;
+    for (e = 0; e < mDictSize && numAvailableNis < 10; e++)
     {
-        if (strstr(mDict[e].name, nisType) != NULL)
+        if (strstr(mDict[e].name, nisType) == NULL)
         {
-            int filterLengthMinusNull = (filter.m_data != NULL) ? (filter.m_data->mSize - 1) : 0;
-            if (filterLengthMinusNull == 0 || mDict[e].name == strstr(mDict[e].name, filter.c_str()))
+            continue;
+        }
+
+        int filterLengthMinusNull = (filter.m_data != NULL) ? (filter.m_data->mSize - 1) : 0;
+        if (filterLengthMinusNull != 0)
+        {
+            const char* filterStr = filter.c_str();
+            if (mDict[e].name != strstr(mDict[e].name, filterStr))
             {
-                if (useFilter == NIS_NO_FILTER || nlStrLen(mExtraNameFilter) == 0 || strstr(mDict[e].name, mExtraNameFilter) != NULL)
-                {
-                    availableNis[numAvailableNis++] = &mDict[e];
-                }
+                continue;
             }
         }
+
+        if (useFilter != NIS_NO_FILTER && nlStrLen(mExtraNameFilter) != 0 && strstr(mDict[e].name, mExtraNameFilter) == NULL)
+        {
+            continue;
+        }
+
+        availableNis[numAvailableNis++] = &mDict[e];
     }
 
     if (numAvailableNis == 0)
@@ -1140,48 +1216,9 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
         else
         {
             float scale = (useStadiumOffset == NIS_AWAY_STADIUM_OFFSET) ? -1.0f : 1.0f;
-            BasicString<char, Detail::TempStringAllocator> formatString("nisHeader/{0}_offset");
+            BasicString<char, Detail::TempStringAllocator> key = Format(((void)0, BasicString<char, Detail::TempStringAllocator>("nisHeader/{0}_offset")), (const char*)GetNisStadiumName());
 
-            eStadiumID stadium = GameInfoManager::s_pInstance->GetStadium();
-            const char* stadiumName = (stadium == STAD_PEACH_TOAD_STADIUM) ? "the_palace" : (stadium == STAD_MARIO_STADIUM) ? "pipeline_central"
-                                                                                      : (stadium == STAD_WARIO_STADIUM)     ? "wario_stadium"
-                                                                                      : (stadium == STAD_DK_DAISY)          ? "dk_daisy"
-                                                                                      : (stadium == STAD_YOSHI_STADIUM)     ? "yoshi_stadium"
-                                                                                      : (stadium == STAD_SUPER_STADIUM)     ? "super_stadium"
-                                                                                      : (stadium == STAD_FORBIDDEN_DOME)    ? "forbidden_dome"
-                                                                                                                            : "";
-
-            BasicString<char, Detail::TempStringAllocator> key = Format(formatString, stadiumName);
-
-            const char* keyStr = key.c_str();
-            Config& cfg = Config::Global();
-            Config::TagValuePair& tvp = cfg.FindTvp(keyStr);
-            float offset;
-            if (tvp.tag == NULL)
-            {
-                cfg.Set(keyStr, 0.0f);
-                offset = 0.0f;
-            }
-            else if (tvp.type == _BOOL)
-            {
-                offset = LexicalCast<float, bool>(tvp.value.b);
-            }
-            else if (tvp.type == _INT)
-            {
-                offset = LexicalCast<float, int>(tvp.value.i);
-            }
-            else if (tvp.type == _FLOAT)
-            {
-                offset = LexicalCast<float, float>(tvp.value.f);
-            }
-            else if (tvp.type == _STRING)
-            {
-                offset = LexicalCast<float, const char*>(tvp.value.s);
-            }
-            else
-            {
-                offset = 0.0f;
-            }
+            float offset = GetConfigFloat(Config::Global(), key.c_str(), 0.0f);
 
             nisHeader.stadiumOffset.f.x = 0.0f;
             nisHeader.stadiumOffset.f.y = scale * offset;
@@ -1189,21 +1226,12 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
         }
 
         bool mirrored = IsMirrored(target, nisHeader.name, winnerType);
-
-        int j = 0;
-        if (mirrored)
+        for (int i = 0; i < nisHeader.numAnimations; i++)
         {
-            for (; j < nisHeader.numAnimations; j++)
+            mBeginPositions[i] = nisHeader.beginPositions[i];
+            if (mirrored)
             {
-                mBeginPositions[j] = nisHeader.beginPositions[j];
-                mBeginPositions[j].f.x *= -1.0f;
-            }
-        }
-        else
-        {
-            for (; j < nisHeader.numAnimations; j++)
-            {
-                mBeginPositions[j] = nisHeader.beginPositions[j];
+                mBeginPositions[i].f.x *= -1.0f;
             }
         }
 

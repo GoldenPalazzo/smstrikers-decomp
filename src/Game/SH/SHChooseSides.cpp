@@ -1,3 +1,4 @@
+#define BASICSTRING_NESTED_DATA_CTOR
 #define BASICSTRING_OUTLINE_CTOR
 
 #include "Game/SH/SHChooseSides.h"

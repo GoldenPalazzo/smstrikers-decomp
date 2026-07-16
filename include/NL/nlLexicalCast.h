@@ -84,15 +84,16 @@ inline WideBasicString Detail::LexicalCastImpl<WideBasicString, WideBasicString>
 
 /**
  * Offset/Address/Size: 0x80 | 0x8009CF48 | size: 0xF4
- * TODO: 98.28% match - loop terminator compare and copy-loop index registers differ.
  */
 #pragma optimization_level 2
+#pragma opt_strength_reduction on
 template <>
 inline WideBasicString Detail::LexicalCastImpl<WideBasicString, const unsigned short*>::Do(
     const unsigned short* const& f)
 {
     return WideBasicString(f);
 }
+#pragma opt_strength_reduction reset
 #pragma optimization_level 4
 
 /**

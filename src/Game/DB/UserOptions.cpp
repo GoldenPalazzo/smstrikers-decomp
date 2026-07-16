@@ -1,3 +1,6 @@
+#define BASICSTRING_COPY_REREAD_TEMP
+#define BASICSTRING_NESTED_DATA_CTOR
+
 #include "types.h"
 #pragma pool_data off
 
@@ -13,8 +16,8 @@
 
 extern bool g_e3_Build;
 
+const char* AUDIO_DEFAULT_CONFIG_FILE = "DefaultAudioOptions.ini";
 static const char* POWERUPS_DEFAULT_CONFIG_FILE = "DefaultPowerupOptions.ini";
-static const char* AUDIO_DEFAULT_CONFIG_FILE = "DefaultAudioOptions.ini";
 
 // /**
 //  * Offset/Address/Size: 0xA8 | 0x801907F8 | size: 0x84
@@ -47,35 +50,8 @@ AudioSettings::AudioSettings()
 
 /**
  * Offset/Address/Size: 0xBB0 | 0x801902BC | size: 0x438
- * TODO: 99.61% match - r29/r30 register-allocation swap in the "undefined"
- * BasicString fallback data construction/destruction path.
  */
-static inline BasicStringInternal* BuildAudioModeDefaultStringData()
-{
-    BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-    if (data != 0)
-    {
-        const char* str = "undefined";
-        data->mData = 0;
-        const char* s = str;
-        data->mSize = 0;
-        data->mCapacity = 0;
-        while (*s++ != 0)
-        {
-            data->mSize++;
-        }
-        data->mSize++;
-        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-        data->mCapacity = data->mSize;
-        for (s32 i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *str++;
-        }
-        data->mRefCount = 1;
-    }
-    return data;
-}
-
+#pragma optimization_level 2
 void AudioSettings::InitializeDefaults()
 {
     Config cfg(Config::ALLOCATE_HIGH);
@@ -85,19 +61,19 @@ void AudioSettings::InitializeDefaults()
     SFXVolume = GetConfigInt(cfg, "SFX Volume", 0xA);
     VoiceVolume = GetConfigInt(cfg, "Voice Volume", 0xA);
 
-    BasicString<char, Detail::TempStringAllocator> mode(
+    BasicString<char, Detail::TempStringAllocator> modeStr(
         cfg.Get<BasicString<char, Detail::TempStringAllocator> >(
-            "Mode", BasicString<char, Detail::TempStringAllocator>(BuildAudioModeDefaultStringData())));
+            "Mode", BasicString<char, Detail::TempStringAllocator>("undefined")));
 
-    if (mode == "STEREO")
+    if (modeStr == "STEREO")
     {
         Mode = STEREO;
     }
-    else if (mode == "MONO")
+    else if (modeStr == "MONO")
     {
         Mode = MONO;
     }
-    else if (mode == "DOLBY")
+    else if (modeStr == "DOLBY")
     {
         Mode = DOLBY;
     }
@@ -106,6 +82,7 @@ void AudioSettings::InitializeDefaults()
         Mode = OSGetSoundMode() == 0 ? MONO : STEREO;
     }
 }
+#pragma optimization_level 4
 
 /**
  * Offset/Address/Size: 0xB20 | 0x8019022C | size: 0x90
@@ -148,11 +125,10 @@ void AudioSettings::ApplySettings(bool bApplyMode, bool bUpdateMode)
         float musicVolume = (float)MusicVolume / 10.0f;
         if (musicVolume != ((float)DefaultMusicVolume / 10.0f))
         {
-            float adjustedMusicVolume = 0.0f;
-            if (musicVolume != adjustedMusicVolume)
-            {
-                adjustedMusicVolume = Interpolate(0.2f, 1.0f, musicVolume);
-            }
+            float adjustedMusicVolume;
+            adjustedMusicVolume = musicVolume != (adjustedMusicVolume = 0.0f)
+                                    ? Interpolate(0.2f, 1.0f, musicVolume)
+                                    : adjustedMusicVolume;
 
             musicVolume = adjustedMusicVolume;
             Audio::MasterVolume::SetVolume(Audio::MasterVolume::VG_Music, adjustedMusicVolume);
@@ -163,7 +139,7 @@ void AudioSettings::ApplySettings(bool bApplyMode, bool bUpdateMode)
         float sfxVolume = (float)SFXVolume / 10.0f;
         if (sfxVolume != ((float)DefaultSFXVolume / 10.0f))
         {
-            const float sfxScale = 0.8f;
+            const float sfxScale = 0.9f;
             sfxVolume *= sfxScale;
             Audio::SetVolGroupVolume(30, sfxVolume, 0);
             Audio::MasterVolume::SetVolume(Audio::MasterVolume::VG_SFX, sfxVolume);
@@ -283,7 +259,7 @@ void PowerupSettings::InitializeDefaults()
     SpinyShells = GetConfigBool(cfg, "Spiny Shells", true);
     Starman = GetConfigBool(cfg, "Starman", true);
     Twister = GetConfigBool(cfg, "Twister", true);
-    Bobombs = GetConfigBool(cfg, "Bobombs", true);
+    Bobombs = GetConfigBool(cfg, "BoBombs", true);
     Bananas = GetConfigBool(cfg, "Bananas", true);
 }
 

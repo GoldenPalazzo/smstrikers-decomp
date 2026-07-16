@@ -34,9 +34,24 @@ static inline void PadActionsEraseRange(PadActionsFormatString& s, const char* b
     data->mSize -= size;
 }
 
+static inline char* PadActionsStringBegin(PadActionsFormatString& s)
+{
+    BasicStringData<char>* data = s.m_data;
+    s[0];
+    data = s.m_data;
+    return data ? data->mData : 0;
+}
+
+static inline char* PadActionsStringEnd(PadActionsFormatString& s)
+{
+    s[(int)(s.m_data ? s.m_data->mSize - 1 : 0)];
+    return s.m_data ? s.m_data->mData + s.m_data->mSize - 1 : (char*)0;
+}
+
 /**
  * Offset/Address/Size: 0x128 | 0x80193720 | size: 0xD74
- * TODO: 99.59% match - copy-on-write temporary register swaps and marker add operand order remain.
+ * TODO: 99.82% match - three copy-on-write allocation temporaries use r27 instead of r26,
+ * and two marker address additions have reversed operands.
  */
 template <>
 template <>
@@ -68,11 +83,9 @@ FormatImpl<PadActionsFormatString>&
         PadActionsEraseRange(mString,
             ((void)mString[0], (mString.m_data ? mString.m_data->mData : (char*)0) + i),
             (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3);
-        mString[i];
-        char* mStringData = mString.m_data ? mString.m_data->mData : 0;
-        const char* insertBegin = ((void)insert[0], insert.m_data ? insert.m_data->mData : 0);
-        insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        const char* insertEnd = insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0;
+        char* const mStringData = PadActionsStringBegin(mString);
+        const char* insertBegin = PadActionsStringBegin(insert);
+        const char* insertEnd = PadActionsStringEnd(insert);
         mString.insert(mStringData + i, insertBegin, insertEnd);
     }
 

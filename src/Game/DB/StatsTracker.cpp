@@ -41,10 +41,22 @@ static inline void EraseRange(NLString& s, const char* begin, const char* end)
     data->mSize -= size;
 }
 
+static inline char* StringBegin(NLString& string)
+{
+    string[0];
+    return string.m_data ? string.m_data->mData : (char*)0;
+}
+
+static inline char* StringEnd(NLString& string)
+{
+    string[(int)(string.m_data ? string.m_data->mSize - 1 : 0)];
+    return string.m_data ? string.m_data->mData + string.m_data->mSize - 1 : (char*)0;
+}
+
 /**
  * Offset/Address/Size: 0x1DAC | 0x80188948 | size: 0xD74
- * TODO: 99.59% match - remaining diffs are marker add operand order and
- * r26/r27/r28 allocation in copy-on-write paths.
+ * TODO: 99.79% match - remaining diffs are marker add operand order and
+ * copy-on-write register allocation.
  */
 template <>
 NLFormatImpl& NLFormatImpl::operator% <const char*>(const char* const& t)
@@ -72,12 +84,7 @@ NLFormatImpl& NLFormatImpl::operator% <const char*>(const char* const& t)
 
         mString[0];
         EraseRange(mString, ((void)mString[0], (mString.m_data ? mString.m_data->mData : (char*)0) + i), (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3);
-        mString[i];
-        char* mStringData = mString.m_data ? mString.m_data->mData : 0;
-        const char* insertBegin = ((void)insert[0], insert.m_data ? insert.m_data->mData : 0);
-        insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        const char* insertEnd = insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0;
-        mString.insert(mStringData + i, insertBegin, insertEnd);
+        mString.insert(StringBegin(mString) + i, StringBegin(insert), StringEnd(insert));
     }
 
     mCurrentPos++;
