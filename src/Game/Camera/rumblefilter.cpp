@@ -29,18 +29,6 @@ void cRumbleFilter::Filter(const nlMatrix4& matViewIn, nlMatrix4& matViewOut)
 }
 
 /**
- * Offset/Address/Size: 0x284 | 0x801A64A0 | size: 0x50
- */
-void cRumbleFilter::Rumble(float x, float y)
-{
-    nlVec2Set(v2Pos0, 0.0f, 0.0f);
-    nlVec2Set(v2Pos1, x, y);
-    nlVec2Set(v2Vel0, 0.0f, 0.0f);
-    nlVec2Set(v2Vel1, 0.0f, 0.0f);
-    g_pEventManager->CreateValidEvent(0x57, 0x14);
-}
-
-/**
  * Offset/Address/Size: 0x2D4 | 0x801A64F0 | size: 0x60
  */
 void cRumbleFilter::Reset()
@@ -55,11 +43,29 @@ void cRumbleFilter::Reset()
 }
 
 /**
+ * Offset/Address/Size: 0x284 | 0x801A64A0 | size: 0x50
+ */
+void cRumbleFilter::Rumble(float x, float y)
+{
+    nlVec2Set(v2Pos0, 0.0f, 0.0f);
+    nlVec2Set(v2Pos1, x, y);
+    nlVec2Set(v2Vel0, 0.0f, 0.0f);
+    nlVec2Set(v2Vel1, 0.0f, 0.0f);
+    g_pEventManager->CreateValidEvent(0x57, 0x14);
+}
+
+// Identity pass-through. Wrapping the spring-force x-component in a call demotes
+// its value class so MWCC keeps it in its own temporary (f2), which forces the
+// unit-vector y-component into f5 to match the original register allocation.
+static inline float rfKeep(float f) { return f; }
+
+/**
  * Offset/Address/Size: 0x0 | 0x801A621C | size: 0x284
- * TODO: 99.69% match - temporary FP registers differ during delta setup and unit-vector calculation
  */
 void cRumbleFilter::Update(float dt)
 {
+    float dx;
+    float dy;
     float fHTerm;
     float fDTerm;
 
@@ -68,17 +74,15 @@ void cRumbleFilter::Update(float dt)
 
     float step = dt <= 0.02f ? dt : 0.02f;
 
-    nlVector2 _p;
-    _p.f.x = v2Pos0.f.x - v2Pos1.f.x;
-    _p.f.y = v2Pos0.f.y - v2Pos1.f.y;
-    const float temp = (_p.f.x * _p.f.x) + (_p.f.y * _p.f.y);
-    const float len = nlSqrt(temp, true);
+    dy = v2Pos0.f.y - v2Pos1.f.y;
+    dx = v2Pos0.f.x - v2Pos1.f.x;
+    const float len = nlSqrt(dx * dx + dy * dy, true);
     fHTerm = len * Ks;
 
     nlVector2 _dv;
     _dv.f.y = v2Vel0.f.y - v2Vel1.f.y;
     _dv.f.x = v2Vel0.f.x - v2Vel1.f.x;
-    float proj = (_dv.f.x * _p.f.x) + (_dv.f.y * _p.f.y);
+    float proj = (_dv.f.x * dx) + (_dv.f.y * dy);
     if (len == 0.0f)
     {
         fDTerm = 0.0f;
@@ -91,8 +95,8 @@ void cRumbleFilter::Update(float dt)
     nlVector2 unit;
     if (len == 0.f)
     {
-        unit.f.y = 0.0f;
         unit.f.x = 0.0f;
+        unit.f.y = 0.0f;
     }
     else
     {
@@ -112,15 +116,15 @@ void cRumbleFilter::Update(float dt)
         }
 
         float invLen = 1.0f / len;
-        unit.f.y = invLen * _p.f.y;
-        unit.f.x = invLen * _p.f.x;
+        unit.f.x = invLen * dx;
+        unit.f.y = invLen * dy;
     }
 
     nlVec2Set(v2Force0, 0.f, 0.f);
     nlVec2Set(v2Force1, 0.f, 0.f);
 
     float total = -(fHTerm + fDTerm);
-    float fx = total * unit.f.x;
+    float fx = rfKeep(total * unit.f.x);
     float fy = total * unit.f.y;
     nlVec2Set(v2Force0,
         fx + v2Force0.f.x,
