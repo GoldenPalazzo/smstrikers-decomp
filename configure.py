@@ -809,7 +809,7 @@ config.libs = [
             Object(NonMatching, "Game/Camera/FollowCam.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Camera/ReplayCamera.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Camera/AnimViewerCam.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Camera/rumblefilter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Camera/rumblefilter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Camera/DebugCam.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Camera/GameplayCam.cpp", extra_cflags=["-inline auto", "-inline deferred"], mw_version="GC/1.3"),
             Object(Matching, "Game/Camera/animcam.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

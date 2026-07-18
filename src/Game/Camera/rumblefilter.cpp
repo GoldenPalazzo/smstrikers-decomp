@@ -90,8 +90,8 @@ void cRumbleFilter::Update(float dt)
     nlVector2 unit;
     if (len == 0.f)
     {
-        unit.f.y = 0.0f;
         unit.f.x = 0.0f;
+        unit.f.y = 0.0f;
     }
     else
     {
@@ -119,14 +119,13 @@ void cRumbleFilter::Update(float dt)
     nlVec2Set(v2Force1, 0.f, 0.f);
 
     float total = -(fHTerm + fDTerm);
-    float fx = total * unit.f.x;
-    float fy = total * unit.f.y;
+    nlVec2Set(unit, total * unit.f.x, total * unit.f.y);
     nlVec2Set(v2Force0,
-        fx + v2Force0.f.x,
-        fy + v2Force0.f.y);
+        unit.f.x + v2Force0.f.x,
+        unit.f.y + v2Force0.f.y);
     nlVec2Set(v2Force1,
-        v2Force1.f.x - fx,
-        v2Force1.f.y - fy);
+        v2Force1.f.x - unit.f.x,
+        v2Force1.f.y - unit.f.y);
 
     float factor0 = 0.f;
     nlVec2Set(v2Vel0,
