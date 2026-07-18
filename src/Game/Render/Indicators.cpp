@@ -106,10 +106,18 @@ static inline void SetIndicatorPolyColour(glPoly2& poly, unsigned char r, unsign
     poly.SetColour(c);
 }
 
+static inline void DrawIndicator(int xCentre, int yCentre, float fPixelWidth, float fPixelHeight, float fOpacity, unsigned long uTexID,
+    float rotationAngle, unsigned char additiveBlending);
+static inline void DrawOffscreenIndicator(const nlVector3& v3NormalizedScreenPos, IndicatorInfo* pInfo, cPlayer* pCharacter);
+static inline unsigned long GetCharacterTexID(cPlayer* pCharacter);
+
+static inline float max_float(float a, float b)
+{
+    return (b >= a) ? b : a;
+}
+
 /**
  * Offset/Address/Size: 0x868 | 0x8015FACC | size: 0x440
- * TODO: 96.97% match - f29/f30/f28 FP register mismatch in dt, x, and size;
- * absX/absY max branch shape still differs
  */
 static void UpdateAndRenderOffScreenIndicators(float dt)
 {
@@ -141,128 +149,68 @@ static void UpdateAndRenderOffScreenIndicators(float dt)
 
         if (((cPlayer*)g_pCharacters[i])->GetGlobalPad() != 0)
         {
-            cPlayer* pChar;
-            u8 insideXY;
-            u8 insideXYZ;
+            u8 onScreenFlags[2];
             float fOne;
-            u8 drawIndicator;
 
-            pChar = (cPlayer*)g_pCharacters[i];
-            insideXYZ = 0;
+            const nlVector3& screenPos = ((cPlayer*)g_pCharacters[i])->m_v3ScreenPosition;
+            onScreenFlags[1] = 0;
             fOne = 1.0f;
-            insideXY = insideXYZ;
+            onScreenFlags[0] = onScreenFlags[1];
 
-            if ((float)__fabs(pChar->m_v3ScreenPosition.f.x) <= fOne
-                && (float)__fabs(pChar->m_v3ScreenPosition.f.y) <= fOne)
+            if ((float)__fabs(screenPos.f.x) <= fOne)
             {
-                insideXY = 1;
-            }
-
-            if (insideXY)
-            {
-                if ((float)__fabs(pChar->m_v3ScreenPosition.f.z) <= fOne)
+                if ((float)__fabs(screenPos.f.y) <= fOne)
                 {
-                    insideXYZ = 1;
+                    onScreenFlags[0] = 1;
                 }
             }
 
-            if (insideXYZ)
-                goto do_fadeout;
-
-            drawIndicator = 0;
-            if (g_pGame->m_eGameState == 4 || g_pGame->m_eGameState == 5)
+            if (onScreenFlags[0] != 0)
             {
-                drawIndicator = 1;
+                if ((float)__fabs(screenPos.f.z) <= fOne)
+                {
+                    onScreenFlags[1] = 1;
+                }
             }
 
-            if (!drawIndicator)
+            if (onScreenFlags[1] != 0 || !g_pGame->IsGameplayOrOvertime())
             {
-            do_fadeout:
                 indicatorInfo[i].IncrementOnscreenTimer(dt);
             }
             else
             {
-                float x;
-                float y;
-                cPlayer* pCharDraw;
-                float absX;
-                float absY;
-                float size;
-                int xPixels;
-                int yPixels;
-                unsigned long texID;
-
                 indicatorInfo[i].IncrementOffscreenTimer(dt);
-
-                x = 320.0f * projectedPos.f.x;
-                y = 240.0f * projectedPos.f.y;
-                pCharDraw = (cPlayer*)g_pCharacters[i];
-
-                if (x < -288.0f)
-                {
-                    x = -288.0f;
-                }
-                else if (x > 288.0f)
-                {
-                    x = 288.0f;
-                }
-
-                if (y < -208.0f)
-                {
-                    y = -208.0f;
-                }
-                else if (y > 208.0f)
-                {
-                    y = 208.0f;
-                }
-
-                absX = (float)__fabs(projectedPos.f.x);
-                absY = (float)__fabs(projectedPos.f.y);
-
-                x = x + 320.0f;
-                y += 240.0f;
-
-                if (absX >= absY)
-                {
-                }
-                else
-                {
-                    absX = absY;
-                }
-
-                size = InterpolateRangeClamped(1.0f, 0.5f, 0.0f, 2.0f, (float)__fabs(1.0f - absX));
-                texID = uIndicatorTexID[pCharDraw->GetGlobalPad()->m_padIndex];
-                {
-                    float opacity = indicatorInfo[i].m_fOpacity;
-
-                    size = 64.0f * size;
-                    yPixels = (int)y;
-                    xPixels = (int)x;
-
-                    if ((u8)glTextureLoad(texID))
-                    {
-                        glPoly2 quad;
-
-                        glSetDefaultState(0);
-                        glSetRasterState(GLS_AlphaBlend, 1);
-                        glSetRasterState(GLS_AlphaTest, 1);
-                        glSetRasterState(GLS_AlphaTestRef, 0);
-                        glSetCurrentRasterState(glHandleizeRasterState());
-                        glSetCurrentTexture(texID, (eGLTextureType)0);
-                        glTextureGetWidth();
-                        glTextureGetHeight();
-
-                        quad.SetupRotatedRectangle((float)xPixels, (float)yPixels, size, size, 0.0f, 10000000000.0f);
-
-                        SetIndicatorPolyColour(quad, 0xFF, 0xFF, 0xFF, (unsigned char)(255.0f * opacity));
-
-                        quad.depth = -0.5f;
-                        quad.Attach((eGLView)27, 0, 0, (unsigned long)-1);
-                    }
-                }
+                DrawOffscreenIndicator(projectedPos, &indicatorInfo[i], (cPlayer*)g_pCharacters[i]);
             }
         }
     }
+}
+
+static inline void DrawOffscreenIndicator(const nlVector3& v3NormalizedScreenPos, IndicatorInfo* pInfo, cPlayer* pCharacter)
+{
+    float screenPosX;
+    float screenPosY;
+    float scale;
+
+    screenPosY = v3NormalizedScreenPos.f.y * 240.0f;
+    screenPosX = v3NormalizedScreenPos.f.x * 320.0f;
+
+    if (screenPosX < -288.0f)
+        screenPosX = -288.0f;
+    else if (screenPosX > 288.0f)
+        screenPosX = 288.0f;
+
+    if (screenPosY < -208.0f)
+        screenPosY = -208.0f;
+    else if (screenPosY > 208.0f)
+        screenPosY = 208.0f;
+
+    screenPosX += 320.0f;
+    screenPosY += 240.0f;
+
+    scale = (float)fabs(1.0f - max_float((float)fabs(v3NormalizedScreenPos.f.y), (float)fabs(v3NormalizedScreenPos.f.x)));
+    scale = InterpolateRangeClamped(1.0f, 0.5f, 0.0f, 2.0f, scale);
+    DrawIndicator((int)screenPosX, (int)screenPosY, 64.0f * scale, 64.0f * scale, pInfo->m_fOpacity, GetCharacterTexID(pCharacter), 0.0f, 1);
 }
 
 static inline void DrawIndicator(int xCentre, int yCentre, float fPixelWidth, float fPixelHeight, float fOpacity, unsigned long uTexID,
