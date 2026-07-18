@@ -277,44 +277,23 @@ void cTeam::SetIsPowerUpNew(int index, bool bIsNew)
     }
 }
 
-#pragma push
-#pragma optimization_level 0
-static inline unsigned int FakeRuntimeZero()
-{
-    register unsigned int z = 0;
-    return z;
-}
-#pragma pop
-
 /**
  * Offset/Address/Size: 0x17D0 | 0x80065B7C | size: 0x54
- * TODO: 97.6% match - r0/r6 register swap (MWCC register allocator quirk)
  */
-#pragma push
-#pragma global_optimizer off
-#pragma opt_propagation off
 void cTeam::SetCurrentPowerUp(ePowerUpType eNewPowerUpType, int nnumOfPowerups)
 {
-    int a;
     unsigned char bGivenNewPowerup = 0;
-    a = 1;
-
-    if (m_ePowerupList[0].eType == POWER_UP_NONE && FakeRuntimeZero() == 0)
+    for (int a = 0; a < 2; ++a)
     {
-        m_ePowerupList[0].eType = eNewPowerUpType;
-        bGivenNewPowerup = 1;
-        m_ePowerupList[0].nnumOfPowerups = nnumOfPowerups;
-        m_ePowerupList[0].bIsNew = a;
-    }
-
-    if (m_ePowerupList[1].eType == POWER_UP_NONE && !bGivenNewPowerup)
-    {
-        m_ePowerupList[1].eType = eNewPowerUpType;
-        m_ePowerupList[1].nnumOfPowerups = nnumOfPowerups;
-        m_ePowerupList[1].bIsNew = a;
+        if (m_ePowerupList[a].eType == POWER_UP_NONE && !bGivenNewPowerup)
+        {
+            m_ePowerupList[a].eType = eNewPowerUpType;
+            bGivenNewPowerup = 1;
+            m_ePowerupList[a].nnumOfPowerups = nnumOfPowerups;
+            m_ePowerupList[a].bIsNew = 1;
+        }
     }
 }
-#pragma pop
 
 /**
  * Offset/Address/Size: 0x17B0 | 0x80065B5C | size: 0x20
