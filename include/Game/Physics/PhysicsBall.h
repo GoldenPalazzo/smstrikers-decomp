@@ -8,7 +8,6 @@ class PhysicsBall : public PhysicsSphere
 {
 public:
     PhysicsBall(CollisionSpace*, PhysicsWorld*, float);
-    virtual ~PhysicsBall() { };
     virtual bool SetContactInfo(dContact* contact, PhysicsObject* other, bool first);
     virtual void PreUpdate();
     virtual void PreCollide();
