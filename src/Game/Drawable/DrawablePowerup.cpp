@@ -6,9 +6,9 @@
 #include "NL/gl/glState.h"
 #include "NL/nlString.h"
 
-static void DrawShadow(float radius, float x, float y, float z);
-
-static inline char* PowerupLookupString(int idx)
+namespace
+{
+char* GetName(int idx)
 {
     static char powerupLookup[] = "powerup_generated_xxx";
 
@@ -33,117 +33,7 @@ static inline char* PowerupLookupString(int idx)
 
     return powerupLookup;
 }
-
-/**
- * Offset/Address/Size: 0x0 | 0x8011EC74 | size: 0xF8
- * TODO: 95.3% match - FPR registers still differ around blend factor
- * temporaries and the mScale store schedule.
- */
-void DrawablePowerup::Blend(const float* blendFactors, const DrawablePowerup& lhs, const DrawablePowerup& rhs)
-{
-    mVisible = lhs.mVisible && rhs.mVisible;
-    if (!mVisible)
-        return;
-
-    float posZ;
-    float posY;
-    float posX;
-    float scale;
-    float t2;
-    float t;
-    float one;
-    float invT;
-
-    t = blendFactors[2];
-    one = 1.0f;
-    invT = one - t;
-    t2 = ((const volatile float*)blendFactors)[2];
-    scale = (one - t2) * lhs.mScale + t2 * rhs.mScale;
-    posX = invT * lhs.mPosition.f.x + t * rhs.mPosition.f.x;
-    posY = invT * lhs.mPosition.f.y + t * rhs.mPosition.f.y;
-    posZ = invT * lhs.mPosition.f.z + t * rhs.mPosition.f.z;
-
-    mType = lhs.mType;
-    mScale = scale;
-    mRadius = lhs.mRadius;
-    mOrientation = lhs.mOrientation + (s16)((s16)(rhs.mOrientation - lhs.mOrientation) * t);
-    mPosition.f.x = posX;
-    mPosition.f.y = posY;
-    mPosition.f.z = posZ;
-}
-
-/**
- * Offset/Address/Size: 0xF8 | 0x8011ED6C | size: 0x27C
- */
-void DrawablePowerup::Render(int idx) const
-{
-    World* world = WorldManager::s_World;
-    DrawableObject* obj = world->FindDrawableObject(nlStringLowerHash(PowerupLookupString(idx)));
-
-    if (obj == NULL)
-    {
-        return;
-    }
-
-    nlQuaternion quat;
-    float angle = 0.0000958738f * (float)mOrientation;
-    const nlVector3 axis = { 0.0f, 0.0f, 1.0f };
-    nlMakeQuat(quat, axis, angle);
-
-    if (mVisible)
-    {
-        obj->m_uObjectFlags |= 1;
-    }
-    else
-    {
-        obj->m_uObjectFlags &= ~1;
-    }
-
-    obj->m_orientation = quat;
-    obj->m_worldMatrixUpToDate = false;
-    obj->m_translation = mPosition;
-    obj->m_worldMatrixUpToDate = false;
-    obj->m_scale = mScale;
-    obj->m_worldMatrixUpToDate = false;
-
-    if (!mVisible)
-    {
-        return;
-    }
-
-    obj->Draw();
-    DrawableModel* model = obj->AsDrawableModel();
-
-    if (model == NULL)
-    {
-        DrawShadow(mRadius, mPosition.f.x, mPosition.f.y, mPosition.f.z);
-    }
-    else
-    {
-        model->DrawPlanarShadow();
-    }
-}
-
-/**
- * Offset/Address/Size: 0x374 | 0x8011EFE8 | size: 0x190
- */
-void DrawablePowerup::Grab(int idx)
-{
-    PowerupBase* powerup = FindPowerUp(nlStringLowerHash(PowerupLookupString(idx)));
-    if (powerup != NULL)
-    {
-        mType = powerup->m_eType;
-        mVisible = true;
-        mRadius = powerup->GetRadius();
-        mOrientation = powerup->m_aOrientation;
-        mPosition = powerup->m_v3Position;
-        mScale = powerup->m_scale;
-    }
-    else
-    {
-        mVisible = false;
-    }
-}
+} // namespace
 
 /**
  * Offset/Address/Size: 0x504 | 0x8011F178 | size: 0x1A0
@@ -229,43 +119,123 @@ static void DrawShadow(float radius, float x, float y, float z)
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x8011F318 | size: 0x88
+ * Retail size: 0x128 (erased)
  */
-template <>
-void DrawablePowerup::Replay<LoadFrame>(LoadFrame& frame)
+PowerupBase* DrawablePowerup::GetPowerup(int idx) const
 {
-    Replayable<3, LoadFrame, bool>(frame, mVisible);
-    if (mVisible)
+    return FindPowerUp(nlStringLowerHash(GetName(idx)));
+}
+
+/**
+ * Offset/Address/Size: 0x374 | 0x8011EFE8 | size: 0x190
+ */
+void DrawablePowerup::Grab(int idx)
+{
+    PowerupBase* powerup = FindPowerUp(nlStringLowerHash(GetName(idx)));
+    if (powerup != NULL)
     {
-        Replayable<3, LoadFrame, char>(frame, (char&)mType);
-        Replayable<3, LoadFrame, unsigned short>(frame, mOrientation);
-        Replayable<3, LoadFrame, nlVector3>(frame, mPosition);
-        Replayable<3, LoadFrame, float>(frame, mScale);
-        Replayable<3, LoadFrame, float>(frame, mRadius);
+        mType = powerup->m_eType;
+        mVisible = true;
+        mRadius = powerup->GetRadius();
+        mOrientation = powerup->m_aOrientation;
+        mPosition = powerup->m_v3Position;
+        mScale = powerup->m_scale;
+    }
+    else
+    {
+        mVisible = false;
     }
 }
 
 /**
- * Offset/Address/Size: 0x88 | 0x8011F3A0 | size: 0x88
+ * Offset/Address/Size: 0xF8 | 0x8011ED6C | size: 0x27C
  */
-template <>
-void DrawablePowerup::Replay<SaveFrame>(SaveFrame& frame)
+void DrawablePowerup::Render(int idx) const
 {
-    Replayable<3, SaveFrame, bool>(frame, mVisible);
+    World* world = WorldManager::s_World;
+    DrawableObject* obj = world->FindDrawableObject(nlStringLowerHash(GetName(idx)));
+
+    if (obj == NULL)
+    {
+        return;
+    }
+
+    nlQuaternion quat;
+    float angle = 0.0000958738f * (float)mOrientation;
+    const nlVector3 axis = { 0.0f, 0.0f, 1.0f };
+    nlMakeQuat(quat, axis, angle);
+
     if (mVisible)
     {
-        Replayable<3, SaveFrame, char>(frame, (char&)mType);
-        Replayable<3, SaveFrame, unsigned short>(frame, mOrientation);
-        Replayable<3, SaveFrame, nlVector3>(frame, mPosition);
-        Replayable<3, SaveFrame, float>(frame, mScale);
-        Replayable<3, SaveFrame, float>(frame, mRadius);
+        obj->m_uObjectFlags |= 1;
+    }
+    else
+    {
+        obj->m_uObjectFlags &= ~1;
+    }
+
+    obj->m_orientation = quat;
+    obj->m_worldMatrixUpToDate = false;
+    obj->m_translation = mPosition;
+    obj->m_worldMatrixUpToDate = false;
+    obj->m_scale = mScale;
+    obj->m_worldMatrixUpToDate = false;
+
+    if (!mVisible)
+    {
+        return;
+    }
+
+    obj->Draw();
+    DrawableModel* model = obj->AsDrawableModel();
+
+    if (model == NULL)
+    {
+        DrawShadow(mRadius, mPosition.f.x, mPosition.f.y, mPosition.f.z);
+    }
+    else
+    {
+        model->DrawPlanarShadow();
     }
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x8011F428 | size: 0x8
+ * Offset/Address/Size: 0x0 | 0x8011EC74 | size: 0xF8
+ * TODO: 95.3% match - FPR registers still differ around blend factor
+ * temporaries and the mScale store schedule.
  */
-inline DrawableModel* DrawableObject::AsDrawableModel()
+void DrawablePowerup::Blend(const float* blendFactors, const DrawablePowerup& lhs, const DrawablePowerup& rhs)
 {
-    return NULL;
+    mVisible = lhs.mVisible && rhs.mVisible;
+    if (!mVisible)
+        return;
+
+    float posZ;
+    float posY;
+    float posX;
+    float scale;
+    float t2;
+    float t;
+    float one;
+    float invT;
+
+    t = blendFactors[2];
+    one = 1.0f;
+    invT = one - t;
+    t2 = ((const volatile float*)blendFactors)[2];
+    scale = (one - t2) * lhs.mScale + t2 * rhs.mScale;
+    posX = invT * lhs.mPosition.f.x + t * rhs.mPosition.f.x;
+    posY = invT * lhs.mPosition.f.y + t * rhs.mPosition.f.y;
+    posZ = invT * lhs.mPosition.f.z + t * rhs.mPosition.f.z;
+
+    mType = lhs.mType;
+    mScale = scale;
+    mRadius = lhs.mRadius;
+    mOrientation = lhs.mOrientation + (s16)((s16)(rhs.mOrientation - lhs.mOrientation) * t);
+    mPosition.f.x = posX;
+    mPosition.f.y = posY;
+    mPosition.f.z = posZ;
 }
+
+template void DrawablePowerup::Replay<SaveFrame>(SaveFrame&);
+template void DrawablePowerup::Replay<LoadFrame>(LoadFrame&);

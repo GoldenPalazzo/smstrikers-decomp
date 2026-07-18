@@ -4,6 +4,8 @@
 #include "Game/Replay.h"
 #include "Game/Drawable/DrawableObj.h"
 
+class PowerupBase;
+
 class DrawablePowerup
 {
 public:
@@ -13,6 +15,7 @@ public:
     void Blend(const float*, const DrawablePowerup&, const DrawablePowerup&);
     void Render(int) const;
     void Grab(int);
+    PowerupBase* GetPowerup(int) const;
 
     /* 0x00 */ s8 mType;
     /* 0x04 */ float mScale;
@@ -21,6 +24,20 @@ public:
     /* 0x10 */ nlVector3 mPosition;
     /* 0x1C */ u16 mOrientation;
 }; // total size: 0x20
+
+template <typename T>
+void DrawablePowerup::Replay(T& frame)
+{
+    Replayable<3, T, bool>(frame, mVisible);
+    if (mVisible)
+    {
+        Replayable<3, T, char>(frame, (char&)mType);
+        Replayable<3, T, unsigned short>(frame, mOrientation);
+        Replayable<3, T, nlVector3>(frame, mPosition);
+        Replayable<3, T, float>(frame, mScale);
+        Replayable<3, T, float>(frame, mRadius);
+    }
+}
 
 template <>
 void DrawablePowerup::Replay<SaveFrame>(SaveFrame&);

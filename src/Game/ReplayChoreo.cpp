@@ -1,6 +1,7 @@
 #include "Game/ReplayChoreo.h"
 #include "Game/Camera/CameraMan.h"
 #include "Game/Game.h"
+#include "Game/Render/NetMesh.h"
 #include "Game/Sys/audio.h"
 #include "Game/Team.h"
 #include "NL/nlDebug.h"
@@ -11,15 +12,6 @@ struct GoalScoredDataExt
 {
     GoalScoredData data;
     int sideOfInterest;
-};
-
-class NetMesh
-{
-public:
-    static NetMesh* spPositiveXNetMesh;
-    static NetMesh* spNegativeXNetMesh;
-
-    void UpdateUntilRelaxed();
 };
 
 unsigned int nlRandom(unsigned int range, unsigned int* seed);

@@ -25,7 +25,7 @@ public:
     /* 0x10 */ virtual void Draw() = 0;
     /* 0x14 */ virtual void DrawPlanarShadow() { };
     /* 0x18 */ virtual bool IsDrawableModel() { return false; };
-    /* 0x1C */ virtual DrawableModel* AsDrawableModel();
+    /* 0x1C */ virtual DrawableModel* AsDrawableModel() { return NULL; }
     /* 0x20 */ virtual void GetAABBDimensions(AABBDimensions&, bool) const;
 
     nlMatrix4& GetWorldMatrix() const;

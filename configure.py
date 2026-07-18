@@ -817,7 +817,7 @@ config.libs = [
             Object(NonMatching, "Game/Replay.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/ReplayChoreo.cpp", extra_cflags=["-inline auto", "-inline deferred"]),    
             Object(NonMatching, "Game/ReplayManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/RenderSnapshot.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "Game/RenderSnapshot.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             Object(NonMatching, "Game/Ball.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/Net.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -1124,7 +1124,7 @@ config.libs = [
             Object(NonMatching, "Game/Drawable/DrawableNetMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Drawable/DrawableCharacter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Drawable/DrawableBall.cpp", extra_cflags=["-inline auto", "-msext on"]),
-            Object(NonMatching, "Game/Drawable/DrawablePowerup.cpp", extra_cflags=["-inline auto"]),
+            Object(NonMatching, "Game/Drawable/DrawablePowerup.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Drawable/DrawableExplosionFragment.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Interpreter
