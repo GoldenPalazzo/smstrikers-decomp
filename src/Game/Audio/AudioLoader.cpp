@@ -1,10 +1,6 @@
-#define GCSTREAM_AUDIOSTREAM_TRIVIAL_METHODS_PURE_VIRTUAL
-#define LOADER_METHODS_DECLARE_ONLY
-#define NL_AVLTREEBASE_AUDIOLOADER_LINK_ORDER
-#define NLDLRING_SIMPLE_SEPARATE
-#define NL_SINGLETON_NO_DEFINE
-#include "NL/nlDLRingSimple.h"
 #include "Game/Audio/AudioLoader.h"
+#include "Game/Audio/AudioStream.h"
+#include "Game/Audio/PriorityStream.h"
 #include "Game/Audio/SebringSoundDefines.h"
 #include "Game/Audio/SoundEventScript.h"
 #include "Game/Camera/CameraMan.h"
@@ -21,46 +17,6 @@ int nlSNPrintf(char*, unsigned long, const char*, ...);
 // vtable-bearing globals) so the .sbss / .sdata symbol order and initial values
 // match the target object exactly.
 
-/**
- * Helper struct for inlining FindGet with bool return to match target assembly.
- * The target uses a bool found flag pattern (li r0,1 / li r0,0 / clrlwi.)
- * which the native AVLTreeBase::FindGet (returning ValueType*) does not produce.
- */
-struct SoundDefineMapType
-{
-    char pad[0x1C];
-    AVLTreeEntry<int, SoundStrToIDNode*>* m_Root;
-
-    inline bool FindGet(int key, SoundStrToIDNode*** foundValue) const
-    {
-        AVLTreeEntry<int, SoundStrToIDNode*>* node = m_Root;
-        while (node != NULL)
-        {
-            int cmpResult;
-            if (key == node->key)
-                cmpResult = 0;
-            else if (key < node->key)
-                cmpResult = -1;
-            else
-                cmpResult = 1;
-            if (cmpResult == 0)
-            {
-                if (foundValue != NULL)
-                    *foundValue = &node->value;
-                return true;
-            }
-            else
-            {
-                if (cmpResult < 0)
-                    node = (AVLTreeEntry<int, SoundStrToIDNode*>*)node->node.left;
-                else
-                    node = (AVLTreeEntry<int, SoundStrToIDNode*>*)node->node.right;
-            }
-        }
-        return false;
-    }
-};
-
 bool AudioLoader::gbStream = true;
 
 static int gLoadedStadiumGroup = -1;
@@ -70,16 +26,13 @@ static int gLoadedHomeSidekickGroup = -1;
 static int gLoadedAwaySidekickGroup = -1;
 static int gLoadedSurfaceGroup = -1;
 
-typedef DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL> FadeDLListEntry;
-typedef DLListContainerBase<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL, BasicSlotPool<FadeDLListEntry> > FadeDLListContainer;
+typedef DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>
+    FadeDLListEntry;
+typedef DLListContainerBase<
+    AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL,
+    BasicSlotPool<FadeDLListEntry> >
+    FadeDLListContainer;
 typedef DLListEntry<GCAudioStreaming::StereoAudioStream*> StreamDLListEntry;
-typedef void (FadeDLListContainer::*FadeDeleteEntryFunc)(FadeDLListEntry*);
-typedef AVLTreeBase<int, SoundStrToIDNode*, BasicSlotPool<AVLTreeEntry<int, SoundStrToIDNode*> >, DefaultKeyCompare<int> > SoundDefineAVLTreeBase;
-
-static inline FadeDeleteEntryFunc GetFadeDeleteEntryFunc()
-{
-    return &FadeDLListContainer::DeleteEntry;
-}
 
 class BaseSceneHandler;
 
@@ -264,12 +217,6 @@ AudioFileData AudioLoader::sebringAudioFileData = {
     0x2E,
 };
 
-template <>
-inline SoundDefineAVLTreeBase::ENTRY_DELETE_FUNC SoundDefineAVLTreeBase::DeleteEntryFunc()
-{
-    return &SoundDefineAVLTreeBase::DeleteEntry;
-}
-
 nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::gMusyXSoundDefineMap(0x438, 0);
 nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::gCharSoundDefineMap(0xAF, 0);
 nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::gWorldSoundDefineMap(0xDC, 0);
@@ -428,7 +375,7 @@ unsigned long AudioLoader::GetSFXIDFromStr(const char* str, SoundStrToIDNode** p
 
     SoundStrToIDNode** foundValue = NULL;
     unsigned long hash = nlStringLowerHash(str);
-    bool found = ((SoundDefineMapType*)&AudioLoader::gMusyXSoundDefineMap)->FindGet(hash, &foundValue);
+    bool found = AudioLoader::gMusyXSoundDefineMap.FindGet(hash, &foundValue);
 
     if (found)
     {
@@ -448,7 +395,7 @@ unsigned long AudioLoader::GetCharSFXTypeFromStr(const char* str)
 {
     SoundStrToIDNode** ppNode = NULL;
     unsigned long key = nlStringLowerHash(str);
-    bool found = ((SoundDefineMapType*)&AudioLoader::gCharSoundDefineMap)->FindGet(key, &ppNode);
+    bool found = AudioLoader::gCharSoundDefineMap.FindGet(key, &ppNode);
     if (found)
         return (*ppNode)->typeID;
     else
@@ -462,11 +409,18 @@ unsigned long AudioLoader::GetWorldSFXTypeFromStr(const char* str)
 {
     SoundStrToIDNode** ppNode = NULL;
     unsigned long key = nlStringLowerHash(str);
-    bool found = ((SoundDefineMapType*)&AudioLoader::gWorldSoundDefineMap)->FindGet(key, &ppNode);
+    bool found = AudioLoader::gWorldSoundDefineMap.FindGet(key, &ppNode);
     if (found)
         return (*ppNode)->typeID;
     else
         return -1;
+}
+
+inline void AudioLoader::DeleteStrToIDTables()
+{
+    gWorldSoundDefineMap.Clear();
+    gCharSoundDefineMap.Clear();
+    gMusyXSoundDefineMap.Clear();
 }
 
 /**
@@ -544,11 +498,10 @@ state_change:
     StreamDLListEntry* pCur;
     StreamDLListEntry** ppHead;
 
-    nlWalkDLRing(((FadeDLListContainer*)&pTM->m_FadeMgr)->m_Head,
-        (FadeDLListContainer*)&pTM->m_FadeMgr,
-        GetFadeDeleteEntryFunc());
-    ((FadeDLListContainer*)&pTM->m_FadeMgr)->m_Head = NULL;
-    SlotPoolBase::BaseFreeBlocks(&((FadeDLListContainer*)&pTM->m_FadeMgr)->m_Allocator, sizeof(FadeDLListEntry));
+    pTM->m_FadeMgr.m_Fades.Clear();
+    SlotPoolBase::BaseFreeBlocks(
+        &pTM->m_FadeMgr.m_Fades.m_Allocator,
+        sizeof(FadeDLListEntry));
 
     StreamDLListEntry* tmp = nlDLRingGetStart(pTM->m_StreamDeleteList.m_Head);
     pHead = pTM->m_StreamDeleteList.m_Head;
@@ -560,7 +513,7 @@ state_change:
         pStream = pCur->entry;
         pStream->~StereoAudioStream();
 
-        ((SlotPoolEntry*)pStream)->m_next = pTM->m_StreamPool.m_FreeList;
+        ((SlotPoolEntry*)pStream)->next = pTM->m_StreamPool.m_FreeList;
         pTM->m_StreamPool.m_FreeList = (SlotPoolEntry*)pStream;
 
         pRemove = pCur;
@@ -577,12 +530,15 @@ state_change:
 
         nlDLRingRemove(ppHead, pRemove);
 
-        ((SlotPoolEntry*)pFree)->m_next = pTM->m_StreamDeleteList.m_Allocator.m_FreeList;
-        pTM->m_StreamDeleteList.m_Allocator.m_FreeList = (SlotPoolEntry*)pFree;
+        ((SlotPoolEntry*)pFree)->next =
+            pTM->m_StreamDeleteList.m_Allocator.m_FreeList;
+        pTM->m_StreamDeleteList.m_Allocator.m_FreeList =
+            (SlotPoolEntry*)pFree;
     }
 
     SlotPoolBase::BaseFreeBlocks(&pTM->m_StreamPool, 0x40);
-    SlotPoolBase::BaseFreeBlocks(&pTM->m_StreamDeleteList.m_Allocator, 0x0C);
+    SlotPoolBase::BaseFreeBlocks(
+        &pTM->m_StreamDeleteList.m_Allocator, 0x0C);
     PlatAudio::ShutdownStreaming();
     Audio::Silence();
     Audio::UnloadWorldSFX();
@@ -1587,11 +1543,10 @@ void AudioLoader::UnloadInGame()
     StreamDLListEntry* pCur;
     StreamDLListEntry** ppHead;
 
-    nlWalkDLRing(((FadeDLListContainer*)&pTM->m_FadeMgr)->m_Head,
-        (FadeDLListContainer*)&pTM->m_FadeMgr,
-        GetFadeDeleteEntryFunc());
-    ((FadeDLListContainer*)&pTM->m_FadeMgr)->m_Head = NULL;
-    SlotPoolBase::BaseFreeBlocks(&((FadeDLListContainer*)&pTM->m_FadeMgr)->m_Allocator, sizeof(FadeDLListEntry));
+    pTM->m_FadeMgr.m_Fades.Clear();
+    SlotPoolBase::BaseFreeBlocks(
+        &pTM->m_FadeMgr.m_Fades.m_Allocator,
+        sizeof(FadeDLListEntry));
 
     StreamDLListEntry* tmp = nlDLRingGetStart(pTM->m_StreamDeleteList.m_Head);
     pHead = pTM->m_StreamDeleteList.m_Head;
@@ -1603,7 +1558,7 @@ void AudioLoader::UnloadInGame()
         pStream = pCur->entry;
         pStream->~StereoAudioStream();
 
-        ((SlotPoolEntry*)pStream)->m_next = pTM->m_StreamPool.m_FreeList;
+        ((SlotPoolEntry*)pStream)->next = pTM->m_StreamPool.m_FreeList;
         pTM->m_StreamPool.m_FreeList = (SlotPoolEntry*)pStream;
 
         pRemove = pCur;
@@ -1620,12 +1575,15 @@ void AudioLoader::UnloadInGame()
 
         nlDLRingRemove(ppHead, pRemove);
 
-        ((SlotPoolEntry*)pFree)->m_next = pTM->m_StreamDeleteList.m_Allocator.m_FreeList;
-        pTM->m_StreamDeleteList.m_Allocator.m_FreeList = (SlotPoolEntry*)pFree;
+        ((SlotPoolEntry*)pFree)->next =
+            pTM->m_StreamDeleteList.m_Allocator.m_FreeList;
+        pTM->m_StreamDeleteList.m_Allocator.m_FreeList =
+            (SlotPoolEntry*)pFree;
     }
 
     SlotPoolBase::BaseFreeBlocks(&pTM->m_StreamPool, 0x40);
-    SlotPoolBase::BaseFreeBlocks(&pTM->m_StreamDeleteList.m_Allocator, 0x0C);
+    SlotPoolBase::BaseFreeBlocks(
+        &pTM->m_StreamDeleteList.m_Allocator, 0x0C);
 
     PlatAudio::UnloadAllSoundGroupsOnStack(sebringAudioFileData, 1);
 
@@ -2537,15 +2495,4 @@ void AudioLoader::InitCrowdFromStateTransition()
     Audio::ResetPauseStatus();
     nlSingleton<GameInfoManager>::s_pInstance->GetAudioOptions();
     CrowdMood::SetCrowdVolume(0x7f, 0);
-}
-
-void AudioLoader_avl_stub()
-{
-    SoundDefineAVLTreeBase* tree = (SoundDefineAVLTreeBase*)&AudioLoader::gMusyXSoundDefineMap;
-    tree->Clear();
-}
-
-void AudioLoader_string_stub()
-{
-    nlPrintf("AudioLoader::UnloadInGameAudioData(), Audio::UpdateReverbSettingsToOff() returned false.\n");
 }

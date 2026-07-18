@@ -1,4 +1,3 @@
-#define BASICSTRING_DATA_CTOR
 #include "Game/FE/Overlay/OverlayHandlerWinner.h"
 #include "Game/FE/feFinder.h"
 #include "Game/FE/feHelpFuncs.h"
@@ -6,7 +5,7 @@
 #include "Game/FE/Overlay/OverlayHandlerSummary.h"
 #include "Game/GameInfo.h"
 #include "Game/OverlayManager.h"
-#include "NL/nlBSearch.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlLocalization.h"
 
 static char* WINNER_TEXTURES[9][3] = {
@@ -109,6 +108,8 @@ WinnerOverlay::~WinnerOverlay()
 
 /**
  * Offset/Address/Size: 0x304 | 0x80105970 | size: 0xCE0
+ * TODO: 99.70% match - later localization wide-string construction still
+ * swaps the result pointer and string data registers.
  */
 
 template <typename StringType, typename ValueType>
@@ -129,18 +130,14 @@ static inline const unsigned short* LookupWinnerLocHash(unsigned long key)
         return LocalizationTableNotFound;
     }
 
-    nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+    nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(
+        key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
     if (entry != 0)
     {
         return loc->m_FirstString + entry->StringOffset;
     }
 
     return MissingLocString;
-}
-
-static inline BasicStringData<unsigned short>* BuildWinnerWideStringData(const unsigned short* text)
-{
-    return new (8, true) BasicStringData<unsigned short>(text);
 }
 
 void WinnerOverlay::SceneCreated()
@@ -159,8 +156,7 @@ void WinnerOverlay::SceneCreated()
     nlStrToWcs(scoreLeftString.c_str(), scoreLeftWideString, 32);
     nlStrToWcs(scoreRightString.c_str(), scoreRightWideString, 32);
 
-    BasicStringData<unsigned short>* unformattedData = BuildWinnerWideStringData(LookupWinnerLocHash(0x8C4180A4));
-    BasicString<unsigned short, Detail::TempStringAllocator> unformatted(unformattedData);
+    BasicString<unsigned short, Detail::TempStringAllocator> unformatted(LookupWinnerLocHash(0x8C4180A4));
     BasicString<unsigned short, Detail::TempStringAllocator> formatted;
 
     if (scoreLeft > scoreRight)
@@ -181,11 +177,9 @@ void WinnerOverlay::SceneCreated()
     mWinningTeam = (eTeamID)nlSingleton<GameInfoManager>::s_pInstance->GetTeam(winnerSide);
 
     unsigned long winnerLocID = GetLOCTeamName((eTeamID)mWinningTeam);
-    BasicString<unsigned short, Detail::TempStringAllocator> winnerNameWideString(
-        BuildWinnerWideStringData(LookupWinnerLocHash(winnerLocID)));
+    BasicString<unsigned short, Detail::TempStringAllocator> winnerNameWideString(LookupWinnerLocHash(winnerLocID));
 
-    BasicString<unsigned short, Detail::TempStringAllocator> unformattedName(
-        BuildWinnerWideStringData(LookupWinnerLocHash(0x8610A152)));
+    BasicString<unsigned short, Detail::TempStringAllocator> unformattedName(LookupWinnerLocHash(0x8610A152));
     BasicString<unsigned short, Detail::TempStringAllocator> formattedName(Format(unformattedName, winnerNameWideString.c_str()));
 
     memcpy(mWinnerBuffer, formattedName.c_str(), 0x40);

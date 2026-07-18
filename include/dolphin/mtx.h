@@ -363,8 +363,7 @@ void C_QUATRotAxisRad(Quaternion* r, const Vec* axis, f32 rad);
 void C_QUATMtx(Quaternion* r, const Mtx m);
 void C_QUATLerp(const Quaternion* p, const Quaternion* q, Quaternion* r, f32 t);
 
-// void C_QUATSlerp(const Quaternion* p, const Quaternion* q, Quaternion* r, f32 t);
-void C_QUATSlerp(float t, const Quaternion* p, const Quaternion* q, Quaternion* r);
+void C_QUATSlerp(const Quaternion* p, const Quaternion* q, Quaternion* r, f32 t);
 
 void C_QUATSquad(const Quaternion* p, const Quaternion* a, const Quaternion* b, const Quaternion* q, Quaternion* r, f32 t);
 void C_QUATCompA(const Quaternion* qprev, const Quaternion* q, const Quaternion* qnext, Quaternion* a);

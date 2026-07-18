@@ -12,6 +12,7 @@
 #include "Game/AnimInventory.h"
 #include "Game/FormationDefines.h"
 #include "Game/GameTweaks.h"
+#include "Game/Physics/PhysicsAIBall.h"
 #include "Game/Render/ShootToScoreMeter.h"
 
 extern FuzzyVariant fvNotSet;

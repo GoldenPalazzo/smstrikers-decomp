@@ -6,7 +6,7 @@
 #include "Game/Physics/PhysicsPlane.h"
 #include "Game/Physics/PhysicsWorld.h"
 #include "Game/Physics/CollisionSpace.h"
-#include "NL/nlDLListSlotPool.h"
+#include "NL/nlDLListContainer.h"
 #include "NL/nlSlotPool.h"
 
 class FakePhysicsBall;

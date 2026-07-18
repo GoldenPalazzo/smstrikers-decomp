@@ -1,5 +1,3 @@
-#define FESLIDEMENU_FUNCTION_CTOR_INIT
-
 #include "Game/FE/feSlideMenu.h"
 
 #include "NL/nlString.h"
@@ -44,21 +42,7 @@ bool FESlideMenu::PrevItem()
     if (changed)
     {
         m_pMenuComp->SetActiveSlide(m_menuItems[m_currentSlide].ItemSlide);
-
-        MenuItem* item = &m_menuItems[m_currentSlide];
-        s32 tag = item->ItemCBFuncs[1].mTag;
-        if (tag != EMPTY)
-        {
-            if (tag == FREE_FUNCTION)
-            {
-                ((void (*)(MenuItem*))item->ItemCBFuncs[1].mFreeFunction)(item);
-            }
-            else
-            {
-                (*((FunctorBase*)item->ItemCBFuncs[1].mFunctor))();
-            }
-        }
-
+        OnHighlight();
         return true;
     }
 
@@ -97,25 +81,7 @@ bool FESlideMenu::NextItem()
     if (didChange)
     {
         m_pMenuComp->SetActiveSlide(m_menuItems[m_currentSlide].ItemSlide);
-
-        MenuItem* item = &m_menuItems[m_currentSlide];
-        int funcType = item->ItemCBFuncs[1].mTag;
-
-        if (funcType == 0)
-        {
-            // No callback
-        }
-        else if (funcType == 1)
-        {
-            // Direct function call
-            void (*fn)() = (void (*)())item->ItemCBFuncs[1].mFreeFunction;
-            fn();
-        }
-        else
-        {
-            (*((FunctorBase*)item->ItemCBFuncs[1].mFunctor))();
-        }
-
+        OnHighlight();
         return true;
     }
 
@@ -131,21 +97,7 @@ void FESlideMenu::SetSlideByIndex(unsigned char index)
         return;
 
     m_currentSlide = index;
-
-    MenuItem& item = m_menuItems[m_currentSlide];
-    Tag tag = (Tag)item.ItemCBFuncs[ON_HIGHLIGHT].mTag;
-    if (tag != EMPTY)
-    {
-        if (tag == FREE_FUNCTION)
-        {
-            ((void (*)())item.ItemCBFuncs[ON_HIGHLIGHT].mFreeFunction)();
-        }
-        else
-        {
-            (*((FunctorBase*)item.ItemCBFuncs[ON_HIGHLIGHT].mFunctor))();
-        }
-    }
-
+    OnHighlight();
     m_pMenuComp->SetActiveSlide(m_menuItems[m_currentSlide].ItemSlide);
 }
 
@@ -160,33 +112,14 @@ bool FESlideMenu::ApplyFunction()
     }
 
     MenuItem* item = &m_menuItems[m_currentSlide];
-    int tag = item->ItemCBFuncs[0].mTag;
-
-    if (tag == EMPTY)
+    if (!item->ItemCBFuncs[ON_APPLY])
     {
-        goto ret0;
+        goto noCallback;
     }
-
-    if (tag == EMPTY)
-    {
-        goto ret1;
-    }
-
-    if (tag != FREE_FUNCTION)
-    {
-        goto functor;
-    }
-
-    ((void (*)(MenuItem*))item->ItemCBFuncs[0].mFreeFunction)(item);
-    goto ret1;
-
-functor:
-    (*((FunctorBase*)item->ItemCBFuncs[0].mFunctor))();
-
-ret1:
+    runCallBack();
     return true;
 
-ret0:
+noCallback:
     return false;
 }
 
@@ -250,4 +183,3 @@ FESlideMenu::FESlideMenu(TLComponentInstance* pWorkPres)
 inline FESlideMenu::MenuItem::MenuItem()
 {
 }
-

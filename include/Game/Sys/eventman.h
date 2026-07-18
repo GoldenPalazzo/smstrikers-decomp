@@ -51,10 +51,12 @@ public:
     void SetupDestArray();
     EventHandler* AddEventHandler(EventCallback, void*, unsigned long);
     void RemoveEventHandler(EventHandler*);
+    void AllocateEvents(unsigned long, unsigned long);
     void AllocateDestArray(unsigned long, unsigned long);
-    inline Event* GetFreeEvent();
+    Event* GetFreeEvent();
     Event* CreateValidEvent(unsigned long eventID, unsigned long uSize);
     void DispatchEvents();
+    inline void FlushEventQueue();
 
     /* 0x00 */ bool m_dispatching;
     /* 0x04 */ EventHandler* m_handlers;

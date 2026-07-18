@@ -64,47 +64,6 @@ static unsigned long BallModelID = nlStringHash("gameplay/ball");
 static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p, bool bGlow);
 
 /**
- * Offset/Address/Size: 0x81C | 0x80122730 | size: 0x10
- */
-#pragma inline_depth(8)
-void AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions> >, DefaultKeyCompare<unsigned long> >::DeleteEntry(AVLTreeEntry<unsigned long, AABBDimensions>* entry)
-{
-    m_Allocator.Free(entry);
-}
-#pragma inline_depth()
-
-/**
- * Offset/Address/Size: 0xA2C | 0x80122940 | size: 0xE0
- */
-AVLTreeNode* AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions> >, DefaultKeyCompare<unsigned long> >::
-    AllocateEntry(void* key, void* value)
-{
-    AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions> >, DefaultKeyCompare<unsigned long> >* self = this;
-    unsigned long* keyPtr = (unsigned long*)key;
-    AABBDimensions* valuePtr = (AABBDimensions*)value;
-    AVLTreeEntry<unsigned long, AABBDimensions>* entry = 0;
-
-    if (self->m_Allocator.m_FreeList == 0)
-    {
-        SlotPoolBase::BaseAddNewBlock(&self->m_Allocator, 0x34);
-    }
-
-    if (self->m_Allocator.m_FreeList != 0)
-    {
-        entry = (AVLTreeEntry<unsigned long, AABBDimensions>*)self->m_Allocator.m_FreeList;
-        self->m_Allocator.m_FreeList = ((SlotPoolEntry*)entry)->m_next;
-    }
-
-    entry->node.left = 0;
-    entry->node.right = 0;
-    entry->node.heavy = 0;
-    entry->key = *keyPtr;
-    entry->value = *valuePtr;
-
-    return (AVLTreeNode*)entry;
-}
-
-/**
  * Offset/Address/Size: 0x1DD4 | 0x80121BE0 | size: 0x214
  * TODO: 92.29% match - initial prologue save timing and remaining quad setup order
  */

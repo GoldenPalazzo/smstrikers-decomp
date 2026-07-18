@@ -145,23 +145,6 @@ void DrawablePowerup::Grab(int idx)
     }
 }
 
-// Stub: pre-allocates DrawShadow's .sdata2 constants in target order.
-// MWCC allocates literal-pool slots in source-text order of first use, so this
-// stub forces 10, 0, 1.75, 4, 150, 48, 0.015625 to claim slots before MWCC
-// visits the same literals inside DrawShadow's body.
-void DrawablePowerup_stub()
-{
-    volatile float __cf;
-    volatile double __cd;
-    __cf = 10.0f;
-    __cf = 0.0f;
-    __cd = 1.75;
-    __cf = 4.0f;
-    __cf = 150.0f;
-    __cf = 48.0f;
-    __cf = 0.015625f;
-}
-
 /**
  * Offset/Address/Size: 0x504 | 0x8011F178 | size: 0x1A0
  */
@@ -183,12 +166,8 @@ static void DrawShadow(float radius, float x, float y, float z)
     }
 
     half_dim = one - frac;
-    float alphaT = 48.0f * frac;
-    float scale = 4.0f * radius;
-    float alphaF = 150.0f * half_dim + alphaT;
-    float shadowT = frac * scale;
-    float shadowRadius = (float)(half_dim * (1.75 * radius) + shadowT);
-    int alpha = (int)alphaF;
+    float shadowRadius = (float)(half_dim * (1.75 * radius) + frac * (4.0f * radius));
+    int alpha = (int)(150.0f * half_dim + 48.0f * frac);
 
     if (alpha < 0)
     {
@@ -252,7 +231,6 @@ static void DrawShadow(float radius, float x, float y, float z)
 /**
  * Offset/Address/Size: 0x0 | 0x8011F318 | size: 0x88
  */
-#pragma inline_depth(0)
 template <>
 void DrawablePowerup::Replay<LoadFrame>(LoadFrame& frame)
 {
@@ -266,7 +244,6 @@ void DrawablePowerup::Replay<LoadFrame>(LoadFrame& frame)
         Replayable<3, LoadFrame, float>(frame, mRadius);
     }
 }
-#pragma inline_depth
 
 /**
  * Offset/Address/Size: 0x88 | 0x8011F3A0 | size: 0x88
@@ -292,51 +269,3 @@ inline DrawableModel* DrawableObject::AsDrawableModel()
 {
     return NULL;
 }
-
-// ---- Replayable specs OWNED by DrawablePowerup ----
-// Ten `inline template <>` definitions emit as weak symbols in this TU's .o
-// in target order. See Replay.h for the architecture rationale.
-//   <3, Save/Load, bool>     <3, Save/Load, char>
-//   <3, Save/Load, unsigned short>  <3, Save/Load, nlVector3>
-//   <3, Save/Load, float>
-
-/**
- * Offset/Address/Size: 0x0 | 0x8011F430 | size: 0x64
- */
-template <>
-inline void Replayable<3, SaveFrame, bool>(SaveFrame& frame, bool& value)
-{
-    if (frame.mInterval == 3)
-    {
-        bool temp = value ? true : false;
-        memcpy(frame.mStream.mStorage, &temp, sizeof(bool));
-        frame.mStream.mStorage += sizeof(bool);
-    }
-}
-
-// Save group POD specs (target offsets 0x64, 0xB4, 0x104, 0x154).
-REPLAYABLE_POD_SAVE(3, char)
-REPLAYABLE_POD_SAVE(3, unsigned short)
-REPLAYABLE_POD_SAVE(3, nlVector3)
-REPLAYABLE_POD_SAVE(3, float)
-
-/**
- * Offset/Address/Size: 0x1A4 | 0x8011F5D4 | size: 0x7C
- */
-template <>
-inline void Replayable<3, LoadFrame, bool>(LoadFrame& frame, bool& value)
-{
-    if (frame.mInterval == 3)
-    {
-        char temp = 0;
-        memcpy(&temp, frame.mStream.mStorage, 1);
-        frame.mStream.mStorage += 1;
-        value = (temp != 0);
-    }
-}
-
-// Load group POD specs (target offsets 0x220, 0x274, 0x2C8, 0x31C).
-REPLAYABLE_POD_LOAD(3, char)
-REPLAYABLE_POD_LOAD(3, unsigned short)
-REPLAYABLE_POD_LOAD(3, nlVector3)
-REPLAYABLE_POD_LOAD(3, float)

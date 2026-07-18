@@ -5,29 +5,17 @@
 
 class Event;
 void FEAudioEventHandler(Event*, void*);
-// void nlQSort<AnimAudioEventLookup>(AnimAudioEventLookup*, int, int (*)(const AnimAudioEventLookup*, const AnimAudioEventLookup*));
-// void nlDefaultQSortComparer<AnimAudioEventLookup>(const AnimAudioEventLookup*, const AnimAudioEventLookup*);
-// void nlBSearch<AnimAudioEventLookup, unsigned long>(const unsigned long&, AnimAudioEventLookup*, int);
-// void nlListAddEnd<ListEntry<AnimAudioEventLookup>>(ListEntry<AnimAudioEventLookup>**, ListEntry<AnimAudioEventLookup>**,
-// ListEntry<AnimAudioEventLookup>*); void nlStrICmp<char>(const char*, const char*); void nlStrCmp<char>(const char*, const char*); void
-// nlToUpper<char>(char);
 
 struct AnimAudioEventLookup
 {
-    /* 0x00 */ unsigned long hash; // eventNameHash
+    /* 0x00 */ unsigned long eventNameHash;
     /* 0x04 */ char szSFXType[50];
 
-    operator unsigned long() const { return hash; }
+    operator unsigned long() const { return eventNameHash; }
 }; // total size: 0x38
 
 extern AnimAudioEventLookup* gp_AnimAudioEventTable;
 extern unsigned long gNumAnimAudioEvents;
-
-template <typename T, typename U>
-T* nlBSearch(const U& key, T* pBase, int count);
-
-template <typename T>
-int nlStrCmp(const T* a, const T* b);
 
 class FEAudio
 {

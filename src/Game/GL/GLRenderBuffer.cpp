@@ -29,5 +29,5 @@ GLRenderBuffer::~GLRenderBuffer()
         }
     }
 
-    DLListContainerBase<GLDrawableData*, NewAdapter<DLListEntry<GLDrawableData*> > >::DestroyAllEntries(&m_drawableData);
+    m_drawableData.Clear();
 }

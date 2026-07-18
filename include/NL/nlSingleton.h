@@ -16,7 +16,6 @@ public:
 
     static void DestroyInstance()
     {
-        FORCE_DONT_INLINE;
         T* p = s_pInstance;
         if (p)
         {
@@ -24,13 +23,7 @@ public:
             s_pInstance = 0;
         }
     }
-
     static T* s_pInstance;
 };
-
-#ifndef NL_SINGLETON_NO_DEFINE
-template <class T>
-T* nlSingleton<T>::s_pInstance = 0;
-#endif
 
 #endif // NL_SINGLETON_H

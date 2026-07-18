@@ -38,7 +38,7 @@ unsigned long GetLOCRank(int);
 eSidekickID ConvertToSidekickID(const char*);
 eTeamID ConvertToTeamID(const char*);
 const char* GetSidekickName(eSidekickID);
-char* GetTeamName(eTeamID);
+const char* GetTeamName(eTeamID);
 eCharacterClass ConvertToCharacterClass(eSidekickID);
 eCharacterClass ConvertToCharacterClass(eTeamID);
 unsigned long GetLOCTrophyName(eTrophyType);

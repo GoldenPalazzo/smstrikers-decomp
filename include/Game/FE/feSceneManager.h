@@ -4,7 +4,7 @@
 #include "types.h"
 
 #include "NL/nlSingleton.h"
-#include "NL/nlDLListSlotPool.h"
+#include "NL/nlDLListContainer.h"
 #include "NL/nlDLRing.h"
 
 #include "Game/BaseSceneHandler.h"

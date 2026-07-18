@@ -25,7 +25,6 @@ public:
     {
         return (id & 0x80FFFFFF) == 0x80018000;
     }
-
     inline u32* GetNodeIDs() const { return m_nodeIDs; }
     inline s32 GetNodeCount() const { return m_nodeCount; }
 

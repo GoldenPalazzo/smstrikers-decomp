@@ -1,4 +1,3 @@
-#define NL_SINGLETON_NO_DEFINE
 #include "Game/Team.h"
 
 #include "Game/AI/Fielder.h"
@@ -15,6 +14,7 @@
 #include "Game/Sys/audio.h"
 
 #include "Game/AI/Fuzzy.h"
+#include "Game/AI/Scripts/ScriptCaching.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/FormationDefines.h"
 

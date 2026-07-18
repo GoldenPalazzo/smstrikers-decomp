@@ -55,20 +55,6 @@ inline void nlColourSeReversed(nlColour& c0, u8 _r, u8 _g, u8 _b, u8 _a)
 struct nlFloatColour
 {
     float c[4]; // offset 0x0, size 0x10
-
-#ifdef NL_FLOATCOLOUR_ASSIGN_OUT_OF_LINE
-    // The defining TU (feRender.cpp) provides the body out of line so the
-    // weak __as__ copy lands in its main .text instead of the header bucket.
-    void operator=(const nlFloatColour& other);
-#else
-    void operator=(const nlFloatColour& other)
-    {
-        *(u32*)&c[0] = *(u32*)&other.c[0];
-        *(u32*)&c[1] = *(u32*)&other.c[1];
-        *(u32*)&c[2] = *(u32*)&other.c[2];
-        *(u32*)&c[3] = *(u32*)&other.c[3];
-    }
-#endif
 }; // total size: 0x10
 
 inline void nlFloatColourSet(nlFloatColour& c0, float _r, float _g, float _b, float _a)

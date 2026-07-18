@@ -867,10 +867,7 @@ void TransitionTask::DestroyGameState()
 
     gSebringLoadPackageToVirtualMemory = 0;
 
-    SlotPoolBase::BaseFreeBlocks(&cPN_SAnimController::m_SAnimControllerSlotPool, 0x54);
-    SlotPoolBase::BaseFreeBlocks(&cPN_Blender::m_BlenderSlotPool, 0x1c);
-    SlotPoolBase::BaseFreeBlocks(&cPN_SingleAxisBlender::m_SingleAxisBlenderSlotPool, 0x28);
-    SlotPoolBase::BaseFreeBlocks(&cPN_Feather::m_FeatherSlotPool, 0x30);
+    CompactSlotPools();
 
     glViewCompact();
 
@@ -1021,109 +1018,7 @@ void TransitionTask::InitializeFEState()
     m_TransitionState = eTS_InState;
 }
 
-inline void TransitionTask::DestroyFEFast()
-{
-    g_pFEInput->Reset();
-
-    while (!nlSingleton<FESceneManager>::s_pInstance->AreAllScenesValid())
-    {
-        nlServiceFileSystem();
-        nlSingleton<FESceneManager>::s_pInstance->Update(0.0f);
-        nlSingleton<FEResourceManager>::s_pInstance->Run(0.0f);
-    }
-
-    nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
-
-    if (nlSingleton<GameSceneManager>::s_pInstance != NULL)
-    {
-        delete nlSingleton<GameSceneManager>::s_pInstance;
-        nlSingleton<GameSceneManager>::s_pInstance = NULL;
-    }
-
-    if (nlSingleton<FESceneManager>::s_pInstance != NULL)
-    {
-        delete nlSingleton<FESceneManager>::s_pInstance;
-        nlSingleton<FESceneManager>::s_pInstance = NULL;
-    }
-
-    nlSingleton<FEResourceManager>::s_pInstance->UnloadPermanentResourceBundle();
-
-    if (nlSingleton<FEResourceManager>::s_pInstance != NULL)
-    {
-        delete nlSingleton<FEResourceManager>::s_pInstance;
-        nlSingleton<FEResourceManager>::s_pInstance = NULL;
-    }
-
-    SlotPoolBase::BaseFreeBlocks(&cPN_SAnimController::m_SAnimControllerSlotPool, 0x54);
-    SlotPoolBase::BaseFreeBlocks(&cPN_Blender::m_BlenderSlotPool, 0x1c);
-    SlotPoolBase::BaseFreeBlocks(&cPN_SingleAxisBlender::m_SingleAxisBlenderSlotPool, 0x28);
-    SlotPoolBase::BaseFreeBlocks(&cPN_Feather::m_FeatherSlotPool, 0x30);
-
-    glViewCompact();
-}
-
-inline void TransitionTask::InitializeFEFast()
-{
-    tDebugPrintManager::Print(DC_MEMORY, "-- Memory upon Entering InitializeFEFast ----------\n");
-    tDebugPrintManager::Print(DC_MEMORY, "Free Memory: %u\n", StandardAllocator.TotalFreeMemory());
-    tDebugPrintManager::Print(DC_MEMORY, "Largest Free Block: %u\n", StandardAllocator.LargestFreeBlock());
-    tDebugPrintManager::Print(DC_MEMORY, "-----------------------------------------\n\n");
-
-    EnableAutoPressed();
-
-    if (nlSingleton<FEResourceManager>::s_pInstance == NULL)
-    {
-        nlSingleton<FEResourceManager>::s_pInstance = new (nlMalloc(sizeof(FEResourceManager), 8, false)) FEResourceManager();
-    }
-
-    nlSingleton<FEResourceManager>::s_pInstance->Initialize();
-    nlSingleton<FEResourceManager>::s_pInstance->LoadPermanentResourceBundle("art/fe/BootUI.Res");
-
-    if (nlSingleton<FESceneManager>::s_pInstance == NULL)
-    {
-        nlSingleton<FESceneManager>::s_pInstance = new (nlMalloc(sizeof(FESceneManager), 8, false)) FESceneManager();
-    }
-
-    nlSingleton<FESceneManager>::s_pInstance->m_uDefaultRenderView = 31;
-
-    if (nlSingleton<GameSceneManager>::s_pInstance == NULL)
-    {
-        nlSingleton<GameSceneManager>::s_pInstance = new (nlMalloc(sizeof(GameSceneManager), 8, false)) GameSceneManager();
-    }
-
-    bool isPressed = g_pFEInput->IsPressed(FE_ALL_PADS, 0x200, false, NULL);
-
-    if (VIGetTvFormat() == 5)
-    {
-        glx_SetPal50Mode();
-    }
-
-    do
-    {
-        if (VIGetTvFormat() == 0)
-        {
-            if (VIGetDTVStatus() != 0 && (OSGetProgressiveMode() == 1 || isPressed))
-            {
-                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_PROGRESSIVE_SCAN, (ScreenMovement)0, false);
-                break;
-            }
-        }
-        else if (VIGetTvFormat() == 1)
-        {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_EURO_RGB60, (ScreenMovement)0, false);
-            break;
-        }
-
-        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_HEALTH_WARNING, (ScreenMovement)0, false);
-    } while (false);
-
-    tDebugPrintManager::Print(DC_MEMORY, "-- Memory upon Exiting InitializeFEFast\n");
-    tDebugPrintManager::Print(DC_MEMORY, "Free Memory: %u\n", StandardAllocator.TotalFreeMemory());
-    tDebugPrintManager::Print(DC_MEMORY, "Largest Free Block: %u\n", StandardAllocator.LargestFreeBlock());
-    tDebugPrintManager::Print(DC_MEMORY, "-----------------------------------------\n\n");
-}
-
-inline void TransitionTask::DestroyFEState()
+void TransitionTask::DestroyFEState()
 {
     g_pFEInput->Reset();
 
@@ -1172,25 +1067,119 @@ inline void TransitionTask::DestroyFEState()
     nlFree(g_pLocalization->m_pFile);
     glResourceRelease(s_FontResourceMark);
 
-    SlotPoolBase::BaseFreeBlocks(&cPN_SAnimController::m_SAnimControllerSlotPool, 0x54);
-    SlotPoolBase::BaseFreeBlocks(&cPN_Blender::m_BlenderSlotPool, 0x1c);
-    SlotPoolBase::BaseFreeBlocks(&cPN_SingleAxisBlender::m_SingleAxisBlenderSlotPool, 0x28);
-    SlotPoolBase::BaseFreeBlocks(&cPN_Feather::m_FeatherSlotPool, 0x30);
+    CompactSlotPools();
 
     glViewCompact();
 }
 
-// Dead anchor: never called, stripped by the linker. Its literal references pin
-// the InitializeFEFast string cluster to the FIRST .data pool slot (this
-// function emits first under -inline deferred); the inlined FEFast bodies then
-// reuse the same pooled strings. Removing it reorders .data and breaks the
-// byte-identical link.
-static void PoolTransitionStrings()
+void TransitionTask::InitializeFEFast()
 {
     tDebugPrintManager::Print(DC_MEMORY, "-- Memory upon Entering InitializeFEFast ----------\n");
     tDebugPrintManager::Print(DC_MEMORY, "Free Memory: %u\n", StandardAllocator.TotalFreeMemory());
     tDebugPrintManager::Print(DC_MEMORY, "Largest Free Block: %u\n", StandardAllocator.LargestFreeBlock());
     tDebugPrintManager::Print(DC_MEMORY, "-----------------------------------------\n\n");
+
+    EnableAutoPressed();
+
+    if (nlSingleton<FEResourceManager>::s_pInstance == NULL)
+    {
+        nlSingleton<FEResourceManager>::s_pInstance = new (nlMalloc(sizeof(FEResourceManager), 8, false)) FEResourceManager();
+    }
+
+    nlSingleton<FEResourceManager>::s_pInstance->Initialize();
     nlSingleton<FEResourceManager>::s_pInstance->LoadPermanentResourceBundle("art/fe/BootUI.Res");
+
+    if (nlSingleton<FESceneManager>::s_pInstance == NULL)
+    {
+        nlSingleton<FESceneManager>::s_pInstance = new (nlMalloc(sizeof(FESceneManager), 8, false)) FESceneManager();
+    }
+
+    nlSingleton<FESceneManager>::s_pInstance->m_uDefaultRenderView = 31;
+
+    if (nlSingleton<GameSceneManager>::s_pInstance == NULL)
+    {
+        nlSingleton<GameSceneManager>::s_pInstance = new (nlMalloc(sizeof(GameSceneManager), 8, false)) GameSceneManager();
+    }
+
+    DisplayFirstScreen();
+
     tDebugPrintManager::Print(DC_MEMORY, "-- Memory upon Exiting InitializeFEFast\n");
+    tDebugPrintManager::Print(DC_MEMORY, "Free Memory: %u\n", StandardAllocator.TotalFreeMemory());
+    tDebugPrintManager::Print(DC_MEMORY, "Largest Free Block: %u\n", StandardAllocator.LargestFreeBlock());
+    tDebugPrintManager::Print(DC_MEMORY, "-----------------------------------------\n\n");
+}
+
+void TransitionTask::DestroyFEFast()
+{
+    g_pFEInput->Reset();
+
+    while (!nlSingleton<FESceneManager>::s_pInstance->AreAllScenesValid())
+    {
+        nlServiceFileSystem();
+        nlSingleton<FESceneManager>::s_pInstance->Update(0.0f);
+        nlSingleton<FEResourceManager>::s_pInstance->Run(0.0f);
+    }
+
+    nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
+
+    if (nlSingleton<GameSceneManager>::s_pInstance != NULL)
+    {
+        delete nlSingleton<GameSceneManager>::s_pInstance;
+        nlSingleton<GameSceneManager>::s_pInstance = NULL;
+    }
+
+    if (nlSingleton<FESceneManager>::s_pInstance != NULL)
+    {
+        delete nlSingleton<FESceneManager>::s_pInstance;
+        nlSingleton<FESceneManager>::s_pInstance = NULL;
+    }
+
+    nlSingleton<FEResourceManager>::s_pInstance->UnloadPermanentResourceBundle();
+
+    if (nlSingleton<FEResourceManager>::s_pInstance != NULL)
+    {
+        delete nlSingleton<FEResourceManager>::s_pInstance;
+        nlSingleton<FEResourceManager>::s_pInstance = NULL;
+    }
+
+    CompactSlotPools();
+
+    glViewCompact();
+}
+
+void TransitionTask::CompactSlotPools()
+{
+    SlotPoolBase::BaseFreeBlocks(&cPN_SAnimController::m_SAnimControllerSlotPool, 0x54);
+    SlotPoolBase::BaseFreeBlocks(&cPN_Blender::m_BlenderSlotPool, 0x1c);
+    SlotPoolBase::BaseFreeBlocks(&cPN_SingleAxisBlender::m_SingleAxisBlenderSlotPool, 0x28);
+    SlotPoolBase::BaseFreeBlocks(&cPN_Feather::m_FeatherSlotPool, 0x30);
+}
+
+void TransitionTask::DisplayFirstScreen()
+{
+    bool isPressed = g_pFEInput->IsPressed(FE_ALL_PADS, 0x200, false, NULL);
+
+    if (VIGetTvFormat() == 5)
+    {
+        glx_SetPal50Mode();
+    }
+
+    do
+    {
+        if (VIGetTvFormat() == 0)
+        {
+            if (VIGetDTVStatus() != 0 && (OSGetProgressiveMode() == 1 || isPressed))
+            {
+                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_PROGRESSIVE_SCAN, (ScreenMovement)0, false);
+                break;
+            }
+        }
+        else if (VIGetTvFormat() == 1)
+        {
+            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_EURO_RGB60, (ScreenMovement)0, false);
+            break;
+        }
+
+        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_HEALTH_WARNING, (ScreenMovement)0, false);
+    } while (false);
 }

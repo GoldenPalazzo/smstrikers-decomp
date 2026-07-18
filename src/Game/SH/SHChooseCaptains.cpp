@@ -25,49 +25,9 @@ ChooseCaptainsSceneV2::ChooseCaptainsSceneV2(ChooseCaptainsSceneV2::SceneType sc
  */
 ChooseCaptainsSceneV2::~ChooseCaptainsSceneV2()
 {
-    FEScrollText* ticker = mTicker;
-
-    if (ticker != NULL)
+    if (mTicker != NULL)
     {
-        if (ticker != NULL)
-        {
-            if ((char*)ticker + 0x21C)
-            {
-                volatile FEScrollText* vticker = ticker;
-                if ((char*)vticker + 0x21C)
-                {
-                    if (ticker->m_messageFinishedCB.mTag == FUNCTOR)
-                    {
-                        delete ticker->m_messageFinishedCB.mFunctor;
-                    }
-                    ticker->m_messageFinishedCB.mTag = EMPTY;
-                }
-            }
-
-            if ((char*)ticker + 4)
-            {
-                BasicStringData<unsigned short>* data = ticker->m_message.m_data;
-                if (data != NULL)
-                {
-                    if (--data->mRefCount == 0)
-                    {
-                        if (data != NULL)
-                        {
-                            if (data != NULL)
-                            {
-                                delete[] data->mData;
-                            }
-                            if (data != NULL)
-                            {
-                                nlFree(data);
-                            }
-                        }
-                    }
-                }
-            }
-
-            ::operator delete(ticker);
-        }
+        delete mTicker;
     }
 }
 

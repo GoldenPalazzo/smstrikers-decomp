@@ -1,6 +1,3 @@
-#define MEMFUN_NO_DECL
-#define BIND_NO_DECL
-#define FUNCTION1_SPLIT_BODIES
 #include "Game/SH/SHTournTeamSetup.h"
 #include "types.h"
 #include "Game/FE/feFinder.h"
@@ -11,12 +8,12 @@
 #include "NL/gl/glPlat.h"
 #include "NL/gl/glStruct.h"
 
+#include "NL/nlBind.h"
+
 typedef Detail::MemFunImpl<void, void (TournTeamSetupSceneV2::*)(int)> MemFunImpl_Tourn_t;
 typedef BindExp2<void, MemFunImpl_Tourn_t, TournTeamSetupSceneV2*, int> BindExp2_Tourn_t;
 typedef Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Tourn_t> FunctorImpl_Tourn_t;
 
-#include "NL/nlMemFunBody.h"
-#include "NL/nlBindBody.h"
 
 namespace DoubleHighlite
 {
@@ -84,7 +81,7 @@ TournTeamSetupSceneV2::TournTeamSetupSceneV2()
 {
     int i = 0;
 
-    *(u8*)((u8*)this + 0x334) = false;
+    mHasTaggedHumanPlayer = false;
 
     for (; i < mTournInfo.m_numTeams; i++)
     {
@@ -103,55 +100,10 @@ TournTeamSetupSceneV2::~TournTeamSetupSceneV2()
     delete mCaptainGrid;
     delete mSKGrid;
 
-    FEScrollText* ticker = mTicker;
-
-    if (ticker != NULL)
+    if (mTicker != NULL)
     {
-        if (ticker != NULL)
-        {
-            if ((char*)ticker + 0x21C)
-            {
-                volatile FEScrollText* vticker = ticker;
-                if ((char*)vticker + 0x21C)
-                {
-                    if (ticker->m_messageFinishedCB.mTag == FUNCTOR)
-                    {
-                        delete ticker->m_messageFinishedCB.mFunctor;
-                    }
-                    ticker->m_messageFinishedCB.mTag = EMPTY;
-                }
-            }
-
-            if ((char*)ticker + 4)
-            {
-                BasicStringData<unsigned short>* data = ticker->m_message.m_data;
-                if (data != NULL)
-                {
-                    if (--data->mRefCount == 0)
-                    {
-                        if (data != NULL)
-                        {
-                            if (data != NULL)
-                            {
-                                delete[] data->mData;
-                            }
-                            if (data != NULL)
-                            {
-                                nlFree(data);
-                            }
-                        }
-                    }
-                }
-            }
-
-            ::operator delete(ticker);
-        }
+        delete mTicker;
     }
-}
-
-static inline MenuItem<TLComponentInstance>* TournTeamSetupItemAt(MenuList<TLComponentInstance>& menu, int idx)
-{
-    return &menu.mMenuItems[idx] - 1;
 }
 
 /**
@@ -162,7 +114,7 @@ void TournTeamSetupSceneV2::SceneCreated()
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     FEAudio::EnableSounds(false);
 
-    typedef Function<TLComponentInstance*> MenuCallback;
+    typedef MenuItem<TLComponentInstance>::Callback MenuCallback;
 
     for (int i = 0; i < 4; i++)
     {
@@ -183,55 +135,27 @@ void TournTeamSetupSceneV2::SceneCreated()
 
             if (mCurrentState == STATE_SCROLLING)
             {
-                int numItemsAdded = mMenuItems.mNumItemsAdded;
-                MenuItem<TLComponentInstance>* item = TournTeamSetupItemAt(mMenuItems, numItemsAdded);
-                mMenuItems.mMenuItems[numItemsAdded].mType = compinstance;
-                menuItem = &item[1];
-                mMenuItems.mNumItemsAdded++;
+                menuItem = mMenuItems.AddItem(compinstance);
 
                 {
-                    MenuCallback openFunction;
-                    openFunction.mTag = FREE_FUNCTION;
-                    openFunction.mFreeFunction = DoubleHighlite::OpenItem;
-                    *(MenuCallback*)&menuItem->mCallbacks[ON_HIGHLIGHT] = openFunction;
+                    MenuCallback openFunction(DoubleHighlite::OpenItem);
+                    menuItem->SetCallback(ON_HIGHLIGHT, openFunction);
                 }
 
                 {
-                    MenuCallback closeFunction;
-                    closeFunction.mTag = FREE_FUNCTION;
-                    closeFunction.mFreeFunction = DoubleHighlite::CloseItem;
-                    *(MenuCallback*)&menuItem->mCallbacks[ON_UNHIGHLIGHT] = closeFunction;
+                    MenuCallback closeFunction(DoubleHighlite::CloseItem);
+                    menuItem->SetCallback(ON_UNHIGHLIGHT, closeFunction);
                 }
 
                 {
-                    BindExp2_Tourn_t bind = Bind<void, MemFunImpl_Tourn_t, TournTeamSetupSceneV2*, int>(
+                    MenuCallback applyFunction(Bind<void, MemFunImpl_Tourn_t, TournTeamSetupSceneV2*, int>(
                         MemFun<TournTeamSetupSceneV2, void, int>(&TournTeamSetupSceneV2::StartChooseCaptain),
                         this,
-                        i);
-
-                    MenuCallback applyFunction(bind);
-                    *(MenuCallback*)&menuItem->mCallbacks[ON_APPLY] = applyFunction;
+                        i));
+                    menuItem->SetCallback(ON_APPLY, applyFunction);
                 }
 
-                {
-                    MenuAction action = (i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT;
-                    int tag = menuItem->mCallbacks[action].mTag;
-                    if (((u32)((-tag) | tag) >> 31) > 0)
-                    {
-                        if (!(action == ON_APPLY && menuItem->mDisabled))
-                        {
-                            TLComponentInstance* type = menuItem->mType;
-                            if (tag == FREE_FUNCTION)
-                            {
-                                menuItem->mCallbacks[action].mFreeFunction(type);
-                            }
-                            else
-                            {
-                                (*menuItem->mCallbacks[action].mFunctor)(type);
-                            }
-                        }
-                    }
-                }
+                menuItem->RunCallback((i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT);
 
                 TLSlide* slide = compinstance->GetActiveSlide();
                 compinstance->Update(slide->m_start + slide->m_duration);
@@ -378,63 +302,6 @@ void TournTeamSetupSceneV2::SceneCreated()
     FEAudio::EnableSounds(true);
 }
 
-inline void TournTeamSetupSceneV2::UpdateArrowVisibility()
-{
-    if (mCurrentRow == 0)
-    {
-        mUpArrow->m_bVisible = false;
-        mDownArrow->m_bVisible = true;
-    }
-    else if (mCurrentRow == (int)mTournInfo.m_numTeams - 1)
-    {
-        mUpArrow->m_bVisible = true;
-        mDownArrow->m_bVisible = false;
-    }
-    else
-    {
-        mUpArrow->m_bVisible = true;
-        mDownArrow->m_bVisible = true;
-    }
-}
-
-inline bool TournTeamSetupSceneV2::HasEmptyTeam() const
-{
-    for (int i = 0; i < mTournInfo.m_numTeams; i++)
-    {
-        if (mTeamData[i].isEmpty)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-inline int TournTeamSetupSceneV2::CanProceed() const
-{
-    int numHumans = 0;
-
-    for (int i = 0; i < mTournInfo.m_numTeams; i++)
-    {
-        if (mTeamData[i].isEmpty)
-        {
-            return -1;
-        }
-
-        if (mTeamData[i].isHumanPlayer)
-        {
-            numHumans++;
-        }
-    }
-
-    if (numHumans < 1)
-    {
-        return -2;
-    }
-
-    return 1;
-}
-
 /**
  * Offset/Address/Size: 0x32F4 | 0x800E5198 | size: 0xBE0
  */
@@ -453,54 +320,7 @@ void TournTeamSetupSceneV2::Update(float fDeltaT)
         init = 1;
     }
 
-    switch (mCurrentState)
-    {
-    case STATE_IN:
-        mButtons1.SetState(ButtonComponent::BS_A_AND_B_AND_Y);
-        mButtons1.CentreButtons();
-        mButtons2.SetState(ButtonComponent::BS_A_AND_B_AND_Y);
-        mButtons2.CentreButtons();
-        break;
-
-    case STATE_SCROLLING:
-    {
-        if (HasEmptyTeam())
-        {
-            mButtons1.SetState(ButtonComponent::BS_A_AND_B_AND_Y);
-            mButtons2.SetState(ButtonComponent::BS_A_AND_B_AND_Y);
-        }
-        else
-        {
-            int result = CanProceed();
-
-            if (result == 1)
-            {
-                mButtons1.SetState((ButtonComponent::ButtonState)4);
-                mButtons2.SetState((ButtonComponent::ButtonState)4);
-            }
-            else
-            {
-                mButtons1.SetState(ButtonComponent::BS_A_AND_B);
-                mButtons2.SetState(ButtonComponent::BS_A_AND_B);
-            }
-        }
-
-        mButtons1.CentreButtons();
-        mButtons2.CentreButtons();
-        break;
-    }
-
-    case STATE_CAPTAIN:
-    case STATE_SIDEKICK:
-        mButtons1.SetState(ButtonComponent::BS_A_AND_B);
-        mButtons2.SetState(ButtonComponent::BS_A_AND_B);
-        mButtons1.CentreButtons();
-        mButtons2.CentreButtons();
-        break;
-
-    default:
-        break;
-    }
+    SetupButtonsBasedOnState(mCurrentState);
 
     if (mCurrentState == STATE_IN)
     {
@@ -534,20 +354,7 @@ void TournTeamSetupSceneV2::Update(float fDeltaT)
 
         if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
         {
-            int currentIndex = mMenuItems.mCurrentIndex;
-            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_APPLY].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0 && !mMenuItems.mMenuItems[currentIndex].mDisabled)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_APPLY].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_APPLY].mFunctor)(type);
-                }
-            }
+            mMenuItems.RunCallbackOnCurrent(ON_APPLY);
             FEAudio::PlayAnimAudioEvent("sfx_accept", false);
         }
         else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
@@ -583,7 +390,7 @@ void TournTeamSetupSceneV2::Update(float fDeltaT)
                 if (!mTeamData[mCurrentRow].isEmpty)
                 {
                     mTeamData[mCurrentRow].isHumanPlayer = !mTeamData[mCurrentRow].isHumanPlayer;
-                    UpdateControllerIcon(mMenuItems.mCurrentIndex);
+                    UpdateControllerIcon(mMenuItems.GetActiveItemIndex());
 
                     if (CanProceed() == 1)
                     {
@@ -636,16 +443,9 @@ void TournTeamSetupSceneV2::Update(float fDeltaT)
             {
                 if (mCurrentCaptain == TEAM_MYSTERY)
                 {
-                    mTeamData[mCurrentRow].captain = mCurrentCaptain;
-                    mTeamData[mCurrentRow].sidekick = mCurrentSK;
-                    mTeamData[mCurrentRow].isEmpty = false;
-                    mCaptainGrid->SetValid(mCurrentCaptain, false);
-                    if (!(*(u8*)((u8*)this + 0x334)))
-                    {
-                        mTeamData[mCurrentRow].isHumanPlayer = true;
-                        *(u8*)((u8*)this + 0x334) = true;
-                    }
-                    UpdateRow(mMenuItems.mCurrentIndex);
+                    SetTeam();
+                    AutoTagCurrentRowAsHumanPlayer();
+                    UpdateRow(mMenuItems.GetActiveItemIndex());
                     ChangeState(mCurrentState, STATE_SCROLLING);
                     lastCaptainSelectSoundStrPlayed = FECharacterSound::PlayCaptainName(mCurrentCaptain);
                     ScrollDown(false);
@@ -690,16 +490,9 @@ void TournTeamSetupSceneV2::Update(float fDeltaT)
     {
         if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
         {
-            mTeamData[mCurrentRow].captain = mCurrentCaptain;
-            mTeamData[mCurrentRow].sidekick = mCurrentSK;
-            mTeamData[mCurrentRow].isEmpty = false;
-            mCaptainGrid->SetValid(mCurrentCaptain, false);
-            if (!(*(u8*)((u8*)this + 0x334)))
-            {
-                mTeamData[mCurrentRow].isHumanPlayer = true;
-                *(u8*)((u8*)this + 0x334) = true;
-            }
-            UpdateRow(mMenuItems.mCurrentIndex);
+            SetTeam();
+            AutoTagCurrentRowAsHumanPlayer();
+            UpdateRow(mMenuItems.GetActiveItemIndex());
             ChangeState(mCurrentState, STATE_SCROLLING);
             FEAudio::PlayAnimAudioEvent("sfx_accept_no_screen_change", false);
             FEAudio::PlayAnimAudioEvent("sfx_character_group_left_exit", false);
@@ -1031,15 +824,7 @@ void TournTeamSetupSceneV2::UpdateRow(int onScreenRow)
     if (onScreenRow == (mCurrentRow - mRowOffset))
     {
         pComp->SetActiveSlide("IN");
-        int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mTag;
-        if (((u32)((-tag) | tag) >> 31) > 0)
-        {
-            TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
-            if (tag == FREE_FUNCTION)
-                mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
-            else
-                (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
-        }
+        mMenuItems.RunCallbackOnCurrent(ON_HIGHLIGHT);
         arrow1->m_bVisible = true;
         arrow2->m_bVisible = true;
     }
@@ -1693,40 +1478,47 @@ void TournTeamSetupSceneV2::UpdateSKName()
     teamComp->SetActiveSlide(GetTeamName(mCurrentCaptain));
 }
 
-static inline void CreateLeagueLineupForTournament(TournTeamSetupSceneV2* scene)
+inline void TournTeamSetupSceneV2::SetTeam()
 {
-    GameInfoManager* pTournamentInfo = nlSingleton<GameInfoManager>::s_pInstance;
-    int numPlayingTeams = pTournamentInfo->GetNumPlayingTeams();
-
-    eTeamID lineup[8];
-    eSidekickID sklineup[8];
-
-    int i;
-    for (i = 0; i < numPlayingTeams; i++)
-    {
-        lineup[i] = scene->mTeamData[i].captain;
-        sklineup[i] = scene->mTeamData[i].sidekick;
-    }
-
-    pTournamentInfo->SetupRoundRobinSchedule(lineup, sklineup);
+    mTeamData[mCurrentRow].captain = mCurrentCaptain;
+    mTeamData[mCurrentRow].sidekick = mCurrentSK;
+    mTeamData[mCurrentRow].isEmpty = false;
+    mCaptainGrid->SetValid(mCurrentCaptain, false);
 }
 
-static inline void CreateKnockoutForTournament(TournTeamSetupSceneV2* scene)
+inline void TournTeamSetupSceneV2::UpdateAllRows()
 {
-    GameInfoManager* pTournamentInfo = nlSingleton<GameInfoManager>::s_pInstance;
-    int numPlayingTeams = pTournamentInfo->GetNumPlayingTeams();
-
-    eTeamID lineup[8];
-    eSidekickID sklineup[8];
-
-    int i;
-    for (i = 0; i < numPlayingTeams; i++)
+    int i = 0;
+    int numRows = ((u32)(3 - (u32)mTournInfo.m_numTeams) >> 31) + 3;
+    for (; i < numRows; i++)
     {
-        lineup[i] = scene->mTeamData[i].captain;
-        sklineup[i] = scene->mTeamData[i].sidekick;
+        UpdateRow(i);
+    }
+}
+
+inline int TournTeamSetupSceneV2::CanProceed() const
+{
+    int numHumans = 0;
+
+    for (int i = 0; i < mTournInfo.m_numTeams; i++)
+    {
+        if (mTeamData[i].isEmpty)
+        {
+            return -1;
+        }
+
+        if (mTeamData[i].isHumanPlayer)
+        {
+            numHumans++;
+        }
     }
 
-    pTournamentInfo->SetupTournamentKnockout(lineup, sklineup);
+    if (numHumans < 1)
+    {
+        return -2;
+    }
+
+    return 1;
 }
 
 /**
@@ -1752,7 +1544,7 @@ void TournTeamSetupSceneV2::Proceed()
 
     if (mTournInfo.m_tournMode == TM_LEAGUE)
     {
-        CreateLeagueLineupForTournament(this);
+        CreateLeagueLineup();
         pGameInfo->SetPreviousTeamStats();
         pGameInfo->IncreaseRoundNumber();
     }
@@ -1770,7 +1562,7 @@ void TournTeamSetupSceneV2::Proceed()
 
         pCup->mRoundNumber = roundNumber;
 
-        CreateKnockoutForTournament(this);
+        CreateKnockout();
     }
 
     while (pGameInfo->GetCurrentRoundNumber() != -5)
@@ -1813,34 +1605,46 @@ void TournTeamSetupSceneV2::Proceed()
     pHubScene->mDoAutoSave = true;
 }
 
+inline void TournTeamSetupSceneV2::CreateLeagueLineup()
+{
+    GameInfoManager* pTournamentInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    int numPlayingTeams = pTournamentInfo->GetNumPlayingTeams();
+
+    eTeamID lineup[8];
+    eSidekickID sklineup[8];
+
+    int i;
+    for (i = 0; i < numPlayingTeams; i++)
+    {
+        lineup[i] = mTeamData[i].captain;
+        sklineup[i] = mTeamData[i].sidekick;
+    }
+
+    pTournamentInfo->SetupRoundRobinSchedule(lineup, sklineup);
+}
+
+inline void TournTeamSetupSceneV2::CreateKnockout()
+{
+    GameInfoManager* pTournamentInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    int numPlayingTeams = pTournamentInfo->GetNumPlayingTeams();
+
+    eTeamID lineup[8];
+    eSidekickID sklineup[8];
+
+    int i;
+    for (i = 0; i < numPlayingTeams; i++)
+    {
+        lineup[i] = mTeamData[i].captain;
+        sklineup[i] = mTeamData[i].sidekick;
+    }
+
+    pTournamentInfo->SetupTournamentKnockout(lineup, sklineup);
+}
+
 /**
  * Offset/Address/Size: 0xC34 | 0x800E2AD8 | size: 0x9C0
  */
 #pragma optimization_level 2
-static inline void InitCaptainSlideStringData(BasicStringData<char>* data, const char* text)
-{
-    data->mData = 0;
-    data->mSize = 0;
-    data->mCapacity = 0;
-
-    const char* scan = text;
-    while (*scan++ != 0)
-    {
-        data->mSize++;
-    }
-
-    data->mSize++;
-    data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
-    data->mCapacity = data->mSize;
-
-    for (int i = 0; i < data->mSize; i++)
-    {
-        data->mData[i] = *text++;
-    }
-
-    data->mRefCount = 1;
-}
-
 BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindCaptainSlideName(eTeamID captain)
 {
     BasicString<char, Detail::TempStringAllocator> returnValue;
@@ -1848,117 +1652,35 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindCaptai
     switch (captain)
     {
     case TEAM_DAISY:
-    {
-        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
-        if (data != 0)
-        {
-            InitCaptainSlideStringData(data, "daisy");
-        }
-
-        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
+        returnValue = BasicString<char, Detail::TempStringAllocator>("daisy");
         break;
-    }
     case TEAM_DONKEYKONG:
-    {
-        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
-        if (data != 0)
-        {
-            InitCaptainSlideStringData(data, "dk");
-        }
-
-        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
+        returnValue = BasicString<char, Detail::TempStringAllocator>("dk");
         break;
-    }
     case TEAM_LUIGI:
-    {
-        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
-        if (data != 0)
-        {
-            InitCaptainSlideStringData(data, "luigi");
-        }
-
-        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
+        returnValue = BasicString<char, Detail::TempStringAllocator>("luigi");
         break;
-    }
     case TEAM_MARIO:
-    {
-        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
-        if (data != 0)
-        {
-            InitCaptainSlideStringData(data, "mario");
-        }
-
-        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
+        returnValue = BasicString<char, Detail::TempStringAllocator>("mario");
         break;
-    }
     case TEAM_PEACH:
-    {
-        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
-        if (data != 0)
-        {
-            InitCaptainSlideStringData(data, "peach");
-        }
-
-        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
+        returnValue = BasicString<char, Detail::TempStringAllocator>("peach");
         break;
-    }
     case TEAM_WALUIGI:
-    {
-        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
-        if (data != 0)
-        {
-            InitCaptainSlideStringData(data, "waluigi");
-        }
-
-        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
+        returnValue = BasicString<char, Detail::TempStringAllocator>("waluigi");
         break;
-    }
     case TEAM_WARIO:
-    {
-        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
-        if (data != 0)
-        {
-            InitCaptainSlideStringData(data, "wario");
-        }
-
-        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
+        returnValue = BasicString<char, Detail::TempStringAllocator>("wario");
         break;
-    }
     case TEAM_YOSHI:
-    {
-        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
-        if (data != 0)
-        {
-            InitCaptainSlideStringData(data, "yoshi");
-        }
-
-        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
+        returnValue = BasicString<char, Detail::TempStringAllocator>("yoshi");
         break;
-    }
     case TEAM_MYSTERY:
-    {
-        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
-        if (data != 0)
-        {
-            InitCaptainSlideStringData(data, "super");
-        }
-
-        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
+        returnValue = BasicString<char, Detail::TempStringAllocator>("super");
         break;
     }
-    }
 
-    BasicStringData<char>* resultData = returnValue.m_data;
-    if (resultData != 0)
-    {
-        resultData->mRefCount++;
-    }
-    else
-    {
-        resultData = 0;
-    }
-
-    return BasicString<char, Detail::TempStringAllocator>(resultData);
+    return returnValue;
 }
 #pragma optimization_level 4
 
@@ -1970,73 +1692,34 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSideki
     switch (sidekick)
     {
     case SK_TOAD:
-    {
-        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
-        if (data != 0)
-        {
-            InitCaptainSlideStringData(data, "toad");
-        }
-
-        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
+        returnValue = BasicString<char, Detail::TempStringAllocator>("toad");
         break;
-    }
     case SK_KOOPA:
-    {
-        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
-        if (data != 0)
-        {
-            InitCaptainSlideStringData(data, "koopa");
-        }
-
-        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
+        returnValue = BasicString<char, Detail::TempStringAllocator>("koopa");
         break;
-    }
     case SK_HAMMERBROS:
-    {
-        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
-        if (data != 0)
-        {
-            InitCaptainSlideStringData(data, "hammer");
-        }
-
-        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
+        returnValue = BasicString<char, Detail::TempStringAllocator>("hammer");
         break;
-    }
     case SK_BIRDO:
-    {
-        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
-        if (data != 0)
-        {
-            InitCaptainSlideStringData(data, "birdo");
-        }
-
-        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
+        returnValue = BasicString<char, Detail::TempStringAllocator>("birdo");
         break;
     }
-    }
 
-    BasicStringData<char>* resultData = returnValue.m_data;
-    if (resultData != 0)
-    {
-        resultData->mRefCount++;
-    }
-    else
-    {
-        resultData = 0;
-    }
-
-    return BasicString<char, Detail::TempStringAllocator>(resultData);
+    return returnValue;
 }
 #pragma optimization_level 4
 
-static inline void AutoFillUpdateRows(TournTeamSetupSceneV2* scene)
+inline bool TournTeamSetupSceneV2::CanAutoFill() const
 {
-    int i = 0;
-    int numRows = ((u32)(3 - (u32)scene->mTournInfo.m_numTeams) >> 31) + 3;
-    for (; i < numRows; i++)
+    for (int i = 0; i < mTournInfo.m_numTeams; i++)
     {
-        scene->UpdateRow(i);
+        if (mTeamData[i].isEmpty)
+        {
+            return true;
+        }
     }
+
+    return false;
 }
 
 /**
@@ -2052,7 +1735,6 @@ void TournTeamSetupSceneV2::AutoFill()
         if (mTeamData[i].isEmpty)
         {
             eTeamID randCapt;
-            u8 alreadySelected;
 
             do
             {
@@ -2064,25 +1746,9 @@ void TournTeamSetupSceneV2::AutoFill()
                 {
                     randCapt = (eTeamID)nlRandom(8, &nlDefaultSeed);
                 }
+            } while (IsAlreadySelected(randCapt));
 
-                for (int k = 0; k < mTournInfo.m_numTeams; k++)
-                {
-                    if (!mTeamData[k].isEmpty && mTeamData[k].captain == randCapt)
-                    {
-                        alreadySelected = 1;
-                        goto done_select_check;
-                    }
-                }
-
-                alreadySelected = 0;
-            done_select_check:;
-            } while (alreadySelected);
-
-            if (!(*(u8*)((u8*)this + 0x334)))
-            {
-                mTeamData[mCurrentRow].isHumanPlayer = true;
-                *(u8*)((u8*)this + 0x334) = true;
-            }
+            AutoTagCurrentRowAsHumanPlayer();
 
             mTeamData[i].isEmpty = false;
             mTeamData[i].sidekick = (eSidekickID)nlRandom(4, &nlDefaultSeed);
@@ -2097,52 +1763,31 @@ void TournTeamSetupSceneV2::AutoFill()
         int numRows = mTournInfo.m_numTeams == 3 ? 3 : 4;
         mRowOffset = mTournInfo.m_numTeams - numRows;
 
-        {
-            int currentIndex = mMenuItems.mCurrentIndex;
-            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mTag;
-            if (((u32)((-tag) | tag) >> 31) != 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFunctor)(type);
-                }
-            }
-        }
+        mMenuItems.SetItem(numRows - 1);
 
-        mMenuItems.mCurrentIndex = numRows - 1;
-
-        {
-            int selIdx = mMenuItems.mCurrentIndex;
-            int tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
-            if (((u32)((-tag) | tag) >> 31) != 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
-                }
-            }
-        }
-
-        mCurrentRow = mRowOffset + mMenuItems.mCurrentIndex;
+        mCurrentRow = mRowOffset + mMenuItems.GetActiveItemIndex();
         mCurrentCaptain = mTeamData[mCurrentRow].captain;
         mCurrentSK = mTeamData[mCurrentRow].sidekick;
 
         mCaptainGrid->MoveHighlightToTarget(mCurrentCaptain);
-        ((IGridComponent<eTeamID>*)mSKGrid)->MoveHighlightToTarget((eTeamID)mCurrentSK);
+        mSKGrid->MoveHighlightToTarget(mCurrentSK);
         UpdateCaptainName();
 
-        AutoFillUpdateRows(this);
+        UpdateAllRows();
     }
+}
+
+inline unsigned char TournTeamSetupSceneV2::IsAlreadySelected(eTeamID captain) const
+{
+    for (int i = 0; i < mTournInfo.m_numTeams; i++)
+    {
+        if (!mTeamData[i].isEmpty && mTeamData[i].captain == captain)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -2150,22 +1795,33 @@ void TournTeamSetupSceneV2::AutoFill()
  */
 void TournTeamSetupSceneV2::UpdateForCurrentRow()
 {
-    FORCE_DONT_INLINE;
-    int numRows;
-    int i = 0;
-    numRows = ((u32)(3 - (u32)mTournInfo.m_numTeams) >> 31) + 3;
-
-    for (; i < numRows; i++)
-    {
-        UpdateRow(i);
-    }
+    UpdateAllRows();
 
     mCurrentCaptain = mTeamData[mCurrentRow].captain;
     mCurrentSK = mTeamData[mCurrentRow].sidekick;
 
     mCaptainGrid->MoveHighlightToTarget(mCurrentCaptain);
-    ((IGridComponent<eTeamID>*)mSKGrid)->MoveHighlightToTarget((eTeamID)mCurrentSK);
+    mSKGrid->MoveHighlightToTarget(mCurrentSK);
     UpdateCaptainName();
+}
+
+inline void TournTeamSetupSceneV2::UpdateArrowVisibility()
+{
+    if (mCurrentRow == 0)
+    {
+        mUpArrow->m_bVisible = false;
+        mDownArrow->m_bVisible = true;
+    }
+    else if (mCurrentRow == (int)mTournInfo.m_numTeams - 1)
+    {
+        mUpArrow->m_bVisible = true;
+        mDownArrow->m_bVisible = false;
+    }
+    else
+    {
+        mUpArrow->m_bVisible = true;
+        mDownArrow->m_bVisible = true;
+    }
 }
 
 /**
@@ -2173,7 +1829,7 @@ void TournTeamSetupSceneV2::UpdateForCurrentRow()
  */
 void TournTeamSetupSceneV2::ScrollUp(bool bPlaySound)
 {
-    int newIndex;
+    MenuResult result;
     bool doUpdate;
 
     if (!bPlaySound)
@@ -2181,92 +1837,21 @@ void TournTeamSetupSceneV2::ScrollUp(bool bPlaySound)
         FEAudio::EnableSounds(false);
     }
 
-    int flags = mMenuItems.mFlags;
-    int skipFlag;
-    int wrapFlag;
-    int currentIndex;
-    wrapFlag = flags & 1;
-    skipFlag = flags & 2;
-    currentIndex = mMenuItems.mCurrentIndex;
-    newIndex = currentIndex - 1;
-
-loop:
-    if (wrapFlag)
-    {
-        if (newIndex < 0)
-        {
-            newIndex = mMenuItems.mNumItemsAdded - 1;
-        }
-    }
-    else
-    {
-        if (newIndex < 0)
-        {
-            newIndex = 2;
-            goto end_section;
-        }
-    }
-
-    if (skipFlag)
-    {
-        if (mMenuItems.mMenuItems[newIndex].mDisabled)
-        {
-            newIndex--;
-            goto loop;
-        }
-    }
-
-    // Deselect old item (callback 2)
-    {
-        int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mTag;
-        if (((u32)((-tag) | tag) >> 31) != 0)
-        {
-            TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
-            if (tag == FREE_FUNCTION)
-            {
-                mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFreeFunction(type);
-            }
-            else
-            {
-                (*mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFunctor)(type);
-            }
-        }
-    }
-
-    mMenuItems.mCurrentIndex = newIndex;
-
-    int selIdx = mMenuItems.mCurrentIndex;
-    int tag2 = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
-    if (((u32)((-tag2) | tag2) >> 31) != 0)
-    {
-        TLComponentInstance* type2 = mMenuItems.mMenuItems[selIdx].mType;
-        if (tag2 == FREE_FUNCTION)
-        {
-            mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type2);
-        }
-        else
-        {
-            (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type2);
-        }
-    }
-
-    newIndex = 1;
-
-end_section:
-    mCurrentRow = mRowOffset + mMenuItems.mCurrentIndex;
+    result = mMenuItems.PreviousItem();
+    mCurrentRow = mRowOffset + mMenuItems.GetActiveItemIndex();
     FEAudio::EnableSounds(false);
 
     doUpdate = true;
-    if (newIndex == 2)
+    if (result == RES_NOT_CHANGED)
     {
         if (mRowOffset > 0)
         {
             mRowOffset--;
-            mCurrentRow = mRowOffset + mMenuItems.mCurrentIndex;
+            mCurrentRow = mRowOffset + mMenuItems.GetActiveItemIndex();
             goto check_update;
         }
     }
-    if (newIndex == 2)
+    if (result == RES_NOT_CHANGED)
     {
         doUpdate = false;
         FEAudio::PlayAnimAudioEvent("sfx_deny", false);
@@ -2275,7 +1860,7 @@ end_section:
 check_update:
     if (doUpdate)
     {
-        if (newIndex == 2)
+        if (result == RES_NOT_CHANGED)
         {
             FEAudio::EnableSounds(true);
         }
@@ -2290,7 +1875,7 @@ check_update:
  */
 void TournTeamSetupSceneV2::ScrollDown(bool bPlaySound)
 {
-    int newIndex;
+    MenuResult result;
     bool doUpdate;
 
     if (!bPlaySound)
@@ -2298,92 +1883,21 @@ void TournTeamSetupSceneV2::ScrollDown(bool bPlaySound)
         FEAudio::EnableSounds(false);
     }
 
-    int flags = mMenuItems.mFlags;
-    int skipFlag;
-    int wrapFlag;
-    int currentIndex;
-    wrapFlag = flags & 1;
-    skipFlag = flags & 2;
-    currentIndex = mMenuItems.mCurrentIndex;
-    newIndex = currentIndex + 1;
-
-loop:
-    if (wrapFlag)
-    {
-        newIndex = newIndex % mMenuItems.mNumItemsAdded;
-    }
-    else
-    {
-        if (newIndex >= mMenuItems.mNumItemsAdded)
-        {
-            newIndex = 2;
-            goto end_section;
-        }
-    }
-
-    if (skipFlag)
-    {
-        if (mMenuItems.mMenuItems[newIndex].mDisabled)
-        {
-            newIndex++;
-            goto loop;
-        }
-    }
-
-    // Deselect old item (callback 2)
-    {
-        int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mTag;
-        if (((u32)((-tag) | tag) >> 31) != 0)
-        {
-            TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
-            if (tag == FREE_FUNCTION)
-            {
-                mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFreeFunction(type);
-            }
-            else
-            {
-                (*mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFunctor)(type);
-            }
-        }
-    }
-
-    mMenuItems.mCurrentIndex = newIndex;
-
-    // Select new item (callback 1)
-    {
-        int selIdx = mMenuItems.mCurrentIndex;
-        int tag2 = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
-        if (((u32)((-tag2) | tag2) >> 31) != 0)
-        {
-            TLComponentInstance* type2 = mMenuItems.mMenuItems[selIdx].mType;
-            if (tag2 == FREE_FUNCTION)
-            {
-                mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type2);
-            }
-            else
-            {
-                (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type2);
-            }
-        }
-    }
-
-    newIndex = 1;
-
-end_section:
-    mCurrentRow = mRowOffset + mMenuItems.mCurrentIndex;
+    result = mMenuItems.NextItem();
+    mCurrentRow = mRowOffset + mMenuItems.GetActiveItemIndex();
     FEAudio::EnableSounds(false);
 
     doUpdate = true;
-    if (newIndex == 2)
+    if (result == RES_NOT_CHANGED)
     {
         if (mRowOffset + 3 < (int)mTournInfo.m_numTeams - 1)
         {
             mRowOffset++;
-            mCurrentRow = mRowOffset + mMenuItems.mCurrentIndex;
+            mCurrentRow = mRowOffset + mMenuItems.GetActiveItemIndex();
             goto check_update;
         }
     }
-    if (newIndex == 2)
+    if (result == RES_NOT_CHANGED)
     {
         doUpdate = false;
         FEAudio::PlayAnimAudioEvent("sfx_deny", false);
@@ -2392,7 +1906,7 @@ end_section:
 check_update:
     if (doUpdate)
     {
-        if (newIndex == 2)
+        if (result == RES_NOT_CHANGED)
         {
             FEAudio::EnableSounds(true);
         }
@@ -2402,14 +1916,61 @@ check_update:
     FEAudio::EnableSounds(true);
 }
 
-void SHTournTeamSetup_stub()
+inline void TournTeamSetupSceneV2::AutoTagCurrentRowAsHumanPlayer()
 {
-    TLInstance* (*volatile forceInstance)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher) = &FEFinder<TLInstance, 4>::Find<TLSlide>;
-    TLImageInstance* (*volatile forceImage)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher) = &FEFinder<TLImageInstance, 2>::Find<TLSlide>;
-    TLTextInstance* (*volatile forceText)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher) = &FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-    TLComponentInstance* (*volatile forceComponent)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher) = &FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-    (void)forceInstance;
-    (void)forceImage;
-    (void)forceText;
-    (void)forceComponent;
+    if (!mHasTaggedHumanPlayer)
+    {
+        mTeamData[mCurrentRow].isHumanPlayer = true;
+        mHasTaggedHumanPlayer = true;
+    }
+}
+
+inline void TournTeamSetupSceneV2::SetupButtonsBasedOnState(eTeamChooserState state)
+{
+    switch (state)
+    {
+    case STATE_IN:
+        mButtons1.SetState(ButtonComponent::BS_A_AND_B_AND_Y);
+        mButtons1.CentreButtons();
+        mButtons2.SetState(ButtonComponent::BS_A_AND_B_AND_Y);
+        mButtons2.CentreButtons();
+        break;
+
+    case STATE_SCROLLING:
+        if (CanAutoFill())
+        {
+            mButtons1.SetState(ButtonComponent::BS_A_AND_B_AND_Y);
+            mButtons2.SetState(ButtonComponent::BS_A_AND_B_AND_Y);
+        }
+        else
+        {
+            int result = CanProceed();
+
+            if (result == 1)
+            {
+                mButtons1.SetState((ButtonComponent::ButtonState)4);
+                mButtons2.SetState((ButtonComponent::ButtonState)4);
+            }
+            else
+            {
+                mButtons1.SetState(ButtonComponent::BS_A_AND_B);
+                mButtons2.SetState(ButtonComponent::BS_A_AND_B);
+            }
+        }
+
+        mButtons1.CentreButtons();
+        mButtons2.CentreButtons();
+        break;
+
+    case STATE_CAPTAIN:
+    case STATE_SIDEKICK:
+        mButtons1.SetState(ButtonComponent::BS_A_AND_B);
+        mButtons2.SetState(ButtonComponent::BS_A_AND_B);
+        mButtons1.CentreButtons();
+        mButtons2.CentreButtons();
+        break;
+
+    default:
+        break;
+    }
 }

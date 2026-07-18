@@ -1,7 +1,3 @@
-#define BIND_NO_DECL
-#define FUNCTION1_SPLIT_BODIES
-#define MEMFUN_NO_DECL
-#define NL_NO_LEXICALCAST_NLSTRING_INT
 #include "Game/SH/SHLessonSelect.h"
 #include "Game/OverlayManager.h"
 #include "Game/SH/SHLesson.h"
@@ -20,8 +16,7 @@
 
 #include "Game/SH/SHPause.h"
 
-#include "NL/nlMemFunBody.h"
-#include "NL/nlBindBody.h"
+#include "NL/nlBind.h"
 
 typedef Detail::MemFunImpl<void, void (LessonSelectScene::*)()> MemFunImpl_LessonSelect_t;
 typedef BindExp1<void, MemFunImpl_LessonSelect_t, LessonSelectScene*> BindExp1_LessonSelect_t;
@@ -30,11 +25,6 @@ static int sRowOffset;
 static int sCurrentRow;
 
 typedef void FnTLComponentInstanceCb(TLComponentInstance*);
-
-static inline MenuItem<TLComponentInstance>* LessonSelectItemAt(MenuList<TLComponentInstance>& menu, int idx)
-{
-    return &menu.mMenuItems[idx];
-}
 
 namespace DoubleHighlite
 {
@@ -80,7 +70,7 @@ void LessonSelectScene::SceneCreated()
     FEPresentation* presentation = m_pFEPresentation;
     FEAudio::EnableSounds(false);
 
-    typedef Function<TLComponentInstance*> MenuCallback;
+    typedef MenuItem<TLComponentInstance>::Callback MenuCallback;
 
     for (int i = 0; i < 4; i++)
     {
@@ -96,30 +86,22 @@ void LessonSelectScene::SceneCreated()
 
         if (mDoSlideIn)
         {
-            int numItemsAdded = mMenuItems.mNumItemsAdded;
-            menuItem = LessonSelectItemAt(mMenuItems, numItemsAdded);
-            mMenuItems.mMenuItems[numItemsAdded].mType = compinstance;
-            mMenuItems.mNumItemsAdded++;
+            menuItem = mMenuItems.AddItem(compinstance);
 
             {
-                MenuCallback openFunc;
-                openFunc.mTag = FREE_FUNCTION;
-                openFunc.mFreeFunction = DoubleHighlite::OpenItem;
-                *(MenuCallback*)&menuItem->mCallbacks[ON_HIGHLIGHT] = openFunc;
+                MenuCallback openFunc(DoubleHighlite::OpenItem);
+                menuItem->SetCallback(ON_HIGHLIGHT, openFunc);
             }
 
             {
-                MenuCallback closeFunc;
-                closeFunc.mTag = FREE_FUNCTION;
-                closeFunc.mFreeFunction = DoubleHighlite::CloseItem;
-                *(MenuCallback*)&menuItem->mCallbacks[ON_UNHIGHLIGHT] = closeFunc;
+                MenuCallback closeFunc(DoubleHighlite::CloseItem);
+                menuItem->SetCallback(ON_UNHIGHLIGHT, closeFunc);
             }
 
             {
-                BindExp1_LessonSelect_t bind = Bind<void, MemFunImpl_LessonSelect_t, LessonSelectScene*>(
-                    MemFun<LessonSelectScene, void>(&LessonSelectScene::StartLesson), this);
-                MenuCallback applyFunc(bind);
-                *(MenuCallback*)&menuItem->mCallbacks[ON_APPLY] = applyFunc;
+                MenuCallback applyFunc(Bind<void, MemFunImpl_LessonSelect_t, LessonSelectScene*>(
+                    MemFun<LessonSelectScene, void>(&LessonSelectScene::StartLesson), this));
+                menuItem->SetCallback(ON_APPLY, applyFunc);
             }
 
             if (i == 0)
@@ -127,7 +109,7 @@ void LessonSelectScene::SceneCreated()
                 DoubleHighlite::TempDisableSound();
             }
 
-            menuItem->ApplyAction((i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT);
+            menuItem->RunCallback((i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT);
 
             TLSlide* slide = compinstance->GetActiveSlide();
             compinstance->Update(slide->m_start + slide->m_duration);
@@ -148,39 +130,7 @@ void LessonSelectScene::SceneCreated()
 
     int newIndex = sCurrentRow - sRowOffset;
 
-    {
-        int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_UNHIGHLIGHT].mTag;
-        if (((unsigned int)((-tag) | tag)) >> 31)
-        {
-            TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
-            if (tag == FREE_FUNCTION)
-            {
-                mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_UNHIGHLIGHT].mFreeFunction(type);
-            }
-            else
-            {
-                (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_UNHIGHLIGHT].mFunctor)(type);
-            }
-        }
-    }
-
-    mMenuItems.mCurrentIndex = newIndex;
-
-    {
-        int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mTag;
-        if (((unsigned int)((-tag) | tag)) >> 31)
-        {
-            TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
-            if (tag == FREE_FUNCTION)
-            {
-                mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
-            }
-            else
-            {
-                (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
-            }
-        }
-    }
+    mMenuItems.SetItem(newIndex);
 
     for (int i = 0; i < 4; i++)
     {
@@ -243,23 +193,7 @@ void LessonSelectScene::Update(float fDeltaT)
 
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
     {
-        int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_APPLY].mTag;
-        if (((unsigned int)((-tag) | tag)) >> 31)
-        {
-            if (!mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mDisabled)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_APPLY].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_APPLY].mFunctor)(type);
-                }
-            }
-        }
-
+        mMenuItems.RunCallbackOnCurrent(ON_APPLY);
         FEAudio::PlayAnimAudioEvent("sfx_accept", false);
     }
     else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
@@ -275,101 +209,18 @@ void LessonSelectScene::Update(float fDeltaT)
     {
         FEAudio::EnableSounds(false);
 
-        int flags = mMenuItems.mFlags;
-        int skipDisabled;
-        int wrapBit = flags & 1;
-        skipDisabled = flags & 2;
-        int currentIndex = mMenuItems.mCurrentIndex;
-        int result = currentIndex - 1;
-
-        while (true)
-        {
-            if (wrapBit)
-            {
-                if (result < 0)
-                {
-                    result = mMenuItems.mNumItemsAdded - 1;
-                }
-            }
-            else
-            {
-                if (result < 0)
-                {
-                    result = RES_NOT_CHANGED;
-                    break;
-                }
-            }
-
-            if (skipDisabled)
-            {
-                if (mMenuItems.mMenuItems[result].mDisabled)
-                {
-                    result = result - 1;
-                    continue;
-                }
-            }
-
-            {
-                int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT].mTag;
-                if (((unsigned int)((-tag) | tag)) >> 31)
-                {
-                    TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
-                    if (tag == FREE_FUNCTION)
-                    {
-                        mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT].mFreeFunction(type);
-                    }
-                    else
-                    {
-                        (*mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT].mFunctor)(type);
-                    }
-                }
-            }
-
-            mMenuItems.mCurrentIndex = result;
-
-            {
-                int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mTag;
-                if (((unsigned int)((-tag) | tag)) >> 31)
-                {
-                    TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
-                    if (tag == FREE_FUNCTION)
-                    {
-                        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
-                    }
-                    else
-                    {
-                        (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
-                    }
-                }
-            }
-
-            result = RES_OK;
-            break;
-        }
+        MenuResult result = mMenuItems.PreviousItem();
 
         FEAudio::EnableSounds(true);
 
-        sCurrentRow = sRowOffset + mMenuItems.mCurrentIndex;
+        sCurrentRow = sRowOffset + mMenuItems.GetActiveItemIndex();
         bool updatearrows = true;
 
         if (result == RES_NOT_CHANGED && sRowOffset > 0)
         {
             sRowOffset = sRowOffset - 1;
-            sCurrentRow = sRowOffset + mMenuItems.mCurrentIndex;
-
-            int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mTag;
-            if (((unsigned int)((-tag) | tag)) >> 31)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
-                }
-            }
+            sCurrentRow = sRowOffset + mMenuItems.GetActiveItemIndex();
+            mMenuItems.RunCallbackOnCurrent(ON_HIGHLIGHT);
         }
         else
         {
@@ -380,19 +231,7 @@ void LessonSelectScene::Update(float fDeltaT)
             }
             else if (result == RES_OK)
             {
-                int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mTag;
-                if (((unsigned int)((-tag) | tag)) >> 31)
-                {
-                    TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
-                    if (tag == FREE_FUNCTION)
-                    {
-                        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
-                    }
-                    else
-                    {
-                        (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
-                    }
-                }
+                mMenuItems.RunCallbackOnCurrent(ON_HIGHLIGHT);
             }
         }
 
@@ -408,99 +247,18 @@ void LessonSelectScene::Update(float fDeltaT)
     {
         FEAudio::EnableSounds(false);
 
-        int flags = mMenuItems.mFlags;
-        int skipDisabled;
-        int wrapBit = flags & 1;
-        skipDisabled = flags & 2;
-        int currentIndex = mMenuItems.mCurrentIndex;
-        int result = currentIndex + 1;
-
-        while (true)
-        {
-            if (wrapBit)
-            {
-                int numItems = mMenuItems.mNumItemsAdded;
-                result = result % numItems;
-            }
-            else
-            {
-                if (result >= mMenuItems.mNumItemsAdded)
-                {
-                    result = RES_NOT_CHANGED;
-                    break;
-                }
-            }
-
-            if (skipDisabled)
-            {
-                if (mMenuItems.mMenuItems[result].mDisabled)
-                {
-                    result = result + 1;
-                    continue;
-                }
-            }
-
-            {
-                int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT].mTag;
-                if (((unsigned int)((-tag) | tag)) >> 31)
-                {
-                    TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
-                    if (tag == FREE_FUNCTION)
-                    {
-                        mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT].mFreeFunction(type);
-                    }
-                    else
-                    {
-                        (*mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT].mFunctor)(type);
-                    }
-                }
-            }
-
-            mMenuItems.mCurrentIndex = result;
-
-            {
-                int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mTag;
-                if (((unsigned int)((-tag) | tag)) >> 31)
-                {
-                    TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
-                    if (tag == FREE_FUNCTION)
-                    {
-                        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
-                    }
-                    else
-                    {
-                        (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
-                    }
-                }
-            }
-
-            result = RES_OK;
-            break;
-        }
+        MenuResult result = mMenuItems.NextItem();
 
         FEAudio::EnableSounds(true);
 
-        sCurrentRow = sRowOffset + mMenuItems.mCurrentIndex;
+        sCurrentRow = sRowOffset + mMenuItems.GetActiveItemIndex();
         bool updatearrows = true;
 
         if (result == RES_NOT_CHANGED && (sRowOffset + 3) < 11)
         {
             sRowOffset = sRowOffset + 1;
-            sCurrentRow = sRowOffset + mMenuItems.mCurrentIndex;
-
-            int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mTag;
-            if (((unsigned int)((-tag) | tag)) >> 31)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
-                }
-            }
+            sCurrentRow = sRowOffset + mMenuItems.GetActiveItemIndex();
+            mMenuItems.RunCallbackOnCurrent(ON_HIGHLIGHT);
         }
         else
         {
@@ -511,19 +269,7 @@ void LessonSelectScene::Update(float fDeltaT)
             }
             else if (result == RES_OK)
             {
-                int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mTag;
-                if (((unsigned int)((-tag) | tag)) >> 31)
-                {
-                    TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
-                    if (tag == FREE_FUNCTION)
-                    {
-                        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
-                    }
-                    else
-                    {
-                        (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
-                    }
-                }
+                mMenuItems.RunCallbackOnCurrent(ON_HIGHLIGHT);
             }
         }
 
@@ -605,19 +351,7 @@ void LessonSelectScene::UpdateRow(int onScreenRow, bool playsound)
         {
             DoubleHighlite::TempDisableSound();
         }
-        int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mTag;
-        if (((unsigned int)((-tag) | tag)) >> 31)
-        {
-            TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
-            if (tag == FREE_FUNCTION)
-            {
-                mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
-            }
-            else
-            {
-                (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
-            }
-        }
+        mMenuItems.RunCallbackOnCurrent(ON_HIGHLIGHT);
     }
 
     BasicString<char, Detail::TempStringAllocator> rowString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(currentRow + 1);
@@ -707,15 +441,12 @@ void SetTickerLesson(int lesson)
         lesson = randomlesson;
         InsertPoint = (InsertPoint + 1) % 5;
 
-        Function<FnVoidVoid> doneCB;
-        doneCB.mTag = FREE_FUNCTION;
-        doneCB.mFreeFunction = LessonTickerDoneCB;
+        Function<FnVoidVoid> doneCB(LessonTickerDoneCB);
 
         FEScrollText* scrollText = ticker->m_scrollText;
         if (scrollText != 0)
         {
-            // *(Function<FnVoidVoid>*)&scrollText->mTag = doneCB;
-            *(Function<FnVoidVoid>*)&scrollText->m_messageFinishedCB = doneCB;
+            scrollText->m_messageFinishedCB = doneCB;
         }
     }
     else
@@ -723,13 +454,7 @@ void SetTickerLesson(int lesson)
         FEScrollText* scrollText = ticker->m_scrollText;
         if (scrollText != 0)
         {
-            // Function<FnVoidVoid>* cb = (Function<FnVoidVoid>*)&scrollText->mTag;
-            Function<FnVoidVoid>* cb = (Function<FnVoidVoid>*)&scrollText->m_messageFinishedCB;
-            if (cb->mTag == FUNCTOR)
-            {
-                delete cb->mFunctor;
-            }
-            cb->mTag = EMPTY;
+            scrollText->m_messageFinishedCB.Clear();
         }
     }
 

@@ -2,7 +2,6 @@
 #define _AISANDBOX_H_
 
 #include "NL/nlSingleton.h"
-#include "Game/AI/Scripts/CommonScript.h"
 
 class AISandbox : public nlSingleton<AISandbox>
 {

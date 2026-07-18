@@ -9,9 +9,30 @@ class Vector
 {
 public:
     Vector() { }
+    Vector(const T* string)
+    {
+        mData = 0;
+        mSize = 0;
+        mCapacity = 0;
+
+        const T* scan = string;
+        while (*scan++ != 0)
+        {
+            mSize++;
+        }
+
+        mSize++;
+        mData = new (8, Allocator::kAtEnd) T[mSize + 1];
+        mCapacity = mSize;
+
+        for (int i = 0; i < mSize; i++)
+        {
+            mData[i] = *string++;
+        }
+    }
     Vector(int count, const char* name)
     {
-        mData = new (8, false) T[count];
+        mData = new (8, Allocator::kAtEnd) T[count];
         mSize = count;
         mCapacity = count;
         for (int i = 0; i < count; i++)
@@ -28,6 +49,10 @@ public:
     void resize(int size);
     void push_back(const T& value);
     void insert(T* position, const T* first, const T* last);
+    T& operator[](int index)
+    {
+        return mData[index];
+    }
 
     /* 0x0 */ T* mData;
     /* 0x4 */ int mSize;

@@ -512,18 +512,6 @@ enum SkinChunkType
     SKIN_CHUNK_STITCHING = 0x1B010,
 };
 
-static u8* GetChunkDataPointer(nlChunk* chunk)
-{
-    u32 id = chunk->m_ID;
-    u32 alignBits = id & 0x7F000000u;
-    if (alignBits != 0)
-    {
-        u32 align = 1u << (alignBits >> 24);
-        return (u8*)(((u32)((u8*)chunk + align) + 7) & ~(align - 1));
-    }
-    return (u8*)chunk + 8;
-}
-
 /**
  * Offset/Address/Size: 0xC08 | 0x801C0828 | size: 0x2A0
  */

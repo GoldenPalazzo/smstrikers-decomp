@@ -19,9 +19,6 @@ struct FreeParticles : public efList
 {
     FreeParticles()
     {
-        m_headNode = nullptr;
-        m_tailNode = nullptr;
-        m_numNodes = 0;
     }
 };
 
@@ -41,13 +38,6 @@ extern u8 (*m_Callback__14ParticleSystem)(eGLView, unsigned long, efList&, Effec
  */
 ParticleSystem::ParticleSystem(EffectsTemplate* pTemplate, EffectsSpec* pSpec)
 {
-    m_nextNode = nullptr;
-    m_prevNode = nullptr;
-
-    m_Particles.m_headNode = nullptr;
-    m_Particles.m_tailNode = nullptr;
-    m_Particles.m_numNodes = 0;
-
     m_NumInstances++;
 
     m_Mirror.f.x = 1.0f;

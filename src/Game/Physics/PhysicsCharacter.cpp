@@ -1,6 +1,7 @@
 #include "Game/Physics/PhysicsCharacter.h"
 #include "Game/Physics/PhysicsColumn.h"
 #include "Game/Physics/PhysicsFakeBall.h"
+#include "Game/Physics/PhysicsAIBall.h"
 #include "Game/Ball.h"
 #include "Game/Net.h"
 #include "Game/AI/Fielder.h"

@@ -25,17 +25,19 @@ nlArrayAllocator<AudioStream::READ_CB_INFO> AudioStream::READ_CB_INFO::s_AllocPo
 
 inline AudioStreamBuffer* AudioBufferMgr::GetFreeBuffer(AudioStream* pStream)
 {
-    unsigned long free;
-    unsigned long mask;
     AudioBufferMgr& mgr = pStream->m_BuffMgr;
     AudioStreamBuffer* pBuf;
     unsigned long i = 0;
+    unsigned long free;
+    unsigned long mask;
+    unsigned long test;
 
     for (unsigned long j = 0; j < mgr.m_BufferCount; j++)
     {
         free = mgr.m_BuffersFree;
         mask = 1 << i;
-        bool test = free & mask;
+        test = free & mask;
+        test = (-(long)test | test) >> 31;
         if ((int)test == 1)
         {
             pBuf = &mgr.m_Buffers[i];
@@ -808,12 +810,10 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
 
 /**
  * Offset/Address/Size: 0xA48 | 0x801C81F8 | size: 0x384
- * TODO: 99.04% match - allocation result, LPF values, and header-read loop use different registers
+ * TODO: 95.82% match - remaining register allocation differs in allocation and header read loops
  */
 void GCAudioStreaming::StereoAudioStream::Warm(bool CoolOnStop)
 {
-    unsigned long buffer;
-
     m_State = SS_Warming;
     m_Flags &= ~(1 << SF_SeriousStop);
     m_Flags = (m_Flags & ~(1 << SF_CoolOnStop)) | ((unsigned long)CoolOnStop << SF_CoolOnStop);
@@ -879,7 +879,7 @@ void GCAudioStreaming::StereoAudioStream::Warm(bool CoolOnStop)
     void* pInterlvHdr = nlMalloc(sizeof(INTERLEAVED_ADPCM_HEADER), 0x20, true);
     nlReadAsync(m_pFile, pInterlvHdr, sizeof(INTERLEAVED_ADPCM_HEADER), _InterleavedHdrReadCB, (unsigned long)this);
 
-    for (buffer = 0; buffer < 2; buffer++)
+    for (unsigned long buffer = 0; buffer < 2; buffer++)
     {
         void* pADPCMHdr = (void*)(((unsigned long)m_BuffMgr.m_ADPCMHdrMem + 0x1F) & ~0x1F);
 
@@ -889,9 +889,8 @@ void GCAudioStreaming::StereoAudioStream::Warm(bool CoolOnStop)
 
         if (pCBInfo)
         {
-            AudioStreamBuffer* pBuffer = m_Buffers[buffer];
             pCBInfo->m_next = (READ_CB_INFO*)this;
-            pCBInfo->pBuffer = pBuffer;
+            pCBInfo->pBuffer = m_Buffers[buffer];
         }
 
         nlReadAsync(m_pFile, pADPCMHdr, sizeof(sDSPADPCM), _HdrReadCB, (unsigned long)pCBInfo);

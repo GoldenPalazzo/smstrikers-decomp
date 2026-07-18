@@ -1,4 +1,3 @@
-#define BASICSTRING_INLINE_ERASE
 #include "Game/FE/feHelpFuncs.h"
 
 #include "Game/FE/FEAudio.h"
@@ -205,28 +204,28 @@ TakeGameMemSnapshot::Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStr
     char s[0x40];
     nlSNPrintf(s, 0x40, "%u", t);
 
-    BasicStringData<char>* data = (BasicStringData<char>*)::Detail::TempStringAllocator::allocate(0x10);
+    BasicString<char, ::Detail::TempStringAllocator>::Data* data = (BasicString<char, ::Detail::TempStringAllocator>::Data*)::Detail::TempStringAllocator::allocate(0x10);
     if (data != 0)
     {
         const char* str = s;
         const char* p = str;
 
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
+        data->mData.mData = 0;
+        data->mData.mSize = 0;
+        data->mData.mCapacity = 0;
 
         while (*p++ != 0)
         {
-            data->mSize++;
+            data->mData.mSize++;
         }
 
-        data->mSize++;
-        data->mData = (char*)::Detail::TempStringAllocator::allocate(data->mSize + 1);
-        data->mCapacity = data->mSize;
+        data->mData.mSize++;
+        data->mData.mData = (char*)::Detail::TempStringAllocator::allocate(data->mData.mSize + 1);
+        data->mData.mCapacity = data->mData.mSize;
 
-        for (int i = 0; i < data->mSize; i++)
+        for (int i = 0; i < data->mData.mSize; i++)
         {
-            data->mData[i] = *str++;
+            data->mData.mData[i] = *str++;
         }
 
         data->mRefCount = 1;
@@ -247,28 +246,28 @@ TakeGameMemSnapshot::Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStr
     char s[0x40];
     nlSNPrintf(s, 0x40, "%u", t);
 
-    BasicStringData<char>* data = (BasicStringData<char>*)::Detail::TempStringAllocator::allocate(0x10);
+    BasicString<char, ::Detail::TempStringAllocator>::Data* data = (BasicString<char, ::Detail::TempStringAllocator>::Data*)::Detail::TempStringAllocator::allocate(0x10);
     if (data != 0)
     {
         const char* str = s;
         const char* p = str;
 
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
+        data->mData.mData = 0;
+        data->mData.mSize = 0;
+        data->mData.mCapacity = 0;
 
         while (*p++ != 0)
         {
-            data->mSize++;
+            data->mData.mSize++;
         }
 
-        data->mSize++;
-        data->mData = (char*)::Detail::TempStringAllocator::allocate(data->mSize + 1);
-        data->mCapacity = data->mSize;
+        data->mData.mSize++;
+        data->mData.mData = (char*)::Detail::TempStringAllocator::allocate(data->mData.mSize + 1);
+        data->mData.mCapacity = data->mData.mSize;
 
-        for (int i = 0; i < data->mSize; i++)
+        for (int i = 0; i < data->mData.mSize; i++)
         {
-            data->mData[i] = *str++;
+            data->mData.mData[i] = *str++;
         }
 
         data->mRefCount = 1;
@@ -287,7 +286,7 @@ TakeGameMemSnapshot::Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStr
 
 /**
  * Offset/Address/Size: 0xED8 | 0x800A579C | size: 0xD74
- * TODO: 99.79% match - insert copy-on-write allocation and pointer roles use different registers.
+ * TODO: 99.37% match - r27/r28/r29 register roles differ in the erase and insert COW paths.
  */
 
 // /**
@@ -543,9 +542,9 @@ eCharacterClass ConvertToCharacterClass(eSidekickID sidekickID)
 /**
  * Offset/Address/Size: 0x1020 | 0x800A40DC | size: 0x14
  */
-char* GetTeamName(eTeamID teamID)
+const char* GetTeamName(eTeamID teamID)
 {
-    return (char*)NameTeamTable[teamID].name;
+    return NameTeamTable[teamID].name;
 }
 
 /**
@@ -1083,67 +1082,56 @@ public:
 template <typename StringType, typename T1, typename T2, typename T3>
 StringType Format(const StringType& format, const T1& value1, const T2& value2, const T3& value3);
 
-typedef BasicString<char, ::Detail::TempStringAllocator> SnapshotFormatString;
-
-static inline void SnapshotEraseRange(SnapshotFormatString& string, const char* begin, const char* end)
-{
-    string[0];
-    BasicStringData<char>* data = string.m_data;
-    int size = end - begin;
-    int offset = begin - data->mData;
-    char* at = data->mData + offset;
-    while (end != data->mData + data->mSize)
-    {
-        *at = *end;
-        end++;
-        at++;
-    }
-    data->mSize -= size;
-}
-
-static inline char* SnapshotBegin(SnapshotFormatString& string)
-{
-    string[0];
-    return string.m_data ? string.m_data->mData : (char*)0;
-}
-
-static inline char* SnapshotEnd(SnapshotFormatString& string)
-{
-    string[(int)(string.m_data ? string.m_data->mSize - 1 : 0)];
-    return string.m_data ? string.m_data->mData + string.m_data->mSize - 1 : (char*)0;
-}
-
 template <typename StringType>
 template <typename T>
 FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
 {
     StringType insert = LexicalCast<StringType, T>(t);
 
-    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
+    for (int i = 0; i < (mString.mData ? mString.mData->mData.mSize - 1 : 0); i++)
     {
         if (mString[i] != '{')
             continue;
 
-        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
+        if (i + 1 >= (mString.mData ? mString.mData->mData.mSize - 1 : 0))
             continue;
 
         typename StringType::value_type* matchString = &mString[i];
         if (mCurrentPos != matchString[1] - '0')
             continue;
 
-        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
+        if (i + 2 >= (mString.mData ? mString.mData->mData.mSize - 1 : 0))
             continue;
 
         typename StringType::value_type* matchStringEnd = &mString[i];
         if (matchStringEnd[2] != '}')
             continue;
 
+        typename StringType::value_type* eraseBegin;
+        typename StringType::value_type* eraseEnd;
         mString[0];
-        SnapshotEraseRange(
-            mString,
-            ((void)mString[0], (mString.m_data ? mString.m_data->mData : (typename StringType::value_type*)0) + i),
-            (mString.m_data ? mString.m_data->mData : (typename StringType::value_type*)0) + i + 3);
-        mString.insert(SnapshotBegin(mString) + i, SnapshotBegin(insert), SnapshotEnd(insert));
+        eraseEnd = (mString.mData ? mString.mData->mData.mData : (typename StringType::value_type*)0) + i + 3;
+        mString[0];
+        eraseBegin = (mString.mData ? mString.mData->mData.mData : (typename StringType::value_type*)0) + i;
+        mString[0];
+        typename StringType::Data* eraseData = mString.mData;
+        int eraseSize = eraseEnd - eraseBegin;
+        int eraseOffset = eraseBegin - eraseData->mData.mData;
+        typename StringType::value_type* eraseAt = eraseData->mData.mData + eraseOffset;
+        while (eraseEnd != eraseData->mData.mData + eraseData->mData.mSize)
+        {
+            *eraseAt = *eraseEnd;
+            eraseEnd++;
+            eraseAt++;
+        }
+        eraseData->mData.mSize -= eraseSize;
+        StringType& insertRef = insert;
+        mString[i];
+        typename StringType::value_type* mStringData = mString.mData ? mString.mData->mData.mData : 0;
+        insertRef[0];
+        typename StringType::value_type* insertBegin = insertRef.mData ? insertRef.mData->mData.mData : 0;
+        insertRef[(int)(insertRef.mData ? insertRef.mData->mData.mSize - 1 : 0)];
+        mString.insert(mStringData + i, insertBegin, insertRef.mData ? insertRef.mData->mData.mData + insertRef.mData->mData.mSize - 1 : (typename StringType::value_type*)0);
     }
 
     mCurrentPos++;
@@ -1151,17 +1139,6 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
 }
 
 } // namespace TakeGameMemSnapshot
-
-// Force instantiation of TakeGameMemSnapshot::FormatImpl -- REMOVE once real callers exist.
-void feHelpFuncs_stub()
-{
-    TakeGameMemSnapshot::FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl;
-    BasicString<char, Detail::TempStringAllocator> result = (BasicString<char, Detail::TempStringAllocator>)impl;
-    unsigned long ul = 0;
-    impl % ul;
-    unsigned int ui = 0;
-    impl % ui;
-}
 
 /**
  * Offset/Address/Size: 0x0 | 0x800A48C4 | size: 0x13C
@@ -1179,14 +1156,14 @@ TakeGameMemSnapshot::Format<BasicString<char, ::Detail::TempStringAllocator>, un
         BasicString<char, ::Detail::TempStringAllocator> mString;
         int mCurrentPos;
 
-        FormatImplLayoutCharTempULUIUI(BasicStringData<char>* data)
+        FormatImplLayoutCharTempULUIUI(BasicString<char, ::Detail::TempStringAllocator>::Data* data)
             : mString(data)
             , mCurrentPos(0)
         {
         }
     };
 
-    BasicStringData<char>* data = format.m_data;
+    BasicString<char, ::Detail::TempStringAllocator>::Data* data = format.mData;
     if (data != 0)
     {
         data->mRefCount++;
@@ -1242,7 +1219,7 @@ void TakeGameMemSnapshot::WriteToDisk()
         pFile = fopen(filename, "wt");
         BasicString<char, ::Detail::TempStringAllocator> header;
         header.AppendInPlace("hcaptain,hsidekick,acaptain,asidekick,stadium,largestfree,freevm,largestfreevm\n");
-        fwrite(header.c_str(), 1, header.m_data ? header.m_data->mSize - 1 : 0, pFile);
+        fwrite(header.c_str(), 1, header.size(), pFile);
     }
     fclose(pFile);
 
@@ -1267,7 +1244,7 @@ void TakeGameMemSnapshot::WriteToDisk()
     data.AppendInPlace(StadiumNames[GameInfoManager::GetInstance()->GetStadium()]);
     data.AppendInPlace(",");
 
-    fwrite(data.c_str(), 1, data.m_data ? data.m_data->mSize - 1 : 0, pFile);
+    fwrite(data.c_str(), 1, data.size(), pFile);
 
     BasicString<char, ::Detail::TempStringAllocator> stats;
     {
@@ -1283,7 +1260,7 @@ void TakeGameMemSnapshot::WriteToDisk()
         stats = Format<BasicString<char, ::Detail::TempStringAllocator>, unsigned long, unsigned int, unsigned int>(fmt, largestFree, freeVM, largestFreeVM);
     }
 
-    fwrite(stats.c_str(), 1, stats.m_data ? stats.m_data->mSize - 1 : 0, pFile);
+    fwrite(stats.c_str(), 1, stats.size(), pFile);
     fclose(pFile);
 }
 

@@ -1,4 +1,3 @@
-#define BASICSTRING_INLINE_ERASE
 #include "Game/AI/Variant.h"
 #include "NL/nlFormat.h"
 #include "NL/nlLexicalCast.h"
@@ -31,85 +30,6 @@ template NLString LexicalCast<NLString, unsigned long>(const unsigned long&);
 // {
 // }
 
-typedef NLString (*Format1FFn)(const NLString&, const float&);
-typedef NLString (*Format3FFn)(const NLString&, const float&, const float&, const float&);
-
-void Variant_stub()
-{
-    NLString format;
-    float value1 = 0.0f;
-    float value2 = 0.0f;
-    float value3 = 0.0f;
-    volatile Format1FFn fn1 = Format<NLString, float>;
-    fn1(format, value1);
-    volatile Format3FFn fn3 = Format<NLString, float, float, float>;
-    fn3(format, value1, value2, value3);
-}
-
-/**
- * Offset/Address/Size: 0x1E4C | 0x800690A4 | size: 0xD74
- * TODO: 99.42% match - remaining copy-on-write temp register swaps around insert.
- */
-template <>
-template <>
-FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> >::operator% <unsigned long>(const unsigned long& t)
-{
-    BasicString<char, Detail::TempStringAllocator> insert = LexicalCast<BasicString<char, Detail::TempStringAllocator>, unsigned long>(t);
-
-    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
-    {
-        if (mString[i] != '{')
-            continue;
-
-        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        char* marker = &mString[i];
-        if (mCurrentPos != marker[1] - '0')
-            continue;
-
-        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        char* markerEnd = &mString[i];
-        if (markerEnd[2] != '}')
-            continue;
-
-        char* eraseBegin;
-        char* eraseEnd;
-        char* eraseAt;
-        int eraseSize;
-        int eraseOffset;
-        BasicStringData<char>* eraseData;
-        mString[0];
-        eraseEnd = (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3;
-        mString[0];
-        eraseBegin = (mString.m_data ? mString.m_data->mData : (char*)0) + i;
-        mString[0];
-        eraseData = mString.m_data;
-        eraseSize = eraseEnd - eraseBegin;
-        eraseOffset = eraseBegin - eraseData->mData;
-        eraseAt = eraseData->mData + eraseOffset;
-        while (eraseEnd != eraseData->mData + eraseData->mSize)
-        {
-            *eraseAt = *eraseEnd;
-            eraseEnd++;
-            eraseAt++;
-        }
-        eraseData->mSize -= eraseSize;
-        mString[i];
-        char* mStringData = mString.m_data ? mString.m_data->mData : 0;
-        insert[0];
-        char* insertBegin = insert.m_data ? insert.m_data->mData : 0;
-        insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0);
-    }
-
-    mCurrentPos++;
-    return *this;
-}
-
 // /**
 //  * Offset/Address/Size: 0x1D38 | 0x80068F90 | size: 0x114
 //  */
@@ -117,120 +37,12 @@ FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
 // {
 // }
 
-/**
- * Offset/Address/Size: 0xFC4 | 0x8006821C | size: 0xD74
- * TODO: 98.96% match - remaining erase/insert register swaps and insert pointer branch offsets.
- */
-template <>
-template <>
-FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> >::operator% <char>(const char& t)
-{
-    BasicString<char, Detail::TempStringAllocator> insert = LexicalCast<BasicString<char, Detail::TempStringAllocator>, char>(t);
-
-    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
-    {
-        if (mString[i] != '{')
-            continue;
-
-        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        char* marker = &mString[i];
-        if (mCurrentPos != marker[1] - '0')
-            continue;
-
-        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        char* markerEnd = &mString[i];
-        if (markerEnd[2] != '}')
-            continue;
-
-        char* eraseBegin;
-        char* eraseEnd;
-        mString[0];
-        eraseEnd = (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3;
-        mString[0];
-        eraseBegin = (mString.m_data ? mString.m_data->mData : (char*)0) + i;
-        mString.erase(eraseBegin, eraseEnd);
-        mString[i];
-        char* mStringData = mString.m_data ? mString.m_data->mData : 0;
-        insert[0];
-        char* insertBegin = insert.m_data ? insert.m_data->mData : 0;
-        insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0);
-    }
-
-    mCurrentPos++;
-    return *this;
-}
-
 // /**
 //  * Offset/Address/Size: 0xEB0 | 0x80068108 | size: 0x114
 //  */
 // void Format<BasicString<char, Detail::TempStringAllocator>, char>(const BasicString<char, Detail::TempStringAllocator>&, const char&)
 // {
 // }
-
-/**
- * Offset/Address/Size: 0x13C | 0x80067394 | size: 0xD74
- * TODO: 99.59% match - copy-on-write temp register swap (r26 vs r27) and marker add operand order.
- */
-typedef FormatImpl<NLString> NLFormatImpl;
-
-static inline void EraseRange(NLString& s, const char* begin, const char* end)
-{
-    s[0];
-    BasicStringData<char>* data = s.m_data;
-    int size = end - begin;
-    int offset = begin - data->mData;
-    char* at = data->mData + offset;
-    while (end != data->mData + data->mSize)
-    {
-        *at = *end;
-        end++;
-        at++;
-    }
-    data->mSize -= size;
-}
-
-template <>
-NLFormatImpl& NLFormatImpl::operator% <float>(const float& t)
-{
-    NLString insert = LexicalCast<NLString, float>(t);
-
-    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
-    {
-        if (mString[i] != (char)'{')
-            continue;
-
-        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        char* marker = &mString[i];
-        if (mCurrentPos != marker[1] - '0')
-            continue;
-
-        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        char* markerEnd = &mString[i];
-        if (markerEnd[2] != (char)'}')
-            continue;
-
-        mString[0];
-        EraseRange(mString, ((void)mString[0], (mString.m_data ? mString.m_data->mData : (char*)0) + i), (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3);
-        mString[i];
-        char* mStringData = mString.m_data ? mString.m_data->mData : 0;
-        char* insertBegin = ((void)insert[0], insert.m_data ? insert.m_data->mData : 0);
-        insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0);
-    }
-
-    mCurrentPos++;
-    return *this;
-}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x80067258 | size: 0x13C
@@ -311,36 +123,14 @@ NLString Variant::ToString() const
             break;
         }
 
-        {
-            BasicStringData<char>* data = dataString.m_data;
-            if (data != 0)
-            {
-                data->mRefCount++;
-            }
-            else
-            {
-                data = 0;
-            }
-            toString = NLString(data);
-        }
+        toString = dataString;
     }
     else
     {
         toString = "N/A";
     }
 
-    {
-        BasicStringData<char>* data = toString.m_data;
-        if (data != 0)
-        {
-            data->mRefCount++;
-        }
-        else
-        {
-            data = 0;
-        }
-        return NLString(data);
-    }
+    return toString;
 }
 #pragma optimization_level 4
 

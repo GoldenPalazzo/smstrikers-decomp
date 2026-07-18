@@ -6,23 +6,6 @@
 #include "NL/nlBasicString.h"
 #include "NL/nlPrint.h"
 
-// Expands to a forward-declaration of the by-value LexicalCast primary
-// templates inside the enclosing namespace. Used by translation units
-// (e.g. TakeGameMemSnapshot) that ship their own parallel copy of the
-// template machinery with `static To Do(From)` (by-value) instead of
-// the by-const-ref signature used at global scope below.
-#define NL_DECLARE_LOCAL_LEXICAL_CAST_BY_VALUE() \
-    namespace Detail                             \
-    {                                            \
-    template <typename To, typename From>        \
-    struct LexicalCastImpl                       \
-    {                                            \
-        static To Do(From);                      \
-    };                                           \
-    }                                            \
-    template <typename To, typename From>        \
-    To LexicalCast(const From& value)
-
 namespace Detail
 {
 template <typename To, typename From>
@@ -30,14 +13,17 @@ struct LexicalCastImpl
 {
     static To Do(const From& f);
 };
-} // namespace Detail
 
-namespace Detail
-{
 template <typename To>
 struct LexicalCastImpl<To, const char*>
 {
     static To Do(const char* s);
+};
+
+template <>
+struct LexicalCastImpl<bool, const char*>
+{
+    static bool Do(const char* s) { return strcmp("true", s) == 0; }
 };
 
 template <typename To>
@@ -69,12 +55,31 @@ struct LexicalCastImpl<To, bool>
 {
     static To Do(bool t);
 };
+
+template <>
+struct LexicalCastImpl<bool, bool>
+{
+    static bool Do(bool t) { return t; }
+};
+
+template <>
+struct LexicalCastImpl<bool, float>
+{
+    static bool Do(float t)
+    {
+        bool result;
+        if (t)
+            result = true;
+        else
+            result = false;
+        return result;
+    }
+};
 } // namespace Detail
 
 typedef BasicString<unsigned short, Detail::TempStringAllocator> WideBasicString;
 typedef BasicString<char, Detail::TempStringAllocator> NLString;
 
-// Identity cast: WideBasicString -> WideBasicString (copy)
 template <>
 inline WideBasicString Detail::LexicalCastImpl<WideBasicString, WideBasicString>::Do(
     const WideBasicString& f)
@@ -82,281 +87,92 @@ inline WideBasicString Detail::LexicalCastImpl<WideBasicString, WideBasicString>
     return f;
 }
 
-/**
- * Offset/Address/Size: 0x80 | 0x8009CF48 | size: 0xF4
- */
-#pragma optimization_level 2
-#pragma opt_strength_reduction on
 template <>
 inline WideBasicString Detail::LexicalCastImpl<WideBasicString, const unsigned short*>::Do(
     const unsigned short* const& f)
 {
     return WideBasicString(f);
 }
-#pragma opt_strength_reduction reset
-#pragma optimization_level 4
 
-/**
- * Offset/Address/Size: 0x0 | 0x800BDB88 | size: 0xE8
- * TODO: 97.16% match - r29/r30 register swap for s and data pointers
- */
 template <>
 inline NLString Detail::LexicalCastImpl<NLString, const char*>::Do(const char* s)
 {
     return NLString(s);
 }
 
-#ifndef NL_NO_LEXICALCAST_NLSTRING_INT
-/**
- * Offset/Address/Size: 0x39064 | 0x8003C084 | size: 0x100
- */
-#pragma optimization_level 2
 template <>
 inline NLString Detail::LexicalCastImpl<NLString, int>::Do(int t)
 {
     char s[0x40];
     nlSNPrintf(s, 0x40, "%i", t);
-
-    BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(0x10);
-    if (data != 0)
-    {
-        const char* str = s;
-        const char* p = str;
-
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        while (*p++ != 0)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (char*)Detail::TempStringAllocator::allocate(data->mSize + 1);
-        data->mCapacity = data->mSize;
-
-        for (int i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *str++;
-        }
-
-        data->mRefCount = 1;
-    }
-
-    return (NLString)data;
+    return NLString(s);
 }
-#pragma optimization_level 4
-#endif
 
-/**
- * Offset/Address/Size: 0x168 | 0x8006A094 | size: 0x100
- */
-#pragma optimization_level 2
 template <>
 inline NLString Detail::LexicalCastImpl<NLString, unsigned long>::Do(unsigned long t)
 {
     char s[0x40];
     nlSNPrintf(s, 0x40, "%u", t);
-
-    BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(0x10);
-    if (data != 0)
-    {
-        const char* str = s;
-        const char* p = str;
-
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        while (*p++ != 0)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (char*)Detail::TempStringAllocator::allocate(data->mSize + 1);
-        data->mCapacity = data->mSize;
-
-        for (int i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *str++;
-        }
-
-        data->mRefCount = 1;
-    }
-
-    return (NLString)data;
-}
-#pragma optimization_level 4
-
-static inline BasicStringData<char>* BuildLexicalCastStringData(char* string)
-{
-    BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
-    if (data != 0)
-    {
-        char* start = string;
-        char* p = start;
-
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        while (*p++ != 0)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-        data->mCapacity = data->mSize;
-
-        for (int i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *start;
-            start++;
-        }
-
-        data->mRefCount = 1;
-    }
-    return data;
+    return NLString(s);
 }
 
-#pragma optimization_level 2
-/**
- * Offset/Address/Size: 0x34 | 0x80069F60 | size: 0x104
- */
 template <>
 inline NLString Detail::LexicalCastImpl<NLString, char>::Do(char t)
 {
-    char string[0x40];
-    nlSNPrintf(string, 0x40, "%c", t);
-    return NLString(BuildLexicalCastStringData(string));
+    char s[0x40];
+    nlSNPrintf(s, 0x40, "%c", t);
+    return NLString(s);
 }
-#pragma optimization_level 4
 
-/**
- * Offset/Address/Size: 0x390F4 | 0x8003C1B4 | size: 0xFC
- */
-#pragma optimization_level 2
 template <>
-inline NLString Detail::LexicalCastImpl<NLString, float>::Do(float f)
+inline NLString Detail::LexicalCastImpl<NLString, float>::Do(float t)
 {
     char s[0x40];
-    nlSNPrintf(s, 0x40, "%f", f);
-
-    BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(0x10);
-    if (data != 0)
-    {
-        const char* str = s;
-        const char* p = str;
-
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        while (*p++ != 0)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (char*)Detail::TempStringAllocator::allocate(data->mSize + 1);
-        data->mCapacity = data->mSize;
-
-        for (int i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *str++;
-        }
-
-        data->mRefCount = 1;
-    }
-
-    return (NLString)data;
+    nlSNPrintf(s, 0x40, "%f", t);
+    return NLString(s);
 }
-#pragma optimization_level 4
 
 template <>
 inline NLString Detail::LexicalCastImpl<NLString, bool>::Do(bool t)
 {
     if (t)
     {
-        BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(sizeof(BasicStringData<char>), 8, true);
-        if (data != 0)
-        {
-            const char* s = "true";
-            data->mData = 0;
-            data->mSize = 0;
-            data->mCapacity = 0;
-
-            const char* p = s;
-            while (*p++ != 0)
-            {
-                data->mSize++;
-            }
-
-            data->mSize++;
-            data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-            data->mCapacity = data->mSize;
-
-            for (int i = 0; i < data->mSize; i++)
-            {
-                data->mData[i] = *s++;
-            }
-
-            data->mRefCount = 1;
-        }
-        return NLString((BasicStringData<char>*)data);
+        return NLString("true");
     }
-    else
-    {
-        BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(sizeof(BasicStringData<char>), 8, true);
-        if (data != 0)
-        {
-            const char* s = "false";
-            data->mData = 0;
-            data->mSize = 0;
-            data->mCapacity = 0;
-
-            const char* p = s;
-            while (*p++ != 0)
-            {
-                data->mSize++;
-            }
-
-            data->mSize++;
-            data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-            data->mCapacity = data->mSize;
-
-            for (int i = 0; i < data->mSize; i++)
-            {
-                data->mData[i] = *s++;
-            }
-
-            data->mRefCount = 1;
-        }
-        return NLString((BasicStringData<char>*)data);
-    }
+    return NLString("false");
 }
 
-#ifdef CHARACTERTEMPLATE_LEXICALCAST_BOOL_DEFERRED
-// CharacterTemplate.cpp only: give the <To,bool> impl an out-of-line body so
-// LexicalCast<bool,bool> becomes a DEFERRED implicit instantiation (drains after
-// the nlList bucket), which puts __sinit in the nlLexicalCast.h linkonce section.
 namespace Detail
 {
 template <typename To>
+inline To LexicalCastImpl<To, const char*>::Do(const char* s)
+{
+    return (To)atof(s);
+}
+
+template <typename To>
+inline To LexicalCastImpl<To, int>::Do(int t)
+{
+    return (To)t;
+}
+
+template <typename To>
+inline To LexicalCastImpl<To, float>::Do(float t)
+{
+    return (To)t;
+}
+
+template <typename To>
 inline To LexicalCastImpl<To, bool>::Do(bool t)
 {
-    return t;
+    return (To)t;
 }
-}
-#endif
+} // namespace Detail
 
 template <typename To, typename From>
-To LexicalCast(const From& f)
+To LexicalCast(const From& from)
 {
-    return Detail::LexicalCastImpl<To, From>::Do(f);
+    return Detail::LexicalCastImpl<To, From>::Do(from);
 }
 
 template <>
@@ -366,35 +182,6 @@ inline NLString LexicalCast<NLString, char>(const char& f)
 }
 
 template <>
-int LexicalCast<int, float>(const float& value);
-template <>
-int LexicalCast<int, int>(const int& value);
-template <>
-int LexicalCast<int, bool>(const bool& value);
-template <>
-int LexicalCast<int, const char*>(const char* const& value);
-
-template <>
-float LexicalCast<float, float>(const float& value);
-template <>
-float LexicalCast<float, int>(const int& value);
-template <>
-float LexicalCast<float, bool>(const bool& value);
-template <>
-float LexicalCast<float, const char*>(const char* const& value);
-
-#ifndef CHARACTERTEMPLATE_LEXICALCAST_BOOL_DEFERRED
-template <>
-bool LexicalCast<bool, bool>(const bool& value);
-#endif
-template <>
-bool LexicalCast<bool, int>(const int& value);
-template <>
-bool LexicalCast<bool, float>(const float& value);
-template <>
-bool LexicalCast<bool, const char*>(const char* const& value);
-
-template <>
 const char* LexicalCast<const char*, const char*>(const char* const& value);
 template <>
 const char* LexicalCast<const char*, int>(const int& value);
@@ -402,109 +189,5 @@ template <>
 const char* LexicalCast<const char*, float>(const float& value);
 template <>
 const char* LexicalCast<const char*, bool>(const bool& value);
-
-#ifdef NL_LEXICALCAST_DEFINE
-
-/* ----------------------------------------------------------------------
-   Definitions (emitted in EXACT order below) -- in ONE TU only.
-   Do this in exactly one .cpp:
-       #define NL_LEXICALCAST_DEFINE
-       #include "nlLexicalCast.h"
-
-   Implementation locations:
-   - int/float specializations: CharacterTweaks.cpp
-   - bool and BasicString specializations: To be determined
-   ---------------------------------------------------------------------- */
-
-template <>
-int LexicalCast<int, float>(const float& v)
-{
-    FORCE_DONT_INLINE;
-    return (int)v;
-}
-template <>
-int LexicalCast<int, int>(const int& v)
-{
-    FORCE_DONT_INLINE;
-    return v;
-}
-template <>
-int LexicalCast<int, bool>(const bool& v)
-{
-    FORCE_DONT_INLINE;
-    return (int)v;
-}
-template <>
-float LexicalCast<float, float>(const float& v)
-{
-    FORCE_DONT_INLINE;
-    return v;
-}
-template <>
-float LexicalCast<float, int>(const int& v)
-{
-    FORCE_DONT_INLINE;
-    return (float)v;
-}
-template <>
-float LexicalCast<float, bool>(const bool& v)
-{
-    FORCE_DONT_INLINE;
-    return (float)v;
-}
-template <>
-float LexicalCast<float, const char*>(const char* const& s)
-{
-    FORCE_DONT_INLINE;
-    return (float)atof(s);
-}
-template <>
-int LexicalCast<int, const char*>(const char* const& s)
-{
-    FORCE_DONT_INLINE;
-    return (int)atof(s);
-}
-#endif // NL_LEXICALCAST_DEFINE
-
-#ifdef NL_LEXICALCAST_DEFINE_BOOL
-
-#ifdef CHARACTERTEMPLATE_LEXICALCAST_WEAK
-#define NL_LEXICALCAST_BOOL_LINKAGE inline
-#else
-#define NL_LEXICALCAST_BOOL_LINKAGE
-#endif
-
-#ifndef CHARACTERTEMPLATE_LEXICALCAST_BOOL_DEFERRED
-template <>
-NL_LEXICALCAST_BOOL_LINKAGE bool LexicalCast<bool, bool>(const bool& v)
-{
-    FORCE_DONT_INLINE;
-    return v;
-}
-#endif
-template <>
-NL_LEXICALCAST_BOOL_LINKAGE bool LexicalCast<bool, int>(const int& v)
-{
-    FORCE_DONT_INLINE;
-    return v != 0;
-}
-template <>
-NL_LEXICALCAST_BOOL_LINKAGE bool LexicalCast<bool, float>(const float& v)
-{
-    bool result;
-    if (v)
-        result = true;
-    else
-        result = false;
-    return result;
-}
-template <>
-NL_LEXICALCAST_BOOL_LINKAGE bool LexicalCast<bool, const char*>(const char* const& s)
-{
-    FORCE_DONT_INLINE;
-    return strcmp("true", s) == 0;
-}
-
-#endif // NL_LEXICALCAST_DEFINE_BOOL
 
 #endif // _NLLEXICALCAST_H_

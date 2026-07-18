@@ -1,15 +1,16 @@
-#define NLDLRING_FORCE_DONT_INLINE
 #include "Game/Sys/audio.h"
+#include "Game/Sys/GCStream.h"
+#include "Game/Audio/AudioStream.h"
 #include "Game/Sys/debug.h"
 #include "Game/Game.h"
 #include "Game/GameAudio.h"
 #include "Game/Audio/WorldAudio.h"
 #include "Game/Audio/AudioLoader.h"
-#include "Game/Sys/GCStream.h"
+#include "Game/Camera/CameraMan.h"
 #include "Game/TransitionTask.h"
 #include "Game/BasicStadium.h"
 
-#include "NL/nlBSearch.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlList.h"
 #include "NL/nlMemory.h"
 #include "NL/nlSortedSlot.h"
@@ -53,45 +54,11 @@ namespace AudioScriptEventMgr
 void Update();
 }
 
-class cBaseCamera;
-class cCameraManager
-{
-public:
-    static cBaseCamera* m_cameraStack;
-    static void GetViewVector(nlVector3&);
-    static void GetUpVector(nlVector3&);
-};
-
 extern bool gbTestPrintout;
 extern float gfSilenceTimer;
 extern unsigned long uCurrentSFXVolume;
 
 static const nlVector3 sListenerZero = { 0.0f, 0.0f, 0.0f };
-
-typedef DLListContainerBase<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL, BasicSlotPool<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL> > > AudioFadeContainer;
-typedef WalkHelper<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL, DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>, AudioStreamTrack::TrackManagerBase::FadeManager> AudioFadeWalkHelper;
-typedef DLListContainerBase<GCAudioStreaming::StereoAudioStream*, BasicSlotPool<DLListEntry<GCAudioStreaming::StereoAudioStream*> > > AudioStreamDeleteContainer;
-typedef DLListContainerBase<AudioStreamTrack::StreamTrack::QUEUED_STREAM, nlStaticArrayAllocator<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>, 4> > AudioQueuedStreamContainer;
-
-template void nlWalkDLRing<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>, AudioFadeContainer>(
-    DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*,
-    AudioFadeContainer*,
-    void (AudioFadeContainer::*)(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*));
-
-template void nlWalkDLRing<DLListEntry<GCAudioStreaming::StereoAudioStream*>, AudioStreamDeleteContainer>(
-    DLListEntry<GCAudioStreaming::StereoAudioStream*>*,
-    AudioStreamDeleteContainer*,
-    void (AudioStreamDeleteContainer::*)(DLListEntry<GCAudioStreaming::StereoAudioStream*>*));
-
-template void nlWalkDLRing<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>, AudioQueuedStreamContainer>(
-    DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*,
-    AudioQueuedStreamContainer*,
-    void (AudioQueuedStreamContainer::*)(DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*));
-
-template void nlWalkDLRing<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>, AudioFadeWalkHelper>(
-    DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*,
-    AudioFadeWalkHelper*,
-    void (AudioFadeWalkHelper::*)(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*));
 
 /**
  * Offset/Address/Size: 0xF0 | 0x801413B0 | size: 0x28
@@ -3756,14 +3723,6 @@ eClassType cGameSFX::GetClassType() const
 // {
 // }
 
-#pragma inline_depth(255)
-inline AudioStreamTrack::TrackManagerBase::FadeManager::~FadeManager()
-{
-    FadeList::DestroyAllEntries(&m_Fades);
-    SlotPoolBase::BaseFreeBlocks(&m_Fades.m_Allocator, sizeof(DLListEntry<STREAM_FADE_CTRL>));
-}
-#pragma inline_depth(0)
-
 /**
  * Offset/Address/Size: 0x3F8 | 0x80141ABC | size: 0x1EC
  * TODO: 98.41% match - this pointer, queued stream, stream pointer, and volume locals still use different registers
@@ -3871,41 +3830,6 @@ void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(Audio::MasterVolume
     }
 }
 
-/**
- * Offset/Address/Size: 0x5E4 | 0x80141CA8 | size: 0x54
- */
-template <>
-AudioStreamTrack::StreamTrack* AudioStreamTrack::TrackManager<3>::GetTrack(unsigned long Name)
-{
-
-    nlSortedSlot<AudioStreamTrack::StreamTrack, 3>::EntryLookup<AudioStreamTrack::StreamTrack>* result;
-    if (this->m_Tracks.m_EntryCount != 0)
-    {
-        result = nlBSearch(Name, this->m_Tracks.m_pEntryLookup, this->m_Tracks.m_EntryCount);
-    }
-    else
-    {
-        result = NULL;
-    }
-    if (result != NULL)
-    {
-        return result->pEntry;
-    }
-    return NULL;
-}
-
-/**
- * Offset/Address/Size: 0x638 | 0x80141CFC | size: 0x78
- */
-template <>
-void AudioStreamTrack::TrackManager<3>::StopAllTracks(unsigned long FadeOut)
-{
-    for (unsigned long track = 0; track < m_Tracks.m_EntryCount; track++)
-    {
-        m_Tracks.m_pEntryLookup[track].pEntry->Stop(FadeOut);
-    }
-}
-
 // /**
 //  * Offset/Address/Size: 0x6B0 | 0x80141D74 | size: 0xF0
 //  */
@@ -3985,26 +3909,7 @@ void AudioStreamTrack::TrackManager<3>::DestroyAllTracks()
         {
             track->m_InFakePause = 0;
             track->Stop(0);
-
-            if (&track->m_IdleCallback)
-            {
-                if (&track->m_IdleCallback)
-                {
-                    if (track->m_IdleCallback.mTag == FUNCTOR)
-                    {
-                        delete track->m_IdleCallback.mFunctor;
-                    }
-                    track->m_IdleCallback.mTag = EMPTY;
-                }
-            }
-
-            if (&track->m_QueuedStreams)
-            {
-                typedef DLListContainerBase<AudioStreamTrack::StreamTrack::QUEUED_STREAM, nlStaticArrayAllocator<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>, 4> > QContainer;
-                void (QContainer::*func)(DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*) = &QContainer::DeleteEntry;
-                nlWalkDLRing(track->m_QueuedStreams.m_Head, &track->m_QueuedStreams, func);
-                track->m_QueuedStreams.m_Head = NULL;
-            }
+            track->~StreamTrack();
         }
 
         if (track == NULL)
@@ -4053,16 +3958,6 @@ void AudioStreamTrack::TrackManager<3>::DestroyAllTracks()
  * Offset/Address/Size: 0x1F4 | 0x801418B8 | size: 0x204
  * TODO: 99.94% match - stream delete and fade cleanup pointer-to-member stack slots are swapped
  */
-#pragma inline_depth(255)
-template <>
-AudioStreamTrack::TrackManager<3>::~TrackManager()
-{
-}
-#pragma inline_depth(0)
-
-template class nlStaticSortedSlot<AudioStreamTrack::StreamTrack, 3>;
-template class AudioStreamTrack::TrackManager<3>;
-
 // /**
 //  * Offset/Address/Size: 0x60 | 0x80142294 | size: 0x60
 //  */
@@ -4111,60 +4006,3 @@ nlDLRingGetStart(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::ST
  */
 template DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*
 nlDLRingGetStart(DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*);
-
-/**
- * Offset/Address/Size: 0x0 | 0x80142234 | size: 0x60
- */
-template void nlWalkRing<DLListEntry<GCAudioStreaming::StereoAudioStream*>,
-    DLListContainerBase<GCAudioStreaming::StereoAudioStream*,
-        BasicSlotPool<DLListEntry<GCAudioStreaming::StereoAudioStream*> > > >(
-    DLListEntry<GCAudioStreaming::StereoAudioStream*>*,
-    DLListContainerBase<GCAudioStreaming::StereoAudioStream*,
-        BasicSlotPool<DLListEntry<GCAudioStreaming::StereoAudioStream*> > >*,
-    void (DLListContainerBase<GCAudioStreaming::StereoAudioStream*,
-        BasicSlotPool<DLListEntry<GCAudioStreaming::StereoAudioStream*> > >::*)(
-        DLListEntry<GCAudioStreaming::StereoAudioStream*>*));
-
-/**
- * Offset/Address/Size: 0x60 | 0x80142294 | size: 0x60
- */
-template void nlWalkRing<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>,
-    DLListContainerBase<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL,
-        BasicSlotPool<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL> > > >(
-    DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*,
-    DLListContainerBase<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL,
-        BasicSlotPool<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL> > >*,
-    void (DLListContainerBase<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL,
-        BasicSlotPool<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL> > >::*)(
-        DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*));
-
-/**
- * Offset/Address/Size: 0xC0 | 0x801422F4 | size: 0x60
- */
-template void nlWalkRing<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>,
-    WalkHelper<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL,
-        DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>,
-        AudioStreamTrack::TrackManagerBase::FadeManager> >(
-    DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*,
-    WalkHelper<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL,
-        DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>,
-        AudioStreamTrack::TrackManagerBase::FadeManager>*,
-    void (WalkHelper<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL,
-        DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>,
-        AudioStreamTrack::TrackManagerBase::FadeManager>::*)(
-        DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*));
-
-/**
- * Offset/Address/Size: 0x120 | 0x80142354 | size: 0x60
- */
-template void nlWalkRing<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>,
-    DLListContainerBase<AudioStreamTrack::StreamTrack::QUEUED_STREAM,
-        nlStaticArrayAllocator<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>, 4> > >(
-    DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*,
-    DLListContainerBase<AudioStreamTrack::StreamTrack::QUEUED_STREAM,
-        nlStaticArrayAllocator<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>, 4> >*,
-    void (DLListContainerBase<AudioStreamTrack::StreamTrack::QUEUED_STREAM,
-        nlStaticArrayAllocator<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>, 4> >::*)(
-        DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*));
-
-#pragma inline_depth(255)

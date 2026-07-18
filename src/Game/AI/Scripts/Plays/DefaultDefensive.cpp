@@ -2,6 +2,7 @@
 #include "Game/AI/AiUtil.h"
 #include "Game/AI/Fuzzy.h"
 #include "Game/AI/ScriptAction.h"
+#include "Game/AI/Scripts/ScriptCaching.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/GameTweaks.h"
 
@@ -13,8 +14,6 @@ extern cTeam* g_pCurrentlyUpdatingTeam;
 extern FuzzyVariant fvNotSet;
 extern cBall* g_pScriptBall;
 extern cFielder* g_pScriptCurrentMark;
-
-#include "Game/AI/Scripts/SaveConfidence.h"
 
 float Defensive(cTeam*);
 

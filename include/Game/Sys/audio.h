@@ -6,8 +6,11 @@
 #include "NL/plat/plataudio.h"
 
 #include "Game/Render/Nis.h"
-#include "Game/Audio/StreamTrack.h"
 
+namespace AudioStreamTrack
+{
+class TrackManagerBase;
+}
 extern AudioStreamTrack::TrackManagerBase* g_pTrackManager;
 
 enum FadeType
@@ -166,6 +169,14 @@ struct SoundAttributes
 namespace MasterVolume
 {
 
+enum VOLUME_GROUP
+{
+    VG_Special = 0,
+    VG_Music = 1,
+    VG_SFX = 2,
+    VG_Voice = 3,
+};
+
 float GetVoiceVolume();
 void SetVoiceVolume(float, int);
 void SetVolume(VOLUME_GROUP, float);
@@ -227,16 +238,6 @@ bool IsInited();
 bool Initialize(bool);
 bool ShutdownReverb();
 // void InitializeReverb(eStadiumID, unsigned char);
-
-/**
- * Offset/Address/Size: 0x0 | 0x80141518 | size: 0x1AC
- * TODO: 99.35% match - vtable and free-list setup use different temporary registers.
- */
-template <int N>
-void CreateTrackMgr()
-{
-    g_pTrackManager = new (8, false) AudioStreamTrack::TrackManager<N>(Audio::TrackMgrFileNameParamLookup);
-}
 
 // eCharSFX enum is defined in CharacterAudio.h
 

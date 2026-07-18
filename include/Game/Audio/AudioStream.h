@@ -1,18 +1,21 @@
 #ifndef _AUDIOSTREAM_H_
 #define _AUDIOSTREAM_H_
 
+#include "Game/Audio/AudioStreamAPI.h"
 #include "Game/Audio/PriorityStream.h"
 
 namespace Audio
 {
 
-void InitStreaming();
-void StopStreaming();
-bool TrackMgrFileNameParamLookup(const char*, char*, unsigned long);
-void CreatePriorityStreams();
-void DestroyPriorityStreams();
-PriorityStream* GetPriorityStream();
-void ConfigureStreamBuffers(unsigned long);
+/**
+ * Offset/Address/Size: 0x0 | 0x80141518 | size: 0x1AC
+ * TODO: 99.35% match - vtable and free-list setup use different temporary registers.
+ */
+template <int N>
+void CreateTrackMgr()
+{
+    g_pTrackManager = new (8, false) AudioStreamTrack::TrackManager<N>(TrackMgrFileNameParamLookup);
+}
 
 }; // namespace Audio
 

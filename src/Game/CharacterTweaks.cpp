@@ -2,7 +2,6 @@
 
 #include "Game/CharacterTweaks.h"
 
-#define NL_LEXICALCAST_DEFINE
 #include "NL/nlLexicalCast.h"
 
 #include "NL/nlConfig.h"
@@ -48,16 +47,16 @@ void PlayerTweaks::Init()
     Config cfg(Config::ALLOCATE_HIGH);
     cfg.LoadFromFile(mszFileName);
 
-    fJoggingSpeed = GetConfigFloat(cfg, "Jog Speed", 1.6f);
-    fRunningSpeed = GetConfigFloat(cfg, "Running Speed", 6.25f);
-    fPhysCapsuleHeight = GetConfigFloat(cfg, "Capsule Height", 0.5f);
-    fPhysCapsuleRadius = GetConfigFloat(cfg, "Capsule Width", 0.3f);
-    fRunningDirectionSeekSpeed = GetConfigFloat(cfg, "Running Turn Speed", 105000.0f);
+    fJoggingSpeed = cfg.Get<float>("Jog Speed", 1.6f);
+    fRunningSpeed = cfg.Get<float>("Running Speed", 6.25f);
+    fPhysCapsuleHeight = cfg.Get<float>("Capsule Height", 0.5f);
+    fPhysCapsuleRadius = cfg.Get<float>("Capsule Width", 0.3f);
+    fRunningDirectionSeekSpeed = cfg.Get<float>("Running Turn Speed", 105000.0f);
     fRunningDirectionSeekFalloff = g_pTweaks[0];
-    fPassGroundSpeedMax = GetConfigFloat(cfg, "Pass Ground Speed Max", 16.0f);
-    fPassGroundSpeedMin = GetConfigFloat(cfg, "Pass Ground Speed Min", 5.5f);
-    fPassVolleySpeedMax = GetConfigFloat(cfg, "Pass Volley Speed Max", 14.0f);
-    fPassVolleySpeedMin = GetConfigFloat(cfg, "Pass Volley Speed Min", 5.5f);
+    fPassGroundSpeedMax = cfg.Get<float>("Pass Ground Speed Max", 16.0f);
+    fPassGroundSpeedMin = cfg.Get<float>("Pass Ground Speed Min", 5.5f);
+    fPassVolleySpeedMax = cfg.Get<float>("Pass Volley Speed Max", 14.0f);
+    fPassVolleySpeedMin = cfg.Get<float>("Pass Volley Speed Min", 5.5f);
 }
 
 /**
@@ -89,29 +88,29 @@ void FielderTweaks::Init()
     fRunningAccel = g_pTweaks[1];
     fRunningDecel = g_pTweaks[2];
     fRunningStopDecel = g_pTweaks[3];
-    fRunningStrafeDirectionSeekSpeed = GetConfigFloat(cfg, "Strafe Turn Speed", 140000.0f);
+    fRunningStrafeDirectionSeekSpeed = cfg.Get<float>("Strafe Turn Speed", 140000.0f);
     fRunningStrafeDirectionSeekFalloff = g_pTweaks[4];
-    fRunningStrafeSpeed = GetConfigFloat(cfg, "Strafe Speed", 3.5f);
-    fRunningBackwardsSpeed = GetConfigFloat(cfg, "Run Backwards Speed", 4.0f);
+    fRunningStrafeSpeed = cfg.Get<float>("Strafe Speed", 3.5f);
+    fRunningBackwardsSpeed = cfg.Get<float>("Run Backwards Speed", 4.0f);
     fRunningStrafeAccel = g_pTweaks[5];
     fRunningStrafeDecel = g_pTweaks[6];
-    fRunningTurboDirectionSeekSpeed = GetConfigFloat(cfg, "Turbo Turn Speed", 65000.0f);
+    fRunningTurboDirectionSeekSpeed = cfg.Get<float>("Turbo Turn Speed", 65000.0f);
     fRunningTurboDirectionSeekFalloff = g_pTweaks[7];
-    fRunningTurboSpeed = GetConfigFloat(cfg, "Turbo Speed", 7.5f);
+    fRunningTurboSpeed = cfg.Get<float>("Turbo Speed", 7.5f);
     fRunningTurboAccel = g_pTweaks[8];
     fRunningTurboDecel = g_pTweaks[9];
-    fRunningWBDirectionSeekSpeed = GetConfigFloat(cfg, "WB Run Turn Speed", 90000.0f);
+    fRunningWBDirectionSeekSpeed = cfg.Get<float>("WB Run Turn Speed", 90000.0f);
     fRunningWBDirectionSeekFalloff = g_pTweaks[10];
-    fRunningWBSpeed = GetConfigFloat(cfg, "WB Run Speed", 6.0f);
+    fRunningWBSpeed = cfg.Get<float>("WB Run Speed", 6.0f);
     fRunningWBAccel = g_pTweaks[11];
     fRunningWBDecel = g_pTweaks[12];
     fRunningWBStopDecel = g_pTweaks[13];
-    fRunningWBTurboDirectionSeekSpeed = GetConfigFloat(cfg, "WB Run Turbo Turn Speed", 70000.0f);
+    fRunningWBTurboDirectionSeekSpeed = cfg.Get<float>("WB Run Turbo Turn Speed", 70000.0f);
     fRunningWBTurboDirectionSeekFalloff = g_pTweaks[14];
-    fRunningWBTurboSpeedLevel1 = GetConfigFloat(cfg, "WB Run Turbo Level 1 Speed", 6.5f);
+    fRunningWBTurboSpeedLevel1 = cfg.Get<float>("WB Run Turbo Level 1 Speed", 6.5f);
 
-    fRunningWBTurboSpeedLevel2 = GetConfigFloat(cfg, "WB Run Turbo Level 2 Speed", 7.0f);
-    fRunningWBTurboSpeedLevel3 = GetConfigFloat(cfg, "WB Run Turbo Level 3 Speed", 7.5f);
+    fRunningWBTurboSpeedLevel2 = cfg.Get<float>("WB Run Turbo Level 2 Speed", 7.0f);
+    fRunningWBTurboSpeedLevel3 = cfg.Get<float>("WB Run Turbo Level 3 Speed", 7.5f);
 
     fRunningWBTurboAccel = g_pTweaks[15];
     fRunningWBTurboDecel = g_pTweaks[16];
@@ -123,31 +122,31 @@ void FielderTweaks::Init()
     fShotWindupDirectionSeekFalloff = g_pTweaks[21];
     fShotWindupDecel = g_pTweaks[22];
 
-    fCaptainS2SNisBeginFrame = GetConfigFloat(cfg, "S2S Nis Begin Frame", 9.0f);
-    fCaptainS2SNisEndFrame = GetConfigFloat(cfg, "S2S Nis End Frame", 9.0f);
-    fS2SKickFrame = GetConfigFloat(cfg, "S2S Kick Frame", 9.0f);
-    fS2S1stJumpFrame = GetConfigFloat(cfg, "S2S 1st Jump Frame", 9.0f);
+    fCaptainS2SNisBeginFrame = cfg.Get<float>("S2S Nis Begin Frame", 9.0f);
+    fCaptainS2SNisEndFrame = cfg.Get<float>("S2S Nis End Frame", 9.0f);
+    fS2SKickFrame = cfg.Get<float>("S2S Kick Frame", 9.0f);
+    fS2S1stJumpFrame = cfg.Get<float>("S2S 1st Jump Frame", 9.0f);
 
-    nChanceForRedShell = GetConfigInt(cfg, "Red Shell Chance", 0x17);
-    nChanceForGreenShell = GetConfigInt(cfg, "Green Shell Chance", 0x17);
-    nChanceForSpinyShell = GetConfigInt(cfg, "Spiny Shell Chance", 0x17);
-    nChanceForFreezeShell = GetConfigInt(cfg, "Freeze Shell Chance", 0x17);
-    nChanceForMushroom = GetConfigInt(cfg, "Mushroom Chance", 0x17);
-    nChanceForBanana = GetConfigInt(cfg, "Banana Chance", 0x17);
-    nChanceForBoBomb = GetConfigInt(cfg, "Bobomb Chance", 0x17);
+    nChanceForRedShell = cfg.Get<int>("Red Shell Chance", 0x17);
+    nChanceForGreenShell = cfg.Get<int>("Green Shell Chance", 0x17);
+    nChanceForSpinyShell = cfg.Get<int>("Spiny Shell Chance", 0x17);
+    nChanceForFreezeShell = cfg.Get<int>("Freeze Shell Chance", 0x17);
+    nChanceForMushroom = cfg.Get<int>("Mushroom Chance", 0x17);
+    nChanceForBanana = cfg.Get<int>("Banana Chance", 0x17);
+    nChanceForBoBomb = cfg.Get<int>("Bobomb Chance", 0x17);
 
-    fChanceForBig = GetConfigFloat(cfg, "Big Chance", 23.0f);
-    fChanceForMultiples = GetConfigFloat(cfg, "Multiples Chance", 23.0f);
+    fChanceForBig = cfg.Get<float>("Big Chance", 23.0f);
+    fChanceForMultiples = cfg.Get<float>("Multiples Chance", 23.0f);
 
-    fAggression = GetConfigFloat(cfg, "Aggression", 0.5f);
-    fShooting = GetConfigFloat(cfg, "Shooting", 0.5f);
-    fPassing = GetConfigFloat(cfg, "Passing", 0.5f);
-    fDekeing = GetConfigFloat(cfg, "Dekeing", 0.5f);
+    fAggression = cfg.Get<float>("Aggression", 0.5f);
+    fShooting = cfg.Get<float>("Shooting", 0.5f);
+    fPassing = cfg.Get<float>("Passing", 0.5f);
+    fDekeing = cfg.Get<float>("Dekeing", 0.5f);
 
-    fShotMinSpeed = GetConfigFloat(cfg, "Shot Min Speed", 0.0f);
-    fShotMaxSpeed = GetConfigFloat(cfg, "Shot Max Speed", 0.0f);
-    fShotChipMinSpeed = GetConfigFloat(cfg, "Chip Shot Min Speed", 0.0f);
-    fShotChipMaxSpeed = GetConfigFloat(cfg, "Chip Shot Max Speed", 0.0f);
+    fShotMinSpeed = cfg.Get<float>("Shot Min Speed", 0.0f);
+    fShotMaxSpeed = cfg.Get<float>("Shot Max Speed", 0.0f);
+    fShotChipMinSpeed = cfg.Get<float>("Chip Shot Min Speed", 0.0f);
+    fShotChipMaxSpeed = cfg.Get<float>("Chip Shot Max Speed", 0.0f);
 }
 
 /**
@@ -181,42 +180,42 @@ void GoalieTweaks::Init()
     Config cfg(Config::ALLOCATE_HIGH);
     cfg.LoadFromFile(mszFileName);
 
-    fThrowingDirectionSeekSpeed = GetConfigFloat(cfg, "Throwing Turn Speed", 50000.0f);
-    fThrowingDirectionSeekFalloff = GetConfigFloat(cfg, "Throwing Turn falloff", 4000.0f);
-    fKickDistanceMin = GetConfigFloat(cfg, "Minimum Kick Distance", 13.0f);
-    fOverhandThrowDistanceMin = GetConfigFloat(cfg, "Minimum Overhand Throw Distance", 7.0f);
-    fKickVelocityMin = GetConfigFloat(cfg, "Minimum Kick Velocity", 12.0f);
-    fKickVelocityMax = GetConfigFloat(cfg, "Maximum Kick Velocity", 16.0f);
-    fKickAngleMin = GetConfigFloat(cfg, "Minimum Kick Angle", 50.0f);
-    fKickAngleMax = GetConfigFloat(cfg, "Maximum Kick Angle", 60.0f);
-    fFatigueRecoverRate = GetConfigFloat(cfg, "Fatigue Recover Rate", 2.0f);
-    fFatigueCatchThreshold = GetConfigFloat(cfg, "Fatigue Catch Threshold", 60.0f);
-    fCatchSaveMaxSpeed = GetConfigFloat(cfg, "Catch Save Max Speed", 0.5f);
-    fGetupEnergyHigh = GetConfigFloat(cfg, "High Getup Energy", 80.0f);
-    fGetupEnergyLow = GetConfigFloat(cfg, "Low Getup Energy", 20.0f);
-    fGetupSpeedLow = GetConfigFloat(cfg, "Low Getup Speed", 0.5f);
-    fStrafeSpeedLow = GetConfigFloat(cfg, "Low Strafe Speed", 0.8f);
-    fGoalieBallTime = GetConfigFloat(cfg, "Goalie Ball Time", 5.0f);
-    fGoalieStunTimeMin = GetConfigFloat(cfg, "Min STS Stun Time", 1.5f);
-    fGoalieStunTimeMax = GetConfigFloat(cfg, "Max STS Stun Time", 3.0f);
-    fLooseBallShotDistance = GetConfigFloat(cfg, "Loose Ball Shot Distance", 10.0f);
-    fSaveDirectionSeekSpeed = GetConfigFloat(cfg, "Save Turn Speed", 100000.0f);
-    fSaveDirectionSeekFalloff = GetConfigFloat(cfg, "Save Turn Falloff", 4000.0f);
-    fSaveBackRunTimeScale = GetConfigFloat(cfg, "Save Back Run Scale", 1.5f);
-    fSaveIgnoreMargin = GetConfigFloat(cfg, "Save Ignore Margin", 1.0f);
-    fSaveMissDelay = GetConfigFloat(cfg, "Miss Save Delay", 0.1f);
-    fLobShotStumbleChance = GetConfigFloat(cfg, "Lob Shot Stumble Chance", 0.3f);
-    fInterceptSaveTolerance = GetConfigFloat(cfg, "Intercept Save Tolerance", 0.5f);
-    fSaveCatchTolerance = GetConfigFloat(cfg, "Catch Save Tolerance", 0.7f);
-    fShotFatigueDefault = GetConfigFloat(cfg, "Shot Fatigue Default", 10.0f);
-    fShotFatigueStandCatch = GetConfigFloat(cfg, "Shot Fatigue Stand Catch", 5.0f);
-    fShotFatigueDiveCatch = GetConfigFloat(cfg, "Shot Fatigue Dive Catch", 10.0f);
-    fShotFatigueStandDeflect = GetConfigFloat(cfg, "Shot Fatigue Stand Deflection", 5.0f);
-    fShotFatigueDiveDeflect = GetConfigFloat(cfg, "Shot Fatigue Dive Deflection", 10.0f);
-    fShotFatigueStandPunch = GetConfigFloat(cfg, "Shot Fatigue Stand Punch", 7.0f);
-    fShotFatigueLegSave = GetConfigFloat(cfg, "Shot Fatigue Leg Save", 6.0f);
-    fShotFatigueSTSSave = GetConfigFloat(cfg, "Shot Fatigue STS Save", 15.0f);
-    fShotFatigueSTSStun = GetConfigFloat(cfg, "Shot Fatigue STS Stun", 20.0f);
+    fThrowingDirectionSeekSpeed = cfg.Get<float>("Throwing Turn Speed", 50000.0f);
+    fThrowingDirectionSeekFalloff = cfg.Get<float>("Throwing Turn falloff", 4000.0f);
+    fKickDistanceMin = cfg.Get<float>("Minimum Kick Distance", 13.0f);
+    fOverhandThrowDistanceMin = cfg.Get<float>("Minimum Overhand Throw Distance", 7.0f);
+    fKickVelocityMin = cfg.Get<float>("Minimum Kick Velocity", 12.0f);
+    fKickVelocityMax = cfg.Get<float>("Maximum Kick Velocity", 16.0f);
+    fKickAngleMin = cfg.Get<float>("Minimum Kick Angle", 50.0f);
+    fKickAngleMax = cfg.Get<float>("Maximum Kick Angle", 60.0f);
+    fFatigueRecoverRate = cfg.Get<float>("Fatigue Recover Rate", 2.0f);
+    fFatigueCatchThreshold = cfg.Get<float>("Fatigue Catch Threshold", 60.0f);
+    fCatchSaveMaxSpeed = cfg.Get<float>("Catch Save Max Speed", 0.5f);
+    fGetupEnergyHigh = cfg.Get<float>("High Getup Energy", 80.0f);
+    fGetupEnergyLow = cfg.Get<float>("Low Getup Energy", 20.0f);
+    fGetupSpeedLow = cfg.Get<float>("Low Getup Speed", 0.5f);
+    fStrafeSpeedLow = cfg.Get<float>("Low Strafe Speed", 0.8f);
+    fGoalieBallTime = cfg.Get<float>("Goalie Ball Time", 5.0f);
+    fGoalieStunTimeMin = cfg.Get<float>("Min STS Stun Time", 1.5f);
+    fGoalieStunTimeMax = cfg.Get<float>("Max STS Stun Time", 3.0f);
+    fLooseBallShotDistance = cfg.Get<float>("Loose Ball Shot Distance", 10.0f);
+    fSaveDirectionSeekSpeed = cfg.Get<float>("Save Turn Speed", 100000.0f);
+    fSaveDirectionSeekFalloff = cfg.Get<float>("Save Turn Falloff", 4000.0f);
+    fSaveBackRunTimeScale = cfg.Get<float>("Save Back Run Scale", 1.5f);
+    fSaveIgnoreMargin = cfg.Get<float>("Save Ignore Margin", 1.0f);
+    fSaveMissDelay = cfg.Get<float>("Miss Save Delay", 0.1f);
+    fLobShotStumbleChance = cfg.Get<float>("Lob Shot Stumble Chance", 0.3f);
+    fInterceptSaveTolerance = cfg.Get<float>("Intercept Save Tolerance", 0.5f);
+    fSaveCatchTolerance = cfg.Get<float>("Catch Save Tolerance", 0.7f);
+    fShotFatigueDefault = cfg.Get<float>("Shot Fatigue Default", 10.0f);
+    fShotFatigueStandCatch = cfg.Get<float>("Shot Fatigue Stand Catch", 5.0f);
+    fShotFatigueDiveCatch = cfg.Get<float>("Shot Fatigue Dive Catch", 10.0f);
+    fShotFatigueStandDeflect = cfg.Get<float>("Shot Fatigue Stand Deflection", 5.0f);
+    fShotFatigueDiveDeflect = cfg.Get<float>("Shot Fatigue Dive Deflection", 10.0f);
+    fShotFatigueStandPunch = cfg.Get<float>("Shot Fatigue Stand Punch", 7.0f);
+    fShotFatigueLegSave = cfg.Get<float>("Shot Fatigue Leg Save", 6.0f);
+    fShotFatigueSTSSave = cfg.Get<float>("Shot Fatigue STS Save", 15.0f);
+    fShotFatigueSTSStun = cfg.Get<float>("Shot Fatigue STS Stun", 20.0f);
 
     // Find the maximum fatigue value
     fShotFatigueMax = max_float(fShotFatigueDefault, fShotFatigueStandCatch);
@@ -228,9 +227,9 @@ void GoalieTweaks::Init()
     fShotFatigueMax = max_float(fShotFatigueMax, fShotFatigueSTSSave);
     fShotFatigueMax = max_float(fShotFatigueMax, fShotFatigueSTSStun);
 
-    fSTSAttackCloseDistance = GetConfigFloat(cfg, "STS Attack Close Distance", 1.0f);
-    fSTSAttackMaxDistance = GetConfigFloat(cfg, "STS Attack Max Distance", 7.0f);
-    fSTSAttackChancePerFrame = GetConfigFloat(cfg, "STS Attack Chance Per Frame", 0.01f);
-    fSTSAttackBallVelMult = GetConfigFloat(cfg, "STS Attack Ball Speed Multiplier", 0.3f);
-    fPounceRange = GetConfigFloat(cfg, "Pounce Range", 1.0f);
+    fSTSAttackCloseDistance = cfg.Get<float>("STS Attack Close Distance", 1.0f);
+    fSTSAttackMaxDistance = cfg.Get<float>("STS Attack Max Distance", 7.0f);
+    fSTSAttackChancePerFrame = cfg.Get<float>("STS Attack Chance Per Frame", 0.01f);
+    fSTSAttackBallVelMult = cfg.Get<float>("STS Attack Ball Speed Multiplier", 0.3f);
+    fPounceRange = cfg.Get<float>("Pounce Range", 1.0f);
 }

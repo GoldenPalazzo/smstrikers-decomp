@@ -1,8 +1,7 @@
-#define BASICSTRING_NO_COPY_REREAD
 #include "NL/nlConfig.h"
-#include "Game/DB/Simmer.h"
 #include "Game/Sys/debug.h"
 #include "NL/nlFileGC.h"
+#include "NL/nlTokenizer.h"
 #include "PowerPC_EABI_Support/MSL_C/MSL_Common/ctype.h"
 
 // static Config* sGlobal = nullptr;
@@ -13,7 +12,6 @@
  */
 typedef BasicString<char, Detail::TempStringAllocator> BString;
 typedef Tokenizer<BString> BTokenizer;
-#pragma opt_propagation off
 void Config::Parse(const char* s, Config::Parser& parser)
 {
     BTokenizer split(BString(s), BString("\n\r"));
@@ -23,7 +21,7 @@ void Config::Parse(const char* s, Config::Parser& parser)
         BString line = iter.mToken;
         line.TrimInPlace(" \t\n");
 
-        int lineLen = line.m_data ? line.m_data->mSize - 1 : 0;
+        int lineLen = line.mData ? line.mData->mData.mSize - 1 : 0;
         if (lineLen == 0)
         {
             parser.EmptyLine();
@@ -38,7 +36,7 @@ void Config::Parse(const char* s, Config::Parser& parser)
 
         if (line[0] == '[')
         {
-            int lastIdx = (line.m_data ? line.m_data->mSize - 1 : 0) - 1;
+            int lastIdx = (line.mData ? line.mData->mData.mSize - 1 : 0) - 1;
             if (line[lastIdx] == ']')
             {
                 char sectionMarkers[3] = "[]";
@@ -63,7 +61,7 @@ void Config::Parse(const char* s, Config::Parser& parser)
             {
                 value = jter.mToken.Trim(" \t\"\r");
 
-                for (int i = 0; i < (int)(value.m_data ? value.m_data->mSize - 1 : 0); i++)
+                for (int i = 0; i < (int)(value.mData ? value.mData->mData.mSize - 1 : 0); i++)
                 {
                     if (value[i] == '#')
                     {
@@ -83,30 +81,29 @@ void Config::Parse(const char* s, Config::Parser& parser)
         parser.TagValuePair(tag, value);
     }
 }
-#pragma opt_propagation reset
 
 /**
  * Offset/Address/Size: 0x13EC | 0x801D4050 | size: 0x21C
  * TODO: 99.93% match - end pointer temp uses r27 where target keeps it in r30
  */
-static inline void InitFileStringData(BasicStringInternal* data, char* buffer, char* end, s32 length)
+static inline void InitFileStringData(BString::Data* data, char* buffer, char* end, s32 length)
 {
     if (data != 0)
     {
         s32 size = length + 1;
-        data->mData = (char*)nlMalloc(size, 8, true);
-        data->mSize = size;
-        data->mCapacity = size;
+        data->mData.mData = (char*)nlMalloc(size, 8, true);
+        data->mData.mSize = size;
+        data->mData.mCapacity = size;
 
         for (s32 i = 0; i < length + 1; i++)
         {
-            data->mData[i] = 0;
+            data->mData.mData[i] = 0;
         }
 
         data->mRefCount = 1;
-        for (s32 i = 0; i < data->mSize - 1; i++)
+        for (s32 i = 0; i < data->mData.mSize - 1; i++)
         {
-            data->mData[i] = buffer[i];
+            data->mData.mData[i] = buffer[i];
         }
     }
 }
@@ -121,7 +118,7 @@ BasicString<char, Detail::TempStringAllocator> Config::LoadFileAsString(const ch
     if (buffer != 0)
     {
         char* end = buffer + fileSize;
-        BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
+        BString::Data* data = (BString::Data*)nlMalloc(0x10, 8, true);
         InitFileStringData(data, buffer, end, end - buffer);
 
         BasicString<char, Detail::TempStringAllocator> s(data);
@@ -433,10 +430,10 @@ TagValuePair& Config::FindTvp(const char* tag)
 bool Config::IsBool(const char* str, bool& b) const
 {
     BasicString<char, Detail::TempStringAllocator> s(str);
-    for (int i = 0; i < (s.m_data ? s.m_data->mSize - 1 : 0); i++)
+    for (int i = 0; i < (s.mData ? s.mData->mData.mSize - 1 : 0); i++)
     {
         (void)s[i];
-        char* data = s.m_data->mData;
+        char* data = s.mData->mData.mData;
         data[i] = _tolower(s[i]);
     }
     if (s == "true" || s == "yes" || s == "on" || s == "enable")
@@ -572,10 +569,10 @@ void SetTagValuePair::TagValuePair(const BasicString<char, Detail::TempStringAll
 {
     BasicString<char, Detail::TempStringAllocator> tagWithSection(tag);
 
-    s32 sectionLen = mCurrentSection.m_data ? mCurrentSection.m_data->mSize - 1 : 0;
+    s32 sectionLen = mCurrentSection.mData ? mCurrentSection.mData->mData.mSize - 1 : 0;
     if (sectionLen > 0)
     {
-        tagWithSection = mCurrentSection.Append(".").Append(tag);
+        tagWithSection = mCurrentSection.Append("/").Append(tag);
     }
 
     mConfig.Set<BasicString<char, Detail::TempStringAllocator> >(tagWithSection.c_str(), rhs);
@@ -622,7 +619,6 @@ Config::TagValuePair::TagValuePair()
  * Offset/Address/Size: 0x0 | 0x801D5850 | size: 0xBC
  */
 // Trim is defined in nlBasicString.h (weak/template out-of-line body).
-// Force instantiation via nlConfig_stub below.
 
 /**
  * Offset/Address/Size: 0xBC | 0x801D590C | size: 0xBC4
@@ -630,13 +626,6 @@ Config::TagValuePair::TagValuePair()
 // BasicString<char, Detail::TempStringAllocator>::TrimInPlace(const char*)
 // {
 // }
-
-// Force template instantiation - REMOVE once real callers exist
-void nlConfig_stub()
-{
-    BasicString<char, Detail::TempStringAllocator> s;
-    s.Trim("");
-}
 
 /**
  * Offset/Address/Size: 0xC80 | 0x801D64D0 | size: 0xBC

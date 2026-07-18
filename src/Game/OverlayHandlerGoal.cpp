@@ -8,12 +8,6 @@
 #include "NL/nlBundleFile.h"
 #include "NL/nlFormat.h"
 
-template <typename To, typename From>
-To LexicalCast(const From& f);
-
-template <typename StringType, typename ValueType>
-StringType Format(const StringType&, const ValueType&);
-
 template <typename T, typename Key>
 T* nlBSearch(const Key&, T*, int);
 
@@ -72,100 +66,6 @@ static inline const unsigned short* LookupLocHash(unsigned long key)
 }
 extern "C" double ceil(double);
 extern "C" double floor(double);
-
-/**
- * Offset/Address/Size: 0x106C | 0x80104868 | size: 0xCF0
- * TODO: 99.48% match - remaining register diffs in BasicString copy and insert pointer paths.
- */
-template <>
-template <>
-FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&
-    FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >::operator% <BasicString<unsigned short, Detail::TempStringAllocator> >(
-        const BasicString<unsigned short, Detail::TempStringAllocator>& t)
-{
-    BasicString<unsigned short, Detail::TempStringAllocator> insert = LexicalCast<BasicString<unsigned short, Detail::TempStringAllocator>, BasicString<unsigned short, Detail::TempStringAllocator> >(t);
-
-    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
-    {
-        if (mString[i] != (unsigned short)'{')
-            continue;
-
-        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        if (mString[i + 1] - '0' != mCurrentPos)
-            continue;
-
-        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        if (mString[i + 2] != (unsigned short)'}')
-            continue;
-
-        mString.erase(mString.begin() + i, mString.begin() + i + 3);
-        mString[i];
-        BasicStringData<unsigned short>* mStringDataPtr = mString.m_data;
-        unsigned short* mStringData = mStringDataPtr ? mStringDataPtr->mData : 0;
-        insert[0];
-        BasicStringData<unsigned short>* insertDataPtr = insert.m_data;
-        unsigned short* insertBegin = insertDataPtr ? insertDataPtr->mData : 0;
-        insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (unsigned short*)0);
-    }
-
-    mCurrentPos++;
-    return *this;
-}
-
-/**
- * Offset/Address/Size: 0x12C | 0x80103928 | size: 0xCF0
- * TODO: 97.44% match - remaining register allocation diffs in BasicString copy and insert pointer paths.
- */
-template <>
-template <>
-FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&
-    FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >::operator% <const unsigned short*>(
-        const unsigned short* const& t)
-{
-    BasicString<unsigned short, Detail::TempStringAllocator> insert = LexicalCast<BasicString<unsigned short, Detail::TempStringAllocator>, const unsigned short*>(t);
-
-    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
-    {
-        if (mString[i] != (unsigned short)'{')
-            continue;
-
-        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        if (mString[i + 1] - '0' != mCurrentPos)
-            continue;
-
-        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        if (mString[i + 2] != (unsigned short)'}')
-            continue;
-
-        mString.erase(&mString[i], &mString[i] + 3);
-        mString[i];
-        unsigned short* mStringData = mString.m_data ? mString.m_data->mData : 0;
-        unsigned short* insertBegin = &insert[0];
-        unsigned short* insertEndCow = &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (unsigned short*)0);
-    }
-
-    mCurrentPos++;
-    return *this;
-}
-
-void OverlayHandlerGoal_stub()
-{
-    typedef BasicString<unsigned short, Detail::TempStringAllocator> WideBasicString;
-    typedef WideBasicString (*FmtFn)(const WideBasicString&, const unsigned short (&)[32], const WideBasicString&);
-
-    volatile FmtFn fn = &Format<WideBasicString, unsigned short[32], WideBasicString>;
-    (void)fn;
-}
 
 /**
  * Offset/Address/Size: 0x106C | 0x80104868 | size: 0xCF0

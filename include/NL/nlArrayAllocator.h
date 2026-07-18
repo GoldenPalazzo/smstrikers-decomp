@@ -12,13 +12,13 @@ public:
         T* entry = m_pFree;
         if (entry == 0)
             return 0;
-        m_pFree = entry->m_next;
+        m_pFree = *(T**)entry;
         return entry;
     }
 
     void DeleteEntry(T* entry)
     {
-        entry->m_next = m_pFree;
+        *(T**)entry = m_pFree;
         m_pFree = entry;
     }
 

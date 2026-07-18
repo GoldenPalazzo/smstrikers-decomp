@@ -1,8 +1,5 @@
-// Enables the TU-scoped weak-emission-order machinery in NL/nlAlgorithm.h,
-// NL/nlListSlotPool.h and NL/nlListSlotPoolDtor.h (must precede all includes).
-#define NL_POOL_DTOR_HOST 1
-
 #include "Game/Audio/AudioLoader.h"
+#include "Game/Audio/AudioStream.h"
 #include "Game/Audio/AudioScriptEventMgr.h"
 #include "Game/Audio/SoundEventScript.h"
 #include "Game/EventDataTypes.h"
@@ -17,28 +14,16 @@
 #include "Game/AI/Powerups.h"
 #include "Game/AI/Variant.h"
 #include "Game/AI/Scripts/CommonScript.h"
+#include "Game/AI/Scripts/ScriptCaching.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/Render/Presentation.h"
 
-#include "NL/nlBSearch.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlConfig.h"
 #include "NL/nlList.h"
-#include "NL/nlListSlotPool.h"
 #include "NL/nlSlotPool.h"
 #include "NL/nlString.h"
-
-// Second include on purpose: the block outside nlAlgorithm.h's include guard
-// hosts ~nlListSlotPool for this TU (NL_POOL_DTOR_HOST), now that
-// NL/nlListSlotPool.h has been seen. This keys the dtor's linkonce bucket to
-// nlAlgorithm.h so it fuses right after nlQSort/nlDefaultQSortComparer.
-#include "NL/nlAlgorithm.h"
-
-template <>
-int nlStrCmp<char>(const char*, const char*);
-template <>
-char* nlStrNCpy<char>(char*, const char*, unsigned long);
-template <>
-char* nlStrNCat<char>(char*, const char*, const char*, unsigned long);
+#include "NL/WalkHelper.h"
 
 struct AUDIO_SCRIPT_POLL_STATE
 {
@@ -76,11 +61,11 @@ struct AUDIO_EVENT_RECORD
 
 struct NIS_EVENT_LOOKUP
 {
-    /* 0x0 */ unsigned long hash;
+    /* 0x0 */ unsigned long Hash;
     /* 0x4 */ const char* Name;
     /* 0x8 */ AUDIO_EVENT_RECORD Event;
 
-    operator unsigned long() const { return hash; }
+    operator unsigned long() const { return Hash; }
 };
 
 // Helper to pack an AUDIO_EVENT_RECORD literal (Event in high 16 bits, Team in low 16 bits)
@@ -94,6 +79,21 @@ NIS_EVENT_LOOKUP g_NisEventLookup[4] = {
     { 0, "EnterStadiumHome", NIS_EVENT_PACK(AudioScriptEventMgr::AE_TeamIntro, AudioScriptEventMgr::AET_Home) },
     { 0, "EnterStadiumAway", NIS_EVENT_PACK(AudioScriptEventMgr::AE_TeamIntro, AudioScriptEventMgr::AET_Away) },
 };
+
+class NisEventLookup
+{
+public:
+    NisEventLookup()
+    {
+        for (unsigned int i = 0; i < 4; i++)
+        {
+            g_NisEventLookup[i].Hash = nlStringLowerHash(g_NisEventLookup[i].Name);
+        }
+        nlQSort<NIS_EVENT_LOOKUP>(g_NisEventLookup, 4, &nlDefaultQSortComparer<NIS_EVENT_LOOKUP>);
+    }
+};
+
+static NisEventLookup g_NisEvents;
 
 char* AUDIO_EVENT_FUNC_NAMES[] = {
     "NULL",
@@ -147,10 +147,8 @@ char* AUDIO_EVENT_FUNC_NAMES[] = {
 
 typedef ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD> > > AudioEventList;
 
+nlListSlotPool<AUDIO_EVENT_RECORD> g_PendingEvents(0x10, 0x10);
 EventHandler* g_pAudioEventHandler;
-extern nlListSlotPool<AUDIO_EVENT_RECORD> g_PendingEvents;
-
-#include "Game/Audio/AudioScriptEventMgrInit.h"
 
 static inline AudioScriptEventMgr::AUDIO_EVENT_TEAM GetPlayerTeam(cPlayer* pPlayer)
 {
@@ -258,9 +256,7 @@ void AudioScriptEventMgr::Init()
  */
 void AudioScriptEventMgr::Purge()
 {
-    AudioEventList::WalkDeleteEntries(g_PendingEvents.m_Head, static_cast<AudioEventList*>(&g_PendingEvents));
-    g_PendingEvents.m_Head = NULL;
-    g_PendingEvents.m_Tail = NULL;
+    g_PendingEvents.Clear();
     SlotPoolBase::BaseFreeBlocks(&g_PendingEvents.m_Allocator, sizeof(ListEntry<AUDIO_EVENT_RECORD>));
 
     if (g_pAudioEventHandler != NULL)
@@ -279,9 +275,7 @@ void AudioScriptEventMgr::Update()
 {
     Poll();
     RaiseEvents();
-    AudioEventList::WalkDeleteEntries(g_PendingEvents.m_Head, static_cast<AudioEventList*>(&g_PendingEvents));
-    g_PendingEvents.m_Head = NULL;
-    g_PendingEvents.m_Tail = NULL;
+    g_PendingEvents.Clear();
 }
 
 static inline void RaiseEvents()
@@ -855,16 +849,3 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
         return;
     }
 }
-
-// Weak-emission-order directives (process bottom-most first, before all
-// function bodies): nlBSearch emits first, then nlQSort+comparer fuse into
-// the next section; the Reap phantom (isolated, dropped at link) holds the
-// TU's only out-of-line ~nlListSlotPool reference, pulling __dt__36 out of
-// the post-__sinit wave; its nlAlgorithm.h-hosted body then joins the
-// nlQSort/comparer section right after comparer, __sinit appends directly
-// after it, and the nlList.h walk/AddEnd bucket emits after __sinit -
-// reproducing the target DOL byte order 0x8014B46C-0x8014B818.
-template void nlListSlotPoolReap<AUDIO_EVENT_RECORD>(nlListSlotPool<AUDIO_EVENT_RECORD>*);
-template int nlDefaultQSortComparer<NIS_EVENT_LOOKUP>(const NIS_EVENT_LOOKUP*, const NIS_EVENT_LOOKUP*);
-template void nlQSort<NIS_EVENT_LOOKUP>(NIS_EVENT_LOOKUP*, int, int (*)(const NIS_EVENT_LOOKUP*, const NIS_EVENT_LOOKUP*));
-template NIS_EVENT_LOOKUP* nlBSearch<NIS_EVENT_LOOKUP, unsigned long>(const unsigned long&, NIS_EVENT_LOOKUP*, int);

@@ -51,64 +51,6 @@ public:
 };
 
 template <int N>
-void __red_black_tree<N>::rotate_left(node_base* x, node_base*& root)
-{
-    FORCE_DONT_INLINE;
-    node_base* y = (node_base*)x->right_;
-    if (root == x)
-    {
-        root = y;
-    }
-    x->right_ = y->left_;
-    node_base* yl = (node_base*)y->left_;
-    if (yl != 0)
-    {
-        yl->parent_ = (void*)((unsigned long)x | ((unsigned long)yl->parent_ & 1));
-    }
-    y->parent_ = (void*)(((unsigned long)x->parent_ & ~1) | ((unsigned long)y->parent_ & 1));
-    node_base* parent = (node_base*)((unsigned long)x->parent_ & ~1);
-    if (x == (node_base*)parent->left_)
-    {
-        parent->left_ = y;
-    }
-    else
-    {
-        parent->right_ = y;
-    }
-    y->left_ = x;
-    x->parent_ = (void*)((unsigned long)y | ((unsigned long)x->parent_ & 1));
-}
-
-template <int N>
-void __red_black_tree<N>::rotate_right(node_base* x, node_base*& root)
-{
-    FORCE_DONT_INLINE;
-    node_base* y = (node_base*)x->left_;
-    if (root == x)
-    {
-        root = y;
-    }
-    x->left_ = y->right_;
-    node_base* yr = (node_base*)y->right_;
-    if (yr != 0)
-    {
-        yr->parent_ = (void*)((unsigned long)x | ((unsigned long)yr->parent_ & 1));
-    }
-    y->parent_ = (void*)(((unsigned long)x->parent_ & ~1) | ((unsigned long)y->parent_ & 1));
-    node_base* parent = (node_base*)((unsigned long)x->parent_ & ~1);
-    if (x == (node_base*)parent->left_)
-    {
-        parent->left_ = y;
-    }
-    else
-    {
-        parent->right_ = y;
-    }
-    y->right_ = x;
-    x->parent_ = (void*)((unsigned long)y | ((unsigned long)x->parent_ & 1));
-}
-
-template <int N>
 void __red_black_tree<N>::balance_insert(node_base* x, node_base* root)
 {
     node_base* y;
@@ -164,6 +106,62 @@ void __red_black_tree<N>::balance_insert(node_base* x, node_base* root)
     root->set_black();
 }
 
+template <int N>
+void __red_black_tree<N>::rotate_left(node_base* x, node_base*& root)
+{
+    node_base* y = (node_base*)x->right_;
+    if (root == x)
+    {
+        root = y;
+    }
+    x->right_ = y->left_;
+    node_base* yl = (node_base*)y->left_;
+    if (yl != 0)
+    {
+        yl->parent_ = (void*)((unsigned long)x | ((unsigned long)yl->parent_ & 1));
+    }
+    y->parent_ = (void*)(((unsigned long)x->parent_ & ~1) | ((unsigned long)y->parent_ & 1));
+    node_base* parent = (node_base*)((unsigned long)x->parent_ & ~1);
+    if (x == (node_base*)parent->left_)
+    {
+        parent->left_ = y;
+    }
+    else
+    {
+        parent->right_ = y;
+    }
+    y->left_ = x;
+    x->parent_ = (void*)((unsigned long)y | ((unsigned long)x->parent_ & 1));
+}
+
+template <int N>
+void __red_black_tree<N>::rotate_right(node_base* x, node_base*& root)
+{
+    node_base* y = (node_base*)x->left_;
+    if (root == x)
+    {
+        root = y;
+    }
+    x->left_ = y->right_;
+    node_base* yr = (node_base*)y->right_;
+    if (yr != 0)
+    {
+        yr->parent_ = (void*)((unsigned long)x | ((unsigned long)yr->parent_ & 1));
+    }
+    y->parent_ = (void*)(((unsigned long)x->parent_ & ~1) | ((unsigned long)y->parent_ & 1));
+    node_base* parent = (node_base*)((unsigned long)x->parent_ & ~1);
+    if (x == (node_base*)parent->left_)
+    {
+        parent->left_ = y;
+    }
+    else
+    {
+        parent->right_ = y;
+    }
+    y->right_ = x;
+    x->parent_ = (void*)((unsigned long)y | ((unsigned long)x->parent_ & 1));
+}
+
 template <class T, class Compare, class Allocator>
 class __tree : private __red_black_tree<1>
 {
@@ -209,6 +207,45 @@ __tree<T, Compare, Allocator>::__tree(const Compare& comp, const Allocator& allo
     , node_alloc_()
     , comp_(comp, (node*)&node_alloc_.second())
 {
+}
+
+template <class T, class Compare, class Allocator>
+inline
+Allocator& __tree<T, Compare, Allocator>::alloc()
+{
+    return alloc_.first();
+}
+
+template <class T, class Compare, class Allocator>
+inline
+std::allocator<typename __tree<T, Compare, Allocator>::node>&
+__tree<T, Compare, Allocator>::node_alloc()
+{
+    return node_alloc_.first();
+}
+
+template <class T, class Compare, class Allocator>
+void __tree<T, Compare, Allocator>::clear()
+{
+    node* n = (node*)node_alloc_.second().left_;
+    if (n != 0)
+    {
+        destroy(n);
+        alloc_.second() = 0;
+        node_alloc_.second().left_ = 0;
+        comp_.second() = (node*)&node_alloc_.second();
+    }
+}
+
+template <class T, class Compare, class Allocator>
+void __tree<T, Compare, Allocator>::destroy(node* __p)
+{
+    if (__p->left_ != 0)
+        destroy(static_cast<node*>(__p->left_));
+    if (__p->right_ != 0)
+        destroy(static_cast<node*>(__p->right_));
+    alloc().destroy(&__p->data_);
+    node_alloc().deallocate(__p, 1);
 }
 
 template <class T, class Compare, class Allocator>

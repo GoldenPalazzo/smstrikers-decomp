@@ -1,7 +1,6 @@
-#define NL_SINGLETON_NO_DEFINE
 #include "Game/Sys/movie.h"
 #include "Game/Audio/AudioLoader.h"
-#include "Game/Audio/StreamTrack.h"
+#include "Game/Audio/AudioStream.h"
 #include "Game/Sys/debug.h"
 #include "NL/gc/gcSwizzler.h"
 #include "NL/gl/glMemory.h"

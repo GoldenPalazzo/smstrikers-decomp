@@ -22,7 +22,7 @@ static inline Replay::Frame* ReplayAllocFrame(char* memory, int memorySize)
     if (pool->m_FreeList != nullptr)
     {
         frame = (Replay::Frame*)pool->m_FreeList;
-        pool->m_FreeList = ((SlotPoolEntry*)frame)->m_next;
+        pool->m_FreeList = ((SlotPoolEntry*)frame)->next;
     }
 
     if (frame != nullptr)
@@ -70,7 +70,7 @@ Replay::~Replay()
     do
     {
         Frame* next = frame->mNext;
-        ((SlotPoolEntry*)frame)->m_next = Frame::mSlotPool.m_FreeList;
+        ((SlotPoolEntry*)frame)->next = Frame::mSlotPool.m_FreeList;
         Frame::mSlotPool.m_FreeList = (SlotPoolEntry*)frame;
         frame = next;
     } while (frame != mFree);
@@ -179,7 +179,7 @@ void Replay::NewFrame()
                 mFree->mSize += nextFrame->mSize;
                 mFree->mNext = nextFrame->mNext;
                 mFree->mReelIdx = -1;
-                ((SlotPoolEntry*)nextFrame)->m_next = Frame::mSlotPool.m_FreeList;
+                ((SlotPoolEntry*)nextFrame)->next = Frame::mSlotPool.m_FreeList;
                 Frame::mSlotPool.m_FreeList = (SlotPoolEntry*)nextFrame;
             }
             else
@@ -380,14 +380,4 @@ float Replay::EndTime() const
 void Replay::PlayReel(int reelIdx)
 {
     mReelIdx = reelIdx;
-}
-
-// Field-order stub: unreferenced TU-local; forces the .sdata2 float pool
-// consts into target order [0.0, magic, 1.2]. Emitted first under
-// -inline deferred, it numbers 0.0f then the (float)(int) conversion magic
-// before LockReel's 1.2f. The linker drops the unreferenced local.
-static void Replay_stub(float& a, float& b, int n)
-{
-    a = 0.0f;
-    b = (float)(n / 4);
 }

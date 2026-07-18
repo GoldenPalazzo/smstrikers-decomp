@@ -1,7 +1,3 @@
-#define NL_SINGLETON_NO_DEFINE
-#define NL_FLOATCOLOUR_ASSIGN_OUT_OF_LINE
-#define FERENDER_INLINE_ACCESSOR_IMPLS
-
 #include "Game/FE/feRender.h"
 #include "Game/FE/tlInstance.h"
 #include "Game/FE/tlImageInstance.h"
@@ -458,19 +454,6 @@ void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
 
         instance = nextInstance;
     }
-}
-
-/**
- * Offset/Address/Size: 0x954 | 0x8020ABDC | size: 0x24
- * Weak __as__ copy emitted here in main .text (body guarded out of nlColour.h
- * via NL_FLOATCOLOUR_ASSIGN_OUT_OF_LINE).
- */
-inline void nlFloatColour::operator=(const nlFloatColour& other)
-{
-    *(u32*)&c[0] = *(u32*)&other.c[0];
-    *(u32*)&c[1] = *(u32*)&other.c[1];
-    *(u32*)&c[2] = *(u32*)&other.c[2];
-    *(u32*)&c[3] = *(u32*)&other.c[3];
 }
 
 /**
@@ -1148,13 +1131,17 @@ void FERender::CalculateCurrentAssetColour(const TLInstance* instance)
     }
 }
 
-/**
- * Unreferenced (mwld strips it). Forces the deferred weak-body flush to happen
- * before __sinit synthesis so __sinit lands in its own section AFTER the
- * linkonce buckets, as in the original object.
- */
-void feRender_stub()
+inline eTimeLineAssetType TLInstance::GetType() const
 {
-    void (*volatile forceTlSlideBucket)() = &feRenderTlSlideStub;
-    (void)forceTlSlideBucket;
+    return m_type;
+}
+
+inline bool TLInstance::IsVisible() const
+{
+    return m_bVisible;
+}
+
+inline FELibObject* TLInstance::GetLibRefObject() const
+{
+    return (FELibObject*)m_component;
 }

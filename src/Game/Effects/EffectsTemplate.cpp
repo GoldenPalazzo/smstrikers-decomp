@@ -21,26 +21,6 @@ struct ColourKey
     int value;
 };
 
-#pragma inline_depth(0)
-/**
- * Offset/Address/Size: 0x8E4 | 0x801F27A4 | size: 0x58
- */
-void AVLTreeBase<unsigned long, EffectsTemplate*, NewAdapter<AVLTreeEntry<unsigned long, EffectsTemplate*> >, DefaultKeyCompare<unsigned long> >::DeleteValues()
-{
-    FORCE_DONT_INLINE;
-    DestroyTree(&AVLTreeBase::DeleteValue);
-    m_NumElements = 0;
-}
-#pragma inline_depth(255)
-
-/**
- * Offset/Address/Size: 0x0 | 0x801F1EC0 | size: 0x48
- */
-void AVLTreeBase<unsigned long, EffectsTemplate*, NewAdapter<AVLTreeEntry<unsigned long, EffectsTemplate*> >, DefaultKeyCompare<unsigned long> >::DeleteValue(AVLTreeEntry<unsigned long, EffectsTemplate*>* entry)
-{
-    delete entry->value;
-    m_Allocator.Delete(entry);
-}
 
 /**
  * Offset/Address/Size: 0x12D8 | 0x801F1E9C | size: 0x24
@@ -656,11 +636,4 @@ EffectsTemplate* fxGetTemplate(unsigned long key)
     }
 
     return *resultPtr;
-}
-
-// At the bottom of EffectsTemplate.cpp -- REMOVE once real callers exist.
-void EffectsTemplate_stub()
-{
-    NewAdapter<AVLTreeEntry<unsigned long, EffectsTemplate*> > adapter;
-    adapter.Delete(0);
 }

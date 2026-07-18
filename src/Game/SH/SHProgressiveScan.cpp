@@ -1,4 +1,3 @@
-#define BASICSTRING_DELEGATING_CTOR
 #include "Game/SH/SHProgressiveScan.h"
 
 #include "Game/FE/feInput.h"

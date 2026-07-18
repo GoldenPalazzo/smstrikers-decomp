@@ -204,92 +204,59 @@ void cSHierarchy::BuildPushPopFlags(int nodeIndex, int currentDepth, int& stackD
     }
 }
 
-static inline void* nlGetChunkData(nlChunk* chunk)
-{
-    u32 alignField = chunk->m_ID & 0x7F000000;
-    if (((-alignField) | alignField) >> 31)
-    {
-        alignField = 1u << (alignField >> 24);
-        u32 result = (u32)chunk + alignField;
-        result = (result + 7) & ~(alignField - 1);
-        return (void*)result;
-    }
-    return (void*)((u8*)chunk + 8);
-}
-
-static inline void* nlGetChunkDataAligned(nlChunk* chunk)
-{
-    u32 alignField = chunk->m_ID & 0x7F000000;
-    if (((-alignField) | alignField) >> 31)
-    {
-        u32 alignment = 1u << (alignField >> 24);
-        u32 result = (u32)chunk + alignment;
-        result = (result + 7) & ~(alignment - 1);
-        return (void*)result;
-    }
-    return (void*)((u8*)chunk + 8);
-}
-
-static inline nlChunk* nlGetNextChunk(nlChunk* chunk)
-{
-    return (nlChunk*)((u8*)chunk + chunk->m_Size + 8);
-}
-
-// NONMATCHING
 /**
  * Offset/Address/Size: 0x354 | 0x801EE340 | size: 0x3E0
- * TODO: 99.78% match - first name chunk walk keeps the next chunk in r4 instead of r6.
  */
-cSHierarchy* cSHierarchy::Initialize(nlChunk* chunkData)
+cSHierarchy* cSHierarchy::Initialize(nlChunk* pChunk)
 {
-    nlChunk* chunk = (nlChunk*)((u8*)chunkData + 8);
-    cSHierarchy* hier = (cSHierarchy*)nlGetChunkData(chunk);
+    pChunk = pChunk->GetFirstChunk();
+    cSHierarchy* pRetval = (cSHierarchy*)pChunk->GetData();
 
-    chunk = nlGetNextChunk(chunk);
-    hier->m_szName = (const char*)nlGetChunkData(chunk);
+    pChunk = pChunk->GetNextChunk();
+    pRetval->m_szName = (const char*)pChunk->GetData();
 
-    chunk = nlGetNextChunk(chunk);
-    hier->m_nodeIDs = (u32*)nlGetChunkData(chunk);
+    pChunk = pChunk->GetNextChunk();
+    pRetval->m_nodeIDs = (u32*)pChunk->GetData();
 
-    chunk = nlGetNextChunk(chunk);
-    hier->m_parentIndices = (s32*)nlGetChunkDataAligned(chunk);
+    pChunk = pChunk->GetNextChunk();
+    pRetval->m_parentIndices = (s32*)pChunk->GetData();
 
-    chunk = nlGetNextChunk(chunk);
-    hier->m_childCounts = (s32*)nlGetChunkDataAligned(chunk);
+    pChunk = pChunk->GetNextChunk();
+    pRetval->m_childCounts = (s32*)pChunk->GetData();
 
-    chunk = nlGetNextChunk(chunk);
-    hier->m_childArrays = (s32**)nlGetChunkDataAligned(chunk);
+    pChunk = pChunk->GetNextChunk();
+    pRetval->m_childArrays = (s32**)pChunk->GetData();
 
-    chunk = nlGetNextChunk(chunk);
-    hier->m_pushPopFlags = (s32*)nlGetChunkDataAligned(chunk);
+    pChunk = pChunk->GetNextChunk();
+    pRetval->m_pushPopFlags = (s32*)pChunk->GetData();
 
-    nlChunk* childDataChunk = nlGetNextChunk(chunk);
-    s32* childData = (s32*)nlGetChunkData(childDataChunk);
+    pChunk = pChunk->GetNextChunk();
+    s32* pChild = (s32*)pChunk->GetData();
 
-    for (int i = 0; i < hier->m_nodeCount; i++)
+    for (int i = 0; i < pRetval->m_nodeCount; i++)
     {
-        if (hier->m_childCounts[i] > 0)
+        if (pRetval->m_childCounts[i] > 0)
         {
-            hier->m_childArrays[i] = childData;
+            pRetval->m_childArrays[i] = pChild;
         }
         else
         {
-            hier->m_childArrays[i] = 0;
+            pRetval->m_childArrays[i] = 0;
         }
-        childData += hier->m_childCounts[i];
+        pChild += pRetval->m_childCounts[i];
     }
 
-    int stackDepth = 0;
-    hier->BuildPushPopFlags(0, 0, stackDepth);
+    int nCurrentDepth = 0;
+    pRetval->BuildPushPopFlags(0, 0, nCurrentDepth);
 
-    chunk = nlGetNextChunk(childDataChunk);
-    hier->m_mirroredNodeIndices = (s32*)nlGetChunkDataAligned(chunk);
+    pChunk = pChunk->GetNextChunk();
+    pRetval->m_mirroredNodeIndices = (s32*)pChunk->GetData();
 
-    chunk = nlGetNextChunk(chunk);
-    hier->m_translationOffsets = (nlVector3*)nlGetChunkDataAligned(chunk);
+    pChunk = pChunk->GetNextChunk();
+    pRetval->m_translationOffsets = (nlVector3*)pChunk->GetData();
 
-    chunk = nlGetNextChunk(chunk);
-    hier->m_boneLengthFlags = (u8*)nlGetChunkDataAligned(chunk);
+    pChunk = pChunk->GetNextChunk();
+    pRetval->m_boneLengthFlags = (u8*)pChunk->GetData();
 
-    return hier;
+    return pRetval;
 }

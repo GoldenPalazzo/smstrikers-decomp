@@ -1,10 +1,8 @@
 #include "Game/SAnim.h"
-#define NLLIST_ADD_START_USE_NEXT_MEMBER
 #include "Game/PoseAccumulator.h"
 
 #include "NL/nlMemory.h"
 #include "NL/nlList.h"
-#undef NLLIST_ADD_START_USE_NEXT_MEMBER
 
 #pragma inline_depth(8)
 #pragma inline_max_size(0x10000)

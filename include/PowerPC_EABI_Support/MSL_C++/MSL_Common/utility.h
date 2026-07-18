@@ -22,4 +22,62 @@ struct pair
 };
 } // namespace std
 
+namespace Metrowerks
+{
+namespace details
+{
+
+template <class First, class Second, int tag>
+class compressed_pair_imp
+{
+    First first_;
+    Second second_;
+
+public:
+    compressed_pair_imp() { }
+    compressed_pair_imp(const First& first)
+        : first_(first)
+        , second_()
+    {
+    }
+    compressed_pair_imp(const First& first, const Second& second)
+        : first_(first)
+        , second_(second)
+    {
+    }
+
+    First& first() { return first_; }
+    Second& second() { return second_; }
+};
+
+template <class First, class Second>
+class compressed_pair_imp<First, Second, 1> : private First
+{
+    Second second_;
+
+public:
+    compressed_pair_imp()
+        : First()
+        , second_()
+    {
+    }
+    compressed_pair_imp(const Second& second)
+        : First()
+        , second_(second)
+    {
+    }
+
+    inline First& first();
+    Second& second() { return second_; }
+};
+
+template <class First, class Second>
+inline First& compressed_pair_imp<First, Second, 1>::first()
+{
+    return *this;
+}
+
+} // namespace details
+} // namespace Metrowerks
+
 #endif

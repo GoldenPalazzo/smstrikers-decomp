@@ -1,6 +1,6 @@
 #include "Game/FE/feMusic.h"
 #include "Game/Audio/AudioLoader.h"
-#include "Game/Audio/StreamTrack.h"
+#include "Game/Audio/AudioStream.h"
 #include "NL/nlString.h"
 
 static const char* streamnames[] = {

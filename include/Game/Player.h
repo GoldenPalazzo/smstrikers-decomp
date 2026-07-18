@@ -86,6 +86,8 @@ public:
     virtual ~cPlayer();
 
     s32 GetUniqueID(int) const;
+    float SuggestPassTargetPosition(nlVector3&, cPlayer*, bool, bool);
+    bool SuggestPassDirection(nlVector3&, cPlayer*, bool, bool);
     void SetNoPickUpTime(float);
     nlVector3 GetAIDefNetLocation(const nlVector3*);
     nlVector3 GetAIOffNetLocation(const nlVector3*);

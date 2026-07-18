@@ -133,8 +133,6 @@ sPlayParams& cDecisionEntity::GetLastPlayParams()
     return m_LastSelectedAction.m_sPlayParams;
 }
 
-extern "C" ScriptAction* __ct__12ScriptActionF17eScriptActionTypef(ScriptAction*, eScriptActionType, float);
-
 /**
  * Offset/Address/Size: 0x9D4 | 0x80018930 | size: 0x3E0
  */
@@ -155,21 +153,8 @@ ScriptAction* cDecisionEntity::QueueActionSetDesire(int eDesireType, float fConf
     }
     else
     {
-        ScriptAction* action = NULL;
-
-        if (ScriptAction::m_ScriptActionSlotPool.m_FreeList == NULL)
-        {
-            SlotPoolBase::BaseAddNewBlock(&ScriptAction::m_ScriptActionSlotPool, sizeof(ScriptAction));
-        }
-
-        if (ScriptAction::m_ScriptActionSlotPool.m_FreeList != NULL)
-        {
-            action = (ScriptAction*)ScriptAction::m_ScriptActionSlotPool.m_FreeList;
-            ScriptAction::m_ScriptActionSlotPool.m_FreeList = ScriptAction::m_ScriptActionSlotPool.m_FreeList->m_next;
-        }
-
-        if (action != NULL)
-            action = __ct__12ScriptActionF17eScriptActionTypef(action, SAT_SET_DESIRE, fConfidence);
+        ScriptAction* action = new (ScriptAction::m_ScriptActionSlotPool.Allocate())
+            ScriptAction(SAT_SET_DESIRE, fConfidence);
 
         pNewAction = action;
     }
@@ -240,21 +225,8 @@ ScriptAction* cDecisionEntity::QueueActionSetDesire(int eDesireType, float fConf
  */
 ScriptAction* cDecisionEntity::QueueActionSetPlay(int ePlayType, float fConfidence, float fDuration)
 {
-    ScriptAction* action = NULL;
-
-    if (ScriptAction::m_ScriptActionSlotPool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&ScriptAction::m_ScriptActionSlotPool, sizeof(ScriptAction));
-    }
-
-    if (ScriptAction::m_ScriptActionSlotPool.m_FreeList != NULL)
-    {
-        action = (ScriptAction*)ScriptAction::m_ScriptActionSlotPool.m_FreeList;
-        ScriptAction::m_ScriptActionSlotPool.m_FreeList = ScriptAction::m_ScriptActionSlotPool.m_FreeList->m_next;
-    }
-
-    if (action != NULL)
-        action = __ct__12ScriptActionF17eScriptActionTypef(action, SAT_SET_PLAY, fConfidence);
+    ScriptAction* action = new (ScriptAction::m_ScriptActionSlotPool.Allocate())
+        ScriptAction(SAT_SET_PLAY, fConfidence);
 
     action->m_sPlayParams.ePlayType = ePlayType;
     ScriptAction* prev = NULL;

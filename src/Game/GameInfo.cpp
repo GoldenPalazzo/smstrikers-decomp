@@ -27,6 +27,9 @@ static bool isYoshiUnlocked = false;
 static bool isForbiddenUnlocked = false;
 static bool isSuperStadUnlocked = false;
 
+template <>
+GameInfoManager* nlSingleton<GameInfoManager>::s_pInstance = 0;
+
 bool inline CheckUnlockStatus(const bool& globalFlag, const unsigned char& trophyValue, const unsigned int bit)
 {
     if (!globalFlag)
@@ -70,110 +73,6 @@ static inline bool CheckUnlockStatusNoGlobal(const unsigned char& trophyValue, c
     {
         return (trophyValue >> bit) & 0x01;
     }
-}
-
-static inline BasicStringInternal* BuildMarioStringData()
-{
-    BasicStringInternal* data = (BasicStringInternal*)Detail::TempStringAllocator::allocate(0x10);
-    if (data != 0)
-    {
-        const char* str = "mario";
-        data->mData = 0;
-        const char* s = str;
-        data->mSize = 0;
-        data->mCapacity = 0;
-        while (*s++ != 0)
-        {
-            data->mSize++;
-        }
-        data->mSize++;
-        data->mData = (char*)Detail::TempStringAllocator::allocate(data->mSize + 1);
-        data->mCapacity = data->mSize;
-        for (s32 i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *str++;
-        }
-        data->mRefCount = 1;
-    }
-    return data;
-}
-
-static inline BasicStringInternal* BuildLuigiStringData()
-{
-    BasicStringInternal* data = (BasicStringInternal*)Detail::TempStringAllocator::allocate(0x10);
-    if (data != 0)
-    {
-        const char* str = "luigi";
-        data->mData = 0;
-        const char* s = str;
-        data->mSize = 0;
-        data->mCapacity = 0;
-        while (*s++ != 0)
-        {
-            data->mSize++;
-        }
-        data->mSize++;
-        data->mData = (char*)Detail::TempStringAllocator::allocate(data->mSize + 1);
-        data->mCapacity = data->mSize;
-        for (s32 i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *str++;
-        }
-        data->mRefCount = 1;
-    }
-    return data;
-}
-
-static inline BasicStringInternal* BuildToadStringData()
-{
-    BasicStringInternal* data = (BasicStringInternal*)Detail::TempStringAllocator::allocate(0x10);
-    if (data != 0)
-    {
-        const char* str = "toad";
-        data->mData = 0;
-        const char* s = str;
-        data->mSize = 0;
-        data->mCapacity = 0;
-        while (*s++ != 0)
-        {
-            data->mSize++;
-        }
-        data->mSize++;
-        data->mData = (char*)Detail::TempStringAllocator::allocate(data->mSize + 1);
-        data->mCapacity = data->mSize;
-        for (s32 i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *str++;
-        }
-        data->mRefCount = 1;
-    }
-    return data;
-}
-
-static inline BasicStringInternal* BuildKoopaStringData()
-{
-    BasicStringInternal* data = (BasicStringInternal*)Detail::TempStringAllocator::allocate(0x10);
-    if (data != 0)
-    {
-        const char* str = "koopa";
-        data->mData = 0;
-        const char* s = str;
-        data->mSize = 0;
-        data->mCapacity = 0;
-        while (*s++ != 0)
-        {
-            data->mSize++;
-        }
-        data->mSize++;
-        data->mData = (char*)Detail::TempStringAllocator::allocate(data->mSize + 1);
-        data->mCapacity = data->mSize;
-        for (s32 i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *str++;
-        }
-        data->mRefCount = 1;
-    }
-    return data;
 }
 
 /**
@@ -3634,18 +3533,6 @@ void GameInfoManager::TimeStampCupEnd()
             pSpoil->mNumCupWins = 999;
         }
     }
-}
-
-inline TeamStats::TeamStats()
-{
-    memset(&mPlayerTotalStats, 0, sizeof(mPlayerTotalStats));
-    mPlayerTotalStats.mRecordType.mTeamID = TEAM_MARIO;
-    mPlayerTotalStats.mType = TYPE_TEAM;
-    mTeamIndex = TEAM_MARIO;
-    mNumWins = 0;
-    mNumLosses = 0;
-    mNumOTLosses = 0;
-    mNumPoints = 0;
 }
 
 /**

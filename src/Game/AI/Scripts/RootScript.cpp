@@ -1,5 +1,6 @@
 #include "Game/AI/Scripts/RootScript.h"
 #include "Game/AI/AIPlay.h"
+#include "Game/AI/Scripts/ScriptCaching.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
 
 extern cFielder* g_pScriptCurrentFielder;

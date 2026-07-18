@@ -70,15 +70,10 @@ inline const char* FEResourceManager::GetName()
     return "FEResource Manager";
 }
 
-// feResourceManager.cpp must not emit the weak Run body (the linked DOL
-// attributes it to SHCrossFader.o, which links later), so it hides this
-// definition behind the guard and keeps only the declaration visible.
-#ifndef FERESOURCEMANAGER_NO_RUN_INLINE
 inline void FEResourceManager::Run(float dt)
 {
     Update(dt);
 }
-#endif
 
 // class AVLTreeBase<unsigned long, FEResourceHandle*, BasicSlotPool<AVLTreeEntry<unsigned long, FEResourceHandle*>>,
 // DefaultKeyCompare<unsigned long>>

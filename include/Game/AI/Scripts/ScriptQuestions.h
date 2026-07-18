@@ -7,13 +7,9 @@
 #include "Game/Team.h"
 #include "Game/Game.h"
 #include "Game/AI/Fielder.h"
-#include "NL/nlSingleton.h"
-#include "NL/nlAVLTreeSlotPool.h"
-#include "Game/AI/FuzzyVariant.h"
-#include "PowerPC_EABI_Support/MSL_C++/MSL_Common/msl_tree.h"
 
-extern unsigned char g_bScriptQuestionCachingOn;
-extern unsigned char g_bScriptQuestionCachingUseSTD;
+extern cFielder* g_pScriptCurrentFielder;
+extern cFielder* g_pScriptCurrentMark;
 
 enum eScriptFielderDesire
 {
@@ -45,27 +41,6 @@ enum eScriptFielderDesire
     edPostWhistle = 25,
     edWait = 28,
 };
-
-#ifndef _SCRIPTQUESTIONCACHE_DEFINED_
-#define _SCRIPTQUESTIONCACHE_DEFINED_
-class ScriptQuestionCache : public nlSingleton<ScriptQuestionCache>
-{
-public:
-    ScriptQuestionCache()
-        : mQuestionCacheMap(16, 16)
-    {
-    }
-    ~ScriptQuestionCache();
-    unsigned char Lookup(unsigned long, FuzzyVariant&, const char*);
-    const FuzzyVariant& AddToCache(unsigned long, const FuzzyVariant&, const char*);
-    void Clear();
-
-    /* 0x00 */ nlAVLTreeSlotPool<unsigned long, FuzzyVariant, DefaultKeyCompare<unsigned long> > mQuestionCacheMap;
-    /* 0x28 */ std::map<unsigned long, FuzzyVariant, std::less<unsigned long>, std::allocator<std::pair<const unsigned long, FuzzyVariant> > > mQuestionCacheMapSTD;
-    /* 0x38 */ int mTotalLookups;
-    /* 0x3C */ int mCacheHits;
-}; // total size: 0x40
-#endif
 
 float InOffensiveZoneOfPlayer(cBall*, cPlayer*);
 float InDefensiveZoneOfPlayer(cBall*, cPlayer*);
@@ -102,8 +77,12 @@ float ChasingBall(cPlayer*);
 float OnMushrooms(cFielder*);
 float WindingUpForShot(cFielder*);
 float InControlOfBall(cFielder*);
+float FarToPlayersNet(cBall*, cPlayer*);
 float NearToPlayersNet(cBall*, cPlayer*);
+float CloseToPlayersNet(cBall*, cPlayer*);
 float FarToTheirNetB(cBall*);
+float NearToTheirNetB(cBall*);
+float CloseToTheirNetB(cBall*);
 float Stunned(Goalie*);
 float OutOfNet(Goalie*);
 float SeparatingFrom(cPlayer*, cPlayer*);
@@ -185,5 +164,76 @@ float LastBallOwner(cPlayer*);
 float BallOwnerT(cTeam*);
 float BallOwner(cPlayer*);
 float CalcSelectChance(float, float);
+
+static float FacingMark(cFielder* fielder)
+{
+    return Facing(fielder, g_pScriptCurrentMark);
+}
+
+static float FacingMe(cFielder* fielder)
+{
+    return Facing(fielder, g_pScriptCurrentFielder);
+}
+
+static float FarToMark(cFielder* fielder)
+{
+    return FarTo(fielder, g_pScriptCurrentMark);
+}
+
+static float NearToMark(cFielder* fielder)
+{
+    return NearTo(fielder, g_pScriptCurrentMark);
+}
+
+static float CloseToMark(cFielder* fielder)
+{
+    return CloseTo(fielder, g_pScriptCurrentMark);
+}
+
+static float OpenFromMe(cPlayer* fielder)
+{
+    return OpenTo(g_pScriptCurrentFielder, fielder);
+}
+
+static float OpenToMe(cPlayer* fielder)
+{
+    return OpenTo(fielder, g_pScriptCurrentFielder);
+}
+
+static float FarToMe(cPlayer* fielder)
+{
+    return FarTo(fielder, g_pScriptCurrentFielder);
+}
+
+static float NearToMe(cPlayer* fielder)
+{
+    return NearTo(fielder, g_pScriptCurrentFielder);
+}
+
+static float CloseToMe(cPlayer* fielder)
+{
+    return CloseTo(fielder, g_pScriptCurrentFielder);
+}
+
+static float FarToMyNetB(cBall* ball)
+{
+    return FarToPlayersNet(ball, g_pScriptCurrentFielder);
+}
+
+static float NearToMyNetB(cBall* ball)
+{
+    return NearToPlayersNet(ball, g_pScriptCurrentFielder);
+}
+
+static float CloseToMyNetB(cBall* ball)
+{
+    return CloseToPlayersNet(ball, g_pScriptCurrentFielder);
+}
+
+template <typename T>
+nlVector3& PositionOf(T pObject)
+{
+    return pObject->m_v3Position;
+}
 
 #endif // _SCRIPTQUESTIONS_H_

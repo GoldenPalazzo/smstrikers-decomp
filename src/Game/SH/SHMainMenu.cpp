@@ -1,12 +1,3 @@
-#define MEMFUN_NO_DECL
-#define BIND_NO_DECL
-#define FUNCTION1_SPLIT_BODIES
-#define FUNCTION1_OWNER_DTOR
-#define FUNCTION1_BIND_BY_VALUE
-#define FUNCTION_SIGNATURE_DTOR_DECLARE_ONLY
-#define MENU_ITEM_SYNTHESIZE_DTOR
-#define FEPOPUPMENU_BYVAL_DECLS
-#define FEPOPUPMENU_INLINE_NOARG_CREATE
 #include "Game/SH/SHMainMenu.h"
 #include "Game/GameInfo.h"
 #include "Game/GameSceneManager.h"
@@ -22,8 +13,7 @@
 #include "NL/gl/glStruct.h"
 #include "NL/nlPrint.h"
 
-#include "NL/nlMemFunBody.h"
-#include "NL/nlBindBody.h"
+#include "NL/nlBind.h"
 
 typedef Detail::MemFunImpl<void, void (SHMainMenu::*)(TLComponentInstance*)> MainMenuMemFun_t;
 typedef BindExp2<void, MainMenuMemFun_t, SHMainMenu*, Placeholder<0> > MainMenuBind_t;
@@ -217,20 +207,9 @@ SHMainMenu::~SHMainMenu()
     }
 }
 
-typedef void MainMenuItemCallback(TLComponentInstance*);
-template <>
-Function<MainMenuItemCallback>::~Function()
-{
-}
-
 static inline BackgroundScene* GetMarioBackground()
 {
     return (BackgroundScene*)nlSingleton<GameSceneManager>::s_pInstance->GetScene(SCENE_MARIO_BACKGROUND);
-}
-
-static inline MenuItem<TLComponentInstance>* MainMenuItemAt(MenuList<TLComponentInstance>& menu, int idx)
-{
-    return &menu.mMenuItems[idx];
 }
 
 /**
@@ -244,7 +223,7 @@ void SHMainMenu::SceneCreated()
     typedef TLInstance* (*FindInstByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
     typedef TLComponentInstance* (*FindComponentByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
     typedef TLComponentInstance* (*FindComponentByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef Function<TLComponentInstance*> MenuCallback;
+    typedef MenuItem<TLComponentInstance>::Callback MenuCallback;
     static const char* MenuNameTable[] = { "MENU ITEM1", "MENU ITEM2", "MENU ITEM3", "MENU ITEM4", "MENU ITEM7", "MENU ITEM5", "MENU ITEM6" };
     static void (*const ApplyFuncTable[])(TLComponentInstance*) = { onSelectFriendly, onSelectCup, onSelectSuperCup, onSelectTournament, onSelect101, onSelectTrophies, onSelectOptions };
     FEMusic::StartStreamIfDifferent(0);
@@ -273,84 +252,55 @@ void SHMainMenu::SceneCreated()
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(MenuNameTable[i])));
         TLComponentInstance* compinstance = (TLComponentInstance*)instance;
-        item = MainMenuItemAt(mMenuItems, mMenuItems.mNumItemsAdded);
-        mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded].mType = compinstance;
-        mMenuItems.mNumItemsAdded++;
+        item = mMenuItems.AddItem(compinstance);
 
         {
             MenuCallback openFunc(Bind<void>(MemFun<SHMainMenu, void, TLComponentInstance*>(&SHMainMenu::OpenItem), this, placeholder0));
-            *(MenuCallback*)&item->mCallbacks[1] = openFunc;
+            item->SetCallback(ON_HIGHLIGHT, openFunc);
         }
         
         {
             MenuCallback closeFunc(Bind<void>(MemFun<SHMainMenu, void, TLComponentInstance*>(&SHMainMenu::CloseItem), this, placeholder0));
-            *(MenuCallback*)&item->mCallbacks[2] = closeFunc;
+            item->SetCallback(ON_UNHIGHLIGHT, closeFunc);
         }
         
         {
-            Function<TLComponentInstance*> applyFunc;
-            applyFunc.mTag = FREE_FUNCTION;
-            applyFunc.mFreeFunction = ApplyFuncTable[i];
-            *(Function<TLComponentInstance*>*)&item->mCallbacks[0] = applyFunc;
+            MenuItem<TLComponentInstance>::Callback applyFunc(ApplyFuncTable[i]);
+            item->SetCallback(ON_APPLY, applyFunc);
         }
         
-        item->mLocked = false;
+        item->SetLockedFlag(false);
         if (i == mLastMenuItem)
         {
             OpenItem(compinstance);
-            item->mDisabled = false;
+            item->SetDisabledFlag(false);
         }
         else if (i == 2 && !g_e3_Build && !nlSingleton<GameInfoManager>::s_pInstance->IsSuperCupModeUnlocked())
         {
             CloseItem(compinstance);
-            item->mLocked = true;
+            item->SetLockedFlag(true);
         }
         else
         {
             CloseItem(compinstance);
             if (g_e3_Build)
             {
-                item->mDisabled = true;
+                item->SetDisabledFlag(true);
             }
         }
         if (i == 2)
         {
-            TLComponentInstance* lockedType = item->mType;
+            TLComponentInstance* lockedType = item->GetType();
             TLComponentInstance* lockedComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
                 lockedType->GetActiveSlide(),
                 InlineHasher(nlStringLowerHash("locked")),
                 InlineHasher(0));
-            u8 locked = item->mLocked;
+            u8 locked = item->IsLocked();
             lockedComp->m_bVisible = (bool)locked;
         }
     }
-    int lastItem = mLastMenuItem;
-    {
-        int curIdx = mMenuItems.mCurrentIndex;
-        int tag = mMenuItems.mMenuItems[curIdx].mCallbacks[2].mTag;
-        if (((u32)((-tag) | tag) >> 31) > 0)
-        {
-            TLComponentInstance* type = mMenuItems.mMenuItems[curIdx].mType;
-            if (tag == FREE_FUNCTION)
-                mMenuItems.mMenuItems[curIdx].mCallbacks[2].mFreeFunction(type);
-            else
-                (*mMenuItems.mMenuItems[curIdx].mCallbacks[2].mFunctor)(type);
-        }
-    }
-    mMenuItems.mCurrentIndex = lastItem;
-    {
-        int curIdx = mMenuItems.mCurrentIndex;
-        int tag = mMenuItems.mMenuItems[curIdx].mCallbacks[1].mTag;
-        if (((u32)((-tag) | tag) >> 31) > 0)
-        {
-            TLComponentInstance* type = mMenuItems.mMenuItems[curIdx].mType;
-            if (tag == FREE_FUNCTION)
-                mMenuItems.mMenuItems[curIdx].mCallbacks[1].mFreeFunction(type);
-            else
-                (*mMenuItems.mMenuItems[curIdx].mCallbacks[1].mFunctor)(type);
-        }
-    }
-    mMenuItems.mFlags = 1;
+    mMenuItems.SetItem(mLastMenuItem);
+    mMenuItems.SetFlag(1);
     scene->SetVisible(true);
     scene->mDesiredPlayMode = PM_STOP_AT_END;
     buttons = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
@@ -366,18 +316,7 @@ void SHMainMenu::SceneCreated()
         BaseSceneHandler::Update(slide->m_start + slide->m_duration);
         FEAudio::EnableSounds(true);
     }
-    {
-        int curIdx = mMenuItems.mCurrentIndex;
-        int tag = mMenuItems.mMenuItems[curIdx].mCallbacks[1].mTag;
-        if (((u32)((-tag) | tag) >> 31) > 0)
-        {
-            TLComponentInstance* type = mMenuItems.mMenuItems[curIdx].mType;
-            if (tag == FREE_FUNCTION)
-                mMenuItems.mMenuItems[curIdx].mCallbacks[1].mFreeFunction(type);
-            else
-                (*mMenuItems.mMenuItems[curIdx].mCallbacks[1].mFunctor)(type);
-        }
-    }
+    mMenuItems.RunCallbackOnCurrent(ON_HIGHLIGHT);
     mSnapMenuIntoPosition = true;
 }
 
@@ -500,7 +439,7 @@ void SHMainMenu::OpenItem(TLComponentInstance* compinstance)
            (InlineHasher&)h1)
         ->SetAssetColour(mHighlightColour);
 
-    if (mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mDisabled)
+    if (mMenuItems.GetMenuItem()->IsDisabled())
     {
         volatile InlineHasher j7, j6, j5, j4, j3, j2, j1, j0;
 
@@ -538,7 +477,7 @@ void SHMainMenu::OpenItem(TLComponentInstance* compinstance)
         text->m_OverloadFlags |= 8;
     }
 
-    if (mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mLocked)
+    if (mMenuItems.GetMenuItem()->IsLocked())
     {
         volatile InlineHasher k8, k7, k6, k5, k4, k3, k2, k1, k0;
         volatile InlineHasher l7, l6, l5, l4, l3, l2, l1, l0;
@@ -651,13 +590,13 @@ void SHMainMenu::OpenItem(TLComponentInstance* compinstance)
         }
     }
 
-    if (mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mLocked)
+    if (mMenuItems.GetMenuItem()->IsLocked())
     {
-        m_itemDescriptions->SetDisplayMessage(sLockedTickerMessages[mMenuItems.mCurrentIndex]);
+        m_itemDescriptions->SetDisplayMessage(sLockedTickerMessages[mMenuItems.GetActiveItemIndex()]);
     }
     else
     {
-        m_itemDescriptions->SetDisplayMessage(sUnlockedTickerMessages[mMenuItems.mCurrentIndex]);
+        m_itemDescriptions->SetDisplayMessage(sUnlockedTickerMessages[mMenuItems.GetActiveItemIndex()]);
     }
 
     BaseSceneHandler* scene = nlSingleton<GameSceneManager>::s_pInstance->GetScene(SCENE_MARIO_BACKGROUND);
@@ -790,7 +729,7 @@ void SHMainMenu::CloseItem(TLComponentInstance* compinstance)
 
     if (lockedComp != NULL)
     {
-        if (mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mLocked)
+        if (mMenuItems.GetMenuItem()->IsLocked())
         {
             lockedComp->m_bVisible = true;
         }
@@ -823,181 +762,24 @@ void SHMainMenu::Update(float dt)
 
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
     {
-        int flags = mMenuItems.mFlags;
-        int wrapFlag = flags & 1;
-        int currentIndex = mMenuItems.mCurrentIndex;
-        int newIndex = currentIndex + 1;
-
-    loop_down:
-        if (wrapFlag)
-        {
-            newIndex = newIndex % mMenuItems.mNumItemsAdded;
-        }
-        else
-        {
-            if (newIndex >= mMenuItems.mNumItemsAdded)
-            {
-                return;
-            }
-        }
-
-        if (flags & 2)
-        {
-            if (mMenuItems.mMenuItems[newIndex].mDisabled)
-            {
-                newIndex++;
-                goto loop_down;
-            }
-        }
-
-        {
-            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFunctor)(type);
-                }
-            }
-        }
-
-        mMenuItems.mCurrentIndex = newIndex;
-
-        {
-            int selIdx = mMenuItems.mCurrentIndex;
-            int tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
-                }
-            }
-        }
-
+        mMenuItems.NextItem();
         return;
     }
 
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
     {
-        int flags = mMenuItems.mFlags;
-        int wrapFlag = flags & 1;
-        int currentIndex = mMenuItems.mCurrentIndex;
-        int newIndex = currentIndex - 1;
-
-    loop_up:
-        if (wrapFlag)
-        {
-            if (newIndex < 0)
-            {
-                newIndex = mMenuItems.mNumItemsAdded - 1;
-            }
-        }
-        else
-        {
-            if (newIndex < 0)
-            {
-                return;
-            }
-        }
-
-        if (flags & 2)
-        {
-            if (mMenuItems.mMenuItems[newIndex].mDisabled)
-            {
-                newIndex--;
-                goto loop_up;
-            }
-        }
-
-        {
-            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFunctor)(type);
-                }
-            }
-        }
-
-        mMenuItems.mCurrentIndex = newIndex;
-
-        {
-            int selIdx = mMenuItems.mCurrentIndex;
-            int tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
-                }
-            }
-        }
-
+        mMenuItems.PreviousItem();
         return;
     }
 
     eFEINPUT_PAD pressedPad;
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, &pressedPad))
     {
-        int currentIndex = mMenuItems.mCurrentIndex;
-        int callbackResult;
-
-        {
-            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[0].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                if (mMenuItems.mMenuItems[currentIndex].mDisabled)
-                {
-                    callbackResult = 3;
-                }
-                else
-                {
-                    TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
-                    if (tag == FREE_FUNCTION)
-                    {
-                        mMenuItems.mMenuItems[currentIndex].mCallbacks[0].mFreeFunction(type);
-                    }
-                    else
-                    {
-                        (*mMenuItems.mMenuItems[currentIndex].mCallbacks[0].mFunctor)(type);
-                    }
-
-                    callbackResult = 1;
-                }
-            }
-            else
-            {
-                callbackResult = 4;
-            }
-        }
-
-        if (callbackResult == 1)
+        if (mMenuItems.RunCallbackOnCurrent(ON_APPLY) == RES_OK)
         {
             GameInfoManager::s_pInstance->mMainUserPadNumber = pressedPad;
             FEAudio::PlayAnimAudioEvent("sfx_accept", false);
-            mLastMenuItem = mMenuItems.mCurrentIndex;
+            mLastMenuItem = mMenuItems.GetActiveItemIndex();
         }
         else
         {

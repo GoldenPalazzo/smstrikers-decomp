@@ -28,27 +28,10 @@ EventManager::~EventManager()
     }
 }
 
-inline EventManager::EventManager(unsigned long uEventCount, unsigned long uEventSize)
-    : m_dispatching(false)
-    , m_handlers(NULL)
-    , m_free(NULL)
-    , m_keep(NULL)
-    , m_queue(NULL)
-    , m_deferred(NULL)
-    , m_dest(NULL)
-    , m_pool(NULL)
-    , m_count(uEventCount)
-    , m_size(uEventSize)
+void EventManager::AllocateEvents(unsigned long uEventCount, unsigned long uEventSize)
 {
-    // The original FlushEventQueue() (inlined away in retail) issued a direct
-    // nlDLRingRemove<Event> on the queue, instantiating Remove<Event> ahead of
-    // RemoveEventHandler's Remove<EventHandler>. That ordering is what makes the
-    // weak COMDAT pair emit EventHandler-before-Event (matching target). The
-    // call is dead and emits no code; it only fixes the instantiation order.
-    if (false)
-    {
-        nlDLRingRemove<Event>(&m_queue, m_queue);
-    }
+    m_count = uEventCount;
+    m_size = uEventSize;
 
     u32 total = m_size * m_count;
     m_pool = (char*)nlMalloc(total, 8, false);
@@ -63,8 +46,31 @@ inline EventManager::EventManager(unsigned long uEventCount, unsigned long uEven
         Event* e = new (m_pool + m_size * i) Event();
         nlDLRingAddEnd(&m_free, e);
     }
+}
 
+EventManager::EventManager(unsigned long uEventCount, unsigned long uEventSize)
+    : m_dispatching(false)
+    , m_handlers(NULL)
+    , m_free(NULL)
+    , m_keep(NULL)
+    , m_queue(NULL)
+    , m_deferred(NULL)
+    , m_dest(NULL)
+    , m_pool(NULL)
+{
+    AllocateEvents(uEventCount, uEventSize);
     SetupDestArray();
+}
+
+inline void EventManager::FlushEventQueue()
+{
+    Event* pEvent;
+    while (m_keep != NULL && m_keep->m_next->m_nReferenceCount == 0)
+    {
+        pEvent = m_keep->m_next;
+        nlDLRingRemove<Event>(&m_keep, pEvent);
+        nlDLRingAddEnd<Event>(&m_free, pEvent);
+    }
 }
 
 /**
@@ -141,7 +147,7 @@ Event* EventManager::CreateValidEvent(unsigned long eventID, unsigned long uSize
     return e;
 }
 
-inline Event* EventManager::GetFreeEvent()
+Event* EventManager::GetFreeEvent()
 {
     Event* e;
     if (!m_free)
@@ -205,13 +211,4 @@ void EventManager::DispatchEvents()
     m_dispatching = 0;
     m_queue = m_deferred;
     m_deferred = NULL;
-}
-
-void eventman_stub()
-{
-    // just needed to get the string/symbols into the right order
-    // TODO: I am sure the erased inline methods in dwarf should get these strings in order without the stub
-    nlPrintf("Event Manager: There are no more free events in the free event list!\n"); // @293
-    nlPrintf("Event Manager: Size mismatch on event creation (%d vs %d)!\n");
-    nlPrintf("Event Manager: Allocating %d events of size %d. Total = %d bytes\n");
 }

@@ -1,9 +1,8 @@
-#define BIND_NO_DECL
-#define FUNCTION1_SPLIT_BODIES
 #include "Game/Render/Nis.h"
 #include "Game/ReplayManager.h"
 #include "Game/NisPlayer.h"
 #include "Game/Sys/audio.h"
+#include "Game/Sys/GCStream.h"
 #include "Game/Audio/AudioStream.h"
 #include "Game/CharacterAudio.h"
 #include "Game/CharacterTriggers.h"
@@ -19,7 +18,7 @@
 
 #include "types.h"
 
-#include "NL/nlBindBody.h"
+#include "NL/nlBind.h"
 
 struct NISData : public EventData
 {
@@ -36,45 +35,6 @@ public:
 };
 
 class EmissionController;
-
-typedef void (*NisEmissionFn)(EmissionController&, int);
-
-typedef BindExp2<void, void (*)(EmissionController&, int), Placeholder<0>, int> BindExp2_Nis_t;
-
-template <>
-inline void Function1<void, EmissionController&>::FunctorImpl<BindExp2_Nis_t>::operator()(EmissionController& arg)
-{
-    mBind.mFunction(arg, mBind.mT1);
-}
-
-// BasicString<>, Detail::TempStringAllocator, FormatImpl<> and the generic
-// Format<>/operator% templates come from NL/nlFormat.h. The TU-unique wrapper
-// Format<..., char[64], int> (char[64] = NisHeader::name) is the only piece not
-// in the header; defining it here instantiates the generic operator%<const char*>
-// and operator%<int> bodies as this TU's local copies (matching the target's
-// scope:local emission), with the wrapper itself emitted weak.
-template <>
-inline BasicString<char, Detail::TempStringAllocator>
-Format<BasicString<char, Detail::TempStringAllocator>, char[64], int>(
-    const BasicString<char, Detail::TempStringAllocator>& format,
-    const char (&value1)[64],
-    const int& value2)
-{
-    BasicStringData<char>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
-
-    return BasicString<char, Detail::TempStringAllocator>(
-        (BasicString<char, Detail::TempStringAllocator>)((impl % (const char*)value1) % value2));
-}
 
 /**
  * Offset/Address/Size: 0x1658 | 0x8012CA68 | size: 0x53C
@@ -405,9 +365,7 @@ void Nis::Trigger::FireEffect(const Nis& nis) const
             return;
         ctrl->m_uUserData = (u32)player;
         {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterFromBall;
+            Function1<void, EmissionController&> update(UpdateEmitterFromBall);
             ctrl->SetUpdateCallback(update);
         }
     }
@@ -444,13 +402,13 @@ void Nis::Trigger::FireEffect(const Nis& nis) const
         }
         if (EffectNeedsValidCoordSys(group))
         {
-            Function<EmissionController&> callback(
+            Function1<void, EmissionController&> callback(
                 Bind<void>(UpdateEmitterFromCharacterIdxWithCoordSys, placeholder0, charIdx));
             ctrl->SetUpdateCallback(callback);
         }
         else
         {
-            Function<EmissionController&> callback(
+            Function1<void, EmissionController&> callback(
                 Bind<void>(UpdateEmitterFromCharacterIdxWithoutAnimController, placeholder0, charIdx));
             ctrl->SetUpdateCallback(callback);
         }

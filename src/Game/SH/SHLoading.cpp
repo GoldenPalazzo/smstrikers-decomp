@@ -1,8 +1,3 @@
-#define BASICSTRING_INDEX_EMPTY_COPY_BYTE_OFFSET
-#define BASICSTRING_INDEX_ALLOC_HELPER
-#define NL_FORMAT_EXPLICIT_WIDE_POINTER_BODY
-#define NL_SINGLETON_NO_DEFINE
-#define NL_NO_LEXICALCAST_NLSTRING_INT
 #include "Game/SH/SHLoading.h"
 #include "Game/Audio/AudioLoader.h"
 #include "Game/Audio/AudioStream.h"
@@ -18,6 +13,7 @@
 #include "Game/main.h"
 #include "NL/nlBasicString.h"
 #include "NL/nlBundleFile.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlTask.h"
 #include "NL/nlLocalization.h"
 #include "NL/nlFormat.h"
@@ -317,18 +313,6 @@ void SuperLoadingScene::Update(float fDeltaT)
  * FE hash setup temporaries and TeamStats ctor inlining order remain
  * mismatched.
  */
-inline TeamStats::TeamStats()
-{
-    memset(&mPlayerTotalStats, 0, sizeof(mPlayerTotalStats));
-    mPlayerTotalStats.mRecordType.mTeamID = TEAM_MARIO;
-    mPlayerTotalStats.mType = TYPE_TEAM;
-    mTeamIndex = TEAM_MARIO;
-    mNumWins = 0;
-    mNumLosses = 0;
-    mNumOTLosses = 0;
-    mNumPoints = 0;
-}
-
 static inline const unsigned short* LookupLocHash(unsigned long key)
 {
     nlLocalization* loc = g_pLocalization;
@@ -451,22 +435,6 @@ void SuperLoadingScene::DisplayCupInfo()
     }
 }
 
-static inline BasicStringData<unsigned short>* CopyWideStringDataNoReread(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& other)
-{
-    BasicStringData<unsigned short>* data;
-    if (other.m_data != NULL)
-    {
-        data = other.m_data;
-        data->mRefCount++;
-    }
-    else
-    {
-        data = NULL;
-    }
-    return data;
-}
-
 /**
  * Offset/Address/Size: 0x0 | 0x800A6770 | size: 0x3C4
  */
@@ -490,9 +458,9 @@ void SuperLoadingScene::BuildPlayerStrings(TLTextInstance* pTextInst, int side, 
 
         nlSNPrintf(narrowBuf, 255, "{clr:%2x%2x%2x}", PAD_COLOURS[i][0], PAD_COLOURS[i][1], PAD_COLOURS[i][2]);
         nlStrToWcs(narrowBuf, wideBuf, 255);
-        str = WideString(CopyWideStringDataNoReread(str.AppendInPlace(wideBuf)));
-        str = WideString(CopyWideStringDataNoReread(str.AppendInPlace(LookupLocHash(CONTROLLER_TEXT[i]))));
-        str = WideString(CopyWideStringDataNoReread(str.AppendInPlace((const unsigned short*)L"{clr:pop} ")));
+        str = str.AppendInPlace(wideBuf);
+        str = str.AppendInPlace(LookupLocHash(CONTROLLER_TEXT[i]));
+        str = str.AppendInPlace((const unsigned short*)L"{clr:pop} ");
     }
 
     memcpy(side == 0 ? mPlayerStrings[0] : mPlayerStrings[1], str.c_str(), 255);

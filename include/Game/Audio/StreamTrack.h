@@ -1,12 +1,12 @@
 #ifndef _STREAMTRACK_H_
 #define _STREAMTRACK_H_
 
+#include "Game/Sys/audio.h"
 #include "NL/nlFunction.h"
 #include "NL/nlDLListContainer.h"
-#include "NL/nlDLListSlotPool.h"
 #include "NL/nlSlotPool.h"
 #include "NL/nlSortedSlot.h"
-#include "NL/nlWalkHelper.h"
+#include "NL/WalkHelper.h"
 
 namespace GCAudioStreaming
 {
@@ -15,17 +15,6 @@ class StereoAudioStream;
 
 namespace Audio
 {
-namespace MasterVolume
-{
-enum VOLUME_GROUP
-{
-    VG_Special = 0,
-    VG_Music = 1,
-    VG_SFX = 2,
-    VG_Voice = 3,
-};
-}
-
 bool TrackMgrFileNameParamLookup(const char*, char*, unsigned long);
 } // namespace Audio
 
@@ -45,46 +34,6 @@ class TrackManagerBase
 public:
     TrackManagerBase();
     TrackManagerBase(const Function<bool(const char*, char*, unsigned long)>&);
-    virtual ~TrackManagerBase();
-    /* 0x0C */ virtual void Update(float);
-    /* 0x10 */ virtual StreamTrack& CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP);
-    /* 0x14 */ virtual void DestroyAllTracks();
-    /* 0x18 */ virtual StreamTrack* GetTrack(unsigned long);
-    /* 0x1C */ virtual void StopAllTracks(unsigned long);
-    /* 0x20 */ virtual void OnMasterVolumeChange(Audio::MasterVolume::VOLUME_GROUP);
-
-    class FadeManager
-    {
-    public:
-        struct STREAM_FADE_CTRL
-        {
-            STREAM_FADE_CTRL()
-                : Callback(EMPTY)
-            {
-            }
-
-            /* 0x00 */ Function<FnVoidVoid> Callback;
-            /* 0x08 */ GCAudioStreaming::StereoAudioStream* pStream;
-            /* 0x0C */ float Interp;
-            /* 0x10 */ unsigned long FadeLength : 14;
-            /* 0x10 */ unsigned long StartVol : 7;
-            /* 0x10 */ unsigned long EndVol : 7;
-            /* 0x10 */ unsigned long VolumeGroup : 3;
-        }; // total size: 0x14
-
-        typedef nlDLListSlotPool<STREAM_FADE_CTRL> FadeList;
-
-        ~FadeManager();
-
-        void UpdateFade(STREAM_FADE_CTRL*);
-        void AddFade(GCAudioStreaming::StereoAudioStream*, unsigned long, unsigned long,
-            Audio::MasterVolume::VOLUME_GROUP, unsigned long, const Function<FnVoidVoid>&);
-        bool ChangeFade(GCAudioStreaming::StereoAudioStream*, unsigned long, unsigned long,
-            const Function<FnVoidVoid>&);
-
-        /* 0x00 */ FadeList m_Fades;
-        /* 0x1C */ float m_dT;
-    }; // total size: 0x20
 
     class StreamFileLookup
     {
@@ -104,19 +53,10 @@ public:
             operator unsigned long() const { return hash; }
         }; // total size: 0x8
 
-        typedef bool (*ParamCallbackFn)(const char*, char*, unsigned long);
-
-        struct ParamFunctorBase
-        {
-            virtual ~ParamFunctorBase() { }
-            virtual bool operator()(const char*, char*, unsigned long) = 0;
-            virtual ParamFunctorBase* Clone() const = 0;
-        };
-
         StreamFileLookup(const char* name,
             const Function<bool(const char*, char*, unsigned long)>& fn);
 
-        /* 0x00 */ Function<FnVoidVoid> m_ParamCB;
+        /* 0x00 */ Function<bool(const char*, char*, unsigned long)> m_ParamCB;
         /* 0x08 */ STREAM_FILE_LOOKUP* m_pLookup;
         /* 0x0C */ unsigned long m_StreamCount;
         /* 0x10 */ char* m_pStrings;
@@ -126,11 +66,75 @@ public:
     typedef BasicSlotPool<StreamDeleteEntry> StreamDeleteAllocator;
     typedef DLListContainerBase<GCAudioStreaming::StereoAudioStream*, StreamDeleteAllocator> StreamDeleteList;
 
+    class FadeManager
+    {
+    public:
+        struct STREAM_FADE_CTRL
+        {
+            STREAM_FADE_CTRL()
+                : Callback()
+            {
+            }
+
+            /* 0x00 */ Function<FnVoidVoid> Callback;
+            /* 0x08 */ GCAudioStreaming::StereoAudioStream* pStream;
+            /* 0x0C */ float Interp;
+            /* 0x10 */ unsigned long FadeLength : 14;
+            /* 0x10 */ unsigned long StartVol : 7;
+            /* 0x10 */ unsigned long EndVol : 7;
+            /* 0x10 */ unsigned long VolumeGroup : 3;
+        }; // total size: 0x14
+
+        typedef nlDLListSlotPool<STREAM_FADE_CTRL> FadeList;
+
+        void Update(float dT);
+        ~FadeManager()
+        {
+            m_Fades.Clear();
+            SlotPoolBase::BaseFreeBlocks(
+                &m_Fades.m_Allocator, sizeof(DLListEntry<STREAM_FADE_CTRL>));
+        }
+        void CompleteFade(STREAM_FADE_CTRL*);
+        void UpdateFade(STREAM_FADE_CTRL*);
+        bool ChangeFade(GCAudioStreaming::StereoAudioStream*, unsigned long, unsigned long,
+            const Function<FnVoidVoid>&);
+        void AddFade(GCAudioStreaming::StereoAudioStream*, unsigned long, unsigned long,
+            Audio::MasterVolume::VOLUME_GROUP, unsigned long, const Function<FnVoidVoid>&);
+
+        /* 0x00 */ FadeList m_Fades;
+        /* 0x1C */ float m_dT;
+    }; // total size: 0x20
+
+    virtual ~TrackManagerBase()
+    {
+        SlotPoolBase::BaseFreeBlocks(&m_StreamPool, 0x40);
+    }
+    /* 0x0C */ virtual void Update(float);
+    /* 0x10 */ virtual StreamTrack& CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP);
+    /* 0x14 */ virtual void DestroyAllTracks();
+    /* 0x18 */ virtual StreamTrack* GetTrack(unsigned long);
+    /* 0x1C */ virtual void StopAllTracks(unsigned long);
+    /* 0x20 */ virtual void OnMasterVolumeChange(Audio::MasterVolume::VOLUME_GROUP);
+
     /* 0x04 */ StreamFileLookup m_FileLookup;
     /* 0x18 */ FadeManager m_FadeMgr;
     /* 0x38 */ SlotPool<GCAudioStreaming::StereoAudioStream> m_StreamPool;
     /* 0x50 */ nlDLListSlotPool<GCAudioStreaming::StereoAudioStream*> m_StreamDeleteList;
 }; // total size: 0x6C
+
+inline void TrackManagerBase::FadeManager::Update(float dT)
+{
+    typedef WalkHelper<STREAM_FADE_CTRL, DLListEntry<STREAM_FADE_CTRL>, FadeManager> FadeWalkHelper;
+    typedef void (FadeWalkHelper::*WalkCBType)(DLListEntry<STREAM_FADE_CTRL>*);
+
+    m_dT = dT * 1000.0f;
+
+    FadeWalkHelper helper;
+    helper.m_CBClass = this;
+    helper.m_CB = &FadeManager::UpdateFade;
+    WalkCBType callback = &FadeWalkHelper::Callback;
+    nlWalkDLRing(m_Fades.m_Head, &helper, callback);
+}
 
 class StreamTrack
 {
@@ -147,6 +151,7 @@ public:
     }; // total size: 0xC
 
     StreamTrack(TrackManagerBase& mgr, Audio::MasterVolume::VOLUME_GROUP volumeGroup);
+    ~StreamTrack() { }
 
     void Update(float);
     void PlayStream(unsigned long, float, bool, unsigned long, unsigned long, const char*, Audio::MasterVolume::VOLUME_GROUP);
@@ -183,7 +188,6 @@ inline StreamTrack::StreamTrack(TrackManagerBase& mgr, Audio::MasterVolume::VOLU
     m_TrackOwnsStreams = true;
     m_State = TS_Idle;
     m_VolumeGroup = volumeGroup;
-    m_IdleCallback.mTag = EMPTY;
 }
 
 inline TrackManagerBase::TrackManagerBase()
@@ -198,17 +202,12 @@ inline TrackManagerBase::TrackManagerBase(const Function<bool(const char*, char*
 {
 }
 
-inline TrackManagerBase::~TrackManagerBase()
-{
-    SlotPoolBase::BaseFreeBlocks(&m_StreamPool, 0x40);
-}
-
 template <int N>
 class TrackManager : public TrackManagerBase
 {
 public:
     TrackManager(const Function<bool(const char*, char*, unsigned long)>&);
-    virtual ~TrackManager();
+    virtual ~TrackManager() { }
     virtual void Update(float);
     virtual StreamTrack& CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP);
     virtual void DestroyAllTracks();
@@ -226,36 +225,46 @@ inline TrackManager<N>::TrackManager(const Function<bool(const char*, char*, uns
 {
 }
 
+template <int N>
+StreamTrack* TrackManager<N>::GetTrack(unsigned long Name)
+{
+    typedef typename nlSortedSlot<StreamTrack, N>::template EntryLookup<StreamTrack> EntryLookup;
+
+    EntryLookup* result;
+    if (m_Tracks.m_EntryCount != 0)
+    {
+        result = nlBSearch(Name, m_Tracks.m_pEntryLookup, m_Tracks.m_EntryCount);
+    }
+    else
+    {
+        result = NULL;
+    }
+    if (result != NULL)
+    {
+        return result->pEntry;
+    }
+    return NULL;
+}
+
+template <int N>
+void TrackManager<N>::StopAllTracks(unsigned long FadeOut)
+{
+    for (unsigned long track = 0; track < m_Tracks.m_EntryCount; track++)
+    {
+        m_Tracks.m_pEntryLookup[track].pEntry->Stop(FadeOut);
+    }
+}
+
 /**
  * Offset/Address/Size: 0x3E4 | 0x800C6728 | size: 0xF0
  */
 template <int N>
 void TrackManager<N>::Update(float dT)
 {
-    struct FadeWalker
-    {
-        static void Walk(TrackManagerBase::FadeManager* fadeMgr)
-        {
-            typedef WalkHelper<TrackManagerBase::FadeManager::STREAM_FADE_CTRL, DLListEntry<TrackManagerBase::FadeManager::STREAM_FADE_CTRL>, TrackManagerBase::FadeManager> FadeWalkHelper;
-            typedef void (FadeWalkHelper::*WalkCBType)(DLListEntry<TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*);
-
-            FadeWalkHelper helper;
-            WalkCBType cb;
-
-            helper.m_CBClass = fadeMgr;
-            helper.m_CB = &TrackManagerBase::FadeManager::UpdateFade;
-            cb = &FadeWalkHelper::Callback;
-
-            nlWalkDLRing(fadeMgr->m_Fades.m_Head, &helper, cb);
-        }
-    };
-
     int trackOffset;
     unsigned long track;
 
-    m_FadeMgr.m_dT = dT * 1000.0f;
-
-    FadeWalker::Walk(&m_FadeMgr);
+    m_FadeMgr.Update(dT);
 
     for (track = 0, trackOffset = 0; track < m_Tracks.m_EntryCount; track++, trackOffset += 8)
     {
@@ -292,26 +301,7 @@ void TrackManager<N>::DestroyAllTracks()
         {
             track->m_InFakePause = 0;
             track->Stop(0);
-
-            if (&track->m_IdleCallback)
-            {
-                if (&track->m_IdleCallback)
-                {
-                    if (track->m_IdleCallback.mTag == FUNCTOR)
-                    {
-                        delete track->m_IdleCallback.mFunctor;
-                    }
-                    track->m_IdleCallback.mTag = EMPTY;
-                }
-            }
-
-            if (&track->m_QueuedStreams)
-            {
-                typedef DLListContainerBase<StreamTrack::QUEUED_STREAM, nlStaticArrayAllocator<DLListEntry<StreamTrack::QUEUED_STREAM>, 4> > QContainer;
-                void (QContainer::*func)(DLListEntry<StreamTrack::QUEUED_STREAM>*) = &QContainer::DeleteEntry;
-                nlWalkDLRing(track->m_QueuedStreams.m_Head, &track->m_QueuedStreams, func);
-                track->m_QueuedStreams.m_Head = NULL;
-            }
+            track->~StreamTrack();
         }
 
         if (track == NULL)

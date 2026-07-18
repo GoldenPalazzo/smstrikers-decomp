@@ -4,8 +4,6 @@
 #include "NL/gl/glModel.h"
 #include "Game/GL/GLMaterial.h"
 
-#include "Game/NisPlayer.h"
-
 enum eBlinkState
 {
     Blink_Open = 0,

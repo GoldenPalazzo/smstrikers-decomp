@@ -70,6 +70,11 @@ extern "C"
     class DefaultAllocator
     {
     public:
+        enum
+        {
+            kAtEnd = false
+        };
+
         static void* allocate(size_t size)
         {
             return nlMalloc(size, 8, false); // 8-byte alignment, not at end

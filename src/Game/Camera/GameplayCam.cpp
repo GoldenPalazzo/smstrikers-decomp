@@ -81,18 +81,6 @@ static const CameraData gCameraData[4] = {
 
 bool gGameplayCameraInReplay = false;
 
-GameplayCameraZoomLevel::GameplayCameraZoomLevel()
-    : m_CameraData(NULL)
-    , m_fDesiredTargetX(0.0f)
-    , m_fDesiredTargetY(0.0f)
-    , m_fDampenedTargetX(0.0f)
-    , m_fDampenedTargetY(0.0f)
-    , m_fTargetSeekSpeedX(0.0f)
-    , m_fTargetSeekSpeedY(0.0f)
-    , m_fTargetSeekTime(0.15f)
-{
-}
-
 /**
  * Offset/Address/Size: 0xCC8 | 0x801AA308 | size: 0x110
  */
@@ -225,7 +213,7 @@ void GameplayCamera::Update(float deltaTime)
         float x;
         float omega = 2.0f / smoothTime;
         x = omega * deltaTime;
-        float exp = 1.0f / ((x * (0.235f * x * x)) + ((0.48f * x * x) + (1.0f + x)));
+        float exp = 1.0f / (((0.48f * x * x) + (1.0f + x)) + (x * (0.235f * x * x)));
         change = m_fZoom - clampedDesiredZoom;
         float currentVelocity = m_fZoomSeekSpeed;
 
@@ -267,6 +255,18 @@ void GameplayCamera::Reactivate()
     m_farZoom.m_fDampenedTargetY = m_farZoom.m_fDesiredTargetY;
 }
 
+GameplayCameraZoomLevel::GameplayCameraZoomLevel()
+    : m_CameraData(NULL)
+    , m_fDesiredTargetX(0.0f)
+    , m_fDesiredTargetY(0.0f)
+    , m_fDampenedTargetX(0.0f)
+    , m_fDampenedTargetY(0.0f)
+    , m_fTargetSeekSpeedX(0.0f)
+    , m_fTargetSeekSpeedY(0.0f)
+    , m_fTargetSeekTime(0.15f)
+{
+}
+
 static inline float MapFromFieldPosToTargetPos(float fPos, const float* pFieldKnots, const float* pTargetKnots, int nNumKnots)
 {
     float fMin = pFieldKnots[0];
@@ -299,7 +299,6 @@ static inline float MapFromFieldPosToTargetPos(float fPos, const float* pFieldKn
 
 /**
  * Offset/Address/Size: 0x470 | 0x801A9AB0 | size: 0x404
- * TODO: 99.46% match - extra base register setup remains in blend queue accumulation.
  */
 void GameplayCameraZoomLevel::CalcDesiredTarget()
 {
@@ -467,7 +466,7 @@ void GameplayCameraZoomLevel::Update(float fDeltaT, bool forceNeutral)
         float x;
         float omega = 2.0f / m_fTargetSeekTime;
         x = omega * fDeltaT;
-        float exp = 1.0f / ((x * (0.235f * x * x)) + ((0.48f * x * x) + (1.0f + x)));
+        float exp = 1.0f / (((0.48f * x * x) + (1.0f + x)) + (x * (0.235f * x * x)));
         change = m_fDampenedTargetX - m_fDesiredTargetX;
         float currentVelocity = m_fTargetSeekSpeedX;
 
@@ -480,7 +479,7 @@ void GameplayCameraZoomLevel::Update(float fDeltaT, bool forceNeutral)
         float x;
         float omega = 2.0f / m_fTargetSeekTime;
         x = omega * fDeltaT;
-        float exp = 1.0f / ((x * (0.235f * x * x)) + ((0.48f * x * x) + (1.0f + x)));
+        float exp = 1.0f / (((0.48f * x * x) + (1.0f + x)) + (x * (0.235f * x * x)));
         change = m_fDampenedTargetY - m_fDesiredTargetY;
         float currentVelocity = m_fTargetSeekSpeedY;
 
@@ -502,11 +501,4 @@ void GameplayCameraZoomLevel::Update(float fDeltaT, bool forceNeutral)
     m_v3Target.f.x = dampenedX;
     m_v3Target.f.y = dampenedY;
     m_v3Target.f.z = 0.0f;
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x801A9640 | size: 0x5C
- */
-GameplayCamera::~GameplayCamera()
-{
 }

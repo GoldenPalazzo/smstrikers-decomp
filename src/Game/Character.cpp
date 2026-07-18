@@ -6,6 +6,7 @@
 #include "Game/Game.h"
 #include "Game/GameInfo.h"
 #include "Game/Physics/PhysicsBanana.h"
+#include "Game/Physics/PhysicsAIBall.h"
 #include "Game/Physics/PhysicsGoalie.h"
 #include "Game/Physics/PhysicsNet.h"
 #include "Game/Physics/CollisionSpace.h"

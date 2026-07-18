@@ -1,5 +1,7 @@
 #include "Game/Blinker.h"
 
+#include "Game/NisPlayer.h"
+
 #include "Game/Sys/debug.h"
 #include "string.h"
 

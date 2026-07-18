@@ -2,30 +2,8 @@
 #include "Game/FE/feFinder.h"
 
 #include "NL/gl/glStruct.h"
+#include "NL/nlLocalization.h"
 #include "NL/nlTask.h"
-
-struct LOCHeader
-{
-    char Thumbprint[4];
-    unsigned long Version;
-    unsigned long Language;
-    unsigned long StringCount;
-    unsigned long Flags;
-};
-
-class nlLocalization
-{
-public:
-    struct StringLookup
-    {
-        unsigned long hash;
-        unsigned long StringOffset;
-    };
-
-    LOCHeader* m_pFile;
-    StringLookup* m_LookupTable;
-    unsigned short* m_FirstString;
-};
 
 extern void* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
@@ -151,36 +129,6 @@ static inline const unsigned short* LookupLocText(const char* locMessage)
     return MissingLocString;
 }
 
-static inline void CopyWideString(BasicStringInternal* data, const unsigned short* text)
-{
-    data->mData = 0;
-    data->mSize = 0;
-    data->mCapacity = 0;
-
-    const unsigned short* ptr = text;
-    while (*ptr++ != 0)
-    {
-        data->mSize++;
-    }
-
-    data->mSize++;
-    data->mData = (char*)nlMalloc((data->mSize + 1) * 2, 8, true);
-    data->mCapacity = data->mSize;
-
-    int j;
-    int i = 0;
-    j = i;
-    while (i < data->mSize)
-    {
-        *(unsigned short*)(data->mData + j) = *text;
-        i++;
-        text++;
-        j += 2;
-    }
-
-    data->mRefCount = 1;
-}
-
 /**
  * Offset/Address/Size: 0x274 | 0x800A1590 | size: 0x1A4
  * TODO: 98.71% match - post-call cleanup keeps data in r30 instead of reloading into r29 from stack
@@ -188,36 +136,7 @@ static inline void CopyWideString(BasicStringInternal* data, const unsigned shor
 void NSNMessengerScene::SetDisplayMessage(const char* locMessage)
 {
     const unsigned short* text = LookupLocText(locMessage);
-
-    BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-    if (data != 0)
-    {
-        CopyWideString(data, text);
-    }
-
-    {
-        BasicStringInternal* localMsgData = data;
-        SetDisplayMessage(*(const BasicString<unsigned short, Detail::TempStringAllocator>*)&localMsgData);
-    }
-
-    BasicStringInternal* msgData = data;
-    if (msgData != 0)
-    {
-        if (--msgData->mRefCount == 0)
-        {
-            if (msgData != 0)
-            {
-                if (msgData != 0)
-                {
-                    delete[] msgData->mData;
-                }
-                if (msgData != 0)
-                {
-                    nlFree(msgData);
-                }
-            }
-        }
-    }
+    SetDisplayMessage(BasicString<unsigned short, Detail::TempStringAllocator>(text));
 }
 
 /**
@@ -320,17 +239,10 @@ void NSNMessengerScene::Update(float fDeltaT)
     {
         m_messageDisplayTime += fDeltaT;
         if (m_messageDisplayTime > MESSAGE_DISPLAY_TIME && m_scrollText == NULL
-            && m_messageFinishedCB.mTag != EMPTY)
+            && m_messageFinishedCB)
         {
             m_messageDisplaying = false;
-            if (m_messageFinishedCB.mTag == FREE_FUNCTION)
-            {
-                ((void (*)())m_messageFinishedCB.mFreeFunction)();
-            }
-            else
-            {
-                (*((FunctorBase*)m_messageFinishedCB.mFunctor))();
-            }
+            m_messageFinishedCB();
         }
 
         if (m_scrollText != NULL)
@@ -388,7 +300,6 @@ NSNMessengerScene::~NSNMessengerScene()
 NSNMessengerScene::NSNMessengerScene()
     : BaseOverlayHandler(3, POSITION_BOTTOM)
 {
-    m_messageFinishedCB.mTag = EMPTY;
     m_curState = MS_INVALID;
     m_messageDisplayTime = 0.0f;
     m_scrollText = NULL;

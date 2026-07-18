@@ -53,14 +53,13 @@ class GameplayCamera : public cBaseCamera
 {
 public:
     GameplayCamera();
-    /* 0x08 */ virtual ~GameplayCamera();
     /* 0x0C */ virtual eCameraType GetType() { return eCameraType_Gameplay; };
     /* 0x10 */ virtual void Update(float);
+    /* 0x20 */ virtual const nlVector3& GetTargetPosition() const { return m_v3Target; };
+    /* 0x24 */ virtual const nlVector3& GetCameraPosition() const { return m_v3Camera; };
     /* 0x14 */ virtual const nlMatrix4& GetViewMatrix() const { return m_matView; };
     /* 0x18 */ virtual float GetFOV() const { return m_fFOV; };
     /* 0x1C */ virtual void Reactivate();
-    /* 0x20 */ virtual const nlVector3& GetCameraPosition() const { return m_v3Camera; };
-    /* 0x24 */ virtual const nlVector3& GetTargetPosition() const { return m_v3Target; };
     void CalcDynamicZoom();
 
     /* 0x01C */ GameplayCameraZoomLevel m_nearZoom;

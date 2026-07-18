@@ -519,6 +519,27 @@ void BaseGameSceneManager::PopEntireStack()
     }
 }
 
+void BaseGameSceneManager::SetVisible(SceneList sceneid, bool visibility)
+{
+    u32 uHashID = nlStringLowerHash(SceneEntryTable[sceneid].sceneName);
+    BaseSceneHandler* sceneHandler = FESceneManager::Instance()->GetSceneHandler(uHashID);
+    if (sceneHandler != NULL)
+    {
+        sceneHandler->SetVisible(visibility);
+    }
+}
+
+bool BaseGameSceneManager::GetVisible(SceneList sceneid)
+{
+    u32 uHashID = nlStringLowerHash(SceneEntryTable[sceneid].sceneName);
+    BaseSceneHandler* sceneHandler = FESceneManager::Instance()->GetSceneHandler(uHashID);
+    if (sceneHandler != NULL)
+    {
+        return sceneHandler->m_bVisible;
+    }
+    return false;
+}
+
 /**
  * Offset/Address/Size: 0x1F4 | 0x800957B0 | size: 0x48
  */
@@ -570,17 +591,4 @@ void BaseGameSceneManager::PushLoadingScene(bool clearStack)
 
     BackgroundScene* handler = (BackgroundScene*)Push((SceneList)0x2B, SCREEN_FORWARD, false);
     handler->mPlayMode = PM_STOPPED;
-}
-
-/**
- * Stub only for field order; unreferenced so the linker drops it.
- * Forces emission of specific constants/operations so the compiler
- * lays out the related fields to match the original binary.
- */
-void BaseGameSceneManager_stub()
-{
-    SlideMenuList* volatile p = NULL;
-    p->SetSlide();
-    BaseSceneHandler* volatile h = NULL;
-    h->SetVisible(true);
 }

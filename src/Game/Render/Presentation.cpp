@@ -1,4 +1,3 @@
-#define BASICSTRING_NO_COPY_REREAD
 #include "Game/Render/Presentation.h"
 #include "Game/BeginFrameTask.h"
 #include "Game/FixedUpdateTask.h"
@@ -18,6 +17,7 @@
 #include "Game/FE/feHelpFuncs.h"
 #include "Game/FE/feManager.h"
 #include "Game/GameInfo.h"
+#include "Game/NisPlayer.h"
 #include "Game/ReplayChoreo.h"
 #include "Game/Render/CrowdManager.h"
 #include "Game/Render/ElectricFence.h"
@@ -67,9 +67,6 @@ extern unsigned long cupTrophyHash;
 char trophyFileName[0xFF];
 static const char* idleFun = "Idle";
 static bool loopPresentation;
-
-template <typename To, typename From>
-To LexicalCast(const From&);
 
 /**
  * Offset/Address/Size: 0x68 | 0x80127308 | size: 0x8
@@ -1126,8 +1123,7 @@ void CupWinStingerDone()
     AudioStreamTrack::TrackManagerBase* pMgr = g_pTrackManager;
     AudioStreamTrack::StreamTrack* pTrack = pMgr->GetTrack(nlStringLowerHash("Music"));
     {
-        Function0<void> emptyCallback;
-        emptyCallback.mTag = EMPTY;
+        Function<FnVoidVoid> emptyCallback;
         SetIdleCallback(pTrack, emptyCallback);
     }
     pTrack->PlayStream(nlStringLowerHash("STAD_Intro"), 0.5f, true, 500, 500, "Stadium", Audio::MasterVolume::VG_Special);
@@ -1325,9 +1321,7 @@ void Presentation::DoFunctionCall(unsigned int func)
         AudioLoader::StartFEStream(streamName, false, "Music");
         AudioStreamTrack::TrackManagerBase* mgr = g_pTrackManager;
         AudioStreamTrack::StreamTrack* track = mgr->GetTrack(nlStringLowerHash("Music"));
-        Function0<void> f0;
-        f0.mTag = FREE_FUNCTION;
-        f0.mFreeFunction = CupWinStingerDone;
+        Function0<void> f0(CupWinStingerDone);
         SetIdleCallback(track, f0);
         break;
     }

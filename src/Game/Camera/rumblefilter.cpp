@@ -54,11 +54,6 @@ void cRumbleFilter::Rumble(float x, float y)
     g_pEventManager->CreateValidEvent(0x57, 0x14);
 }
 
-// Identity pass-through. Wrapping the spring-force x-component in a call demotes
-// its value class so MWCC keeps it in its own temporary (f2), which forces the
-// unit-vector y-component into f5 to match the original register allocation.
-static inline float rfKeep(float f) { return f; }
-
 /**
  * Offset/Address/Size: 0x0 | 0x801A621C | size: 0x284
  */
@@ -95,8 +90,8 @@ void cRumbleFilter::Update(float dt)
     nlVector2 unit;
     if (len == 0.f)
     {
-        unit.f.x = 0.0f;
         unit.f.y = 0.0f;
+        unit.f.x = 0.0f;
     }
     else
     {
@@ -124,7 +119,7 @@ void cRumbleFilter::Update(float dt)
     nlVec2Set(v2Force1, 0.f, 0.f);
 
     float total = -(fHTerm + fDTerm);
-    float fx = rfKeep(total * unit.f.x);
+    float fx = total * unit.f.x;
     float fy = total * unit.f.y;
     nlVec2Set(v2Force0,
         fx + v2Force0.f.x,

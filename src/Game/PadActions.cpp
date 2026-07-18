@@ -1,4 +1,3 @@
-#define BASICSTRING_INLINE_ERASE
 #include "Game/PadActions.h"
 
 #include "NL/platpad.h"
@@ -15,83 +14,6 @@ bool g_bEnableGamecubePadMonkey;
 s32 g_pPadRemapArray[38] = {
     0x00000020, 0x00000040, 0x00000008, 0x00000004, 0x00000004, 0x00000040, 0x00000020, 0x00000100, 0x00000010, 0x00000100, 0x00000200, 0x00000001, 0x00000002, 0x00000008, 0x00000004, 0x00000100, 0x00000200, 0x00000400, 0x00000800, 0x00001000, 0x00000020, 0x00000040, 0x00000400, 0x00000010, 0x00000800, 0x00000200, 0x00000100, 0x00000100, 0x00000200, 0x00000800, 0x00000800, 0x00000800, 0x00000020, 0x00001000, 0x00000010, 0x00000010, 0x00001000, 0x00001000
 };
-
-typedef BasicString<char, Detail::TempStringAllocator> PadActionsFormatString;
-
-static inline void PadActionsEraseRange(PadActionsFormatString& s, const char* begin, const char* end)
-{
-    s[0];
-    BasicStringData<char>* data = s.m_data;
-    int size = end - begin;
-    int offset = begin - data->mData;
-    char* at = data->mData + offset;
-    while (end != data->mData + data->mSize)
-    {
-        *at = *end;
-        end++;
-        at++;
-    }
-    data->mSize -= size;
-}
-
-static inline char* PadActionsStringBegin(PadActionsFormatString& s)
-{
-    BasicStringData<char>* data = s.m_data;
-    s[0];
-    data = s.m_data;
-    return data ? data->mData : 0;
-}
-
-static inline char* PadActionsStringEnd(PadActionsFormatString& s)
-{
-    s[(int)(s.m_data ? s.m_data->mSize - 1 : 0)];
-    return s.m_data ? s.m_data->mData + s.m_data->mSize - 1 : (char*)0;
-}
-
-/**
- * Offset/Address/Size: 0x128 | 0x80193720 | size: 0xD74
- * TODO: 99.82% match - three copy-on-write allocation temporaries use r27 instead of r26,
- * and two marker address additions have reversed operands.
- */
-template <>
-template <>
-FormatImpl<PadActionsFormatString>&
-    FormatImpl<PadActionsFormatString>::operator% <int>(const int& t)
-{
-    PadActionsFormatString insert = LexicalCast<PadActionsFormatString, int>(t);
-
-    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
-    {
-        if (mString[i] != '{')
-            continue;
-
-        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        char* marker = &mString[i];
-        if (mCurrentPos != marker[1] - '0')
-            continue;
-
-        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        char* markerEnd = &mString[i];
-        if (markerEnd[2] != '}')
-            continue;
-
-        mString[0];
-        PadActionsEraseRange(mString,
-            ((void)mString[0], (mString.m_data ? mString.m_data->mData : (char*)0) + i),
-            (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3);
-        char* const mStringData = PadActionsStringBegin(mString);
-        const char* insertBegin = PadActionsStringBegin(insert);
-        const char* insertEnd = PadActionsStringEnd(insert);
-        mString.insert(mStringData + i, insertBegin, insertEnd);
-    }
-
-    mCurrentPos++;
-    return *this;
-}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x801935F8 | size: 0x128

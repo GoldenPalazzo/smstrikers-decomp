@@ -1,6 +1,7 @@
 #include "Game/Camera/CameraMan.h"
 
 #include "NL/nlDLRing.h"
+#include "NL/nlConfig.h"
 #include "NL/nlString.h"
 #include "NL/platqmath.h"
 
@@ -11,6 +12,7 @@
 #include "Game/Camera/GameplayCam.h"
 #include "NL/nlBasicString.h"
 #include "Game/Drawable/DrawableObj.h"
+#include "Game/FE/feHelpFuncs.h"
 #include "Game/Field.h"
 #include "Game/Net.h"
 #include "Game/WorldManager.h"
@@ -53,22 +55,6 @@ void FireCameraRumbleFilter(float fRumbleX, float fRumbleY)
         nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter->Rumble(fRumbleX, fRumbleY);
     }
 }
-
-enum eTeamID
-{
-    TEAM_INVALID = -1,
-    TEAM_DAISY = 0,
-    TEAM_DONKEYKONG = 1,
-    TEAM_LUIGI = 2,
-    TEAM_MARIO = 3,
-    TEAM_PEACH = 4,
-    TEAM_WALUIGI = 5,
-    TEAM_WARIO = 6,
-    TEAM_YOSHI = 7,
-    TEAM_MYSTERY = 8,
-    NUM_TEAMS = 9,
-};
-char* GetTeamName(eTeamID);
 
 /**
  * Offset/Address/Size: 0x1768 | 0x801A7DF0 | size: 0x59C
@@ -237,30 +223,6 @@ handle_end:
     m_aJoystickRemap = (u16)(int)(nlATan2f(m_matView.f.m23, m_matView.f.m13) * 10430.378f);
     m_aJoystickRemap += 0x8000;
 }
-
-class Config
-{
-public:
-    struct TagValuePair
-    {
-        const char* tag;
-        int type;
-        union
-        {
-            bool b;
-            int i;
-            float f;
-            const char* s;
-        } value;
-    };
-
-    static Config& Global();
-    TagValuePair& FindTvp(const char*);
-    void Set(const char*, bool);
-};
-
-template <typename T, typename U>
-T LexicalCast(const U&);
 
 void* nlMalloc(unsigned long, unsigned int, bool);
 

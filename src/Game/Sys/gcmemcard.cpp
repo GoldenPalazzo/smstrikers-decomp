@@ -1,6 +1,6 @@
 #include "Game/Sys/gcmemcard.h"
 #include "NL/nlString.h"
-#include "NL/nlBSearch.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlMemory.h"
 #include <dolphin/dvd.h>
 
@@ -712,8 +712,7 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
 
 /**
  * Offset/Address/Size: 0xBE8 | 0x801CA358 | size: 0x340
- * TODO: 99.16% match - both lookup pEntry copies use r0 instead of target r5,
- * and the header-size arithmetic still has register-color differences.
+ * TODO: 99.06% match - both lookup pEntry copies use r0 instead of target r5.
  */
 extern "C" void* memset(void*, int, unsigned long);
 
@@ -824,12 +823,11 @@ long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned 
         ICON_CONFIG* config = &pFile->IconCfg;
         unsigned long paletteSize = 0x200;
         s8 iconFormat = config->IconFormat;
-        unsigned long headerSize = (config->BannerFormat * 0xC00) + ((config->BannerFormat == 1) ? paletteSize : 0);
-        headerSize = (config->IconCount * (iconFormat << 10)) + headerSize;
-        unsigned long iconClut = ((iconFormat == 1) ? paletteSize : 0);
-        headerSize = iconClut + headerSize;
-        headerSize += 0x40;
-        config->HeaderSize = headerSize;
+        unsigned long headerSize = ((config->BannerFormat == 1) ? paletteSize : 0);
+        headerSize = headerSize + (config->BannerFormat * 0xC00);
+        headerSize = headerSize + (config->IconCount * (iconFormat << 10));
+        headerSize = headerSize + ((iconFormat == 1) ? paletteSize : 0);
+        config->HeaderSize = headerSize + 0x40;
 
         unsigned long sectorMask = m_CardInfo.SectorSize - 1;
         pFile->TotalHeaderSize = (pFile->IconCfg.HeaderSize + sectorMask) & ~sectorMask;

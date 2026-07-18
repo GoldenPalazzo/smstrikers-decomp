@@ -31,6 +31,10 @@ public:
 
     static void InitializeFEFast();
 
+    static void DisplayFirstScreen();
+
+    static void CompactSlotPools();
+
     static void DestroyFEState();
 
     void Initialize(LoadingManager&);

@@ -1,9 +1,12 @@
-#define NL_SINGLETON_NO_DEFINE
 #include "Game/WorldManager.h"
 #include "NL/platqmath.h"
 #pragma pool_data off
 
 #include "Game/Ball.h"
+#include "Game/CharacterTriggers.h"
+#include "Game/Drawable/DrawableObj.h"
+#include "Game/EventDataTypes.h"
+#include "Game/ObjectBlur.h"
 #include "Game/AI/Fielder.h"
 #include "Game/AI/FuzzyVariant.h"
 
@@ -2006,27 +2009,4 @@ cBall::cBall()
     {
         gfPerfectPassSFXVol = Audio::gStadGenSFX.GetSFXVol(0xBA);
     }
-}
-
-/**
- * Stub only for field order; unreferenced so the linker drops it.
- * Forces emission of specific constants/operations so the compiler
- * lays out the related fields to match the original binary.
- */
-#pragma dont_inline on
-void Ball_stub()
-{
-    Variant v;
-    v.Reset();
-    FuzzyVariant fv;
-    fv.Reset();
-}
-#pragma dont_inline reset
-
-/**
- * Offset/Address/Size: 0x0 | 0x8000DEEC | size: 0x8
- */
-u32 PassBallData::GetID()
-{
-    return 0x131;
 }

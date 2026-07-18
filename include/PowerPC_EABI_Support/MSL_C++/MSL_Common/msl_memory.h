@@ -9,7 +9,7 @@ class allocator
 {
 public:
     allocator() { }
-    void destroy(T*);
+    void destroy(T* p) { p->~T(); }
     void deallocate(T* p, unsigned long) { ::operator delete(p); }
 };
 
@@ -65,55 +65,5 @@ inline T* uninitialized_copy(T* first, T* last, T* result)
 }
 
 } // namespace std
-
-namespace Metrowerks
-{
-namespace details
-{
-
-template <class First, class Second, int tag>
-class compressed_pair_imp
-{
-    First first_;
-    Second second_;
-
-public:
-    compressed_pair_imp() { }
-    compressed_pair_imp(const First& f)
-        : first_(f)
-        , second_()
-    {
-    }
-    compressed_pair_imp(const First& f, const Second& s)
-        : first_(f)
-        , second_(s)
-    {
-    }
-    First& first() { return first_; }
-    Second& second() { return second_; }
-};
-
-template <class First, class Second>
-class compressed_pair_imp<First, Second, 1> : private First
-{
-    Second second_;
-
-public:
-    compressed_pair_imp()
-        : First()
-        , second_()
-    {
-    }
-    compressed_pair_imp(const Second& s)
-        : First()
-        , second_(s)
-    {
-    }
-    First& first();
-    Second& second() { return second_; }
-};
-
-} // namespace details
-} // namespace Metrowerks
 
 #endif

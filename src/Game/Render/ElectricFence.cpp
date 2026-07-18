@@ -46,11 +46,6 @@ SlotPool<ElectricFenceGeometry> ElectricFenceGeometry::sElectricFenceGeometryPoo
 // {
 // }
 
-/**
- * Offset/Address/Size: 0x0 | 0x8016C650 | size: 0x9C
- */
-template ElectricFenceData* nlListRemoveElement<ElectricFenceData>(ElectricFenceData**, ElectricFenceData*, ElectricFenceData**);
-
 static void GetWallPoint(const nlVector3& impactPosition, float xOffset, float zOffset, nlVector3& outPosition);
 
 /**
@@ -285,7 +280,7 @@ static inline ElectricFenceData* CreateAndAssignElectricFenceData(EmissionContro
     if (ElectricFenceData::sElectricFenceDataPool.m_FreeList != NULL)
     {
         data = (ElectricFenceData*)ElectricFenceData::sElectricFenceDataPool.m_FreeList;
-        ElectricFenceData::sElectricFenceDataPool.m_FreeList = ElectricFenceData::sElectricFenceDataPool.m_FreeList->m_next;
+        ElectricFenceData::sElectricFenceDataPool.m_FreeList = ElectricFenceData::sElectricFenceDataPool.m_FreeList->next;
     }
     data = new ((u8*)data) ElectricFenceData(pController);
     return data;
@@ -387,41 +382,25 @@ void EmitElectricFenceBallEffect(const nlVector3& pos, const nlVector3& dir, uns
         controller->SetPosition(clampedPos);
 
         float angle = nlATan2f(dir.f.y, dir.f.x);
-        data = NULL;
         controller->m_aFacing = (u16)(10430.378f * angle);
 
-        if (ElectricFenceData::sElectricFenceDataPool.m_FreeList == NULL)
-        {
-            SlotPoolBase::BaseAddNewBlock(&ElectricFenceData::sElectricFenceDataPool, sizeof(ElectricFenceData));
-        }
-        SlotPoolEntry* freeSlot = ElectricFenceData::sElectricFenceDataPool.m_FreeList;
-        if (freeSlot != NULL)
-        {
-            data = (ElectricFenceData*)freeSlot;
-            ElectricFenceData::sElectricFenceDataPool.m_FreeList = freeSlot->m_next;
-        }
+        data = ElectricFenceData::sElectricFenceDataPool.Allocate();
 
         new (data) ElectricFenceData(controller);
 
-        {
-            Function<EmissionController&> updateCb;
-            updateCb.mTag = FREE_FUNCTION;
-            updateCb.mFreeFunction = RenderElectricFence;
-            controller->SetUpdateCallback(updateCb);
-        }
-
-        Function<EmissionController&> finishedCb;
-        finishedCb.mTag = FREE_FUNCTION;
-        finishedCb.mFreeFunction = ElectricFenceFinished;
-        controller->SetFinishedCallback(finishedCb);
+        controller->SetUpdateCallback(RenderElectricFence);
+        controller->SetFinishedCallback(ElectricFenceFinished);
     }
 }
 
 /**
  * Offset/Address/Size: 0xAB8 | 0x8016BAE8 | size: 0x1D4
  */
-static inline void EmitElectricFenceCharacterEffectImpl(const nlVector3& pos, const nlVector3& dir, unsigned long emitterID)
+void EmitElectricFenceCharacterEffect(const nlVector3& pos, const nlVector3& dir, unsigned long emitterID)
 {
+    if (g_pGame->mbCaptainShotToScoreOn)
+        return;
+
     if (!EmissionManager::IsPlaying(emitterID, fxGetGroup("fx_electric_fence_char")))
     {
         EmissionController* controller = EmissionManager::Create(fxGetGroup("fx_electric_fence_char"), 0);
@@ -429,45 +408,17 @@ static inline void EmitElectricFenceCharacterEffectImpl(const nlVector3& pos, co
         controller->SetPosition(pos);
 
         float angle = nlATan2f(dir.f.y, dir.f.x);
-        ElectricFenceData* data = NULL;
         controller->m_aFacing = (u16)(10430.378f * angle);
 
-        if (ElectricFenceData::sElectricFenceDataPool.m_FreeList == NULL)
-        {
-            SlotPoolBase::BaseAddNewBlock(&ElectricFenceData::sElectricFenceDataPool, sizeof(ElectricFenceData));
-        }
-        SlotPoolEntry* freeSlot = ElectricFenceData::sElectricFenceDataPool.m_FreeList;
-        if (freeSlot != NULL)
-        {
-            data = (ElectricFenceData*)freeSlot;
-            ElectricFenceData::sElectricFenceDataPool.m_FreeList = freeSlot->m_next;
-        }
+        ElectricFenceData* data = ElectricFenceData::sElectricFenceDataPool.Allocate();
 
         new (data) ElectricFenceData(controller);
 
-        Function<EmissionController&> finishedCb;
-
-        {
-            Function<EmissionController&> updateCb;
-            updateCb.mTag = FREE_FUNCTION;
-            updateCb.mFreeFunction = RenderElectricFence;
-            controller->SetUpdateCallback(updateCb);
-        }
-
-        finishedCb.mTag = FREE_FUNCTION;
-        finishedCb.mFreeFunction = ElectricFenceFinished;
-        controller->SetFinishedCallback(finishedCb);
+        controller->SetUpdateCallback(Function<EmissionController&>(RenderElectricFence));
+        controller->SetFinishedCallback(Function<EmissionController&>(ElectricFenceFinished));
     }
 
     SidelineExplodableManager::TriggerExplosions(pos, g_pGame->m_pGameTweaks->fBobombMediumRadius * g_pGame->m_pGameTweaks->fPowerupExplosionRadius);
-}
-
-void EmitElectricFenceCharacterEffect(const nlVector3& pos, const nlVector3& dir, unsigned long emitterID)
-{
-    if (g_pGame->mbCaptainShotToScoreOn)
-        return;
-
-    EmitElectricFenceCharacterEffectImpl(pos, dir, emitterID);
 }
 
 /**
@@ -653,7 +604,7 @@ ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
         if (freeSlot != NULL)
         {
             geom = (ElectricFenceGeometry*)freeSlot;
-            ElectricFenceGeometry::sElectricFenceGeometryPool.m_FreeList = freeSlot->m_next;
+            ElectricFenceGeometry::sElectricFenceGeometryPool.m_FreeList = freeSlot->next;
         }
 
         mpGeometry = geom;
@@ -721,6 +672,7 @@ void UpdateElectricFence(float fDeltaT)
         float sideLineY = cField::GetSidelineY(1U);
         float randomAngleOffset = nlRandomf(-sfAngleRandomOffset, sfAngleRandomOffset, &nlDefaultSeed);
         nlVector3 pos = { 0.0f, 0.0f, 0.0f };
+        nlVector3 normal;
         u16 sinArg = (u16)(s32)(10430.378f * (3.1415927f * (sfElectricFenceDisplayAngle + randomAngleOffset) / 180.0f));
         pos.f.x = nlSin(sinArg);
         sinArg = (u16)(s32)(10430.378f * (3.1415927f * (sfElectricFenceDisplayAngle + randomAngleOffset) / 180.0f));
@@ -729,14 +681,14 @@ void UpdateElectricFence(float fDeltaT)
         if (pos.f.x == 0.0f)
         {
             scale = sideLineY;
-            sideLineY = 0.0f;
-            randomAngleOffset = 1.0f;
+            normal.f.x = 0.0f;
+            normal.f.y = 1.0f;
         }
         else if ((float)pos.f.y == 0.0f)
         {
             scale = goalLineX;
-            randomAngleOffset = 0.0f;
-            sideLineY = 1.0f;
+            normal.f.x = 1.0f;
+            normal.f.y = 0.0f;
         }
         else
         {
@@ -749,14 +701,14 @@ void UpdateElectricFence(float fDeltaT)
             if (goalLineScale < sideLineScale)
             {
                 scale = goalLineScale;
-                sideLineY = 1.0f;
-                randomAngleOffset = 0.0f;
+                normal.f.x = 1.0f;
+                normal.f.y = 0.0f;
             }
             else
             {
                 scale = sideLineScale;
-                sideLineY = 0.0f;
-                randomAngleOffset = 1.0f;
+                normal.f.x = 0.0f;
+                normal.f.y = 1.0f;
             }
         }
         nlVec3Scale(pos, pos, scale);
@@ -774,62 +726,7 @@ void UpdateElectricFence(float fDeltaT)
                 pos.f.z = nlRandomf(netHeight, 5.0f, &nlDefaultSeed);
             }
         }
-        ElectricFenceData* data;
-        const char* groupName;
-        EmissionController* controller;
-        bool useNoSpark = !sbUseSparksDuringElectricFenceFlyBy;
-        unsigned long counterVal = counter;
-        counter++;
-        if (g_pGame->mbCaptainShotToScoreOn)
-            goto next;
-        {
-            nlVector3 clampedPos = pos;
-            float goalLineX2 = cField::GetGoalLineX(1U);
-            if ((float)__fabs((float)__fabs(clampedPos.f.x) - goalLineX2) < 0.2f)
-            {
-                if (clampedPos.f.x > 0.0f)
-                {
-                    clampedPos.f.x = goalLineX2;
-                }
-                else
-                {
-                    clampedPos.f.x = -goalLineX2;
-                }
-            }
-            groupName = useNoSpark ? "electric_fence_nospark" : "electric_fence";
-            if (!EmissionManager::IsPlaying(counterVal, fxGetGroup(groupName)))
-            {
-                controller = EmissionManager::Create(fxGetGroup(groupName), 0);
-                controller->m_uUserData = counterVal;
-                controller->SetPosition(clampedPos);
-                float atan = nlATan2f(randomAngleOffset, sideLineY);
-                data = NULL;
-                controller->m_aFacing = (u16)(s32)(10430.378f * atan);
-                if (ElectricFenceData::sElectricFenceDataPool.m_FreeList == NULL)
-                {
-                    SlotPoolBase::BaseAddNewBlock(&ElectricFenceData::sElectricFenceDataPool, sizeof(ElectricFenceData));
-                }
-                SlotPoolEntry* freeSlot = ElectricFenceData::sElectricFenceDataPool.m_FreeList;
-                if (freeSlot != NULL)
-                {
-                    data = (ElectricFenceData*)freeSlot;
-                    ElectricFenceData::sElectricFenceDataPool.m_FreeList = freeSlot->m_next;
-                }
-                new (data) ElectricFenceData(controller);
-                Function<EmissionController&> finishedCb;
-
-                {
-                    Function<EmissionController&> updateCb;
-                    updateCb.mTag = FREE_FUNCTION;
-                    updateCb.mFreeFunction = RenderElectricFence;
-                    controller->SetUpdateCallback(updateCb);
-                }
-                finishedCb.mTag = FREE_FUNCTION;
-                finishedCb.mFreeFunction = ElectricFenceFinished;
-                controller->SetFinishedCallback(finishedCb);
-            }
-        }
-    next:
+        EmitElectricFenceBallEffect(pos, normal, counter++, !sbUseSparksDuringElectricFenceFlyBy);
         timeSinceLastEffect = timeSinceLastEffect - sfTimeBetweenEffects;
     }
     timeSinceLastEffect = timeSinceLastEffect + fDeltaT;

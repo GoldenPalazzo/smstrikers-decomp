@@ -1,92 +1,8 @@
-// This TU supplies constructor specializations for its two concrete AVL trees.
-#define NL_AVLTREE_CONSTRUCTOR_SPECIALIZATIONS
-#include "NL/nlRingCount.h"
-#include "NL/nlRingWalk.h"
 #include "Game/Effects/EffectsGroup.h"
 #include "Game/Effects/EmissionController.h"
 #include "Game/Effects/EmissionManager.h"
 #include "NL/nlAVLTree.h"
 #include "NL/nlDLListContainer.h"
-
-typedef AVLTreeEntry<unsigned long, EffectsGroup*> EffectsGroupTreeEntry;
-typedef AVLTreeBase<unsigned long, EffectsGroup*, NewAdapter<EffectsGroupTreeEntry>, DefaultKeyCompare<unsigned long> > EffectsGroupTreeBase;
-typedef AVLTreeEntry<unsigned long, EffectsTerrainSpec*> EffectsTerrainTreeEntry;
-typedef AVLTreeBase<unsigned long, EffectsTerrainSpec*, NewAdapter<EffectsTerrainTreeEntry>, DefaultKeyCompare<unsigned long> > EffectsTerrainTreeBase;
-typedef DLListContainerBase<UserEffectSpec*, NewAdapter<DLListEntry<UserEffectSpec*> > > EffectsGroupUserSpecContainer;
-
-// This discarded constructor fixes the target vtable emission order. The
-// section contains executable code, so its permissions must include RX.
-#pragma section RX ".dead"
-#pragma defer_codegen off
-template <>
-DECL_SECT(".dead")
-nlAVLTree<unsigned long, EffectsTerrainSpec*, DefaultKeyCompare<unsigned long> >::nlAVLTree()
-{
-}
-
-template <>
-inline EffectsTerrainTreeBase::AVLTreeBase()
-{
-    m_NumElements = 0;
-    m_Root = nullptr;
-    m_Compare = nullptr;
-}
-
-template <>
-inline nlAVLTree<unsigned long, EffectsGroup*, DefaultKeyCompare<unsigned long> >::nlAVLTree()
-{
-}
-
-template <>
-inline EffectsGroupTreeBase::AVLTreeBase()
-{
-    m_NumElements = 0;
-    m_Root = nullptr;
-    m_Compare = nullptr;
-}
-#pragma defer_codegen reset
-
-template <>
-void EffectsGroupTreeBase::DeleteEntry(EffectsGroupTreeEntry* entry);
-template <>
-void EffectsTerrainTreeBase::DeleteEntry(EffectsTerrainTreeEntry* entry);
-template <>
-void EffectsGroupTreeBase::DeleteValue(EffectsGroupTreeEntry* entry);
-template <>
-void EffectsTerrainTreeBase::DeleteValue(EffectsTerrainTreeEntry* entry);
-template <>
-void EffectsGroupUserSpecContainer::DeleteEntry(DLListEntry<UserEffectSpec*>* entry);
-
-// Define the accessor before the list methods so their real code emits this
-// member-function pointer in the target order.
-template <>
-inline EffectsGroupUserSpecContainer::ENTRY_DELETE_FUNC EffectsGroupUserSpecContainer::DeleteEntryFunc()
-{
-    return &EffectsGroupUserSpecContainer::DeleteEntry;
-}
-
-#include "EffectsGroupAVL.inl"
-
-// Keep the literal pool ahead of the deferred vtables without emitting a
-// discarded helper function.
-DECL_SECT(".dead")
-const char* const gEffectsGroupStringOrder[] = {
-    "EffectsGroup: unrecognized token '%s'\n",
-    "EffectsGroup::parse_group unsupported token '%s'\n",
-    "parse_group couldn't find template '%s'\n",
-    "linger_start",
-    "linger_end",
-    "parse_spec: unknown fx binding '%s'\n",
-    "offsetxyz",
-    "parse_spec has an unrecognized token '%s'\n",
-};
-
-#pragma defer_codegen off
-#include "EffectsGroupAdapter.inl"
-#pragma defer_codegen reset
-#include "EffectsGroupList.inl"
-#pragma defer_codegen off
-#pragma defer_codegen reset
 #include "NL/nlDLRing.h"
 #include "NL/nlMain.h"
 #include "NL/nlString.h"
@@ -107,8 +23,6 @@ public:
     virtual UserEffectSpec* ParseSpec(SimpleParser* parser);
     virtual const char* GetName();
 };
-
-typedef DLListContainerBase<UserEffectSpec*, NewAdapter<DLListEntry<UserEffectSpec*> > > UserSpecContainer;
 
 struct EffectsSpecRaw
 {
@@ -728,6 +642,11 @@ static EffectsGroup* parse_group(SimpleParser* parser)
     return pGroup;
 }
 
+static inline void AddGroupNoCollisions(EffectsGroup* group)
+{
+    pGroupMap->Add(group->m_hashID, group);
+}
+
 /**
  * Offset/Address/Size: 0x30C | 0x801F2D54 | size: 0x2C
  */
@@ -793,12 +712,6 @@ bool fxLoadGroupBundle(void* data, unsigned long size)
     return true;
 }
 
-template <>
-WEAKFUNC nlAVLTree<unsigned long, EffectsTerrainSpec*, DefaultKeyCompare<unsigned long> >::~nlAVLTree()
-{
-    FORCE_DONT_INLINE;
-}
-
 /**
  * Offset/Address/Size: 0xA4 | 0x801F2AEC | size: 0x74
  */
@@ -820,50 +733,18 @@ bool fxUnloadGroups()
     return true;
 }
 
-/**
- * Helper struct for inlining FindGet with bool return to match target assembly.
- * The target uses a bool found flag pattern (li r0,1 / li r0,0 / clrlwi.)
- * which the native AVLTreeBase::FindGet (returning ValueType*) does not produce.
- */
-struct GroupMapFindHelper
+static inline EffectsGroup* fxGetGroup(unsigned long hashID)
 {
-    char pad[0x8];
-    AVLTreeEntry<unsigned long, EffectsGroup*>* m_Root;
-
-    inline bool FindGet(unsigned long key, EffectsGroup*** foundValue) const
-    {
-        AVLTreeEntry<unsigned long, EffectsGroup*>* node = m_Root;
-        while (node != NULL)
-        {
-            int cmpResult;
-            if (key == node->key)
-                cmpResult = 0;
-            else if (key < node->key)
-                cmpResult = -1;
-            else
-                cmpResult = 1;
-            if (cmpResult == 0)
-            {
-                if (foundValue != NULL)
-                    *foundValue = &node->value;
-                return true;
-            }
-            else
-            {
-                if (cmpResult < 0)
-                    node = (AVLTreeEntry<unsigned long, EffectsGroup*>*)node->node.left;
-                else
-                    node = (AVLTreeEntry<unsigned long, EffectsGroup*>*)node->node.right;
-            }
-        }
-        return false;
-    }
-};
+    EffectsGroup** group;
+    return pGroupMap->FindGet(hashID, &group) ? *group : nullptr;
+}
 
 EffectsGroup* fxGetGroup(const char* groupName)
 {
-    unsigned long hashID = nlStringHash(groupName);
-    EffectsGroup** group;
-    bool found = ((GroupMapFindHelper*)pGroupMap)->FindGet(hashID, &group);
-    return found ? *group : nullptr;
+    return fxGetGroup(nlStringHash(groupName));
+}
+
+static inline void fxRegisterUserEffect(UserEffectFactory* factory)
+{
+    gUserEffectTypes[gnUserEffectTypes++] = factory;
 }

@@ -1,17 +1,11 @@
-#define NO_BASICSTRING_IMPL
 #include "NL/StatsGatherer.h"
 
 /**
- * Offset/Address/Size: 0x0 | 0x80064398 | size: 0x14
+ * Raw object offset/size: 0x1F4 | size: 0x134
  */
-template <>
-BasicString<char, Detail::TempStringAllocator>&
-BasicString<char, Detail::TempStringAllocator>::operator=(BasicString<char, Detail::TempStringAllocator> other)
+void StatsGatherer::SetTestName(const char* name)
 {
-    BasicStringData<char>* tmp = m_data;
-    m_data = other.m_data;
-    other.m_data = tmp;
-    return *this;
+    m_testName = name;
 }
 
 /**

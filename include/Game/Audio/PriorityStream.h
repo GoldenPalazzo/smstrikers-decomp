@@ -2,19 +2,7 @@
 #define _PRIORITYSTREAM_H_
 
 #include "Game/Audio/StreamTrack.h"
-
-// namespace AudioStreamTrack
-// {
-// class StreamTrack;
-// }
-
-enum VOLUME_GROUP
-{
-    VG_Special = 0,
-    VG_Music = 1,
-    VG_SFX = 2,
-    VG_Voice = 3,
-};
+#include "NL/nlBind.h"
 
 class PriorityStream
 {
@@ -36,7 +24,7 @@ public:
         /* 0x08 */ unsigned long m_Active : 1;
         /* 0x0C */ char m_StreamParam[32];
         /* 0x2C */ AudioStreamTrack::StreamTrack& m_Track;
-        /* 0x30 */ VOLUME_GROUP m_VolGroup;
+        /* 0x30 */ Audio::MasterVolume::VOLUME_GROUP m_VolGroup;
         /* 0x34 */ unsigned long m_OrigStreamId;
 
         static unsigned char s_BowserAttackNext;
@@ -61,12 +49,6 @@ public:
     /* 0x0C */ PLAY_RECORD m_PStream;
     /* 0x44 */ PLAY_RECORD m_CapChant;
 }; // total size: 0x7C
-
-#endif // _PRIORITYSTREAM_H_
-
-#ifdef PRIORITYSTREAM_INLINE_BODY
-#ifndef _PRIORITYSTREAM_INLINE_BODY_
-#define _PRIORITYSTREAM_INLINE_BODY_
 
 static inline AudioStreamTrack::StreamTrack& InitPriorityRecord(PriorityStream* stream)
 {
@@ -98,5 +80,4 @@ inline PriorityStream::PriorityStream(AudioStreamTrack::StreamTrack& track)
     PriorityStreamSetIdleCallback(&trackRef, f0);
 }
 
-#endif // _PRIORITYSTREAM_INLINE_BODY_
-#endif // PRIORITYSTREAM_INLINE_BODY
+#endif // _PRIORITYSTREAM_H_

@@ -1,4 +1,3 @@
-#define BASICSTRING_NO_INLINE_APPEND
 #include "Game/SH/SHMilestoneTrophy.h"
 
 #include "Game/FE/FEAudio.h"
@@ -9,147 +8,12 @@
 #include "Game/FE/tlTextInstance.h"
 #include "Game/GameInfo.h"
 #include "Game/GameSceneManager.h"
-#include "NL/nlBSearch.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlFormat.h"
 #include "NL/nlLocalization.h"
 
-template <typename StringType, typename T1>
-StringType Format(const StringType& format, const T1& value1);
-
-template <typename StringType, typename T1, typename T2>
-StringType Format(const StringType& format, const T1& value1, const T2& value2);
-
-template <typename StringType, typename T1, typename T2, typename T3>
-StringType Format(const StringType& format, const T1& value1, const T2& value2, const T3& value3);
-
 typedef BasicString<unsigned short, Detail::TempStringAllocator> WideBasicString;
 typedef BasicString<char, Detail::TempStringAllocator> CharBasicString;
-
-static inline BasicStringData<char>* RetainCharStringData(const CharBasicString& string)
-{
-    BasicStringData<char>* data = string.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-        data = string.m_data;
-    }
-    else
-    {
-        data = 0;
-    }
-    return data;
-}
-
-// Force a non-weak (global) emission of FormatImpl<WideBasicString>::operator%<const
-// unsigned short*> in this TU. Target emits __md<PCUs> as a global symbol; the implicit
-// (weak/linkonce) instantiation MWCC would otherwise produce is uncreditable by objdiff.
-template FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&
-    FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >::operator% <const unsigned short*>(
-        const unsigned short* const& t);
-
-/**
- * Offset/Address/Size: 0x1058 | 0x800D0DD8 | size: 0x118
- * TODO: 98.36% match - return copy null/data path still stores through r4 instead of reloading through r0.
- */
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator>
-Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[128]>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short (&value)[128])
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)(((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % (const unsigned short*)value));
-}
-
-/**
- * Offset/Address/Size: 0xF44 | 0x800D0CC4 | size: 0x114
- */
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator>
-Format<BasicString<unsigned short, Detail::TempStringAllocator>, const unsigned short*>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short* const& value)
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)(((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % value));
-}
-
-/**
- * Offset/Address/Size: 0xE20 | 0x800D0BA0 | size: 0x124
- */
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator>
-Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[128], unsigned short[128]>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short (&value)[128],
-    const unsigned short (&value2)[128])
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % (const unsigned short*)value) % (const unsigned short*)value2));
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x800CFD80 | size: 0x130
- */
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator>
-Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[16], unsigned short[16], unsigned short[16]>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short (&value1)[16],
-    const unsigned short (&value2)[16],
-    const unsigned short (&value3)[16])
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)(((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % (const unsigned short*)value1) % (const unsigned short*)value2) % (const unsigned short*)value3));
-}
 
 // /**
 //  * Offset/Address/Size: 0x5A8 | 0x800CFB68 | size: 0x15C
@@ -654,7 +518,7 @@ void MilestoneTrophyScene::SceneCreated()
 
     if (nlSingleton<GameInfoManager>::s_pInstance->HasTrophy(mTrophy))
     {
-        BasicString<char, Detail::TempStringAllocator> accumulatedString(RetainCharStringData(LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(statAccumulated)));
+        CharBasicString accumulatedString = LexicalCast<CharBasicString, int>(statAccumulated);
 
         unsigned short accumulatedWideString[128];
         nlStrToWcs(accumulatedString.c_str(), accumulatedWideString, 128);
@@ -714,8 +578,8 @@ void MilestoneTrophyScene::SceneCreated()
     }
     else
     {
-        BasicString<char, Detail::TempStringAllocator> accumulatedString(RetainCharStringData(LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(statAccumulated)));
-        BasicString<char, Detail::TempStringAllocator> neededString(RetainCharStringData(LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(statNeeded)));
+        CharBasicString accumulatedString = LexicalCast<CharBasicString, int>(statAccumulated);
+        CharBasicString neededString = LexicalCast<CharBasicString, int>(statNeeded);
 
         unsigned short accumulatedWideString[128];
         unsigned short neededWideString[128];
@@ -767,9 +631,9 @@ void MilestoneTrophyScene::SceneCreated()
             pStat->SetString(mStatBuffer);
         }
 
-        BasicString<char, Detail::TempStringAllocator> bronzeString(RetainCharStringData(LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(bronzeStat)));
-        BasicString<char, Detail::TempStringAllocator> silverString(RetainCharStringData(LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(silverStat)));
-        BasicString<char, Detail::TempStringAllocator> goldString(RetainCharStringData(LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(goldStat)));
+        CharBasicString bronzeString = LexicalCast<CharBasicString, int>(bronzeStat);
+        CharBasicString silverString = LexicalCast<CharBasicString, int>(silverStat);
+        CharBasicString goldString = LexicalCast<CharBasicString, int>(goldStat);
 
         unsigned short bronzeWideString[16];
         unsigned short silverWideString[16];

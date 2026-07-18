@@ -196,15 +196,39 @@ inline void BasicStadium::HyperStrikeModelAddHelper(unsigned long hash)
     }
 }
 
+static inline void LoadGameplayOptimizeOut(BasicStadium* self)
+{
+    char szOptBin[80];
+    nlSNPrintf(szOptBin, 0x50, "%s-GameplayInvisibleModels.bin", self->m_szBaseName);
+    unsigned long fileSize;
+    u32* pCur;
+    u32* pData = (u32*)nlLoadEntireFile(szOptBin, &fileSize, 0x20, AllocateEnd);
+    if (pData != NULL)
+    {
+        unsigned long j;
+        u32 uFlags = eOC_OPTIMIZE_OUT_FROM_GAMEPLAY;
+        pCur = pData;
+        fileSize = fileSize >> 2;
+        for (j = 0; j < fileSize; j++)
+        {
+            DrawableObject* pObj = self->FindDrawableObject(*pCur);
+            if (pObj != NULL)
+            {
+                DrawableModel* pModel = pObj->AsDrawableModel();
+                pModel->m_uObjectCreationFlags |= uFlags;
+            }
+            pCur++;
+        }
+        nlFree(pData);
+    }
+}
+
 /**
  * Offset/Address/Size: 0x2E8 | 0x8019C068 | size: 0x2608
  */
 bool BasicStadium::DoInitialize()
 {
     DrawableObject* pObject;
-    AVLTreeNode* pNode;
-    AVLTreeNode* pPopped;
-    AVLTreeNode* pRight;
 
     FindDrawableObject(nlStringLowerHash("gameplay/ball"));
     m_pSkyboxObject = FindDrawableObject(uSkyBoxHashID);
@@ -412,9 +436,9 @@ bool BasicStadium::DoInitialize()
     // Stadium.ini Config
     {
         Config stadConfig(Config::ALLOCATE_HIGH);
+        char szKey[256];
         eStadiumID stadiumid = nlSingleton<GameInfoManager>::s_pInstance->GetStadium();
         stadConfig.LoadFromFile("Stadium.ini");
-        char szKey[256];
         nlStrNCat<char>(szKey, m_szBaseName, " pitch", 0x100);
         BasicString<char, Detail::TempStringAllocator> terrain = stadConfig.Get<BasicString<char, Detail::TempStringAllocator> >(szKey, BasicString<char, Detail::TempStringAllocator>("grass"));
         TheWorldLoader.SetStadiumTerrain(stadiumid, terrain.c_str());
@@ -479,104 +503,37 @@ bool BasicStadium::DoInitialize()
     }
 
     // Camera flash - Pass 1: Count
+    typedef nlAVLTreeIterator<unsigned long, HelperObject*, DefaultKeyCompare<unsigned long> > HelperIterator;
     m_NumCameraFlashPositions = 0;
-    u32* pIterStack = (u32*)nlMalloc(8, 8, false);
-    if (pIterStack != NULL)
-    {
-        pNode = (AVLTreeNode*)m_helperMap.m_Root;
-        pIterStack[0] = (u32)nlMalloc((m_helperMap.m_NumElements + 1) * 4, 8, false);
-        pIterStack[1] = 0;
-        if (pNode != NULL)
-        {
-            while (pNode->left != NULL)
-            {
-                ((AVLTreeNode**)pIterStack[0])[pIterStack[1]] = pNode;
-                pIterStack[1]++;
-                pNode = pNode->left;
-            }
-            ((AVLTreeNode**)pIterStack[0])[pIterStack[1]] = pNode;
-            pIterStack[1]++;
-        }
-    }
+    HelperIterator* iterator = new (nlMalloc(sizeof(HelperIterator), 8, false)) HelperIterator(m_helperMap);
     const char* flashString = "fx_camera_flash";
     HelperObject* pHelper;
-    while (pIterStack[1] > 0)
+    while (iterator->m_NumStackEntries > 0)
     {
-        pHelper = ((AVLTreeEntry<unsigned long, HelperObject*>*)((AVLTreeNode**)pIterStack[0])[pIterStack[1] - 1])->value;
+        pHelper = iterator->m_Stack[iterator->m_NumStackEntries - 1]->value;
         if (nlStrNICmp<char>(pHelper->m_szName, flashString, nlStrLen<char>(flashString)) == 0)
         {
             m_NumCameraFlashPositions++;
         }
-        pIterStack[1]--;
-        pPopped = ((AVLTreeNode**)pIterStack[0])[pIterStack[1]];
-        pRight = pPopped->right;
-        if (pRight != NULL)
-        {
-            while (pRight->left != NULL)
-            {
-                ((AVLTreeNode**)pIterStack[0])[pIterStack[1]] = pRight;
-                pIterStack[1]++;
-                pRight = pRight->left;
-            }
-            ((AVLTreeNode**)pIterStack[0])[pIterStack[1]] = pRight;
-            pIterStack[1]++;
-        }
+        iterator->Next();
     }
-    if (pIterStack != NULL)
-    {
-        delete[] (char*)pIterStack[0];
-        delete pIterStack;
-    }
+    delete iterator;
 
     // Camera flash - Pass 2: Extract positions
     m_CameraFlashPositions = (nlVector3*)nlMalloc(m_NumCameraFlashPositions * sizeof(nlVector3), 8, false);
     m_NumCameraFlashPositions = 0;
-    pIterStack = (u32*)nlMalloc(8, 8, false);
-    if (pIterStack != NULL)
+    iterator = new (nlMalloc(sizeof(HelperIterator), 8, false)) HelperIterator(m_helperMap);
+    while (iterator->m_NumStackEntries > 0)
     {
-        pNode = (AVLTreeNode*)m_helperMap.m_Root;
-        pIterStack[0] = (u32)nlMalloc((m_helperMap.m_NumElements + 1) * 4, 8, false);
-        pIterStack[1] = 0;
-        if (pNode != NULL)
-        {
-            while (pNode->left != NULL)
-            {
-                ((AVLTreeNode**)pIterStack[0])[pIterStack[1]] = pNode;
-                pIterStack[1]++;
-                pNode = pNode->left;
-            }
-            ((AVLTreeNode**)pIterStack[0])[pIterStack[1]] = pNode;
-            pIterStack[1]++;
-        }
-    }
-    while (pIterStack[1] > 0)
-    {
-        pHelper = ((AVLTreeEntry<unsigned long, HelperObject*>*)((AVLTreeNode**)pIterStack[0])[pIterStack[1] - 1])->value;
+        pHelper = iterator->m_Stack[iterator->m_NumStackEntries - 1]->value;
         if (nlStrNICmp<char>(pHelper->m_szName, flashString, nlStrLen<char>(flashString)) == 0)
         {
             m_CameraFlashPositions[m_NumCameraFlashPositions] = *(nlVector3*)&pHelper->m_worldMatrix.f.m41;
             m_NumCameraFlashPositions++;
         }
-        pIterStack[1]--;
-        pPopped = ((AVLTreeNode**)pIterStack[0])[pIterStack[1]];
-        pRight = pPopped->right;
-        if (pRight != NULL)
-        {
-            while (pRight->left != NULL)
-            {
-                ((AVLTreeNode**)pIterStack[0])[pIterStack[1]] = pRight;
-                pIterStack[1]++;
-                pRight = pRight->left;
-            }
-            ((AVLTreeNode**)pIterStack[0])[pIterStack[1]] = pRight;
-            pIterStack[1]++;
-        }
+        iterator->Next();
     }
-    if (pIterStack != NULL)
-    {
-        delete[] (char*)pIterStack[0];
-        delete pIterStack;
-    }
+    delete iterator;
 
     // Extra ball loop
     {
@@ -587,7 +544,7 @@ bool BasicStadium::DoInitialize()
             {
                 DrawableObject* extraBall = ball->Clone();
                 extraBall->m_uObjectFlags &= 0xFFFFFFFE;
-                BasicString<char, Detail::TempStringAllocator> name = Format(BasicString<char, Detail::TempStringAllocator>(((void)0, "extra_ball_{0}")), i);
+                BasicString<char, Detail::TempStringAllocator> name = Format(BasicString<char, Detail::TempStringAllocator>("extra_ball_{0}"), i);
                 unsigned long extraHash = nlStringHash(name.c_str());
                 AddDrawableObject(extraHash, extraBall);
             }
@@ -595,30 +552,7 @@ bool BasicStadium::DoInitialize()
     }
 
     // Optimization file loading
-    {
-        char szOptBin[80];
-        nlSNPrintf(szOptBin, 0x50, "%s-GameplayInvisibleModels.bin", m_szBaseName);
-        unsigned long fileSize;
-        u32* pData = (u32*)nlLoadEntireFile(szOptBin, &fileSize, 0x20, AllocateEnd);
-        if (pData != NULL)
-        {
-            u32 uFlags = eOC_OPTIMIZE_OUT_FROM_GAMEPLAY;
-            unsigned long j;
-            u32* pCur = pData;
-            fileSize = fileSize >> 2;
-            for (j = 0; j < fileSize; j++)
-            {
-                DrawableObject* pObj = FindDrawableObject(*pCur);
-                if (pObj != NULL)
-                {
-                    DrawableModel* pModel = pObj->AsDrawableModel();
-                    pModel->m_uObjectCreationFlags |= uFlags;
-                }
-                pCur++;
-            }
-            nlFree(pData);
-        }
-    }
+    LoadGameplayOptimizeOut(this);
 
     return true;
 }

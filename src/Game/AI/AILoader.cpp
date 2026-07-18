@@ -4,7 +4,7 @@
 
 #include "Game/Ball.h"
 #include "Game/Physics/PhysicsFakeBall.h"
-#include "Game/CharacterTemplate.h"
+#include "Game/CharacterLifecycle.h"
 
 AILoader TheAILoader;
 

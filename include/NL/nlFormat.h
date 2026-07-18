@@ -7,16 +7,12 @@
 template <typename StringType>
 class FormatImpl
 {
-public:
     StringType mString;
     int mCurrentPos;
-    FormatImpl()
-        : mCurrentPos(0)
-    {
-    }
 
-    FormatImpl(BasicStringData<char>* data)
-        : mString(data)
+public:
+    FormatImpl(const StringType& string)
+        : mString(string)
         , mCurrentPos(0)
     {
     }
@@ -27,796 +23,116 @@ public:
     }
 
     template <typename T>
-    FormatImpl& operator%(const T& t);
-};
-
-template <typename StringType>
-template <typename T>
-FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
-{
-#ifdef NL_FORMAT_EXPLICIT_WIDE_POINTER_BODY
-    BasicString<unsigned short, Detail::TempStringAllocator> insert = LexicalCast<BasicString<unsigned short, Detail::TempStringAllocator>, const unsigned short*>(t);
-
-    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
+    FormatImpl& operator%(const T& t)
     {
-        if (!(mString[i] == (unsigned short)'{'
-              && i + 1 < (mString.m_data ? mString.m_data->mSize - 1 : 0)
-              && mString[i + 1] - '0' == mCurrentPos
-              && i + 2 < (mString.m_data ? mString.m_data->mSize - 1 : 0)
-              && mString[i + 2] == (unsigned short)'}'))
-            continue;
+        StringType insert = LexicalCast<StringType>(t);
 
-        mString.erase(mString.begin() + i, mString.begin() + i + 3);
-        mString.insert(mString.begin() + i, insert.begin(), insert.end());
-    }
-#else
-    StringType insert = LexicalCast<StringType, T>(t);
-
-    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
-    {
-        if (mString[i] != (typename StringType::value_type)'{')
-            continue;
-
-        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        if (mString[i + 1] - '0' != mCurrentPos)
-            continue;
-
-        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        if (mString[i + 2] != (typename StringType::value_type)'}')
-            continue;
-
-        mString.erase(&mString[i], &mString[i + 3]);
-        mString[i];
-        typename StringType::value_type* mStringData = mString.m_data ? mString.m_data->mData : 0;
-        typename StringType::value_type* insertBegin = &insert[0];
-        typename StringType::value_type* insertEndCow = &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        mString.insert(mStringData + i, insertBegin, insert.m_data ? &insert.m_data->mData[insert.m_data->mSize - 1] : (typename StringType::value_type*)0);
-    }
-#endif
-
-    mCurrentPos++;
-    return *this;
-}
-
-struct FormatImplLayoutCharTemp
-{
-    BasicString<char, Detail::TempStringAllocator> mString;
-    int mCurrentPos;
-};
-
-struct FormatImplLayoutWideTemp
-{
-    BasicString<unsigned short, Detail::TempStringAllocator> mString;
-    int mCurrentPos;
-
-    FormatImplLayoutWideTemp(BasicStringData<unsigned short>* data)
-        : mString(data)
-        , mCurrentPos(0)
-    {
-    }
-
-    ~FormatImplLayoutWideTemp()
-    {
-    }
-};
-
-template <typename StringType, typename T1, typename T2>
-inline StringType Format(const StringType& format, const T1& value1, const T2& value2);
-
-template <typename StringType, typename T1, typename T2, typename T3>
-inline StringType Format(const StringType& format, const T1& value1, const T2& value2, const T3& value3);
-
-template <typename StringType, typename T1, typename T2, typename T3, typename T4>
-inline StringType Format(const StringType& format, const T1& value1, const T2& value2, const T3& value3, const T4& value4);
-
-template <typename StringType, typename T1, typename T2, typename T3, typename T4, typename T5>
-inline StringType Format(const StringType& format, const T1& value1, const T2& value2, const T3& value3, const T4& value4, const T5& value5);
-
-template <typename StringType, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-inline StringType Format(const StringType& format, const T1& value1, const T2& value2, const T3& value3, const T4& value4, const T5& value5, const T6& value6);
-
-/**
- * Offset/Address/Size: 0xFB4 | 0x800CD994 | size: 0x118
- */
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator> Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[32]>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short (&value)[32])
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)(((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % (const unsigned short*)value));
-}
-
-/**
- * Offset/Address/Size: 0xE10 | 0x800D6924 | size: 0x124
- * TODO: 98.49% match - result copy still follows the r4/null store path instead of
- * the target's temporary-slot reload path before final assignment.
- */
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator>
-Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[32], unsigned short[32]>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short (&value1)[32],
-    const unsigned short (&value2)[32])
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % (const unsigned short*)value1) % (const unsigned short*)value2));
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x801037FC | size: 0x12C
- */
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator>
-Format<BasicString<unsigned short, Detail::TempStringAllocator>,
-    const unsigned short*, unsigned short[32], unsigned short[32]>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short* const& value1,
-    const unsigned short (&value2)[32],
-    const unsigned short (&value3)[32])
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)(((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % value1) % (const unsigned short*)value2) % (const unsigned short*)value3));
-}
-
-/**
- * Offset/Address/Size: 0xF40 | 0x8010473C | size: 0x12C
- */
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator>
-Format<BasicString<unsigned short, Detail::TempStringAllocator>,
-    unsigned short[32],
-    BasicString<unsigned short, Detail::TempStringAllocator> >(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short (&value1)[32],
-    const BasicString<unsigned short, Detail::TempStringAllocator>& value2)
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % (const unsigned short*)value1) % value2));
-}
-
-/**
- * Offset/Address/Size: 0x3DCC | 0x800F5D94 | size: 0x128
- */
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator>
-Format<BasicString<unsigned short, Detail::TempStringAllocator>, const unsigned short*, const unsigned short*>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short* const& value1,
-    const unsigned short* const& value2)
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % value1) % value2));
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x800F414C | size: 0x140
- */
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator>
-Format<BasicString<unsigned short, Detail::TempStringAllocator>,
-    const unsigned short*, const unsigned short*, unsigned short[16], unsigned short[16]>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short* const& value1,
-    const unsigned short* const& value2,
-    const unsigned short (&value3)[16],
-    const unsigned short (&value4)[16])
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)((((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % value1) % value2) % (const unsigned short*)value3) % (const unsigned short*)value4));
-}
-
-/**
- * Offset/Address/Size: 0xE30 | 0x800F4F7C | size: 0x128
- */
-#ifndef NL_NO_WIDE_FORMAT_3_STRING_IMPL
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator>
-Format<BasicString<unsigned short, Detail::TempStringAllocator>,
-    BasicString<unsigned short, Detail::TempStringAllocator>,
-    BasicString<unsigned short, Detail::TempStringAllocator> >(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const BasicString<unsigned short, Detail::TempStringAllocator>& value1,
-    const BasicString<unsigned short, Detail::TempStringAllocator>& value2)
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % value1) % value2));
-}
-
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator>
-Format<BasicString<unsigned short, Detail::TempStringAllocator>,
-    BasicString<unsigned short, Detail::TempStringAllocator>,
-    BasicString<unsigned short, Detail::TempStringAllocator>,
-    BasicString<unsigned short, Detail::TempStringAllocator> >(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const BasicString<unsigned short, Detail::TempStringAllocator>& value1,
-    const BasicString<unsigned short, Detail::TempStringAllocator>& value2,
-    const BasicString<unsigned short, Detail::TempStringAllocator>& value3)
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)(((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % value1) % value2) % value3));
-}
-#endif
-
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator>
-Format<BasicString<unsigned short, Detail::TempStringAllocator>,
-    BasicString<unsigned short, Detail::TempStringAllocator> >(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const BasicString<unsigned short, Detail::TempStringAllocator>& value)
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)(((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % value));
-}
-
-/**
- * Offset/Address/Size: 0xE08 | 0x800A9794 | size: 0x118
- */
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator> Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[16]>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short (&value)[16])
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)(((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % value));
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x800D5B14 | size: 0x120
- * TODO: 98.47% match - result copy path still stores through r4 and misses the temporary-slot reload into r0 before final write.
- */
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator>
-Format<BasicString<unsigned short, Detail::TempStringAllocator>, const unsigned short*, unsigned short[16]>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short* const& value1,
-    const unsigned short (&value2)[16])
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % value1) % value2));
-}
-
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator>
-Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[16], unsigned short[16]>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short (&value1)[16],
-    const unsigned short (&value2)[16])
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % (const unsigned short*)value1) % (const unsigned short*)value2));
-}
-
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator> Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[8]>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short (&value)[8])
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)(((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % (const unsigned short*)value));
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x800FA298 | size: 0x124
- */
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator>
-Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[8], unsigned short[8]>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short (&value1)[8],
-    const unsigned short (&value2)[8])
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % (const unsigned short*)value1) % (const unsigned short*)value2));
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x800A898C | size: 0x118
- */
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator> Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[2]>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short (&value)[2])
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)(((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % (const unsigned short*)value));
-}
-/**
- * Offset/Address/Size: 0xF68 | 0x8009DFA4 | size: 0x118
- */
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator> Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[4]>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short (&value)[4])
-{
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (const BasicString<unsigned short, Detail::TempStringAllocator>&)(BasicString<unsigned short, Detail::TempStringAllocator>)(((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % (const unsigned short*)value));
-}
-/**
- * Offset/Address/Size: 0x0 | 0x80060960 | size: 0x114
- */
-template <>
-inline BasicString<char, Detail::TempStringAllocator> Format<BasicString<char, Detail::TempStringAllocator>, int>(
-    const BasicString<char, Detail::TempStringAllocator>& format,
-    const int& value)
-{
-    BasicStringData<char>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
-
-    return BasicString<char, Detail::TempStringAllocator>(
-        (BasicString<char, Detail::TempStringAllocator>)(impl % value));
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x801935F8 | size: 0x128
- */
-template <>
-inline BasicString<char, Detail::TempStringAllocator> Format<BasicString<char, Detail::TempStringAllocator>, int, int>(
-    const BasicString<char, Detail::TempStringAllocator>& format,
-    const int& value1,
-    const int& value2)
-{
-    struct FormatImplLayoutCharTempI2
-    {
-        BasicString<char, Detail::TempStringAllocator> mString;
-        int mCurrentPos;
-
-        FormatImplLayoutCharTempI2(BasicStringData<char>* data)
-            : mString(data)
-            , mCurrentPos(0)
+        for (int i = 0; i < mString.size(); i++)
         {
+            if (mString[i] == '{'
+                && i + 1 < mString.size()
+                && mString[i + 1] - '0' == mCurrentPos
+                && i + 2 < mString.size()
+                && mString[i + 2] == '}')
+            {
+                mString.erase(mString.begin() + i, mString.begin() + i + 3);
+                mString.insert(mString.begin() + i, insert.begin(), insert.end());
+            }
         }
-    };
 
-    BasicStringData<char>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
+        mCurrentPos++;
+        return *this;
     }
-    else
-    {
-        data = 0;
-    }
+};
 
-    FormatImplLayoutCharTempI2 impl(data);
-
-    return BasicString<char, Detail::TempStringAllocator>(
-        (const BasicString<char, Detail::TempStringAllocator>&)(BasicString<char, Detail::TempStringAllocator>)((((FormatImpl<BasicString<char, Detail::TempStringAllocator> >&)impl) % value1) % value2));
-}
-/**
- * Offset/Address/Size: 0xEB0 | 0x80068108 | size: 0x114
- */
-template <>
-inline BasicString<char, Detail::TempStringAllocator> Format<BasicString<char, Detail::TempStringAllocator>, char>(
-    const BasicString<char, Detail::TempStringAllocator>& format,
-    const char& value)
+template <typename StringType, typename T0, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
+inline StringType Format(
+    const StringType& string,
+    const T0& t0,
+    const T1& t1,
+    const T2& t2,
+    const T3& t3,
+    const T4& t4,
+    const T5& t5,
+    const T6& t6,
+    const T7& t7)
 {
-    BasicStringData<char>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
-
-    return BasicString<char, Detail::TempStringAllocator>(
-        (BasicString<char, Detail::TempStringAllocator>)(((FormatImpl<BasicString<char, Detail::TempStringAllocator> >&)impl) % value));
-}
-/**
- * Offset/Address/Size: 0x0 | 0x8002FED4 | size: 0x114
- */
-template <>
-inline BasicString<char, Detail::TempStringAllocator> Format<BasicString<char, Detail::TempStringAllocator>, const char*>(
-    const BasicString<char, Detail::TempStringAllocator>& format,
-    const char* const& value)
-{
-    BasicStringData<char>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
-
-    return BasicString<char, Detail::TempStringAllocator>(
-        (BasicString<char, Detail::TempStringAllocator>)(impl % value));
-}
-/**
- * Offset/Address/Size: 0x2BC0 | 0x80069E18 | size: 0x114
- */
-template <>
-inline BasicString<char, Detail::TempStringAllocator> Format<BasicString<char, Detail::TempStringAllocator>, float>(
-    const BasicString<char, Detail::TempStringAllocator>& format,
-    const float& value)
-{
-    BasicStringData<char>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
-
-    return BasicString<char, Detail::TempStringAllocator>((BasicString<char, Detail::TempStringAllocator>)(impl % value));
+    return FormatImpl<StringType>(string) % t0 % t1 % t2 % t3 % t4 % t5 % t6 % t7;
 }
 
-/**
- * Offset/Address/Size: 0x0 | 0x80067258 | size: 0x13C
- */
-template <>
-inline BasicString<char, Detail::TempStringAllocator>
-Format<BasicString<char, Detail::TempStringAllocator>, float, float, float>(
-    const BasicString<char, Detail::TempStringAllocator>& format,
-    const float& value1,
-    const float& value2,
-    const float& value3)
+template <typename StringType, typename T0, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+inline StringType Format(
+    const StringType& string,
+    const T0& t0,
+    const T1& t1,
+    const T2& t2,
+    const T3& t3,
+    const T4& t4,
+    const T5& t5,
+    const T6& t6)
 {
-    BasicStringData<char>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
-
-    return BasicString<char, Detail::TempStringAllocator>(
-        (BasicString<char, Detail::TempStringAllocator>)(((impl % value1) % value2) % value3));
+    return FormatImpl<StringType>(string) % t0 % t1 % t2 % t3 % t4 % t5 % t6;
 }
 
-/**
- * Offset/Address/Size: 0x0 | 0x8016D494 | size: 0x128
- */
-template <>
-inline BasicString<char, Detail::TempStringAllocator>
-Format<BasicString<char, Detail::TempStringAllocator>, float, float>(
-    const BasicString<char, Detail::TempStringAllocator>& format,
-    const float& value1,
-    const float& value2)
+template <typename StringType, typename T0, typename T1, typename T2, typename T3, typename T4, typename T5>
+inline StringType Format(
+    const StringType& string,
+    const T0& t0,
+    const T1& t1,
+    const T2& t2,
+    const T3& t3,
+    const T4& t4,
+    const T5& t5)
 {
-    BasicStringData<char>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
-
-    return BasicString<char, Detail::TempStringAllocator>(
-        (BasicString<char, Detail::TempStringAllocator>)(((impl % value1) % value2)));
+    return FormatImpl<StringType>(string) % t0 % t1 % t2 % t3 % t4 % t5;
 }
 
-/**
- * Offset/Address/Size: 0x3DC | 0x800C3820 | size: 0x114
- * TODO: 97.46% match - store scheduling (li r0,0 before/after stw r4) and
- * copy ctor register convergence (r0 reload vs r4 reuse) differ from target.
- */
-template <>
-inline BasicString<char, Detail::TempStringAllocator> Format<BasicString<char, Detail::TempStringAllocator>, unsigned long>(
-    const BasicString<char, Detail::TempStringAllocator>& format,
-    const unsigned long& value)
+template <typename StringType, typename T0, typename T1, typename T2, typename T3, typename T4>
+inline StringType Format(
+    const StringType& string,
+    const T0& t0,
+    const T1& t1,
+    const T2& t2,
+    const T3& t3,
+    const T4& t4)
 {
-    BasicStringData<char>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
-
-    return BasicString<char, Detail::TempStringAllocator>(
-        (BasicString<char, Detail::TempStringAllocator>)(impl % value));
+    return FormatImpl<StringType>(string) % t0 % t1 % t2 % t3 % t4;
 }
 
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator>
-Format<BasicString<unsigned short, Detail::TempStringAllocator>,
-    unsigned short[16], unsigned short[16], unsigned short[16],
-    const unsigned short*, const unsigned short*>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short (&value1)[16],
-    const unsigned short (&value2)[16],
-    const unsigned short (&value3)[16],
-    const unsigned short* const& value4,
-    const unsigned short* const& value5)
+template <typename StringType, typename T0, typename T1, typename T2, typename T3>
+inline StringType Format(
+    const StringType& string,
+    const T0& t0,
+    const T1& t1,
+    const T2& t2,
+    const T3& t3)
 {
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)((((((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % (const unsigned short*)value1) % (const unsigned short*)value2) % (const unsigned short*)value3) % value4) % value5)));
+    return FormatImpl<StringType>(string) % t0 % t1 % t2 % t3;
 }
 
-template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator>
-Format<BasicString<unsigned short, Detail::TempStringAllocator>,
-    unsigned short[16], unsigned short[16], unsigned short[16],
-    const unsigned short*, const unsigned short*, const unsigned short*>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short (&value1)[16],
-    const unsigned short (&value2)[16],
-    const unsigned short (&value3)[16],
-    const unsigned short* const& value4,
-    const unsigned short* const& value5,
-    const unsigned short* const& value6)
+template <typename StringType, typename T0, typename T1, typename T2>
+inline StringType Format(
+    const StringType& string,
+    const T0& t0,
+    const T1& t1,
+    const T2& t2)
 {
-    BasicStringData<unsigned short>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutWideTemp impl(data);
-
-    return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)(((((((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % (const unsigned short*)value1) % (const unsigned short*)value2) % (const unsigned short*)value3) % value4) % value5) % value6)));
+    return FormatImpl<StringType>(string) % t0 % t1 % t2;
 }
 
-template <>
-inline BasicString<char, Detail::TempStringAllocator>
-Format<BasicString<char, Detail::TempStringAllocator>, const char*, const char*, const char*, const char*, const char*>(
-    const BasicString<char, Detail::TempStringAllocator>& format,
-    const char* const& value1,
-    const char* const& value2,
-    const char* const& value3,
-    const char* const& value4,
-    const char* const& value5)
+template <typename StringType, typename T0, typename T1>
+inline StringType Format(
+    const StringType& string,
+    const T0& t0,
+    const T1& t1)
 {
-    BasicStringData<char>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
+    return FormatImpl<StringType>(string) % t0 % t1;
+}
 
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
-
-    return BasicString<char, Detail::TempStringAllocator>(
-        (BasicString<char, Detail::TempStringAllocator>)(((((impl % value1) % value2) % value3) % value4) % value5));
+template <typename StringType, typename T0>
+inline StringType Format(const StringType& string, const T0& t0)
+{
+    return FormatImpl<StringType>(string) % t0;
 }
 
 #endif // _NLFORMAT_H_

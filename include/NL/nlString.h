@@ -22,233 +22,38 @@ u32 nlStringLowerHash(const char*);
 u32 nlStringHash(const char*);
 
 template <typename CharT>
-unsigned long nlStrLen(const CharT* str)
-{
-    unsigned long n = 0;
-    if (str)
-    {
-        for (; *str; str++, n++)
-            ;
-    }
-    return n;
-}
+unsigned long nlStrLen(const CharT*);
 
 template <typename CharT>
-CharT* nlStrChr(const CharT* str, CharT ch)
-{
-    while (*str != static_cast<CharT>(0))
-    {
-        if (*str == ch)
-            return const_cast<CharT*>(str);
-        ++str;
-    }
-    return nullptr;
-}
+CharT* nlStrNCpy(CharT*, const CharT*, unsigned long);
 
 template <typename CharT>
-int nlStrCmp(const CharT* a, const CharT* b)
-{
-    int c1;
-    int c2;
-
-    do
-    {
-        c2 = (unsigned char)*b++;
-        c1 = (unsigned char)*a++;
-        if ((CharT)c1 == 0)
-            break;
-        if ((CharT)c2 == 0)
-            break;
-    } while ((CharT)c1 == (CharT)c2);
-
-    return (CharT)c1 - (CharT)c2;
-}
+CharT* nlStrNCat(CharT*, const CharT*, const CharT*, unsigned long);
 
 template <typename CharT>
-int nlStrNCmp(const CharT* a, const CharT* b, unsigned long maxsize)
-{
-    int c1;
-    int c2;
-    CharT av;
-
-    do
-    {
-        --maxsize;
-        av = *a;
-        c2 = (unsigned char)*b;
-        c1 = (unsigned char)av;
-        b++;
-        a++;
-        if (maxsize == 0)
-            break;
-        if ((CharT)c1 == 0)
-            break;
-        if ((CharT)c2 == 0)
-            break;
-    } while ((CharT)c1 == (CharT)c2);
-    return (CharT)c1 - (CharT)c2;
-}
+int nlStrCmp(const CharT*, const CharT*);
 
 template <typename CharT>
-CharT nlToUpper(CharT c)
-{
-    if ((c >= 0x61) && (c <= 0x7A))
-    {
-        return c & 0x5F;
-    }
-    return c;
-}
-
-#pragma dont_inline on
-template <typename CharT>
-int nlStrICmp(const CharT* str1, const CharT* str2)
-{
-    CharT c1;
-    CharT c2;
-
-    do
-    {
-        c1 = nlToUpper<CharT>(const_cast<CharT&>(*str1++));
-        c2 = nlToUpper<CharT>(const_cast<CharT&>(*str2++));
-    } while (c1 != 0 && c2 != 0 && c1 == c2);
-
-    return c1 - c2;
-}
-#pragma dont_inline reset
-
-/**
- * Offset/Address/Size: 0x0 | 0x8014C2B8 | size: 0x98
- */
-template <typename CharT>
-int nlStrNICmp(const CharT* a, const CharT* b, unsigned long maxsize)
-{
-    CharT c1;
-    CharT c2;
-
-    do
-    {
-        c1 = nlToUpper<CharT>(const_cast<CharT&>(*a++));
-        c2 = nlToUpper<CharT>(const_cast<CharT&>(*b++));
-    } while (--maxsize != 0 && c1 != 0 && c2 != 0 && c1 == c2);
-
-    return c1 - c2;
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x801D2854 | size: 0x20
- * void nlToLower<unsigned char>(unsigned char)
- */
-
-// Single character version
-template <typename CharT>
-CharT nlToLower(CharT c)
-{
-    FORCE_DONT_INLINE;
-    if ((c >= 0x41) && (c <= 0x5A))
-    {
-        c = (CharT)(c | 0x20);
-    }
-    return c;
-}
+int nlStrICmp(const CharT*, const CharT*);
 
 template <typename CharT>
-CharT* nlToLower(CharT* str)
-{
-    CharT* cp = str;
-    while (*cp)
-    {
-        *cp = nlToLower<CharT>(*cp);
-        cp++;
-    }
-    return str;
-}
+int nlStrNICmp(const CharT*, const CharT*, unsigned long);
 
-/**
- * Offset/Address/Size: 0x0 | 0x8000DEFC | size: 0x40
- * CharT* nlStrNCpy<CharT>(CharT*, const CharT*, unsigned long)
- */
 template <typename CharT>
-CharT* nlStrNCpy(CharT* str1, const CharT* str2, unsigned long len)
-{
-#ifdef NLSTRNCPY_FORCE_DONT_INLINE
-    FORCE_DONT_INLINE;
-#endif
-    CharT* p;
-    unsigned long c;
-    unsigned long n;
-    n = len;
-    p = str1;
-    goto test;
-loop:
-    if (sizeof(CharT) == 1)
-    {
-        p++;
-        str2++;
-    }
-    else
-    {
-        str2++;
-        p++;
-    }
-test:
-    if (n-- == 0)
-        goto done;
-    if (sizeof(CharT) == 1)
-        c = *(const unsigned char*)str2;
-    else
-        c = *str2;
-    *p = c;
-    if ((CharT)c)
-        goto loop;
-done:
-    str1[len - 1] = '\0';
-    return str1;
-}
+int nlStrNCmp(const CharT*, const CharT*, unsigned long);
 
-/**
- * Offset/Address/Size: 0x0 | 0x8000DEFC | size: 0x90
- * CharT* nlStrNCat<char>(char*, const char*, const char*, unsigned long)
- */
 template <typename CharT>
-CharT* nlStrNCat(CharT* dest, const CharT* a, const CharT* b, unsigned long maxsize)
-{
-    CharT* p;
-    unsigned long n = 0;
+CharT nlToUpper(CharT);
 
-    goto entry1;
-body1:
-    *p++ = *a++;
-    n++;
-    if (n >= maxsize)
-    {
-        dest[maxsize - 1] = (CharT)0;
-        return dest;
-    }
-    goto test1;
-entry1:
-    p = dest;
-test1:
-    if (*a)
-        goto body1;
+template <typename CharT>
+CharT nlToLower(CharT);
 
-    goto entry2;
-body2:
-    *p++ = *b++;
-    n++;
-    if (n >= maxsize)
-    {
-        dest[maxsize - 1] = (CharT)0;
-        return dest;
-    }
-    goto test2;
-entry2:
-    p = &dest[n];
-test2:
-    if (*b)
-        goto body2;
+template <typename CharT>
+CharT* nlToLower(CharT*);
 
-    dest[n] = (CharT)0;
-    return dest;
-}
+template <typename CharT>
+CharT* nlStrChr(const CharT*, CharT);
+
+#include "NL/nlstring_tmpl.h"
 
 #endif // _NLSTRING_H_

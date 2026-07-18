@@ -38,6 +38,85 @@ public:
         mSlideMenuLists[7] = NULL;
     }
 
+    void ColourAllText(const nlColour& colour, int menuitem)
+    {
+        unsigned long hash;
+
+        SlideMenuList* list = mSlideMenuLists[menuitem];
+        if (list != NULL)
+        {
+            TLComponentInstance* component = list->GetComponentInstance();
+            if (component != NULL && component->GetActiveSlide() != NULL)
+            {
+                TLSlide* firstSlide = component->GetActiveSlide();
+                TLSlide* slide = firstSlide;
+                do
+                {
+                    component->SetActiveSlide(slide);
+                    TLInstance* firstChild = component->GetActiveSlide()->m_instances;
+                    TLInstance* child = firstChild;
+                    if (firstChild != NULL)
+                    {
+                        do
+                        {
+                            if (child->m_type == TLAT_TEXT)
+                            {
+                                child->SetAssetColour(colour);
+                            }
+                            else if (child->m_type == TLAT_IMAGE)
+                            {
+                                hash = child->m_hash;
+                                if (hash != nlStringLowerHash("white_box"))
+                                {
+                                    child->SetAssetColour(colour);
+                                }
+                            }
+                            child = child->m_next;
+                        } while (child != firstChild);
+                    }
+                    slide = slide->m_next;
+                } while (slide != firstSlide);
+                component->SetActiveSlide(firstSlide);
+            }
+        }
+    }
+
+    void ColourAllText(TLComponentInstance& component, const nlColour& colour)
+    {
+        if (component.GetActiveSlide() != NULL)
+        {
+            TLSlide* firstSlide = component.GetActiveSlide();
+            TLSlide* slide = firstSlide;
+            do
+            {
+                component.SetActiveSlide(slide);
+                TLInstance* firstChild = component.GetActiveSlide()->m_instances;
+                TLInstance* child = firstChild;
+                if (firstChild != NULL)
+                {
+                    do
+                    {
+                        if (child->m_type == TLAT_TEXT)
+                        {
+                            child->SetAssetColour(colour);
+                        }
+                        else if (child->m_type == TLAT_IMAGE)
+                        {
+                            unsigned long hash = child->m_hash;
+                            if (hash != nlStringLowerHash("white_box"))
+                            {
+                                child->SetAssetColour(colour);
+                            }
+                        }
+                        child = child->m_next;
+                    } while (child != firstChild);
+                }
+                slide = slide->m_next;
+            } while (slide != firstSlide);
+            component.SetActiveSlide(firstSlide);
+        }
+    }
+
     virtual ~OptionsSubMenu();
     virtual void Update(float);
     virtual void Save() = 0;
@@ -54,7 +133,7 @@ public:
     /* 0x00C */ ButtonComponent::ButtonState m_currentButtonState; // offset 0xC, size 0x4
     /* 0x010 */ ButtonComponent mButtons;                          // offset 0x10, size 0x24
     /* 0x034 */ MenuList<TLComponentInstance> mMenuItems;          // offset 0x34, size 0x214
-    /* 0x248 */ MenuList<SlideMenuList>* mSlideMenuLists[8];       // offset 0x248, size 0x20
+    /* 0x248 */ SlideMenuList* mSlideMenuLists[8];                 // offset 0x248, size 0x20
     /* 0x268 */ unsigned long mSettingsCRC;                        // offset 0x268, size 0x4
 }; // total size: 0x26C
 

@@ -9,13 +9,6 @@
 
 static int numLingeringSystems;
 
-struct EmissionFunctor
-{
-    virtual ~EmissionFunctor() { };
-    virtual void Invoke(EmissionController&) = 0;
-    virtual FunctorBase* Clone() const = 0;
-};
-
 struct UserEffectSpecClone : public UserEffectSpec
 {
     virtual UserEffectSpec* Clone() = 0;
@@ -26,29 +19,11 @@ static inline UserEffectSpec** GetUserSpecs(EffectsGroup* pGroup)
     return pGroup->m_userSpecsPtr;
 }
 
-struct EmptyCallback
-{
-    enum Tag mTag;
-    union
-    {
-        void (*mFreeFunction)(EmissionController&);
-        Function1<void, EmissionController&>::FunctorBase* mFunctor;
-    };
-};
-
 /**
  * Offset/Address/Size: 0xF2C | 0x801F881C | size: 0x104
  */
 EmissionController::EmissionController(EffectsGroup* pEffectsGroup, unsigned short id, eGLView view)
 {
-    m_nextNode = nullptr;
-    m_prevNode = nullptr;
-    m_Systems.m_headNode = nullptr;
-    m_Systems.m_tailNode = nullptr;
-    m_Systems.m_numNodes = 0;
-    mUpdateCallback.mTag = EMPTY;
-    mFinishedCallback.mTag = EMPTY;
-
     m_GlView = view;
     m_Replaying = false;
     m_Age = 0.0f;
@@ -165,42 +140,10 @@ void EmissionController::InitializeSystemsFromGroup()
  */
 EmissionController::~EmissionController()
 {
-    if (mFinishedCallback.mTag != EMPTY)
+    if (mFinishedCallback)
     {
-        if (mFinishedCallback.mTag == FREE_FUNCTION)
-        {
-            mFinishedCallback.mFreeFunction(*this);
-        }
-        else
-        {
-            ((EmissionFunctor*)mFinishedCallback.mFunctor)->Invoke(*this);
-        }
-
-        EmptyCallback empty;
-        empty.mTag = EMPTY;
-
-        if (mFinishedCallback.mTag == FUNCTOR)
-        {
-            delete mFinishedCallback.mFunctor;
-        }
-
-        mFinishedCallback.mTag = EMPTY;
-        mFinishedCallback.mTag = empty.mTag;
-
-        if (mFinishedCallback.mTag == FREE_FUNCTION)
-        {
-            mFinishedCallback.mFreeFunction = empty.mFreeFunction;
-        }
-        else if (mFinishedCallback.mTag == FUNCTOR)
-        {
-            mFinishedCallback.mFunctor = empty.mFunctor->Clone();
-        }
-
-        if (empty.mTag == FUNCTOR)
-        {
-            delete empty.mFunctor;
-        }
-        *(volatile int*)&empty.mTag = EMPTY;
+        mFinishedCallback(*this);
+        mFinishedCallback = Function<FnEmissionController>();
     }
 
     while (m_Systems.m_headNode != NULL)
@@ -227,23 +170,6 @@ EmissionController::~EmissionController()
         numLingeringSystems--;
     }
 
-    if (&mFinishedCallback)
-    {
-        if (mFinishedCallback.mTag == FUNCTOR)
-        {
-            delete mFinishedCallback.mFunctor;
-        }
-        mFinishedCallback.mTag = EMPTY;
-    }
-
-    if (&mUpdateCallback)
-    {
-        if (mUpdateCallback.mTag == FUNCTOR)
-        {
-            delete mUpdateCallback.mFunctor;
-        }
-        mUpdateCallback.mTag = EMPTY;
-    }
 }
 
 /**
@@ -306,42 +232,10 @@ void EmissionController::Die()
         p = (ParticleSystem*)p->m_nextNode;
     }
 
-    if (mFinishedCallback.mTag != EMPTY)
+    if (mFinishedCallback)
     {
-        if (mFinishedCallback.mTag == FREE_FUNCTION)
-        {
-            mFinishedCallback.mFreeFunction(*this);
-        }
-        else
-        {
-            ((EmissionFunctor*)mFinishedCallback.mFunctor)->Invoke(*this);
-        }
-
-        EmptyCallback empty;
-        empty.mTag = EMPTY;
-
-        if (mFinishedCallback.mTag == FUNCTOR)
-        {
-            delete mFinishedCallback.mFunctor;
-        }
-
-        mFinishedCallback.mTag = EMPTY;
-        mFinishedCallback.mTag = empty.mTag;
-
-        if (mFinishedCallback.mTag == FREE_FUNCTION)
-        {
-            mFinishedCallback.mFreeFunction = empty.mFreeFunction;
-        }
-        else if (mFinishedCallback.mTag == FUNCTOR)
-        {
-            mFinishedCallback.mFunctor = empty.mFunctor->Clone();
-        }
-
-        if (empty.mTag == FUNCTOR)
-        {
-            delete empty.mFunctor;
-        }
-        *(volatile int*)&empty.mTag = EMPTY;
+        mFinishedCallback(*this);
+        mFinishedCallback = Function<FnEmissionController>();
     }
 }
 
@@ -457,16 +351,9 @@ bool EmissionController::Update(float dt)
         m_Age += dt;
     }
 
-    if (mUpdateCallback.mTag != EMPTY)
+    if (mUpdateCallback)
     {
-        if (mUpdateCallback.mTag == FREE_FUNCTION)
-        {
-            mUpdateCallback.mFreeFunction(*this);
-        }
-        else
-        {
-            ((EmissionFunctor*)mUpdateCallback.mFunctor)->Invoke(*this);
-        }
+        mUpdateCallback(*this);
     }
 
     if (dt <= 0.0f)
@@ -588,42 +475,10 @@ bool EmissionController::Update(float dt)
         isFinished = false;
     }
 
-    if (isFinished && mFinishedCallback.mTag != EMPTY)
+    if (isFinished && mFinishedCallback)
     {
-        if (mFinishedCallback.mTag == FREE_FUNCTION)
-        {
-            mFinishedCallback.mFreeFunction(*this);
-        }
-        else
-        {
-            ((EmissionFunctor*)mFinishedCallback.mFunctor)->Invoke(*this);
-        }
-
-        EmptyCallback empty;
-        empty.mTag = EMPTY;
-
-        if (mFinishedCallback.mTag == FUNCTOR)
-        {
-            delete mFinishedCallback.mFunctor;
-        }
-
-        mFinishedCallback.mTag = EMPTY;
-        mFinishedCallback.mTag = empty.mTag;
-
-        if (mFinishedCallback.mTag == FREE_FUNCTION)
-        {
-            mFinishedCallback.mFreeFunction = empty.mFreeFunction;
-        }
-        else if (mFinishedCallback.mTag == FUNCTOR)
-        {
-            mFinishedCallback.mFunctor = empty.mFunctor->Clone();
-        }
-
-        if (empty.mTag == FUNCTOR)
-        {
-            delete empty.mFunctor;
-        }
-        *(volatile int*)&empty.mTag = EMPTY;
+        mFinishedCallback(*this);
+        mFinishedCallback = Function<FnEmissionController>();
     }
 
     if (m_nUserEffects > 0)
@@ -738,22 +593,7 @@ void EmissionController::Render()
  */
 void EmissionController::SetUpdateCallback(const Function1<void, EmissionController&>& callback)
 {
-    if (mUpdateCallback.mTag == FUNCTOR)
-    {
-        delete mUpdateCallback.mFunctor;
-    }
-
-    mUpdateCallback.mTag = EMPTY;
-    mUpdateCallback.mTag = callback.mTag;
-
-    if (mUpdateCallback.mTag == FREE_FUNCTION)
-    {
-        mUpdateCallback.mFreeFunction = callback.mFreeFunction;
-    }
-    else if (mUpdateCallback.mTag == FUNCTOR)
-    {
-        mUpdateCallback.mFunctor = callback.mFunctor->Clone();
-    }
+    mUpdateCallback = callback;
 }
 
 /**
@@ -761,20 +601,5 @@ void EmissionController::SetUpdateCallback(const Function1<void, EmissionControl
  */
 void EmissionController::SetFinishedCallback(const Function1<void, EmissionController&>& callback)
 {
-    if (mFinishedCallback.mTag == FUNCTOR)
-    {
-        delete mFinishedCallback.mFunctor;
-    }
-
-    mFinishedCallback.mTag = EMPTY;
-    mFinishedCallback.mTag = callback.mTag;
-
-    if (mFinishedCallback.mTag == FREE_FUNCTION)
-    {
-        mFinishedCallback.mFreeFunction = callback.mFreeFunction;
-    }
-    else if (mFinishedCallback.mTag == FUNCTOR)
-    {
-        mFinishedCallback.mFunctor = callback.mFunctor->Clone();
-    }
+    mFinishedCallback = callback;
 }

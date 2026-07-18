@@ -15,30 +15,6 @@ public:
 
         operator unsigned long() const { return hash; }
 
-        void Set(unsigned long id, U* entry)
-        {
-            pEntry = entry;
-            hash = id;
-        }
-
-        void SetEntry(U* entry, unsigned long id)
-        {
-            pEntry = entry;
-            hash = id;
-        }
-
-        void Copy(const EntryLookup& other)
-        {
-            Set(other.hash, other.pEntry);
-        }
-
-        void CopyTo(EntryLookup* other) const
-        {
-            unsigned long id = hash;
-            U* entry = pEntry;
-            other->pEntry = entry;
-            other->hash = id;
-        }
     }; // total size: 0x8
 
     nlSortedSlot()
@@ -103,23 +79,13 @@ void nlStaticSortedSlot<T, N>::FreeLookup()
 template <typename T, int N>
 void nlStaticSortedSlot<T, N>::FreeEntry(T* entry)
 {
-    *(T**)entry = m_ArrayAllocator.m_pFree;
-    m_ArrayAllocator.m_pFree = entry;
+    m_ArrayAllocator.DeleteEntry(entry);
 }
 
 template <typename T, int N>
 T* nlStaticSortedSlot<T, N>::GetNewEntry()
 {
-    T* pEntry = m_ArrayAllocator.m_pFree;
-    if (pEntry == 0)
-    {
-        pEntry = 0;
-    }
-    else
-    {
-        m_ArrayAllocator.m_pFree = *(T**)pEntry;
-    }
-    return pEntry;
+    return m_ArrayAllocator.Allocate();
 }
 
 #endif // _NLSORTEDSLOT_H_

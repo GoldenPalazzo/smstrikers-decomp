@@ -4,6 +4,7 @@
 #include "Game/RenderSnapshot.h"
 #include "Game/Ball.h"
 #include "Game/CharacterTemplate.h"
+#include "Game/Player.h"
 #include "NL/gl/glModel.h"
 #include "NL/gl/glState.h"
 #include "NL/gl/glUserData.h"
@@ -291,40 +292,6 @@ void DrawableBall::Replay<LoadFrame>(LoadFrame& frame)
     Replayable<1, LoadFrame, char>(frame, (char&)mPrevOwnerIndex);
     Replayable<1, LoadFrame, char>(frame, (char&)mPassTargetIndex);
     Replayable<1, LoadFrame, char>(frame, (char&)mLastTouchIndex);
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x8011E8AC | size: 0x50
- */
-template <>
-void Replayable<1, SaveFrame, char>(SaveFrame& frame, char& value)
-{
-    FORCE_DONT_INLINE;
-    if (frame.mInterval == 1)
-    {
-        if (frame.mInterval == 1)
-        {
-            memcpy(frame.mStream.mStorage, &value, 1);
-            frame.mStream.mStorage += 1;
-        }
-    }
-}
-
-/**
- * Offset/Address/Size: 0x50 | 0x8011E8FC | size: 0x54
- */
-template <>
-void Replayable<1, LoadFrame, char>(LoadFrame& frame, char& value)
-{
-    FORCE_DONT_INLINE;
-    if (frame.mInterval == 1)
-    {
-        if (frame.mInterval == 1)
-        {
-            memcpy(&value, frame.mStream.mStorage, 1);
-            frame.mStream.mStorage += 1;
-        }
-    }
 }
 
 /**

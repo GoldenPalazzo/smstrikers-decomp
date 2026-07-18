@@ -1,5 +1,3 @@
-#define BASICSTRING_DELEGATING_CTOR
-#define BASICSTRING_INLINE_ERASE
 #include "Game/DB/StatsTracker.h"
 #include "Game/AI/FielderActions.h"
 #include "Game/FE/feHelpFuncs.h"
@@ -8,6 +6,9 @@
 #include "Game/World/WorldLoader.h"
 #include "NL/nlFormat.h"
 #include "PowerPC_EABI_Support/MSL_C/MSL_Common/direct_io.h"
+
+template <>
+StatsTracker* nlSingleton<StatsTracker>::s_pInstance = 0;
 
 // /**
 //  * Offset/Address/Size: 0x2C7C | 0x80189818 | size: 0x144
@@ -23,286 +24,12 @@
 // {
 // }
 
-typedef FormatImpl<NLString> NLFormatImpl;
-
-static inline void EraseRange(NLString& s, const char* begin, const char* end)
-{
-    s[0];
-    BasicStringData<char>* data = s.m_data;
-    int size = end - begin;
-    int offset = begin - data->mData;
-    char* at = data->mData + offset;
-    while (end != data->mData + data->mSize)
-    {
-        *at = *end;
-        end++;
-        at++;
-    }
-    data->mSize -= size;
-}
-
-static inline char* StringBegin(NLString& string)
-{
-    string[0];
-    return string.m_data ? string.m_data->mData : (char*)0;
-}
-
-static inline char* StringEnd(NLString& string)
-{
-    string[(int)(string.m_data ? string.m_data->mSize - 1 : 0)];
-    return string.m_data ? string.m_data->mData + string.m_data->mSize - 1 : (char*)0;
-}
-
-/**
- * Offset/Address/Size: 0x1DAC | 0x80188948 | size: 0xD74
- * TODO: 99.79% match - remaining diffs are marker add operand order and
- * copy-on-write register allocation.
- */
-template <>
-NLFormatImpl& NLFormatImpl::operator% <const char*>(const char* const& t)
-{
-    NLString insert = LexicalCast<NLString, const char*>(t);
-
-    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
-    {
-        if (mString[i] != (char)'{')
-            continue;
-
-        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        char* marker = &mString[i];
-        if (mCurrentPos != marker[1] - '0')
-            continue;
-
-        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        char* markerEnd = &mString[i];
-        if (markerEnd[2] != (char)'}')
-            continue;
-
-        mString[0];
-        EraseRange(mString, ((void)mString[0], (mString.m_data ? mString.m_data->mData : (char*)0) + i), (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3);
-        mString.insert(StringBegin(mString) + i, StringBegin(insert), StringEnd(insert));
-    }
-
-    mCurrentPos++;
-    return *this;
-}
-
-/**
- * Offset/Address/Size: 0x1038 | 0x80187BD4 | size: 0xD74
- * TODO: 99.37% match - remaining diffs are marker add operand order and
- * r27/r28/r29 allocation in erase/insert copy paths.
- */
-template <>
-NLFormatImpl& NLFormatImpl::operator% <float>(const float& t)
-{
-    NLString insert = LexicalCast<NLString, float>(t);
-
-    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
-    {
-        if (mString[i] != (char)'{')
-            continue;
-
-        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        char* marker = &mString[i];
-        if (mCurrentPos != marker[1] - '0')
-            continue;
-
-        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        char* markerEnd = &mString[i];
-        if (markerEnd[2] != (char)'}')
-            continue;
-
-        mString[0];
-        EraseRange(mString, ((void)mString[0], (mString.m_data ? mString.m_data->mData : (char*)0) + i), (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3);
-        mString[i];
-        char* mStringData = mString.m_data ? mString.m_data->mData : 0;
-        const char* insertBegin = ((void)insert[0], insert.m_data ? insert.m_data->mData : 0);
-        insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        const char* insertEnd = insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0;
-        mString.insert(mStringData + i, insertBegin, insertEnd);
-    }
-
-    mCurrentPos++;
-    return *this;
-}
-
-/**
- * Offset/Address/Size: 0xEDC | 0x80187A78 | size: 0x15C
- */
-template <typename StringType, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-inline StringType Format(
-    const StringType& format,
-    const T1& value1,
-    const T2& value2,
-    const T3& value3,
-    const T4& value4,
-    const T5& value5,
-    const T6& value6,
-    const T7& value7);
-
-template <>
-inline BasicString<char, Detail::TempStringAllocator>
-Format<BasicString<char, Detail::TempStringAllocator>,
-    const char*,
-    const char*,
-    const char*,
-    const char*,
-    const char*,
-    float,
-    float>(
-    const BasicString<char, Detail::TempStringAllocator>& format,
-    const char* const& value1,
-    const char* const& value2,
-    const char* const& value3,
-    const char* const& value4,
-    const char* const& value5,
-    const float& value6,
-    const float& value7)
-{
-    BasicStringData<char>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
-
-    return BasicString<char, Detail::TempStringAllocator>(
-        (BasicString<char, Detail::TempStringAllocator>)(((((((impl % value1) % value2) % value3) % value4) % value5) % value6) % value7));
-}
-
-void StatsTracker_Format7_stub()
-{
-    BasicString<char, Detail::TempStringAllocator> s;
-    const char* p = "";
-    float f = 0.0f;
-    Format(s, p, p, p, p, p, f, f);
-}
-
 // /**
 //  * Offset/Address/Size: 0x168 | 0x80186D04 | size: 0xD74
 //  */
 // void FormatImpl<BasicString<char, Detail::TempStringAllocator>>::operator%<int>(const int&)
 // {
 // }
-
-/**
- * Offset/Address/Size: 0x0 | 0x80186B9C | size: 0x168
- */
-template <typename StringType, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-inline StringType Format(
-    const StringType& format,
-    const T1& value1,
-    const T2& value2,
-    const T3& value3,
-    const T4& value4,
-    const T5& value5,
-    const T6& value6,
-    const T7& value7,
-    const T8& value8);
-
-template <>
-inline BasicString<char, Detail::TempStringAllocator>
-Format<BasicString<char, Detail::TempStringAllocator>, int, int, int, int, int, int, int, int>(
-    const BasicString<char, Detail::TempStringAllocator>& format,
-    const int& value1,
-    const int& value2,
-    const int& value3,
-    const int& value4,
-    const int& value5,
-    const int& value6,
-    const int& value7,
-    const int& value8)
-{
-    BasicStringData<char>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
-
-    return BasicString<char, Detail::TempStringAllocator>(
-        (BasicString<char, Detail::TempStringAllocator>)((((((((impl % value1) % value2) % value3) % value4) % value5) % value6) % value7) % value8));
-}
-
-void StatsTracker_Format8_stub()
-{
-    typedef BasicString<char, Detail::TempStringAllocator> (*FmtFnI8)(
-        const BasicString<char, Detail::TempStringAllocator>&,
-        const int&,
-        const int&,
-        const int&,
-        const int&,
-        const int&,
-        const int&,
-        const int&,
-        const int&);
-    volatile FmtFnI8 fn = &Format<BasicString<char, Detail::TempStringAllocator>, int, int, int, int, int, int, int, int>;
-    (void)fn;
-}
-
-/**
- * Offset/Address/Size: 0x2B20 | 0x801896BC | size: 0x15C
- */
-template <>
-inline BasicString<char, Detail::TempStringAllocator>
-Format<BasicString<char, Detail::TempStringAllocator>, int, int, int, int, int, int, int>(
-    const BasicString<char, Detail::TempStringAllocator>& format,
-    const int& value1,
-    const int& value2,
-    const int& value3,
-    const int& value4,
-    const int& value5,
-    const int& value6,
-    const int& value7)
-{
-    BasicStringData<char>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
-
-    return BasicString<char, Detail::TempStringAllocator>(
-        (BasicString<char, Detail::TempStringAllocator>)(((((((impl % value1) % value2) % value3) % value4) % value5) % value6) % value7));
-}
-
-void StatsTracker_Format7i_stub()
-{
-    typedef BasicString<char, Detail::TempStringAllocator> (*FmtFnI7)(
-        const BasicString<char, Detail::TempStringAllocator>&,
-        const int&,
-        const int&,
-        const int&,
-        const int&,
-        const int&,
-        const int&,
-        const int&);
-    volatile FmtFnI7 fn = &Format<BasicString<char, Detail::TempStringAllocator>, int, int, int, int, int, int, int>;
-    (void)fn;
-}
 
 // /**
 //  * Offset/Address/Size: 0xBC | 0x801869B8 | size: 0x1E4
@@ -2284,16 +2011,7 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
 
         header.AppendInPlace("\n");
 
-        unsigned long len;
-        if (header.m_data != 0)
-        {
-            len = (unsigned long)(header.m_data->mSize - 1);
-        }
-        else
-        {
-            len = 0UL;
-        }
-        fwrite(header.c_str(), 1, len, pFile);
+        fwrite(header.c_str(), 1, header.size(), pFile);
     }
 
     int numHumans[2] = { 0, 0 };
@@ -2395,18 +2113,7 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
     }
 
     stats.AppendInPlace("\n");
-    {
-        unsigned long len;
-        if (stats.m_data != 0)
-        {
-            len = (unsigned long)(stats.m_data->mSize - 1);
-        }
-        else
-        {
-            len = 0UL;
-        }
-        fwrite(stats.c_str(), 1, len, pFile);
-    }
+    fwrite(stats.c_str(), 1, stats.size(), pFile);
 
     fclose(pFile);
 }
@@ -2500,17 +2207,7 @@ void StatsTracker::WriteCurrentlyPlaying() const
         GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1)),
         TheWorldLoader.GetStadiumFilename(nlSingleton<GameInfoManager>::s_pInstance->GetStadium()));
 
-    s32 len;
-    if (s.m_data != 0)
-    {
-        len = s.m_data->mSize - 1;
-    }
-    else
-    {
-        len = 0;
-    }
-
-    fwrite(s.c_str(), 1, len, f);
+    fwrite(s.c_str(), 1, s.size(), f);
     fclose(f);
 }
 
@@ -2569,11 +2266,4 @@ bool StatsTracker::MoveTeamBUp(TeamStats b, TeamStats a)
         return false;
 
     return (s32)a.mTeamIndex < (s32)b.mTeamIndex;
-}
-
-void StatsTracker_stub()
-{
-    BasicString<char, Detail::TempStringAllocator> s;
-    const char* p = "";
-    Format<BasicString<char, Detail::TempStringAllocator>, const char*, const char*, const char*, const char*, const char*>(s, p, p, p, p, p);
 }

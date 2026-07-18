@@ -74,7 +74,7 @@ static inline void ResetTrackedPlaySet(SFXPlaySet* pPlaySet)
     pPlaySet->pitch = 0x2000;
 
     SlotPoolEntry* pFreeEntry = (SlotPoolEntry*)pPlaySet;
-    pFreeEntry->m_next = SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList;
+    pFreeEntry->next = SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList;
     SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList = pFreeEntry;
 }
 
@@ -264,7 +264,7 @@ void cGameSFX::ShutdownPlaySet()
     mbCurPlaySetIsValid = false;
     StopPlayingAllTrackedSFX();
 
-    DLListContainerBase<SFXPlaySet*, NewAdapter<DLListEntry<SFXPlaySet*> > >::DestroyAllEntries(&mpCurPlaySet);
+    mpCurPlaySet.Clear();
 }
 
 /**
@@ -1179,7 +1179,7 @@ SFXPlaySet* cGameSFX::KeepTrack(SFXEmitter* pEmitter, const Audio::SoundAttribut
     if (SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList != NULL)
     {
         slot = (SFXPlaySet*)SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList;
-        SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList = SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList->m_next;
+        SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList = SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList->next;
     }
 
     slot->type = (unsigned long)-1;
@@ -1542,7 +1542,7 @@ cleanup_list:
     pPlaySet->pitch = 0x2000;
 
     SlotPoolEntry* pFreeEntry = (SlotPoolEntry*)pPlaySet;
-    pFreeEntry->m_next = SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList;
+    pFreeEntry->next = SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList;
     SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList = pFreeEntry;
 
     return true;

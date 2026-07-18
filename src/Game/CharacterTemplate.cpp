@@ -1,14 +1,3 @@
-#define CHARACTERTEMPLATE_INLINE_DLLIST_DELETEENTRY
-#define CHARACTERTEMPLATE_INLINE_WALKHELPER_CALLBACK
-#define CHARACTERTEMPLATE_LISTCONTAINER_PC_EXTERN
-#define CHARACTERTEMPLATE_IMPLICIT_SEBRING_DTOR
-#define CHARACTERTEMPLATE_SLOTPOOL_DTOR
-#define NL_SINGLETON_NO_DEFINE
-#define CHARACTERTEMPLATE_INLINE_PHYSICSDATA_DTOR
-#define NL_LEXICALCAST_DEFINE_BOOL
-#define CHARACTERTEMPLATE_LEXICALCAST_BOOL_DEFERRED
-#define CHARACTERTEMPLATE_LEXICALCAST_WEAK
-#define CHARACTERTEMPLATE_LISTCONT_HOST
 #include "Game/CharacterTemplate.h"
 #include "Game/SHierarchy.h"
 #include "Game/SAnim/AnimRetargeter.h"
@@ -19,6 +8,8 @@
 #include "Game/Goalie.h"
 #include "Game/AI/ScriptAction.h"
 #include "Game/Audio/AudioLoader.h"
+#include "Game/Sys/GCStream.h"
+#include "Game/Audio/AudioStream.h"
 #include "Game/AnimInventory.h"
 #include "Game/Physics/CharacterPhysicsElement.h"
 #include "Game/Triggers/AnimTrigger.h"
@@ -32,113 +23,6 @@
 #include "NL/gl/glRenderList.h"
 #include "NL/gl/glTexture.h"
 #include "NL/glx/glxTexture.h"
-
-// --- B1: suppress the <char*> ("<Pc>") free-function template family. A
-//     declared-but-not-defined explicit specialization inhibits implicit
-//     instantiation (C++98 14.7.3/5), so each becomes a UND import satisfied by
-//     AnimInventory.o's weak definitions, which link first.
-typedef ListContainerBase<char*, NewAdapter<ListEntry<char*> > > _PcListBase;
-
-template <>
-void nlWalkList<ListEntry<char*>, _PcListBase>(
-    ListEntry<char*>* head, _PcListBase* container,
-    void (_PcListBase::*func)(ListEntry<char*>*));
-
-template <>
-ListEntry<char*>* nlListRemoveStart<ListEntry<char*> >(
-    ListEntry<char*>** head, ListEntry<char*>** tail);
-
-template <>
-void nlListAddStart<ListEntry<char*> >(
-    ListEntry<char*>** head, ListEntry<char*>* newNode, ListEntry<char*>** prev);
-
-// (B) listcont position. PARTIAL specialization for T=cSHierarchy*: identical to
-// the generic except DeleteEntry is DECLARED-not-DEFINED. With no definition
-// visible, the address-take in DeleteEntryFunc() cannot instantiate the function,
-// so it creates NO eager linkonce section -- that eager pin is what forced
-// listcont to emit 1st. It stays a TEMPLATE, so the .data PTMF anon still mints
-// at its natural position, now as a reloc to a symbol defined later by
-// NL/nlListContHost.h.
-template <typename Adapter>
-class ListContainerBase<cSHierarchy*, Adapter>
-{
-public:
-    ListContainerBase() : m_Head(NULL), m_Tail(NULL) {}
-    ~ListContainerBase()
-    {
-        nlWalkList(m_Head, this, DeleteEntryFunc());
-        m_Head = NULL;
-        m_Tail = NULL;
-    }
-    void DeleteEntry(ListEntry<cSHierarchy*>* entry);   // DECLARED ONLY
-    typedef void (ListContainerBase::*ENTRY_FUNC)(ListEntry<cSHierarchy*>*);
-    static ENTRY_FUNC DeleteEntryFunc() { return &ListContainerBase::DeleteEntry; }
-    void AddEntry(ListEntry<cSHierarchy*>* entry)
-    { nlListAddStart<ListEntry<cSHierarchy*> >(&m_Head, entry, &m_Tail); }
-    ListEntry<cSHierarchy*>* Allocate(cSHierarchy* const& data)
-    {
-        ListEntry<cSHierarchy*> localEntry(data);
-        ListEntry<cSHierarchy*>* entry = NULL;
-        m_Allocator.Allocate(entry);
-        if (entry != NULL) { *entry = localEntry; }
-        return entry;
-    }
-    void AddEntry(cSHierarchy* const& data)
-    {
-        ListEntry<cSHierarchy*>* entry = new (m_Allocator.Allocate()) ListEntry<cSHierarchy*>(data);
-        nlListAddStart<ListEntry<cSHierarchy*> >(&m_Head, entry, &m_Tail);
-    }
-    void AddStart(cSHierarchy* const& data)
-    {
-        ListEntry<cSHierarchy*>* entry = m_Allocator.New(ListEntry<cSHierarchy*>(data));
-        nlListAddStart<ListEntry<cSHierarchy*> >(&m_Head, entry, &m_Tail);
-    }
-    void RemoveEntry(ListEntry<cSHierarchy*>* entry) {}
-    /* 0x0 */ Adapter m_Allocator;
-    ListEntry<cSHierarchy*>* m_Head;
-    ListEntry<cSHierarchy*>* m_Tail;
-};
-
-// Same for T=AnimRetargetList*.
-template <typename Adapter>
-class ListContainerBase<AnimRetargetList*, Adapter>
-{
-public:
-    ListContainerBase() : m_Head(NULL), m_Tail(NULL) {}
-    ~ListContainerBase()
-    {
-        nlWalkList(m_Head, this, DeleteEntryFunc());
-        m_Head = NULL;
-        m_Tail = NULL;
-    }
-    void DeleteEntry(ListEntry<AnimRetargetList*>* entry);   // DECLARED ONLY
-    typedef void (ListContainerBase::*ENTRY_FUNC)(ListEntry<AnimRetargetList*>*);
-    static ENTRY_FUNC DeleteEntryFunc() { return &ListContainerBase::DeleteEntry; }
-    void AddEntry(ListEntry<AnimRetargetList*>* entry)
-    { nlListAddStart<ListEntry<AnimRetargetList*> >(&m_Head, entry, &m_Tail); }
-    ListEntry<AnimRetargetList*>* Allocate(AnimRetargetList* const& data)
-    {
-        ListEntry<AnimRetargetList*> localEntry(data);
-        ListEntry<AnimRetargetList*>* entry = NULL;
-        m_Allocator.Allocate(entry);
-        if (entry != NULL) { *entry = localEntry; }
-        return entry;
-    }
-    void AddEntry(AnimRetargetList* const& data)
-    {
-        ListEntry<AnimRetargetList*>* entry = new (m_Allocator.Allocate()) ListEntry<AnimRetargetList*>(data);
-        nlListAddStart<ListEntry<AnimRetargetList*> >(&m_Head, entry, &m_Tail);
-    }
-    void AddStart(AnimRetargetList* const& data)
-    {
-        ListEntry<AnimRetargetList*>* entry = m_Allocator.New(ListEntry<AnimRetargetList*>(data));
-        nlListAddStart<ListEntry<AnimRetargetList*> >(&m_Head, entry, &m_Tail);
-    }
-    void RemoveEntry(ListEntry<AnimRetargetList*>* entry) {}
-    /* 0x0 */ Adapter m_Allocator;
-    ListEntry<AnimRetargetList*>* m_Head;
-    ListEntry<AnimRetargetList*>* m_Tail;
-};
 
 extern SoundPropAccessor* gpBIRDOSoundPropAccessor;
 extern SoundPropAccessor* gpDAISYSoundPropAccessor;
@@ -156,7 +40,7 @@ extern SoundPropAccessor* gpSUPERSoundPropAccessor;
 extern SoundPropAccessor* gpCRITTERSoundPropAccessor;
 
 SebringAnimTagScriptInterpreter* g_pAnimScriptInterp;
-cCharacter* g_pCurrentlyUpdatingCharacter;
+cPlayer* g_pCurrentlyUpdatingCharacter;
 
 extern AnimProperties GLOBALAnimProperties[];
 extern AnimProperties GOALIEAnimProperties[];
@@ -186,7 +70,7 @@ static tCharacterTemplate* g_GoalieTemplate;
 
 static s32 skiptexture = 0xFFFFFFFF;
 
-static tGoalieTemplateInfo g_GoalieTextureInfo[9] = {
+tGoalieTemplateInfo g_GoalieTextureInfo[9] = {
     { "daisygoalie", "characters/daisygoalie/daisygoalie.glt", 0 },
     { "donkeykonggoalie", "characters/donkeykonggoalie/donkeykonggoalie.glt", 0 },
     { "luigigoalie", "characters/luigigoalie/luigigoalie.glt", 0 },
@@ -271,8 +155,6 @@ static inline nlChunk* AddLoadedInventoryMemory(cInventory<T>* inv, nlChunk* dat
     return data;
 }
 
-extern SebringAnimTagScriptInterpreter* g_pAnimScriptInterp;
-
 static cAnimInventory* FindDuplicateAnimInventory(int nCurIndex, unsigned long uHashID);
 static char* GetCharacterTriggerFileName(eCharacterClass cc);
 
@@ -300,40 +182,6 @@ bool IsCaptain(eCharacterClass cc)
     return false;
 }
 
-// --- C1: allocate+init the inventories without a ctor instantiation, which
-//     would drag in the subobject dtors (absent from the target) via the
-//     ctor-cleanup path. The `if (p != NULL)` guard reproduces the
-//     placement-new null check byte-for-byte (cmplwi r3,0 / beq).
-static inline cInventory<cSHierarchy>* NewHierInv()
-{
-    cInventory<cSHierarchy>* p =
-        (cInventory<cSHierarchy>*)nlMalloc(sizeof(cInventory<cSHierarchy>), 8, false);
-    if (p != NULL)
-    {
-        p->m_lItemList.m_Head = NULL;
-        p->m_lItemList.m_Tail = NULL;
-        p->m_lMemList.m_Head = NULL;
-        p->m_lMemList.m_Tail = NULL;
-        p->m_nItemCount = 0;
-    }
-    return p;
-}
-
-static inline cInventory<AnimRetargetList>* NewRetInv()
-{
-    cInventory<AnimRetargetList>* p =
-        (cInventory<AnimRetargetList>*)nlMalloc(sizeof(cInventory<AnimRetargetList>), 8, false);
-    if (p != NULL)
-    {
-        p->m_lItemList.m_Head = NULL;
-        p->m_lItemList.m_Tail = NULL;
-        p->m_lMemList.m_Head = NULL;
-        p->m_lMemList.m_Tail = NULL;
-        p->m_nItemCount = 0;
-    }
-    return p;
-}
-
 /**
  * Offset/Address/Size: 0x1CFC | 0x80013FE4 | size: 0x3F0
  */
@@ -345,7 +193,7 @@ void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharact
     pCharacterTemplate->nCharacterModelID[0] = pRigidCharacterModel->id;
     pCharacterTemplate->nCharacterModelID[1] = pBlendCharacterModel->id;
 
-    pCharacterTemplate->pHierarchyInventory = NewHierInv();
+    pCharacterTemplate->pHierarchyInventory = new (nlMalloc(sizeof(cInventory<cSHierarchy>), 8, false)) cInventory<cSHierarchy>();
     pCharacterTemplate->pHierarchyInventory->AddFile(charTemplateInfo.szHierarchyFilename);
 
     if (!bForViewer)
@@ -382,7 +230,7 @@ void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharact
 
     if (charTemplateInfo.szAnimRetargetFilename != NULL)
     {
-        pCharacterTemplate->pAnimRetargetListInventory = NewRetInv();
+        pCharacterTemplate->pAnimRetargetListInventory = new (nlMalloc(sizeof(cInventory<AnimRetargetList>), 8, false)) cInventory<AnimRetargetList>();
         pCharacterTemplate->pAnimRetargetListInventory->AddFile(charTemplateInfo.szAnimRetargetFilename);
     }
     else
@@ -689,25 +537,19 @@ static inline eCharacterClass GetGoalieFromCaptain(eCharacterClass captain)
     }
 }
 
+static inline bool CaptainClassGreater(eCharacterClass first, eCharacterClass second)
+{
+    return first > second;
+}
+
+static inline bool SameCharacterClass(const eCharacterClass* first, const eCharacterClass* second, int index)
+{
+    return first[index] == second[index];
+}
+
 /**
  * Offset/Address/Size: 0x3DC | 0x80012C3C | size: 0x51C
  */
-// CapGT: args evaluate right-to-left, so captain[1] loads before captain[0], matching the
-// target's lwz 28(r1) / lwz 24(r1) order while keeping the ble form of the compare.
-static inline bool CapGT(eCharacterClass a, eCharacterClass b)
-{
-    return a > b;
-}
-
-// SameClass: the inline boundary stops MWCC CSEing the compare's loads into the call
-// arguments below, so captain[plrindex]/sidekick[plrindex] are reloaded per iteration as
-// the target does. A volatile cast also does this, but it perturbs the whole function's
-// register allocation and pushes captain[1] into r31 instead of r27.
-static inline bool SameClass(const eCharacterClass* s, const eCharacterClass* c, int i)
-{
-    return s[i] == c[i];
-}
-
 void CreateCharacters()
 {
     eCharacterClass captain[2];
@@ -722,34 +564,7 @@ void CreateCharacters()
     goalie[1] = GetGoalieFromCaptain(captain[1]);
 
     Config& cfg = Config::Global();
-    TagValuePair& tvp = cfg.FindTvp("allcaptains");
-    bool allcaptains;
-    if (tvp.tag == NULL)
-    {
-        cfg.Set("allcaptains", false);
-        allcaptains = false;
-    }
-    else if (tvp.type == _BOOL)
-    {
-        allcaptains = LexicalCast<bool, bool>(tvp.value.b);
-    }
-    else if (tvp.type == _INT)
-    {
-        allcaptains = LexicalCast<bool, int>(tvp.value.i);
-    }
-    else if (tvp.type == _FLOAT)
-    {
-        bool (*castFloat)(const float&) = LexicalCast<bool, float>;
-        allcaptains = castFloat(tvp.value.f);
-    }
-    else if (tvp.type == _STRING)
-    {
-        allcaptains = LexicalCast<bool, const char*>(tvp.value.s);
-    }
-    else
-    {
-        allcaptains = 0;
-    }
+    bool allcaptains = cfg.Get<bool>("allcaptains", false);
     if (allcaptains)
     {
         sidekick[0] = captain[0];
@@ -790,7 +605,7 @@ void CreateCharacters()
 
     for (int teami = 0; teami < 2; teami++)
     {
-        plrindex = CapGT(captain[0], captain[1]) ? !teami : teami;
+        plrindex = CaptainClassGreater(captain[0], captain[1]) ? !teami : teami;
 
         int idx = plrindex * 4;
         g_pCharacters[idx] = CreateCharacter(0, plrindex, captain[plrindex], false);
@@ -815,7 +630,7 @@ void CreateCharacters()
 
         for (int index = 1; index < 4; index++)
         {
-            if (SameClass(sidekick, captain, plrindex))
+            if (SameCharacterClass(sidekick, captain, plrindex))
             {
                 g_pCharacters[charIdx] = CreateCharacter(index, plrindex, captain[plrindex], false);
             }
@@ -839,24 +654,12 @@ void CreateCharacters()
 
 /**
  * Offset/Address/Size: 0x294 | 0x8001257C | size: 0x6C0
+ * TODO: 99.44% match - character cleanup index register and callback literal-pool/address diffs
+ * across inventory cleanup paths.
  */
 void DestroyCharacters()
 {
-    typedef ListContainerBase<cSHierarchy*, NewAdapter<ListEntry<cSHierarchy*> > > HierListBase;
-    typedef ListContainerBase<char*, NewAdapter<ListEntry<char*> > > FileListBase;
-    typedef ListContainerBase<AnimRetargetList*, NewAdapter<ListEntry<AnimRetargetList*> > > RetargetListBase;
     int i;
-    cInventory<cSHierarchy>* pHierInv;
-    cInventory<AnimRetargetList>* pRetInv;
-    /* Role-NEUTRAL slot holders, deliberately shared by the two teardown blocks
-       inside the loop below, with their tail/head roles SWAPPED between the two:
-       the sharing is what coalesces this function's `i` into r27, and the swap is
-       what keeps each block's pair coloured independently. Both call sites still
-       pass nlListRemoveStart(<head>, <tail>), so this is shape-only. Declaration
-       ORDER is load-bearing; the names are not. Reverting either half costs the
-       match. */
-    ListEntry<char*>** pMemA;
-    ListEntry<char*>** pMemB;
 
     delete g_pAnimScriptInterp;
     g_pAnimScriptInterp = NULL;
@@ -867,125 +670,30 @@ void DestroyCharacters()
         g_pCharacters[i] = NULL;
     }
 
-    for (int k = 0; k < 13; k++)
+    for (i = 0; i < 13; i++)
     {
-        if (g_aCharacterTemplates[k] != NULL)
+        if (g_aCharacterTemplates[i] != NULL)
         {
-            pHierInv = GetHierInv(g_aCharacterTemplates[k]);
-            if (pHierInv != NULL)
+            delete g_aCharacterTemplates[i]->pHierarchyInventory;
+
+            if (!g_aCharacterTemplates[i]->bAnimInventoryCopy)
             {
-                ListEntry<cSHierarchy*>* hierEntry = pHierInv->m_lItemList.m_Head;
-                while (hierEntry != NULL)
-                {
-                    hierEntry = hierEntry->next;
-                }
-
-                nlWalkList(pHierInv->m_lItemList.m_Head, (HierListBase*)pHierInv, HierListBase::DeleteEntryFunc());
-
-                pMemB = &pHierInv->m_lMemList.m_Tail;
-                pHierInv->m_lItemList.m_Head = NULL;
-                pMemA = &pHierInv->m_lMemList.m_Head;
-                pHierInv->m_lItemList.m_Tail = NULL;
-
-                while (pHierInv->m_lMemList.m_Head != NULL)
-                {
-                    ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pMemA, pMemB);
-                    void* mesh;
-                    if (&mesh != NULL)
-                    {
-                        mesh = first->entry;
-                    }
-                    ::operator delete(first);
-                    ::operator delete(mesh);
-                }
-
-                pHierInv->m_nItemCount = 0;
-                pHierInv->m_lMemList.~nlListContainer();
-                pHierInv->m_lItemList.~nlListContainer();
-                ::operator delete(pHierInv);
+                delete g_aCharacterTemplates[i]->pAnimInventory;
             }
 
-            if (!g_aCharacterTemplates[k]->bAnimInventoryCopy)
+            delete g_aCharacterTemplates[i]->pPhysicsData;
+            if (g_aCharacterTemplates[i]->pAnimRetargetListInventory != NULL)
             {
-                delete g_aCharacterTemplates[k]->pAnimInventory;
+                delete g_aCharacterTemplates[i]->pAnimRetargetListInventory;
             }
-
-            delete g_aCharacterTemplates[k]->pPhysicsData;
-
-            pRetInv = g_aCharacterTemplates[k]->pAnimRetargetListInventory;
-            if (pRetInv != NULL && pRetInv != NULL)
-            {
-                ListEntry<AnimRetargetList*>* retEntry = pRetInv->m_lItemList.m_Head;
-                while (retEntry != NULL)
-                {
-                    retEntry = retEntry->next;
-                }
-
-                nlWalkList(pRetInv->m_lItemList.m_Head, (RetargetListBase*)pRetInv, RetargetListBase::DeleteEntryFunc());
-
-                pMemA = &pRetInv->m_lMemList.m_Tail;
-                pRetInv->m_lItemList.m_Head = NULL;
-                pMemB = &pRetInv->m_lMemList.m_Head;
-                pRetInv->m_lItemList.m_Tail = NULL;
-
-                while (pRetInv->m_lMemList.m_Head != NULL)
-                {
-                    ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pMemB, pMemA);
-                    void* mesh;
-                    if (&mesh != NULL)
-                    {
-                        mesh = first->entry;
-                    }
-                    ::operator delete(first);
-                    ::operator delete(mesh);
-                }
-
-                pRetInv->m_nItemCount = 0;
-                pRetInv->m_lMemList.~nlListContainer();
-                pRetInv->m_lItemList.~nlListContainer();
-                ::operator delete(pRetInv);
-            }
-
-            ::operator delete(g_aCharacterTemplates[k]);
-            g_aCharacterTemplates[k] = NULL;
+            delete g_aCharacterTemplates[i];
+            g_aCharacterTemplates[i] = NULL;
         }
     }
 
     if (g_GoalieTemplate != NULL)
     {
-        pHierInv = GetHierInv(g_GoalieTemplate);
-        if (pHierInv != NULL)
-        {
-            ListEntry<cSHierarchy*>* hierEntry = pHierInv->m_lItemList.m_Head;
-            while (hierEntry != NULL)
-            {
-                hierEntry = hierEntry->next;
-            }
-
-            nlWalkList(pHierInv->m_lItemList.m_Head, (HierListBase*)pHierInv, HierListBase::DeleteEntryFunc());
-
-            ListEntry<char*>** pTail = &pHierInv->m_lMemList.m_Tail;
-            pHierInv->m_lItemList.m_Head = NULL;
-            ListEntry<char*>** pHead = &pHierInv->m_lMemList.m_Head;
-            pHierInv->m_lItemList.m_Tail = NULL;
-
-            while (pHierInv->m_lMemList.m_Head != NULL)
-            {
-                ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead, pTail);
-                void* mesh;
-                if (&mesh != NULL)
-                {
-                    mesh = first->entry;
-                }
-                ::operator delete(first);
-                ::operator delete(mesh);
-            }
-
-            pHierInv->m_nItemCount = 0;
-            pHierInv->m_lMemList.~nlListContainer();
-            pHierInv->m_lItemList.~nlListContainer();
-            ::operator delete(pHierInv);
-        }
+        delete g_GoalieTemplate->pHierarchyInventory;
 
         if (!g_GoalieTemplate->bAnimInventoryCopy)
         {
@@ -993,42 +701,11 @@ void DestroyCharacters()
         }
 
         delete g_GoalieTemplate->pPhysicsData;
-
-        pRetInv = g_GoalieTemplate->pAnimRetargetListInventory;
-        if (pRetInv != NULL && pRetInv != NULL)
+        if (g_GoalieTemplate->pAnimRetargetListInventory != NULL)
         {
-            ListEntry<AnimRetargetList*>* retEntry = pRetInv->m_lItemList.m_Head;
-            while (retEntry != NULL)
-            {
-                retEntry = retEntry->next;
-            }
-
-            nlWalkList(pRetInv->m_lItemList.m_Head, (RetargetListBase*)pRetInv, RetargetListBase::DeleteEntryFunc());
-
-            ListEntry<char*>** pTail2 = &pRetInv->m_lMemList.m_Tail;
-            pRetInv->m_lItemList.m_Head = NULL;
-            ListEntry<char*>** pHead2 = &pRetInv->m_lMemList.m_Head;
-            pRetInv->m_lItemList.m_Tail = NULL;
-
-            while (pRetInv->m_lMemList.m_Head != NULL)
-            {
-                ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead2, pTail2);
-                void* mesh;
-                if (&mesh != NULL)
-                {
-                    mesh = first->entry;
-                }
-                ::operator delete(first);
-                ::operator delete(mesh);
-            }
-
-            pRetInv->m_nItemCount = 0;
-            pRetInv->m_lMemList.~nlListContainer();
-            pRetInv->m_lItemList.~nlListContainer();
-            ::operator delete(pRetInv);
+            delete g_GoalieTemplate->pAnimRetargetListInventory;
         }
-
-        ::operator delete(g_GoalieTemplate);
+        delete g_GoalieTemplate;
         g_GoalieTemplate = NULL;
     }
 
@@ -1086,60 +763,6 @@ s32 GetGoalieIndex(int arg0)
 }
 
 // /**
-//  * Offset/Address/Size: 0x0 | 0x80014444 | size: 0x10
-//  */
-// void DLListContainerBase<GCAudioStreaming::StereoAudioStream*, BasicSlotPool<DLListEntry<GCAudioStreaming::StereoAudioStream*>>>::DeleteEntry(DLListEntry<GCAudioStreaming::StereoAudioStream*>*)
-// {
-// }
-
-// Force weak symbol emission for DLListContainerBase::DeleteEntry<StereoAudioStream*>
-typedef DLListContainerBase<GCAudioStreaming::StereoAudioStream*, BasicSlotPool<DLListEntry<GCAudioStreaming::StereoAudioStream*> > > _StereoStreamDLList;
-
-// Force weak symbol emission for DLListContainerBase::DeleteEntry<QUEUED_STREAM>
-typedef DLListContainerBase<AudioStreamTrack::StreamTrack::QUEUED_STREAM, nlStaticArrayAllocator<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>, 4> > _QueuedStreamDLList;
-
-// Force weak symbol emission for DLListContainerBase::DeleteEntry<STREAM_FADE_CTRL>
-typedef DLListContainerBase<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL, BasicSlotPool<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL> > > _FadeDLList;
-
-/**
- * Stub only for field order; unreferenced so the linker drops it.
- * Forces emission of specific constants/operations so the compiler
- * lays out the related fields to match the original binary.
- */
-typedef WalkHelper<
-    AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL,
-    DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>,
-    AudioStreamTrack::TrackManagerBase::FadeManager>
-    _FadeWalkHelper;
-
-
-// stub_fq drains AFTER the host-header def (lower source line => later drain).
-// Body Q,F drains LIFO as F,Q: F appends Fade(0x10) to audio, Q appends
-// Queued(0xa0) and drags in __vt__Q212Function0<v>11FunctorBase (QUEUED_STREAM /
-// STREAM_FADE_CTRL hold a Function<FnVoidVoid>), creating functorbase LAST.
-void CharacterTemplate_stub_fq()
-{
-    _QueuedStreamDLList* pQueuedList = 0;
-    pQueuedList->DeleteEntry(0);
-    _FadeDLList* pFadeList = 0;
-    pFadeList->DeleteEntry(0);
-}
-
-#include "NL/nlListContHost.h"
-
-// Last function in the file => drains FIRST. Body C,S drains LIFO as S,C:
-// S creates the audio bucket (Stereo@0x0), C creates callback.
-void CharacterTemplate_stub()
-{
-    _FadeWalkHelper fadeHelper;
-    DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>* fadeEntry = 0;
-    fadeHelper.Callback(fadeEntry);
-
-    _StereoStreamDLList* pStereoList = 0;
-    pStereoList->DeleteEntry(0);
-}
-
-// /**
 //  * Offset/Address/Size: 0x0 | 0x800144F4 | size: 0x34
 //  */
 // void WalkHelper<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL, DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>, AudioStreamTrack::TrackManagerBase::FadeManager>::Callback(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*)
@@ -1166,12 +789,3 @@ void CharacterTemplate_stub()
 // void Function0<void>::FunctorBase::~FunctorBase()
 // {
 // }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800145B8 | size: 0x60
-//  */
-// CharacterPhysicsData::~CharacterPhysicsData()  -- defined inline in-class in
-// include/Game/Physics/CharacterPhysicsElement.h under
-// CHARACTERTEMPLATE_INLINE_PHYSICSDATA_DTOR, so the dtor and
-// __vt__20CharacterPhysicsData are emitted WEAK (as in the target) rather than
-// GLOBAL at def-position.

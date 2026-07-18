@@ -46,16 +46,23 @@ public:
     void StartChooseCaptain(int);
     void UpdateCaptainName();
     void UpdateSKName();
+    void SetTeam();
+    inline void UpdateAllRows();
+    int CanProceed() const;
     void Proceed();
+    void CreateLeagueLineup();
+    void CreateKnockout();
     BasicString<char, Detail::TempStringAllocator> FindCaptainSlideName(eTeamID);
     BasicString<char, Detail::TempStringAllocator> FindSidekickSlideName(eSidekickID);
+    bool CanAutoFill() const;
     void AutoFill();
+    unsigned char IsAlreadySelected(eTeamID) const;
     void UpdateForCurrentRow();
     void UpdateArrowVisibility();
-    bool HasEmptyTeam() const;
-    int CanProceed() const;
     void ScrollUp(bool);
     void ScrollDown(bool);
+    void AutoTagCurrentRowAsHumanPlayer();
+    void SetupButtonsBasedOnState(eTeamChooserState);
 
     /* 0x01C */ MenuList<TLComponentInstance> mMenuItems;  // size 0x214
     /* 0x230 */ TeamData mTeamData[8];                     // size 0x80
@@ -74,7 +81,8 @@ public:
     /* 0x308 */ ButtonComponent mButtons2;                 // size 0x24
     /* 0x32C */ TLImageInstance* mUpArrow;                 // size 0x4
     /* 0x330 */ TLImageInstance* mDownArrow;               // size 0x4
-}; // total size: 0x334
+    /* 0x334 */ bool mHasTaggedHumanPlayer;                 // size 0x1
+}; // total size: 0x338
 
 // class FEFinder<TLComponentInstance, 4>
 // {

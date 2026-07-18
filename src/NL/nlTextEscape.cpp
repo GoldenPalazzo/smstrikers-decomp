@@ -1,7 +1,6 @@
 #include "NL/nlTextEscape.h"
 
-#include "NL/nlQSort.h"
-#include "NL/nlBSearch.h"
+#include "NL/nlAlgorithm.h"
 
 extern "C" unsigned long wcstoul(const unsigned short* str, unsigned short** end, int base);
 

@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-#include "NL/nlAdapter.h"
+#include "NL/NewAdapter.h"
 #include "NL/nlDLRing.h"
 #include "NL/nlSlotPool.h"
 
@@ -36,7 +36,6 @@ public:
 template <typename T>
 ListEntry<T>* nlListRemoveStart(ListEntry<T>** head, ListEntry<T>** tail)
 {
-    FORCE_DONT_INLINE;
     ListEntry<T>* first = *head;
     if (first == 0)
         return 0;
@@ -60,11 +59,7 @@ void nlListAddStart(T** head, T* newNode, T** prev)
     {
         *prev = newNode;
     }
-#ifdef NLLIST_ADD_START_USE_NEXT_MEMBER
     newNode->next = *head;
-#else
-    *(T**)newNode = *head;
-#endif
     *head = newNode;
 }
 
@@ -86,7 +81,6 @@ void nlListAddEnd(T** head, T** tail, T* node)
 template <typename T>
 T* nlListRemoveStart(T** head, T** tail)
 {
-    FORCE_DONT_INLINE;
     T* current_node = *head;
     if (current_node == NULL)
     {
@@ -118,7 +112,6 @@ public:
 template <typename T>
 T* nlListRemoveElement(T** head, T* element, T** tail)
 {
-    FORCE_DONT_INLINE;
     if (head == NULL)
         return NULL;
 
@@ -153,7 +146,6 @@ T* nlListRemoveElement(T** head, T* element, T** tail)
     }
     return NULL;
 }
-
 // Defined after nlListRemoveElement: MWCC emits linkonce template
 // instantiations in reverse definition order, and the original DOL has
 // nlDeleteList<T> before nlListRemoveElement<T> in every TU that uses both.
@@ -197,6 +189,5 @@ void nlWalkList(EntryT* list, ContainerT* cbClass, void (ContainerT::*cb)(EntryT
 // ListContainerBase / nlListContainer bodies live in their original home
 // header (linkonce grouping is keyed by the body's file).
 #include "NL/nlListContainer.h"
-#include "NL/nlListContainerDtor.h"
 
 #endif

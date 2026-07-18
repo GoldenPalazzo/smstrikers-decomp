@@ -2,7 +2,7 @@
 #include "Game/FE/feFontResource.h"
 #include "NL/gl/glStruct.h"
 #include "NL/nlTextEscape.h"
-#include "NL/nlBSearch.h"
+#include "NL/nlAlgorithm.h"
 
 struct LOCHeader
 {
@@ -78,16 +78,9 @@ void FEScrollText::Update(float fDeltaT)
 
     if (x + (float)m_messageWidth < m_leftEdge)
     {
-        if (m_messageFinishedCB.mTag != EMPTY)
+        if (m_messageFinishedCB)
         {
-            if (m_messageFinishedCB.mTag == FREE_FUNCTION)
-            {
-                ((void (*)())m_messageFinishedCB.mFreeFunction)();
-            }
-            else
-            {
-                (*((FunctorBase*)m_messageFinishedCB.mFunctor))();
-            }
+            m_messageFinishedCB();
         }
         else
         {
@@ -109,61 +102,6 @@ static inline const unsigned short* LookupLocTextChar(unsigned long hash)
         return loc->m_FirstString + lookup->StringOffset;
     }
     return MissingLocString;
-}
-
-static inline BasicStringData<unsigned short>* BuildScrollString(const unsigned short* str)
-{
-    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<unsigned short>));
-    if (data != 0)
-    {
-        const unsigned short* src = str;
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-        const unsigned short* s = src;
-        while (*s++ != 0)
-        {
-            data->mSize++;
-        }
-        data->mSize++;
-        data->mData = (unsigned short*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(unsigned short));
-        data->mCapacity = data->mSize;
-        for (int i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *src++;
-        }
-        data->mRefCount = 1;
-    }
-    return data;
-}
-
-static inline BasicStringData<unsigned short>* BuildEmptyScrollStringData()
-{
-    if (BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<unsigned short>)))
-    {
-        const unsigned short* str = (const unsigned short*)L"";
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-        const unsigned short* s = str;
-        while (*s++ != 0)
-        {
-            data->mSize++;
-        }
-        data->mSize++;
-        data->mData = (unsigned short*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(unsigned short));
-        data->mCapacity = data->mSize;
-        for (int i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *str++;
-        }
-        data->mRefCount = 1;
-        return data;
-    }
-    else
-    {
-        return data;
-    }
 }
 
 static inline const unsigned short* LookupLocTextChar(nlLocalization* loc, unsigned long hash)
@@ -189,31 +127,7 @@ void FEScrollText::SetDisplayMessage(const char* locMessage)
     nlLocalization* loc = (nlLocalization*)g_pLocalization;
     unsigned long hash = nlStringLowerHash(locMessage);
     const unsigned short* text = LookupLocTextChar(loc, hash);
-    BasicStringData<unsigned short>* data = BuildScrollString(text);
-
-    {
-        BasicStringData<unsigned short>* localMsgData = data;
-        SetDisplayMessage(*(const BasicString<unsigned short, Detail::TempStringAllocator>*)&localMsgData);
-    }
-
-    BasicStringData<unsigned short>* msgData = data;
-    if (msgData != 0)
-    {
-        if (--msgData->mRefCount == 0)
-        {
-            if (msgData != 0)
-            {
-                if (msgData != 0)
-                {
-                    delete[] msgData->mData;
-                }
-                if (msgData != 0)
-                {
-                    nlFree(msgData);
-                }
-            }
-        }
-    }
+    SetDisplayMessage(BasicString<unsigned short, Detail::TempStringAllocator>(text));
 }
 
 static inline const unsigned short* LookupLocText(unsigned long hash)
@@ -238,31 +152,7 @@ static inline const unsigned short* LookupLocText(unsigned long hash)
 void FEScrollText::SetDisplayMessage(unsigned long hash)
 {
     const unsigned short* text = LookupLocText(hash);
-    BasicStringData<unsigned short>* data = BuildScrollString(text);
-
-    {
-        BasicStringData<unsigned short>* localMsgData = data;
-        SetDisplayMessage(*(const BasicString<unsigned short, Detail::TempStringAllocator>*)&localMsgData);
-    }
-
-    BasicStringData<unsigned short>* msgData = data;
-    if (msgData != 0)
-    {
-        if (--msgData->mRefCount == 0)
-        {
-            if (msgData != 0)
-            {
-                if (msgData != 0)
-                {
-                    delete[] msgData->mData;
-                }
-                if (msgData != 0)
-                {
-                    nlFree(msgData);
-                }
-            }
-        }
-    }
+    SetDisplayMessage(BasicString<unsigned short, Detail::TempStringAllocator>(text));
 }
 
 static inline void BuildFontCharStringForScroll(FontCharString& fontcharstring, FEScrollText* self)
@@ -340,7 +230,7 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
     m_messageWidth = 0;
 
     int i = 0;
-    while (i < (m_message.m_data != 0 ? m_message.m_data->mSize - 1 : 0))
+    while (i < (m_message.mData != 0 ? m_message.mData->mData.mSize - 1 : 0))
     {
         const unsigned short* str = m_message.c_str();
         unsigned short* charPtr = (unsigned short*)(str) + i;
@@ -399,16 +289,13 @@ inline void FEScrollText::SetMetrics(int pos, int width)
  */
 FEScrollText::FEScrollText(TLTextInstance* controlText, int pos, int width)
     : m_controlText(controlText)
-    , m_message(BuildEmptyScrollStringData())
+    , m_message((const unsigned short*)L"")
+    , m_messageWidth(0)
+    , m_msgTime(0.0f)
+    , m_textFont(NULL)
 {
-    m_messageWidth = 0;
-
     nlVector2 boxSize;
     boxSize.f.x = 8000.0f;
-
-    m_msgTime = 0.0f;
-    m_messageFinishedCB.mTag = EMPTY;
-    m_textFont = NULL;
 
     boxSize.f.y = 100.0f;
 
@@ -424,13 +311,4 @@ FEScrollText::FEScrollText(TLTextInstance* controlText, int pos, int width)
     SetMetrics(pos, width);
 
     m_leftEdge = (float)(m_pos - m_width / 2);
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x800C9624 | size: 0x90
- */
-void feScrollText_stub()
-{
-    nlFont::GlyphInfo key;
-    nlBSearch<nlFont::GlyphInfo, nlFont::GlyphInfo>(key, (nlFont::GlyphInfo*)0, 0);
 }

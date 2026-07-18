@@ -8,7 +8,7 @@ SlotPool<cPN_Blender> cPN_Blender::m_BlenderSlotPool(0x10, 0x10);
 
 void cPN_Blender::operator delete(void* ptr)
 {
-    ((SlotPoolEntry*)ptr)->m_next = m_BlenderSlotPool.m_FreeList;
+    ((SlotPoolEntry*)ptr)->next = m_BlenderSlotPool.m_FreeList;
     m_BlenderSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
 }
 

@@ -5,12 +5,13 @@
 #include "NL/nlFunction.h"
 #include "NL/gl/gl.h"
 
-#include "Game/PoseAccumulator.h"
 #include "Game/Effects/EffectsGroup.h"
 #include "Game/Effects/efList.h"
 
 class cPN_SAnimController;
+class cPoseAccumulator;
 class EmissionController;
+typedef void FnEmissionController(EmissionController&);
 
 void* fxLoadEntireFileHigh(const char* filename, unsigned long* fileSize);
 

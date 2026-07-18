@@ -106,21 +106,7 @@ struct PlayerStats
 
 struct TeamStats
 {
-#ifdef SH_CUP_HUB_INLINE_TEAM_STATS_CTOR
-    TeamStats()
-    {
-        memset(&mPlayerTotalStats, 0, sizeof(mPlayerTotalStats));
-        mPlayerTotalStats.mRecordType.mTeamID = TEAM_MARIO;
-        mPlayerTotalStats.mType = TYPE_TEAM;
-        mTeamIndex = TEAM_MARIO;
-        mNumWins = 0;
-        mNumLosses = 0;
-        mNumOTLosses = 0;
-        mNumPoints = 0;
-    }
-#else
     TeamStats();
-#endif
     /* 0x0 */ eTeamID mTeamIndex;
     /* 0x4 */ unsigned short mNumWins;
     /* 0x6 */ unsigned short mNumLosses;
@@ -171,13 +157,22 @@ public:
     /* 0x4C2 */ bool mHasGameEnded;
 }; // total size: 0x4C4
 
-#pragma dont_inline on
+inline TeamStats::TeamStats()
+{
+    memset(&mPlayerTotalStats, 0, sizeof(mPlayerTotalStats));
+    mPlayerTotalStats.mRecordType.mTeamID = TEAM_MARIO;
+    mPlayerTotalStats.mType = TYPE_TEAM;
+    mTeamIndex = TEAM_MARIO;
+    mNumWins = 0;
+    mNumLosses = 0;
+    mNumOTLosses = 0;
+    mNumPoints = 0;
+}
+
 inline void StatsTracker::Track(ePlayerStats stat, int homeaway, int playerindex, int param0, int param1, int param2, int param3)
 {
     s_pInstance->TrackStat(stat, homeaway, playerindex, param0, param1, param2, param3);
 }
-#pragma dont_inline reset
-
 // class BasicString < char, Detail
 // {
 // public:

@@ -1,9 +1,9 @@
 #include "Game/AI/Scripts/Plays/DefaultLoose.h"
+#include "Game/AI/Fuzzy.h"
 #include "Game/AI/ScriptAction.h"
+#include "Game/AI/Scripts/ScriptCaching.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/GameTweaks.h"
-
-#include "Game/AI/Scripts/SaveConfidence.h"
 
 extern cFielder* g_pScriptCurrentFielder;
 extern cFielder* g_pScriptCurrentMark;

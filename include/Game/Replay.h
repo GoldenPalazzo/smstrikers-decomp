@@ -4,6 +4,7 @@
 #include <string.h>
 #include "NL/nlMath.h"
 #include "NL/nlSlotPool.h"
+#include "Game/Effects/EmissionController.h"
 
 // Forward declarations
 class DrawableCharacter;
@@ -13,9 +14,9 @@ class DrawablePowerup;
 class CrowdManager;
 class EmissionManager;
 class DrawableNetMesh;
-class EmissionController;
 class RenderSnapshot;
 class cPoseNode;
+class LoadFrame;
 
 void nlBreak();
 
@@ -33,13 +34,6 @@ public:
     /* 0x4 */ const char* mStorage;
 }; // total size: 0x8
 
-class SaveFrame
-{
-public:
-    /* 0x0 */ int mInterval;
-    /* 0x4 */ WriteByteStream mStream;
-}; // total size: 0xC
-
 enum ReplayNonBlendables
 {
     REPLAY_NON_BLENDABLES = 0,
@@ -54,243 +48,176 @@ struct NotReplayablePod
 {
 }; // total size: 0x1
 
-#include "Game/LoadFrame.h"
+template <typename T>
+struct ReplayableCategory
+{
+    typedef NotReplayablePod Type;
+};
 
-template <int MIN, int MAX, int BITS>
-class FloatCompressor
+template <>
+struct ReplayableCategory<bool>
+{
+    typedef ReplayablePod Type;
+};
+
+template <>
+struct ReplayableCategory<char>
+{
+    typedef ReplayablePod Type;
+};
+
+template <>
+struct ReplayableCategory<unsigned char>
+{
+    typedef ReplayablePod Type;
+};
+
+template <>
+struct ReplayableCategory<unsigned short>
+{
+    typedef ReplayablePod Type;
+};
+
+template <>
+struct ReplayableCategory<int>
+{
+    typedef ReplayablePod Type;
+};
+
+template <>
+struct ReplayableCategory<unsigned int>
+{
+    typedef ReplayablePod Type;
+};
+
+template <>
+struct ReplayableCategory<unsigned long>
+{
+    typedef ReplayablePod Type;
+};
+
+template <>
+struct ReplayableCategory<float>
+{
+    typedef ReplayablePod Type;
+};
+
+template <>
+struct ReplayableCategory<nlVector3>
+{
+    typedef ReplayablePod Type;
+};
+
+template <>
+struct ReplayableCategory<nlQuaternion>
+{
+    typedef ReplayablePod Type;
+};
+
+class SaveFrame
 {
 public:
-    FloatCompressor(float& f);
-    inline unsigned int Read(LoadFrame& frame) const;
-    inline unsigned int Read(SaveFrame& frame) const;
-    inline void Transfer(LoadFrame& frame, unsigned int& value) const;
-    inline void TransferOR(LoadFrame& frame, unsigned int& value) const;
-    inline void Transfer(SaveFrame& frame, unsigned int& value) const;
-    inline void TransferOR(SaveFrame& frame, unsigned int& value) const;
-    inline void Apply(LoadFrame& frame, unsigned int value) const;
-    inline void Apply(SaveFrame& frame, unsigned int value) const;
-    inline void Replay(LoadFrame& frame) const;
-    inline void Replay(SaveFrame& frame) const;
+    template <int N, typename T>
+    void Replayable(T& current);
 
-    /* 0x0 */ float& mF;
-}; // total size: 0x4
+    template <int N, typename T>
+    void Replayable(T& current, ReplayablePod);
 
-template <>
-FloatCompressor<0, 1, 15>::FloatCompressor(float& f);
+    template <int N>
+    void Replayable(bool& current, ReplayablePod);
 
-template <>
-FloatCompressor<0, 1, 7>::FloatCompressor(float& f);
+    template <int N, typename T>
+    void Replayable(T& current, NotReplayablePod);
 
-template <int MIN, int MAX, int BITS>
-inline FloatCompressor<MIN, MAX, BITS>::FloatCompressor(float& f)
-    : mF(f)
+    template <int N, typename T>
+    void ReplayablePolymorphicPtr(T*& ptr);
+
+    /* 0x0 */ int mInterval;
+    /* 0x4 */ WriteByteStream mStream;
+}; // total size: 0xC
+
+template <int N, typename T>
+inline void SaveFrame::Replayable(T& current)
 {
+    typename ReplayableCategory<T>::Type category;
+    Replayable<N>(current, category);
 }
 
-template <int MIN, int MAX, int BITS>
-inline unsigned int FloatCompressor<MIN, MAX, BITS>::Read(LoadFrame& frame) const
+template <int N, typename T>
+inline void SaveFrame::Replayable(T& current, ReplayablePod)
 {
-    return 0;
-}
-
-template <int MIN, int MAX, int BITS>
-inline unsigned int FloatCompressor<MIN, MAX, BITS>::Read(SaveFrame& frame) const
-{
-    float f = mF;
-    if (f > (float)MAX)
-        f = (float)MAX;
-    if (f < (float)MIN)
-        f = (float)MIN;
-    f -= (float)MIN;
-    f *= (float)(1 << BITS);
-    return (unsigned int)f;
-}
-
-template <int MIN, int MAX, int BITS>
-inline void FloatCompressor<MIN, MAX, BITS>::Transfer(LoadFrame& frame, unsigned int& value) const
-{
-    if ((MAX - MIN) * (1 << BITS) <= 255)
+    if (N == 0 || mInterval == N)
     {
-        const char* cursor = frame.mStream.mStorage;
-        value = (unsigned int)(unsigned char)*cursor++;
-        frame.mStream.mStorage = cursor;
-    }
-    else if ((MAX - MIN) * (1 << BITS) <= 65535)
-    {
-        const char* cursor = frame.mStream.mStorage;
-        unsigned char lo = (unsigned char)*cursor++;
-        value = (unsigned int)lo | ((unsigned int)(unsigned char)*cursor++ << 8);
-        frame.mStream.mStorage = cursor;
-    }
-    else
-    {
-        const char* cursor = frame.mStream.mStorage;
-        unsigned char mid = (unsigned char)cursor[1];
-        unsigned char hi = (unsigned char)cursor[2];
-        unsigned char lo = (unsigned char)cursor[0];
-        cursor += 3;
-        frame.mStream.mStorage = cursor;
-        value = ((unsigned int)hi << 16) | ((unsigned int)mid << 8) | (unsigned int)lo;
+        memcpy(mStream.mStorage, &current, sizeof(T));
+        mStream.mStorage += sizeof(T);
     }
 }
 
-template <int MIN, int MAX, int BITS>
-inline void FloatCompressor<MIN, MAX, BITS>::TransferOR(LoadFrame& frame, unsigned int& value) const
+template <int N>
+inline void SaveFrame::Replayable(bool& current, ReplayablePod)
 {
-    if ((MAX - MIN) * (1 << BITS) <= 255)
+    char value = current ? 1 : 0;
+    memcpy(mStream.mStorage, &value, 1);
+    mStream.mStorage += 1;
+}
+
+template <int N, typename T>
+inline void SaveFrame::Replayable(T& current, NotReplayablePod)
+{
+    if (N == 0 || mInterval == N)
     {
-        const char* cursor = frame.mStream.mStorage;
-        value = (unsigned int)(unsigned char)*cursor++;
-        frame.mStream.mStorage = cursor;
-    }
-    else if ((MAX - MIN) * (1 << BITS) <= 65535)
-    {
-        const char* cursor = frame.mStream.mStorage;
-        unsigned char lo = (unsigned char)*cursor++;
-        unsigned char hi = (unsigned char)*cursor++;
-        frame.mStream.mStorage = cursor;
-        value |= (unsigned int)hi << 8;
-        value |= (unsigned int)lo;
-    }
-    else
-    {
-        const char* cursor = frame.mStream.mStorage;
-        unsigned char mid = (unsigned char)cursor[1];
-        unsigned char hi = (unsigned char)cursor[2];
-        unsigned char lo = (unsigned char)cursor[0];
-        cursor += 3;
-        frame.mStream.mStorage = cursor;
-        value = ((unsigned int)hi << 16) | ((unsigned int)mid << 8) | (unsigned int)lo;
+        current.Replay(*this);
     }
 }
 
-template <int MIN, int MAX, int BITS>
-inline void FloatCompressor<MIN, MAX, BITS>::Transfer(SaveFrame& frame, unsigned int& value) const
-{
-    if ((MAX - MIN) * (1 << BITS) <= 255)
-    {
-        char* p = frame.mStream.mStorage;
-        *p++ = (char)value;
-        frame.mStream.mStorage = p;
-    }
-    else if ((MAX - MIN) * (1 << BITS) <= 65535)
-    {
-        char* p = frame.mStream.mStorage;
-        *p++ = (char)(value & 0xFF);
-        *p++ = (char)((value >> 8) & 0xFF);
-        frame.mStream.mStorage = p;
-    }
-    else
-    {
-        char* p = frame.mStream.mStorage;
-        *p++ = (char)(value & 0xFF);
-        *p++ = (char)((value >> 8) & 0xFF);
-        *p++ = (char)((value >> 16) & 0xFF);
-        frame.mStream.mStorage = p;
-    }
-}
-
-template <int MIN, int MAX, int BITS>
-inline void FloatCompressor<MIN, MAX, BITS>::TransferOR(SaveFrame& frame, unsigned int& value) const
-{
-    if ((MAX - MIN) * (1 << BITS) <= 255)
-    {
-        char* p = frame.mStream.mStorage;
-        *p++ = (char)value;
-        frame.mStream.mStorage = p;
-    }
-    else if ((MAX - MIN) * (1 << BITS) <= 65535)
-    {
-        char* p = frame.mStream.mStorage;
-        *p++ = (char)(value & 0xFF);
-        *p++ = (char)((value >> 8) & 0xFF);
-        frame.mStream.mStorage = p;
-    }
-    else
-    {
-        char* p = frame.mStream.mStorage;
-        *p++ = (char)(value & 0xFF);
-        *p++ = (char)((value >> 8) & 0xFF);
-        *p++ = (char)((value >> 16) & 0xFF);
-        frame.mStream.mStorage = p;
-    }
-}
-
-template <int MIN, int MAX, int BITS>
-inline void FloatCompressor<MIN, MAX, BITS>::Apply(LoadFrame& frame, unsigned int value) const
-{
-    mF = (float)value / (float)(1 << BITS);
-    mF += (float)MIN;
-}
-
-template <int MIN, int MAX, int BITS>
-inline void FloatCompressor<MIN, MAX, BITS>::Apply(SaveFrame& frame, unsigned int value) const
-{
-}
-
-template <int MIN, int MAX, int BITS>
-inline void FloatCompressor<MIN, MAX, BITS>::Replay(LoadFrame& frame) const
-{
-    unsigned int value = Read(frame);
-    Transfer(frame, value);
-    Apply(frame, value);
-}
-
-template <int MIN, int MAX, int BITS>
-inline void FloatCompressor<MIN, MAX, BITS>::Replay(SaveFrame& frame) const
-{
-    unsigned int value = Read(frame);
-    Transfer(frame, value);
-    Apply(frame, value);
-}
-
-// =====================================================================
-// Replayable<N, FrameType, T> -- replay-buffer serialization templates.
-//
-// DWARF says this whole family lives in Replay.h. The set of `template <>`
-// explicit specializations below cannot be replaced by a single generic
-// because of two MWCC/C++ constraints:
-//
-//   1. Target binaries call `Replayable<N, FrameType, T>(...)` with all 3
-//      template args explicit. The Itanium mangling for that call is
-//      `Replayable<N,FT,T>__FR...` -- to match it, the SOURCE must
-//      use the same 3-template-arg form, which forces overload resolution
-//      to pick a 3-template-arg overload. A POD-only generic with fewer
-//      template parameters would produce a *different* mangling and break
-//      target-bound `bl` instructions.
-//
-//   2. A generic `template <int N, typename T> void Replayable(SaveFrame&,
-//      T&)` would be ambiguous with the FloatCompressor proxy template
-//      below (`template <int N, typename FT, typename T> void
-//      Replayable(FT&, const T& proxy)`) for `T = const FloatCompressor<...>`.
-//
-// Architecture in practice:
-//   - **class generic** (line ~near end) -- calls `drawable.Replay(frame)`
-//     for class types that have a `Replay` member (Drawable*, Manager*).
-//   - **FloatCompressor proxy generic** (below) -- handles `const T&` for
-//     types with Read/Transfer/Apply methods.
-//   - **explicit `inline template <>` specs** -- bool variants (special
-//     `temp = value ? 1 : 0` pattern), char/short/long/vec3/quaternion/
-//     float (formulaic memcpy), and the EmissionController & Manager
-//     specs that need an interval gate around `manager.Replay(frame)`.
-//
-// Each owning TU emits its specs as weak symbols by defining them as
-// `inline template <>` either in its own .cpp / .h or via a header that
-// only that TU includes. See the per-TU comments in the .cpp files for
-// the ownership map.
-// =====================================================================
-
-// Forward declaration of the class-type generic (defined later, after
-// the FloatCompressor proxy template). Needed here so specializations
-// below resolve against it.
 template <int N, typename FrameType, typename T>
-void Replayable(FrameType& frame, T& manager);
+void Replayable(FrameType& frame, T& current);
+
+template <int N>
+void Replayable(SaveFrame& frame, char typeId, cPoseNode*& poseNode);
+
+template <typename FrameType>
+static inline void ReplayControllerFloats(FrameType& frame, EmissionController& controller);
+
+static inline void ReplayControllerState(LoadFrame& frame, EmissionController& controller);
+
+template <typename T>
+static inline void ReplayLoadObject(LoadFrame& frame, T& current);
+
+static inline void ReplayLoadObject(LoadFrame& frame, EmissionController& controller);
+
+#include "Game/LoadFrame.h"
+
+template <int N, typename T>
+inline void SaveFrame::ReplayablePolymorphicPtr(T*& ptr)
+{
+    T* current = ptr;
+    if (N == 0 || mInterval == N)
+    {
+        unsigned char notNull = (current != 0);
+        memcpy(mStream.mStorage, &notNull, 1);
+        mStream.mStorage++;
+
+        if (notNull)
+        {
+            char typeId = (char)current->GetType();
+            if (typeId < 0 || typeId > 4)
+                nlBreak();
+
+            memcpy(mStream.mStorage, &typeId, 1);
+            mStream.mStorage++;
+
+            ::Replayable<N>(*this, typeId, current);
+        }
+    }
+}
+
+#include "Game/Compressor.h"
 
 // Proxy generic for FloatCompressor-style types (Read/Transfer/Apply).
 template <int N, typename FrameType, typename T>
 void Replayable(FrameType& frame, const T& proxy)
 {
-    FORCE_DONT_INLINE;
     if (N == 0 || frame.mInterval == N)
     {
         unsigned int value = proxy.Read(frame);
@@ -306,250 +233,138 @@ void Replayable(FrameType& frame, const T& proxy)
     }
 }
 
-template <>
-void Replayable<1, LoadFrame, CrowdManager>(LoadFrame& frame, CrowdManager& manager);
+template <typename FrameType>
+static inline void ReplayControllerFloats(FrameType& frame, EmissionController& controller)
+{
+    const FloatCompressor<-255, 255, 6> positionX(controller.m_vPosition.f.x);
+    ::Replayable<0>(frame, positionX);
+    const FloatCompressor<-255, 255, 6> positionY(controller.m_vPosition.f.y);
+    ::Replayable<0>(frame, positionY);
+    const FloatCompressor<-255, 255, 6> positionZ(controller.m_vPosition.f.z);
+    ::Replayable<0>(frame, positionZ);
+    const FloatCompressor<-255, 255, 6> directionX(controller.m_vDirection.f.x);
+    ::Replayable<0>(frame, directionX);
+    const FloatCompressor<-255, 255, 6> directionY(controller.m_vDirection.f.y);
+    ::Replayable<0>(frame, directionY);
+    const FloatCompressor<-255, 255, 6> directionZ(controller.m_vDirection.f.z);
+    ::Replayable<0>(frame, directionZ);
+    const FloatCompressor<-255, 255, 6> velocityX(controller.m_vVelocity.f.x);
+    ::Replayable<0>(frame, velocityX);
+    const FloatCompressor<-255, 255, 6> velocityY(controller.m_vVelocity.f.y);
+    ::Replayable<0>(frame, velocityY);
+    const FloatCompressor<-255, 255, 6> velocityZ(controller.m_vVelocity.f.z);
+    ::Replayable<0>(frame, velocityZ);
+}
 
-template <>
-void Replayable<1, SaveFrame, CrowdManager>(SaveFrame& frame, CrowdManager& manager);
+static inline void ReplayControllerState(LoadFrame& frame, EmissionController& controller)
+{
+    float age = 0.0f;
+    ::Replayable<0>(frame, age);
+    age += frame.mNonBlendableAheadOfFrame;
+    controller.m_ReplayDeltaTime = age - controller.m_Age;
+    controller.m_Age = age;
 
-template <>
-void Replayable<3, LoadFrame, EmissionManager>(LoadFrame& frame, EmissionManager& manager);
+    unsigned int updateCb = 0;
+    ::Replayable<0>(frame, updateCb);
+    unsigned int callback = updateCb;
+    if (callback != 0)
+    {
+        controller.mUpdateCallback = (void (*)(EmissionController&))callback;
+    }
 
-template <>
-void Replayable<3, SaveFrame, EmissionManager>(SaveFrame& frame, EmissionManager& manager);
+    unsigned int finishedCb = 0;
+    ::Replayable<0>(frame, finishedCb);
+    callback = finishedCb;
+    if (callback != 0)
+    {
+        controller.mFinishedCallback = (void (*)(EmissionController&))callback;
+    }
+}
 
-template <>
-void Replayable<0, LoadFrame, bool>(LoadFrame& frame, bool& value);
-template <>
-void Replayable<1, LoadFrame, bool>(LoadFrame& frame, bool& value);
-template <>
-void Replayable<0, SaveFrame, bool>(SaveFrame& frame, bool& value);
-template <>
-void Replayable<1, SaveFrame, bool>(SaveFrame& frame, bool& value);
-template <>
-void Replayable<1, LoadFrame, char>(LoadFrame& frame, char& value);
-template <>
-void Replayable<1, SaveFrame, char>(SaveFrame& frame, char& value);
-template <>
-void Replayable<1, LoadFrame, nlVector3>(LoadFrame& frame, nlVector3& value);
-template <>
-void Replayable<1, SaveFrame, nlVector3>(SaveFrame& frame, nlVector3& value);
+static inline void ReplayControllerCallbacks(SaveFrame& frame, EmissionController& controller)
+{
+    unsigned int updateCb = (unsigned int)controller.mUpdateCallback.GetFreeFunction();
+    Replayable<0>(frame, updateCb);
 
-template <>
-void Replayable<1, LoadFrame, int>(LoadFrame& frame, int& value);
-template <>
-void Replayable<1, SaveFrame, int>(SaveFrame& frame, int& value);
+    unsigned int finishedCb = (unsigned int)controller.mFinishedCallback.GetFreeFunction();
+    Replayable<0>(frame, finishedCb);
+}
 
-template <>
-void Replayable<0, SaveFrame, float>(SaveFrame& frame, float& value);
-template <>
-void Replayable<0, LoadFrame, float>(LoadFrame& frame, float& value);
+template <typename T>
+static inline void ReplayLoadObject(LoadFrame& frame, T& current)
+{
+    current.Replay(frame);
+}
 
-template <>
-void Replayable<0, LoadFrame, char>(LoadFrame& frame, char& value);
-template <>
-void Replayable<0, SaveFrame, char>(SaveFrame& frame, char& value);
-template <>
-void Replayable<0, SaveFrame, int>(SaveFrame& frame, int& value);
-template <>
-void Replayable<0, LoadFrame, int>(LoadFrame& frame, int& value);
-
-template <>
-void Replayable<0, SaveFrame, unsigned int>(SaveFrame& frame, unsigned int& value);
-template <>
-void Replayable<0, LoadFrame, unsigned int>(LoadFrame& frame, unsigned int& value);
-template <>
-void Replayable<0, SaveFrame, unsigned short>(SaveFrame& frame, unsigned short& value);
-template <>
-void Replayable<0, SaveFrame, unsigned long>(SaveFrame& frame, unsigned long& value);
-template <>
-void Replayable<0, LoadFrame, unsigned long>(LoadFrame& frame, unsigned long& value);
-template <>
-void Replayable<0, SaveFrame, EmissionController>(SaveFrame& frame, EmissionController& controller);
-template <>
-void Replayable<0, LoadFrame, EmissionController>(LoadFrame& frame, EmissionController& controller);
-
-template <>
-void Replayable<3, LoadFrame, bool>(LoadFrame& frame, bool& value);
-template <>
-void Replayable<3, SaveFrame, bool>(SaveFrame& frame, bool& value);
-template <>
-void Replayable<3, LoadFrame, char>(LoadFrame& frame, char& value);
-template <>
-void Replayable<3, SaveFrame, char>(SaveFrame& frame, char& value);
-template <>
-void Replayable<3, LoadFrame, float>(LoadFrame& frame, float& value);
-template <>
-void Replayable<3, SaveFrame, float>(SaveFrame& frame, float& value);
-template <>
-void Replayable<3, LoadFrame, unsigned short>(LoadFrame& frame, unsigned short& value);
-template <>
-void Replayable<3, SaveFrame, unsigned short>(SaveFrame& frame, unsigned short& value);
-template <>
-void Replayable<3, LoadFrame, unsigned long>(LoadFrame& frame, unsigned long& value);
-template <>
-void Replayable<3, SaveFrame, unsigned long>(SaveFrame& frame, unsigned long& value);
-template <>
-void Replayable<3, LoadFrame, nlVector3>(LoadFrame& frame, nlVector3& value);
-template <>
-void Replayable<3, SaveFrame, nlVector3>(SaveFrame& frame, nlVector3& value);
-template <>
-void Replayable<3, LoadFrame, nlQuaternion>(LoadFrame& frame, nlQuaternion& value);
-template <>
-void Replayable<3, SaveFrame, nlQuaternion>(SaveFrame& frame, nlQuaternion& value);
-
-template <>
-void Replayable<1, SaveFrame, unsigned char>(SaveFrame& frame, unsigned char& value);
-template <>
-void Replayable<1, LoadFrame, unsigned char>(LoadFrame& frame, unsigned char& value);
-template <>
-void Replayable<1, SaveFrame, unsigned short>(SaveFrame& frame, unsigned short& value);
-template <>
-void Replayable<1, LoadFrame, unsigned short>(LoadFrame& frame, unsigned short& value);
-template <>
-void Replayable<1, SaveFrame, unsigned long>(SaveFrame& frame, unsigned long& value);
-template <>
-void Replayable<1, LoadFrame, unsigned long>(LoadFrame& frame, unsigned long& value);
+static inline void ReplayLoadObject(LoadFrame& frame, EmissionController& controller)
+{
+    ::Replayable<0>(frame, (unsigned int&)controller.m_pPose);
+    ::Replayable<0>(frame, (unsigned int&)controller.m_pAnimController);
+    memcpy(&controller.m_uUserData, frame.mStream.mStorage, sizeof(unsigned long));
+    frame.mStream.mStorage += sizeof(unsigned long);
+    ::Replayable<0>(frame, controller.m_fGround);
+    memcpy(&controller.m_aFacing, frame.mStream.mStorage, sizeof(unsigned short));
+    frame.mStream.mStorage += sizeof(unsigned short);
+    ::Replayable<0>(frame, (char&)controller.m_GlView);
+    ReplayControllerFloats(frame, controller);
+    controller.m_Replaying = true;
+    ReplayControllerState(frame, controller);
+}
 
 template <int N, typename FrameType, typename T>
-void ReplayablePolymorphic(FrameType& frame, T*& ptr);
+static inline void ReplayFrameValue(FrameType& frame, T& current, ReplayablePod category)
+{
+    frame.Replayable<N>(current, category);
+}
+
+template <int N, typename FrameType, typename T>
+static inline void ReplayFrameValue(FrameType& frame, T& current, NotReplayablePod)
+{
+    if (N == 0 || frame.mInterval == N)
+    {
+        current.Replay(frame);
+    }
+}
+
+template <>
+inline void ReplayFrameValue<0, LoadFrame, EmissionController>(LoadFrame& frame, EmissionController& controller, NotReplayablePod)
+{
+    frame.Replayable<0>(controller);
+}
+
+template <>
+inline void ReplayFrameValue<0, SaveFrame, EmissionController>(SaveFrame& frame, EmissionController& controller, NotReplayablePod)
+{
+    ::Replayable<0>(frame, (unsigned int&)controller.m_pPose);
+    ::Replayable<0>(frame, (unsigned int&)controller.m_pAnimController);
+    memcpy(frame.mStream.mStorage, &controller.m_uUserData, sizeof(unsigned long));
+    frame.mStream.mStorage += sizeof(unsigned long);
+    ::Replayable<0>(frame, controller.m_fGround);
+    memcpy(frame.mStream.mStorage, &controller.m_aFacing, sizeof(unsigned short));
+    frame.mStream.mStorage += sizeof(unsigned short);
+    ::Replayable<0>(frame, (char&)controller.m_GlView);
+    ReplayControllerFloats(frame, controller);
+    controller.m_Replaying = false;
+    controller.m_ReplayDeltaTime = 0.0f;
+    ::Replayable<0>(frame, controller.m_Age);
+    ReplayControllerCallbacks(frame, controller);
+}
+
+template <int N, typename FrameType, typename T>
+void ReplayablePolymorphic(FrameType& frame, T*& ptr)
+{
+    frame.template ReplayablePolymorphicPtr<N>(ptr);
+}
 
 template <int N, typename FrameType, typename T>
 void Replayable(FrameType& frame, T& drawable)
 {
-    drawable.Replay(frame);
+    if (N == 0 || frame.mInterval == N)
+    {
+        typename ReplayableCategory<T>::Type category;
+        ReplayFrameValue<N, FrameType, T>(frame, drawable, category);
+    }
 }
-
-// ==================================================================
-// Replayable specialization macros -- DRY boilerplate for explicit
-// `template <>` specs while preserving target's mangling and ordering.
-// Each macro expands to a single `inline template <>` definition.
-// Pair macros (REPLAYABLE_*_PAIR) expand SAVE first, then LOAD; if the
-// target wants a different per-spec ordering, use the *_SAVE / *_LOAD
-// macros separately and arrange them in target order.
-// ==================================================================
-
-// Formulaic POD memcpy (char, Us, Ul, vec3, Q, float, etc.).
-#define REPLAYABLE_POD_SAVE(N, T)                                         \
-    template <>                                                           \
-    inline void Replayable<N, SaveFrame, T>(SaveFrame & frame, T & value) \
-    {                                                                     \
-        FORCE_DONT_INLINE;                                                \
-        if (frame.mInterval == N)                                         \
-        {                                                                 \
-            if (frame.mInterval == N)                                     \
-            {                                                             \
-                memcpy(frame.mStream.mStorage, &value, sizeof(T));        \
-                frame.mStream.mStorage += sizeof(T);                      \
-            }                                                             \
-        }                                                                 \
-    }
-
-#define REPLAYABLE_POD_LOAD(N, T)                                         \
-    template <>                                                           \
-    inline void Replayable<N, LoadFrame, T>(LoadFrame & frame, T & value) \
-    {                                                                     \
-        FORCE_DONT_INLINE;                                                \
-        if (frame.mInterval == N)                                         \
-        {                                                                 \
-            if (frame.mInterval == N)                                     \
-            {                                                             \
-                memcpy(&value, frame.mStream.mStorage, sizeof(T));        \
-                frame.mStream.mStorage += sizeof(T);                      \
-            }                                                             \
-        }                                                                 \
-    }
-
-#define REPLAYABLE_POD_PAIR(N, T) \
-    REPLAYABLE_POD_SAVE(N, T)     \
-    REPLAYABLE_POD_LOAD(N, T)
-
-// Bool specials -- `temp = value ? 1 : 0` pattern (1-byte memcpy, not sizeof(bool)).
-// N=0 / N=3 use sizeof(bool); N=1 uses literal 1. Pick the right variant.
-#define REPLAYABLE_BOOL_SAVE_1BYTE(N)                                          \
-    template <>                                                                \
-    inline void Replayable<N, SaveFrame, bool>(SaveFrame & frame, bool& value) \
-    {                                                                          \
-        FORCE_DONT_INLINE;                                                     \
-        if (frame.mInterval == N)                                              \
-        {                                                                      \
-            char temp = value ? 1 : 0;                                         \
-            memcpy(frame.mStream.mStorage, &temp, 1);                          \
-            frame.mStream.mStorage += 1;                                       \
-        }                                                                      \
-    }
-
-#define REPLAYABLE_BOOL_LOAD_1BYTE(N)                                          \
-    template <>                                                                \
-    inline void Replayable<N, LoadFrame, bool>(LoadFrame & frame, bool& value) \
-    {                                                                          \
-        FORCE_DONT_INLINE;                                                     \
-        if (frame.mInterval == N)                                              \
-        {                                                                      \
-            char temp = 0;                                                     \
-            memcpy(&temp, frame.mStream.mStorage, 1);                          \
-            frame.mStream.mStorage += 1;                                       \
-            value = (temp != 0);                                               \
-        }                                                                      \
-    }
-
-// Manager / drawable types -- calls `obj.Replay(frame)`.
-// Use this for explicit `template <>` overrides of the class generic so
-// the body has FORCE_DONT_INLINE (otherwise MWCC inlines them away).
-#define REPLAYABLE_CALL_SAVE(N, T)                                      \
-    template <>                                                         \
-    inline void Replayable<N, SaveFrame, T>(SaveFrame & frame, T & obj) \
-    {                                                                   \
-        FORCE_DONT_INLINE;                                              \
-        if (frame.mInterval == N)                                       \
-        {                                                               \
-            if (frame.mInterval == N)                                   \
-            {                                                           \
-                obj.Replay(frame);                                      \
-            }                                                           \
-        }                                                               \
-    }
-
-#define REPLAYABLE_CALL_LOAD(N, T)                                      \
-    template <>                                                         \
-    inline void Replayable<N, LoadFrame, T>(LoadFrame & frame, T & obj) \
-    {                                                                   \
-        FORCE_DONT_INLINE;                                              \
-        if (frame.mInterval == N)                                       \
-        {                                                               \
-            if (frame.mInterval == N)                                   \
-            {                                                           \
-                obj.Replay(frame);                                      \
-            }                                                           \
-        }                                                               \
-    }
-
-#define REPLAYABLE_CALL_PAIR(N, T) \
-    REPLAYABLE_CALL_SAVE(N, T)     \
-    REPLAYABLE_CALL_LOAD(N, T)
-
-// Drawable types -- no interval check, just `obj.Replay(frame)`.
-// Matches RenderSnapshot's Drawable* specs (target call shapes show no
-// interval gate). FORCE_DONT_INLINE required to survive -inline deferred.
-#define REPLAYABLE_DRAWABLE_SAVE(N, T)                                       \
-    template <>                                                              \
-    inline void Replayable<N, SaveFrame, T>(SaveFrame & frame, T & drawable) \
-    {                                                                        \
-        FORCE_DONT_INLINE;                                                   \
-        drawable.Replay(frame);                                              \
-    }
-
-#define REPLAYABLE_DRAWABLE_LOAD(N, T)                                       \
-    template <>                                                              \
-    inline void Replayable<N, LoadFrame, T>(LoadFrame & frame, T & drawable) \
-    {                                                                        \
-        FORCE_DONT_INLINE;                                                   \
-        drawable.Replay(frame);                                              \
-    }
-
-#define REPLAYABLE_DRAWABLE_PAIR(N, T) \
-    REPLAYABLE_DRAWABLE_SAVE(N, T)     \
-    REPLAYABLE_DRAWABLE_LOAD(N, T)
 
 enum ReplayType
 {
@@ -624,83 +439,3 @@ public:
 }; // total size: 0x64
 
 #endif // _REPLAY_H_
-
-// Reinclude this header from the target owner after EmissionController is
-// complete. Ordinary Replay.h consumers see only the declarations above.
-#ifdef REPLAY_EMISSION_FREE_SPECIALIZATIONS
-
-template <>
-inline void Replayable<0, LoadFrame, unsigned short>(LoadFrame& frame, unsigned short& value)
-{
-    FORCE_DONT_INLINE;
-    memcpy(&value, frame.mStream.mStorage, sizeof(unsigned short));
-    frame.mStream.mStorage += sizeof(unsigned short);
-}
-
-template <>
-inline void Replayable<0, LoadFrame, unsigned long>(LoadFrame& frame, unsigned long& value)
-{
-    FORCE_DONT_INLINE;
-    memcpy(&value, frame.mStream.mStorage, sizeof(unsigned long));
-    frame.mStream.mStorage += sizeof(unsigned long);
-}
-
-template <>
-inline void Replayable<0, LoadFrame, EmissionController>(LoadFrame& frame, EmissionController& controller)
-{
-    FORCE_DONT_INLINE;
-    frame.Replayable<0>(controller);
-}
-
-template <>
-inline void Replayable<0, SaveFrame, unsigned short>(SaveFrame& frame, unsigned short& value)
-{
-    FORCE_DONT_INLINE;
-    memcpy(frame.mStream.mStorage, &value, sizeof(unsigned short));
-    frame.mStream.mStorage += sizeof(unsigned short);
-}
-
-template <>
-inline void Replayable<0, SaveFrame, unsigned long>(SaveFrame& frame, unsigned long& value)
-{
-    FORCE_DONT_INLINE;
-    memcpy(frame.mStream.mStorage, &value, sizeof(unsigned long));
-    frame.mStream.mStorage += sizeof(unsigned long);
-}
-
-template <>
-inline void Replayable<0, SaveFrame, EmissionController>(SaveFrame& frame, EmissionController& controller)
-{
-    FORCE_DONT_INLINE;
-    Replayable<0>(frame, (unsigned int&)controller.m_pPose);
-    Replayable<0>(frame, (unsigned int&)controller.m_pAnimController);
-    memcpy(frame.mStream.mStorage, &controller.m_uUserData, sizeof(unsigned long));
-    frame.mStream.mStorage += sizeof(unsigned long);
-    Replayable<0>(frame, controller.m_fGround);
-    memcpy(frame.mStream.mStorage, &controller.m_aFacing, sizeof(unsigned short));
-    frame.mStream.mStorage += sizeof(unsigned short);
-    Replayable<0>(frame, (char&)controller.m_GlView);
-    ReplayControllerFloats(frame, controller);
-    controller.m_Replaying = false;
-    controller.m_ReplayDeltaTime = 0.0f;
-    Replayable<0>(frame, controller.m_Age);
-    ReplayControllerCallbacks(frame, controller);
-}
-
-template <>
-inline void Replayable<0, LoadFrame, char>(LoadFrame& frame, char& value)
-{
-    FORCE_DONT_INLINE;
-    memcpy(&value, frame.mStream.mStorage, sizeof(char));
-    frame.mStream.mStorage += sizeof(char);
-}
-
-template <>
-inline void Replayable<0, SaveFrame, char>(SaveFrame& frame, char& value)
-{
-    FORCE_DONT_INLINE;
-    memcpy(frame.mStream.mStorage, &value, sizeof(char));
-    frame.mStream.mStorage += sizeof(char);
-}
-
-#endif

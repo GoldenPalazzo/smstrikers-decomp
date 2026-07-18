@@ -3,7 +3,7 @@
 
 #include "Game/Render/NetMesh.h"
 #include "NL/gl/glModel.h"
-#include "NL/nlAVLTreeSlotPool.h"
+#include "NL/nlAVLTree.h"
 
 class NetMeshModelLoader
 {
@@ -64,17 +64,10 @@ public:
         /* 0x08 */ NetMeshVertex* mpVertex2;
     };
 
-#ifdef NETMESHMODELLOADER_VERTEX_TREE_FIRST
     typedef nlAVLTreeSlotPool<NetMeshVertex, int, DefaultKeyCompare<NetMeshVertex> > VertexTree;
     typedef nlAVLTreeSlotPool<NetMeshEdge, int, DefaultKeyCompare<NetMeshEdge> > EdgeTree;
     typedef AVLTreeEntry<NetMeshVertex, int> VertexEntry;
     typedef AVLTreeEntry<NetMeshEdge, int> EdgeEntry;
-#else
-    typedef nlAVLTreeSlotPool<NetMeshEdge, int, DefaultKeyCompare<NetMeshEdge> > EdgeTree;
-    typedef nlAVLTreeSlotPool<NetMeshVertex, int, DefaultKeyCompare<NetMeshVertex> > VertexTree;
-    typedef AVLTreeEntry<NetMeshEdge, int> EdgeEntry;
-    typedef AVLTreeEntry<NetMeshVertex, int> VertexEntry;
-#endif
 
     NetMeshModelLoader(NetMesh&, unsigned long);
     virtual ~NetMeshModelLoader();
@@ -85,85 +78,14 @@ public:
     void ProcessEdges(const glModelPacket&, int);
     void CreateNetMeshFromVertexList();
 
-    /* 0x04 */ NetMesh& m_NetMesh;            // offset 0x4, size 0x4
-    /* 0x08 */ u32 m_NetMeshDrawableObjectID; // offset 0x8, size 0x4
-    /* 0x0C */ EdgeTree* m_EdgeList;          // offset 0xC, size 0x4
-    /* 0x10 */ VertexTree* m_VertexList;      // offset 0x10, size 0x4
-    /* 0x14 */ int m_NumParticles;            // offset 0x14, size 0x4
-    /* 0x18 */ u16* m_TriStripIndices;        // offset 0x18, size 0x4
-    /* 0x1C */ int m_CurrentTriStripIndex;    // offset 0x1C, size 0x4
-    /* 0x20 */ int m_NumTriStripIndices;      // offset 0x20, size 0x4
+    /* 0x04 */ NetMesh& m_NetMesh;
+    /* 0x08 */ u32 m_NetMeshDrawableObjectID;
+    /* 0x0C */ EdgeTree* m_EdgeList;
+    /* 0x10 */ VertexTree* m_VertexList;
+    /* 0x14 */ int m_NumParticles;
+    /* 0x18 */ u16* m_TriStripIndices;
+    /* 0x1C */ int m_CurrentTriStripIndex;
+    /* 0x20 */ int m_NumTriStripIndices;
 };
-
-// class nlAVLTreeSlotPool<NetMeshModelLoader
-// {
-// public:
-//     void NetMeshEdge, int, DefaultKeyCompare<NetMeshModelLoader::NetMeshEdge>>::~nlAVLTreeSlotPool();
-//     void NetMeshVertex, int, DefaultKeyCompare<NetMeshModelLoader::NetMeshVertex>>::~nlAVLTreeSlotPool();
-// };
-
-// class AVLTreeBase<NetMeshModelLoader
-// {
-// public:
-//     void NetMeshVertex, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshVertex>>::DeleteEntry(AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int>*);
-//     void NetMeshVertex, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshVertex>>::AllocateEntry(void*, void*);
-//     void NetMeshEdge, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshEdge, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshEdge>>::DeleteEntry(AVLTreeEntry<NetMeshModelLoader::NetMeshEdge, int>*);
-//     void NetMeshEdge, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshEdge, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshEdge>>::CompareNodes(AVLTreeNode*, AVLTreeNode*);
-//     void NetMeshEdge, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshEdge, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshEdge>>::CompareKey(void*, AVLTreeNode*);
-//     void NetMeshEdge, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshEdge, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshEdge>>::AllocateEntry(void*, void*);
-//     void NetMeshVertex, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshVertex>>::CompareKey(void*, AVLTreeNode*);
-//     void NetMeshVertex, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshVertex>>::CompareNodes(AVLTreeNode*, AVLTreeNode*);
-//     void NetMeshEdge, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshEdge, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshEdge>>::CastUp(AVLTreeNode*) const;
-//     void NetMeshEdge, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshEdge, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshEdge>>::PostorderTraversal(AVLTreeEntry<NetMeshModelLoader::NetMeshEdge, int>*, void (AVLTreeBase<NetMeshModelLoader::NetMeshEdge, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshEdge, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshEdge>>::*)(AVLTreeEntry<NetMeshModelLoader::NetMeshEdge, int>*));
-//     void NetMeshEdge, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshEdge, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshEdge>>::DestroyTree(void (AVLTreeBase<NetMeshModelLoader::NetMeshEdge, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshEdge, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshEdge>>::*)(AVLTreeEntry<NetMeshModelLoader::NetMeshEdge, int>*));
-//     void NetMeshEdge, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshEdge, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshEdge>>::Clear();
-//     void NetMeshEdge, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshEdge, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshEdge>>::~AVLTreeBase();
-//     void NetMeshVertex, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshVertex>>::CastUp(AVLTreeNode*) const;
-//     void NetMeshVertex, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshVertex>>::PostorderTraversal(AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int>*, void (AVLTreeBase<NetMeshModelLoader::NetMeshVertex, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshVertex>>::*)(AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int>*));
-//     void NetMeshVertex, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshVertex>>::DestroyTree(void (AVLTreeBase<NetMeshModelLoader::NetMeshVertex, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshVertex>>::*)(AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int>*));
-//     void NetMeshVertex, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshVertex>>::Clear();
-//     void NetMeshVertex, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshVertex>>::~AVLTreeBase();
-// };
-
-#ifndef NETMESHMODELLOADER_EXPLICIT_AVL_SPECIALIZATIONS
-
-template <>
-inline int AVLTreeBase<NetMeshModelLoader::NetMeshVertex, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int> >, DefaultKeyCompare<NetMeshModelLoader::NetMeshVertex> >::CompareKey(void* key, AVLTreeNode* node)
-{
-    NetMeshModelLoader::NetMeshVertex* k = (NetMeshModelLoader::NetMeshVertex*)key;
-    AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int>* entry = (AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int>*)node;
-    int result;
-    bool equal = (k->mpPacket == entry->key.mpPacket && k->mIndex == entry->key.mIndex);
-    if (equal)
-    {
-        result = 0;
-    }
-    else
-    {
-        bool less = (k->mpPacket < entry->key.mpPacket || (k->mpPacket == entry->key.mpPacket && k->mIndex < entry->key.mIndex));
-        if (less)
-            result = -1;
-        else
-            result = 1;
-    }
-    return result;
-}
-
-template <>
-inline int AVLTreeBase<NetMeshModelLoader::NetMeshEdge, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshEdge, int> >, DefaultKeyCompare<NetMeshModelLoader::NetMeshEdge> >::CompareKey(void* key, AVLTreeNode* node)
-{
-    const NetMeshModelLoader::NetMeshEdge& k = *(NetMeshModelLoader::NetMeshEdge*)key;
-    AVLTreeEntry<NetMeshModelLoader::NetMeshEdge, int>* entry = (AVLTreeEntry<NetMeshModelLoader::NetMeshEdge, int>*)node;
-    int result;
-    if (k == entry->key)
-        result = 0;
-    else if (k < entry->key)
-        result = -1;
-    else
-        result = 1;
-    return result;
-}
-
-#endif // NETMESHMODELLOADER_EXPLICIT_AVL_SPECIALIZATIONS
 
 #endif // _NETMESHMODELLOADER_H_

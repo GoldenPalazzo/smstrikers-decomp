@@ -4,9 +4,12 @@
 #include "Game/BasicStadium.h"
 #include "Game/Game.h"
 #include "Game/Sys/eventman.h"
-#include "NL/nlListSlotPoolHigh.h"
-#include "NL/nlQSort.h"
+#include "NL/nlList.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlString.h"
+
+AnimAudioEventLookup* gp_AnimAudioEventTable;
+unsigned long gNumAnimAudioEvents;
 
 static bool mIsEnabled = true;
 static void* gpLastSoundFromPlayer;
@@ -408,7 +411,7 @@ void FEAudio::BuildAnimAudioEventLookup()
                 if (LookupList.m_Allocator.m_FreeList != NULL)
                 {
                     pEntry = (ListEntry<AnimAudioEventLookup>*)LookupList.m_Allocator.m_FreeList;
-                    LookupList.m_Allocator.m_FreeList = LookupList.m_Allocator.m_FreeList->m_next;
+                    LookupList.m_Allocator.m_FreeList = LookupList.m_Allocator.m_FreeList->next;
                 }
 
                 if (pEntry != NULL)
@@ -418,7 +421,7 @@ void FEAudio::BuildAnimAudioEventLookup()
                 }
 
                 nlListAddEnd(&LookupList.m_Head, &LookupList.m_Tail, pEntry);
-                pEntry->entry.hash = nlStringHash(pToken);
+                pEntry->entry.eventNameHash = nlStringHash(pToken);
                 nlStrNCpy(pEntry->entry.szSFXType, pSFXTypeStr, 0x32);
                 gNumAnimAudioEvents++;
             }
@@ -478,54 +481,6 @@ void FEAudio::BuildAnimAudioEventLookup()
 // {
 // }
 
-/**
- * Offset/Address/Size: 0x28 | 0x8009FA28 | size: 0x2C
- */
-template <>
-int nlDefaultQSortComparer<AnimAudioEventLookup>(const AnimAudioEventLookup* a, const AnimAudioEventLookup* b)
-{
-    if (a->hash > b->hash)
-        return 1;
-    if (a->hash == b->hash)
-        return 0;
-    return -1;
-}
-
-/**
- * Offset/Address/Size: 0x54 | 0x8009FA54 | size: 0x8C
- */
-template <>
-AnimAudioEventLookup* nlBSearch(const unsigned long& key, AnimAudioEventLookup* base, int count)
-{
-    unsigned long keyVal = (unsigned long)key;
-    int high = count - 1;
-    int low = -1;
-
-    while ((high - low) > 1)
-    {
-        int mid = (high + low) / 2;
-        if (base[mid].hash > keyVal)
-            high = mid;
-        else
-            low = mid;
-    }
-
-    unsigned long cmpKey = *(const volatile unsigned long*)&key;
-
-    unsigned long highHash = base[high].hash;
-    if (highHash == cmpKey)
-        return &base[high];
-
-    if (low == -1)
-        return 0;
-
-    unsigned long lowHash = base[low].hash;
-    if (lowHash == cmpKey)
-        return &base[low];
-
-    return 0;
-}
-
 // /**
 //  * Offset/Address/Size: 0x0 | 0x8009FAE0 | size: 0x68
 //  */
@@ -551,9 +506,3 @@ AnimAudioEventLookup* nlBSearch(const unsigned long& key, AnimAudioEventLookup* 
 // void nlStrCmp<char>(const char*, const char*)
 // {
 // }
-
-/**
- * Offset/Address/Size: 0xC4 | 0x8009FC38 | size: 0x20
- */
-template int nlStrICmp<char>(const char*, const char*);
-template char nlToUpper<char>(char);

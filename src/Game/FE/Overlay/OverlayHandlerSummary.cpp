@@ -7,7 +7,7 @@
 #include "Game/GameInfo.h"
 #include "Game/OverlayManager.h"
 #include "Game/SH/SHPause.h"
-#include "NL/nlBSearch.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlFormat.h"
 #include "NL/nlLocalization.h"
 

@@ -1,9 +1,8 @@
-#define MEMFUN_NO_DECL
-#define BIND_NO_DECL
-#define FUNCTION0_SPLIT_BODIES
+#include "Game/Sys/GCStream.h"
 #include "Game/Audio/AudioStream.h"
 #include "Game/Sys/PlatStream.h"
 #include "Game/Audio/AudioLoader.h"
+#include "NL/nlBind.h"
 #include "Game/Audio/PriorityStream.h"
 #include "NL/nlMemory.h"
 #include "NL/nlConfig.h"
@@ -16,13 +15,6 @@
 #include <stdlib.h>
 
 #include "Game/FE/feHelpFuncs.h"
-
-#include "NL/nlBindBody.h"
-#include "NL/nlMemFunBody.h"
-
-#define PRIORITYSTREAM_INLINE_BODY
-#include "Game/Audio/PriorityStream.h"
-#undef PRIORITYSTREAM_INLINE_BODY
 
 extern cTeam* g_pTeams[2];
 extern unsigned int nlDefaultSeed;
@@ -178,6 +170,12 @@ bool Audio::TrackMgrFileNameParamLookup(const char* param, char* out, unsigned l
     return true;
 }
 
+void Audio::DestroyTrackMgr()
+{
+    delete g_pTrackManager;
+    g_pTrackManager = NULL;
+}
+
 /**
  * Offset/Address/Size: 0x27C | 0x8014BA94 | size: 0x70
  */
@@ -197,9 +195,8 @@ void Audio::DestroyPriorityStreams()
     {
         AudioStreamTrack::StreamTrack& track = ps->m_Track;
         {
-            Function0<void> f0;
-            f0.mTag = EMPTY;
-            PriorityStreamSetIdleCallback(&track, f0);
+            Function<FnVoidVoid> callback;
+            PriorityStreamSetIdleCallback(&track, callback);
         }
         delete ps;
     }

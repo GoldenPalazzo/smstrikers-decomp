@@ -1,27 +1,9 @@
 #include "NL/nlFont.h"
-#include "NL/nlBSearch.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlColour.h"
 #include "NL/nlList.h"
-#include "NL/nlListSlotPoolHigh.h"
-#include "NL/nlQSort.h"
-#include "NL/nlSlotPoolHigh.h"
 #include "NL/nlString.h"
 
-// Explicit-specialization declarations (no bodies): emit these helpers as external
-// references (UND) like the target, instead of redundant weak out-of-line copies.
-// Other TUs already provide the weak definitions; the linker resolves them.
-template <>
-unsigned long nlStrLen<unsigned short>(const unsigned short*);
-template <>
-char* nlStrChr<char>(const char*, char);
-template <>
-char nlToUpper<char>(char);
-template <>
-char nlToLower<char>(char);
-template <>
-char* nlStrNCpy<char>(char*, const char*, unsigned long);
-template <>
-char* nlStrNCat<char>(char*, const char*, const char*, unsigned long);
 #include "NL/nlPrint.h"
 #include "NL/nlTextBox.h"
 #include "NL/nlTextEscape.h"

@@ -11,7 +11,7 @@ public:
     WorldLoader() { mTEMP_FOR_FE = false; }
 
     bool StartLoad(LoadingManager* manager);
-    char* GetStadiumFilename(eStadiumID stadiumid) const;
+    const char* GetStadiumFilename(eStadiumID stadiumid) const;
     eTerrain GetStadiumTerrain(eStadiumID stadiumID) const;
     void SetStadiumTerrain(eStadiumID stadiumID, const char* szTerrainName);
 

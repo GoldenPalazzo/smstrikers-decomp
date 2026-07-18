@@ -5,6 +5,7 @@
 #include "Game/FE/feFinder.h"
 #include "Game/FE/feMusic.h"
 #include "Game/Audio/AudioLoader.h"
+#include "Game/Audio/StreamTrack.h"
 #include "Game/FE/tlComponentInstance.h"
 #include "Game/SH/SHLoading.h"
 #include "Game/SH/SHMainMenu.h"
@@ -64,9 +65,7 @@ TitleScene::TitleScene()
     AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("FE"));
     if (track != NULL)
     {
-        Function0<void> f0;
-        f0.mTag = FREE_FUNCTION;
-        f0.mFreeFunction = DoNothingCallback;
+        Function0<void> f0(DoNothingCallback);
         SetIdleCallback(track, f0);
     }
 }
@@ -322,10 +321,7 @@ void TitleScene::StartIntroMovie()
         }
         else
         {
-            Function0<void> f0;
-
-            f0.mTag = FREE_FUNCTION;
-            f0.mFreeFunction = StartMovieCB;
+            Function0<void> f0(StartMovieCB);
             SetIdleCallback(track, f0);
         }
     }

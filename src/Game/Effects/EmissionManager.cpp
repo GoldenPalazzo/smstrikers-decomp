@@ -1,6 +1,3 @@
-#define NL_AVLTREEBASE_EXPLICIT_INSTANTIATION
-// The retained weak Function1 base destructor is owned by an earlier TU.
-#define FUNCTION1_BASE_DTOR_DECLARE_ONLY
 #include "Game/Effects/EmissionManager.h"
 #include "dolphin/types.h"
 #include "NL/nlAVLTree.h"
@@ -8,82 +5,6 @@
 #include "Game/NisPlayer.h"
 #include "Game/Sys/debug.h"
 #include "Game/Replay.h"
-
-template <typename FrameType>
-static inline void ReplayControllerFloats(FrameType& frame, EmissionController& controller)
-{
-    const FloatCompressor<-255, 255, 6> positionX(controller.m_vPosition.f.x);
-    ::Replayable<0>(frame, positionX);
-    const FloatCompressor<-255, 255, 6> positionY(controller.m_vPosition.f.y);
-    ::Replayable<0>(frame, positionY);
-    const FloatCompressor<-255, 255, 6> positionZ(controller.m_vPosition.f.z);
-    ::Replayable<0>(frame, positionZ);
-    const FloatCompressor<-255, 255, 6> directionX(controller.m_vDirection.f.x);
-    ::Replayable<0>(frame, directionX);
-    const FloatCompressor<-255, 255, 6> directionY(controller.m_vDirection.f.y);
-    ::Replayable<0>(frame, directionY);
-    const FloatCompressor<-255, 255, 6> directionZ(controller.m_vDirection.f.z);
-    ::Replayable<0>(frame, directionZ);
-    const FloatCompressor<-255, 255, 6> velocityX(controller.m_vVelocity.f.x);
-    ::Replayable<0>(frame, velocityX);
-    const FloatCompressor<-255, 255, 6> velocityY(controller.m_vVelocity.f.y);
-    ::Replayable<0>(frame, velocityY);
-    const FloatCompressor<-255, 255, 6> velocityZ(controller.m_vVelocity.f.z);
-    ::Replayable<0>(frame, velocityZ);
-}
-
-static inline void ReplayControllerState(LoadFrame& frame, EmissionController& controller)
-{
-    float age = 0.0f;
-    ::Replayable<0>(frame, age);
-    age += frame.mNonBlendableAheadOfFrame;
-    controller.m_ReplayDeltaTime = age - controller.m_Age;
-    controller.m_Age = age;
-
-    unsigned int updateCb = 0;
-    ::Replayable<0>(frame, updateCb);
-    register unsigned int callback = updateCb;
-    if (callback != 0)
-    {
-        if (controller.mUpdateCallback.mTag == FUNCTOR)
-        {
-            delete controller.mUpdateCallback.mFunctor;
-        }
-        controller.mUpdateCallback.mTag = EMPTY;
-        controller.mUpdateCallback.mTag = FREE_FUNCTION;
-        controller.mUpdateCallback.mFreeFunction = (void (*)(EmissionController&))callback;
-    }
-
-    unsigned int finishedCb = 0;
-    ::Replayable<0>(frame, finishedCb);
-    callback = finishedCb;
-    if (callback != 0)
-    {
-        if (controller.mFinishedCallback.mTag == FUNCTOR)
-        {
-            delete controller.mFinishedCallback.mFunctor;
-        }
-        controller.mFinishedCallback.mTag = EMPTY;
-        controller.mFinishedCallback.mTag = FREE_FUNCTION;
-        controller.mFinishedCallback.mFreeFunction = (void (*)(EmissionController&))callback;
-    }
-}
-
-static inline void ReplayControllerCallbacks(SaveFrame& frame, EmissionController& controller)
-{
-    unsigned int updateCb = (controller.mUpdateCallback.mTag == FREE_FUNCTION)
-                              ? (unsigned int)controller.mUpdateCallback.mFreeFunction
-                              : 0;
-    Replayable<0>(frame, updateCb);
-
-    unsigned int finishedCb = (controller.mFinishedCallback.mTag == FREE_FUNCTION)
-                                ? (unsigned int)controller.mFinishedCallback.mFreeFunction
-                                : 0;
-    Replayable<0>(frame, finishedCb);
-}
-
-template <>
-WEAKFUNC nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >::~nlAVLTree();
 
 static class efList* controllers = nullptr;
 static class efList* errors = nullptr;
@@ -93,30 +14,8 @@ static EffectsLight g_EffectsLights[3];
 static eGLView defaultView = GLV_Particles;
 
 typedef AVLTreeEntry<unsigned long, LingerMessage*> LMEntry;
-typedef AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<LMEntry>, DefaultKeyCompare<unsigned long> > LingerTreeBase;
-
-template <>
-inline LingerTreeBase::ENTRY_DELETE_FUNC LingerTreeBase::DeleteEntryFunc()
-{
-    return &LingerTreeBase::DeleteEntry;
-}
-
-template class AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<LMEntry>, DefaultKeyCompare<unsigned long> >;
-#pragma defer_codegen off
 
 static char lingerMessageFormat[] = "%s lingers (%d .. %d)";
-static char nonEmptyEmissionManagerMessage[] = "EmissionManager being deleted non-empty\n";
-
-template class NewAdapter<LMEntry>;
-#define REPLAY_EMISSION_FREE_SPECIALIZATIONS
-#include "Game/Replay.h"
-#undef REPLAY_EMISSION_FREE_SPECIALIZATIONS
-
-#define LOADFRAME_EMISSIONCONTROLLER_SPECIALIZATIONS
-#include "Game/LoadFrame.h"
-#undef LOADFRAME_EMISSIONCONTROLLER_SPECIALIZATIONS
-
-#pragma defer_codegen reset
 
 struct nlAVLTreeIter
 {
@@ -170,12 +69,6 @@ bool EmissionManager::Startup(eGLView view)
     return true;
 }
 
-template <>
-WEAKFUNC nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >::~nlAVLTree()
-{
-    FORCE_DONT_INLINE;
-}
-
 /**
  * Offset/Address/Size: 0xC1C | 0x801F953C | size: 0xF0
  */
@@ -183,7 +76,7 @@ bool EmissionManager::Shutdown()
 {
     if (controllers->m_headNode != nullptr)
     {
-        tDebugPrintManager::Print(DC_RENDER, nonEmptyEmissionManagerMessage);
+        tDebugPrintManager::Print(DC_RENDER, "EmissionManager being deleted non-empty\n");
     }
 
     EmissionController* next;
@@ -215,8 +108,7 @@ bool EmissionManager::Shutdown()
     delete errors;
     errors = nullptr;
 
-    void (*resetLingerers)() = &EmissionManager::ResetLingerers;
-    resetLingerers();
+    ResetLingerers();
 
     delete lingerers;
     lingerers = nullptr;
@@ -651,9 +543,6 @@ void EmissionManager::Replay(LoadFrame& frame)
     Replayable<0>(frame, numEffects);
 
     efList oldControllers;
-    oldControllers.m_headNode = nullptr;
-    oldControllers.m_tailNode = nullptr;
-    oldControllers.m_numNodes = 0;
 
     efBaseNode* head;
     efBaseNode* tail;
@@ -824,27 +713,3 @@ void EmissionManager::KillOldest(int num, bool lingeringOnly)
         num--;
     }
 }
-
-#pragma section ".dead"
-// MWCC emits these deferred specializations in reverse reference order. Data
-// references preserve the target linkonce order without discarded code.
-DECL_SECT(".dead")
-void (*const gEmissionReplaySaveFloat)(SaveFrame&, const FloatCompressor<-255, 255, 6>&) = Replayable<0, SaveFrame, FloatCompressor<-255, 255, 6> >;
-DECL_SECT(".dead")
-void (*const gEmissionReplayLoadFloat)(LoadFrame&, const FloatCompressor<-255, 255, 6>&) = Replayable<0, LoadFrame, FloatCompressor<-255, 255, 6> >;
-DECL_SECT(".dead")
-void (*const gEmissionReplaySaveChar)(SaveFrame&, char&) = Replayable<0, SaveFrame, char>;
-DECL_SECT(".dead")
-void (*const gEmissionReplayLoadChar)(LoadFrame&, char&) = Replayable<0, LoadFrame, char>;
-DECL_SECT(".dead")
-void (*const gEmissionReplaySaveController)(SaveFrame&, EmissionController&) = Replayable<0, SaveFrame, EmissionController>;
-DECL_SECT(".dead")
-void (*const gEmissionReplaySaveLong)(SaveFrame&, unsigned long&) = Replayable<0, SaveFrame, unsigned long>;
-DECL_SECT(".dead")
-void (*const gEmissionReplaySaveShort)(SaveFrame&, unsigned short&) = Replayable<0, SaveFrame, unsigned short>;
-DECL_SECT(".dead")
-void (*const gEmissionReplayLoadController)(LoadFrame&, EmissionController&) = Replayable<0, LoadFrame, EmissionController>;
-DECL_SECT(".dead")
-void (*const gEmissionReplayLoadLong)(LoadFrame&, unsigned long&) = Replayable<0, LoadFrame, unsigned long>;
-DECL_SECT(".dead")
-void (*const gEmissionReplayLoadShort)(LoadFrame&, unsigned short&) = Replayable<0, LoadFrame, unsigned short>;

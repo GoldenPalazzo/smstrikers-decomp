@@ -10,6 +10,7 @@
 #include "Game/AI/SpaceSearch.h"
 #include "Game/AI/AiUtil.h"
 #include "Game/AI/Scripts/CommonScript.h"
+#include "Game/AI/Scripts/ScriptQuestions.h"
 
 #include "Game/CharacterTemplate.h"
 #include "Game/SAnim/pnFeather.h"
@@ -22,6 +23,7 @@
 #include "Game/CharacterTriggers.h"
 #include "Game/Game.h"
 #include "Game/Audio/WorldAudio.h"
+#include "Game/Physics/PhysicsAIBall.h"
 #include "Game/Physics/PhysicsColumn.h"
 #include "Game/FixedUpdateTask.h"
 #include "Game/FormationDefines.h"
@@ -78,11 +80,6 @@ static inline float DoCalculatePassSpeed(
     float passGroundSpeed = InterpolateRangeClamped(passSpeedMin, passSpeedMax, passDistMin, passDistMax, distToTarget);
     float closingSpeed = GetClosingSpeed2D(teammatePosition, teammateVelocity, g_pBall->m_v3Position, v3Zero);
     return passGroundSpeed - 0.5f * closingSpeed;
-}
-
-static inline int DoGetPassDirection(int nDirection)
-{
-    return nDirection;
 }
 
 static inline cFielder* GetAIOrderedFielder(cTeam* pTeam, s32 i)
@@ -1046,24 +1043,9 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
     {
         if (pPassTarget->ShouldILeadPass())
         {
-            SSearchBestPass* pNewSearch;
-            int direction = DoGetPassDirection(Fuzzy::GetPassDirection(this, pPassTarget).mData.i);
-            pNewSearch = new (nlMalloc(sizeof(SSearchBestPass), 8, false)) SSearchBestPass(this, pPassTarget, bVolleyPass, bParam3);
-            if (pPassTarget->m_pSpaceSearch != NULL)
-            {
-                delete pPassTarget->m_pSpaceSearch;
-            }
-            pPassTarget->m_pSpaceSearch = pNewSearch;
-            pPassTarget->m_pSpaceSearch->m_bDebugOn = false;
             nlVector3 suggestedPassDirection;
             nlVector3 suggestedPassTarget;
-            float fSearchScore = pPassTarget->m_pSpaceSearch->FindBestPosition(
-                suggestedPassTarget,
-                pPassTarget->m_v3Position,
-                (eFieldDirection)direction,
-                &m_v3Position,
-                6.0f,
-                0xAAAA);
+            float fSearchScore = pPassTarget->SuggestPassTargetPosition(suggestedPassTarget, this, bVolleyPass, bParam3);
             nlVec3Sub(suggestedPassDirection, suggestedPassTarget, pPassTarget->m_v3Position);
             nlVector3* pSuggestedPassDirection = &suggestedPassDirection;
             float distSq2D = pSuggestedPassDirection->GetLengthSq2D();
@@ -1760,12 +1742,52 @@ s32 cPlayer::GetUniqueID(int nTeamID) const
     return nTeamID + m_ID;
 }
 
-// This weak copy folds against Ball.cpp. Its constants seed Player's sdata2
-// order before deferred emission of the real cPlayer methods.
-extern "C" __declspec(weak) int GetID__12PassBallDataFv()
+bool cPlayer::SuggestPassDirection(nlVector3& suggestedDirection, cPlayer* fromPlayer, bool volleyPass, bool param3)
 {
-    volatile float six = 6.0f;
-    volatile float pointThree = 0.3f;
-    volatile float one = 1.0f;
-    return (int)(six + pointThree + one);
+    nlVector3 bestOpenPosition;
+    float bestPositionScore = SuggestPassTargetPosition(bestOpenPosition, fromPlayer, volleyPass, param3);
+
+    nlVec3Sub(suggestedDirection, bestOpenPosition, m_v3Position);
+    bool leadPass = bestPositionScore < 0.3f;
+    float distanceSquared2D = suggestedDirection.GetLengthSq2D();
+    if (distanceSquared2D > 1.0f)
+    {
+        float zSquared = suggestedDirection.f.z * suggestedDirection.f.z;
+        float reciprocalDistance = nlRecipSqrt(zSquared + distanceSquared2D, true);
+        nlVec3Scale(suggestedDirection, reciprocalDistance);
+        if (leadPass)
+        {
+            nlPolarToCartesian(suggestedDirection.f.x, suggestedDirection.f.y, m_aActualFacingDirection, m_pTweaks->fRunningSpeed);
+            suggestedDirection.f.z = 0.0f;
+        }
+        else
+        {
+            float length = nlSqrt(
+                suggestedDirection.f.x * suggestedDirection.f.x
+                    + suggestedDirection.f.y * suggestedDirection.f.y
+                    + suggestedDirection.f.z * suggestedDirection.f.z,
+                true);
+            float scale = m_pTweaks->fRunningSpeed / length;
+            nlVec3Scale(suggestedDirection, scale);
+        }
+    }
+    else
+    {
+        leadPass = false;
+    }
+
+    return leadPass;
+}
+
+float cPlayer::SuggestPassTargetPosition(nlVector3& suggestedTarget, cPlayer* fromPlayer, bool volleyPass, bool param3)
+{
+    eFieldDirection passDirection = (eFieldDirection)Fuzzy::GetPassDirection(fromPlayer, this).mData.i;
+    SSearchBestPass* search = new (nlMalloc(sizeof(SSearchBestPass), 8, false)) SSearchBestPass(fromPlayer, this, volleyPass, param3);
+    if (m_pSpaceSearch != NULL)
+    {
+        delete m_pSpaceSearch;
+    }
+    m_pSpaceSearch = search;
+    m_pSpaceSearch->m_bDebugOn = false;
+    return m_pSpaceSearch->FindBestPosition(suggestedTarget, m_v3Position, passDirection, &fromPlayer->m_v3Position, 6.0f, 0xAAAA);
 }

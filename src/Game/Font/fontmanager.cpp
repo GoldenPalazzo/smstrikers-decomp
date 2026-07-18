@@ -5,6 +5,9 @@
 #include "NL/gl/glTexture.h"
 #include "NL/nlBundleFile.h"
 
+template <>
+FontManager* nlSingleton<FontManager>::s_pInstance = 0;
+
 /**
  * Offset/Address/Size: 0x4CC | 0x80209B60 | size: 0x70
  * TODO: 96.25% match - r30/r31 are swapped across the list-pool initialization.
@@ -37,8 +40,7 @@ FontManager::~FontManager()
         }
     }
 
-    typedef DLListContainerBase<nlFont*, BasicSlotPool<DLListEntry<nlFont*> > > FontListBase;
-    FontListBase::DestroyAllEntries(&m_fonts);
+    m_fonts.Clear();
 }
 
 /**
@@ -122,7 +124,7 @@ static inline void AddFontEntry(BasicSlotPool<DLListEntry<nlFont*> >& alloc, DLL
     if (alloc.m_FreeList != NULL)
     {
         entry = (DLListEntry<nlFont*>*)alloc.m_FreeList;
-        alloc.m_FreeList = alloc.m_FreeList->m_next;
+        alloc.m_FreeList = alloc.m_FreeList->next;
     }
 
     if (entry != NULL)

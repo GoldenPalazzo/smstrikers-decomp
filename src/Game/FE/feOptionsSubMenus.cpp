@@ -1,7 +1,3 @@
-#define BIND_NO_DECL
-#define MEMFUN_NO_DECL
-#define FUNCTION1_SPLIT_BODIES
-#define FUNCTION1_OWNER_DTOR
 #include "Game/FE/feOptionsSubMenus.h"
 
 #include "NL/platpad.h"
@@ -18,7 +14,6 @@
 #include "types.h"
 
 typedef void FnTLComponentInstanceCb(TLComponentInstance*);
-typedef void FnSlideMenuItemCb(SlideMenuItem*);
 
 extern nlColour MenuHighliteColour;
 extern nlColour SubMenuHighliteColour;
@@ -31,68 +26,21 @@ void CloseItem(TLComponentInstance*);
 void TempDisableSound();
 } // namespace SingleHighlite
 
+namespace DoubleHighlite
+{
+static const char* SLIDE_IN = "in";
+static const char* SLIDE_OUT = "out";
+void OpenItem(TLComponentInstance*);
+void CloseItem(TLComponentInstance*);
+void TempDisableSound();
+} // namespace DoubleHighlite
+
 static const char* MAIN_MENU_SLIDE = "Slide1";
 static const char* AUDIO_MENU_SLIDE = "Slide2";
-static const char* VISUAL_MENU_SLIDE = "Slide6";
 static const char* GAMEPLAY_MENU_SLIDE = "Slide3";
-static const char* SAVE_LOAD_SLIDE = "Slide_SaveLoad";
+static const char* SAVE_LOAD_SLIDE = "Slide4";
 static const char* CHEATS_MENU_SLIDE = "Slide5";
-
-static inline MenuItem<TLComponentInstance>* AudioOptionsMenuItemAt(MenuList<TLComponentInstance>& menu, int idx)
-{
-    return &menu.mMenuItems[idx];
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x800B5044 | size: 0x4
- */
-void OptionsSaveLoad::Revert()
-{
-    // Empty
-}
-
-/**
- * Offset/Address/Size: 0x4 | 0x800B5048 | size: 0x4
- */
-void OptionsSaveLoad::Save()
-{
-    // Empty
-}
-
-/**
- * Offset/Address/Size: 0x8 | 0x800B504C | size: 0x11C
- */
-void OptionsSaveLoad::Update(float dt)
-{
-    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
-    {
-        if (mMenuItems.mCurrentIndex == 0)
-        {
-            ResetEnableSaveLoadFlag();
-            if (SaveLoadScene::IsIOEnabled())
-            {
-                nlSingleton<GameSceneManager>::s_pInstance->Pop();
-                SaveLoadScene* handler = (SaveLoadScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_ASK_SAVE, SCREEN_FORWARD, false);
-                handler->mNextScene = SCENE_OPTIONS;
-            }
-        }
-        else
-        {
-            ResetEnableSaveLoadFlag();
-            if (SaveLoadScene::IsIOEnabled())
-            {
-                nlSingleton<GameSceneManager>::s_pInstance->Pop();
-                SaveLoadScene* handler = (SaveLoadScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_ASK_LOAD, SCREEN_FORWARD, false);
-                handler->mNextScene = SCENE_OPTIONS;
-            }
-        }
-        FEAudio::PlayAnimAudioEvent("sfx_accept", false);
-    }
-    else
-    {
-        OptionsSubMenu::Update(dt);
-    }
-}
+static const char* VISUAL_MENU_SLIDE = "Slide6";
 
 /**
  * Offset/Address/Size: 0x5FD4 | 0x800BB018 | size: 0xDC
@@ -109,84 +57,1645 @@ OptionsSubMenu::~OptionsSubMenu()
 }
 
 /**
- * Offset/Address/Size: 0x124 | 0x800B5168 | size: 0xEC
+ * Offset/Address/Size: 0x55A4 | 0x800BA5E8 | size: 0xA30
+ * TODO: 99.75% match - first unhighlight component/hash registers and slide-menu newIndex temps differ.
  */
-OptionsSaveLoad::~OptionsSaveLoad()
+void OptionsSubMenu::Update(float)
+{
+    mButtons.CentreButtons();
+
+    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
+    {
+        bool locked;
+        int menuIndex = mMenuItems.GetActiveItemIndex();
+        if (mSlideMenuLists[menuIndex] != NULL
+            && ((SlideMenuList*)mSlideMenuLists[menuIndex])->GetMenuItem()->IsLocked())
+        {
+            locked = true;
+        }
+        else
+        {
+            locked = false;
+        }
+
+        if (!locked)
+        {
+            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[menuIndex];
+            if (slideMenuList != NULL)
+            {
+                TLComponentInstance* comp = slideMenuList->GetComponentInstance();
+                if (comp != NULL)
+                {
+                    ColourAllText(*comp, SubMenuUnhighliteColour);
+                }
+            }
+        }
+
+        mMenuItems.PreviousItem();
+
+        menuIndex = mMenuItems.GetActiveItemIndex();
+        if (mSlideMenuLists[menuIndex] != NULL
+            && ((SlideMenuList*)mSlideMenuLists[menuIndex])->GetMenuItem()->IsLocked())
+        {
+            locked = true;
+        }
+        else
+        {
+            locked = false;
+        }
+
+        if (!locked)
+        {
+            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[menuIndex];
+            if (slideMenuList != NULL)
+            {
+                TLComponentInstance* comp = slideMenuList->GetComponentInstance();
+                if (comp != NULL)
+                {
+                    ColourAllText(*comp, SubMenuHighliteColour);
+                }
+            }
+        }
+
+        return;
+    }
+
+    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
+    {
+        bool locked;
+        int menuIndex = mMenuItems.GetActiveItemIndex();
+        if (mSlideMenuLists[menuIndex] != NULL
+            && ((SlideMenuList*)mSlideMenuLists[menuIndex])->GetMenuItem()->IsLocked())
+        {
+            locked = true;
+        }
+        else
+        {
+            locked = false;
+        }
+
+        if (!locked)
+        {
+            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[menuIndex];
+            if (slideMenuList != NULL)
+            {
+                TLComponentInstance* comp = slideMenuList->GetComponentInstance();
+                if (comp != NULL)
+                {
+                    ColourAllText(*comp, SubMenuUnhighliteColour);
+                }
+            }
+        }
+
+        mMenuItems.NextItem();
+
+        menuIndex = mMenuItems.GetActiveItemIndex();
+        if (mSlideMenuLists[menuIndex] != NULL
+            && ((SlideMenuList*)mSlideMenuLists[menuIndex])->GetMenuItem()->IsLocked())
+        {
+            locked = true;
+        }
+        else
+        {
+            locked = false;
+        }
+
+        if (!locked)
+        {
+            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[menuIndex];
+            if (slideMenuList != NULL)
+            {
+                TLComponentInstance* comp = slideMenuList->GetComponentInstance();
+                if (comp != NULL)
+                {
+                    ColourAllText(*comp, SubMenuHighliteColour);
+                }
+            }
+        }
+
+        return;
+    }
+
+    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL))
+    {
+        int menuIndex = mMenuItems.GetActiveItemIndex();
+        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[menuIndex];
+        if (slideMenuList != NULL)
+        {
+            MenuResult res = slideMenuList->PreviousItem();
+
+            if (res == RES_OK)
+            {
+                FEAudio::PlayAnimAudioEvent("sfx_option_scroll_left", false);
+                Save();
+            }
+            else if (res == RES_NOT_CHANGED)
+            {
+                FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+            }
+        }
+
+        return;
+    }
+
+    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xC, true, NULL))
+    {
+        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
+        if (slideMenuList != NULL)
+        {
+            MenuResult res = slideMenuList->NextItem();
+
+            if (res == RES_OK)
+            {
+                FEAudio::PlayAnimAudioEvent("sfx_option_scroll_right", false);
+                Save();
+            }
+            else if (res == RES_NOT_CHANGED)
+            {
+                FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+                Save();
+            }
+        }
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x5480 | 0x800BA4C4 | size: 0x124
+ */
+void OptionsSubMenu::GoBack()
+{
+    ColourAllText(SubMenuUnhighliteColour, mMenuItems.GetActiveItemIndex());
+
+    m_pres->SetActiveSlide(MAIN_MENU_SLIDE);
+    m_pres->Update(0.0f);
+    SetButtonState(ButtonComponent::BS_A_AND_B);
+}
+
+/**
+ * Offset/Address/Size: 0x504C | 0x800BA090 | size: 0x434
+ * TODO: 99.63% match - r28/r29 register swap for this+menuitem offset and bind/callback temporary stack layout
+ */
+void OptionsSubMenu::BuildSubMenuList(int menuitem, TLComponentInstance* compinstance, bool wraps, int startindex)
+{
+    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
+
+    SlideMenuList* list = new (nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance);
+    mSlideMenuLists[menuitem] = list;
+
+    MenuItem<SlideMenuItem>* menuItem;
+    char slidename[64] = { 0 };
+
+    int slidenum = 0;
+    do
+    {
+        nlSNPrintf(slidename, 64, "Slide%d", slidenum + 1);
+        compinstance->SetActiveSlide(slidename);
+
+        if (compinstance->GetActiveSlide() == NULL)
+        {
+            break;
+        }
+
+        unsigned long slideHash = compinstance->GetActiveSlide()->m_hash;
+
+        SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[menuitem];
+
+        menuItem = sml->AddItem(slideHash, slidenum);
+    } while (++slidenum);
+
+    list = (SlideMenuList*)mSlideMenuLists[menuitem];
+    list->SetItem(startindex);
+
+    if (wraps)
+    {
+        ((SlideMenuList*)mSlideMenuLists[menuitem])->SetFlag(1);
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x4F84 | 0x800B9FC8 | size: 0xC8
+ */
+void OptionsSubMenu::SetButtonState(ButtonComponent::ButtonState buttonState)
+{
+    FORCE_DONT_INLINE;
+
+    typedef TLComponentInstance* (*FindComponentByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLComponentInstance* (*FindComponentByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+    union
+    {
+        FindComponentByValue byValue;
+        FindComponentByRef byRef;
+    } findComponent;
+
+    volatile InlineHasher hB, hA;
+    volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+
+    h0.m_Hash = 0;
+    h1.m_Hash = 0;
+    h2.m_Hash = 0;
+    h3.m_Hash = 0;
+    h4.m_Hash = 0;
+    h5.m_Hash = 0;
+    h6.m_Hash = 0;
+    h7.m_Hash = 0;
+
+    h9.m_Hash = h8.m_Hash = nlStringLowerHash("buttons");
+    hA.m_Hash = hB.m_Hash = nlStringLowerHash("Layer");
+
+    findComponent.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+    m_buttons = findComponent.byRef(
+        m_pres->m_currentSlide,
+        (InlineHasher&)hB,
+        (InlineHasher&)h9,
+        (InlineHasher&)h7,
+        (InlineHasher&)h5,
+        (InlineHasher&)h3,
+        (InlineHasher&)h1);
+
+    mButtons.mButtonInstance = m_buttons;
+    mButtons.SetState(buttonState);
+    m_currentButtonState = buttonState;
+
+    SetAButtonLOC(0x527F4084);
+}
+
+/**
+ * Offset/Address/Size: 0x4ECC | 0x800B9F10 | size: 0xB8
+ */
+void OptionsSubMenu::SetAButtonLOC(unsigned long locStrId)
+{
+    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+    union
+    {
+        FindTextByValue byValue;
+        FindTextByRef byRef;
+    } findText;
+
+    if (m_buttons == NULL)
+    {
+        return;
+    }
+
+    volatile InlineHasher hB, hA;
+    volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+
+    findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+
+    h0.m_Hash = 0;
+    h1.m_Hash = 0;
+    h2.m_Hash = 0;
+    h3.m_Hash = 0;
+    h4.m_Hash = 0;
+    h5.m_Hash = 0;
+    h6.m_Hash = 0;
+    h7.m_Hash = 0;
+    h8.m_Hash = 0;
+    h9.m_Hash = 0;
+
+    unsigned long hash = nlStringLowerHash("accept");
+    hB.m_Hash = hash;
+    hA.m_Hash = hash;
+
+    TLTextInstance* textInstance = findText.byRef(
+        m_buttons->GetActiveSlide(),
+        (InlineHasher&)hB,
+        (InlineHasher&)h9,
+        (InlineHasher&)h7,
+        (InlineHasher&)h5,
+        (InlineHasher&)h3,
+        (InlineHasher&)h1);
+
+    if (textInstance != NULL)
+    {
+        textInstance->m_LocStrId = locStrId;
+        textInstance->m_OverloadFlags |= 0x8u;
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x47AC | 0x800B97F0 | size: 0x720
+ * TODO: 99.88% match - GameInfoManager pointer and cheat flag registers differ.
+ */
+OptionsCheatsMenu::OptionsCheatsMenu(FEPresentation* pres, ButtonComponent::ButtonState btnState, CheatSettings& settings)
+    : OptionsSubMenu(pres, btnState)
+    , mSettings(settings)
+{
+    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
+
+    char menuname[64];
+    int i;
+    TLInstance* instance;
+    TLComponentInstance* compinstance;
+
+    pres->SetActiveSlide(CHEATS_MENU_SLIDE);
+    pres->Update(0.0f);
+
+    SetButtonState(btnState);
+    if (btnState == ButtonComponent::BS_A_AND_B)
+    {
+        SetAButtonLOC(0x9C81A82F);
+    }
+
+    TLSlide* currentSlide = pres->m_currentSlide;
+
+    for (i = 0; i < 5; i++)
+    {
+        nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
+
+        instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
+            currentSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash(menuname)));
+
+        MenuItem<TLComponentInstance>* menuItem = mMenuItems.AddItem((TLComponentInstance*)instance);
+
+        menuItem->SetCallback(ON_HIGHLIGHT, SingleHighlite::OpenItem);
+
+        menuItem->SetCallback(ON_UNHIGHLIGHT, SingleHighlite::CloseItem);
+
+        if (i == 0)
+        {
+            SingleHighlite::TempDisableSound();
+        }
+
+        menuItem->RunCallback((i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT);
+
+        mSlideMenuLists[i] = NULL;
+    }
+
+    mMenuItems.SetFlag(1);
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("CHOICES")));
+    BuildCustomPowerupsList(compinstance, mSettings.mCustomPowerups, pres);
+
+    GameInfoManager* gm = nlSingleton<GameInfoManager>::Instance();
+
+    bool stunnedGoalies;
+    TLComponentInstance* comp3 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("ON/OFF3")));
+    stunnedGoalies = mSettings.mStunnedGoalies;
+    BuildLockableSubMenuList(1, comp3, pres, gm->IsGlassJawGoalieUnlocked(), stunnedGoalies);
+
+    bool infinitePowerups;
+    TLComponentInstance* comp4 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("ON/OFF4")));
+    infinitePowerups = mSettings.mInfinitePowerups;
+    BuildLockableSubMenuList(2, comp4, pres, gm->IsUnlimtedPowerupsUnlocked(), infinitePowerups);
+
+    bool cheatTBD1;
+    TLComponentInstance* comp5 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("ON/OFF5")));
+    cheatTBD1 = mSettings.mCheatTBD1Enabled;
+    BuildLockableSubMenuList(3, comp5, pres, gm->IsTiltCheatUnlocked(), cheatTBD1);
+
+    bool cheatTBD2;
+    TLComponentInstance* comp6 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("ON/OFF6")));
+    cheatTBD2 = mSettings.mCheatTBD2Enabled;
+    BuildLockableSubMenuList(4, comp6, pres, gm->IsAllSTSCheatUnlocked(), cheatTBD2);
+
+    memcpy(&mBackupSettings, &mSettings, sizeof(CheatSettings));
+    mSettingsCRC = nlChecksum32(&mBackupSettings, sizeof(CheatSettings));
+}
+
+/**
+ * Offset/Address/Size: 0x46C0 | 0x800B9704 | size: 0xEC
+ */
+OptionsCheatsMenu::~OptionsCheatsMenu()
 {
 }
 
-namespace DoubleHighlite
+/**
+ * Offset/Address/Size: 0x4550 | 0x800B9594 | size: 0x170
+ */
+void OptionsCheatsMenu::Save()
 {
-extern const char* SLIDE_IN;
-extern const char* SLIDE_OUT;
-void OpenItem(TLComponentInstance*);
-void CloseItem(TLComponentInstance*);
-void TempDisableSound();
-} // namespace DoubleHighlite
+    CheatSettings localSettings;
+    SlideMenuList* list;
+    int val;
+
+    // Custom Powerups
+    list = (SlideMenuList*)mSlideMenuLists[0];
+    if (list != NULL)
+    {
+        val = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        val = -1;
+    }
+    localSettings.mCustomPowerups = (CustomPowerups)val;
+
+    // Stunned Goalies
+    list = (SlideMenuList*)mSlideMenuLists[1];
+    if (list != NULL)
+    {
+        val = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        val = -1;
+    }
+    localSettings.mStunnedGoalies = (val != 0);
+
+    // Infinite Powerups
+    list = (SlideMenuList*)mSlideMenuLists[2];
+    if (list != NULL)
+    {
+        val = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        val = -1;
+    }
+    localSettings.mInfinitePowerups = (val != 0);
+
+    // Cheat TBD1
+    list = (SlideMenuList*)mSlideMenuLists[3];
+    if (list != NULL)
+    {
+        val = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        val = -1;
+    }
+    localSettings.mCheatTBD1Enabled = (val != 0);
+
+    // Cheat TBD2
+    list = (SlideMenuList*)mSlideMenuLists[4];
+    if (list != NULL)
+    {
+        val = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        val = -1;
+    }
+    localSettings.mCheatTBD2Enabled = (val != 0);
+
+    mSettings = localSettings;
+    mSettings.OnSettingsUpdated();
+}
 
 /**
- * Offset/Address/Size: 0x210 | 0x800B5254 | size: 0x410
- * Matches: only residual is the TU-wide MENU_ITEMS$NNNN local-static suffix (link-neutral).
+ * Offset/Address/Size: 0x4510 | 0x800B9554 | size: 0x40
  */
-OptionsSaveLoad::OptionsSaveLoad(FEPresentation* presentation, ButtonComponent::ButtonState buttonstate)
-    : OptionsSubMenu(presentation, buttonstate)
+void OptionsCheatsMenu::Revert()
 {
-    static char* MENU_ITEMS[] = { "Item_Save", "Item_Load" };
+    memcpy(&mSettings, &mBackupSettings, sizeof(CheatSettings));
+    mSettings.OnSettingsUpdated();
+}
 
-    presentation->SetActiveSlide(SAVE_LOAD_SLIDE);
+/**
+ * Offset/Address/Size: 0x3D3C | 0x800B8D80 | size: 0x7D4
+ * TODO: 99.77% match - callback and FEFinder temporaries still use different stack slots.
+ */
+void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstance* compinstance, FEPresentation* presentation, bool unlocked, int startindex)
+{
+    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
+    nlColour lockColour;
+
+    SlideMenuList* list = new (nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance);
+    mSlideMenuLists[menuitem] = list;
+
+    compinstance->SetActiveSlide("Slide2");
+
+    unsigned long hash = compinstance->GetActiveSlide()->m_hash;
+    SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[menuitem];
+    MenuItem<SlideMenuItem>* menuItem = sml->AddItem(hash, 0);
+
+    bool wraps = true;
+    if (!unlocked)
+    {
+        startindex = 0;
+        wraps = false;
+
+        TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            compinstance->GetActiveSlide(),
+            InlineHasher(nlStringLowerHash("OFF")),
+            InlineHasher(0));
+
+        pText->SetStringId("CHEAT_LOCKED");
+
+        lockColour.c[0] = 0xFE;
+        lockColour.c[1] = 0xEE;
+        lockColour.c[2] = 0x00;
+        lockColour.c[3] = 0xFF;
+        pText->SetAssetColour(lockColour);
+
+        char slidename[64] = { 0 };
+        nlSNPrintf(slidename, 64, "MENU ITEM%d", menuitem + 1);
+
+        TLComponentInstance* pMenuComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+            presentation->m_currentSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash(slidename)));
+
+        pMenuComp->SetActiveSlide("IN");
+
+        TLComponentInstance* pArrowComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+            pMenuComp->GetActiveSlide(),
+            InlineHasher(nlStringLowerHash("ARROWS")),
+            InlineHasher(0));
+
+        pArrowComp->m_bVisible = false;
+        pMenuComp->SetActiveSlide("OUT");
+
+        ((SlideMenuList*)mSlideMenuLists[menuitem])->GetMenuItem()->SetLockedFlag(true);
+    }
+    else
+    {
+        compinstance->SetActiveSlide("Slide1");
+
+        hash = compinstance->GetActiveSlide()->m_hash;
+        sml = (SlideMenuList*)mSlideMenuLists[menuitem];
+        menuItem = sml->AddItem(hash, 1);
+    }
+
+    {
+        SlideMenuList* s = (SlideMenuList*)mSlideMenuLists[menuitem];
+        s->SetItem(startindex);
+
+        if (wraps)
+        {
+            ((SlideMenuList*)mSlideMenuLists[menuitem])->SetFlag(1);
+        }
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x34B0 | 0x800B84F4 | size: 0x88C
+ * TODO: 99.69% match - callback temporary stack slots still differ in slide menu item setup.
+ */
+void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstance, CustomPowerups startOption, FEPresentation* presentation)
+{
+    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
+    GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    int slidesAdded = 1;
+    int startindex = 0;
+    char slidename[64];
+    int i;
+    TLTextInstance* pText;
+    nlColour lockColour;
+    TLComponentInstance* pMenuComp;
+    TLComponentInstance* pArrowComp;
+    MenuItem<SlideMenuItem>* menuItem;
+    unsigned long slideHash;
+    bool unlocked;
+    SlideMenuList* sml;
+
+    mSlideMenuLists[0] = new (nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance);
+
+    compinstance->SetActiveSlide("Slide1");
+    {
+        slideHash = compinstance->GetActiveSlide()->m_hash;
+        sml = (SlideMenuList*)mSlideMenuLists[0];
+        menuItem = sml->AddItem(slideHash, 0);
+    }
+
+    for (i = 1; i < 6; i++)
+    {
+        switch (i)
+        {
+        case 1:
+            unlocked = gameInfo->IsCustomExplosiveUnlocked();
+            break;
+        case 2:
+            unlocked = gameInfo->IsCustomFreezingUnlocked();
+            break;
+        case 3:
+            unlocked = gameInfo->IsCustomShellsUnlocked();
+            break;
+        case 4:
+            unlocked = gameInfo->IsCustomGiantUnlocked();
+            break;
+        case 5:
+            unlocked = gameInfo->IsCustomEnhanceUnlocked();
+            break;
+        }
+
+        if (unlocked)
+        {
+            nlSNPrintf(slidename, 64, "Slide%d", i + 1);
+            compinstance->SetActiveSlide(slidename);
+
+            slideHash = compinstance->GetActiveSlide()->m_hash;
+            sml = (SlideMenuList*)mSlideMenuLists[0];
+            menuItem = sml->AddItem(slideHash, i);
+
+            if (startOption == i)
+            {
+                startindex = slidesAdded;
+            }
+
+            slidesAdded++;
+        }
+    }
+
+    {
+        SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[0];
+        sml->SetItem(startindex);
+
+        if (slidesAdded > 1)
+        {
+            ((SlideMenuList*)mSlideMenuLists[0])->SetFlag(1);
+
+            if (((SlideMenuList*)mSlideMenuLists[0]) != NULL)
+            {
+                TLInstance* inst;
+                TLInstance* firstChild;
+                TLSlide* currentMenuSlide;
+                TLSlide* startSlide;
+                TLComponentInstance* comp = ((SlideMenuList*)mSlideMenuLists[0])->GetComponentInstance();
+                if (comp != NULL && comp->GetActiveSlide() != NULL)
+                {
+                    startSlide = comp->GetActiveSlide();
+                    currentMenuSlide = startSlide;
+
+                    do
+                    {
+                        comp->SetActiveSlide(currentMenuSlide);
+                        firstChild = comp->GetActiveSlide()->m_instances;
+                        inst = firstChild;
+                        if (firstChild != NULL)
+                        {
+                            do
+                            {
+                                if (inst->m_type == TLAT_TEXT)
+                                {
+                                    inst->SetAssetColour(SubMenuHighliteColour);
+                                }
+                                else if (inst->m_type == TLAT_IMAGE)
+                                {
+                                    unsigned long instHash = inst->m_hash;
+                                    if (instHash != nlStringLowerHash("white_box"))
+                                    {
+                                        inst->SetAssetColour(SubMenuHighliteColour);
+                                    }
+                                }
+                                inst = inst->m_next;
+                            } while (inst != firstChild);
+                        }
+
+                        currentMenuSlide = currentMenuSlide->m_next;
+                    } while (currentMenuSlide != startSlide);
+
+                    comp->SetActiveSlide(startSlide);
+                }
+            }
+        }
+        else
+        {
+            pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+                compinstance->GetActiveSlide(),
+                InlineHasher(nlStringLowerHash("EXPLOSIVE")),
+                InlineHasher(0));
+
+            pText->SetStringId("CHEAT_LOCKED");
+
+            lockColour.c[0] = 0xFE;
+            lockColour.c[1] = 0xEE;
+            lockColour.c[2] = 0x00;
+            lockColour.c[3] = 0xFF;
+            pText->SetAssetColour(lockColour);
+
+            pMenuComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+                presentation->m_currentSlide,
+                InlineHasher(nlStringLowerHash("Layer")),
+                InlineHasher(nlStringLowerHash("MENU ITEM1")));
+
+            pArrowComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+                pMenuComp->GetActiveSlide(),
+                InlineHasher(nlStringLowerHash("ARROWS")),
+                InlineHasher(0));
+
+            pArrowComp->m_bVisible = false;
+
+            ((SlideMenuList*)mSlideMenuLists[0])->GetMenuItem()->SetLockedFlag(true);
+        }
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x2D44 | 0x800B7D88 | size: 0x76C
+ */
+OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonComponent::ButtonState buttonstate, AudioSettings& settings)
+    : OptionsSubMenu(presentation, buttonstate)
+    , mSettings(settings)
+{
+    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
+
+    bool inpausestate;
+    char menuname[64];
+    TLInstance* instance;
+    TLComponentInstance* compinstance;
+
+    mbUpdateMode = false;
+
+    inpausestate = (nlTaskManager::m_pInstance->m_CurrState == 1);
+    if (inpausestate)
+    {
+        presentation->SetActiveSlide("Slide1");
+    }
+    else
+    {
+        presentation->SetActiveSlide(AUDIO_MENU_SLIDE);
+    }
+
     presentation->Update(0.0f);
 
     SetButtonState(buttonstate);
-    mButtons.CentreButtons();
-
-    TLSlide* slide = presentation->m_currentSlide;
-    char** menuName;
-
-    void (*openItem)(TLComponentInstance*) = DoubleHighlite::OpenItem;
-    void (*closeItem)(TLComponentInstance*) = DoubleHighlite::CloseItem;
-    MenuItem<TLComponentInstance>* menuItem;
-
-    int i;
-    for (i = 0, menuName = MENU_ITEMS; i < 2; i++, menuName++)
+    if (buttonstate == ButtonComponent::BS_A_AND_B)
     {
-        TLComponentInstance* instance = FEFinder<TLComponentInstance, 4>::Find(
-            slide,
-            InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(*menuName)),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
-
-        instance->SetActiveSlide((i == 0) ? DoubleHighlite::SLIDE_IN : DoubleHighlite::SLIDE_OUT);
-        instance->Update(0.0f);
-
-        int numAdded = mMenuItems.mNumItemsAdded;
-        menuItem = AudioOptionsMenuItemAt(mMenuItems, numAdded);
-        mMenuItems.mMenuItems[numAdded].mType = instance;
-        mMenuItems.mNumItemsAdded++;
-
-        {
-            Function<TLComponentInstance*> openFunc;
-            openFunc.mTag = FREE_FUNCTION;
-            openFunc.mFreeFunction = openItem;
-            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[1] = openFunc;
-        }
-
-        {
-            Function<TLComponentInstance*> closeFunc;
-            closeFunc.mTag = FREE_FUNCTION;
-            closeFunc.mFreeFunction = closeItem;
-            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[2] = closeFunc;
-        }
-
-        if (i == 0)
-            DoubleHighlite::TempDisableSound();
-
-        menuItem->ApplyAction((i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT);
+        SetAButtonLOC(0x9C81A82F);
     }
 
-    mMenuItems.mFlags = 1;
+    TLSlide* currentSlide = presentation->m_currentSlide;
+
+    for (int i = 0; i < 4; i++)
+    {
+        nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
+
+        instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
+            currentSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash(menuname)));
+
+        MenuItem<TLComponentInstance>* menuItem = mMenuItems.AddItem((TLComponentInstance*)instance);
+
+        menuItem->SetCallback(ON_HIGHLIGHT, SingleHighlite::OpenItem);
+
+        menuItem->SetCallback(ON_UNHIGHLIGHT, SingleHighlite::CloseItem);
+
+        if (i == 0)
+        {
+            SingleHighlite::TempDisableSound();
+            menuItem->RunCallback(ON_HIGHLIGHT);
+            menuItem->SetDisabledFlag(false);
+        }
+        else
+        {
+            menuItem->RunCallback(ON_UNHIGHLIGHT);
+        }
+
+        if (inpausestate && i == 3)
+        {
+            menuItem->SetDisabledFlag(true);
+            menuItem->GetType()->m_bVisible = false;
+        }
+    }
+
+    mMenuItems.SetFlag(3);
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("volume1")));
+    BuildSubMenuList(0, compinstance, false, mSettings.MusicVolume);
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("volume2")));
+    BuildSubMenuList(1, compinstance, false, mSettings.SFXVolume);
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("volume3")));
+    BuildSubMenuList(2, compinstance, false, mSettings.VoiceVolume);
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("mode")));
+    BuildSubMenuList(3, compinstance, true, mSettings.Mode);
+    ((SlideMenuList*)mSlideMenuLists[3])->SetFlag(1);
+
+    if (inpausestate)
+    {
+        compinstance->m_bVisible = false;
+    }
+
+    ColourAllText(SubMenuHighliteColour, mMenuItems.GetActiveItemIndex());
+
+    memcpy(&mBackupSettings, &mSettings, sizeof(AudioSettings));
+    mSettingsCRC = nlChecksum32(&mBackupSettings, sizeof(AudioSettings));
+}
+
+/**
+ * Offset/Address/Size: 0x2C58 | 0x800B7C9C | size: 0xEC
+ */
+OptionsAudioMenuV2::~OptionsAudioMenuV2()
+{
+}
+
+/**
+ * Offset/Address/Size: 0x2B48 | 0x800B7B8C | size: 0x110
+ */
+void OptionsAudioMenuV2::Save()
+{
+    SlideMenuList* list;
+    int val;
+
+    // Music Volume
+    list = (SlideMenuList*)mSlideMenuLists[0];
+    if (list != NULL)
+    {
+        val = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        val = -1;
+    }
+    mSettings.MusicVolume = val;
+
+    // SFX Volume
+    list = (SlideMenuList*)mSlideMenuLists[1];
+    if (list != NULL)
+    {
+        val = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        val = -1;
+    }
+    mSettings.SFXVolume = val;
+
+    // Voice Volume
+    list = (SlideMenuList*)mSlideMenuLists[2];
+    if (list != NULL)
+    {
+        val = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        val = -1;
+    }
+    mSettings.VoiceVolume = val;
+
+    // Audio Mode
+    list = (SlideMenuList*)mSlideMenuLists[3];
+    if (list != NULL)
+    {
+        val = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        val = -1;
+    }
+    mSettings.Mode = (eAudioMode)val;
+
+    mSettings.ApplySettings(mbUpdateMode, false);
+    if (mbUpdateMode)
+    {
+        AudioLoader::PlayFEMenuMusic();
+        mbUpdateMode = false;
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x2B04 | 0x800B7B48 | size: 0x44
+ */
+void OptionsAudioMenuV2::Revert()
+{
+    memcpy(&mSettings, &mBackupSettings, sizeof(AudioSettings));
+    mSettings.ForceApplySettings(false);
+}
+
+/**
+ * Offset/Address/Size: 0x20C8 | 0x800B710C | size: 0xA3C
+ * TODO: 99.27% match - ischaractervol and highlight-loop temporaries use
+ * different registers from target.
+ */
+void OptionsAudioMenuV2::Update(float)
+{
+    bool ischaractervol = (mMenuItems.GetActiveItemIndex() == 2);
+    mButtons.CentreButtons();
+
+    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
+    {
+        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
+        if (slideMenuList != NULL)
+        {
+            TLComponentInstance* comp = slideMenuList->GetComponentInstance();
+            if (comp != NULL)
+            {
+                ColourAllText(*comp, SubMenuUnhighliteColour);
+            }
+        }
+
+        mMenuItems.PreviousItem();
+
+        slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
+        if (slideMenuList != NULL)
+        {
+            TLComponentInstance* comp = slideMenuList->GetComponentInstance();
+            if (comp != NULL)
+            {
+                ColourAllText(*comp, SubMenuHighliteColour);
+            }
+        }
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
+    {
+        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
+        if (slideMenuList != NULL)
+        {
+            TLComponentInstance* comp = slideMenuList->GetComponentInstance();
+            if (comp != NULL)
+            {
+                ColourAllText(*comp, SubMenuUnhighliteColour);
+            }
+        }
+
+        mMenuItems.NextItem();
+
+        slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
+        if (slideMenuList != NULL)
+        {
+            TLComponentInstance* comp = slideMenuList->GetComponentInstance();
+            if (comp != NULL)
+            {
+                ColourAllText(*comp, SubMenuHighliteColour);
+            }
+        }
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL))
+    {
+        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
+        if (slideMenuList != NULL)
+        {
+            MenuResult res = slideMenuList->PreviousItem();
+
+            if (res == RES_OK)
+            {
+                if (ischaractervol)
+                {
+                    FEAudio::PlayRandomVoiceToggleSFX();
+                }
+                else
+                {
+                    FEAudio::PlayAnimAudioEvent("sfx_option_scroll_left", false);
+                }
+
+                if (mMenuItems.GetActiveItemIndex() != 3)
+                {
+                    bool bModeChanged = mbUpdateMode;
+                    mbUpdateMode = false;
+                    Save();
+                    mbUpdateMode = bModeChanged;
+                }
+                else
+                {
+                    int mode;
+                    SlideMenuList* list = (SlideMenuList*)mSlideMenuLists[3];
+                    if (list != NULL)
+                    {
+                        mode = list->GetMenuItem()->GetType()->GetUserEnumType();
+                    }
+                    else
+                    {
+                        mode = -1;
+                    }
+
+                    mSettings.Mode = (eAudioMode)mode;
+                    if (mSettings.Mode != mSettings.DefaultMode)
+                    {
+                        mbUpdateMode = true;
+                    }
+                    else
+                    {
+                        mbUpdateMode = false;
+                    }
+                }
+            }
+            else if (res == RES_NOT_CHANGED)
+            {
+                FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+            }
+        }
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xC, true, NULL))
+    {
+        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
+        if (slideMenuList != NULL)
+        {
+            MenuResult res = slideMenuList->NextItem();
+
+            if (res == RES_OK)
+            {
+                if (ischaractervol)
+                {
+                    FEAudio::PlayRandomVoiceToggleSFX();
+                }
+                else
+                {
+                    FEAudio::PlayAnimAudioEvent("sfx_option_scroll_left", false);
+                }
+
+                if (mMenuItems.GetActiveItemIndex() != 3)
+                {
+                    bool bModeChanged = mbUpdateMode;
+                    mbUpdateMode = false;
+                    Save();
+                    mbUpdateMode = bModeChanged;
+                }
+                else
+                {
+                    int mode;
+                    SlideMenuList* list = (SlideMenuList*)mSlideMenuLists[3];
+                    if (list != NULL)
+                    {
+                        mode = list->GetMenuItem()->GetType()->GetUserEnumType();
+                    }
+                    else
+                    {
+                        mode = -1;
+                    }
+
+                    mSettings.Mode = (eAudioMode)mode;
+                    if (mSettings.Mode != mSettings.DefaultMode)
+                    {
+                        mbUpdateMode = true;
+                    }
+                    else
+                    {
+                        mbUpdateMode = false;
+                    }
+                }
+            }
+            else if (res == RES_NOT_CHANGED)
+            {
+                FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+            }
+        }
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x19E0 | 0x800B6A24 | size: 0x6E8
+ * TODO: 99.85% match - menu item index/current slide register rotation.
+ */
+OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::ButtonState btnState, VisualSettings& settings)
+    : OptionsSubMenu(pres, btnState)
+    , mSettings(settings)
+{
+    static char* MENU_ITEMS[] = {
+        "MENU ITEM3",
+        "MENU ITEM6",
+        "MENU ITEM4",
+    };
+
+    if (nlTaskManager::m_pInstance->m_CurrState == 1)
+    {
+        pres->SetActiveSlide("Slide2");
+    }
+    else
+    {
+        pres->SetActiveSlide(VISUAL_MENU_SLIDE);
+    }
+
+    pres->Update(0.0f);
+
+    SetButtonState(btnState);
+    if (btnState == ButtonComponent::BS_A_AND_B)
+    {
+        SetAButtonLOC(0x9C81A82F);
+    }
+
+    int slideMenuIndex = 0;
+    TLSlide* currentSlide = pres->m_currentSlide;
+
+    for (int i = 0; i < 3; i++)
+    {
+        TLInstance* instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
+            currentSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash(MENU_ITEMS[i])));
+
+        MenuItem<TLComponentInstance>* menuItem = mMenuItems.AddItem((TLComponentInstance*)instance);
+
+        menuItem->SetCallback(ON_HIGHLIGHT, SingleHighlite::OpenItem);
+
+        menuItem->SetCallback(ON_UNHIGHLIGHT, SingleHighlite::CloseItem);
+
+        if (i == 0)
+        {
+            SingleHighlite::TempDisableSound();
+            menuItem->RunCallback(ON_HIGHLIGHT);
+        }
+        else
+        {
+            menuItem->RunCallback(ON_UNHIGHLIGHT);
+        }
+
+        mSlideMenuLists[slideMenuIndex] = NULL;
+        slideMenuIndex++;
+    }
+
+    mMenuItems.SetFlag(3);
+
+    TLComponentInstance* compinstance;
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("CAMERA")));
+
+    BuildSubMenuList(0, compinstance, true, mSettings.mIsAutoZoomCamera ? 0 : 1);
+    compinstance->m_bVisible = true;
+    mMenuItems.GetMenuItem(0)->GetType()->m_bVisible = true;
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("ZOOM")));
+
+    BuildSubMenuList(1, compinstance, false, (int)(10.0f * mSettings.mCameraZoomLevel));
+    compinstance->m_bVisible = true;
+    mMenuItems.GetMenuItem(1)->GetType()->m_bVisible = true;
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("ASPECT")));
+
+    BuildSubMenuList(2, compinstance, true, mSettings.mIsWidescreen ? 1 : 0);
+    compinstance->m_bVisible = true;
+    mMenuItems.GetMenuItem(2)->GetType()->m_bVisible = true;
+
+    SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
+    if (slideMenuList != NULL)
+    {
+        TLInstance* inst;
+        TLInstance* firstChild;
+        TLSlide* currentMenuSlide;
+        TLSlide* startSlide;
+        TLComponentInstance* finalCompinstance;
+
+        finalCompinstance = slideMenuList->GetComponentInstance();
+        if (finalCompinstance != NULL)
+        {
+            if (finalCompinstance->GetActiveSlide() != NULL)
+            {
+                startSlide = finalCompinstance->GetActiveSlide();
+                currentMenuSlide = startSlide;
+
+                do
+                {
+                    finalCompinstance->SetActiveSlide(currentMenuSlide);
+                    firstChild = finalCompinstance->GetActiveSlide()->m_instances;
+                    inst = firstChild;
+                    if (firstChild != NULL)
+                    {
+                        do
+                        {
+                            if (inst->m_type == TLAT_TEXT)
+                            {
+                                inst->SetAssetColour(SubMenuHighliteColour);
+                            }
+                            else if (inst->m_type == TLAT_IMAGE)
+                            {
+                                unsigned long hash = inst->m_hash;
+                                if (hash != nlStringLowerHash("white_box"))
+                                {
+                                    inst->SetAssetColour(SubMenuHighliteColour);
+                                }
+                            }
+
+                            inst = inst->m_next;
+                        } while (inst != firstChild);
+                    }
+
+                    currentMenuSlide = currentMenuSlide->m_next;
+                } while (currentMenuSlide != startSlide);
+
+                finalCompinstance->SetActiveSlide(startSlide);
+            }
+        }
+    }
+
+    memcpy(&mBackupSettings, &mSettings, sizeof(VisualSettings));
+    mSettingsCRC = nlChecksum32(&mBackupSettings, sizeof(VisualSettings));
+}
+
+/**
+ * Offset/Address/Size: 0x18F4 | 0x800B6938 | size: 0xEC
+ */
+OptionsVisualMenuV2::~OptionsVisualMenuV2()
+{
+}
+
+/**
+ * Offset/Address/Size: 0x1834 | 0x800B6878 | size: 0xC0
+ */
+void OptionsVisualMenuV2::Update(float dt)
+{
+    OptionsSubMenu::Update(dt);
+
+    MenuItem<TLComponentInstance>* menuItem = mMenuItems.GetMenuItem(1);
+    if (menuItem == NULL)
+        return;
+
+    int userEnumType;
+    SlideMenuList* list = (SlideMenuList*)mSlideMenuLists[0];
+    if (list != NULL)
+    {
+        userEnumType = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        userEnumType = -1;
+    }
+
+    if (userEnumType == 0)
+    {
+        TLComponentInstance* compInstance = menuItem->GetType();
+        if (compInstance->m_bVisible != false)
+        {
+            compInstance->m_bVisible = false;
+            menuItem->SetDisabledFlag(true);
+
+            SlideMenuList* list2 = (SlideMenuList*)mSlideMenuLists[1];
+            TLComponentInstance* compInstance2 = list2->GetComponentInstance();
+            compInstance2->m_bVisible = false;
+        }
+    }
+    else
+    {
+        TLComponentInstance* compInstance = menuItem->GetType();
+        if (compInstance->m_bVisible == false)
+        {
+            compInstance->m_bVisible = true;
+            menuItem->SetDisabledFlag(false);
+
+            SlideMenuList* list2 = (SlideMenuList*)mSlideMenuLists[1];
+            TLComponentInstance* compInstance2 = list2->GetComponentInstance();
+            compInstance2->m_bVisible = true;
+        }
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x1760 | 0x800B67A4 | size: 0xD4
+ */
+void OptionsVisualMenuV2::Save()
+{
+    SlideMenuList* list;
+    int val;
+
+    // Auto zoom camera
+    list = (SlideMenuList*)mSlideMenuLists[0];
+    if (list != NULL)
+    {
+        val = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        val = -1;
+    }
+    mSettings.mIsAutoZoomCamera = (val == 0);
+
+    // Camera zoom level
+    list = (SlideMenuList*)mSlideMenuLists[1];
+    if (list != NULL)
+    {
+        val = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        val = -1;
+    }
+    mSettings.mCameraZoomLevel = (float)val / 10.0f;
+
+    // Widescreen
+    list = (SlideMenuList*)mSlideMenuLists[2];
+    if (list != NULL)
+    {
+        val = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        val = -1;
+    }
+    mSettings.mIsWidescreen = (val != 0);
+}
+
+/**
+ * Offset/Address/Size: 0x1730 | 0x800B6774 | size: 0x30
+ */
+void OptionsVisualMenuV2::Revert()
+{
+    memcpy(&mSettings, &mBackupSettings, sizeof(VisualSettings));
+}
+
+/**
+ * Offset/Address/Size: 0xEE0 | 0x800B5F24 | size: 0x850
+ */
+OptionsGameplayMenuV2::OptionsGameplayMenuV2(FEPresentation* presentation, ButtonComponent::ButtonState buttonstate, GameplaySettings& settings, int skilltoskip)
+    : OptionsSubMenu(presentation, buttonstate)
+    , mSettings(settings)
+{
+    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
+
+    char menuname[64];
+    int i;
+    TLInstance* instance;
+    TLComponentInstance* compinstance;
+    int gtindex;
+
+    presentation->SetActiveSlide(GAMEPLAY_MENU_SLIDE);
+    presentation->Update(0.0f);
+
+    SetButtonState(buttonstate);
+    if (buttonstate == ButtonComponent::BS_A_AND_B)
+    {
+        SetAButtonLOC(0x9C81A82F);
+    }
+
+    TLSlide* currentSlide = presentation->m_currentSlide;
+    for (i = 0; i < 6; i++)
+    {
+        nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
+
+        instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
+            currentSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash(menuname)));
+
+        TLComponentInstance* componentinstance = (TLComponentInstance*)instance;
+        MenuItem<TLComponentInstance>* menuItem = mMenuItems.AddItem(componentinstance);
+
+        menuItem->SetCallback(ON_HIGHLIGHT, SingleHighlite::OpenItem);
+
+        menuItem->SetCallback(ON_UNHIGHLIGHT, SingleHighlite::CloseItem);
+
+        if (i == 0)
+        {
+            SingleHighlite::TempDisableSound();
+            menuItem->RunCallback(ON_HIGHLIGHT);
+            menuItem->SetDisabledFlag(false);
+        }
+        else
+        {
+            CloseItem(componentinstance);
+        }
+
+        mSlideMenuLists[i] = NULL;
+    }
+
+    mMenuItems.SetFlag(1);
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("SKILLLEVEL")));
+    BuildSkillLevelMenu(compinstance, settings.SkillLevel, skilltoskip);
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("GAME TIME")));
+
+    gtindex = 0;
+    switch (settings.GameTime)
+    {
+    case 120:
+        gtindex = 0;
+        break;
+    case 180:
+        gtindex = 1;
+        break;
+    case 240:
+        gtindex = 2;
+        break;
+    case 300:
+        gtindex = 3;
+        break;
+    case 600:
+        gtindex = 4;
+        break;
+    case 900:
+        gtindex = 5;
+        break;
+    }
+    BuildSubMenuList(1, compinstance, true, gtindex);
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("PUPS")));
+    BuildSubMenuList(2, compinstance, true, settings.PowerUps ? 0 : 1);
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("S2S")));
+    BuildSubMenuList(3, compinstance, true, settings.Shoot2Score ? 0 : 1);
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("RUMBLE")));
+    BuildSubMenuList(4, compinstance, true, settings.RumbleEnabled ? 0 : 1);
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("BOWSER")));
+    BuildSubMenuList(5, compinstance, true, settings.BowserAttackEnabled ? 0 : 1);
+
+    ColourAllText(SubMenuHighliteColour, mMenuItems.GetActiveItemIndex());
+
+    memcpy(&mBackupSettings, &mSettings, sizeof(GameplaySettings));
+    mSettingsCRC = nlChecksum32(&mBackupSettings, sizeof(GameplaySettings));
+}
+
+/**
+ * Offset/Address/Size: 0xAA8 | 0x800B5AEC | size: 0x438
+ * TODO: 99.91% match - callback construction temporary stack layout still
+ * differs in the menu item callback setup path.
+ */
+void OptionsGameplayMenuV2::BuildSkillLevelMenu(TLComponentInstance* compinstance, int startindex, int skilltoskip)
+{
+    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
+    nlColour lockColour;
+
+    SlideMenuList* list = new ((SlideMenuList*)nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance);
+    mSlideMenuLists[0] = list;
+
+    char slidename[64] = { 0 };
+    MenuItem<SlideMenuItem>* menuItem;
+    int slidenum = 1;
+    do
+    {
+        nlSNPrintf(slidename, 64, "Slide%d", slidenum);
+        compinstance->SetActiveSlide(slidename);
+        if (compinstance->GetActiveSlide() == NULL)
+        {
+            break;
+        }
+        unsigned long slideHash = compinstance->GetActiveSlide()->m_hash;
+
+        SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[0];
+
+        menuItem = sml->AddItem(slideHash, slidenum);
+
+        if (skilltoskip == slidenum)
+            menuItem->SetDisabledFlag(true);
+        else
+            menuItem->SetDisabledFlag(false);
+
+        slidenum++;
+    } while (slidenum);
+
+    SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[0];
+    sml->SetItem(startindex - 1);
+    ((SlideMenuList*)mSlideMenuLists[0])->SetFlag(3);
+}
+
+/**
+ * Offset/Address/Size: 0x9BC | 0x800B5A00 | size: 0xEC
+ */
+OptionsGameplayMenuV2::~OptionsGameplayMenuV2()
+{
+}
+
+/**
+ * Offset/Address/Size: 0x798 | 0x800B57DC | size: 0x224
+ */
+void OptionsGameplayMenuV2::Save()
+{
+    GameplaySettings localSettings;
+    SlideMenuList* list;
+    int val;
+
+    // Skill Level
+    list = (SlideMenuList*)mSlideMenuLists[0];
+    if (list != NULL)
+    {
+        val = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        val = -1;
+    }
+    localSettings.SkillLevel = (GameplaySettings::eSkillLevel)val;
+
+    // Game Time - convert from menu index to seconds
+    list = (SlideMenuList*)mSlideMenuLists[1];
+    if (list != NULL)
+    {
+        val = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        val = -1;
+    }
+    switch (val)
+    {
+    case 0:
+        localSettings.GameTime = 120;
+        break;
+    case 1:
+        localSettings.GameTime = 180;
+        break;
+    case 2:
+        localSettings.GameTime = 240;
+        break;
+    case 3:
+        localSettings.GameTime = 300;
+        break;
+    case 4:
+        localSettings.GameTime = 600;
+        break;
+    case 5:
+        localSettings.GameTime = 900;
+        break;
+    default:
+        localSettings.GameTime = 120;
+        break;
+    }
+
+    // Power Ups
+    list = (SlideMenuList*)mSlideMenuLists[2];
+    if (list != NULL)
+    {
+        val = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        val = -1;
+    }
+    localSettings.PowerUps = (val == 0);
+
+    // Shoot2Score
+    list = (SlideMenuList*)mSlideMenuLists[3];
+    if (list != NULL)
+    {
+        val = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        val = -1;
+    }
+    localSettings.Shoot2Score = (val == 0);
+
+    // RumbleEnabled (index 4 stores to offset 0xB)
+    list = (SlideMenuList*)mSlideMenuLists[4];
+    if (list != NULL)
+    {
+        val = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        val = -1;
+    }
+    localSettings.RumbleEnabled = (val == 0);
+
+    // BowserAttackEnabled (index 5 stores to offset 0xA)
+    list = (SlideMenuList*)mSlideMenuLists[5];
+    if (list != NULL)
+    {
+        val = list->GetMenuItem()->GetType()->GetUserEnumType();
+    }
+    else
+    {
+        val = -1;
+    }
+    localSettings.BowserAttackEnabled = (val == 0);
+
+    mSettings = localSettings;
+    mSettings.OnSettingsUpdated();
+
+    cPlatPad::m_bDisableRumble = !localSettings.RumbleEnabled;
+}
+
+/**
+ * Offset/Address/Size: 0x744 | 0x800B5788 | size: 0x54
+ */
+void OptionsGameplayMenuV2::Revert()
+{
+    memcpy(&mSettings, &mBackupSettings, sizeof(GameplaySettings));
+    mSettings.OnSettingsUpdated();
+    cPlatPad::m_bDisableRumble = !mSettings.RumbleEnabled;
 }
 
 /**
@@ -278,3076 +1787,114 @@ void OptionsGameplayMenuV2::CloseItem(TLComponentInstance* compinstance)
 }
 
 /**
- * Offset/Address/Size: 0x744 | 0x800B5788 | size: 0x54
+ * Offset/Address/Size: 0x210 | 0x800B5254 | size: 0x410
+ * Matches: only residual is the TU-wide MENU_ITEMS$NNNN local-static suffix (link-neutral).
  */
-void OptionsGameplayMenuV2::Revert()
-{
-    memcpy(&mSettings, &mBackupSettings, sizeof(GameplaySettings));
-    mSettings.OnSettingsUpdated();
-    cPlatPad::m_bDisableRumble = !mSettings.RumbleEnabled;
-}
-
-/**
- * Offset/Address/Size: 0x798 | 0x800B57DC | size: 0x224
- */
-void OptionsGameplayMenuV2::Save()
-{
-    GameplaySettings localSettings;
-    SlideMenuList* list;
-    int val;
-    SlideMenuItem** pType;
-
-    // Skill Level
-    list = (SlideMenuList*)mSlideMenuLists[0];
-    if (list != NULL)
-    {
-        pType = &list->mMenuItems[list->mCurrentIndex].mType;
-        val = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        val = -1;
-    }
-    localSettings.SkillLevel = (GameplaySettings::eSkillLevel)val;
-
-    // Game Time - convert from menu index to seconds
-    list = (SlideMenuList*)mSlideMenuLists[1];
-    if (list != NULL)
-    {
-        pType = &list->mMenuItems[list->mCurrentIndex].mType;
-        val = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        val = -1;
-    }
-    switch (val)
-    {
-    case 0:
-        localSettings.GameTime = 120;
-        break;
-    case 1:
-        localSettings.GameTime = 180;
-        break;
-    case 2:
-        localSettings.GameTime = 240;
-        break;
-    case 3:
-        localSettings.GameTime = 300;
-        break;
-    case 4:
-        localSettings.GameTime = 600;
-        break;
-    case 5:
-        localSettings.GameTime = 900;
-        break;
-    default:
-        localSettings.GameTime = 120;
-        break;
-    }
-
-    // Power Ups
-    list = (SlideMenuList*)mSlideMenuLists[2];
-    if (list != NULL)
-    {
-        pType = &list->mMenuItems[list->mCurrentIndex].mType;
-        val = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        val = -1;
-    }
-    localSettings.PowerUps = (val == 0);
-
-    // Shoot2Score
-    list = (SlideMenuList*)mSlideMenuLists[3];
-    if (list != NULL)
-    {
-        pType = &list->mMenuItems[list->mCurrentIndex].mType;
-        val = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        val = -1;
-    }
-    localSettings.Shoot2Score = (val == 0);
-
-    // RumbleEnabled (index 4 stores to offset 0xB)
-    list = (SlideMenuList*)mSlideMenuLists[4];
-    if (list != NULL)
-    {
-        pType = &list->mMenuItems[list->mCurrentIndex].mType;
-        val = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        val = -1;
-    }
-    localSettings.RumbleEnabled = (val == 0);
-
-    // BowserAttackEnabled (index 5 stores to offset 0xA)
-    list = (SlideMenuList*)mSlideMenuLists[5];
-    if (list != NULL)
-    {
-        pType = &list->mMenuItems[list->mCurrentIndex].mType;
-        val = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        val = -1;
-    }
-    localSettings.BowserAttackEnabled = (val == 0);
-
-    mSettings = localSettings;
-    mSettings.OnSettingsUpdated();
-
-    cPlatPad::m_bDisableRumble = !localSettings.RumbleEnabled;
-}
-
-/**
- * Offset/Address/Size: 0x9BC | 0x800B5A00 | size: 0xEC
- */
-OptionsGameplayMenuV2::~OptionsGameplayMenuV2()
-{
-}
-
-#include "NL/nlMemFunBody.h"
-#include "NL/nlBindBody.h"
-
-extern char __vt__13SlideMenuItem[];
-
-typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML_t;
-typedef BindExp1<void, MemFunImpl_SML_t, SlideMenuList*> BindExp1_SML_t;
-
-/**
- * Offset/Address/Size: 0xAA8 | 0x800B5AEC | size: 0x438
- * TODO: 99.91% match - callback construction temporary stack layout still
- * differs in the menu item callback setup path.
- */
-void OptionsGameplayMenuV2::BuildSkillLevelMenu(TLComponentInstance* compinstance, int startindex, int skilltoskip)
-{
-    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
-    typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML;
-    typedef BindExp1<void, MemFunImpl_SML, SlideMenuList*> BindExp1_SML;
-    nlColour lockColour;
-
-    SlideMenuList* list = new ((SlideMenuList*)nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance);
-    mSlideMenuLists[0] = (MenuList<SlideMenuList>*)list;
-
-    char slidename[64] = { 0 };
-    MenuItem<SlideMenuItem>* menuItem;
-    int slidenum = 1;
-    do
-    {
-        nlSNPrintf(slidename, 64, "Slide%d", slidenum);
-        compinstance->SetActiveSlide(slidename);
-        if (compinstance->GetActiveSlide() == NULL)
-        {
-            break;
-        }
-        unsigned long slideHash = compinstance->GetActiveSlide()->m_hash;
-
-        SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[0];
-
-        SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
-        if (item != NULL)
-        {
-            TLComponentInstance* comp = sml->mComponentInstance;
-            *(char**)item = __vt__13SlideMenuItem;
-            item->mSlideMenuHash = (unsigned long)-1;
-            item->mComponentInstance = comp;
-            item->mUserEnumType = slidenum;
-        }
-        item->mSlideMenuHash = slideHash;
-
-        MenuItem<SlideMenuItem>* menuItems = sml->mMenuItems;
-        menuItem = &menuItems[sml->mNumItemsAdded];
-        menuItem->mType = item;
-        sml->mNumItemsAdded++;
-
-        {
-            BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
-                MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
-            Function<FnSlideMenuItemCb> callback(bind);
-            menuItem->mCallbacks[1] = callback;
-        }
-
-        if (skilltoskip == slidenum)
-            menuItem->mDisabled = true;
-        else
-            menuItem->mDisabled = false;
-
-        slidenum++;
-    } while (slidenum);
-
-    SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[0];
-    menuItem = &sml->mMenuItems[sml->mCurrentIndex];
-    int tag = menuItem->mCallbacks[2].mTag;
-    if (((u32)((-tag) | tag) >> 31) > 0)
-    {
-        SlideMenuItem* type = menuItem->mType;
-        if (tag == FREE_FUNCTION)
-        {
-            menuItem->mCallbacks[2].mFreeFunction(type);
-        }
-        else
-        {
-            (*menuItem->mCallbacks[2].mFunctor)(type);
-        }
-    }
-    sml->mCurrentIndex = startindex - 1;
-    menuItem = &sml->mMenuItems[sml->mCurrentIndex];
-    tag = menuItem->mCallbacks[1].mTag;
-    if (((u32)((-tag) | tag) >> 31) > 0)
-    {
-        SlideMenuItem* type = menuItem->mType;
-        if (tag == FREE_FUNCTION)
-        {
-            menuItem->mCallbacks[1].mFreeFunction(type);
-        }
-        else
-        {
-            (*menuItem->mCallbacks[1].mFunctor)(type);
-        }
-    }
-    ((SlideMenuList*)mSlideMenuLists[0])->mFlags = 3;
-}
-
-/**
- * Offset/Address/Size: 0xEE0 | 0x800B5F24 | size: 0x850
- */
-OptionsGameplayMenuV2::OptionsGameplayMenuV2(FEPresentation* presentation, ButtonComponent::ButtonState buttonstate, GameplaySettings& settings, int skilltoskip)
+OptionsSaveLoad::OptionsSaveLoad(FEPresentation* presentation, ButtonComponent::ButtonState buttonstate)
     : OptionsSubMenu(presentation, buttonstate)
-    , mSettings(settings)
 {
-    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
+    static char* MENU_ITEMS[] = { "MENU ITEM2", "MENU ITEM3" };
 
-    char menuname[64];
-    int i;
-    TLInstance* instance;
-    TLComponentInstance* compinstance;
-    int gtindex;
-
-    presentation->SetActiveSlide(GAMEPLAY_MENU_SLIDE);
+    presentation->SetActiveSlide(SAVE_LOAD_SLIDE);
     presentation->Update(0.0f);
 
     SetButtonState(buttonstate);
-    if (buttonstate == ButtonComponent::BS_A_AND_B)
-    {
-        SetAButtonLOC(0x9C81A82F);
-    }
-
-    TLSlide* currentSlide = presentation->m_currentSlide;
-    for (i = 0; i < 6; i++)
-    {
-        nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
-
-        instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
-            currentSlide,
-            InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(menuname)));
-
-        int numAdded = mMenuItems.mNumItemsAdded;
-        MenuItem<TLComponentInstance>* menuItem = AudioOptionsMenuItemAt(mMenuItems, numAdded);
-        TLComponentInstance* componentinstance = (TLComponentInstance*)instance;
-        mMenuItems.mMenuItems[numAdded].mType = componentinstance;
-        mMenuItems.mNumItemsAdded++;
-
-        {
-            Function<TLComponentInstance*> openFunc;
-            openFunc.mTag = FREE_FUNCTION;
-            openFunc.mFreeFunction = SingleHighlite::OpenItem;
-            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[1] = openFunc;
-        }
-
-        {
-            Function<TLComponentInstance*> closeFunc;
-            closeFunc.mTag = FREE_FUNCTION;
-            closeFunc.mFreeFunction = SingleHighlite::CloseItem;
-            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[2] = closeFunc;
-        }
-
-        if (i == 0)
-        {
-            SingleHighlite::TempDisableSound();
-            int tag = menuItem->mCallbacks[1].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = menuItem->mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    menuItem->mCallbacks[1].mFreeFunction(type);
-                }
-                else
-                {
-                    (*menuItem->mCallbacks[1].mFunctor)(type);
-                }
-            }
-            menuItem->mDisabled = false;
-        }
-        else
-        {
-            CloseItem(componentinstance);
-        }
-
-        mSlideMenuLists[i] = NULL;
-    }
-
-    mMenuItems.mFlags = 1;
-
-    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        currentSlide,
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("SKILLLEVEL")));
-    BuildSkillLevelMenu(compinstance, settings.SkillLevel, skilltoskip);
-
-    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        currentSlide,
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("GAME TIME")));
-
-    gtindex = 0;
-    switch (settings.GameTime)
-    {
-    case 120:
-        gtindex = 0;
-        break;
-    case 180:
-        gtindex = 1;
-        break;
-    case 240:
-        gtindex = 2;
-        break;
-    case 300:
-        gtindex = 3;
-        break;
-    case 600:
-        gtindex = 4;
-        break;
-    case 900:
-        gtindex = 5;
-        break;
-    }
-    BuildSubMenuList(1, compinstance, true, gtindex);
-
-    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        currentSlide,
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("PUPS")));
-    BuildSubMenuList(2, compinstance, true, settings.PowerUps ? 0 : 1);
-
-    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        currentSlide,
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("S2S")));
-    BuildSubMenuList(3, compinstance, true, settings.Shoot2Score ? 0 : 1);
-
-    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        currentSlide,
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("RUMBLE")));
-    BuildSubMenuList(4, compinstance, true, settings.RumbleEnabled ? 0 : 1);
-
-    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        currentSlide,
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("BOWSER")));
-    BuildSubMenuList(5, compinstance, true, settings.BowserAttackEnabled ? 0 : 1);
-
-    SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
-    if (slideMenuList != NULL)
-    {
-        TLInstance* inst;
-        TLInstance* firstChild;
-        TLSlide* currentMenuSlide;
-        TLSlide* startSlide;
-        TLComponentInstance* finalCompinstance;
-
-        finalCompinstance = slideMenuList->mComponentInstance;
-        if (finalCompinstance != NULL)
-        {
-            if (finalCompinstance->GetActiveSlide() != NULL)
-            {
-                startSlide = finalCompinstance->GetActiveSlide();
-                currentMenuSlide = startSlide;
-
-                do
-                {
-                    finalCompinstance->SetActiveSlide(currentMenuSlide);
-                    firstChild = finalCompinstance->GetActiveSlide()->m_instances;
-                    inst = firstChild;
-                    if (firstChild != NULL)
-                    {
-                        do
-                        {
-                            if (inst->m_type == TLAT_TEXT)
-                            {
-                                inst->SetAssetColour(SubMenuHighliteColour);
-                            }
-                            else if (inst->m_type == TLAT_IMAGE)
-                            {
-                                unsigned long hash = inst->m_hash;
-                                if (hash != nlStringLowerHash("white_box"))
-                                {
-                                    inst->SetAssetColour(SubMenuHighliteColour);
-                                }
-                            }
-
-                            inst = inst->m_next;
-                        } while (inst != firstChild);
-                    }
-
-                    currentMenuSlide = currentMenuSlide->m_next;
-                } while (currentMenuSlide != startSlide);
-
-                finalCompinstance->SetActiveSlide(startSlide);
-            }
-        }
-    }
-
-    memcpy(&mBackupSettings, &mSettings, sizeof(GameplaySettings));
-    mSettingsCRC = nlChecksum32(&mBackupSettings, sizeof(GameplaySettings));
-}
-
-/**
- * Offset/Address/Size: 0x1730 | 0x800B6774 | size: 0x30
- */
-void OptionsVisualMenuV2::Revert()
-{
-    memcpy(&mSettings, &mBackupSettings, sizeof(VisualSettings));
-}
-
-/**
- * Offset/Address/Size: 0x1760 | 0x800B67A4 | size: 0xD4
- */
-void OptionsVisualMenuV2::Save()
-{
-    SlideMenuList* list;
-    int val;
-    SlideMenuItem** pType;
-
-    // Auto zoom camera
-    list = (SlideMenuList*)mSlideMenuLists[0];
-    if (list != NULL)
-    {
-        pType = &list->mMenuItems[list->mCurrentIndex].mType;
-        val = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        val = -1;
-    }
-    mSettings.mIsAutoZoomCamera = (val == 0);
-
-    // Camera zoom level
-    list = (SlideMenuList*)mSlideMenuLists[1];
-    if (list != NULL)
-    {
-        pType = &list->mMenuItems[list->mCurrentIndex].mType;
-        val = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        val = -1;
-    }
-    mSettings.mCameraZoomLevel = (float)val / 10.0f;
-
-    // Widescreen
-    list = (SlideMenuList*)mSlideMenuLists[2];
-    if (list != NULL)
-    {
-        pType = &list->mMenuItems[list->mCurrentIndex].mType;
-        val = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        val = -1;
-    }
-    mSettings.mIsWidescreen = (val != 0);
-}
-
-/**
- * Offset/Address/Size: 0x1834 | 0x800B6878 | size: 0xC0
- */
-void OptionsVisualMenuV2::Update(float dt)
-{
-    OptionsSubMenu::Update(dt);
-
-    MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[1];
-    if (menuItem == NULL)
-        return;
-
-    int userEnumType;
-    SlideMenuList* list = (SlideMenuList*)mSlideMenuLists[0];
-    if (list != NULL)
-    {
-        int index = list->mCurrentIndex;
-        SlideMenuItem** pType = &list->mMenuItems[index].mType;
-        userEnumType = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        userEnumType = -1;
-    }
-
-    if (userEnumType == 0)
-    {
-        TLComponentInstance* compInstance = (TLComponentInstance*)menuItem->mType;
-        if (compInstance->m_bVisible != false)
-        {
-            compInstance->m_bVisible = false;
-            menuItem->mDisabled = true;
-
-            SlideMenuList* list2 = (SlideMenuList*)mSlideMenuLists[1];
-            TLComponentInstance* compInstance2 = list2->mComponentInstance;
-            compInstance2->m_bVisible = false;
-        }
-    }
-    else
-    {
-        TLComponentInstance* compInstance = (TLComponentInstance*)menuItem->mType;
-        if (compInstance->m_bVisible == false)
-        {
-            compInstance->m_bVisible = true;
-            menuItem->mDisabled = false;
-
-            SlideMenuList* list2 = (SlideMenuList*)mSlideMenuLists[1];
-            TLComponentInstance* compInstance2 = list2->mComponentInstance;
-            compInstance2->m_bVisible = true;
-        }
-    }
-}
-
-/**
- * Offset/Address/Size: 0x18F4 | 0x800B6938 | size: 0xEC
- */
-OptionsVisualMenuV2::~OptionsVisualMenuV2()
-{
-}
-
-static inline void HighliteSlideComponent(TLComponentInstance* comp, const nlColour& colour)
-{
-    if (comp != NULL && comp->GetActiveSlide() != NULL)
-    {
-        TLSlide* startSlide = comp->GetActiveSlide();
-        TLSlide* currentSlide = startSlide;
-
-        do
-        {
-            comp->SetActiveSlide(currentSlide);
-            TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
-            TLInstance* inst = firstChild;
-
-            if (firstChild != NULL)
-            {
-                do
-                {
-                    if (inst->m_type == TLAT_TEXT)
-                    {
-                        inst->SetAssetColour(colour);
-                    }
-                    else if (inst->m_type == TLAT_IMAGE)
-                    {
-                        unsigned long hash = inst->m_hash;
-                        if (hash != nlStringLowerHash("white_box"))
-                        {
-                            inst->SetAssetColour(colour);
-                        }
-                    }
-
-                    inst = inst->m_next;
-                } while (inst != firstChild);
-            }
-
-            currentSlide = currentSlide->m_next;
-        } while (currentSlide != startSlide);
-
-        comp->SetActiveSlide(startSlide);
-    }
-}
-
-static inline void HighliteSlideComponentAlt(const nlColour& colour, TLComponentInstance* comp)
-{
-    unsigned long hash;
-
-    if (comp != NULL && comp->GetActiveSlide() != NULL)
-    {
-        TLSlide* startSlide = comp->GetActiveSlide();
-        TLSlide* currentSlide = startSlide;
-
-        do
-        {
-            comp->SetActiveSlide(currentSlide);
-            TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
-            TLInstance* inst = firstChild;
-
-            if (firstChild != NULL)
-            {
-                do
-                {
-                    if (inst->m_type == TLAT_TEXT)
-                    {
-                        inst->SetAssetColour(colour);
-                    }
-                    else if (inst->m_type == TLAT_IMAGE)
-                    {
-                        hash = inst->m_hash;
-                        if (hash != nlStringLowerHash("white_box"))
-                        {
-                            inst->SetAssetColour(colour);
-                        }
-                    }
-
-                    inst = inst->m_next;
-                } while (inst != firstChild);
-            }
-
-            currentSlide = currentSlide->m_next;
-        } while (currentSlide != startSlide);
-
-        comp->SetActiveSlide(startSlide);
-    }
-}
-
-static inline void HighliteSlideComponentAltV1(TLComponentInstance* comp, const nlColour& colour)
-{
-    HighliteSlideComponentAlt(colour, comp);
-}
-
-static inline void HighliteSlideComponentAltV2(TLComponentInstance*& comp, const nlColour& colour)
-{
-    HighliteSlideComponentAlt(colour, comp);
-}
-
-static inline void HighliteSlideComponentAltV3(TLComponentInstance& comp, const nlColour& colour)
-{
-    HighliteSlideComponentAlt(colour, &comp);
-}
-
-static inline void HighliteSlideComponentAltV4(TLComponentInstance* const comp, const nlColour& colour)
-{
-    HighliteSlideComponentAlt(colour, comp);
-}
-
-static inline void HighliteSlideComponentAltV5(const nlColour& colour, TLComponentInstance* comp)
-{
-    TLComponentInstance* component = comp;
-    HighliteSlideComponentAlt(colour, component);
-}
-
-static inline void HighliteSlideComponentAltV6(const nlColour& colour, TLComponentInstance* comp)
-{
-    TLComponentInstance* const component = comp;
-    HighliteSlideComponentAlt(colour, component);
-}
-
-static inline void HighliteSlideComponentAltV7(SlideMenuList* list, const nlColour& colour)
-{
-    TLComponentInstance* comp = list->mComponentInstance;
-    HighliteSlideComponentAlt(colour, comp);
-}
-
-static inline void HighliteSlideComponentAltV8(const nlColour* colour, TLComponentInstance* comp)
-{
-    HighliteSlideComponentAlt(*colour, comp);
-}
-
-static inline void HighliteSlideComponentAltV9(nlColour colour, TLComponentInstance* comp)
-{
-    HighliteSlideComponentAlt(colour, comp);
-}
-
-static inline void HighliteSlideComponentAltV10(const nlColour& colour, TLComponentInstance* comp)
-{
-    if (comp != NULL)
-        HighliteSlideComponentAlt(colour, comp);
-}
-
-static inline void HighliteSlideComponentAltF1(const nlColour& colour, TLComponentInstance* comp)
-{
-    TLInstance* inst;
-    TLInstance* firstChild;
-    TLSlide* currentSlide;
-    TLSlide* startSlide;
-    unsigned long hash;
-
-    if (comp != NULL && comp->GetActiveSlide() != NULL)
-    {
-        startSlide = comp->GetActiveSlide();
-        currentSlide = startSlide;
-
-        do
-        {
-            comp->SetActiveSlide(currentSlide);
-            firstChild = comp->GetActiveSlide()->m_instances;
-            inst = firstChild;
-
-            if (firstChild != NULL)
-            {
-                do
-                {
-                    if (inst->m_type == TLAT_TEXT)
-                    {
-                        inst->SetAssetColour(colour);
-                    }
-                    else if (inst->m_type == TLAT_IMAGE)
-                    {
-                        hash = inst->m_hash;
-                        if (hash != nlStringLowerHash("white_box"))
-                            inst->SetAssetColour(colour);
-                    }
-
-                    inst = inst->m_next;
-                } while (inst != firstChild);
-            }
-
-            currentSlide = currentSlide->m_next;
-        } while (currentSlide != startSlide);
-
-        comp->SetActiveSlide(startSlide);
-    }
-}
-
-static inline void HighliteSlideComponentAltF2(TLComponentInstance* comp, const nlColour& colour)
-{
-    TLInstance* inst;
-    TLInstance* firstChild;
-    TLSlide* currentSlide;
-    TLSlide* startSlide;
-    unsigned long hash;
-
-    if (comp != NULL && comp->GetActiveSlide() != NULL)
-    {
-        startSlide = comp->GetActiveSlide();
-        currentSlide = startSlide;
-
-        do
-        {
-            comp->SetActiveSlide(currentSlide);
-            firstChild = comp->GetActiveSlide()->m_instances;
-            inst = firstChild;
-
-            if (firstChild != NULL)
-            {
-                do
-                {
-                    if (inst->m_type == TLAT_TEXT)
-                    {
-                        inst->SetAssetColour(colour);
-                    }
-                    else if (inst->m_type == TLAT_IMAGE)
-                    {
-                        hash = inst->m_hash;
-                        if (hash != nlStringLowerHash("white_box"))
-                            inst->SetAssetColour(colour);
-                    }
-
-                    inst = inst->m_next;
-                } while (inst != firstChild);
-            }
-
-            currentSlide = currentSlide->m_next;
-        } while (currentSlide != startSlide);
-
-        comp->SetActiveSlide(startSlide);
-    }
-}
-
-static inline void HighliteSlideComponentAltF3(const nlColour& colour, TLComponentInstance* comp)
-{
-    unsigned long hash;
-    TLSlide* startSlide;
-    TLSlide* currentSlide;
-    TLInstance* firstChild;
-    TLInstance* inst;
-
-    if (comp != NULL && comp->GetActiveSlide() != NULL)
-    {
-        startSlide = comp->GetActiveSlide();
-        currentSlide = startSlide;
-
-        do
-        {
-            comp->SetActiveSlide(currentSlide);
-            firstChild = comp->GetActiveSlide()->m_instances;
-            inst = firstChild;
-
-            if (firstChild != NULL)
-            {
-                do
-                {
-                    if (inst->m_type == TLAT_TEXT)
-                    {
-                        inst->SetAssetColour(colour);
-                    }
-                    else if (inst->m_type == TLAT_IMAGE)
-                    {
-                        hash = inst->m_hash;
-                        if (hash != nlStringLowerHash("white_box"))
-                            inst->SetAssetColour(colour);
-                    }
-
-                    inst = inst->m_next;
-                } while (inst != firstChild);
-            }
-
-            currentSlide = currentSlide->m_next;
-        } while (currentSlide != startSlide);
-
-        comp->SetActiveSlide(startSlide);
-    }
-}
-
-static inline void HighliteSlideComponentAltG1(SlideMenuList* list, const nlColour& colour)
-{
-    unsigned long hash;
-    TLComponentInstance* comp = list->mComponentInstance;
-
-    if (comp != NULL && comp->GetActiveSlide() != NULL)
-    {
-        TLSlide* startSlide = comp->GetActiveSlide();
-        TLSlide* currentSlide = startSlide;
-
-        do
-        {
-            comp->SetActiveSlide(currentSlide);
-            TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
-            TLInstance* inst = firstChild;
-
-            if (firstChild != NULL)
-            {
-                do
-                {
-                    if (inst->m_type == TLAT_TEXT)
-                    {
-                        inst->SetAssetColour(colour);
-                    }
-                    else if (inst->m_type == TLAT_IMAGE)
-                    {
-                        hash = inst->m_hash;
-                        if (hash != nlStringLowerHash("white_box"))
-                            inst->SetAssetColour(colour);
-                    }
-
-                    inst = inst->m_next;
-                } while (inst != firstChild);
-            }
-
-            currentSlide = currentSlide->m_next;
-        } while (currentSlide != startSlide);
-
-        comp->SetActiveSlide(startSlide);
-    }
-}
-
-static inline void HighliteSlideComponentAltG2(TLComponentInstance*& component, const nlColour& colour)
-{
-    unsigned long hash;
-    TLComponentInstance* comp = component;
-
-    if (comp != NULL && comp->GetActiveSlide() != NULL)
-    {
-        TLSlide* startSlide = comp->GetActiveSlide();
-        TLSlide* currentSlide = startSlide;
-
-        do
-        {
-            comp->SetActiveSlide(currentSlide);
-            TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
-            TLInstance* inst = firstChild;
-
-            if (firstChild != NULL)
-            {
-                do
-                {
-                    if (inst->m_type == TLAT_TEXT)
-                    {
-                        inst->SetAssetColour(colour);
-                    }
-                    else if (inst->m_type == TLAT_IMAGE)
-                    {
-                        hash = inst->m_hash;
-                        if (hash != nlStringLowerHash("white_box"))
-                            inst->SetAssetColour(colour);
-                    }
-
-                    inst = inst->m_next;
-                } while (inst != firstChild);
-            }
-
-            currentSlide = currentSlide->m_next;
-        } while (currentSlide != startSlide);
-
-        comp->SetActiveSlide(startSlide);
-    }
-}
-
-static inline void HighliteSlideComponentAltG3(TLComponentInstance* component, const nlColour& colour)
-{
-    unsigned long hash;
-    TLComponentInstance* comp = component;
-
-    if (comp != NULL && comp->GetActiveSlide() != NULL)
-    {
-        TLSlide* startSlide = comp->GetActiveSlide();
-        TLSlide* currentSlide = startSlide;
-
-        do
-        {
-            comp->SetActiveSlide(currentSlide);
-            TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
-            TLInstance* inst = firstChild;
-
-            if (firstChild != NULL)
-            {
-                do
-                {
-                    if (inst->m_type == TLAT_TEXT)
-                    {
-                        inst->SetAssetColour(colour);
-                    }
-                    else if (inst->m_type == TLAT_IMAGE)
-                    {
-                        hash = inst->m_hash;
-                        if (hash != nlStringLowerHash("white_box"))
-                            inst->SetAssetColour(colour);
-                    }
-
-                    inst = inst->m_next;
-                } while (inst != firstChild);
-            }
-
-            currentSlide = currentSlide->m_next;
-        } while (currentSlide != startSlide);
-
-        comp->SetActiveSlide(startSlide);
-    }
-}
-
-/**
- * Offset/Address/Size: 0x19E0 | 0x800B6A24 | size: 0x6E8
- * TODO: 99.85% match - menu item index/current slide register rotation.
- */
-OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::ButtonState btnState, VisualSettings& settings)
-    : OptionsSubMenu(pres, btnState)
-    , mSettings(settings)
-{
-    static char* MENU_ITEMS[] = {
-        "MENU ITEM3",
-        "MENU ITEM6",
-        "MENU ITEM4",
-    };
-
-    if (nlTaskManager::m_pInstance->m_CurrState == 1)
-    {
-        pres->SetActiveSlide("Slide2");
-    }
-    else
-    {
-        pres->SetActiveSlide(VISUAL_MENU_SLIDE);
-    }
-
-    pres->Update(0.0f);
-
-    SetButtonState(btnState);
-    if (btnState == ButtonComponent::BS_A_AND_B)
-    {
-        SetAButtonLOC(0x9C81A82F);
-    }
-
-    int slideMenuIndex = 0;
-    TLSlide* currentSlide = pres->m_currentSlide;
-
-    for (int i = 0; i < 3; i++)
-    {
-        TLInstance* instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
-            currentSlide,
-            InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(MENU_ITEMS[i])));
-
-        int numAdded = mMenuItems.mNumItemsAdded;
-        MenuItem<TLComponentInstance>* menuItem = AudioOptionsMenuItemAt(mMenuItems, numAdded);
-        mMenuItems.mMenuItems[numAdded].mType = (TLComponentInstance*)instance;
-        mMenuItems.mNumItemsAdded++;
-
-        {
-            Function<TLComponentInstance*> openFunc;
-            openFunc.mTag = FREE_FUNCTION;
-            openFunc.mFreeFunction = SingleHighlite::OpenItem;
-            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[1] = openFunc;
-        }
-
-        {
-            Function<TLComponentInstance*> closeFunc;
-            closeFunc.mTag = FREE_FUNCTION;
-            closeFunc.mFreeFunction = SingleHighlite::CloseItem;
-            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[2] = closeFunc;
-        }
-
-        if (i == 0)
-        {
-            SingleHighlite::TempDisableSound();
-            int tag = menuItem->mCallbacks[1].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = menuItem->mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    menuItem->mCallbacks[1].mFreeFunction(type);
-                }
-                else
-                {
-                    (*menuItem->mCallbacks[1].mFunctor)(type);
-                }
-            }
-        }
-        else
-        {
-            int tag = menuItem->mCallbacks[2].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = menuItem->mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    menuItem->mCallbacks[2].mFreeFunction(type);
-                }
-                else
-                {
-                    (*menuItem->mCallbacks[2].mFunctor)(type);
-                }
-            }
-        }
-
-        mSlideMenuLists[slideMenuIndex] = NULL;
-        slideMenuIndex++;
-    }
-
-    mMenuItems.mFlags = 3;
-
-    TLComponentInstance* compinstance;
-
-    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        currentSlide,
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("CAMERA")));
-
-    BuildSubMenuList(0, compinstance, true, mSettings.mIsAutoZoomCamera ? 0 : 1);
-    compinstance->m_bVisible = true;
-    mMenuItems.mMenuItems[0].mType->m_bVisible = true;
-
-    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        currentSlide,
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ZOOM")));
-
-    BuildSubMenuList(1, compinstance, false, (int)(10.0f * mSettings.mCameraZoomLevel));
-    compinstance->m_bVisible = true;
-    mMenuItems.mMenuItems[1].mType->m_bVisible = true;
-
-    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        currentSlide,
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ASPECT")));
-
-    BuildSubMenuList(2, compinstance, true, mSettings.mIsWidescreen ? 1 : 0);
-    compinstance->m_bVisible = true;
-    mMenuItems.mMenuItems[2].mType->m_bVisible = true;
-
-    SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
-    if (slideMenuList != NULL)
-    {
-        TLInstance* inst;
-        TLInstance* firstChild;
-        TLSlide* currentMenuSlide;
-        TLSlide* startSlide;
-        TLComponentInstance* finalCompinstance;
-
-        finalCompinstance = slideMenuList->mComponentInstance;
-        if (finalCompinstance != NULL)
-        {
-            if (finalCompinstance->GetActiveSlide() != NULL)
-            {
-                startSlide = finalCompinstance->GetActiveSlide();
-                currentMenuSlide = startSlide;
-
-                do
-                {
-                    finalCompinstance->SetActiveSlide(currentMenuSlide);
-                    firstChild = finalCompinstance->GetActiveSlide()->m_instances;
-                    inst = firstChild;
-                    if (firstChild != NULL)
-                    {
-                        do
-                        {
-                            if (inst->m_type == TLAT_TEXT)
-                            {
-                                inst->SetAssetColour(SubMenuHighliteColour);
-                            }
-                            else if (inst->m_type == TLAT_IMAGE)
-                            {
-                                unsigned long hash = inst->m_hash;
-                                if (hash != nlStringLowerHash("white_box"))
-                                {
-                                    inst->SetAssetColour(SubMenuHighliteColour);
-                                }
-                            }
-
-                            inst = inst->m_next;
-                        } while (inst != firstChild);
-                    }
-
-                    currentMenuSlide = currentMenuSlide->m_next;
-                } while (currentMenuSlide != startSlide);
-
-                finalCompinstance->SetActiveSlide(startSlide);
-            }
-        }
-    }
-
-    memcpy(&mBackupSettings, &mSettings, sizeof(VisualSettings));
-    mSettingsCRC = nlChecksum32(&mBackupSettings, sizeof(VisualSettings));
-}
-
-/**
- * Offset/Address/Size: 0x20C8 | 0x800B710C | size: 0xA3C
- * TODO: 99.27% match - ischaractervol and highlight-loop temporaries use
- * different registers from target.
- */
-void OptionsAudioMenuV2::Update(float)
-{
-    bool ischaractervol = (mMenuItems.mCurrentIndex == 2);
     mButtons.CentreButtons();
 
-    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
-    {
-        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
-        if (slideMenuList != NULL)
-        {
-            TLComponentInstance* comp = slideMenuList->mComponentInstance;
-            HighliteSlideComponent(comp, SubMenuUnhighliteColour);
-        }
+    TLSlide* slide = presentation->m_currentSlide;
+    char** menuName;
 
-        int flags = mMenuItems.mFlags;
-        int wrapList = flags & 1;
-        int skipDisabled = flags & 2;
-        int oldIndex = mMenuItems.mCurrentIndex;
-        int newIndex = oldIndex - 1;
+    void (*openItem)(TLComponentInstance*) = DoubleHighlite::OpenItem;
+    void (*closeItem)(TLComponentInstance*) = DoubleHighlite::CloseItem;
+    MenuItem<TLComponentInstance>* menuItem;
 
-        while (true)
-        {
-            if (wrapList)
-            {
-                if (newIndex < 0)
-                {
-                    newIndex = mMenuItems.mNumItemsAdded - 1;
-                }
-            }
-            else if (newIndex < 0)
-            {
-                break;
-            }
-
-            if (skipDisabled)
-            {
-                if (mMenuItems.mMenuItems[newIndex].mDisabled)
-                {
-                    newIndex--;
-                    continue;
-                }
-            }
-
-            {
-                int tag = mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mTag;
-                if (((u32)((-tag) | tag) >> 31) > 0)
-                {
-                    TLComponentInstance* type = mMenuItems.mMenuItems[oldIndex].mType;
-                    if (tag == FREE_FUNCTION)
-                    {
-                        mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mFreeFunction(type);
-                    }
-                    else
-                    {
-                        (*mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mFunctor)(type);
-                    }
-                }
-            }
-
-            mMenuItems.mCurrentIndex = newIndex;
-
-            {
-                int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mTag;
-                if (((u32)((-tag) | tag) >> 31) > 0)
-                {
-                    TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
-                    if (tag == FREE_FUNCTION)
-                    {
-                        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mFreeFunction(type);
-                    }
-                    else
-                    {
-                        (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mFunctor)(type);
-                    }
-                }
-            }
-            break;
-        }
-
-        slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
-        if (slideMenuList != NULL)
-        {
-            TLComponentInstance* comp = slideMenuList->mComponentInstance;
-            HighliteSlideComponent(comp, SubMenuHighliteColour);
-        }
-    }
-    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
-    {
-        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
-        if (slideMenuList != NULL)
-        {
-            TLComponentInstance* comp = slideMenuList->mComponentInstance;
-            HighliteSlideComponent(comp, SubMenuUnhighliteColour);
-        }
-
-        int flags = mMenuItems.mFlags;
-        int wrapList = flags & 1;
-        int skipDisabled = flags & 2;
-        int oldIndex = mMenuItems.mCurrentIndex;
-        int newIndex = oldIndex + 1;
-
-        while (true)
-        {
-            if (wrapList)
-            {
-                newIndex = newIndex % mMenuItems.mNumItemsAdded;
-            }
-            else if (newIndex >= mMenuItems.mNumItemsAdded)
-            {
-                break;
-            }
-
-            if (skipDisabled)
-            {
-                if (mMenuItems.mMenuItems[newIndex].mDisabled)
-                {
-                    newIndex++;
-                    continue;
-                }
-            }
-
-            {
-                int tag = mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mTag;
-                if (((u32)((-tag) | tag) >> 31) > 0)
-                {
-                    TLComponentInstance* type = mMenuItems.mMenuItems[oldIndex].mType;
-                    if (tag == FREE_FUNCTION)
-                    {
-                        mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mFreeFunction(type);
-                    }
-                    else
-                    {
-                        (*mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mFunctor)(type);
-                    }
-                }
-            }
-
-            mMenuItems.mCurrentIndex = newIndex;
-
-            {
-                int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mTag;
-                if (((u32)((-tag) | tag) >> 31) > 0)
-                {
-                    TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
-                    if (tag == FREE_FUNCTION)
-                    {
-                        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mFreeFunction(type);
-                    }
-                    else
-                    {
-                        (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mFunctor)(type);
-                    }
-                }
-            }
-            break;
-        }
-
-        slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
-        if (slideMenuList != NULL)
-        {
-            TLComponentInstance* comp = slideMenuList->mComponentInstance;
-            HighliteSlideComponent(comp, SubMenuHighliteColour);
-        }
-    }
-    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL))
-    {
-        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
-        if (slideMenuList != NULL)
-        {
-            MenuResult res = RES_ERROR;
-
-            int flags = slideMenuList->mFlags;
-            int wrapList = flags & 1;
-            int skipDisabled = flags & 2;
-            int oldIndex = slideMenuList->mCurrentIndex;
-            int newIndex = oldIndex - 1;
-
-            while (true)
-            {
-                if (wrapList)
-                {
-                    if (newIndex < 0)
-                    {
-                        newIndex = slideMenuList->mNumItemsAdded - 1;
-                    }
-                }
-                else if (newIndex < 0)
-                {
-                    res = RES_NOT_CHANGED;
-                    break;
-                }
-
-                if (skipDisabled)
-                {
-                    if (slideMenuList->mMenuItems[newIndex].mDisabled)
-                    {
-                        newIndex--;
-                        continue;
-                    }
-                }
-
-                MenuItem<SlideMenuItem>* oldSlideItem = &slideMenuList->mMenuItems[oldIndex];
-                {
-                    int tag = oldSlideItem->mCallbacks[2].mTag;
-                    if (((u32)((-tag) | tag) >> 31) > 0)
-                    {
-                        SlideMenuItem* type = oldSlideItem->mType;
-                        if (tag == FREE_FUNCTION)
-                        {
-                            oldSlideItem->mCallbacks[2].mFreeFunction(type);
-                        }
-                        else
-                        {
-                            (*oldSlideItem->mCallbacks[2].mFunctor)(type);
-                        }
-                    }
-                }
-
-                slideMenuList->mCurrentIndex = newIndex;
-
-                MenuItem<SlideMenuItem>* curSlideItem = &slideMenuList->mMenuItems[slideMenuList->mCurrentIndex];
-                {
-                    int tag = curSlideItem->mCallbacks[1].mTag;
-                    if (((u32)((-tag) | tag) >> 31) > 0)
-                    {
-                        SlideMenuItem* type = curSlideItem->mType;
-                        if (tag == FREE_FUNCTION)
-                        {
-                            curSlideItem->mCallbacks[1].mFreeFunction(type);
-                        }
-                        else
-                        {
-                            (*curSlideItem->mCallbacks[1].mFunctor)(type);
-                        }
-                    }
-                }
-
-                res = RES_OK;
-                break;
-            }
-
-            if (res == RES_OK)
-            {
-                if (ischaractervol)
-                {
-                    FEAudio::PlayRandomVoiceToggleSFX();
-                }
-                else
-                {
-                    FEAudio::PlayAnimAudioEvent("sfx_option_scroll_left", false);
-                }
-
-                if (mMenuItems.mCurrentIndex != 3)
-                {
-                    bool bModeChanged = mbUpdateMode;
-                    mbUpdateMode = false;
-                    Save();
-                    mbUpdateMode = bModeChanged;
-                }
-                else
-                {
-                    int mode;
-                    SlideMenuList* list = (SlideMenuList*)mSlideMenuLists[3];
-                    if (list != NULL)
-                    {
-                        SlideMenuItem** pType = &list->mMenuItems[list->mCurrentIndex].mType;
-                        mode = (*pType)->mUserEnumType;
-                    }
-                    else
-                    {
-                        mode = -1;
-                    }
-
-                    mSettings.Mode = (eAudioMode)mode;
-                    if (mSettings.Mode != mSettings.DefaultMode)
-                    {
-                        mbUpdateMode = true;
-                    }
-                    else
-                    {
-                        mbUpdateMode = false;
-                    }
-                }
-            }
-            else if (res == RES_NOT_CHANGED)
-            {
-                FEAudio::PlayAnimAudioEvent("sfx_deny", false);
-            }
-        }
-    }
-    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xC, true, NULL))
-    {
-        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
-        if (slideMenuList != NULL)
-        {
-            MenuResult res = RES_ERROR;
-
-            int flags = slideMenuList->mFlags;
-            int wrapList = flags & 1;
-            int skipDisabled = flags & 2;
-            int oldIndex = slideMenuList->mCurrentIndex;
-            int newIndex = oldIndex + 1;
-
-            while (true)
-            {
-                if (wrapList)
-                {
-                    newIndex = newIndex % slideMenuList->mNumItemsAdded;
-                }
-                else if (newIndex >= slideMenuList->mNumItemsAdded)
-                {
-                    res = RES_NOT_CHANGED;
-                    break;
-                }
-
-                if (skipDisabled)
-                {
-                    if (slideMenuList->mMenuItems[newIndex].mDisabled)
-                    {
-                        newIndex++;
-                        continue;
-                    }
-                }
-
-                MenuItem<SlideMenuItem>* oldSlideItem = &slideMenuList->mMenuItems[oldIndex];
-                {
-                    int tag = oldSlideItem->mCallbacks[2].mTag;
-                    if (((u32)((-tag) | tag) >> 31) > 0)
-                    {
-                        SlideMenuItem* type = oldSlideItem->mType;
-                        if (tag == FREE_FUNCTION)
-                        {
-                            oldSlideItem->mCallbacks[2].mFreeFunction(type);
-                        }
-                        else
-                        {
-                            (*oldSlideItem->mCallbacks[2].mFunctor)(type);
-                        }
-                    }
-                }
-
-                slideMenuList->mCurrentIndex = newIndex;
-
-                MenuItem<SlideMenuItem>* curSlideItem = &slideMenuList->mMenuItems[slideMenuList->mCurrentIndex];
-                {
-                    int tag = curSlideItem->mCallbacks[1].mTag;
-                    if (((u32)((-tag) | tag) >> 31) > 0)
-                    {
-                        SlideMenuItem* type = curSlideItem->mType;
-                        if (tag == FREE_FUNCTION)
-                        {
-                            curSlideItem->mCallbacks[1].mFreeFunction(type);
-                        }
-                        else
-                        {
-                            (*curSlideItem->mCallbacks[1].mFunctor)(type);
-                        }
-                    }
-                }
-
-                res = RES_OK;
-                break;
-            }
-
-            if (res == RES_OK)
-            {
-                if (ischaractervol)
-                {
-                    FEAudio::PlayRandomVoiceToggleSFX();
-                }
-                else
-                {
-                    FEAudio::PlayAnimAudioEvent("sfx_option_scroll_left", false);
-                }
-
-                if (mMenuItems.mCurrentIndex != 3)
-                {
-                    bool bModeChanged = mbUpdateMode;
-                    mbUpdateMode = false;
-                    Save();
-                    mbUpdateMode = bModeChanged;
-                }
-                else
-                {
-                    int mode;
-                    SlideMenuList* list = (SlideMenuList*)mSlideMenuLists[3];
-                    if (list != NULL)
-                    {
-                        SlideMenuItem** pType = &list->mMenuItems[list->mCurrentIndex].mType;
-                        mode = (*pType)->mUserEnumType;
-                    }
-                    else
-                    {
-                        mode = -1;
-                    }
-
-                    mSettings.Mode = (eAudioMode)mode;
-                    if (mSettings.Mode != mSettings.DefaultMode)
-                    {
-                        mbUpdateMode = true;
-                    }
-                    else
-                    {
-                        mbUpdateMode = false;
-                    }
-                }
-            }
-            else if (res == RES_NOT_CHANGED)
-            {
-                FEAudio::PlayAnimAudioEvent("sfx_deny", false);
-            }
-        }
-    }
-}
-/**
- * Offset/Address/Size: 0x2B04 | 0x800B7B48 | size: 0x44
- */
-void OptionsAudioMenuV2::Revert()
-{
-    memcpy(&mSettings, &mBackupSettings, sizeof(AudioSettings));
-    mSettings.ForceApplySettings(false);
-}
-
-/**
- * Offset/Address/Size: 0x2B48 | 0x800B7B8C | size: 0x110
- */
-void OptionsAudioMenuV2::Save()
-{
-    SlideMenuList* list;
-    int val;
-    SlideMenuItem** pType;
-
-    // Music Volume
-    list = (SlideMenuList*)mSlideMenuLists[0];
-    if (list != NULL)
-    {
-        pType = &list->mMenuItems[list->mCurrentIndex].mType;
-        val = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        val = -1;
-    }
-    mSettings.MusicVolume = val;
-
-    // SFX Volume
-    list = (SlideMenuList*)mSlideMenuLists[1];
-    if (list != NULL)
-    {
-        pType = &list->mMenuItems[list->mCurrentIndex].mType;
-        val = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        val = -1;
-    }
-    mSettings.SFXVolume = val;
-
-    // Voice Volume
-    list = (SlideMenuList*)mSlideMenuLists[2];
-    if (list != NULL)
-    {
-        pType = &list->mMenuItems[list->mCurrentIndex].mType;
-        val = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        val = -1;
-    }
-    mSettings.VoiceVolume = val;
-
-    // Audio Mode
-    list = (SlideMenuList*)mSlideMenuLists[3];
-    if (list != NULL)
-    {
-        pType = &list->mMenuItems[list->mCurrentIndex].mType;
-        val = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        val = -1;
-    }
-    mSettings.Mode = (eAudioMode)val;
-
-    mSettings.ApplySettings(mbUpdateMode, false);
-    if (mbUpdateMode)
-    {
-        AudioLoader::PlayFEMenuMusic();
-        mbUpdateMode = false;
-    }
-}
-
-/**
- * Offset/Address/Size: 0x2C58 | 0x800B7C9C | size: 0xEC
- */
-OptionsAudioMenuV2::~OptionsAudioMenuV2()
-{
-}
-
-/**
- * Offset/Address/Size: 0x2D44 | 0x800B7D88 | size: 0x76C
- */
-OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonComponent::ButtonState buttonstate, AudioSettings& settings)
-    : OptionsSubMenu(presentation, buttonstate)
-    , mSettings(settings)
-{
-    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
-
-    bool inpausestate;
-    char menuname[64];
-    TLInstance* instance;
-    TLComponentInstance* compinstance;
-
-    mbUpdateMode = false;
-
-    inpausestate = (nlTaskManager::m_pInstance->m_CurrState == 1);
-    if (inpausestate)
-    {
-        presentation->SetActiveSlide("Slide1");
-    }
-    else
-    {
-        presentation->SetActiveSlide(AUDIO_MENU_SLIDE);
-    }
-
-    presentation->Update(0.0f);
-
-    SetButtonState(buttonstate);
-    if (buttonstate == ButtonComponent::BS_A_AND_B)
-    {
-        SetAButtonLOC(0x9C81A82F);
-    }
-
-    TLSlide* currentSlide = presentation->m_currentSlide;
-
-    for (int i = 0; i < 4; i++)
-    {
-        nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
-
-        instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
-            currentSlide,
-            InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(menuname)));
-
-        int numAdded = mMenuItems.mNumItemsAdded;
-        MenuItem<TLComponentInstance>* menuItem = AudioOptionsMenuItemAt(mMenuItems, numAdded);
-        mMenuItems.mMenuItems[numAdded].mType = (TLComponentInstance*)instance;
-        mMenuItems.mNumItemsAdded++;
-
-        {
-            Function<TLComponentInstance*> openFunc;
-            openFunc.mTag = FREE_FUNCTION;
-            openFunc.mFreeFunction = SingleHighlite::OpenItem;
-            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[1] = openFunc;
-        }
-
-        {
-            Function<TLComponentInstance*> closeFunc;
-            closeFunc.mTag = FREE_FUNCTION;
-            closeFunc.mFreeFunction = SingleHighlite::CloseItem;
-            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[2] = closeFunc;
-        }
-
-        if (i == 0)
-        {
-            SingleHighlite::TempDisableSound();
-            int tag = menuItem->mCallbacks[1].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = menuItem->mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    menuItem->mCallbacks[1].mFreeFunction(type);
-                }
-                else
-                {
-                    (*menuItem->mCallbacks[1].mFunctor)(type);
-                }
-            }
-            menuItem->mDisabled = false;
-        }
-        else
-        {
-            int tag = menuItem->mCallbacks[2].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = menuItem->mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    menuItem->mCallbacks[2].mFreeFunction(type);
-                }
-                else
-                {
-                    (*menuItem->mCallbacks[2].mFunctor)(type);
-                }
-            }
-        }
-
-        if (inpausestate && i == 3)
-        {
-            menuItem->mDisabled = true;
-            menuItem->mType->m_bVisible = false;
-        }
-    }
-
-    mMenuItems.mFlags = 3;
-
-    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        presentation->m_currentSlide,
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("volume1")));
-    BuildSubMenuList(0, compinstance, false, mSettings.MusicVolume);
-
-    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        presentation->m_currentSlide,
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("volume2")));
-    BuildSubMenuList(1, compinstance, false, mSettings.SFXVolume);
-
-    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        presentation->m_currentSlide,
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("volume3")));
-    BuildSubMenuList(2, compinstance, false, mSettings.VoiceVolume);
-
-    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        presentation->m_currentSlide,
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("mode")));
-    BuildSubMenuList(3, compinstance, true, mSettings.Mode);
-    ((SlideMenuList*)mSlideMenuLists[3])->mFlags = 1;
-
-    if (inpausestate)
-    {
-        compinstance->m_bVisible = false;
-    }
-
-    SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
-    if (slideMenuList != NULL)
-    {
-        TLInstance* inst;
-        TLInstance* firstChild;
-        TLSlide* currentMenuSlide;
-        TLSlide* startSlide;
-        TLComponentInstance* activeCompinstance;
-
-        activeCompinstance = slideMenuList->mComponentInstance;
-        if (activeCompinstance != NULL)
-        {
-            if (activeCompinstance->GetActiveSlide() != NULL)
-            {
-                startSlide = activeCompinstance->GetActiveSlide();
-                currentMenuSlide = startSlide;
-
-                do
-                {
-                    activeCompinstance->SetActiveSlide(currentMenuSlide);
-                    firstChild = activeCompinstance->GetActiveSlide()->m_instances;
-                    inst = firstChild;
-                    if (firstChild != NULL)
-                    {
-                        do
-                        {
-                            if (inst->m_type == TLAT_TEXT)
-                            {
-                                inst->SetAssetColour(SubMenuHighliteColour);
-                            }
-                            else if (inst->m_type == TLAT_IMAGE)
-                            {
-                                u32 imageHash = inst->m_hash;
-                                if (imageHash != nlStringLowerHash("white_box"))
-                                {
-                                    inst->SetAssetColour(SubMenuHighliteColour);
-                                }
-                            }
-
-                            inst = inst->m_next;
-                        } while (inst != firstChild);
-                    }
-
-                    currentMenuSlide = currentMenuSlide->m_next;
-                } while (currentMenuSlide != startSlide);
-
-                activeCompinstance->SetActiveSlide(startSlide);
-            }
-        }
-    }
-
-    memcpy(&mBackupSettings, &mSettings, sizeof(AudioSettings));
-    mSettingsCRC = nlChecksum32(&mBackupSettings, sizeof(AudioSettings));
-}
-
-/**
- * Offset/Address/Size: 0x34B0 | 0x800B84F4 | size: 0x88C
- * TODO: 99.69% match - callback temporary stack slots still differ in slide menu item setup.
- */
-void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstance, CustomPowerups startOption, FEPresentation* presentation)
-{
-    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
-    typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML;
-    typedef BindExp1<void, MemFunImpl_SML, SlideMenuList*> BindExp1_SML;
-
-    GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
-    int slidesAdded = 1;
-    int startindex = 0;
-    char slidename[64];
     int i;
-    TLTextInstance* pText;
-    nlColour lockColour;
-    TLComponentInstance* pMenuComp;
-    TLComponentInstance* pArrowComp;
-    MenuItem<SlideMenuItem>* menuItem;
-    unsigned long slideHash;
-    bool unlocked;
-    SlideMenuList* sml;
-
-    mSlideMenuLists[0] = (MenuList<SlideMenuList>*)(new (nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance));
-
-    compinstance->SetActiveSlide("Slide1");
+    for (i = 0, menuName = MENU_ITEMS; i < 2; i++, menuName++)
     {
-        slideHash = compinstance->GetActiveSlide()->m_hash;
-        sml = (SlideMenuList*)mSlideMenuLists[0];
-        SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
-        if (item != NULL)
-        {
-            TLComponentInstance* comp = sml->mComponentInstance;
-            *(char**)item = __vt__13SlideMenuItem;
-            item->mSlideMenuHash = (unsigned long)-1;
-            item->mComponentInstance = comp;
-            item->mUserEnumType = 0;
-        }
-        item->mSlideMenuHash = slideHash;
-
-        menuItem = &sml->mMenuItems[sml->mNumItemsAdded];
-        menuItem->mType = item;
-        sml->mNumItemsAdded++;
-
-        BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
-            MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
-        menuItem->mCallbacks[1] = Function<FnSlideMenuItemCb>(bind);
-    }
-
-    for (i = 1; i < 6; i++)
-    {
-        switch (i)
-        {
-        case 1:
-            unlocked = gameInfo->IsCustomExplosiveUnlocked();
-            break;
-        case 2:
-            unlocked = gameInfo->IsCustomFreezingUnlocked();
-            break;
-        case 3:
-            unlocked = gameInfo->IsCustomShellsUnlocked();
-            break;
-        case 4:
-            unlocked = gameInfo->IsCustomGiantUnlocked();
-            break;
-        case 5:
-            unlocked = gameInfo->IsCustomEnhanceUnlocked();
-            break;
-        }
-
-        if (unlocked)
-        {
-            nlSNPrintf(slidename, 64, "Slide%d", i + 1);
-            compinstance->SetActiveSlide(slidename);
-
-            slideHash = compinstance->GetActiveSlide()->m_hash;
-            sml = (SlideMenuList*)mSlideMenuLists[0];
-            SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
-            if (item != NULL)
-            {
-                TLComponentInstance* comp = sml->mComponentInstance;
-                *(char**)item = __vt__13SlideMenuItem;
-                item->mSlideMenuHash = (unsigned long)-1;
-                item->mComponentInstance = comp;
-                item->mUserEnumType = i;
-            }
-            item->mSlideMenuHash = slideHash;
-
-            MenuItem<SlideMenuItem>* menuItems = sml->mMenuItems;
-            menuItem = &menuItems[sml->mNumItemsAdded];
-            menuItem->mType = item;
-            sml->mNumItemsAdded++;
-
-            BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
-                MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
-            menuItem->mCallbacks[1] = Function<FnSlideMenuItemCb>(bind);
-
-            if (startOption == i)
-            {
-                startindex = slidesAdded;
-            }
-
-            slidesAdded++;
-        }
-    }
-
-    {
-        SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[0];
-        menuItem = &sml->mMenuItems[sml->mCurrentIndex];
-        int tag = menuItem->mCallbacks[2].mTag;
-        if (((u32)((-tag) | tag) >> 31) > 0)
-        {
-            SlideMenuItem* type = menuItem->mType;
-            if (tag == FREE_FUNCTION)
-            {
-                menuItem->mCallbacks[2].mFreeFunction(type);
-            }
-            else
-            {
-                (*menuItem->mCallbacks[2].mFunctor)(type);
-            }
-        }
-
-        sml->mCurrentIndex = startindex;
-
-        menuItem = &sml->mMenuItems[sml->mCurrentIndex];
-        tag = menuItem->mCallbacks[1].mTag;
-        if (((u32)((-tag) | tag) >> 31) > 0)
-        {
-            SlideMenuItem* type = menuItem->mType;
-            if (tag == FREE_FUNCTION)
-            {
-                menuItem->mCallbacks[1].mFreeFunction(type);
-            }
-            else
-            {
-                (*menuItem->mCallbacks[1].mFunctor)(type);
-            }
-        }
-
-        if (slidesAdded > 1)
-        {
-            ((SlideMenuList*)mSlideMenuLists[0])->mFlags = 1;
-
-            if (((SlideMenuList*)mSlideMenuLists[0]) != NULL)
-            {
-                TLInstance* inst;
-                TLInstance* firstChild;
-                TLSlide* currentMenuSlide;
-                TLSlide* startSlide;
-                TLComponentInstance* comp = ((SlideMenuList*)mSlideMenuLists[0])->mComponentInstance;
-                if (comp != NULL && comp->GetActiveSlide() != NULL)
-                {
-                    startSlide = comp->GetActiveSlide();
-                    currentMenuSlide = startSlide;
-
-                    do
-                    {
-                        comp->SetActiveSlide(currentMenuSlide);
-                        firstChild = comp->GetActiveSlide()->m_instances;
-                        inst = firstChild;
-                        if (firstChild != NULL)
-                        {
-                            do
-                            {
-                                if (inst->m_type == TLAT_TEXT)
-                                {
-                                    inst->SetAssetColour(SubMenuHighliteColour);
-                                }
-                                else if (inst->m_type == TLAT_IMAGE)
-                                {
-                                    unsigned long instHash = inst->m_hash;
-                                    if (instHash != nlStringLowerHash("white_box"))
-                                    {
-                                        inst->SetAssetColour(SubMenuHighliteColour);
-                                    }
-                                }
-                                inst = inst->m_next;
-                            } while (inst != firstChild);
-                        }
-
-                        currentMenuSlide = currentMenuSlide->m_next;
-                    } while (currentMenuSlide != startSlide);
-
-                    comp->SetActiveSlide(startSlide);
-                }
-            }
-        }
-        else
-        {
-            pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-                compinstance->GetActiveSlide(),
-                InlineHasher(nlStringLowerHash("EXPLOSIVE")),
-                InlineHasher(0));
-
-            pText->SetStringId("CHEAT_LOCKED");
-
-            lockColour.c[0] = 0xFE;
-            lockColour.c[1] = 0xEE;
-            lockColour.c[2] = 0x00;
-            lockColour.c[3] = 0xFF;
-            pText->SetAssetColour(lockColour);
-
-            pMenuComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-                presentation->m_currentSlide,
-                InlineHasher(nlStringLowerHash("Layer")),
-                InlineHasher(nlStringLowerHash("MENU ITEM1")));
-
-            pArrowComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-                pMenuComp->GetActiveSlide(),
-                InlineHasher(nlStringLowerHash("ARROWS")),
-                InlineHasher(0));
-
-            pArrowComp->m_bVisible = false;
-
-            ((SlideMenuList*)mSlideMenuLists[0])->mMenuItems[((SlideMenuList*)mSlideMenuLists[0])->mCurrentIndex].mLocked = true;
-        }
-    }
-}
-
-/**
- * Offset/Address/Size: 0x3D3C | 0x800B8D80 | size: 0x7D4
- * TODO: 99.77% match - callback and FEFinder temporaries still use different stack slots.
- */
-void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstance* compinstance, FEPresentation* presentation, bool unlocked, int startindex)
-{
-    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
-    typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML;
-    typedef BindExp1<void, MemFunImpl_SML, SlideMenuList*> BindExp1_SML;
-    nlColour lockColour;
-
-    SlideMenuList* list = new (nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance);
-    mSlideMenuLists[menuitem] = (MenuList<SlideMenuList>*)list;
-
-    compinstance->SetActiveSlide("Slide2");
-
-    unsigned long hash = compinstance->GetActiveSlide()->m_hash;
-    SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[menuitem];
-    SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
-    if (item != NULL)
-    {
-        TLComponentInstance* comp = sml->mComponentInstance;
-        *(char**)item = __vt__13SlideMenuItem;
-        item->mSlideMenuHash = (unsigned long)-1;
-        item->mComponentInstance = comp;
-        item->mUserEnumType = 0;
-    }
-    item->mSlideMenuHash = hash;
-
-    MenuItem<SlideMenuItem>* menuItem = &sml->mMenuItems[sml->mNumItemsAdded];
-    menuItem->mType = item;
-    sml->mNumItemsAdded++;
-
-    {
-        BindExp1_SML bind = Bind<void>(
-            MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
-        Function<FnSlideMenuItemCb> callback(bind);
-        menuItem->mCallbacks[1] = callback;
-    }
-
-    bool wraps = true;
-    if (!unlocked)
-    {
-        startindex = 0;
-        wraps = false;
-
-        TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-            compinstance->GetActiveSlide(),
-            InlineHasher(nlStringLowerHash("OFF")),
+        TLComponentInstance* instance = FEFinder<TLComponentInstance, 4>::Find(
+            slide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash(*menuName)),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
             InlineHasher(0));
 
-        pText->SetStringId("CHEAT_LOCKED");
+        instance->SetActiveSlide((i == 0) ? DoubleHighlite::SLIDE_IN : DoubleHighlite::SLIDE_OUT);
+        instance->Update(0.0f);
 
-        lockColour.c[0] = 0xFE;
-        lockColour.c[1] = 0xEE;
-        lockColour.c[2] = 0x00;
-        lockColour.c[3] = 0xFF;
-        pText->SetAssetColour(lockColour);
+        menuItem = mMenuItems.AddItem(instance);
 
-        char slidename[64] = { 0 };
-        nlSNPrintf(slidename, 64, "MENU ITEM%d", menuitem + 1);
+        menuItem->SetCallback(ON_HIGHLIGHT, openItem);
 
-        TLComponentInstance* pMenuComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-            presentation->m_currentSlide,
-            InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(slidename)));
-
-        pMenuComp->SetActiveSlide("IN");
-
-        TLComponentInstance* pArrowComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-            pMenuComp->GetActiveSlide(),
-            InlineHasher(nlStringLowerHash("ARROWS")),
-            InlineHasher(0));
-
-        pArrowComp->m_bVisible = false;
-        pMenuComp->SetActiveSlide("OUT");
-
-        ((SlideMenuList*)mSlideMenuLists[menuitem])->mMenuItems[((SlideMenuList*)mSlideMenuLists[menuitem])->mCurrentIndex].mLocked = true;
-    }
-    else
-    {
-        compinstance->SetActiveSlide("Slide1");
-
-        hash = compinstance->GetActiveSlide()->m_hash;
-        sml = (SlideMenuList*)mSlideMenuLists[menuitem];
-        item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
-        if (item != NULL)
-        {
-            TLComponentInstance* comp = sml->mComponentInstance;
-            *(char**)item = __vt__13SlideMenuItem;
-            item->mSlideMenuHash = (unsigned long)-1;
-            item->mComponentInstance = comp;
-            item->mUserEnumType = 1;
-        }
-        item->mSlideMenuHash = hash;
-
-        menuItem = &sml->mMenuItems[sml->mNumItemsAdded];
-        menuItem->mType = item;
-        sml->mNumItemsAdded++;
-
-        {
-            BindExp1_SML bind = Bind<void>(
-                MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
-            Function<FnSlideMenuItemCb> callback(bind);
-            menuItem->mCallbacks[1] = callback;
-        }
-    }
-
-    {
-        SlideMenuList* s = (SlideMenuList*)mSlideMenuLists[menuitem];
-        MenuItem<SlideMenuItem>* mi = &s->mMenuItems[s->mCurrentIndex];
-        int tag = mi->mCallbacks[2].mTag;
-        if (((u32)((-tag) | tag) >> 31) > 0)
-        {
-            SlideMenuItem* type = mi->mType;
-            if (tag == FREE_FUNCTION)
-            {
-                mi->mCallbacks[2].mFreeFunction(type);
-            }
-            else
-            {
-                (*mi->mCallbacks[2].mFunctor)(type);
-            }
-        }
-
-        s->mCurrentIndex = startindex;
-
-        mi = &s->mMenuItems[s->mCurrentIndex];
-        tag = mi->mCallbacks[1].mTag;
-        if (((u32)((-tag) | tag) >> 31) > 0)
-        {
-            SlideMenuItem* type = mi->mType;
-            if (tag == FREE_FUNCTION)
-            {
-                mi->mCallbacks[1].mFreeFunction(type);
-            }
-            else
-            {
-                (*mi->mCallbacks[1].mFunctor)(type);
-            }
-        }
-
-        if (wraps)
-        {
-            ((SlideMenuList*)mSlideMenuLists[menuitem])->mFlags = 1;
-        }
-    }
-}
-
-/**
- * Offset/Address/Size: 0x4510 | 0x800B9554 | size: 0x40
- */
-void OptionsCheatsMenu::Revert()
-{
-    memcpy(&mSettings, &mBackupSettings, sizeof(CheatSettings));
-    mSettings.OnSettingsUpdated();
-}
-
-/**
- * Offset/Address/Size: 0x4550 | 0x800B9594 | size: 0x170
- */
-void OptionsCheatsMenu::Save()
-{
-    CheatSettings localSettings;
-    SlideMenuList* list;
-    int val;
-    SlideMenuItem** pType;
-
-    // Custom Powerups
-    list = (SlideMenuList*)mSlideMenuLists[0];
-    if (list != NULL)
-    {
-        pType = &list->mMenuItems[list->mCurrentIndex].mType;
-        val = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        val = -1;
-    }
-    localSettings.mCustomPowerups = (CustomPowerups)val;
-
-    // Stunned Goalies
-    list = (SlideMenuList*)mSlideMenuLists[1];
-    if (list != NULL)
-    {
-        pType = &list->mMenuItems[list->mCurrentIndex].mType;
-        val = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        val = -1;
-    }
-    localSettings.mStunnedGoalies = (val != 0);
-
-    // Infinite Powerups
-    list = (SlideMenuList*)mSlideMenuLists[2];
-    if (list != NULL)
-    {
-        pType = &list->mMenuItems[list->mCurrentIndex].mType;
-        val = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        val = -1;
-    }
-    localSettings.mInfinitePowerups = (val != 0);
-
-    // Cheat TBD1
-    list = (SlideMenuList*)mSlideMenuLists[3];
-    if (list != NULL)
-    {
-        pType = &list->mMenuItems[list->mCurrentIndex].mType;
-        val = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        val = -1;
-    }
-    localSettings.mCheatTBD1Enabled = (val != 0);
-
-    // Cheat TBD2
-    list = (SlideMenuList*)mSlideMenuLists[4];
-    if (list != NULL)
-    {
-        pType = &list->mMenuItems[list->mCurrentIndex].mType;
-        val = (*pType)->mUserEnumType;
-    }
-    else
-    {
-        val = -1;
-    }
-    localSettings.mCheatTBD2Enabled = (val != 0);
-
-    mSettings = localSettings;
-    mSettings.OnSettingsUpdated();
-}
-
-/**
- * Offset/Address/Size: 0x46C0 | 0x800B9704 | size: 0xEC
- */
-OptionsCheatsMenu::~OptionsCheatsMenu()
-{
-}
-
-/**
- * Offset/Address/Size: 0x47AC | 0x800B97F0 | size: 0x720
- * TODO: 99.88% match - GameInfoManager pointer and cheat flag registers differ.
- */
-OptionsCheatsMenu::OptionsCheatsMenu(FEPresentation* pres, ButtonComponent::ButtonState btnState, CheatSettings& settings)
-    : OptionsSubMenu(pres, btnState)
-    , mSettings(settings)
-{
-    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
-
-    char menuname[64];
-    int i;
-    TLInstance* instance;
-    TLComponentInstance* compinstance;
-
-    pres->SetActiveSlide(CHEATS_MENU_SLIDE);
-    pres->Update(0.0f);
-
-    SetButtonState(btnState);
-    if (btnState == ButtonComponent::BS_A_AND_B)
-    {
-        SetAButtonLOC(0x9C81A82F);
-    }
-
-    TLSlide* currentSlide = pres->m_currentSlide;
-
-    for (i = 0; i < 5; i++)
-    {
-        nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
-
-        instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
-            currentSlide,
-            InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(menuname)));
-
-        int numAdded = mMenuItems.mNumItemsAdded;
-        MenuItem<TLComponentInstance>* menuItem = AudioOptionsMenuItemAt(mMenuItems, numAdded);
-        mMenuItems.mMenuItems[numAdded].mType = (TLComponentInstance*)instance;
-        mMenuItems.mNumItemsAdded++;
-
-        {
-            Function<TLComponentInstance*> openFunc;
-            openFunc.mTag = FREE_FUNCTION;
-            openFunc.mFreeFunction = SingleHighlite::OpenItem;
-            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[1] = openFunc;
-        }
-
-        {
-            Function<TLComponentInstance*> closeFunc;
-            closeFunc.mTag = FREE_FUNCTION;
-            closeFunc.mFreeFunction = SingleHighlite::CloseItem;
-            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[2] = closeFunc;
-        }
+        menuItem->SetCallback(ON_UNHIGHLIGHT, closeItem);
 
         if (i == 0)
-        {
-            SingleHighlite::TempDisableSound();
-        }
+            DoubleHighlite::TempDisableSound();
 
-        menuItem->ApplyAction((i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT);
-
-        mSlideMenuLists[i] = NULL;
+        menuItem->RunCallback((i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT);
     }
 
-    mMenuItems.mFlags = 1;
-
-    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        currentSlide,
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("CHOICES")));
-    BuildCustomPowerupsList(compinstance, mSettings.mCustomPowerups, pres);
-
-    GameInfoManager* gm = nlSingleton<GameInfoManager>::Instance();
-
-    bool stunnedGoalies;
-    TLComponentInstance* comp3 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        currentSlide,
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ON/OFF3")));
-    stunnedGoalies = mSettings.mStunnedGoalies;
-    BuildLockableSubMenuList(1, comp3, pres, gm->IsGlassJawGoalieUnlocked(), stunnedGoalies);
-
-    bool infinitePowerups;
-    TLComponentInstance* comp4 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        currentSlide,
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ON/OFF4")));
-    infinitePowerups = mSettings.mInfinitePowerups;
-    BuildLockableSubMenuList(2, comp4, pres, gm->IsUnlimtedPowerupsUnlocked(), infinitePowerups);
-
-    bool cheatTBD1;
-    TLComponentInstance* comp5 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        currentSlide,
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ON/OFF5")));
-    cheatTBD1 = mSettings.mCheatTBD1Enabled;
-    BuildLockableSubMenuList(3, comp5, pres, gm->IsTiltCheatUnlocked(), cheatTBD1);
-
-    bool cheatTBD2;
-    TLComponentInstance* comp6 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        currentSlide,
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ON/OFF6")));
-    cheatTBD2 = mSettings.mCheatTBD2Enabled;
-    BuildLockableSubMenuList(4, comp6, pres, gm->IsAllSTSCheatUnlocked(), cheatTBD2);
-
-    memcpy(&mBackupSettings, &mSettings, sizeof(CheatSettings));
-    mSettingsCRC = nlChecksum32(&mBackupSettings, sizeof(CheatSettings));
+    mMenuItems.SetFlag(1);
 }
 
 /**
- * Offset/Address/Size: 0x4ECC | 0x800B9F10 | size: 0xB8
+ * Offset/Address/Size: 0x124 | 0x800B5168 | size: 0xEC
  */
-void OptionsSubMenu::SetAButtonLOC(unsigned long locStrId)
+OptionsSaveLoad::~OptionsSaveLoad()
 {
-    FORCE_DONT_INLINE;
+}
 
-    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    union
+/**
+ * Offset/Address/Size: 0x8 | 0x800B504C | size: 0x11C
+ */
+void OptionsSaveLoad::Update(float dt)
+{
+    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
     {
-        FindTextByValue byValue;
-        FindTextByRef byRef;
-    } findText;
-
-    if (m_buttons == NULL)
-    {
-        return;
+        if (mMenuItems.GetActiveItemIndex() == 0)
+        {
+            ResetEnableSaveLoadFlag();
+            if (SaveLoadScene::IsIOEnabled())
+            {
+                nlSingleton<GameSceneManager>::s_pInstance->Pop();
+                SaveLoadScene* handler = (SaveLoadScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_ASK_SAVE, SCREEN_FORWARD, false);
+                handler->mNextScene = SCENE_OPTIONS;
+            }
+        }
+        else
+        {
+            ResetEnableSaveLoadFlag();
+            if (SaveLoadScene::IsIOEnabled())
+            {
+                nlSingleton<GameSceneManager>::s_pInstance->Pop();
+                SaveLoadScene* handler = (SaveLoadScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_ASK_LOAD, SCREEN_FORWARD, false);
+                handler->mNextScene = SCENE_OPTIONS;
+            }
+        }
+        FEAudio::PlayAnimAudioEvent("sfx_accept", false);
     }
-
-    volatile InlineHasher hB, hA;
-    volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-    findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-    h8.m_Hash = 0;
-    h9.m_Hash = 0;
-
-    unsigned long hash = nlStringLowerHash("accept");
-    hB.m_Hash = hash;
-    hA.m_Hash = hash;
-
-    TLTextInstance* textInstance = findText.byRef(
-        m_buttons->GetActiveSlide(),
-        (InlineHasher&)hB,
-        (InlineHasher&)h9,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
-
-    if (textInstance != NULL)
+    else
     {
-        textInstance->m_LocStrId = locStrId;
-        textInstance->m_OverloadFlags |= 0x8u;
+        OptionsSubMenu::Update(dt);
     }
 }
 
 /**
- * Offset/Address/Size: 0x4F84 | 0x800B9FC8 | size: 0xC8
+ * Offset/Address/Size: 0x4 | 0x800B5048 | size: 0x4
  */
-void OptionsSubMenu::SetButtonState(ButtonComponent::ButtonState buttonState)
+void OptionsSaveLoad::Save()
 {
-    FORCE_DONT_INLINE;
-
-    typedef TLComponentInstance* (*FindComponentByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindComponentByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    union
-    {
-        FindComponentByValue byValue;
-        FindComponentByRef byRef;
-    } findComponent;
-
-    volatile InlineHasher hB, hA;
-    volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-
-    h9.m_Hash = h8.m_Hash = nlStringLowerHash("buttons");
-    hA.m_Hash = hB.m_Hash = nlStringLowerHash("Layer");
-
-    findComponent.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-
-    m_buttons = findComponent.byRef(
-        m_pres->m_currentSlide,
-        (InlineHasher&)hB,
-        (InlineHasher&)h9,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
-
-    mButtons.mButtonInstance = m_buttons;
-    mButtons.SetState(buttonState);
-    m_currentButtonState = buttonState;
-
-    SetAButtonLOC(0x527F4084);
+    // Empty
 }
 
 /**
- * Offset/Address/Size: 0x504C | 0x800BA090 | size: 0x434
- * TODO: 99.63% match - r28/r29 register swap for this+menuitem offset and bind/callback temporary stack layout
+ * Offset/Address/Size: 0x0 | 0x800B5044 | size: 0x4
  */
-void OptionsSubMenu::BuildSubMenuList(int menuitem, TLComponentInstance* compinstance, bool wraps, int startindex)
+void OptionsSaveLoad::Revert()
 {
-    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
-    typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML;
-    typedef BindExp1<void, MemFunImpl_SML, SlideMenuList*> BindExp1_SML;
-
-    SlideMenuList* list = new (nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance);
-    mSlideMenuLists[menuitem] = (MenuList<SlideMenuList>*)list;
-
-    MenuItem<SlideMenuItem>* menuItem;
-    char slidename[64] = { 0 };
-
-    int slidenum = 0;
-    do
-    {
-        nlSNPrintf(slidename, 64, "Slide%d", slidenum + 1);
-        compinstance->SetActiveSlide(slidename);
-
-        if (compinstance->GetActiveSlide() == NULL)
-        {
-            break;
-        }
-
-        unsigned long slideHash = compinstance->GetActiveSlide()->m_hash;
-
-        SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[menuitem];
-
-        SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
-        if (item != NULL)
-        {
-            TLComponentInstance* comp = sml->mComponentInstance;
-            *(char**)item = __vt__13SlideMenuItem;
-            item->mSlideMenuHash = (unsigned long)-1;
-            item->mComponentInstance = comp;
-            item->mUserEnumType = slidenum;
-        }
-        item->mSlideMenuHash = slideHash;
-
-        MenuItem<SlideMenuItem>* menuItems = sml->mMenuItems;
-        menuItem = &menuItems[sml->mNumItemsAdded];
-        menuItem->mType = item;
-        sml->mNumItemsAdded++;
-
-        {
-            BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
-                MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
-            Function<FnSlideMenuItemCb> callback(bind);
-            menuItem->mCallbacks[1] = callback;
-        }
-    } while (++slidenum);
-
-    list = (SlideMenuList*)mSlideMenuLists[menuitem];
-    menuItem = &list->mMenuItems[list->mCurrentIndex];
-    int tag = menuItem->mCallbacks[2].mTag;
-    if (((u32)((-tag) | tag) >> 31) > 0)
-    {
-        SlideMenuItem* type = menuItem->mType;
-        if (tag == FREE_FUNCTION)
-            menuItem->mCallbacks[2].mFreeFunction(type);
-        else
-            (*menuItem->mCallbacks[2].mFunctor)(type);
-    }
-
-    list->mCurrentIndex = startindex;
-
-    menuItem = &list->mMenuItems[list->mCurrentIndex];
-    tag = menuItem->mCallbacks[1].mTag;
-    if (((u32)((-tag) | tag) >> 31) > 0)
-    {
-        SlideMenuItem* type = menuItem->mType;
-        if (tag == FREE_FUNCTION)
-            menuItem->mCallbacks[1].mFreeFunction(type);
-        else
-            (*menuItem->mCallbacks[1].mFunctor)(type);
-    }
-
-    if (wraps)
-    {
-        ((SlideMenuList*)mSlideMenuLists[menuitem])->mFlags = 1;
-    }
+    // Empty
 }
-
-/**
- * Offset/Address/Size: 0x5480 | 0x800BA4C4 | size: 0x124
- */
-void OptionsSubMenu::GoBack()
-{
-    TLInstance* inst;
-    TLInstance* firstChild;
-    TLSlide* currentSlide;
-    TLSlide* startSlide;
-    TLComponentInstance* compInstance;
-    u32 hash;
-
-    SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
-    if (slideMenuList != NULL)
-    {
-        compInstance = slideMenuList->mComponentInstance;
-        if (compInstance != NULL && compInstance->GetActiveSlide() != NULL)
-        {
-            startSlide = compInstance->GetActiveSlide();
-            currentSlide = startSlide;
-
-            do
-            {
-                compInstance->SetActiveSlide(currentSlide);
-                firstChild = compInstance->GetActiveSlide()->m_instances;
-                inst = firstChild;
-                if (firstChild != NULL)
-                {
-                    do
-                    {
-                        if (inst->m_type == (eTimeLineAssetType)3)
-                        {
-                            inst->SetAssetColour(SubMenuUnhighliteColour);
-                        }
-                        else if (inst->m_type == (eTimeLineAssetType)2)
-                        {
-                            hash = inst->m_hash;
-                            if (hash != nlStringLowerHash("white_box"))
-                            {
-                                inst->SetAssetColour(SubMenuUnhighliteColour);
-                            }
-                        }
-                        inst = inst->m_next;
-                    } while (inst != firstChild);
-                }
-                currentSlide = currentSlide->m_next;
-            } while (currentSlide != startSlide);
-
-            compInstance->SetActiveSlide(startSlide);
-        }
-    }
-
-    m_pres->SetActiveSlide(MAIN_MENU_SLIDE);
-    m_pres->Update(0.0f);
-    SetButtonState(ButtonComponent::BS_A_AND_B);
-}
-
-/**
- * Offset/Address/Size: 0x55A4 | 0x800BA5E8 | size: 0xA30
- * TODO: 99.75% match - first unhighlight component/hash registers and slide-menu newIndex temps differ.
- */
-void OptionsSubMenu::Update(float)
-{
-    int flags;
-    int skipDisabled;
-    int wrapList;
-    int oldIndex;
-    int newIndex;
-    int tag;
-
-    mButtons.CentreButtons();
-
-    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
-    {
-        bool locked;
-        if (mSlideMenuLists[mMenuItems.mCurrentIndex] != NULL
-            && ((SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex])
-                ->mMenuItems[((SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex])->mCurrentIndex]
-                .mLocked)
-        {
-            locked = true;
-        }
-        else
-        {
-            locked = false;
-        }
-
-        if (!locked)
-        {
-            oldIndex = mMenuItems.mCurrentIndex;
-            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[oldIndex];
-            if (slideMenuList != NULL)
-            {
-                TLComponentInstance* comp = slideMenuList->mComponentInstance;
-                HighliteSlideComponentAlt(SubMenuUnhighliteColour, comp);
-            }
-        }
-
-        int flags = mMenuItems.mFlags;
-        int skipDisabled;
-        int wrapList = flags & 1;
-        skipDisabled = flags & 2;
-        int oldIndex = mMenuItems.mCurrentIndex;
-        int newIndex = oldIndex - 1;
-
-        while (true)
-        {
-            if (wrapList)
-            {
-                if (newIndex < 0)
-                {
-                    newIndex = mMenuItems.mNumItemsAdded - 1;
-                }
-            }
-            else if (newIndex < 0)
-            {
-                break;
-            }
-
-            if (skipDisabled)
-            {
-                if (mMenuItems.mMenuItems[newIndex].mDisabled)
-                {
-                    newIndex--;
-                    continue;
-                }
-            }
-
-            tag = mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[oldIndex].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mFunctor)(type);
-                }
-            }
-
-            mMenuItems.mCurrentIndex = newIndex;
-
-            tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mFunctor)(type);
-                }
-            }
-            break;
-        }
-
-        if (mSlideMenuLists[mMenuItems.mCurrentIndex] != NULL
-            && ((SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex])
-                ->mMenuItems[((SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex])->mCurrentIndex]
-                .mLocked)
-        {
-            locked = true;
-        }
-        else
-        {
-            locked = false;
-        }
-
-        if (!locked)
-        {
-            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[newIndex];
-            if (slideMenuList != NULL)
-            {
-                TLComponentInstance* comp = slideMenuList->mComponentInstance;
-                HighliteSlideComponent(comp, SubMenuHighliteColour);
-            }
-        }
-
-        return;
-    }
-
-    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
-    {
-        bool locked;
-        newIndex = mMenuItems.mCurrentIndex;
-        if (mSlideMenuLists[newIndex] != NULL
-            && ((SlideMenuList*)mSlideMenuLists[newIndex])
-                ->mMenuItems[((SlideMenuList*)mSlideMenuLists[newIndex])->mCurrentIndex]
-                .mLocked)
-        {
-            locked = true;
-        }
-        else
-        {
-            locked = false;
-        }
-
-        if (!locked)
-        {
-            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
-            if (slideMenuList != NULL)
-            {
-                TLComponentInstance* comp = slideMenuList->mComponentInstance;
-                HighliteSlideComponent(comp, SubMenuUnhighliteColour);
-            }
-        }
-
-        int flags = mMenuItems.mFlags;
-        int skipDisabled;
-        int wrapList = flags & 1;
-        skipDisabled = flags & 2;
-        int oldIndex = mMenuItems.mCurrentIndex;
-        int newIndex = oldIndex + 1;
-
-        while (true)
-        {
-            if (wrapList)
-            {
-                newIndex = newIndex % mMenuItems.mNumItemsAdded;
-            }
-            else if (newIndex >= mMenuItems.mNumItemsAdded)
-            {
-                break;
-            }
-
-            if (skipDisabled)
-            {
-                if (mMenuItems.mMenuItems[newIndex].mDisabled)
-                {
-                    newIndex++;
-                    continue;
-                }
-            }
-
-            tag = mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[oldIndex].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mFunctor)(type);
-                }
-            }
-
-            mMenuItems.mCurrentIndex = newIndex;
-
-            tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mFunctor)(type);
-                }
-            }
-            break;
-        }
-
-        if (mSlideMenuLists[mMenuItems.mCurrentIndex] != NULL
-            && ((SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex])
-                ->mMenuItems[((SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex])->mCurrentIndex]
-                .mLocked)
-        {
-            locked = true;
-        }
-        else
-        {
-            locked = false;
-        }
-
-        if (!locked)
-        {
-            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[newIndex];
-            if (slideMenuList != NULL)
-            {
-                TLComponentInstance* comp = slideMenuList->mComponentInstance;
-                HighliteSlideComponent(comp, SubMenuHighliteColour);
-            }
-        }
-
-        return;
-    }
-
-    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL))
-    {
-        int menuIndex = mMenuItems.mCurrentIndex;
-        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[menuIndex];
-        if (slideMenuList != NULL)
-        {
-            MenuResult res = RES_ERROR;
-
-            int flags = slideMenuList->mFlags;
-            int skipDisabled;
-            int wrapList = flags & 1;
-            skipDisabled = flags & 2;
-            int oldIndex = slideMenuList->mCurrentIndex;
-            newIndex = oldIndex - 1;
-
-            while (true)
-            {
-                if (wrapList)
-                {
-                    if (newIndex < 0)
-                    {
-                        newIndex = slideMenuList->mNumItemsAdded - 1;
-                    }
-                }
-                else if (newIndex < 0)
-                {
-                    res = RES_NOT_CHANGED;
-                    break;
-                }
-
-                if (skipDisabled)
-                {
-                    if (slideMenuList->mMenuItems[newIndex].mDisabled)
-                    {
-                        newIndex--;
-                        continue;
-                    }
-                }
-
-                MenuItem<SlideMenuItem>* oldSlideItem = &slideMenuList->mMenuItems[oldIndex];
-                {
-                    int tag = oldSlideItem->mCallbacks[2].mTag;
-                    if (((u32)((-tag) | tag) >> 31) > 0)
-                    {
-                        SlideMenuItem* type = oldSlideItem->mType;
-                        if (tag == FREE_FUNCTION)
-                        {
-                            oldSlideItem->mCallbacks[2].mFreeFunction(type);
-                        }
-                        else
-                        {
-                            (*oldSlideItem->mCallbacks[2].mFunctor)(type);
-                        }
-                    }
-                }
-
-                slideMenuList->mCurrentIndex = newIndex;
-
-                MenuItem<SlideMenuItem>* curSlideItem = &slideMenuList->mMenuItems[slideMenuList->mCurrentIndex];
-                {
-                    int tag = curSlideItem->mCallbacks[1].mTag;
-                    if (((u32)((-tag) | tag) >> 31) > 0)
-                    {
-                        SlideMenuItem* type = curSlideItem->mType;
-                        if (tag == FREE_FUNCTION)
-                        {
-                            curSlideItem->mCallbacks[1].mFreeFunction(type);
-                        }
-                        else
-                        {
-                            (*curSlideItem->mCallbacks[1].mFunctor)(type);
-                        }
-                    }
-                }
-
-                res = RES_OK;
-                break;
-            }
-
-            if (res == RES_OK)
-            {
-                FEAudio::PlayAnimAudioEvent("sfx_option_scroll_left", false);
-                Save();
-            }
-            else if (res == RES_NOT_CHANGED)
-            {
-                FEAudio::PlayAnimAudioEvent("sfx_deny", false);
-            }
-        }
-
-        return;
-    }
-
-    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xC, true, NULL))
-    {
-        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
-        if (slideMenuList != NULL)
-        {
-            MenuResult res = RES_ERROR;
-
-            oldIndex = slideMenuList->mCurrentIndex;
-            flags = slideMenuList->mFlags;
-            wrapList = flags & 1;
-            skipDisabled = flags & 2;
-            newIndex = oldIndex + 1;
-
-            while (true)
-            {
-                if (wrapList)
-                {
-                    newIndex = newIndex % slideMenuList->mNumItemsAdded;
-                }
-                else if (newIndex >= slideMenuList->mNumItemsAdded)
-                {
-                    res = RES_NOT_CHANGED;
-                    break;
-                }
-
-                if (skipDisabled)
-                {
-                    if (slideMenuList->mMenuItems[newIndex].mDisabled)
-                    {
-                        newIndex++;
-                        continue;
-                    }
-                }
-
-                MenuItem<SlideMenuItem>* oldSlideItem = &slideMenuList->mMenuItems[oldIndex];
-                {
-                    int tag = oldSlideItem->mCallbacks[2].mTag;
-                    if (((u32)((-tag) | tag) >> 31) > 0)
-                    {
-                        SlideMenuItem* type = oldSlideItem->mType;
-                        if (tag == FREE_FUNCTION)
-                        {
-                            oldSlideItem->mCallbacks[2].mFreeFunction(type);
-                        }
-                        else
-                        {
-                            (*oldSlideItem->mCallbacks[2].mFunctor)(type);
-                        }
-                    }
-                }
-
-                slideMenuList->mCurrentIndex = newIndex;
-
-                MenuItem<SlideMenuItem>* curSlideItem = &slideMenuList->mMenuItems[slideMenuList->mCurrentIndex];
-                {
-                    int tag = curSlideItem->mCallbacks[1].mTag;
-                    if (((u32)((-tag) | tag) >> 31) > 0)
-                    {
-                        SlideMenuItem* type = curSlideItem->mType;
-                        if (tag == FREE_FUNCTION)
-                        {
-                            curSlideItem->mCallbacks[1].mFreeFunction(type);
-                        }
-                        else
-                        {
-                            (*curSlideItem->mCallbacks[1].mFunctor)(type);
-                        }
-                    }
-                }
-
-                res = RES_OK;
-                break;
-            }
-
-            if (res == RES_OK)
-            {
-                FEAudio::PlayAnimAudioEvent("sfx_option_scroll_right", false);
-                Save();
-            }
-            else if (res == RES_NOT_CHANGED)
-            {
-                FEAudio::PlayAnimAudioEvent("sfx_deny", false);
-                Save();
-            }
-        }
-    }
-}
-
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800BB21C | size: 0x48
 //  */
@@ -3378,13 +1925,6 @@ void OptionsSubMenu::Update(float)
 // {
 // }
 
-/**
- * Offset/Address/Size: 0x1C8 | 0x800BB4E0 | size: 0x48
- */
-SlideMenuItem::~SlideMenuItem()
-{
-}
-
 // /**
 //  * Offset/Address/Size: 0x210 | 0x800BB528 | size: 0x5C
 //  */
@@ -3392,13 +1932,6 @@ SlideMenuItem::~SlideMenuItem()
 // SlideMenuList*>>::~FunctorImpl()
 // {
 // }
-
-/**
- * Offset/Address/Size: 0x26C | 0x800BB584 | size: 0x4
- */
-void SlideMenuList::Update(float dt)
-{
-}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800BB588 | size: 0x38

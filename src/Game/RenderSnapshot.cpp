@@ -22,12 +22,6 @@ extern f32 g_fFixedUpdateTick;
 
 static nlVector3 ballPrevPosition = { 0.0f, 0.0f, 0.0f };
 
-void RenderSnapshot_stub(float& a, float& b)
-{
-    b = 0.0f;
-    a = 1.0f;
-}
-
 /**
  * Offset/Address/Size: 0x0 | 0x80112CD4 | size: 0xC
  */
@@ -400,8 +394,6 @@ void RenderSnapshot::Replay<LoadFrame>(LoadFrame& frame)
         {
             static bool doUpdate = false;
 
-            // static nlVector3 ballPrevPosition = { 0.0f, 0.0f, 0.0f };
-
             if (doUpdate)
             {
                 doUpdate = false;
@@ -481,50 +473,3 @@ void RenderSnapshot::Replay<SaveFrame>(SaveFrame& frame)
 
     mValid = true;
 }
-
-// ---- Replayable specs OWNED by RenderSnapshot (target order) ----
-
-// Save group
-REPLAYABLE_DRAWABLE_SAVE(0, DrawableCharacter)
-REPLAYABLE_DRAWABLE_SAVE(0, DrawablePowerup)
-REPLAYABLE_DRAWABLE_SAVE(0, DrawableExplosionFragment)
-
-// <0, S, bool> uses the sizeof(bool) variant (target's first .data byte).
-template <>
-inline void Replayable<0, SaveFrame, bool>(SaveFrame& frame, bool& value)
-{
-    FORCE_DONT_INLINE;
-    bool temp = value ? true : false;
-    memcpy(frame.mStream.mStorage, &temp, sizeof(bool));
-    frame.mStream.mStorage += sizeof(bool);
-}
-
-REPLAYABLE_DRAWABLE_SAVE(0, DrawableBall)
-REPLAYABLE_POD_SAVE(1, nlVector3)
-REPLAYABLE_BOOL_SAVE_1BYTE(1)
-REPLAYABLE_CALL_SAVE(1, CrowdManager)
-REPLAYABLE_CALL_SAVE(3, EmissionManager)
-REPLAYABLE_CALL_SAVE(1, DrawableNetMesh)
-
-// Load group
-REPLAYABLE_DRAWABLE_LOAD(0, DrawableCharacter)
-REPLAYABLE_DRAWABLE_LOAD(0, DrawablePowerup)
-REPLAYABLE_DRAWABLE_LOAD(0, DrawableExplosionFragment)
-
-// <0, L, bool> is UNCONDITIONAL (no interval check).
-template <>
-inline void Replayable<0, LoadFrame, bool>(LoadFrame& frame, bool& value)
-{
-    FORCE_DONT_INLINE;
-    char temp = 0;
-    memcpy(&temp, frame.mStream.mStorage, 1);
-    frame.mStream.mStorage += 1;
-    value = (temp != 0);
-}
-
-REPLAYABLE_DRAWABLE_LOAD(0, DrawableBall)
-REPLAYABLE_POD_LOAD(1, nlVector3)
-REPLAYABLE_BOOL_LOAD_1BYTE(1)
-REPLAYABLE_CALL_LOAD(1, CrowdManager)
-REPLAYABLE_CALL_LOAD(3, EmissionManager)
-REPLAYABLE_CALL_LOAD(1, DrawableNetMesh)

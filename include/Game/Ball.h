@@ -5,15 +5,14 @@
 #include "NL/nlMath.h"
 #include "NL/nlTimer.h"
 
-#include "Game/Player.h"
-#include "Game/Physics/PhysicsAIBall.h"
-#include "Game/Physics/RayCollider.h"
-#include "Game/Drawable/DrawableObj.h"
-#include "Game/ObjectBlur.h"
-#include "Game/EventDataTypes.h"
-
-#include "Game/CharacterAudio.h"
 #include "Game/CharacterTriggers.h"
+
+class BlurHandler;
+class DrawableObject;
+class PhysicsAIBall;
+class RayCollider;
+class cFielder;
+class cPlayer;
 
 enum eSpinType
 {
@@ -23,18 +22,6 @@ enum eSpinType
     SPINTYPE_ROLLING = 3,
     SPINTYPE_PARAMETER = 4,
 };
-
-// enum eBallShotEffectType
-// {
-//     BALL_EFFECT_S2S_SUPER_SHOT = 0,
-//     BALL_EFFECT_S2S_SHOT = 1,
-//     BALL_EFFECT_PERFECT_SHOT = 2,
-//     BALL_EFFECT_PERFECT_PASS = 3,
-//     BALL_EFFECT_REGULAR_SHOT = 4,
-//     BALL_EFFECT_ONETIMER_SHOT = 5,
-//     BALL_EFFECT_CHIP_SHOT = 6,
-//     NUM_BALL_EFFECTS = 7,
-// };
 
 class cBall
 {

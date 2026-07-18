@@ -2620,7 +2620,7 @@ void Goalie::ActionSnapBall(float)
 void Goalie::ActionGrabBall(float)
 {
     bool bShouldInitMove = false;
-    if (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 0.0f)
+    if (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f)
     {
         bShouldInitMove = true;
     }
@@ -2665,12 +2665,4 @@ void Goalie::ActionGrabBall(float)
             }
         }
     }
-}
-
-void GoalieActions_stub(float& a, float& b, float& c, float& d)
-{
-    a = 1.0f;  // @1577
-    b = 0.1f;  // @1578
-    c = 0.25f; // @1579
-    d = 0.0f;  // @1616
 }

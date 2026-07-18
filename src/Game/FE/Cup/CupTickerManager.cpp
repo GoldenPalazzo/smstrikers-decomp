@@ -1,8 +1,3 @@
-#define NO_BASICSTRING_IMPL
-#define BASICSTRING_OUTLINE_CTOR
-#define MEMFUN_NO_DECL
-#define BIND_NO_DECL
-#define FUNCTION0_SPLIT_BODIES
 #include "Game/FE/Cup/CupTickerManager.h"
 
 #include "Game/DB/StatsTracker.h"
@@ -11,15 +6,14 @@
 #include "Game/GameInfo.h"
 
 #include "NL/gl/glStruct.h"
-#include "NL/nlBSearch.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlFormat.h"
 #include "NL/nlLexicalCast.h"
 #include "NL/nlLocalization.h"
 #include "NL/nlSingleton.h"
 #include "NL/nlString.h"
 
-#include "NL/nlMemFunBody.h"
-#include "NL/nlBindBody.h"
+#include "NL/nlBind.h"
 
 typedef Detail::MemFunImpl<void, void (CupTickerManager::*)()> MemFunImpl_CupTickerManager_v;
 typedef BindExp1<void, MemFunImpl_CupTickerManager_v, CupTickerManager*> BindExp1_vfmfcp;
@@ -46,9 +40,6 @@ struct BaseCupAccessor_CupTicker
 extern nlLocalization* g_pLocalization;
 extern unsigned short LocalizationTableNotFound[];
 extern unsigned short MissingLocString[];
-
-template <typename StringType, typename T1, typename T2, typename T3, typename T4>
-StringType Format(const StringType& fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4);
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800F5EBC | size: 0x38
@@ -147,41 +138,6 @@ CupTickerManager::~CupTickerManager()
     }
 }
 
-static inline BasicStringData<unsigned short>* BuildTickerMessageData(CupTickerManager* manager)
-{
-    BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-    if (data)
-    {
-        const unsigned short* src = manager->mMessageBuffer;
-        data->mData = 0;
-        const unsigned short* ptr = src;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        while (*ptr++)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (char*)nlMalloc((data->mSize + 1) * 2, 8, true);
-        data->mCapacity = data->mSize;
-
-        int j = 0;
-        int i = j;
-        while (i < data->mSize)
-        {
-            *(unsigned short*)(data->mData + j) = *src;
-            i++;
-            src++;
-            j += 2;
-        }
-
-        data->mRefCount = 1;
-    }
-    return (BasicStringData<unsigned short>*)data;
-}
-
 /**
  * Offset/Address/Size: 0x1968 | 0x800F3930 | size: 0x328
  * TODO: 99.93% match - copy-loop index and byte-offset zero initialization still swap r4/r5.
@@ -199,23 +155,15 @@ void CupTickerManager::SetTickerTextInstance(TLTextInstance* tickerText)
             FEScrollText(tickerText, 0, screenInfo->ScreenWidth + 0x32);
 
         {
-            BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupTickerManager_v, CupTickerManager*>(
-                MemFun<CupTickerManager, void>(&CupTickerManager::CreateNewMessage), this);
-
-            Function<FnVoidVoid> callback;
-            callback.mTag = FUNCTOR;
-
-            FunctorImpl_vfmfcp* functor = new ((FunctorImpl_vfmfcp*)nlMalloc(sizeof(FunctorImpl_vfmfcp), 8, false))
-                FunctorImpl_vfmfcp(bind);
-            callback.mFunctor = functor;
-
-            *(Function<FnVoidVoid>*)&mTicker->m_messageFinishedCB = callback;
+            Function<FnVoidVoid> callback(Bind<void, MemFunImpl_CupTickerManager_v, CupTickerManager*>(
+                MemFun<CupTickerManager, void>(&CupTickerManager::CreateNewMessage), this));
+            mTicker->m_messageFinishedCB = callback;
         }
 
         this->CreateNewMessage();
     }
 
-    mTicker->SetDisplayMessage(BasicString<unsigned short, Detail::TempStringAllocator>(BuildTickerMessageData(this)));
+    mTicker->SetDisplayMessage(BasicString<unsigned short, Detail::TempStringAllocator>(mMessageBuffer));
 }
 
 #define LOC_LOOKUP(_hashExpr, _locVar)                                                                                     \
@@ -240,7 +188,7 @@ void CupTickerManager::SetTickerTextInstance(TLTextInstance* tickerText)
         }                                                                                                                  \
     }
 
-static inline unsigned short* CupTickerLookupLocString(unsigned long hash)
+static inline const unsigned short* CupTickerLookupLocString(unsigned long hash)
 {
     nlLocalization* loc = g_pLocalization;
     if (loc->m_LookupTable == 0)
@@ -256,32 +204,6 @@ static inline unsigned short* CupTickerLookupLocString(unsigned long hash)
     return MissingLocString;
 }
 
-static inline BasicStringData<unsigned short>* BuildWideBasicStringData(const unsigned short* str)
-{
-    const unsigned short* src = str;
-    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<unsigned short>));
-    if (data != 0)
-    {
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-        const unsigned short* s = str;
-        while (*s++ != 0)
-        {
-            data->mSize++;
-        }
-        data->mSize++;
-        data->mData = (unsigned short*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(unsigned short));
-        data->mCapacity = data->mSize;
-        for (int i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *src++;
-        }
-        data->mRefCount = 1;
-    }
-    return data;
-}
-
 /**
  * Offset/Address/Size: 0x680 | 0x800F2648 | size: 0x12E8
  */
@@ -292,7 +214,7 @@ void CupTickerManager::CreateNewMessage()
     GameInfoAccessor_CupTicker* gameInfoMem = (GameInfoAccessor_CupTicker*)gameInfo;
     WideBasicString tickerMessage;
     bool messageDisplayed = false;
-    unsigned short* locString;
+    const unsigned short* locString;
 
     if (gameInfo->IsInTournamentMode() && gameInfoMem->mTournamentMode == 0)
     {
@@ -398,12 +320,12 @@ void CupTickerManager::CreateNewMessage()
                 unsigned long fmtHash = nlStringLowerHash("CUPHUB_TICKER_NEXT_MATCH");
                 LOC_LOOKUP(fmtHash, locString);
                 WideBasicString fmtWBS(locString);
-                unsigned short* team0LocString;
-                unsigned short* team1LocString;
+                const unsigned short* team0LocString;
+                const unsigned short* team1LocString;
                 LOC_LOOKUP(team0LOC, team0LocString);
                 LOC_LOOKUP(team1LOC, team1LocString);
 
-                tickerMessage = Format<WideBasicString, unsigned short*, unsigned short*>(
+                tickerMessage = Format<WideBasicString, const unsigned short*, const unsigned short*>(
                     fmtWBS, team0LocString, team1LocString);
                 messageDisplayed = true;
             }
@@ -491,28 +413,28 @@ void CupTickerManager::CreateNewMessage()
 
                     if (game->mFinalScore[0] > game->mFinalScore[1])
                     {
-                        unsigned short* fmtLocString;
+                        const unsigned short* fmtLocString;
                         LOC_LOOKUP(formatHash, fmtLocString);
                         WideBasicString fmtWBS(fmtLocString);
-                        unsigned short* t0Str;
-                        unsigned short* t1Str;
+                        const unsigned short* t0Str;
+                        const unsigned short* t1Str;
                         LOC_LOOKUP(team0Name, t0Str);
                         LOC_LOOKUP(team1Name, t1Str);
                         tickerMessage = tickerMessage.Append(
-                            Format<WideBasicString, unsigned short*, unsigned short*, unsigned short[16], unsigned short[16]>(
+                            Format<WideBasicString, const unsigned short*, const unsigned short*, unsigned short[16], unsigned short[16]>(
                                 fmtWBS, t0Str, t1Str, wideScore0, wideScore1));
                     }
                     else
                     {
-                        unsigned short* fmtLocString;
+                        const unsigned short* fmtLocString;
                         LOC_LOOKUP(formatHash, fmtLocString);
                         WideBasicString fmtWBS(fmtLocString);
-                        unsigned short* t1Str;
-                        unsigned short* t0Str;
+                        const unsigned short* t1Str;
+                        const unsigned short* t0Str;
                         LOC_LOOKUP(team1Name, t1Str);
                         LOC_LOOKUP(team0Name, t0Str);
                         tickerMessage = tickerMessage.Append(
-                            Format<WideBasicString, unsigned short*, unsigned short*, unsigned short[16], unsigned short[16]>(
+                            Format<WideBasicString, const unsigned short*, const unsigned short*, unsigned short[16], unsigned short[16]>(
                                 fmtWBS, t1Str, t0Str, wideScore1, wideScore0));
                     }
                 }
@@ -537,21 +459,6 @@ void CupTickerManager::Update(float dt)
     {
         mTicker->Update(dt);
     }
-}
-
-// Stub to force template instantiations -- REMOVE once real callers exist.
-void CupTickerManager_stub()
-{
-    typedef BasicString<unsigned short, Detail::TempStringAllocator> WideBasicString;
-    typedef WideBasicString (*FmtFn)(const WideBasicString&, const WideBasicString&, const WideBasicString&);
-    typedef WideBasicString (*FmtFnPCUs)(const WideBasicString&, const unsigned short* const&, const unsigned short* const&);
-    typedef WideBasicString (*FmtFn4)(const WideBasicString&, const unsigned short* const&, const unsigned short* const&, const unsigned short (&)[16], const unsigned short (&)[16]);
-
-    WideBasicString s;
-    volatile FmtFn fn = &Format<WideBasicString, WideBasicString, WideBasicString>;
-    volatile FmtFnPCUs fn2 = &Format<WideBasicString, const unsigned short*, const unsigned short*>;
-    volatile FmtFn4 fn3 = &Format<WideBasicString, const unsigned short*, const unsigned short*, unsigned short[16], unsigned short[16]>;
-    WideBasicString s2 = fn(s, s, s);
 }
 
 /**
@@ -623,6 +530,6 @@ void CupTickerManager::BuildGoalTotalTickerMessage(
         nlStrToWcs(goalsStr.c_str(), wideGoals, 16);
 
         result = result.Append(Format<WideBasicString, const unsigned short*, unsigned short[16]>(
-            WideBasicString(BuildWideBasicStringData(CupTickerLookupLocString(formatHash))), CupTickerLookupLocString(teamNameHash), wideGoals));
+            WideBasicString(CupTickerLookupLocString(formatHash)), CupTickerLookupLocString(teamNameHash), wideGoals));
     }
 }

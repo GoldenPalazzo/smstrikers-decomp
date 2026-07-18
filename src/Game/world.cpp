@@ -1,9 +1,7 @@
-#define NL_AVLTREE_DECLARE_ONLY
-#define NL_AVLTREEBASE_DECLARE_ONLY
-#define NLDLLISTCONTAINER_DESTRUCTOR_NULL_CHECK
-#define NLDLRING_FORCE_DONT_INLINE
 #include "Game/World.h"
 #include "Game/LightObject.h"
+#include "Game/Camera/CameraMan.h"
+#include "Game/Camera/MatrixEffectCam.h"
 
 #include "string.h"
 
@@ -32,19 +30,6 @@
 #include "Game/SAnim.h"
 #include "Game/Physics/CharacterPhysicsElement.h"
 #include "ctype_api.h"
-
-// These template helpers' weak bodies live in other TUs; reference them (UND),
-// don't re-emit a redundant weak COMDAT copy (matches target world.o).
-template <>
-unsigned long nlStrLen<char>(const char*);
-template <>
-int nlStrNCmp<char>(const char*, const char*, unsigned long);
-template <>
-char* nlStrNCpy<char>(char*, const char*, unsigned long);
-template <>
-int nlStrNICmp<char>(const char*, const char*, unsigned long);
-template <>
-char nlToLower<char>(char);
 
 // .sdata (initialized) -- order matches target world.s
 static unsigned char g_bClipToFrustum = 1;
@@ -794,40 +779,6 @@ void World::HandleCameraSwitch()
 /**
  * Offset/Address/Size: 0x10F4 | 0x80195DB8 | size: 0x24C
  */
-class cRumbleFilter;
-
-class cBaseCamera
-{
-public:
-    virtual ~cBaseCamera() { }
-    virtual int GetType() = 0;
-    virtual void Update(float) = 0;
-    virtual const nlMatrix4& GetViewMatrix() const = 0;
-    virtual float GetFOV() const;
-    virtual void Reactivate() { }
-    virtual const nlVector3& GetTargetPosition() const = 0;
-    virtual const nlVector3& GetCameraPosition() const = 0;
-
-    cBaseCamera* m_next;
-    cBaseCamera* m_prev;
-    cRumbleFilter* m_pFilter;
-    nlVector3 mUpVector;
-};
-
-class cCameraManager
-{
-public:
-    static int m_pBeginFrameCameraType;
-    static cBaseCamera* m_cameraStack;
-    static unsigned char IsObjectOccludingField(const DrawableObject*);
-};
-
-struct MatrixEffectCamStub
-{
-    char _pad[0x13C];
-    unsigned char m_transitioningOut;
-};
-
 void DoTranslucency(DrawableObject* pObject)
 {
     int cameraType = cCameraManager::m_pBeginFrameCameraType;
@@ -863,7 +814,7 @@ void DoTranslucency(DrawableObject* pObject)
 
     if (nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->GetType() == 8)
     {
-        if (((MatrixEffectCamStub*)nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack))->m_transitioningOut)
+        if (((MatrixEffectCam*)nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack))->mbUseGameplayTransparencyFlags)
         {
             transitioningOutOfGameplayCamera = true;
         }
@@ -1268,8 +1219,8 @@ void* World::GetCustomSpecularData(glModelPacket* pPacket, bool bPerm)
  */
 void World::CreateLightUserData()
 {
-    ListContainerBase<LightObject*, NewAdapter<ListEntry<LightObject*> > > lightList;
-    ListContainerBase<LightObject*, NewAdapter<ListEntry<LightObject*> > > specList;
+    nlListContainer<LightObject*> lightList;
+    nlListContainer<LightObject*> specList;
     int numSpecLights = 0;
     int numLights = 0;
     u32* pStack = (u32*)nlMalloc(8, 8, false);
@@ -2311,15 +2262,6 @@ World::~World()
 }
 
 /**
- * Offset/Address/Size: 0x3D54 | 0x80198A18 | size: 0x60
- */
-template <>
-nlAVLTree<unsigned long, LightObject*, DefaultKeyCompare<unsigned long> >::~nlAVLTree()
-{
-    FORCE_DONT_INLINE;
-}
-
-/**
  * Offset/Address/Size: 0x3DB4 | 0x80198A78 | size: 0x19C
  */
 World::World(const char* szWorldName)
@@ -2363,70 +2305,3 @@ void World::FixedUpdate(float dt)
 void World::HandleEvent(Event*, void*)
 {
 }
-
-/**
- * Offset/Address/Size: 0x24 | 0x80198C40 | size: 0x5C
- */
-template <>
-AVLTreeBase<unsigned long, LightObject*, NewAdapter<AVLTreeEntry<unsigned long, LightObject*> >, DefaultKeyCompare<unsigned long> >::~AVLTreeBase()
-{
-    FORCE_DONT_INLINE;
-    Clear();
-}
-
-/**
- * Offset/Address/Size: 0x80 | 0x80198C9C | size: 0x60
- */
-template <>
-nlAVLTree<unsigned long, DrawableObject*, DefaultKeyCompare<unsigned long> >::~nlAVLTree()
-{
-    FORCE_DONT_INLINE;
-}
-
-/**
- * Offset/Address/Size: 0xE0 | 0x80198CFC | size: 0x5C
- */
-template <>
-AVLTreeBase<unsigned long, DrawableObject*, NewAdapter<AVLTreeEntry<unsigned long, DrawableObject*> >, DefaultKeyCompare<unsigned long> >::~AVLTreeBase()
-{
-    FORCE_DONT_INLINE;
-    Clear();
-}
-
-/**
- * Offset/Address/Size: 0x13C | 0x80198D58 | size: 0x60
- */
-template <>
-nlAVLTree<unsigned long, HelperObject*, DefaultKeyCompare<unsigned long> >::~nlAVLTree()
-{
-    FORCE_DONT_INLINE;
-}
-
-/**
- * Offset/Address/Size: 0x19C | 0x80198DB8 | size: 0x5C
- */
-template <>
-AVLTreeBase<unsigned long, HelperObject*, NewAdapter<AVLTreeEntry<unsigned long, HelperObject*> >, DefaultKeyCompare<unsigned long> >::~AVLTreeBase()
-{
-    FORCE_DONT_INLINE;
-    Clear();
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x8019A9BC | size: 0x3C
- * TODO: 96.00% match - prologue scheduling mismatch remains.
- * Target orders `lwz r7, 0(r5)` before saving LR; current MWCC output saves LR first.
- */
-template void nlWalkDLRing<DLListEntry<WorldAnimController*>, DLListContainerBase<WorldAnimController*,
-                                                                  NewAdapter<DLListEntry<WorldAnimController*> > > >(
-    DLListEntry<WorldAnimController*>* head,
-    DLListContainerBase<WorldAnimController*, NewAdapter<DLListEntry<WorldAnimController*> > >* callback,
-    void (DLListContainerBase<WorldAnimController*, NewAdapter<DLListEntry<WorldAnimController*> > >::*)(DLListEntry<WorldAnimController*>*));
-
-// REMOVE once real callers exist.
-void World_stub()
-{
-    nlListContainer<LightObject*> list;
-}
-
-template void nlListAddStart<ListEntry<LightObject*> >(ListEntry<LightObject*>**, ListEntry<LightObject*>*, ListEntry<LightObject*>**);

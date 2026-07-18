@@ -8,6 +8,8 @@
 #include "Game/Sys/audio.h"
 #include "NL/nlDebug.h"
 
+SoundEventScript* SoundEventScript::pInstance;
+
 static inline unsigned long PriorityStreamToStreamId(int stream)
 {
     switch (stream)

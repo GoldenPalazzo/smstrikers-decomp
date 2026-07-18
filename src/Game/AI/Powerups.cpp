@@ -1,6 +1,7 @@
 #include "Game/AI/Powerups.h"
 #include "Game/AI/Fielder.h"
 #include "Game/AI/AiUtil.h"
+#include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/Render/Bowser.h"
 #include "Game/Render/ChainChomp.h"
 #include "Game/Render/NPCManager.h"
@@ -203,37 +204,37 @@ PowerupMasterInit s_powerupMasterInit;
 
 void FreezeShell::operator delete(void* ptr)
 {
-    ((SlotPoolEntry*)ptr)->m_next = m_FreezeShellSlotPool.m_FreeList;
+    ((SlotPoolEntry*)ptr)->next = m_FreezeShellSlotPool.m_FreeList;
     m_FreezeShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
 }
 
 void GreenShell::operator delete(void* ptr)
 {
-    ((SlotPoolEntry*)ptr)->m_next = m_GreenShellSlotPool.m_FreeList;
+    ((SlotPoolEntry*)ptr)->next = m_GreenShellSlotPool.m_FreeList;
     m_GreenShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
 }
 
 void Bobomb::operator delete(void* ptr)
 {
-    ((SlotPoolEntry*)ptr)->m_next = m_BobombSlotPool.m_FreeList;
+    ((SlotPoolEntry*)ptr)->next = m_BobombSlotPool.m_FreeList;
     m_BobombSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
 }
 
 void SpinyShell::operator delete(void* ptr)
 {
-    ((SlotPoolEntry*)ptr)->m_next = m_SpinyShellSlotPool.m_FreeList;
+    ((SlotPoolEntry*)ptr)->next = m_SpinyShellSlotPool.m_FreeList;
     m_SpinyShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
 }
 
 void Banana::operator delete(void* ptr)
 {
-    ((SlotPoolEntry*)ptr)->m_next = m_BananaSlotPool.m_FreeList;
+    ((SlotPoolEntry*)ptr)->next = m_BananaSlotPool.m_FreeList;
     m_BananaSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
 }
 
 void RedShell::operator delete(void* ptr)
 {
-    ((SlotPoolEntry*)ptr)->m_next = m_RedShellSlotPool.m_FreeList;
+    ((SlotPoolEntry*)ptr)->next = m_RedShellSlotPool.m_FreeList;
     m_RedShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
 }
 
@@ -730,7 +731,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                 if (Banana::m_BananaSlotPool.m_FreeList != NULL)
                 {
                     pBanana = (Banana*)Banana::m_BananaSlotPool.m_FreeList;
-                    Banana::m_BananaSlotPool.m_FreeList = Banana::m_BananaSlotPool.m_FreeList->m_next;
+                    Banana::m_BananaSlotPool.m_FreeList = Banana::m_BananaSlotPool.m_FreeList->next;
                 }
 
                 if (pBanana == NULL)
@@ -767,7 +768,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                 if (Bobomb::m_BobombSlotPool.m_FreeList != NULL)
                 {
                     pBobomb = (Bobomb*)Bobomb::m_BobombSlotPool.m_FreeList;
-                    Bobomb::m_BobombSlotPool.m_FreeList = Bobomb::m_BobombSlotPool.m_FreeList->m_next;
+                    Bobomb::m_BobombSlotPool.m_FreeList = Bobomb::m_BobombSlotPool.m_FreeList->next;
                 }
 
                 new (pBobomb) Bobomb(pTarget, j, fBobombRadius, eSize, true);
@@ -799,7 +800,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                 if (GreenShell::m_GreenShellSlotPool.m_FreeList != NULL)
                 {
                     pPowerup = (GreenShell*)GreenShell::m_GreenShellSlotPool.m_FreeList;
-                    GreenShell::m_GreenShellSlotPool.m_FreeList = GreenShell::m_GreenShellSlotPool.m_FreeList->m_next;
+                    GreenShell::m_GreenShellSlotPool.m_FreeList = GreenShell::m_GreenShellSlotPool.m_FreeList->next;
                 }
 
                 new (pPowerup) GreenShell(pTarget, j, fGreenShellRadius, eSize, bExplode);
@@ -830,7 +831,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                 if (FreezeShell::m_FreezeShellSlotPool.m_FreeList != NULL)
                 {
                     pPowerup = (FreezeShell*)FreezeShell::m_FreezeShellSlotPool.m_FreeList;
-                    FreezeShell::m_FreezeShellSlotPool.m_FreeList = FreezeShell::m_FreezeShellSlotPool.m_FreeList->m_next;
+                    FreezeShell::m_FreezeShellSlotPool.m_FreeList = FreezeShell::m_FreezeShellSlotPool.m_FreeList->next;
                 }
 
                 new (pPowerup) FreezeShell(pTarget, j, fFreezeShellRadius, eSize, bExplode);
@@ -861,7 +862,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                 if (RedShell::m_RedShellSlotPool.m_FreeList != NULL)
                 {
                     pPowerup = (RedShell*)RedShell::m_RedShellSlotPool.m_FreeList;
-                    RedShell::m_RedShellSlotPool.m_FreeList = RedShell::m_RedShellSlotPool.m_FreeList->m_next;
+                    RedShell::m_RedShellSlotPool.m_FreeList = RedShell::m_RedShellSlotPool.m_FreeList->next;
                 }
 
                 new (pPowerup) RedShell(pTarget, j, fRedShellRadius, eSize, bExplode);
@@ -892,7 +893,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                 if (SpinyShell::m_SpinyShellSlotPool.m_FreeList != NULL)
                 {
                     pPowerup = (SpinyShell*)SpinyShell::m_SpinyShellSlotPool.m_FreeList;
-                    SpinyShell::m_SpinyShellSlotPool.m_FreeList = SpinyShell::m_SpinyShellSlotPool.m_FreeList->m_next;
+                    SpinyShell::m_SpinyShellSlotPool.m_FreeList = SpinyShell::m_SpinyShellSlotPool.m_FreeList->next;
                 }
 
                 new (pPowerup) SpinyShell(pTarget, j, fSpinyShellRadius, eSize, bExplode);

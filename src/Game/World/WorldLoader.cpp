@@ -44,7 +44,7 @@ bool WorldLoader::StartLoad(LoadingManager* manager)
 /**
  * Offset/Address/Size: 0xA0 | 0x8019ABB8 | size: 0x14
  */
-char* WorldLoader::GetStadiumFilename(eStadiumID stadiumid) const
+const char* WorldLoader::GetStadiumFilename(eStadiumID stadiumid) const
 {
     return g_szStadiumName[stadiumid];
 }

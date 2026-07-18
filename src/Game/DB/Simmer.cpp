@@ -1,161 +1,12 @@
-#define BASICSTRING_DELEGATING_CTOR
-#define BASICSTRING_SELECTIVE_NO_COPY_REREAD
 #include "Game/DB/Simmer.h"
 #include "Game/GameInfo.h"
 #include "NL/nlLexicalCast.h"
 #include "NL/nlString.h"
 #include "PowerPC_EABI_Support/MSL_C/MSL_Common/stdio.h"
 
-// nlStrNCmp<char>'s weak body lives in CrowdMood.o; reference it (UND), don't re-emit.
-template <>
-int nlStrNCmp<char>(const char*, const char*, unsigned long);
-
 extern "C" char* fgets(char*, int, FILE*);
 
 static const char* SIM_FILE = "";
-
-// Tokenizer's members are written as proper templated methods (not explicit
-// specializations) so MWCC emits the Tokenizer<BString> instantiation as WEAK
-// linkonce in this TU (matching target). Definitions live here, NOT in Simmer.h:
-// nlConfig.cpp odr-uses begin/end/operator++ and would otherwise emit its own
-// weak copies, whereas target references them as *UND* satisfied by this TU.
-
-/**
- * Offset/Address/Size: 0x3D0 | 0x80191868 | size: 0x38
- */
-template <typename StringType>
-typename Tokenizer<StringType>::iterator Tokenizer<StringType>::begin() const
-{
-    return iterator(*this, m_source.m_data ? m_source.m_data->mData : (char*)0);
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x80191498 | size: 0x44
- */
-template <typename StringType>
-typename Tokenizer<StringType>::iterator Tokenizer<StringType>::end() const
-{
-    const char* endPtr;
-    if (m_source.m_data)
-    {
-        endPtr = m_source.m_data->mData + m_source.m_data->mSize - 1;
-    }
-    else
-    {
-        endPtr = NULL;
-    }
-    return iterator(*this, endPtr);
-}
-
-/**
- * Offset/Address/Size: 0x398 | 0x80191830 | size: 0x38
- */
-#pragma dont_inline on
-template <typename StringType>
-typename Tokenizer<StringType>::iterator& Tokenizer<StringType>::iterator::operator++()
-{
-    mIter = mEnd;
-    FindNextToken();
-    return *this;
-}
-#pragma dont_inline off
-
-/**
- * Offset/Address/Size: 0x88 | 0x80191520 | size: 0x310
- * TODO: 84.76% match - delimiter data/index registers differ in both scan loops.
- */
-template <typename StringType>
-void Tokenizer<StringType>::iterator::FindNextToken()
-{
-    const char* iter = mIter;
-    const Tokenizer<StringType>* tok = mTokenizer;
-
-    while (iter != (tok->m_source.m_data != 0 ? tok->m_source.m_data->mData + (tok->m_source.m_data->mSize - 1) : (char*)0))
-    {
-        int i = 0;
-        while (i < (tok->m_delimiter.m_data != 0 ? tok->m_delimiter.m_data->mSize - 1 : 0))
-        {
-            signed char c = (signed char)*(unsigned char*)iter;
-            signed char sep = (signed char)tok->m_delimiter.m_data->mData[i];
-            if (c == sep)
-            {
-                break;
-            }
-            i++;
-        }
-        if (i == (tok->m_delimiter.m_data != 0 ? tok->m_delimiter.m_data->mSize - 1 : 0))
-        {
-            break;
-        }
-        iter++;
-        mIter = iter;
-    }
-
-    mIter = iter;
-    iter = mIter;
-    tok = mTokenizer;
-
-    while (iter != (tok->m_source.m_data != 0 ? tok->m_source.m_data->mData + (tok->m_source.m_data->mSize - 1) : (char*)0))
-    {
-        int i = 0;
-        while (i < (tok->m_delimiter.m_data != 0 ? tok->m_delimiter.m_data->mSize - 1 : 0))
-        {
-            signed char c = (signed char)*(unsigned char*)iter;
-            signed char sep = (signed char)tok->m_delimiter.m_data->mData[i];
-            if (c == sep)
-            {
-                break;
-            }
-            i++;
-        }
-        if (i != (tok->m_delimiter.m_data != 0 ? tok->m_delimiter.m_data->mSize - 1 : 0))
-        {
-            break;
-        }
-        iter++;
-        mEnd = iter;
-    }
-
-    mEnd = iter;
-
-    const char* end = mEnd;
-    const char* start = mIter;
-    BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
-    if (data != 0)
-    {
-        int len = end - start + 1;
-        data->mData = (char*)nlMalloc(len, 8, true);
-        data->mSize = len;
-        data->mCapacity = len;
-        for (int j = 0; j < len; j++)
-        {
-            data->mData[j] = 0;
-        }
-        data->mRefCount = 1;
-        for (int j = 0; j < data->mSize - 1; j++)
-        {
-            data->mData[j] = *start++;
-        }
-    }
-
-    mToken = StringType(data);
-}
-
-#pragma dont_inline on
-/**
- * Offset/Address/Size: 0x44 | 0x801914DC | size: 0x44
- */
-template <typename StringType>
-Tokenizer<StringType>::iterator::iterator(
-    const Tokenizer<StringType>& tokenizer,
-    const char* endPtr)
-    : mTokenizer(&tokenizer)
-    , mIter(endPtr)
-    , mEnd(0)
-{
-    FindNextToken();
-}
-#pragma dont_inline off
 
 /**
  * Offset/Address/Size: 0xC18 | 0x80191494 | size: 0x4
@@ -214,14 +65,14 @@ void Simulator::InitializeStats()
         while (fgets(line, 0x100, pFile) != 0)
         {
             unsigned char isLineFound;
-            if (nlStrNCmp<char>(meanString.c_str(), line, meanString.m_data ? (unsigned long)(meanString.m_data->mSize - 1) : 0) == 0)
+            if (nlStrNCmp<char>(meanString.c_str(), line, meanString.mData ? (unsigned long)(meanString.mData->mData.mSize - 1) : 0) == 0)
             {
                 statString = BasicString<char, Detail::TempStringAllocator>(line);
                 isLineFound = 1;
                 isMeanFound = 1;
                 doMean = 1;
             }
-            else if (nlStrNCmp<char>(SDString.c_str(), line, SDString.m_data ? (unsigned long)(SDString.m_data->mSize - 1) : 0) == 0)
+            else if (nlStrNCmp<char>(SDString.c_str(), line, SDString.mData ? (unsigned long)(SDString.mData->mData.mSize - 1) : 0) == 0)
             {
                 statString = BasicString<char, Detail::TempStringAllocator>(line);
                 isLineFound = 1;

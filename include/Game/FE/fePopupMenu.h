@@ -9,15 +9,7 @@
 #include "NL/nlColour.h"
 #include "NL/nlFunction.h"
 
-// Some target TUs see these callback overloads with by-value C++ mangling.
-// MWCC still passes non-trivial Function objects by address at the ABI level,
-// so call-site codegen can match the reference form while the symbol name
-// changes. Keep this separate from Function assignment inlining controls.
-#if defined(FEPOPUPMENU_BYVAL_DECLS) || defined(FEPOPUPMENU_INTERNAL_BYVAL)
 typedef Function<FnVoidVoid> _FEPopupMenuCB;
-#else
-typedef Function<FnVoidVoid>& _FEPopupMenuCB;
-#endif
 
 // void CastToSomeType<TLInstance>(TLInstance*, void*);
 // void CastToSomeType<TLSlide>(TLSlide*, void*);
@@ -56,6 +48,25 @@ enum ePopupMenu
     POPUP_ABOUTTOSAVE = 26,
     POPUP_NOTSAMECARD = 27,
     POPUP_MEMCARD_ASK_SAVE_OVERWRITE = 28,
+    POPUP_MEMCARD_ASK_LOAD_OVERWRITE = 29,
+    POPUP_MEMCARD_ASK_SAVE_NO_FILE = 30,
+    POPUP_MEMCARD_CONFIRM_FORMAT = 31,
+    POPUP_UNLOCKED_FLOWER_CUP = 32,
+    POPUP_UNLOCKED_STAR_CUP = 33,
+    POPUP_UNLOCKED_BOWSER_CUP = 34,
+    POPUP_UNLOCKED_SUPER_CUPS = 35,
+    POPUP_UNLOCKED_CUSTOM_POWERUPS = 36,
+    POPUP_UNLOCKED_KONGA_STADIUM = 37,
+    POPUP_UNLOCKED_YOSHI_STADIUM = 38,
+    POPUP_UNLOCKED_FORBIDDEN_STADIUM = 39,
+    POPUP_UNLOCKED_SUPER_STADIUM = 40,
+    POPUP_UNLOCKED_LEGEND_DIFFICULTY = 41,
+    POPUP_UNLOCKED_SUPER_TEAM = 42,
+    POPUP_UNLOCKED_CHEAT_GOALIE = 43,
+    POPUP_UNLOCKED_CHEAT_INFINITE = 44,
+    POPUP_UNLOCKED_CHEAT_TILT = 45,
+    POPUP_UNLOCKED_ALL_STS = 46,
+    NUM_POPUP_MENUS = 47,
 };
 
 struct Popup
@@ -78,15 +89,10 @@ public:
     void CentrePopup(float, float);
     void SetPositions();
 
-#ifdef FEPOPUPMENU_INLINE_NOARG_CREATE
     void Create(ePopupMenu type)
     {
         Create(type, Function<FnVoidVoid>(Nothing));
     }
-#else
-    void Create(ePopupMenu);
-#endif
-#if defined(FEPOPUPMENU_BYVAL_DECLS) || defined(FEPOPUPMENU_INTERNAL_BYVAL)
     void Create(ePopupMenu type, Function<FnVoidVoid> option1)
     {
         Create(type, option1, Function<FnVoidVoid>(Nothing));
@@ -112,12 +118,6 @@ public:
         Function<FnVoidVoid>,
         Function<FnVoidVoid>,
         Function<FnVoidVoid>);
-#else
-    void Create(ePopupMenu, _FEPopupMenuCB);
-    void Create(ePopupMenu, _FEPopupMenuCB, _FEPopupMenuCB);
-    void Create(ePopupMenu, _FEPopupMenuCB, _FEPopupMenuCB, _FEPopupMenuCB);
-    void Create(ePopupMenu, _FEPopupMenuCB, _FEPopupMenuCB, _FEPopupMenuCB, _FEPopupMenuCB);
-#endif
     void SetBackButtonCallback(_FEPopupMenuCB);
     static void Nothing() { }
 

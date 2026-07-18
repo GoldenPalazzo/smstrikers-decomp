@@ -1,4 +1,3 @@
-#define BASICSTRING_COPY_REREAD_TEMP
 #include "NL/glx/glxSwap.h"
 #include "NL/nlDebug.h"
 #include "NL/nlPrint.h"
@@ -298,7 +297,6 @@ static void hitz_Pre(bool)
  */
 static void hitz_SwapBuffers()
 {
-    FORCE_DONT_INLINE;
     glx_nBuffer ^= 1;
 }
 
@@ -307,7 +305,6 @@ static void hitz_SwapBuffers()
  */
 static void hitz_AdvanceFrame()
 {
-    FORCE_DONT_INLINE;
     VISetNextFrameBuffer(glx_FrameBuffer[glx_nBuffer]);
     if (nFirstFrame > 0)
     {
@@ -397,36 +394,9 @@ void glxSwapPre(bool bSend)
     }
 }
 
-static inline BasicStringInternal* MakeHitzData()
-{
-    BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-    if (data != 0)
-    {
-        const char* str = "hitz";
-        data->mData = 0;
-        const char* s = str;
-        data->mSize = 0;
-        data->mCapacity = 0;
-        while ((signed char)*s++ != 0)
-        {
-            data->mSize++;
-        }
-        data->mSize++;
-        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-        data->mCapacity = data->mSize;
-        for (s32 i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *str++;
-        }
-        data->mRefCount = 1;
-    }
-    return data;
-}
-
 /**
  * Offset/Address/Size: 0x734 | 0x801BF484 | size: 0x260
  */
-#pragma optimization_level 2
 void glxInitSwap(void* fb0, void* fb1)
 {
     glx_FrameBuffer[0] = fb0;
@@ -435,12 +405,9 @@ void glxInitSwap(void* fb0, void* fb1)
     nFirstFrame = 3;
     glx_bAllowDrawSync = 1;
 
-    BasicStringInternal* data = MakeHitzData();
-    BasicString<char, Detail::TempStringAllocator> mode(
-        Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
-            "swapmode", BasicString<char, Detail::TempStringAllocator>(data)));
+    TempString swapString = Config::Global().Get<TempString>("swapmode", TempString("hitz"));
 
-    glx_SwapMode = (mode == "simple") ? 0 : 1;
+    glx_SwapMode = (swapString == "simple") ? 0 : 1;
     switch (glx_SwapMode)
     {
     case 1:
@@ -456,7 +423,6 @@ void glxInitSwap(void* fb0, void* fb1)
         break;
     }
 }
-#pragma optimization_level 4
 
 /**
  * Offset/Address/Size: 0x994 | 0x801BF6E4 | size: 0x28
@@ -498,7 +464,6 @@ static void vi_pre_cb(unsigned long)
  */
 static void loading_indicator()
 {
-    FORCE_DONT_INLINE;
     if (nFirstFrame == 0)
     {
         DrawLoadingIndicator();
@@ -553,7 +518,6 @@ void glxLoadSaveState()
  */
 void glxSwapLoading(bool arg0, bool arg1)
 {
-    FORCE_DONT_INLINE;
     u32 loadWaitFrames;
     u32 targetFPS;
     u32 lws;

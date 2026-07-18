@@ -6,6 +6,8 @@
 #include "Game/Ball.h"
 #include "Game/Field.h"
 #include "Game/MathHelpers.h"
+#include "Game/Physics/PhysicsAIBall.h"
+#include "Game/Player.h"
 
 static s32 gnCamType;
 static bool gbCamFreeze;

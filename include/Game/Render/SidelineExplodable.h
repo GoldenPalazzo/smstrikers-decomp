@@ -2,6 +2,7 @@
 #define _SIDELINEEXPLODABLE_H_
 
 #include "NL/nlList.h"
+#include "NL/nlVector.h"
 
 #include "Game/Physics/PhysicsBox.h"
 #include "Game/Effects/EmissionController.h"
@@ -51,16 +52,9 @@ class ExplosionFragment
 public:
     ExplosionFragment();
     virtual ~ExplosionFragment();
-    void SetStationaryTransform(const nlMatrix4& transform)
-    {
-        if (mStationaryTransform == NULL)
-        {
-            mStationaryTransform = (nlMatrix4*)nlMalloc(sizeof(nlMatrix4), 8, false);
-        }
-        *mStationaryTransform = transform;
-    }
-    void GetRotation(nlMatrix4*) const;
-    nlVector3& GetPosition() const;
+    virtual void SetStationaryTransform(const nlMatrix4&);
+    virtual void GetRotation(nlMatrix4*) const;
+    virtual nlVector3& GetPosition() const;
 
     /* 0x04 */ PhysicsObject* mpPhysicsObject;
     /* 0x08 */ unsigned short mDrawableFragmentID;
@@ -126,8 +120,6 @@ public:
         : PhysicsBox(space, world, side1, side2, side3)
         , mpExplosionFragment(pExplosionFragment)
     {
-        SetCategory(0x400);
-        SetCollide(0xFF);
     }
     virtual ~SidelineExplosionPhysicsObject();
     virtual int GetObjectType() const { return 0x1C; };

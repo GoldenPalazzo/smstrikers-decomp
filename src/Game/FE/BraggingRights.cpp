@@ -13,7 +13,7 @@
 #include "Game/SH/SHMainMenu.h"
 #include "Game/SH/SHSaveLoad.h"
 #include "NL/gl/glStruct.h"
-#include "NL/nlBSearch.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlColour.h"
 #include "NL/nlMath.h"
 #include "NL/nlPrint.h"
@@ -99,11 +99,6 @@ BraggingRightsOverlay::~BraggingRightsOverlay()
     nlSingleton<GameInfoManager>::s_pInstance->IsInTournamentMode();
 }
 
-static inline MenuItem<TLComponentInstance>* BraggingItemAt(MenuList<TLComponentInstance>& menu, int idx)
-{
-    return &menu.mMenuItems[idx];
-}
-
 /**
  * Offset/Address/Size: 0x2E3C | 0x800D4E38 | size: 0x52C
  * TODO: 99.97% match on scratch - two bl relocation-only diffs (extern-mangled local calls)
@@ -141,28 +136,15 @@ void BraggingRightsOverlay::SceneCreated()
 
         instance->SetActiveSlide((i == 0) ? SingleHighlite::SLIDE_IN : SingleHighlite::SLIDE_OUT);
 
-        int idx = mMenuItems.mNumItemsAdded;
-        menuItem = BraggingItemAt(mMenuItems, idx);
-        mMenuItems.mMenuItems[idx].mType = instance;
-        mMenuItems.mNumItemsAdded++;
+        menuItem = mMenuItems.AddItem(instance);
 
-        {
-            Function<TLComponentInstance*> openFunc;
-            openFunc.mTag = FREE_FUNCTION;
-            openFunc.mFreeFunction = SingleHighlite::OpenItem;
-            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[1] = openFunc;
-        }
-        {
-            Function<TLComponentInstance*> closeFunc;
-            closeFunc.mTag = FREE_FUNCTION;
-            closeFunc.mFreeFunction = SingleHighlite::CloseItem;
-            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[2] = closeFunc;
-        }
+        menuItem->SetCallback(ON_HIGHLIGHT, SingleHighlite::OpenItem);
+        menuItem->SetCallback(ON_UNHIGHLIGHT, SingleHighlite::CloseItem);
 
-        menuItem->ApplyAction((i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT);
+        menuItem->RunCallback((i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT);
     }
 
-    mMenuItems.mFlags = 1;
+    mMenuItems.SetFlag(1);
 
     mButtons.mButtonInstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,
@@ -512,140 +494,13 @@ void BraggingRightsOverlay::Update(float fDeltaT)
     }
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0x0E, true, NULL))
     {
-        int flags = mMenuItems.mFlags;
-        int wrapFlag = flags & 1;
-        int currentIndex = mMenuItems.mCurrentIndex;
-        int nextIndex = currentIndex + 1;
-
-    loop_right:
-        if (wrapFlag)
-        {
-            nextIndex = nextIndex % mMenuItems.mNumItemsAdded;
-        }
-        else
-        {
-            if (nextIndex >= mMenuItems.mNumItemsAdded)
-            {
-                goto done_right;
-            }
-        }
-
-        if (flags & 2)
-        {
-            if (mMenuItems.mMenuItems[nextIndex].mDisabled)
-            {
-                nextIndex++;
-                goto loop_right;
-            }
-        }
-
-        {
-            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFunctor)(type);
-                }
-            }
-        }
-
-        mMenuItems.mCurrentIndex = nextIndex;
-
-        {
-            int selIdx = mMenuItems.mCurrentIndex;
-            int tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
-                }
-            }
-        }
-
-    done_right:
-        ChangeTicker(mMenuItems.mCurrentIndex);
+        mMenuItems.NextItem();
+        ChangeTicker(mMenuItems.GetActiveItemIndex());
     }
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0x0D, true, NULL))
     {
-        int flags = mMenuItems.mFlags;
-        int wrapFlag = flags & 1;
-        int currentIndex = mMenuItems.mCurrentIndex;
-        int nextIndex = currentIndex - 1;
-
-    loop_left:
-        if (wrapFlag)
-        {
-            if (nextIndex < 0)
-            {
-                nextIndex = mMenuItems.mNumItemsAdded - 1;
-            }
-        }
-        else
-        {
-            if (nextIndex < 0)
-            {
-                goto done_left;
-            }
-        }
-
-        if (flags & 2)
-        {
-            if (mMenuItems.mMenuItems[nextIndex].mDisabled)
-            {
-                nextIndex--;
-                goto loop_left;
-            }
-        }
-
-        {
-            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFunctor)(type);
-                }
-            }
-        }
-
-        mMenuItems.mCurrentIndex = nextIndex;
-
-        {
-            int selIdx = mMenuItems.mCurrentIndex;
-            int tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
-                }
-            }
-        }
-
-    done_left:
-        ChangeTicker(mMenuItems.mCurrentIndex);
+        mMenuItems.PreviousItem();
+        ChangeTicker(mMenuItems.GetActiveItemIndex());
     }
 }
 
@@ -710,18 +565,6 @@ BraggingRightsScene::BraggingRightsScene()
  */
 BraggingRightsScene::~BraggingRightsScene()
 {
-}
-
-inline TeamStats::TeamStats()
-{
-    memset(&mPlayerTotalStats, 0, sizeof(mPlayerTotalStats));
-    mPlayerTotalStats.mRecordType.mTeamID = TEAM_MARIO;
-    mPlayerTotalStats.mType = TYPE_TEAM;
-    mTeamIndex = TEAM_MARIO;
-    mNumWins = 0;
-    mNumLosses = 0;
-    mNumOTLosses = 0;
-    mNumPoints = 0;
 }
 
 /**

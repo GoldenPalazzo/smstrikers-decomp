@@ -1,6 +1,8 @@
 #include "Game/FE/feAnimModelManager.h"
 #include "Game/FE/feBasic3dModel.h"
+#include "Game/Character.h"
 #include "Game/SAnim.h"
+#include "Game/SHierarchy.h"
 #include "NL/globalpad.h"
 #include "NL/nlColour.h"
 #include "NL/nlPrint.h"
@@ -10,24 +12,35 @@
 
 void DrawTextRectangle(int, float, float, float, float, float, const nlColour&, bool);
 
-FEAnimModelManager* nlSingleton<FEAnimModelManager>::s_pInstance = NULL;
+class cPN_SAnimController;
+class cPoseAccumulator;
+class GLSkinMesh;
 
-// Layout-only stub (unreferenced -> mwld drops it). The ~cInventory<cSAnim>
-// dtor mints the two DeleteEntry PTMF consts in the wrong .data order
-// (cSAnim*-list before char*-list) because its body walks the item list first.
-// Minting them here in target order -- char* (mem) list first, then cSAnim*
-// (item) list -- fixes the .data anon sequence; the real uses pool to these
-// slots. Same trick as CharacterTemplate_stub.
-typedef ListContainerBase<char*, NewAdapter<ListEntry<char*> > > FEMemListBase;
-typedef ListContainerBase<cSAnim*, NewAdapter<ListEntry<cSAnim*> > > FEItemListBase;
-
-void feAnimModelManager_stub()
+// Retail DWARF defines this model locally before FEAnimModelManager. Its
+// methods are stripped, but parsing the destructor establishes the original
+// cInventory<cSHierarchy> cleanup-template ownership for this translation unit.
+class FEAnimModel : public FEBasic3dModel
 {
-    void (FEMemListBase::*forceMemDelete)(ListEntry<char*>*) = FEMemListBase::DeleteEntryFunc();
-    void (FEItemListBase::*forceItemDelete)(ListEntry<cSAnim*>*) = FEItemListBase::DeleteEntryFunc();
-    (void)forceMemDelete;
-    (void)forceItemDelete;
-}
+public:
+    FEAnimModel(eCharacterClass cc, eGLView targetview);
+    virtual ~FEAnimModel()
+    {
+        FEAnimModelManager::s_pInstance->RemoveModelFromTweakList(this);
+        delete pInventorySHierarchy;
+    }
+    void Update(float fDeltaT);
+
+    /* 0x2C */ eCharacterClass mCharacterClass;
+    /* 0x30 */ cInventory<cSHierarchy>* pInventorySHierarchy;
+    /* 0x34 */ cSAnim* pCurrentAnimation;
+    /* 0x38 */ cPN_SAnimController* pAnimController;
+    /* 0x3C */ cPoseAccumulator* pPoseAccumulator;
+    /* 0x40 */ GLSkinMesh* pSkinMesh;
+    /* 0x44 */ unsigned long mNormalTextureID;
+    /* 0x48 */ unsigned long mSwapTextureID;
+}; // total size: 0x4C
+
+FEAnimModelManager* nlSingleton<FEAnimModelManager>::s_pInstance = NULL;
 
 /**
  * Offset/Address/Size: 0x3E8 | 0x80094B94 | size: 0xB0

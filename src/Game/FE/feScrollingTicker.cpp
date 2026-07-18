@@ -1,4 +1,3 @@
-#define NL_SINGLETON_NO_DEFINE
 #include "Game/FE/feScrollingTicker.h"
 #include "Game/FE/feFinder.h"
 
@@ -69,7 +68,7 @@ void ScrollingTickerScene::tickerClosed(void* scene)
 ScrollingTickerScene::ScrollingTickerScene()
     : BaseSceneHandler()
     , m_active(false)
-    , m_cbFunc(EMPTY)
+    , m_cbFunc()
     , m_textScroller(NULL)
     , m_pFETweenManager()
 {

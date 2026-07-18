@@ -94,7 +94,6 @@ void ShotMeter::Abort(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0x258 | 0x80062378 | size: 0x42C
- * TODO: 99.57% match - remaining diffs are in score-weight accumulation.
  */
 void ShotMeter::CalcOneTimerValue(cFielder* pFielder, bool bWasPerfectPass)
 {
@@ -148,7 +147,9 @@ void ShotMeter::CalcOneTimerValue(cFielder* pFielder, bool bWasPerfectPass)
 
         m_fSpeedValue = nlRandomf(0.2f * g_pGame->m_pGameTweaks->unk2EC, &nlDefaultSeed);
 
-        float fCombinedValue = (fDirectionValue + fDistanceValue) * 0.5f;
+        float fSumValue = fDirectionValue + fDistanceValue;
+        float fHalfValue = 0.5f;
+        float fCombinedValue = fSumValue * fHalfValue;
         m_fSpeedValue += InterpolateRangeClamped(0.25f, 0.8f * g_pGame->m_pGameTweaks->unk2EC, 0.0f, 1.0f, fCombinedValue);
     }
     else
@@ -209,8 +210,8 @@ static inline void CalcShotAim(cFielder* pFielder, ShotMeter* pMeter)
 
 static inline void CalcScoreValue(cFielder* pFielder, ShotMeter* pMeter)
 {
-    float fPlayerDistance;
     float fNetOpeness;
+    float fPlayerDistance;
     float fChargedValue;
     float fRatingsValue;
 
@@ -223,12 +224,13 @@ static inline void CalcScoreValue(cFielder* pFielder, ShotMeter* pMeter)
     float fPositionWeighting = pGameTweaks->unk2D8;
     bool bIsChipShot = pFielder->mActionShotVars.bIsChipShot || pFielder->mActionLooseBallShotVars.bIsChipShot;
 
+    fNetOpeness = fRatingsValue;
+
     if (!bIsChipShot)
     {
         float fPlayerWeighting = pGameTweaks->unk2E0;
         fShooting *= fPositionWeighting;
         float fNetWeighting = pGameTweaks->unk2DC;
-        fNetOpeness = fRatingsValue;
         fNetOpeness *= fNetWeighting;
         fPlayerDistance *= fPlayerWeighting;
         float fSumWeighting = fPlayerWeighting + fNetWeighting;
@@ -243,7 +245,6 @@ static inline void CalcScoreValue(cFielder* pFielder, ShotMeter* pMeter)
         float fChipWeight = pGameTweaks->unk2E4;
         float fGoalieOut = GoalieOutOfPosition(pFielder);
         pGameTweaks = g_pGame->m_pGameTweaks;
-        float fOpenVal;
         float fGoalieVal;
         float fSum;
         float fSumWeights;
@@ -252,20 +253,17 @@ static inline void CalcScoreValue(cFielder* pFielder, ShotMeter* pMeter)
         fGoalieVal *= fChipWeight;
         fShooting *= fPositionWeighting;
         float fChipOpenWeight = pGameTweaks->unk2E8;
-        fOpenVal = fRatingsValue;
-        fOpenVal *= fChipOpenWeight;
+        fNetOpeness *= fChipOpenWeight;
         fSum = fChipWeight + fChipOpenWeight;
         fSumWeights = fPositionWeighting + fSum;
         fRemainder = 1.0f - fSumWeights;
         fChargedValue *= fRemainder;
-        pMeter->m_fScoreValue = fShooting + (fChargedValue + (fGoalieVal + fOpenVal));
+        pMeter->m_fScoreValue = fShooting + (fChargedValue + (fGoalieVal + fNetOpeness));
     }
 }
 
 /**
  * Offset/Address/Size: 0x0 | 0x80062120 | size: 0x1FC
- * TODO: 99.84% match - the weighted-openess product lands in f3/f4 where the
- * target uses f5 in the normal and chip shot branches.
  */
 void ShotMeter::ShotReleased(cFielder* pFielder)
 {

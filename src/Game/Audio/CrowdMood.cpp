@@ -9,13 +9,6 @@
 #include "NL/nlMath.h"
 #include "NL/nlString.h"
 
-// nlStrNCmp<char>'s weak body is this TU's (matches target); nlStrLen/nlStrNCpy's
-// live elsewhere -- reference them (UND) instead of re-emitting weak COMDAT copies.
-template <>
-unsigned long nlStrLen<char>(const char*);
-template <>
-char* nlStrNCpy<char>(char*, const char*, unsigned long);
-
 extern GCAudioStreaming::AudioBufferMgr g_BufferMgr;
 static void ___blank(const char*, ...);
 static void UpdateTiming(float);
@@ -306,36 +299,15 @@ void ChangeCrowdVolume(float NewVolume)
     }
 }
 
-/**
- * Offset/Address/Size: 0x31F8 | 0x8015090C | size: 0x588
- * TODO: 87.53% match - remaining diffs are blend/vocal temp register order and shortened fallback branch offsets.
- */
-static inline void ScaleAndAddVocalDef(CROWD_VOCAL_DEFINITION& Dest, const CROWD_VOCAL_DEFINITION& Src, float Scale)
+static void FixValueRange(float& Value, float& Range)
 {
-    float srcVolume = Src.Volume;
-    Dest.Volume += srcVolume * Scale;
-    Dest.VolumeRange += Src.VolumeRange * Scale;
-    if (srcVolume)
-    {
-        float delayAdd;
-        if (Src.Delay)
-        {
-            delayAdd = (1.0f / Src.Delay) * Scale;
-        }
-        else
-        {
-            delayAdd = 1000000.0f;
-        }
-        Dest.Delay += delayAdd;
-    }
-    else
-    {
-        Dest.Delay = (float)((double)Dest.Delay + 0.000001);
-    }
-    Dest.DelayRange += Src.DelayRange * Scale;
+    float temp = Range;
+    temp = Value - temp;
+    Value = temp;
+    Range *= 2.0f;
 }
 
-static inline void ScaleAndAddVocalDef2(CROWD_VOCAL_DEFINITION& Dest, const CROWD_VOCAL_DEFINITION& Src, float Scale)
+static void ScaleAndAddVocalDef(CROWD_VOCAL_DEFINITION& Dest, const CROWD_VOCAL_DEFINITION& Src, float Scale)
 {
     Dest.Volume += Src.Volume * Scale;
     Dest.VolumeRange += Src.VolumeRange * Scale;
@@ -359,14 +331,9 @@ static inline void ScaleAndAddVocalDef2(CROWD_VOCAL_DEFINITION& Dest, const CROW
     Dest.DelayRange += Src.DelayRange * Scale;
 }
 
-static void FixValueRange(float& Value, float& Range)
-{
-    float temp = Range;
-    temp = Value - temp;
-    Value = temp;
-    Range *= 2.0f;
-}
-
+/**
+ * Offset/Address/Size: 0x31F8 | 0x8015090C | size: 0x588
+ */
 static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
 {
     float Zero;
@@ -399,8 +366,8 @@ static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
         MoodDef.PositiveVol += g_MoodDefs[mood].PositiveVol * MoodBlend[mood];
         MoodDef.NegativeVol += g_MoodDefs[mood].NegativeVol * MoodBlend[mood];
 
-        ScaleAndAddVocalDef2(MoodDef.Chant, g_MoodDefs[mood].Chant, MoodBlend[mood]);
-        ScaleAndAddVocalDef2(MoodDef.Heckle, g_MoodDefs[mood].Heckle, MoodBlend[mood]);
+        ScaleAndAddVocalDef(MoodDef.Chant, g_MoodDefs[mood].Chant, MoodBlend[mood]);
+        ScaleAndAddVocalDef(MoodDef.Heckle, g_MoodDefs[mood].Heckle, MoodBlend[mood]);
     }
 
     float remainWeight = (1.0f - AccountedFor >= 0.0f) ? 1.0f - AccountedFor : 0.0f;
@@ -409,8 +376,8 @@ static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
     MoodDef.NeutralVol += SatMoodDef.NeutralVol * remainWeight;
     MoodDef.PositiveVol += SatMoodDef.PositiveVol * remainWeight;
     MoodDef.NegativeVol += SatMoodDef.NegativeVol * remainWeight;
-    ScaleAndAddVocalDef2(MoodDef.Chant, g_MoodDefs[CrowdMood::CM_Neutral].Chant, remainWeight);
-    ScaleAndAddVocalDef2(MoodDef.Heckle, g_MoodDefs[CrowdMood::CM_Neutral].Heckle, remainWeight);
+    ScaleAndAddVocalDef(MoodDef.Chant, g_MoodDefs[CrowdMood::CM_Neutral].Chant, remainWeight);
+    ScaleAndAddVocalDef(MoodDef.Heckle, g_MoodDefs[CrowdMood::CM_Neutral].Heckle, remainWeight);
 
     MoodDef.Chant.Delay = MoodDef.Chant.Delay ? (1.0f / MoodDef.Chant.Delay) : 0.0f;
     MoodDef.Heckle.Delay = MoodDef.Heckle.Delay ? (1.0f / MoodDef.Heckle.Delay) : 0.0f;

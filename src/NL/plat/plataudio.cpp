@@ -1,4 +1,3 @@
-#define NL_SINGLETON_NO_DEFINE
 #include "NL/plat/plataudio.h"
 #include "NL/nlMemory.h"
 #include "NL/nlFile.h"

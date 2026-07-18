@@ -1,5 +1,3 @@
-#define BASICSTRING_INDEX_EMPTY_COPY_BYTE_OFFSET
-
 #include "Game/OverlayHandlerInGameText.h"
 #include "Game/BaseSceneHandler.h"
 #include "Game/DB/StatsTracker.h"
@@ -99,7 +97,7 @@ BasicString<unsigned short, Detail::TempStringAllocator>::Append<Detail::TempStr
 {
     BasicString r(*this);
     r.AppendInPlace(rhs);
-    BasicStringData<unsigned short>* data = r.m_data;
+    BasicString<unsigned short, Detail::TempStringAllocator>::Data* data = r.mData;
     if (data != 0)
     {
         data->mRefCount++;
@@ -122,19 +120,6 @@ BasicString<unsigned short, Detail::TempStringAllocator>::Append<Detail::TempStr
  */
 #pragma dont_inline on
 #pragma dont_inline reset
-
-/**
- * Stub only for field order; unreferenced so the linker drops it.
- * Forces emission of specific constants/operations so the compiler
- * lays out the related fields to match the original binary.
- */
-void OverlayHandlerInGameText_stub()
-{
-    void (*volatile forceTrack)(ePlayerStats, int, int, int, int, int, int) = &StatsTracker::Track;
-    (void)forceTrack;
-    TLInstance* (*volatile forceFind)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher) = &FEFinder<TLInstance, 3>::Find<FEPresentation>;
-    (void)forceFind;
-}
 
 /**
  * Offset/Address/Size: 0xF44 | 0x800FBFF0 | size: 0xA8
@@ -224,31 +209,6 @@ void InGameTextOverlay::SceneCreated()
 {
 }
 
-static inline BasicStringData<unsigned short>* BuildWideStringData(const unsigned short* str)
-{
-    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<unsigned short>));
-    if (data != 0)
-    {
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-        const unsigned short* scan = str;
-        while (*scan++ != 0)
-        {
-            data->mSize++;
-        }
-        data->mSize++;
-        data->mData = (unsigned short*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(unsigned short));
-        data->mCapacity = data->mSize;
-        for (int i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *str++;
-        }
-        data->mRefCount = 1;
-    }
-    return data;
-}
-
 /**
  * Offset/Address/Size: 0x0 | 0x800FB0AC | size: 0xCAC
  */
@@ -292,7 +252,7 @@ void InGameTextOverlay::DisplayFinalScore()
         eTeamID winningTeam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)winningSide);
 
         const unsigned short* winnerNameLookup = LookupLocHash(GetLOCTeamName(winningTeam));
-        WideString winnerNameWideString(BuildWideStringData(winnerNameLookup));
+        WideString winnerNameWideString(winnerNameLookup);
 
         if (winningTeam == 3)
         {

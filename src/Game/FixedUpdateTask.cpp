@@ -7,6 +7,7 @@
 #include "Game/FlickDetection.h"
 #include "Game/Game.h"
 #include "Game/Physics/Physics.h"
+#include "Game/Physics/PhysicsAIBall.h"
 #include "Game/Render/NetMesh.h"
 #include "Game/Render/SidelineExplodable.h"
 #include "Game/ReplayManager.h"

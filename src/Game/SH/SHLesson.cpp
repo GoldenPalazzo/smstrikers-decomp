@@ -10,7 +10,7 @@
 #include "Game/OverlayManager.h"
 #include "Game/SH/SHMoviePlayer.h"
 #include "NL/nlLocalization.h"
-#include "NL/nlBSearch.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlPrint.h"
 #include "NL/nlSingleton.h"
 #include "types.h"

@@ -1,12 +1,8 @@
 #include "NL/glx/glxTexture.h"
 
-#define NL_AVLTREE_DECLARE_ONLY
-#define NL_AVLTREEBASE_DECLARE_ONLY
 #include "NL/nlAVLTree.h"
-#undef NL_AVLTREEBASE_DECLARE_ONLY
-#undef NL_AVLTREE_DECLARE_ONLY
 #include "NL/nlList.h"
-#include "NL/nlQSort.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlFile.h"
 #include "NL/nlFileGC.h"
 #include "NL/gl/glTexture.h"
@@ -401,6 +397,14 @@ bool glxParseTextureBundle(const char* filedata)
 }
 
 /**
+ * Offset/Address/Size: 0xBC4 | 0x801B7E80 | size: 0x10
+ */
+inline int BundleSortProc(const glTexBundleDict* a, const glTexBundleDict* b)
+{
+    return a->offset - b->offset;
+}
+
+/**
  * Offset/Address/Size: 0x9F4 | 0x801B7CB0 | size: 0x1D0
  */
 /**
@@ -474,14 +478,6 @@ bool glplatLoadTextureBundle(const char* filename)
     glx_FreeMemory1(filename);
 
     return true;
-}
-
-/**
- * Offset/Address/Size: 0xBC4 | 0x801B7E80 | size: 0x10
- */
-int BundleSortProc(const glTexBundleDict* a, const glTexBundleDict* b)
-{
-    return a->offset - b->offset;
 }
 
 /**

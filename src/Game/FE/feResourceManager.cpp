@@ -1,6 +1,3 @@
-#define FERESOURCEMANAGER_NO_RUN_INLINE
-#define NL_AVLTREEBASE_DELETEENTRY_INCLASS
-#include "NL/nlRingWalk.h"
 #include "Game/FE/FEResourceManager.h"
 #include "Game/FE/feFontResource.h"
 #include "Game/FE/feResourceManager.h"
@@ -11,8 +8,8 @@
 #include "NL/nlMemory.h"
 #include "NL/nlString.h"
 #include "NL/gl/glTexture.h"
-#include "NL/nlAVLTreeSlotPool.h"
-#include "NL/nlDLListSlotPool.h"
+#include "NL/nlAVLTree.h"
+#include "NL/nlDLListContainer.h"
 #include "NL/glx/glxMemory.h"
 
 static unsigned char* s_pResourceLoadBuffer;
@@ -29,21 +26,6 @@ enum ResourceResult
     FERR_WaitingForResource = 0,
     FERR_AlreadyLoaded = 1,
 };
-
-#pragma dont_inline on
-void feResourceManager_stub()
-{
-    s_loadedResourceList.DeleteEntry(NULL);
-    nlAVLTreeSlotPool<unsigned long, FEResourceHandle*, DefaultKeyCompare<unsigned long> >::ENTRY_DELETE_FUNC deleteFunc = nlAVLTreeSlotPool<unsigned long, FEResourceHandle*, DefaultKeyCompare<unsigned long> >::DeleteEntryFunc();
-    (void)deleteFunc;
-    nlPrintf("FEResourceManager Error: Failed to get file information in permanent bundle!\n");
-}
-
-void feResourceManager_stubB()
-{
-    s_loadedResourceList.Clear();
-}
-#pragma dont_inline off
 
 static inline FEResourceHandle* FindExistingResourceInResourceList_Inline(FEResourceHandle* pFEResourceHandle)
 {
@@ -381,8 +363,8 @@ void FEResourceManager::UnloadPermanentResourceBundle()
 
         if (removedNode != NULL)
         {
-            removedNode->left = (AVLTreeNode*)s_loadedResourceList.m_Allocator.m_FreeList;
-            s_loadedResourceList.m_Allocator.m_FreeList = (SlotPoolEntry*)removedNode;
+            s_loadedResourceList.DeleteEntry(
+                (AVLTreeEntry<unsigned long, FEResourceHandle*>*)removedNode);
             s_loadedResourceList.m_NumElements--;
         }
 
@@ -513,7 +495,7 @@ void FEResourceManager::QueueResourceLoad(FEResourceHandle* pHandle)
     if (freeEntry != NULL)
     {
         entry = (DLListEntry<FEResourceHandle*>*)freeEntry;
-        pendingResourceQueue.m_Allocator.m_FreeList = freeEntry->m_next;
+        pendingResourceQueue.m_Allocator.m_FreeList = freeEntry->next;
     }
 
     if (entry != NULL)
@@ -773,9 +755,5 @@ asm FEResourceManager::FEResourceManager()
     // clang-format on
 }
 
-// The original object defines the singleton instance as a GLOBAL symbol in
-// this TU's .sbss (symbols.txt scope:global). An explicit specialization
-// produces that strong definition; the weak copies other TUs emit via the
-// nlSingleton header template all fold against it at link.
 template <>
 FEResourceManager* nlSingleton<FEResourceManager>::s_pInstance = 0;

@@ -21,15 +21,7 @@ struct CharacterPhysicsElement
 class CharacterPhysicsData
 {
 public:
-#ifdef CHARACTERTEMPLATE_INLINE_PHYSICSDATA_DTOR
-    // CharacterTemplate.cpp owns this class's out-of-line dtor in the target. Defining the
-    // body in-class there emits __dt__ and __vt__20CharacterPhysicsData WEAK (the target's
-    // scope) instead of GLOBAL at def-position. Guarded per-TU: every other includer takes
-    // the #else branch and preprocesses to identical tokens.
     virtual ~CharacterPhysicsData() { delete[] pPhysicsElements; }
-#else
-    virtual ~CharacterPhysicsData();
-#endif
 
     /* 0x04 */ u32 physicsElementCount;
     /* 0x08 */ CharacterPhysicsElement* pPhysicsElements;

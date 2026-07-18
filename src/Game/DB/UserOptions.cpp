@@ -1,6 +1,3 @@
-#define BASICSTRING_COPY_REREAD_TEMP
-#define BASICSTRING_NESTED_DATA_CTOR
-
 #include "types.h"
 #pragma pool_data off
 
@@ -12,6 +9,7 @@
 
 #include "Game/AI/AiUtil.h"
 #include "Game/Audio/AudioLoader.h"
+#include "Game/Audio/AudioStream.h"
 #include "Game/GameInfo.h"
 
 extern bool g_e3_Build;
@@ -125,13 +123,8 @@ void AudioSettings::ApplySettings(bool bApplyMode, bool bUpdateMode)
         float musicVolume = (float)MusicVolume / 10.0f;
         if (musicVolume != ((float)DefaultMusicVolume / 10.0f))
         {
-            float adjustedMusicVolume;
-            adjustedMusicVolume = musicVolume != (adjustedMusicVolume = 0.0f)
-                                    ? Interpolate(0.2f, 1.0f, musicVolume)
-                                    : adjustedMusicVolume;
-
-            musicVolume = adjustedMusicVolume;
-            Audio::MasterVolume::SetVolume(Audio::MasterVolume::VG_Music, adjustedMusicVolume);
+            musicVolume = musicVolume ? Interpolate(0.2f, 1.0f, musicVolume) : 0.0f;
+            Audio::MasterVolume::SetVolume(Audio::MasterVolume::VG_Music, musicVolume);
             DefaultMusicVolume = MusicVolume;
             g_pTrackManager->OnMasterVolumeChange(Audio::MasterVolume::VG_Music);
         }

@@ -1,5 +1,5 @@
-#define NL_SINGLETON_NO_DEFINE
 #include "Game/AI/Scripts/ScriptQuestions.h"
+#include "Game/AI/Scripts/ScriptCaching.h"
 #include "Game/FormationDefines.h"
 #include "Game/AI/AiUtil.h"
 #include "Game/AI/AvoidController.h"
@@ -14,7 +14,6 @@
 extern cTeam* g_pCurrentlyUpdatingTeam;
 extern cBall* g_pScriptBall;
 extern cBall* g_pBall;
-extern cFielder* g_pScriptCurrentFielder;
 extern cTeam* g_pScriptOtherTeam;
 
 static const nlVector2 g_vOpenToAdjust = { 0.0f, 0.8f };
@@ -3183,6 +3182,36 @@ float Stunned(Goalie* pGoalie)
     return 0.0f;
 }
 
+float CloseToTheirNetB(cBall* pBall)
+{
+    if (pBall == NULL)
+    {
+        return 0.0f;
+    }
+
+    const nlVector3& netLocation = g_pScriptCurrentFielder->GetAIOffNetLocation(&pBall->m_v3Position);
+
+    float dx = pBall->m_v3Position.f.x - netLocation.f.x;
+    float dy = pBall->m_v3Position.f.y - netLocation.f.y;
+
+    return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), g_pGame->m_pFuzzyTweaks->vCloseBallNetConfidenceDistance);
+}
+
+float NearToTheirNetB(cBall* pBall)
+{
+    if (pBall == NULL)
+    {
+        return 0.0f;
+    }
+
+    const nlVector3& netLocation = g_pScriptCurrentFielder->GetAIOffNetLocation(&pBall->m_v3Position);
+
+    float dx = pBall->m_v3Position.f.x - netLocation.f.x;
+    float dy = pBall->m_v3Position.f.y - netLocation.f.y;
+
+    return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), g_pGame->m_pFuzzyTweaks->vNearBallNetConfidenceDistance);
+}
+
 /**
  * Offset/Address/Size: 0x12A8 | 0x8007FD30 | size: 0x7C
  */
@@ -3199,6 +3228,26 @@ float FarToTheirNetB(cBall* pBall)
     float dy = pBall->m_v3Position.f.y - netLocation.f.y;
 
     return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), g_pGame->m_pFuzzyTweaks->vFarBallNetConfidenceDistance);
+}
+
+float CloseToPlayersNet(cBall* pBall, cPlayer* pPlayer)
+{
+    if (pBall == NULL)
+    {
+        return 0.0f;
+    }
+
+    if (pPlayer == NULL)
+    {
+        return 0.0f;
+    }
+
+    const nlVector3& netLocation = pPlayer->GetAIDefNetLocation(&pBall->m_v3Position);
+
+    float dx = pBall->m_v3Position.f.x - netLocation.f.x;
+    float dy = pBall->m_v3Position.f.y - netLocation.f.y;
+
+    return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), g_pGame->m_pFuzzyTweaks->vCloseBallNetConfidenceDistance);
 }
 
 /**
@@ -3222,6 +3271,26 @@ float NearToPlayersNet(cBall* pBall, cPlayer* pPlayer)
     float dy = pBall->m_v3Position.f.y - netLocation.f.y;
 
     return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), g_pGame->m_pFuzzyTweaks->vNearBallNetConfidenceDistance);
+}
+
+float FarToPlayersNet(cBall* pBall, cPlayer* pPlayer)
+{
+    if (pBall == NULL)
+    {
+        return 0.0f;
+    }
+
+    if (pPlayer == NULL)
+    {
+        return 0.0f;
+    }
+
+    const nlVector3& netLocation = pPlayer->GetAIDefNetLocation(&pBall->m_v3Position);
+
+    float dx = pBall->m_v3Position.f.x - netLocation.f.x;
+    float dy = pBall->m_v3Position.f.y - netLocation.f.y;
+
+    return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), g_pGame->m_pFuzzyTweaks->vFarBallNetConfidenceDistance);
 }
 
 /**

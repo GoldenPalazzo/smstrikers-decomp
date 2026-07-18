@@ -3,6 +3,17 @@
 
 #include "stdlib.h"
 
+static unsigned long nlCountBits(unsigned long bits)
+{
+    unsigned long count = 0;
+    while (bits != 0)
+    {
+        count += bits & 1;
+        bits >>= 1;
+    }
+    return count;
+}
+
 // Home header for the generic search/sort algorithm templates. The original
 // compiler grouped weak instantiations into linkonce sections keyed by the
 // BODY's file; DWARF attributes nlBSearch/nlQSort/nlDefaultQSortComparer to
@@ -13,82 +24,43 @@
  * Offset/Address/Size: 0x0 | 0x80213820 | size: 0x8C
  */
 template <typename T, typename Key>
-T* nlBSearch(const Key& key, T* pBase, int count)
+T* nlBSearch(const Key& key, T* array, int size)
 {
-#ifdef NL_POOL_DTOR_HOST
-    FORCE_DONT_INLINE;
-#endif
-    const Key* keyPtr = &key;
-    int high = count - 1;
+    int high = size - 1;
     int low = -1;
-
-    while ((high - low) > 1)
+    while (high - low > 1)
     {
-        int mid = (high + low) / 2;
-
-        if (pBase[mid].hash > (unsigned long)*keyPtr)
-        {
-            high = mid;
-        }
+        int probe = (high + low) / 2;
+        if ((unsigned long)array[probe] > (unsigned long)key)
+            high = probe;
         else
-        {
-            low = mid;
-        }
+            low = probe;
     }
-
-    unsigned long highHash = pBase[high].hash;
-    if (highHash == (unsigned long)*keyPtr)
-    {
-        return &pBase[high];
-    }
-
+    unsigned long highValue = (unsigned long)array[high];
+    if (highValue == (unsigned long)key)
+        return &array[high];
     if (low == -1)
-    {
-        return nullptr;
-    }
-
-    unsigned long lowHash = pBase[low].hash;
-    if (lowHash == (unsigned long)*keyPtr)
-    {
-        return &pBase[low];
-    }
-
-    return nullptr;
+        return NULL;
+    unsigned long lowValue = (unsigned long)array[low];
+    if (lowValue == (unsigned long)key)
+        return &array[low];
+    return NULL;
 }
 
 template <typename T>
-int nlDefaultQSortComparer(const T* a, const T* b)
+int nlDefaultQSortComparer(const T* pa, const T* pb)
 {
-    if (a->hash > b->hash)
+    if ((unsigned long)*pa > (unsigned long)*pb)
         return 1;
-    if (a->hash == b->hash)
+    if ((unsigned long)*pa == (unsigned long)*pb)
         return 0;
     return -1;
 }
 
 template <typename T>
-void nlQSort(T* array, int size, int (*compare)(const T*, const T*))
+void nlQSort(T* array, int count, int (*comparefunc)(const T*, const T*))
 {
-#ifdef NL_POOL_DTOR_HOST
-    FORCE_DONT_INLINE;
-#endif
-    qsort(array, size, sizeof(T), (int (*)(const void*, const void*))compare);
+    qsort(array, count, sizeof(T), (int (*)(const void*, const void*))comparefunc);
 }
 
 #endif // _NLALGORITHM_H_
-
-// Outside the include guard on purpose: a TU that defines NL_POOL_DTOR_HOST
-// and re-includes this header AFTER NL/nlListSlotPool.h hosts the
-// ~nlListSlotPool body here, keying its linkonce bucket to this file so the
-// weak __dt__36nlListSlotPool<...> emission fuses into the same section as
-// nlQSort/nlDefaultQSortComparer (as in the target DOL). Inert for every
-// other TU. NOTE: non-inline on purpose - the out-of-line reference from the
-// nlListSlotPoolReap phantom is what pulls the dtor out of the post-__sinit
-// instantiation wave.
-#if defined(NL_POOL_DTOR_HOST) && defined(_NLLISTSLOTPOOL_H_) && !defined(_NL_POOL_DTOR_EMITTED_)
-#define _NL_POOL_DTOR_EMITTED_
-template <typename T>
-nlListSlotPool<T>::~nlListSlotPool()
-{
-}
-#endif

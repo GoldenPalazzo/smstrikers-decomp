@@ -165,12 +165,7 @@ void ChainChomp::Update(float fDeltaT)
             pControl = EmissionManager::Create(pGroup, 0);
             pControl->m_uUserData = (u32)this;
 
-            {
-                Function<EmissionController&> update;
-                update.mTag = FREE_FUNCTION;
-                update.mFreeFunction = UpdateChainEmitter;
-                pControl->SetUpdateCallback(update);
-            }
+            pControl->SetUpdateCallback(Function<EmissionController&>(UpdateChainEmitter));
 
             FireCameraRumbleFilter(0.0f, 0.2f);
         }

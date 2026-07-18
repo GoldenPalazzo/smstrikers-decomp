@@ -128,12 +128,3 @@ void DrawableExplosionFragment::Replay<SaveFrame>(SaveFrame& frame)
         Replayable<3, SaveFrame, float>(frame, mOpacity);
     }
 }
-
-// ---- Replayable specs OWNED by DrawableExplosionFragment ----
-// Four weak specs emit in this TU's .o in target order. Save-group first,
-// then Load-group (per target.s `unique=2` section layout).
-//   <3, S, Ul>   <3, S, Q>   <3, L, Ul>   <3, L, Q>
-REPLAYABLE_POD_SAVE(3, unsigned long)
-REPLAYABLE_POD_SAVE(3, nlQuaternion)
-REPLAYABLE_POD_LOAD(3, unsigned long)
-REPLAYABLE_POD_LOAD(3, nlQuaternion)

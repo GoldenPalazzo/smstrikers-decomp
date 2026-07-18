@@ -1,6 +1,8 @@
 #pragma pool_data off
 
 #include "Game/ScriptTuning.h"
+#include "Game/AI/Scripts/ScriptCaching.h"
+#include "Game/AI/Scripts/ScriptQuestions.h"
 #include "NL/nlConfig.h"
 
 /**

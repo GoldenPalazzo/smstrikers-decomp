@@ -13,8 +13,6 @@ struct GoalScoredDataExt
     int sideOfInterest;
 };
 
-typedef BasicStringData<char> BasicStringDataHack;
-
 class NetMesh
 {
 public:
@@ -23,12 +21,6 @@ public:
 
     void UpdateUntilRelaxed();
 };
-
-// FormatImpl<> and the generic Format<> template come from NL/nlFormat.h.
-// The generic FormatImpl::operator%<T> body defined there provides the two
-// operator% instantiations (<const char*>, <int>) that this TU's Format<>
-// specialization (below) requires -- previously these were left as empty
-// stubs, so they were emitted as undefined references instead of local code.
 
 unsigned int nlRandom(unsigned int range, unsigned int* seed);
 extern unsigned int nlDefaultSeed;
@@ -42,34 +34,6 @@ char* zoneInWidthNames[3];
 char scriptName[128];
 int cameraPick;
 } // namespace
-
-/**
- * Offset/Address/Size: 0x0 | 0x80128B74 | size: 0x150
- */
-template <>
-inline BasicString<char, Detail::TempStringAllocator>
-Format<BasicString<char, Detail::TempStringAllocator>, const char*, const char*, const char*, int>(
-    const BasicString<char, Detail::TempStringAllocator>& format,
-    const char* const& value1,
-    const char* const& value2,
-    const char* const& value3,
-    const int& value4)
-{
-    BasicStringData<char>* data = format.m_data;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
-
-    return BasicString<char, Detail::TempStringAllocator>(
-        (BasicString<char, Detail::TempStringAllocator>)((((impl % value1) % value2) % value3) % value4));
-}
 
 ReplayChoreo& ReplayChoreo::Instance()
 {
@@ -253,36 +217,6 @@ void ReplayChoreo::DoFunctionCall(unsigned int func)
 template <typename StringType, typename T1, typename T2, typename T3, typename T4>
 void Format(StringType& result, const StringType& format, const T1& value1, const T2& value2, const T3& value3, const T4& value4);
 
-static inline BasicStringDataHack* MakeStringData(const char* src_str)
-{
-    BasicStringDataHack* data = (BasicStringDataHack*)nlMalloc(0x10, 8, true);
-    if (data != 0)
-    {
-        const char* src = src_str;
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        const char* p = src;
-        while (*p++ != 0)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-        data->mCapacity = data->mSize;
-
-        for (int i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *src++;
-        }
-
-        data->mRefCount = 1;
-    }
-    return data;
-}
-
 /**
  * Offset/Address/Size: 0xCC8 | 0x80128334 | size: 0x314
  * TODO: 98.10% match - remaining register permutation in this/loop cursor allocation
@@ -314,7 +248,7 @@ void ReplayChoreo::LoadScript()
                 for (j = 0; j < 8; j++)
                 {
                     BasicString<char, Detail::TempStringAllocator> name = Format<BasicString<char, Detail::TempStringAllocator>, const char*, const char*, const char*, int>(
-                        BasicString<char, Detail::TempStringAllocator>(MakeStringData((char*)"{0}_{1}_{2}_{3}")),
+                        BasicString<char, Detail::TempStringAllocator>("{0}_{1}_{2}_{3}"),
                         zoneDepthNames[d],
                         zoneInWidthNames[w],
                         replayTypeNames[t],
@@ -426,10 +360,7 @@ void ReplayChoreo::Reset()
  */
 BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScriptName(ReplayType) const
 {
-    BasicStringDataHack* data = MakeStringData("{0}_{1}_{2}_{3}");
-
-    BasicString<char, Detail::TempStringAllocator> format;
-    format.m_data = data;
+    BasicString<char, Detail::TempStringAllocator> format("{0}_{1}_{2}_{3}");
 
     int zoneDepth = 0;
     int zoneInWidth = 0;
@@ -484,8 +415,7 @@ BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScrip
 
     if (!mReplay->DidOccurInLastNumSeconds(2, 6.0f))
     {
-        BasicStringDataHack* d2 = MakeStringData("MID_CENTER_OWN_GOAL_0");
-        return BasicString<char, Detail::TempStringAllocator>(d2);
+        return BasicString<char, Detail::TempStringAllocator>("MID_CENTER_OWN_GOAL_0");
     }
 
     int pick = nlRandom(mNumScripts[zoneDepth][zoneInWidth][goalType], &nlDefaultSeed);

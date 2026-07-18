@@ -3,12 +3,6 @@
 
 #include "NL/nlMath.h"
 
-template <typename T>
-nlVector3& PositionOf(T pObject)
-{
-    return pObject->m_v3Position;
-}
-
 nlVector3 GetClosestPointOnSidelines(const nlVector3&);
 char* GetPowerupName(int powerup);
 void SortToMinOrMaxTotalSum(unsigned int*, float (*)[4], bool);

@@ -2,12 +2,6 @@
 #define _CHARACTERTRIGGERS_H_
 
 #include "NL/nlMath.h"
-#include "Game/Character.h"
-#include "Game/Effects/EffectsGroup.h"
-#include "Game/Effects/EmissionManager.h"
-
-class cBall;
-extern cBall* g_pBall;
 
 enum eBallShotEffectType
 {

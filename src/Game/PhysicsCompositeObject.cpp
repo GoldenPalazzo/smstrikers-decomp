@@ -136,7 +136,7 @@ call_transform:
  * Offset/Address/Size: 0x0 | 0x801FF99C | size: 0x3C
  * nlWalkDLRing<Entry, Container> is emitted WEAK via implicit instantiation
  * from the m_Components member destructor (~DLListContainerBase ->
- * DestroyAllEntries -> nlWalkDLRing). An explicit `template void ...`
+ * container cleanup -> nlWalkDLRing). An explicit `template void ...`
  * instantiation directive here would force GLOBAL linkage and mismatch the
  * target's weak symbol, so it is intentionally omitted.
  */

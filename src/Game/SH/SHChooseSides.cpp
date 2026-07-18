@@ -1,6 +1,3 @@
-#define BASICSTRING_NESTED_DATA_CTOR
-#define BASICSTRING_OUTLINE_CTOR
-
 #include "Game/SH/SHChooseSides.h"
 
 #include "Game/FE/feFinder.h"
@@ -264,49 +261,9 @@ SHChooseSides2::SHChooseSides2(SHChooseSides2::eCSContext context)
  */
 SHChooseSides2::~SHChooseSides2()
 {
-    FEScrollText* ticker = m_pTicker;
-
-    if (ticker != NULL)
+    if (m_pTicker != NULL)
     {
-        if (ticker != NULL)
-        {
-            if ((char*)ticker + 0x21C)
-            {
-                volatile FEScrollText* vticker = ticker;
-                if ((char*)vticker + 0x21C)
-                {
-                    if (ticker->m_messageFinishedCB.mTag == FUNCTOR)
-                    {
-                        delete ticker->m_messageFinishedCB.mFunctor;
-                    }
-                    ticker->m_messageFinishedCB.mTag = EMPTY;
-                }
-            }
-
-            if ((char*)ticker + 4)
-            {
-                BasicStringData<unsigned short>* data = ticker->m_message.m_data;
-                if (data != NULL)
-                {
-                    if (--data->mRefCount == 0)
-                    {
-                        if (data != NULL)
-                        {
-                            if (data != NULL)
-                            {
-                                delete[] data->mData;
-                            }
-                            if (data != NULL)
-                            {
-                                nlFree(data);
-                            }
-                        }
-                    }
-                }
-            }
-
-            ::operator delete(ticker);
-        }
+        delete m_pTicker;
     }
 
     for (int i = 0; i < 3; i++)
@@ -464,7 +421,6 @@ void SHChooseSides2::SceneCreated()
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash("HOME_AWAY2")));
 
-#pragma inline_depth(1)
         BasicString<char, Detail::TempStringAllocator> iconfilename[2];
 
         for (int i = 0; i < 2; i++)
@@ -512,7 +468,6 @@ void SHChooseSides2::SceneCreated()
 
             mAsyncImage[i][0]->QueueLoad(iconfilename[i].c_str(), true);
         }
-#pragma inline_depth()
     }
 
     TLComponentInstance* captainnamecomponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
@@ -746,30 +701,25 @@ void SHChooseSides2::UpdateChooseSideComponent(float fDeltaT)
     }
 }
 
+static inline FEPresentation* GetScenePresentation(SHChooseSides2* pScene)
+{
+    return pScene->m_pFEPresentation;
+}
+
 /**
  * Offset/Address/Size: 0x350 | 0x800C4F10 | size: 0x46C
- * TODO: 71.81% match - MWCC keeps InlineHasher(0) value in callee-saved register (r27)
- * instead of using li r0,0 per Find call. Causes stmw r23 (9 regs) vs target r24 (8 regs),
- * register-based zero stores vs target li+stw pattern, and fewer zero stores per call.
- * Inline InlineHasher(0) gives correct zero-store pattern but 0x1F0 frame (target 0x180).
  */
 #pragma inline_depth(8)
 void SHChooseSides2::BindChooseSideInstances()
 {
-    InlineHasher zH(0);
-    FEPresentation* pPres = m_pFEPresentation;
+    FEPresentation* pPres = GetScenePresentation(this);
 
     TLComponentInstance* choosesidecomponent = (TLComponentInstance*)FEFinder<TLInstance, 4>::Find<TLSlide>(
         pPres->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("CHOOSE_SIDE")),
-        zH,
-        zH,
-        zH,
-        zH);
+        InlineHasher(nlStringLowerHash("CHOOSE_SIDE")));
 
     TLSlide* activeslide = choosesidecomponent->GetActiveSlide();
-    unsigned char* pPadColour = (unsigned char*)PAD_COLOURS;
 
     for (int i = 0; i < 4; i++)
     {
@@ -779,20 +729,11 @@ void SHChooseSides2::BindChooseSideInstances()
         mChooseSide.mInstanceTable[i] = FEFinder<TLInstance, 5>::Find<TLSlide>(
             activeslide,
             InlineHasher(nlStringLowerHash("group")),
-            InlineHasher(nlStringLowerHash(tempstring)),
-            zH,
-            zH,
-            zH,
-            zH);
+            InlineHasher(nlStringLowerHash(tempstring)));
 
         mChooseSide.mInstanceTable[i + 4] = FEFinder<TLInstance, 3>::Find<TLInstance>(
             mChooseSide.mInstanceTable[i],
-            InlineHasher(nlStringLowerHash("ready")),
-            zH,
-            zH,
-            zH,
-            zH,
-            zH);
+            InlineHasher(nlStringLowerHash("ready")));
 
         if (mChooseSide.mInstanceTable[i + 4])
         {
@@ -804,52 +745,34 @@ void SHChooseSides2::BindChooseSideInstances()
         mChooseSide.mInstanceTable[i + 12] = (TLInstance*)FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             activeslide,
             InlineHasher(nlStringLowerHash("group")),
-            InlineHasher(nlStringLowerHash(tempstring)),
-            zH,
-            zH,
-            zH,
-            zH);
+            InlineHasher(nlStringLowerHash(tempstring)));
 
         nlSNPrintf(tempstring, 64, "p%d", i + 1);
 
         mChooseSide.mInstanceTable[i + 8] = (TLInstance*)FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             activeslide,
             InlineHasher(nlStringLowerHash("group")),
-            InlineHasher(nlStringLowerHash(tempstring)),
-            zH,
-            zH,
-            zH,
-            zH);
+            InlineHasher(nlStringLowerHash(tempstring)));
 
         nlColour colour;
-        colour.c[0] = pPadColour[0];
-        colour.c[1] = pPadColour[1];
-        colour.c[2] = pPadColour[2];
+        colour.c[0] = PAD_COLOURS[i][0];
+        colour.c[1] = PAD_COLOURS[i][1];
+        colour.c[2] = PAD_COLOURS[i][2];
         colour.c[3] = 0xFF;
         mChooseSide.mInstanceTable[i + 8]->SetAssetColour(colour);
-
-        pPadColour += 3;
     }
 
     TLInstance* object = FEFinder<TLInstance, 2>::Find<TLSlide>(
         activeslide,
         InlineHasher(nlStringLowerHash("group")),
-        InlineHasher(nlStringLowerHash("homex")),
-        zH,
-        zH,
-        zH,
-        zH);
+        InlineHasher(nlStringLowerHash("homex")));
     mChooseSide.mControllerDestPos[0] = object->GetAssetPosition().f.x;
     object->m_bVisible = false;
 
     object = FEFinder<TLInstance, 2>::Find<TLSlide>(
         activeslide,
         InlineHasher(nlStringLowerHash("group")),
-        InlineHasher(nlStringLowerHash("awayx")),
-        zH,
-        zH,
-        zH,
-        zH);
+        InlineHasher(nlStringLowerHash("awayx")));
     mChooseSide.mControllerDestPos[1] = object->GetAssetPosition().f.x;
     object->m_bVisible = false;
 
@@ -858,11 +781,7 @@ void SHChooseSides2::BindChooseSideInstances()
     mChooseSide.mInstanceTable[16] = FEFinder<TLInstance, 4>::Find<TLSlide>(
         pPres->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("continue")),
-        zH,
-        zH,
-        zH,
-        zH);
+        InlineHasher(nlStringLowerHash("continue")));
 
     mChooseSide.ResetAndPositionControllers(false);
 }

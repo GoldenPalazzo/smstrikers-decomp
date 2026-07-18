@@ -1,6 +1,3 @@
-#define BASICSTRING_COPY_REREAD_TEMP
-#define NLDLRING_GETSTART_DONT_INLINE
-
 #include "Game/AI/FielderActions.h"
 #include "Game/Camera/CameraMan.h"
 #include "Game/Camera/animcam.h"
@@ -32,6 +29,7 @@
 #include "Game/Render/ShootToScoreArrow.h"
 #include "Game/Render/Wiper.h"
 #include "Game/Effects/EffectsGroup.h"
+#include "Game/Effects/EmissionManager.h"
 #include "Game/World.h"
 #include "NL/nlBasicString.h"
 #include "NL/nlFormat.h"
@@ -126,9 +124,6 @@ public:
     static void Flash();
 };
 
-template <typename StringType, typename ValueType>
-StringType Format(const StringType&, const ValueType&);
-
 int SlideAttackReactAnims[4] = {
     0x66,
     0x69,
@@ -149,46 +144,6 @@ int PassingAnims[4] = {
     0x35,
     0x34,
 };
-
-/**
- * Offset/Address/Size: 0x13C | 0x80030010 | size: 0xD74
- */
-template <>
-template <>
-FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> >::operator% <const char*>(const char* const& t)
-{
-    BasicString<char, Detail::TempStringAllocator> insert = LexicalCast<BasicString<char, Detail::TempStringAllocator>, const char*>(t);
-    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
-    {
-        if (mString[i] != '{')
-            continue;
-        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-        if (mString[i + 1] - '0' != mCurrentPos)
-            continue;
-        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-        if (mString[i + 2] != '}')
-            continue;
-        mString[0];
-        BasicStringData<char>* data = mString.m_data;
-        char* eraseStart = &mString[i];
-        char* eraseEnd = &mString[i + 3];
-        int eraseLen = eraseEnd - eraseStart;
-        char* at = data->mData + (eraseStart - data->mData);
-        while (eraseEnd != data->mData + data->mSize)
-        {
-            *at = *eraseEnd;
-            eraseEnd++;
-            at++;
-        }
-        data->mSize -= eraseLen;
-        mString.insert(&mString[i], &insert[0], &insert[(int)insert.size()]);
-    }
-    mCurrentPos++;
-    return *this;
-}
 
 // /**
 //  * Offset/Address/Size: 0x114 | 0x8002FFE8 | size: 0x28
@@ -3077,12 +3032,11 @@ void MatrixCamFinishedCallback(MatrixEffectCam*)
 /**
  * Offset/Address/Size: 0x2D08 | 0x80029840 | size: 0x450
  */
-#pragma optimization_level 2
 void cFielder::SetupCaptainSTSAnimCam(bool arg1)
 {
     mActionShootToScoreVars.captainStsCamera = new ((cAnimCamera*)nlMalloc(sizeof(cAnimCamera), 8, false)) cAnimCamera();
 
-    BasicString<char, Detail::TempStringAllocator> cameraName = Format(((void)0, BasicString<char, Detail::TempStringAllocator>("{0}_ShootToScoreCamera")),
+    BasicString<char, Detail::TempStringAllocator> cameraName = Format(BasicString<char, Detail::TempStringAllocator>("{0}_ShootToScoreCamera"),
         (const char*)GetTeamName(nlSingleton<GameInfoManager>::s_pInstance
                 ->mGameInfo[nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode]
                 ->mTeamIndex[(s16)m_pTeam->m_nSide]));
@@ -3140,8 +3094,6 @@ void cFielder::SetupCaptainSTSAnimCam(bool arg1)
         cCameraManager::PushCamera(mActionShootToScoreVars.captainStsCamera);
     }
 }
-#pragma optimization_level 4
-
 /**
  * Offset/Address/Size: 0x2D04 | 0x8002983C | size: 0x4
  */
@@ -3662,15 +3614,8 @@ void cFielder::ActionShootToScore(float)
                     EmissionController* pEmitCtrl = EmitGeneric(this, effectName.c_str(), NULL);
                     if (pEmitCtrl != NULL)
                     {
-                        Function1<void, EmissionController&> callback;
-                        callback.mTag = FREE_FUNCTION;
-                        callback.mFreeFunction = HyperStrikeEffectUpdate;
+                        Function1<void, EmissionController&> callback(HyperStrikeEffectUpdate);
                         pEmitCtrl->SetUpdateCallback(callback);
-                        if (callback.mTag == FUNCTOR)
-                        {
-                            delete callback.mFunctor;
-                        }
-                        callback.mTag = EMPTY;
                     }
                 }
 
@@ -4451,12 +4396,4 @@ void cFielder::InitActionWait()
 void cFielder::ActionWait(float)
 {
     // EMPTY
-}
-
-void FielderActions_stub()
-{
-    const char* s = "";
-    BasicString<char, Detail::TempStringAllocator> fmt("{0}");
-    BasicString<char, Detail::TempStringAllocator> result = Format<BasicString<char, Detail::TempStringAllocator>, const char*>(fmt, s);
-    LexicalCast<BasicString<char, Detail::TempStringAllocator>, const char*>(s);
 }

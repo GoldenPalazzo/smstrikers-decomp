@@ -40,42 +40,6 @@
 /**
  * Offset/Address/Size: 0x0 | 0x801AC980 | size: 0x1E4
  */
-#pragma dont_inline on
-template <>
-template <>
-BasicString<char, Detail::TempStringAllocator>&
-BasicString<char, Detail::TempStringAllocator>::AppendInPlace<Detail::TempStringAllocator>(
-    const BasicString<char, Detail::TempStringAllocator>& rhs)
-{
-    (*this)[0];
-
-    char* at;
-    BasicStringData<char>* currentData = m_data;
-    if (currentData != 0)
-    {
-        at = currentData->mData + currentData->mSize - 1;
-    }
-    else
-    {
-        at = 0;
-    }
-
-    BasicStringData<char>* rhsData = rhs.m_data;
-    const char* begin;
-    if (rhsData != 0)
-    {
-        begin = rhsData->mData;
-    }
-    else
-    {
-        begin = 0;
-    }
-
-    insert(at, begin, rhsData != 0 ? rhsData->mData + rhsData->mSize - 1 : 0);
-    return *this;
-}
-#pragma dont_inline reset
-
 /**
  * Offset/Address/Size: 0x1C78 | 0x801AC97C | size: 0x4
  */

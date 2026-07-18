@@ -1,6 +1,24 @@
 #ifndef _FUZZY_H_
 #define _FUZZY_H_
 
+class SaveConfidence
+{
+public:
+    SaveConfidence(float* pVal)
+        : m_fSavedVal(*pVal)
+        , m_pVal(pVal)
+    {
+    }
+
+    ~SaveConfidence()
+    {
+        *m_pVal = m_fSavedVal;
+    }
+
+    float m_fSavedVal;
+    float* m_pVal;
+};
+
 float FLESS(float f1, float f2);
 float FGREATER(float f1, float f2);
 float RandomChance(float fChance);

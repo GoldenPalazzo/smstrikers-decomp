@@ -1,40 +1,105 @@
-#define BIND_NO_DECL
-#define MEMFUN_NO_DECL
-#define FUNCTION0_SPLIT_BODIES
-#include "Game/Audio/StreamTrack.h"
 #include "Game/Sys/GCStream.h"
-#include "NL/nlBSearch.h"
-#include "NL/nlQSort.h"
+#include "Game/Audio/StreamTrack.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlConfig.h"
 #include "NL/nlFileGC.h"
 #include "NL/nlList.h"
-#include "NL/nlSlotPoolHigh.h"
 #include "NL/nlString.h"
 
 extern GCAudioStreaming::AudioBufferMgr g_BufferMgr;
 
-#include "NL/nlBindBody.h"
-#include "NL/nlMemFunBody.h"
+#include "NL/nlBind.h"
 
 namespace AudioStreamTrack
 {
 TrackManagerBase::StreamFileLookup::StreamFileLookup(
     const char* /*name*/,
-    const Function<bool(const char*, char*, unsigned long)>& /*fn*/)
+    const Function<bool(const char*, char*, unsigned long)>& ParamCB)
+    : m_ParamCB(ParamCB)
+    , m_pLookup(NULL)
+    , m_StreamCount(0)
 {
-    typedef TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP LookupT;
-    typedef BasicSlotPoolHigh<ListEntry<LookupT> > AdapterT;
-    typedef ListContainerBase<LookupT, AdapterT> ContainerT;
-    ContainerT container;
-    nlWalkList(container.m_Head, &container, &ContainerT::DeleteEntry);
+    typedef STREAM_FILE_LIST_LOOKUP LookupT;
+    typedef ListEntry<LookupT> ListEntryT;
+
+    nlListSlotPoolHigh<LookupT> LookupList(16, 16);
+    Config config(Config::ALLOCATE_HIGH);
+    config.LoadFromFile("audio/data/streams/StreamNames.txt");
+
+    unsigned long TotalFileNameMem = 0;
+    TagValuePair* iter = config.mTvpHash;
+    TagValuePair* end = iter + 1024;
+
+    while (iter < end && (iter->tag == NULL || iter->type != _STRING))
+    {
+        ++iter;
+    }
+
+    while (iter < end)
+    {
+        LookupT lookup;
+        ListEntryT* entry = LookupList.Allocate(lookup);
+        nlListAddEnd(&LookupList.m_Head, &LookupList.m_Tail, entry);
+
+        entry->entry.key = nlStringLowerHash(iter->tag);
+
+        if (iter->type == _BOOL)
+        {
+            entry->entry.value = LexicalCast<const char*, bool>(iter->value.b);
+        }
+        else if (iter->type == _INT)
+        {
+            entry->entry.value = LexicalCast<const char*, int>(iter->value.i);
+        }
+        else if (iter->type == _FLOAT)
+        {
+            entry->entry.value = LexicalCast<const char*, float>(iter->value.f);
+        }
+        else if (iter->type == _STRING)
+        {
+            entry->entry.value = LexicalCast<const char*, const char*>(iter->value.s);
+        }
+        else
+        {
+            entry->entry.value = NULL;
+        }
+
+        entry->entry.length = nlStrLen(entry->entry.value) + 1;
+
+        ++iter;
+        ++m_StreamCount;
+        TotalFileNameMem += entry->entry.length;
+
+        while (iter < end && (iter->tag == NULL || iter->type != _STRING))
+        {
+            ++iter;
+        }
+    }
+
+    m_pLookup = (STREAM_FILE_LOOKUP*)nlMalloc(
+        m_StreamCount * sizeof(STREAM_FILE_LOOKUP), 8, false);
+    m_pStrings = (char*)nlMalloc(TotalFileNameMem, 8, false);
+
+    unsigned long lookupOffset = 0;
+    char* pLastString = m_pStrings;
+    ListEntryT* entry = LookupList.m_Head;
+    while (entry != NULL)
+    {
+        *(unsigned long*)((char*)m_pLookup + lookupOffset) = entry->entry.key;
+        *(char**)((char*)m_pLookup + lookupOffset + sizeof(unsigned long)) = pLastString;
+        memcpy(pLastString, entry->entry.value, entry->entry.length);
+
+        lookupOffset += sizeof(STREAM_FILE_LOOKUP);
+        pLastString += entry->entry.length;
+        entry = entry->next;
+    }
+
+    nlQSort<STREAM_FILE_LOOKUP>(
+        m_pLookup, (int)m_StreamCount,
+        &nlDefaultQSortComparer<STREAM_FILE_LOOKUP>);
 }
 
 } // namespace AudioStreamTrack
-
-typedef AudioStreamTrack::StreamTrack::QUEUED_STREAM QS_T;
-typedef Detail::MemFunImpl<void, void (AudioStreamTrack::StreamTrack::*)(QS_T*)> MemFunImpl_T;
-typedef BindExp2<void, MemFunImpl_T, AudioStreamTrack::StreamTrack*, QS_T*> BindExp2_T;
-typedef Function0<void>::FunctorImpl<BindExp2_T> FunctorImpl_T;
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x80157A98 | size: 0x1C
@@ -203,10 +268,7 @@ void AudioStreamTrack::TrackManagerBase::FadeManager::AddFade(
 
     FadeCtrl* fadeCtrl = m_Fades.AllocateAtEnd(NULL);
 
-    if (fadeCtrl != NULL)
-    {
-        fadeCtrl->Callback.mTag = EMPTY;
-    }
+    new (&fadeCtrl->Callback) Function<FnVoidVoid>();
 
     fadeCtrl->pStream = pStream;
     fadeCtrl->StartVol = startVol;
@@ -281,16 +343,30 @@ void AudioStreamTrack::TrackManagerBase::Update(float)
     }
 }
 
-namespace Audio
-{
-namespace MasterVolume
-{
-float GetVolume(VOLUME_GROUP);
-}
-} // namespace Audio
-
 extern "C" void sndStreamMixParameterEx(unsigned long stid, unsigned char vol, unsigned char pan,
     unsigned char span, unsigned char auxa, unsigned char auxb);
+
+inline void AudioStreamTrack::TrackManagerBase::FadeManager::CompleteFade(
+    STREAM_FADE_CTRL* fadeCtrl)
+{
+    typedef DLListEntry<STREAM_FADE_CTRL> FadeEntry;
+
+    Function<FnVoidVoid> callback(fadeCtrl->Callback);
+
+    FadeEntry* entry = (FadeEntry*)((char*)fadeCtrl - 8);
+    nlDLRingIsEnd(m_Fades.m_Head, entry);
+    nlDLRingRemove(&m_Fades.m_Head, entry);
+
+    entry->~DLListEntry();
+
+    entry->m_next = (FadeEntry*)m_Fades.m_Allocator.m_FreeList;
+    m_Fades.m_Allocator.m_FreeList = (SlotPoolEntry*)entry;
+
+    if (callback)
+    {
+        callback();
+    }
+}
 
 /**
  * Offset/Address/Size: 0x1D60 | 0x80156AB8 | size: 0x2D8
@@ -339,28 +415,7 @@ fade_found:
 
     if (endVol == (unsigned long)(unsigned char)curVol)
     {
-        Function<FnVoidVoid> Callback(fadeCtrl->Callback);
-
-        FadeEntry* entry = (FadeEntry*)((char*)fadeCtrl - 8);
-        nlDLRingIsEnd(m_Fades.m_Head, entry);
-        nlDLRingRemove(&m_Fades.m_Head, entry);
-
-        entry->~DLListEntry();
-
-        entry->m_next = (FadeEntry*)m_Fades.m_Allocator.m_FreeList;
-        m_Fades.m_Allocator.m_FreeList = (SlotPoolEntry*)entry;
-
-        if ((bool)Callback.mTag)
-        {
-            if (Callback.mTag == FREE_FUNCTION)
-            {
-                Callback.mFreeFunction();
-            }
-            else
-            {
-                (*Callback.mFunctor)();
-            }
-        }
+        CompleteFade(fadeCtrl);
     }
     else
     {
@@ -452,28 +507,7 @@ void AudioStreamTrack::TrackManagerBase::FadeManager::UpdateFade(STREAM_FADE_CTR
 
         pStream->m_Volume = (u8)clampedVol;
 
-        Function<FnVoidVoid> Callback(pFade->Callback);
-
-        DLListEntry<STREAM_FADE_CTRL>* entry = (DLListEntry<STREAM_FADE_CTRL>*)((char*)pFade - 8);
-        nlDLRingIsEnd(m_Fades.m_Head, entry);
-        nlDLRingRemove(&m_Fades.m_Head, entry);
-
-        entry->~DLListEntry();
-
-        entry->m_next = (DLListEntry<STREAM_FADE_CTRL>*)m_Fades.m_Allocator.m_FreeList;
-        m_Fades.m_Allocator.m_FreeList = (SlotPoolEntry*)entry;
-
-        if ((bool)Callback.mTag)
-        {
-            if (Callback.mTag == FREE_FUNCTION)
-            {
-                Callback.mFreeFunction();
-            }
-            else
-            {
-                (*Callback.mFunctor)();
-            }
-        }
+        CompleteFade(pFade);
     }
     else
     {
@@ -653,27 +687,9 @@ void AudioStreamTrack::StreamTrack::PlayStream(
     iter.m_current = startEntry;
     QUEUED_STREAM* qs = &startEntry->entry;
 
-    BindExp2_T bind = Bind<void>(
-        MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDoneStartNext), this, qs);
-
-    struct CallbackRaw
-    {
-        Tag mTag;
-        Function0<void>::FunctorBase* mFunctor;
-    } callback;
-
-    callback.mTag = FUNCTOR;
-    FunctorImpl_T* functor = new ((FunctorImpl_T*)nlMalloc(sizeof(FunctorImpl_T), 8, false))
-        FunctorImpl_T(bind);
-    callback.mFunctor = functor;
-
-    StartQStreamFadeout(qs, ExistingFadeOut, *(Function<FnVoidVoid>*)&callback);
-
-    if (callback.mTag == FUNCTOR)
-    {
-        delete callback.mFunctor;
-    }
-    callback.mTag = EMPTY;
+    Function<FnVoidVoid> callback(Bind<void>(
+        MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDoneStartNext), this, qs));
+    StartQStreamFadeout(qs, ExistingFadeOut, callback);
 }
 
 inline GCAudioStreaming::AudioStream::AudioStream(GCAudioStreaming::AudioBufferMgr& mgr,
@@ -774,15 +790,7 @@ void AudioStreamTrack::StreamTrack::QueueStream(
         nlStrNCpy<char>(dest, lookup->value, prefixLen + 1);
         unsigned long remainLen = 0xed - prefixLen;
         dest += prefixLen;
-        Tag tag = lookupMgr.m_FileLookup.m_ParamCB.mTag;
-        if (tag == FREE_FUNCTION)
-        {
-            ((AudioStreamTrack::TrackManagerBase::StreamFileLookup::ParamCallbackFn)lookupMgr.m_FileLookup.m_ParamCB.mFreeFunction)(StreamParam, dest, remainLen);
-        }
-        else
-        {
-            (*(AudioStreamTrack::TrackManagerBase::StreamFileLookup::ParamFunctorBase*)lookupMgr.m_FileLookup.m_ParamCB.mFunctor)(StreamParam, dest, remainLen);
-        }
+        lookupMgr.m_FileLookup.m_ParamCB(StreamParam, dest, remainLen);
         unsigned long cbLen = nlStrLen(dest);
         nlStrNCpy<char>(dest + cbLen, percentPos + 3, remainLen - cbLen);
     }
@@ -850,16 +858,9 @@ void AudioStreamTrack::StreamTrack::ProcessNewHeadStream()
         if (m_State != TS_Idle)
         {
             m_State = TS_Idle;
-            if ((bool)m_IdleCallback.mTag)
+            if (m_IdleCallback)
             {
-                if (m_IdleCallback.mTag == FREE_FUNCTION)
-                {
-                    m_IdleCallback.mFreeFunction();
-                }
-                else
-                {
-                    (*m_IdleCallback.mFunctor)();
-                }
+                m_IdleCallback();
             }
         }
         return;
@@ -880,7 +881,6 @@ void AudioStreamTrack::StreamTrack::ProcessNewHeadStream()
     if (pEntry->entry.StartVolume != 0)
     {
         Function<FnVoidVoid> callback;
-        callback.mTag = EMPTY;
 
         m_TrackMgr.m_FadeMgr.AddFade(
             pEntry->entry.pStream,
@@ -991,27 +991,9 @@ void AudioStreamTrack::StreamTrack::StopHead(unsigned long Fadeout)
     else
     {
         QUEUED_STREAM* qs = &entry->entry;
-        BindExp2_T bind = Bind<void>(
-            MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDoneStartNext), this, qs);
-
-        struct CallbackRaw
-        {
-            Tag mTag;
-            Function0<void>::FunctorBase* mFunctor;
-        } callback;
-
-        callback.mTag = FUNCTOR;
-        FunctorImpl_T* functor = new ((FunctorImpl_T*)nlMalloc(sizeof(FunctorImpl_T), 8, false))
-            FunctorImpl_T(bind);
-        callback.mFunctor = functor;
-
-        StartQStreamFadeout(&entry->entry, Fadeout, *(Function<FnVoidVoid>*)&callback);
-
-        if (callback.mTag == FUNCTOR)
-        {
-            delete callback.mFunctor;
-        }
-        callback.mTag = EMPTY;
+        Function<FnVoidVoid> callback(Bind<void>(
+            MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDoneStartNext), this, qs));
+        StartQStreamFadeout(&entry->entry, Fadeout, callback);
     }
 }
 
@@ -1051,14 +1033,8 @@ void AudioStreamTrack::StreamTrack::Stop(unsigned long Fadeout)
     QUEUED_STREAM* qs = &entry->entry;
 
     {
-        BindExp2_T bind = Bind<void>(
-            MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDone), this, &entry->entry);
-
-        Function<FnVoidVoid> callback;
-        callback.mTag = FUNCTOR;
-        FunctorImpl_T* functor = new ((FunctorImpl_T*)nlMalloc(sizeof(FunctorImpl_T), 8, false))
-            FunctorImpl_T(bind);
-        callback.mFunctor = functor;
+        Function<FnVoidVoid> callback(Bind<void>(
+            MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDone), this, &entry->entry));
 
         StartQStreamFadeout(&entry->entry, Fadeout, callback);
     }
@@ -1113,16 +1089,9 @@ void AudioStreamTrack::StreamTrack::StartQStreamFadeout(
         }
         else
         {
-            if ((bool)callback.mTag)
+            if (callback)
             {
-                if (callback.mTag == FREE_FUNCTION)
-                {
-                    callback.mFreeFunction();
-                }
-                else
-                {
-                    (*callback.mFunctor)();
-                }
+                callback();
             }
         }
     }
@@ -1149,16 +1118,9 @@ void AudioStreamTrack::StreamTrack::StopQStream(QUEUED_STREAM* pQueuedStream)
         if (m_State != TS_Idle)
         {
             m_State = TS_Idle;
-            if ((bool)m_IdleCallback.mTag)
+            if (m_IdleCallback)
             {
-                if (m_IdleCallback.mTag == FREE_FUNCTION)
-                {
-                    m_IdleCallback.mFreeFunction();
-                }
-                else
-                {
-                    (*m_IdleCallback.mFunctor)();
-                }
+                m_IdleCallback();
             }
         }
     }
@@ -1576,14 +1538,4 @@ void AudioStreamTrack::StreamTrack::AttachStream(
     entry->entry.TrackOwnsStream = TrackOwnsStream;
 
     m_State = TS_Playing;
-}
-
-// At the bottom of StreamTrack.cpp -- REMOVE once real callers exist.
-void StreamTrack_stub()
-{
-    using namespace AudioStreamTrack;
-    typedef ListEntry<TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP> ListLookupT;
-    nlListAddEnd<ListLookupT>((ListLookupT**)0, (ListLookupT**)0, (ListLookupT*)0);
-    nlQSort<TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP>(
-        (TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP*)0, 0, nlDefaultQSortComparer<TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP>);
 }

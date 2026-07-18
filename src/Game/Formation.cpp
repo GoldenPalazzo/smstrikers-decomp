@@ -5,6 +5,7 @@
 #include "Game/AI/Fielder.h"
 #include "Game/AI/FuzzyVariant.h"
 #include "Game/AI/Scripts/FormationScript.h"
+#include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/Game.h"
 #include "Game/Team.h"
 #include "Game/FormationDefines.h"
@@ -512,6 +513,26 @@ float FormationEval::GetWeight()
     return 0.0f;
 }
 
+inline void FormationEval::FieldLocToAILoc(nlVector3& dest, const nlVector3& field_location, int nTeamID)
+{
+    if (nTeamID == 0)
+    {
+        dest = field_location;
+        return;
+    }
+    nlVec3Set(dest, -field_location.f.x, -field_location.f.y, 0.0f);
+}
+
+inline void FormationEval::AILocToFieldLoc(nlVector3& dest, const nlVector3& ai_location, int nTeamID)
+{
+    if (nTeamID == 0)
+    {
+        dest = ai_location;
+        return;
+    }
+    nlVec3Set(dest, -ai_location.f.x, -ai_location.f.y, 0.0f);
+}
+
 /**
  * Offset/Address/Size: 0x1A14 | 0x80039C64 | size: 0x310
  * TODO: 94.18% match - stack frame/register allocation and loop-counter hoist
@@ -640,14 +661,22 @@ void FormationEval::AssignPositionsToFielders(unsigned int* pFielderPosAssignmen
     }
 }
 
+static inline void SubtractVector(nlVector2& result, const nlVector2& value)
+{
+    result.f.y -= value.f.y;
+    result.f.x -= value.f.x;
+}
+
+static inline cTeam* GetFormationTeam(FormationManager* manager)
+{
+    return manager->m_pTeam;
+}
+
 /**
  * Offset/Address/Size: 0x1798 | 0x800399E8 | size: 0x27C
- * TODO: 98.96% match - remaining diffs are this/v2Center prologue mr order, team/pFielder GPR swap, and center branch pointer-register swap
  */
 void FormationEval::SortPlayers(const nlVector2* v2Center)
 {
-    FormationEval* const self = this;
-    const nlVector2* pCenter = v2Center;
     float fFielderToPositionDistance[4][4];
     nlVector2 av2FormationPositions[4];
     nlVector3 av3FielderAILocs[4];
@@ -657,12 +686,12 @@ void FormationEval::SortPlayers(const nlVector2* v2Center)
     int i_fielder;
     int i_pos;
 
-    if (self->m_pFormationSpec == NULL)
+    if (m_pFormationSpec == NULL)
     {
         return;
     }
 
-    cTeam* team = self->m_pFormationManager->m_pTeam;
+    cTeam* team = GetFormationTeam(m_pFormationManager);
     memset(fFielderToPositionDistance, 0, sizeof(fFielderToPositionDistance));
 
     for (i = 0; i < 4; i++)
@@ -687,36 +716,28 @@ void FormationEval::SortPlayers(const nlVector2* v2Center)
             av3FielderAILocs[i].f.z = fz;
         }
 
-        if (team->m_nSide != 0)
-        {
-            f32 nx = -av3FielderAILocs[i].f.x;
-            f32 ny = -av3FielderAILocs[i].f.y;
-            av3FielderAILocs[i].f.x = nx;
-            av3FielderAILocs[i].f.y = ny;
-            av3FielderAILocs[i].f.z = 0.0f;
-        }
+        FieldLocToAILoc(av3FielderAILocs[i], av3FielderAILocs[i], team->m_nSide);
     }
 
-    if (pCenter != NULL)
+    if (v2Center != NULL)
     {
-        v2CenterOfPlayers = *pCenter;
+        v2CenterOfPlayers = *v2Center;
     }
     else
     {
-        v2CenterOfPlayers = self->m_pFormationManager->m_v2AIFielderCenter;
-        v2CenterOfPlayers.f.y -= self->m_pFormationSpec->m_v2Center.f.y;
-        v2CenterOfPlayers.f.x -= self->m_pFormationSpec->m_v2Center.f.x;
+        v2CenterOfPlayers = m_pFormationManager->m_v2AIFielderCenter;
+        SubtractVector(v2CenterOfPlayers, m_pFormationSpec->m_v2Center);
     }
 
     for (i = 0; i < 4; i++)
     {
         nlVec2Set(av2FormationPositions[i],
-            self->m_pFormationSpec->m_Positions[i].m_Location.f.x + v2CenterOfPlayers.f.x,
-            self->m_pFormationSpec->m_Positions[i].m_Location.f.y + v2CenterOfPlayers.f.y);
+            m_pFormationSpec->m_Positions[i].m_Location.f.x + v2CenterOfPlayers.f.x,
+            m_pFormationSpec->m_Positions[i].m_Location.f.y + v2CenterOfPlayers.f.y);
     }
 
     pFormPositions = av2FormationPositions;
-    self->GetKeyPlayer();
+    GetKeyPlayer();
 
     for (i_fielder = 0; i_fielder < 4; i_fielder++)
     {
@@ -729,7 +750,7 @@ void FormationEval::SortPlayers(const nlVector2* v2Center)
         }
     }
 
-    self->AssignPositionsToFielders(self->m_iFielderFormationPos, fFielderToPositionDistance);
+    AssignPositionsToFielders(m_iFielderFormationPos, fFielderToPositionDistance);
 }
 
 /**

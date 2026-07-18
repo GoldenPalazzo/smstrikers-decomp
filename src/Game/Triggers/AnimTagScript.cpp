@@ -67,7 +67,7 @@ u8 AnimTagScriptInterpreter::SetupAnimationTriggers(const char* TriggerFileName,
                 if (m_AnimTagSlotPool.m_FreeList != NULL)
                 {
                     pSlot = (AnimTagCBInfo*)m_AnimTagSlotPool.m_FreeList;
-                    m_AnimTagSlotPool.m_FreeList = m_AnimTagSlotPool.m_FreeList->m_next;
+                    m_AnimTagSlotPool.m_FreeList = m_AnimTagSlotPool.m_FreeList->next;
                 }
 
                 pSlot->pAnimTagScript = this;

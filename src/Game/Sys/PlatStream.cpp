@@ -79,9 +79,7 @@ void PlatAudio::InitStreaming()
 
 /**
  * Offset/Address/Size: 0x208 | 0x801C72CC | size: 0x36C
- * TODO: 98.5% match - initial zero setup is scheduled differently; the pass-two
- * lookup offset and stream-slot pointer are register-swapped; shifted pEntry uses
- * r0 instead of r5.
+ * TODO: 97.9% match - initial lookup-offset zero materialization differs.
  */
 void PlatAudio::ShutdownStreaming()
 {
@@ -172,6 +170,9 @@ void PlatAudio::ShutdownStreaming()
     {
         nlSortedSlot<GCAudioStreaming::AudioStream*, 7>::EntryLookup<GCAudioStreaming::AudioStream*>* removedLookup;
         AudioStream** pStream;
+        nlSortedSlot<GCAudioStreaming::AudioStream*, 7>::EntryLookup<GCAudioStreaming::AudioStream*>* pEntryLookup;
+        unsigned long index;
+        unsigned long count;
 
         stream = *((EL*)((char*)g_Streams.m_pEntryLookup + lookupOffset))->pEntry;
         stream->SafeToPurge();
@@ -181,46 +182,41 @@ void PlatAudio::ShutdownStreaming()
 
         if (pStream != NULL)
         {
-            struct LookupFinder
+            pEntryLookup = g_Streams.m_pEntryLookup;
+            index = 0;
+            count = g_Streams.m_EntryCount;
+
+            while (index < count)
             {
-                static EL* Find(nlStaticSortedSlot<AudioStream*, 7>* self, AudioStream** pStream)
+                if (pEntryLookup->pEntry == pStream)
                 {
-                    EL* pEntryLookup = self->m_pEntryLookup;
-                    unsigned long index = 0;
-                    unsigned long count = self->m_EntryCount;
-                    while (index < count)
-                    {
-                        if (pEntryLookup->pEntry == pStream)
-                            return &self->m_pEntryLookup[index];
-                        pEntryLookup++;
-                        index++;
-                    }
-                    return NULL;
+                    removedLookup = &g_Streams.m_pEntryLookup[index];
+                    goto found_stream;
                 }
-            };
-            removedLookup = LookupFinder::Find(&g_Streams, pStream);
+
+                pEntryLookup++;
+                index++;
+            }
+
+            removedLookup = NULL;
+        found_stream:
             ((nlSortedSlot<AudioStream*, 7>*)&g_Streams)->FreeEntry(pStream);
 
-            struct LookupShifter
+            index = (unsigned long)(removedLookup - g_Streams.m_pEntryLookup);
+            count = g_Streams.m_EntryCount;
+            while (index != count)
             {
-                static void Shift(nlStaticSortedSlot<AudioStream*, 7>* self, EL* removedLookup)
-                {
-                    unsigned long entryCount = self->m_EntryCount;
-                    long idx = removedLookup - self->m_pEntryLookup;
-                    while ((unsigned long)idx != entryCount)
-                    {
-                        long next = idx + 1;
-                        EL* src = &self->m_pEntryLookup[next];
-                        register unsigned long hash = src->hash;
-                        EL* dst = &self->m_pEntryLookup[idx];
-                        idx = next;
-                        AudioStream** pEntry = src->pEntry;
-                        dst->pEntry = pEntry;
-                        dst->hash = hash;
-                    }
-                }
-            };
-            LookupShifter::Shift(&g_Streams, removedLookup);
+                unsigned long next = index + 1;
+                nlSortedSlot<GCAudioStreaming::AudioStream*, 7>::EntryLookup<GCAudioStreaming::AudioStream*>* base = g_Streams.m_pEntryLookup;
+                nlSortedSlot<GCAudioStreaming::AudioStream*, 7>::EntryLookup<GCAudioStreaming::AudioStream*>* src = &base[next];
+                nlSortedSlot<GCAudioStreaming::AudioStream*, 7>::EntryLookup<GCAudioStreaming::AudioStream*>* dst = &base[index];
+                unsigned long id = src->hash;
+                AudioStream** entry = src->pEntry;
+
+                dst->pEntry = entry;
+                dst->hash = id;
+                index = next;
+            }
             g_Streams.m_EntryCount--;
         }
 

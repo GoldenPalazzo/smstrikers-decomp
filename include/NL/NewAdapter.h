@@ -1,13 +1,7 @@
-#ifndef NL_ADAPTER_H
-#define NL_ADAPTER_H
+#ifndef NEW_ADAPTER_H
+#define NEW_ADAPTER_H
 
 #include "NL/nlMemory.h"
-
-#ifdef NL_NEWADAPTER_EXPLICIT_LINK_ORDER
-#define NL_NEWADAPTER_DELETE_DECL WEAKFUNC void
-#else
-#define NL_NEWADAPTER_DELETE_DECL void
-#endif
 
 template <typename T>
 class NewAdapter
@@ -18,21 +12,17 @@ public:
     void Allocate(T*& out) { out = (T*)nlMalloc(sizeof(T), 8, false); }
     T* New(const T& data) { return new (8, false) T(data); }
     void Free(T* ptr) { delete ptr; }
-    NL_NEWADAPTER_DELETE_DECL Delete(T* ptr);
+    void Delete(T* ptr);
 
     // For List interface
     typedef T EntryType;
     static void DeleteEntry(T* entry) { delete entry; }
 };
 
-#ifndef NL_NEWADAPTER_DECLARE_ONLY
 template <typename T>
-NL_NEWADAPTER_DELETE_DECL NewAdapter<T>::Delete(T* ptr)
+void NewAdapter<T>::Delete(T* ptr)
 {
     delete ptr;
 }
-#endif
 
-#undef NL_NEWADAPTER_DELETE_DECL
-
-#endif // NL_ADAPTER_H
+#endif // NEW_ADAPTER_H

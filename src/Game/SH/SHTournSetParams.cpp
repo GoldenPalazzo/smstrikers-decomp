@@ -1,4 +1,3 @@
-#define BIND_NO_DECL
 #include "Game/SH/SHTournSetParams.h"
 
 #include "Game/FE/FEAudio.h"
@@ -7,19 +6,6 @@
 #include "Game/GameInfo.h"
 #include "Game/GameSceneManager.h"
 #include "NL/nlPrint.h"
-#undef BIND_NO_DECL
-
-template <typename R, typename F, typename A>
-BindExp1<R, F, A> Bind(F fn, const A& arg)
-{
-    BindExp1<R, F, A> result;
-    result.mFuncPtr = fn;
-    result.mArg = arg;
-    return result;
-}
-
-template <typename T, typename R>
-Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*fn)());
 
 typedef void FnTLComponentInstanceCb(TLComponentInstance*);
 
@@ -32,28 +18,6 @@ void TempDisableSound();
 
 extern nlColour SubMenuHighliteColour;
 extern nlColour SubMenuUnhighliteColour;
-
-static inline MenuItem<TLComponentInstance>* TournSetParamsMenuItemAt(MenuList<TLComponentInstance>& menu, int idx)
-{
-    return &menu.mMenuItems[idx];
-}
-
-static inline MenuItem<SlideMenuItem>* TournSetParamsSlideMenuItemAt(SlideMenuList* menu, int idx)
-{
-    MenuItem<SlideMenuItem>* items = menu->mMenuItems;
-    return &items[idx];
-}
-
-static inline void TournSetParamsInstallSlideCallback(MenuItem<SlideMenuItem>* menuItem, SlideMenuList* const& sml)
-{
-    typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML;
-    typedef BindExp1<void, MemFunImpl_SML, SlideMenuList*> BindExp1_SML;
-    typedef void FnSlideMenuItemCb(SlideMenuItem*);
-
-    BindExp1_SML bind = Bind<void>(MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
-    Function<FnSlideMenuItemCb> callback(bind);
-    menuItem->mCallbacks[1] = callback;
-}
 
 // /**
 //  * Offset/Address/Size: 0xBC | 0x800E1D48 | size: 0x15C
@@ -134,44 +98,15 @@ void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* co
 
         SlideMenuList* sml = mSlideMenuLists[menuitem];
 
-        SlideMenuItem* item = new (nlMalloc(sizeof(SlideMenuItem), 8, true)) SlideMenuItem(sml->mComponentInstance, slidenum);
-        item->mSlideMenuHash = slideHash;
-
-        menuItem = TournSetParamsSlideMenuItemAt(sml, sml->mNumItemsAdded);
-        menuItem->mType = item;
-        sml->mNumItemsAdded++;
-
-        TournSetParamsInstallSlideCallback(menuItem, sml);
+        menuItem = sml->AddItem(slideHash, slidenum);
     } while (++slidenum);
 
     list = mSlideMenuLists[menuitem];
-    menuItem = &list->mMenuItems[list->mCurrentIndex];
-    int tag = menuItem->mCallbacks[2].mTag;
-    if (((u32)((-tag) | tag) >> 31) > 0)
-    {
-        SlideMenuItem* type = menuItem->mType;
-        if (tag == FREE_FUNCTION)
-            menuItem->mCallbacks[2].mFreeFunction(type);
-        else
-            (*menuItem->mCallbacks[2].mFunctor)(type);
-    }
-
-    list->mCurrentIndex = startindex;
-
-    menuItem = &list->mMenuItems[list->mCurrentIndex];
-    tag = menuItem->mCallbacks[1].mTag;
-    if (((u32)((-tag) | tag) >> 31) > 0)
-    {
-        SlideMenuItem* type = menuItem->mType;
-        if (tag == FREE_FUNCTION)
-            menuItem->mCallbacks[1].mFreeFunction(type);
-        else
-            (*menuItem->mCallbacks[1].mFunctor)(type);
-    }
+    list->SetItem(startindex);
 
     if (wraps)
     {
-        mSlideMenuLists[menuitem]->mFlags = 1;
+        mSlideMenuLists[menuitem]->SetFlag(1);
     }
 }
 
@@ -196,34 +131,20 @@ void TournSetParamsScene::SceneCreated()
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(menuname)));
 
-        int numAdded = mMenuItems.mNumItemsAdded;
-        menuItem = TournSetParamsMenuItemAt(mMenuItems, numAdded);
-        mMenuItems.mMenuItems[numAdded].mType = instance;
-        mMenuItems.mNumItemsAdded++;
+        menuItem = mMenuItems.AddItem(instance);
 
-        {
-            Function<TLComponentInstance*> openFunc;
-            openFunc.mTag = FREE_FUNCTION;
-            openFunc.mFreeFunction = SingleHighlite::OpenItem;
-            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[ON_HIGHLIGHT] = openFunc;
-        }
-
-        {
-            Function<TLComponentInstance*> closeFunc;
-            closeFunc.mTag = FREE_FUNCTION;
-            closeFunc.mFreeFunction = SingleHighlite::CloseItem;
-            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[ON_UNHIGHLIGHT] = closeFunc;
-        }
+        menuItem->SetCallback(ON_HIGHLIGHT, SingleHighlite::OpenItem);
+        menuItem->SetCallback(ON_UNHIGHLIGHT, SingleHighlite::CloseItem);
 
         if (i == 0)
         {
             SingleHighlite::TempDisableSound();
         }
 
-        menuItem->ApplyAction((i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT);
+        menuItem->RunCallback((i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT);
     }
 
-    mMenuItems.mFlags = 3;
+    mMenuItems.SetFlag(3);
 
     TLSlide* currentSlide = presentation->m_currentSlide;
 
@@ -239,7 +160,7 @@ void TournSetParamsScene::SceneCreated()
         InlineHasher(nlStringLowerHash("numbers")));
     BuildSubMenuList(1, instance, true, 0);
 
-    mSlideMenuLists[1]->mFlags = 3;
+    mSlideMenuLists[1]->SetFlag(3);
 
     instance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
@@ -247,14 +168,14 @@ void TournSetParamsScene::SceneCreated()
         InlineHasher(nlStringLowerHash("numbers2")));
     BuildSubMenuList(2, instance, true, 0);
 
-    SlideMenuList* slideMenuList = mSlideMenuLists[mMenuItems.mCurrentIndex];
+    SlideMenuList* slideMenuList = mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
     if (slideMenuList != NULL)
     {
         TLInstance* inst;
         TLInstance* head;
         TLSlide* slide;
         TLSlide* firstSlide;
-        TLComponentInstance* comp = slideMenuList->mComponentInstance;
+        TLComponentInstance* comp = slideMenuList->GetComponentInstance();
         if (comp != NULL)
         {
             if (comp->GetActiveSlide() != NULL)
@@ -307,67 +228,27 @@ void TournSetParamsScene::SceneCreated()
  * Offset/Address/Size: 0xBA0 | 0x800E0574 | size: 0xAEC
  * TODO: 99.31% match - remaining slide traversal register swaps
  */
-#define CALL_MENU_CB_UPDATE_TOP(cur, action)                   \
-    do                                                         \
-    {                                                          \
-        int tag = (cur)->mCallbacks[action].mTag;              \
-        if (((u32)((-tag) | tag) >> 31) > 0)                   \
-        {                                                      \
-            TLComponentInstance* type = (cur)->mType;          \
-            if (tag == FREE_FUNCTION)                          \
-            {                                                  \
-                (cur)->mCallbacks[action].mFreeFunction(type); \
-            }                                                  \
-            else                                               \
-            {                                                  \
-                (*(cur)->mCallbacks[action].mFunctor)(type);   \
-            }                                                  \
-        }                                                      \
-    } while (0)
-
-#define CALL_MENU_CB_UPDATE_SUB(cur, action)                   \
-    do                                                         \
-    {                                                          \
-        int tag = (cur)->mCallbacks[action].mTag;              \
-        if (((u32)((-tag) | tag) >> 31) > 0)                   \
-        {                                                      \
-            SlideMenuItem* type = (cur)->mType;                \
-            if (tag == FREE_FUNCTION)                          \
-            {                                                  \
-                (cur)->mCallbacks[action].mFreeFunction(type); \
-            }                                                  \
-            else                                               \
-            {                                                  \
-                (*(cur)->mCallbacks[action].mFunctor)(type);   \
-            }                                                  \
-        }                                                      \
-    } while (0)
-
 void TournSetParamsScene::Update(float fDeltaT)
 {
     BaseSceneHandler::Update(fDeltaT);
     mButtons.CentreButtons();
 
-    int newIndex;
     SlideMenuList* slideMenuList;
 
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
     {
         SlideMenuList* list = mSlideMenuLists[0];
         CustomTournament* customTourn = &nlSingleton<GameInfoManager>::s_pInstance->mCustomTournamentInfo;
-        SlideMenuItem** itemPtr = &list->mMenuItems[list->mCurrentIndex].mType;
-        SlideMenuItem* item = *itemPtr;
-        m_isLeagueMode = !item->mUserEnumType;
+        SlideMenuItem* item = list->GetMenuItem()->GetType();
+        m_isLeagueMode = !item->GetUserEnumType();
 
         list = mSlideMenuLists[1];
-        itemPtr = &list->mMenuItems[list->mCurrentIndex].mType;
-        item = *itemPtr;
-        m_numTeams = item->mUserEnumType + 3;
+        item = list->GetMenuItem()->GetType();
+        m_numTeams = item->GetUserEnumType() + 3;
 
         list = mSlideMenuLists[2];
-        itemPtr = &list->mMenuItems[list->mCurrentIndex].mType;
-        item = *itemPtr;
-        m_numGames = (item->mUserEnumType == 0) ? 1 : 2;
+        item = list->GetMenuItem()->GetType();
+        m_numGames = (item->GetUserEnumType() == 0) ? 1 : 2;
 
         customTourn->m_tournMode = (eTournamentMode)(m_isLeagueMode ? 0 : 1);
         customTourn->m_numTeams = m_numTeams;
@@ -393,7 +274,7 @@ void TournSetParamsScene::Update(float fDeltaT)
     }
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
     {
-        slideMenuList = mSlideMenuLists[mMenuItems.mCurrentIndex];
+        slideMenuList = mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
         if (slideMenuList != NULL)
         {
             TLInstance* inst;
@@ -402,7 +283,7 @@ void TournSetParamsScene::Update(float fDeltaT)
             TLSlide* startSlide;
             TLComponentInstance* comp;
             unsigned long hash;
-            comp = slideMenuList->mComponentInstance;
+            comp = slideMenuList->GetComponentInstance();
             if (comp != NULL && comp->GetActiveSlide() != NULL)
             {
                 startSlide = comp->GetActiveSlide();
@@ -442,48 +323,9 @@ void TournSetParamsScene::Update(float fDeltaT)
             }
         }
 
-        MenuResult res = RES_ERROR;
-        int flags = mMenuItems.mFlags;
-        int skipDisabled;
-        int wrapList = flags & 1;
-        skipDisabled = flags & 2;
-        int oldIndex = mMenuItems.mCurrentIndex;
-        newIndex = oldIndex - 1;
-
-        while (true)
+        if (mMenuItems.PreviousItem() == RES_OK)
         {
-            if (wrapList)
-            {
-                if (newIndex < 0)
-                {
-                    newIndex = mMenuItems.mNumItemsAdded - 1;
-                }
-            }
-            else if (newIndex < 0)
-            {
-                res = RES_NOT_CHANGED;
-                break;
-            }
-
-            if (skipDisabled)
-            {
-                if (mMenuItems.mMenuItems[newIndex].mDisabled)
-                {
-                    newIndex--;
-                    continue;
-                }
-            }
-
-            CALL_MENU_CB_UPDATE_TOP(&mMenuItems.mMenuItems[oldIndex], ON_UNHIGHLIGHT);
-            mMenuItems.mCurrentIndex = newIndex;
-            CALL_MENU_CB_UPDATE_TOP(&mMenuItems.mMenuItems[mMenuItems.mCurrentIndex], ON_HIGHLIGHT);
-            res = RES_OK;
-            break;
-        }
-
-        if (res == RES_OK)
-        {
-            slideMenuList = mSlideMenuLists[mMenuItems.mCurrentIndex];
+            slideMenuList = mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
             if (slideMenuList != NULL)
             {
                 TLComponentInstance* comp;
@@ -492,7 +334,7 @@ void TournSetParamsScene::Update(float fDeltaT)
                 TLSlide* startSlide;
                 TLSlide* currentSlide;
                 unsigned long hash;
-                comp = slideMenuList->mComponentInstance;
+                comp = slideMenuList->GetComponentInstance();
                 if (comp != NULL && comp->GetActiveSlide() != NULL)
                 {
                     startSlide = comp->GetActiveSlide();
@@ -535,7 +377,7 @@ void TournSetParamsScene::Update(float fDeltaT)
     }
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
     {
-        slideMenuList = mSlideMenuLists[mMenuItems.mCurrentIndex];
+        slideMenuList = mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
         if (slideMenuList != NULL)
         {
             TLComponentInstance* comp;
@@ -544,7 +386,7 @@ void TournSetParamsScene::Update(float fDeltaT)
             TLSlide* startSlide;
             TLSlide* currentSlide;
             unsigned long hash;
-            comp = slideMenuList->mComponentInstance;
+            comp = slideMenuList->GetComponentInstance();
             if (comp != NULL && comp->GetActiveSlide() != NULL)
             {
                 startSlide = comp->GetActiveSlide();
@@ -584,45 +426,9 @@ void TournSetParamsScene::Update(float fDeltaT)
             }
         }
 
-        MenuResult res = RES_ERROR;
-        int flags = mMenuItems.mFlags;
-        int skipDisabled;
-        int wrapList = flags & 1;
-        skipDisabled = flags & 2;
-        int oldIndex = mMenuItems.mCurrentIndex;
-        newIndex = oldIndex + 1;
-
-        while (true)
+        if (mMenuItems.NextItem() == RES_OK)
         {
-            if (wrapList)
-            {
-                newIndex = newIndex % mMenuItems.mNumItemsAdded;
-            }
-            else if (newIndex >= mMenuItems.mNumItemsAdded)
-            {
-                res = RES_NOT_CHANGED;
-                break;
-            }
-
-            if (skipDisabled)
-            {
-                if (mMenuItems.mMenuItems[newIndex].mDisabled)
-                {
-                    newIndex++;
-                    continue;
-                }
-            }
-
-            CALL_MENU_CB_UPDATE_TOP(&mMenuItems.mMenuItems[oldIndex], ON_UNHIGHLIGHT);
-            mMenuItems.mCurrentIndex = newIndex;
-            CALL_MENU_CB_UPDATE_TOP(&mMenuItems.mMenuItems[mMenuItems.mCurrentIndex], ON_HIGHLIGHT);
-            res = RES_OK;
-            break;
-        }
-
-        if (res == RES_OK)
-        {
-            slideMenuList = mSlideMenuLists[mMenuItems.mCurrentIndex];
+            slideMenuList = mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
             if (slideMenuList != NULL)
             {
                 TLComponentInstance* comp;
@@ -631,7 +437,7 @@ void TournSetParamsScene::Update(float fDeltaT)
                 TLSlide* startSlide;
                 TLSlide* currentSlide;
                 unsigned long hash;
-                comp = slideMenuList->mComponentInstance;
+                comp = slideMenuList->GetComponentInstance();
                 if (comp != NULL && comp->GetActiveSlide() != NULL)
                 {
                     startSlide = comp->GetActiveSlide();
@@ -674,51 +480,11 @@ void TournSetParamsScene::Update(float fDeltaT)
     }
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL))
     {
-        int menuIndex = mMenuItems.mCurrentIndex;
+        int menuIndex = mMenuItems.GetActiveItemIndex();
         slideMenuList = mSlideMenuLists[menuIndex];
         if (slideMenuList != NULL)
         {
-            MenuResult res = RES_ERROR;
-
-            int flags = slideMenuList->mFlags;
-            int skipDisabled;
-            int wrapList = flags & 1;
-            skipDisabled = flags & 2;
-            int oldIndex = slideMenuList->mCurrentIndex;
-            newIndex = oldIndex - 1;
-
-            while (true)
-            {
-                if (wrapList)
-                {
-                    if (newIndex < 0)
-                    {
-                        newIndex = slideMenuList->mNumItemsAdded - 1;
-                    }
-                }
-                else if (newIndex < 0)
-                {
-                    res = RES_NOT_CHANGED;
-                    break;
-                }
-
-                if (skipDisabled)
-                {
-                    if (slideMenuList->mMenuItems[newIndex].mDisabled)
-                    {
-                        newIndex--;
-                        continue;
-                    }
-                }
-
-                MenuItem<SlideMenuItem>* oldItem = &slideMenuList->mMenuItems[oldIndex];
-                CALL_MENU_CB_UPDATE_SUB(oldItem, ON_UNHIGHLIGHT);
-                slideMenuList->mCurrentIndex = newIndex;
-                MenuItem<SlideMenuItem>* newItem = &slideMenuList->mMenuItems[slideMenuList->mCurrentIndex];
-                CALL_MENU_CB_UPDATE_SUB(newItem, ON_HIGHLIGHT);
-                res = RES_OK;
-                break;
-            }
+            MenuResult res = slideMenuList->PreviousItem();
 
             switch (res)
             {
@@ -737,48 +503,11 @@ void TournSetParamsScene::Update(float fDeltaT)
     }
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xC, true, NULL))
     {
-        int menuIndex = mMenuItems.mCurrentIndex;
+        int menuIndex = mMenuItems.GetActiveItemIndex();
         slideMenuList = mSlideMenuLists[menuIndex];
         if (slideMenuList != NULL)
         {
-            MenuResult res = RES_ERROR;
-
-            int flags = slideMenuList->mFlags;
-            int skipDisabled;
-            int wrapList = flags & 1;
-            skipDisabled = flags & 2;
-            int oldIndex = slideMenuList->mCurrentIndex;
-            newIndex = oldIndex + 1;
-
-            while (true)
-            {
-                if (wrapList)
-                {
-                    newIndex = newIndex % slideMenuList->mNumItemsAdded;
-                }
-                else if (newIndex >= slideMenuList->mNumItemsAdded)
-                {
-                    res = RES_NOT_CHANGED;
-                    break;
-                }
-
-                if (skipDisabled)
-                {
-                    if (slideMenuList->mMenuItems[newIndex].mDisabled)
-                    {
-                        newIndex++;
-                        continue;
-                    }
-                }
-
-                MenuItem<SlideMenuItem>* oldItem = &slideMenuList->mMenuItems[oldIndex];
-                CALL_MENU_CB_UPDATE_SUB(oldItem, ON_UNHIGHLIGHT);
-                slideMenuList->mCurrentIndex = newIndex;
-                MenuItem<SlideMenuItem>* newItem = &slideMenuList->mMenuItems[slideMenuList->mCurrentIndex];
-                CALL_MENU_CB_UPDATE_SUB(newItem, ON_HIGHLIGHT);
-                res = RES_OK;
-                break;
-            }
+            MenuResult res = slideMenuList->NextItem();
 
             switch (res)
             {
@@ -797,9 +526,6 @@ void TournSetParamsScene::Update(float fDeltaT)
     }
 }
 
-#undef CALL_MENU_CB_UPDATE_SUB
-#undef CALL_MENU_CB_UPDATE_TOP
-
 /**
  * Offset/Address/Size: 0xB90 | 0x800E0564 | size: 0x10
  */
@@ -815,121 +541,47 @@ void TournSetParamsScene::SetInitialParams(bool isLeagueMode, int numTeams, int 
  * TODO: 99.34% match - remaining diffs are r5/r6/r7 register allocation
  * swaps in the disabled-state loops.
  */
-#define CALL_MENU_CB_APPLY(cur, action)                        \
-    do                                                         \
-    {                                                          \
-        int tag = (cur)->mCallbacks[action].mTag;              \
-        if (((u32)((-tag) | tag) >> 31) > 0)                   \
-        {                                                      \
-            SlideMenuItem* type = (cur)->mType;                \
-            if (tag == FREE_FUNCTION)                          \
-            {                                                  \
-                (cur)->mCallbacks[action].mFreeFunction(type); \
-            }                                                  \
-            else                                               \
-            {                                                  \
-                (*(cur)->mCallbacks[action].mFunctor)(type);   \
-            }                                                  \
-        }                                                      \
-    } while (0)
-
 void TournSetParamsScene::ApplyMenuDefaults()
 {
     SlideMenuList* slideMenu = mSlideMenuLists[0];
-    int idx = slideMenu->mCurrentIndex;
-    MenuItem<SlideMenuItem>* cur0 = &slideMenu->mMenuItems[idx];
-    m_isLeagueMode = !cur0->mType->mUserEnumType;
+    MenuItem<SlideMenuItem>* cur0 = slideMenu->GetMenuItem();
+    m_isLeagueMode = !cur0->GetType()->GetUserEnumType();
     if (!m_isLeagueMode)
     {
-        mMenuItems.mMenuItems[2].mDisabled = true;
-        mMenuItems.mMenuItems[2].mType->m_bVisible = false;
+        MenuItem<TLComponentInstance>* gamesItem = mMenuItems.GetMenuItem(2);
+        gamesItem->SetDisabledFlag(true);
+        gamesItem->GetType()->m_bVisible = false;
 
-        SlideMenuList* menu = mSlideMenuLists[1];
-        MenuItem<SlideMenuItem>* cur = &menu->mMenuItems[menu->mCurrentIndex];
-        CALL_MENU_CB_APPLY(cur, 2);
-        menu->mCurrentIndex = 1;
-        cur = &menu->mMenuItems[menu->mCurrentIndex];
-        CALL_MENU_CB_APPLY(cur, 1);
+        mSlideMenuLists[1]->SetItem(1);
+        mSlideMenuLists[2]->SetItem(0);
 
-        menu = mSlideMenuLists[2];
-        cur = &menu->mMenuItems[menu->mCurrentIndex];
-        CALL_MENU_CB_APPLY(cur, 2);
-        menu->mCurrentIndex = 0;
-        cur = &menu->mMenuItems[menu->mCurrentIndex];
-        CALL_MENU_CB_APPLY(cur, 1);
+        mSlideMenuLists[2]->GetMenuItem()->SetDisabledFlag(true);
+        mSlideMenuLists[2]->GetComponentInstance()->m_bVisible = false;
 
-        ((unsigned char&)mSlideMenuLists[2]->mMenuItems[mSlideMenuLists[2]->mCurrentIndex].mDisabled) = true;
-        mSlideMenuLists[2]->mComponentInstance->m_bVisible = false;
-
-        unsigned char activestatetable[6] = { 1, 0, 1, 1, 1, 0 };
+        bool activestatetable[6] = { true, false, true, true, true, false };
         for (int i = 0; i < 6; i++)
         {
-            struct LoopState
-            {
-                SlideMenuList* list;
-                MenuItem<SlideMenuItem>* item;
-                unsigned char active;
-            } state;
-            state.active = activestatetable[i];
-            state.list = mSlideMenuLists[1];
-            if (i == ON_INVALID)
-            {
-                state.item = &state.list->mMenuItems[state.list->mCurrentIndex];
-            }
-            else
-            {
-                state.item = &state.list->mMenuItems[i];
-            }
-            ((unsigned char&)state.item->mDisabled) = state.active;
+            mSlideMenuLists[1]->GetMenuItem(i)->SetDisabledFlag(activestatetable[i]);
         }
     }
     else
     {
-        mMenuItems.mMenuItems[2].mDisabled = false;
-        mMenuItems.mMenuItems[2].mType->m_bVisible = true;
+        MenuItem<TLComponentInstance>* gamesItem = mMenuItems.GetMenuItem(2);
+        gamesItem->SetDisabledFlag(false);
+        gamesItem->GetType()->m_bVisible = true;
 
-        SlideMenuList* menu = mSlideMenuLists[1];
-        MenuItem<SlideMenuItem>* cur = &menu->mMenuItems[menu->mCurrentIndex];
-        CALL_MENU_CB_APPLY(cur, 2);
-        menu->mCurrentIndex = 0;
-        cur = &menu->mMenuItems[menu->mCurrentIndex];
-        CALL_MENU_CB_APPLY(cur, 1);
+        mSlideMenuLists[1]->SetItem(0);
+        mSlideMenuLists[2]->SetItem(0);
 
-        menu = mSlideMenuLists[2];
-        cur = &menu->mMenuItems[menu->mCurrentIndex];
-        CALL_MENU_CB_APPLY(cur, 2);
-        menu->mCurrentIndex = 0;
-        cur = &menu->mMenuItems[menu->mCurrentIndex];
-        CALL_MENU_CB_APPLY(cur, 1);
+        mSlideMenuLists[2]->GetMenuItem()->SetDisabledFlag(false);
+        mSlideMenuLists[2]->GetComponentInstance()->m_bVisible = true;
 
-        struct LeagueState
+        for (int i = 0; i < mSlideMenuLists[1]->GetNumItemsAdded(); i++)
         {
-            SlideMenuList* list;
-            MenuItem<SlideMenuItem>* item;
-            unsigned char active;
-        } state;
-        state.active = false;
-        state.list = mSlideMenuLists[2];
-        ((unsigned char&)state.list->mMenuItems[state.list->mCurrentIndex].mDisabled) = state.active;
-        mSlideMenuLists[2]->mComponentInstance->m_bVisible = true;
-
-        for (int i = 0; i < mSlideMenuLists[1]->mNumItemsAdded; i++)
-        {
-            state.list = mSlideMenuLists[1];
-            if (i == ON_INVALID)
-            {
-                state.item = &state.list->mMenuItems[state.list->mCurrentIndex];
-            }
-            else
-            {
-                state.item = &state.list->mMenuItems[i];
-            }
-            state.item->mDisabled = state.active;
+            mSlideMenuLists[1]->GetMenuItem(i)->SetDisabledFlag(false);
         }
     }
 }
-
-#undef CALL_MENU_CB_APPLY
 
 /**
  * Offset/Address/Size: 0x0 | 0x800DF9D4 | size: 0x6B0
@@ -938,173 +590,52 @@ void TournSetParamsScene::ApplyMenuDefaults()
  */
 void TournSetParamsScene::InitializeMenu()
 {
-#define CALL_MENU_CB(cur, action)                              \
-    do                                                         \
-    {                                                          \
-        int tag = (cur)->mCallbacks[action].mTag;              \
-        if (((u32)((-tag) | tag) >> 31) > 0)                   \
-        {                                                      \
-            SlideMenuItem* type = (cur)->mType;                \
-            if (tag == FREE_FUNCTION)                          \
-            {                                                  \
-                (cur)->mCallbacks[action].mFreeFunction(type); \
-            }                                                  \
-            else                                               \
-            {                                                  \
-                (*(cur)->mCallbacks[action].mFunctor)(type);   \
-            }                                                  \
-        }                                                      \
-    } while (0)
-
     if (!m_isLeagueMode)
     {
-        int newIndex;
-        SlideMenuList* menu = mSlideMenuLists[0];
-        int flags = menu->mFlags;
-        int skipDisabled;
-        int wrapFlag = flags & 1;
-        skipDisabled = flags & 2;
-        int currentIndex = menu->mCurrentIndex;
-        newIndex = currentIndex - 1;
+        mSlideMenuLists[0]->PreviousItem();
 
-        while (true)
-        {
-            if (wrapFlag)
-            {
-                if (newIndex < 0)
-                {
-                    newIndex = menu->mNumItemsAdded - 1;
-                }
-            }
-            else
-            {
-                if (newIndex < 0)
-                {
-                    break;
-                }
-            }
-
-            if (skipDisabled)
-            {
-                if (menu->mMenuItems[newIndex].mDisabled)
-                {
-                    newIndex--;
-                    continue;
-                }
-            }
-
-            MenuItem<SlideMenuItem>* cur = &menu->mMenuItems[currentIndex];
-            CALL_MENU_CB(cur, 2);
-            menu->mCurrentIndex = newIndex;
-            cur = &menu->mMenuItems[menu->mCurrentIndex];
-            CALL_MENU_CB(cur, 1);
-            break;
-        }
-
-        mMenuItems.mMenuItems[2].mDisabled = true;
-        mMenuItems.mMenuItems[2].mType->m_bVisible = false;
+        MenuItem<TLComponentInstance>* gamesItem = mMenuItems.GetMenuItem(2);
+        gamesItem->SetDisabledFlag(true);
+        gamesItem->GetType()->m_bVisible = false;
 
         if (m_numTeams == 4)
         {
-            SlideMenuList* menu = mSlideMenuLists[1];
-            MenuItem<SlideMenuItem>* cur = &menu->mMenuItems[menu->mCurrentIndex];
-            CALL_MENU_CB(cur, 2);
-            menu->mCurrentIndex = 1;
-            cur = &menu->mMenuItems[menu->mCurrentIndex];
-            CALL_MENU_CB(cur, 1);
+            mSlideMenuLists[1]->SetItem(1);
         }
         else if (m_numTeams == 8)
         {
-            SlideMenuList* menu = mSlideMenuLists[1];
-            MenuItem<SlideMenuItem>* cur = &menu->mMenuItems[menu->mCurrentIndex];
-            CALL_MENU_CB(cur, 2);
-            menu->mCurrentIndex = 5;
-            cur = &menu->mMenuItems[menu->mCurrentIndex];
-            CALL_MENU_CB(cur, 1);
+            mSlideMenuLists[1]->SetItem(5);
         }
 
-        {
-            SlideMenuList* menu = mSlideMenuLists[2];
-            MenuItem<SlideMenuItem>* cur = &menu->mMenuItems[menu->mCurrentIndex];
-            CALL_MENU_CB(cur, 2);
-            menu->mCurrentIndex = 0;
-            cur = &menu->mMenuItems[menu->mCurrentIndex];
-            CALL_MENU_CB(cur, 1);
-        }
+        mSlideMenuLists[2]->SetItem(0);
 
-        ((unsigned char&)mSlideMenuLists[2]->mMenuItems[mSlideMenuLists[2]->mCurrentIndex].mDisabled) = true;
-        mSlideMenuLists[2]->mComponentInstance->m_bVisible = false;
+        mSlideMenuLists[2]->GetMenuItem()->SetDisabledFlag(true);
+        mSlideMenuLists[2]->GetComponentInstance()->m_bVisible = false;
 
-        unsigned char activestatetable[6] = { 1, 0, 1, 1, 1, 0 };
+        bool activestatetable[6] = { true, false, true, true, true, false };
         for (int i = 0; i < 6; i++)
         {
-            struct LoopState
-            {
-                SlideMenuList* list;
-                MenuItem<SlideMenuItem>* item;
-                unsigned char active;
-            } state;
-            state.active = activestatetable[i];
-            state.list = mSlideMenuLists[1];
-            if (i == ON_INVALID)
-            {
-                state.item = &state.list->mMenuItems[state.list->mCurrentIndex];
-            }
-            else
-            {
-                state.item = &state.list->mMenuItems[i];
-            }
-            ((unsigned char&)state.item->mDisabled) = state.active;
+            mSlideMenuLists[1]->GetMenuItem(i)->SetDisabledFlag(activestatetable[i]);
         }
     }
     else
     {
-        mMenuItems.mMenuItems[2].mDisabled = false;
-        mMenuItems.mMenuItems[2].mType->m_bVisible = true;
+        MenuItem<TLComponentInstance>* gamesItem = mMenuItems.GetMenuItem(2);
+        gamesItem->SetDisabledFlag(false);
+        gamesItem->GetType()->m_bVisible = true;
 
-        SlideMenuList* menu = mSlideMenuLists[1];
         int numTeamsSelection = m_numTeams - 3;
-        MenuItem<SlideMenuItem>* cur = &menu->mMenuItems[menu->mCurrentIndex];
-        CALL_MENU_CB(cur, 2);
-        menu->mCurrentIndex = numTeamsSelection;
-        cur = &menu->mMenuItems[menu->mCurrentIndex];
-        CALL_MENU_CB(cur, 1);
+        mSlideMenuLists[1]->SetItem(numTeamsSelection);
 
-        {
-            SlideMenuList* menu = mSlideMenuLists[2];
-            int numGamesSelection = m_numGames - 1;
-            MenuItem<SlideMenuItem>* cur = &menu->mMenuItems[menu->mCurrentIndex];
-            CALL_MENU_CB(cur, 2);
-            menu->mCurrentIndex = numGamesSelection;
-            cur = &menu->mMenuItems[menu->mCurrentIndex];
-            CALL_MENU_CB(cur, 1);
-        }
+        int numGamesSelection = m_numGames - 1;
+        mSlideMenuLists[2]->SetItem(numGamesSelection);
 
-        struct LeagueState
-        {
-            SlideMenuList* list;
-            MenuItem<SlideMenuItem>* item;
-            unsigned char active;
-        } state;
-        state.active = false;
-        state.list = mSlideMenuLists[2];
-        ((unsigned char&)state.list->mMenuItems[state.list->mCurrentIndex].mDisabled) = state.active;
-        mSlideMenuLists[2]->mComponentInstance->m_bVisible = true;
+        mSlideMenuLists[2]->GetMenuItem()->SetDisabledFlag(false);
+        mSlideMenuLists[2]->GetComponentInstance()->m_bVisible = true;
 
-        for (int i = 0; i < mSlideMenuLists[1]->mNumItemsAdded; i++)
+        for (int i = 0; i < mSlideMenuLists[1]->GetNumItemsAdded(); i++)
         {
-            state.list = mSlideMenuLists[1];
-            if (i == ON_INVALID)
-            {
-                state.item = &state.list->mMenuItems[state.list->mCurrentIndex];
-            }
-            else
-            {
-                state.item = &state.list->mMenuItems[i];
-            }
-            state.item->mDisabled = state.active;
+            mSlideMenuLists[1]->GetMenuItem(i)->SetDisabledFlag(false);
         }
     }
-
-#undef CALL_MENU_CB
 }

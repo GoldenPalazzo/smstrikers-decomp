@@ -1,6 +1,7 @@
 #ifndef _CHARACTERTEMPLATE_H_
 #define _CHARACTERTEMPLATE_H_
 
+#include "Game/CharacterLifecycle.h"
 #include "Game/Character.h"
 #include "Game/Inventory.h"
 #include "Game/SHierarchy.h"
@@ -53,8 +54,6 @@ class tCharacterTemplateInfo;
 
 s32 GetGoalieIndex(int);
 s32 GetCharacterIndex(const cCharacter*);
-void DestroyCharacters();
-void CreateCharacters();
 cPlayer* CreateGoalie(eCharacterClass, bool);
 cPlayer* CreateSidekick(int, int, eCharacterClass, eCharacterClass, bool);
 cPlayer* CreateCharacter(int, int, eCharacterClass, bool);

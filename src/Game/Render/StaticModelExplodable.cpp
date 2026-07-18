@@ -90,7 +90,7 @@ void StaticModelExplodable::CreateExplodablesFromHelperObjects()
             if (pEntry != NULL)
             {
                 pNode = pEntry;
-                pPool->m_FreeList = pEntry->m_next;
+                pPool->m_FreeList = pEntry->next;
             }
 
             if (pNode != NULL)
@@ -118,7 +118,7 @@ void StaticModelExplodable::CreateExplodablesFromHelperObjects()
             if (pEntry != NULL)
             {
                 pNode = pEntry;
-                pPool->m_FreeList = pEntry->m_next;
+                pPool->m_FreeList = pEntry->next;
             }
 
             if (pNode != NULL)
@@ -177,7 +177,7 @@ void StaticModelExplodable::CleanUp()
             delete node->mpExplodable;
         }
         node->mpExplodable = (SidelineExplodable*)zero;
-        ((SlotPoolEntry*)node)->m_next = pPool->m_FreeList;
+        ((SlotPoolEntry*)node)->next = pPool->m_FreeList;
         pPool->m_FreeList = (SlotPoolEntry*)node;
     }
 }

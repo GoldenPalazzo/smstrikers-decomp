@@ -1,4 +1,5 @@
 #include "NL/nlSlotPool.h"
+#include "NL/nlList.h"
 #include "NL/nlMemory.h"
 
 /**
@@ -45,7 +46,7 @@ void SlotPoolBase::BaseFreeBlocks(SlotPoolBase* slotPool, unsigned int slotSize)
     blockOffset = slotSize * slotPool->m_Delta;
     while (currentBlock != NULL)
     {
-        nextBlock = currentBlock->m_next;
+        nextBlock = currentBlock->next;
         if (nextBlock == NULL)
         {
             blockOffset = slotSize * slotPool->m_Initial;

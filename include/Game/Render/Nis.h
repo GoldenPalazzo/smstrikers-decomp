@@ -2,6 +2,7 @@
 #define _NIS_H_
 
 #include "NL/nlMath.h"
+#include "NL/nlList.h"
 #include "NL/nlSlotPool.h"
 #include "Game/SAnim/pnSAnimController.h"
 
@@ -193,27 +194,6 @@ public:
 // public:
 //     void NisAudioData>(Nis::NisAudioData**, Nis::NisAudioData*, Nis::NisAudioData**);
 // };
-
-/**
- * Explicit specialization for NisAudioData: next is at offset 0x90, not offset 0,
- * so the generic nlListAddStart(T**,T*,T**) from nlSlotPool.h (which does *(T**)newNode = *head)
- * would write to the wrong location. This uses entry->next directly.
- */
-template <>
-inline void nlListAddStart<Nis::NisAudioData>(Nis::NisAudioData** head, Nis::NisAudioData* entry, Nis::NisAudioData** tail)
-{
-    FORCE_DONT_INLINE;
-    if (tail != 0)
-    {
-        if (*head == 0)
-        {
-            *tail = entry;
-        }
-    }
-
-    entry->next = *head;
-    *head = entry;
-}
 
 // class Format<BasicString<char, Detail
 // {

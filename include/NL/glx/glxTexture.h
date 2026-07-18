@@ -169,7 +169,6 @@ bool glplatEndLoadTextureBundle(void* data, unsigned long size);
 bool glplatBeginLoadTextureBundle(const char* filename, void (*callback)(void*, unsigned long, void*), void* param);
 bool glxParseTextureBundle(const char*);
 bool glplatLoadTextureBundle(const char* filename);
-WEAKFUNC int BundleSortProc(const glTexBundleDict* a, const glTexBundleDict* b);
 PlatTexture* glx_MakeTexture(GXTextureHeader* header, unsigned long handle);
 bool glx_AddTex(unsigned long handle, PlatTexture* platTex);
 PlatTexture* glx_GetTex(unsigned long, bool, bool);

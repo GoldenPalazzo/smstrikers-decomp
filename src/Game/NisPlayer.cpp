@@ -1,4 +1,3 @@
-#define BASICSTRING_DELEGATING_CTOR
 #include "Game/NisPlayer.h"
 #include "Game/Camera/CameraMan.h"
 #include "Game/Character.h"
@@ -42,38 +41,6 @@ namespace
 static unsigned char useAsyncLoading = true;
 static char kNisEmpty[] = "";
 } // namespace
-
-/**
- * Offset/Address/Size: 0x74 | 0x80118E84 | size: 0x2C
- */
-template <>
-unsigned long nlStrLen<char>(const char* str)
-{
-    FORCE_DONT_INLINE;
-    unsigned long n = 0;
-    if (str)
-    {
-        for (; *str; n++, str++)
-            ;
-    }
-    return n;
-}
-
-// REMOVE once real callers exist.
-void NisPlayer_stub()
-{
-    nlStrLen<char>((const char*)0);
-}
-
-/**
- * Offset/Address/Size: 0x54 | 0x80118E64 | size: 0x20
- */
-template char nlToLower<char>(char c);
-
-/**
- * Offset/Address/Size: 0x0 | 0x80118E10 | size: 0x54
- */
-template char* nlToLower<char>(char* str);
 
 /**
  * Offset/Address/Size: 0x0 | 0x801186C4 | size: 0x74C
@@ -851,55 +818,29 @@ typedef BasicString<char, Detail::TempStringAllocator> TriggerString;
 static inline void EraseTriggerPrefix(TriggerString& s, const char* begin, const char* end)
 {
     s[0];
-    BasicStringData<char>* data = s.m_data;
+    TriggerString::Data* data = s.mData;
     int size = end - begin;
     const char* eraseEnd = end;
-    int offset = begin - data->mData;
-    char* at = data->mData + offset;
-    while (eraseEnd != data->mData + data->mSize)
+    int offset = begin - data->mData.mData;
+    char* at = data->mData.mData + offset;
+    while (eraseEnd != data->mData.mData + data->mData.mSize)
     {
         *at = *eraseEnd;
         eraseEnd++;
         at++;
     }
-    data->mSize -= size;
+    data->mData.mSize -= size;
 }
 
 static inline char* TriggerMutableBegin(TriggerString& s)
 {
     s[0];
-    return s.m_data ? s.m_data->mData : (char*)0;
-}
-
-static inline BasicStringData<char>* MakeAllTriggerStringData()
-{
-    BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(sizeof(BasicStringData<char>), 8, true);
-    if (data != NULL)
-    {
-        const char* text = "all";
-        data->mData = NULL;
-        data->mSize = 0;
-        data->mCapacity = 0;
-        const char* scan = text;
-        while (*scan++ != '\0')
-        {
-            data->mSize++;
-        }
-        data->mSize++;
-        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-        data->mCapacity = data->mSize;
-        for (int i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *text++;
-        }
-        data->mRefCount = 1;
-    }
-    return data;
+    return s.mData ? s.mData->mData.mData : (char*)0;
 }
 
 /**
  * Offset/Address/Size: 0x1AE0 | 0x801167BC | size: 0xD08
- * TODO: 99.59% match - erase range pointers and insert copy allocation use different registers.
+ * TODO: 99.42% match - remaining register allocation differs in BasicString construction and copy-on-write paths.
  */
 void NisPlayer::LoadTriggers(Nis& nis)
 {
@@ -908,7 +849,7 @@ void NisPlayer::LoadTriggers(Nis& nis)
     int i;
     unsigned long nisHash;
 
-    for (i = ((name.m_data != NULL) ? (name.m_data->mSize - 1) : 0) - 1; i >= 0; i = i - 1)
+    for (i = ((name.mData != NULL) ? (name.mData->mData.mSize - 1) : 0) - 1; i >= 0; i = i - 1)
     {
         if (name[i] == '.')
         {
@@ -921,28 +862,25 @@ void NisPlayer::LoadTriggers(Nis& nis)
     if (!FunctionExists(nisHash))
     {
         int i;
-        for (i = 0; i < ((name.m_data != NULL) ? (name.m_data->mSize - 1) : 0); i = i + 1)
+        for (i = 0; i < ((name.mData != NULL) ? (name.mData->mData.mSize - 1) : 0); i = i + 1)
         {
             if (name[i] == '_')
             {
-                {
-                    char* eraseBegin = ((void)name[0], name.m_data ? name.m_data->mData : (char*)0);
-                    EraseTriggerPrefix(name, eraseBegin, ((void)name[0], (name.m_data ? name.m_data->mData : (char*)0) + i));
-                }
+                EraseTriggerPrefix(name, ((void)name[0], name.mData ? name.mData->mData.mData : (char*)0), ((void)name[0], (name.mData ? name.mData->mData.mData : (char*)0) + i));
 
-                BasicString<char, Detail::TempStringAllocator> all(MakeAllTriggerStringData());
+                BasicString<char, Detail::TempStringAllocator> all("all");
                 char* at = TriggerMutableBegin(name);
-                BasicStringData<char>* allData = all.m_data;
+                TriggerString::Data* allData = all.mData;
                 const char* begin;
                 if (allData != NULL)
                 {
-                    begin = allData->mData;
+                    begin = allData->mData.mData;
                 }
                 else
                 {
                     begin = NULL;
                 }
-                name.insert(at, begin, allData != NULL ? allData->mData + allData->mSize - 1 : (char*)0);
+                name.insert(at, begin, allData != NULL ? allData->mData.mData + allData->mData.mSize - 1 : (char*)0);
                 break;
             }
         }
@@ -1041,62 +979,11 @@ static inline char* GetNisStadiumName()
     return kNisEmpty;
 }
 
-static inline BasicStringData<char>* MakeTargetFilterStringData(const char* src_str)
-{
-    BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
-    if (data != 0)
-    {
-        const char* src = src_str;
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-        const char* p = src;
-        while (*p++ != 0)
-        {
-            data->mSize++;
-        }
-        data->mSize++;
-        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-        data->mCapacity = data->mSize;
-        for (int i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *src++;
-        }
-        data->mRefCount = 1;
-    }
-    return data;
-}
-
-static inline BasicStringData<char>* MakeGoalieTargetFilterStringData()
-{
-    const char* src;
-    BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
-    if (data != 0)
-    {
-        src = "goalie";
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-        const char* p = src;
-        while (*p++ != 0)
-        {
-            data->mSize++;
-        }
-        data->mSize++;
-        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-        data->mCapacity = data->mSize;
-        for (int i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *src++;
-        }
-        data->mRefCount = 1;
-    }
-    return data;
-}
-
 #pragma optimization_level 2
 /**
  * Offset/Address/Size: 0xFAC | 0x80115C88 | size: 0xA9C
+ * TODO: 99.85% match - goalie and empty return construction still swap the
+ * source and Data pointer registers.
  */
 BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTarget target, NisWinnerType wt) const
 {
@@ -1152,8 +1039,7 @@ BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTar
 
     if (target == NIS_TARGET_HOME_GOALIE || target == NIS_TARGET_AWAY_GOALIE || target == NIS_TARGET_WINNER_GOALIE || target == NIS_TARGET_LOSER_GOALIE)
     {
-        BasicStringData<char>* data = MakeGoalieTargetFilterStringData();
-        return BasicString<char, Detail::TempStringAllocator>(data);
+        return "goalie";
     }
 
     if (target == NIS_TARGET_AWAY_SIDEKICK)
@@ -1161,13 +1047,13 @@ BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTar
         return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1)));
     }
 
-    BasicStringData<char>* data = MakeTargetFilterStringData(kNisEmpty);
-    return BasicString<char, Detail::TempStringAllocator>(data);
+    return kNisEmpty;
 }
 #pragma optimization_level 4
 
 /**
  * Offset/Address/Size: 0x610 | 0x801152EC | size: 0x99C
+ * TODO: 94.27% match - remaining r30/r31/r28 register rotation and BasicString temporary stack-slot differences
  */
 void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset useStadiumOffset, NisUseFilter useFilter, NisWinnerType winnerType)
 {
@@ -1177,7 +1063,7 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
 
     if (filter == "myst_sidekick" && strstr(nisType, "goal_winner") != NULL)
     {
-        filter = BasicString<char, Detail::TempStringAllocator>(((void)0, "mystery"));
+        filter = BasicString<char, Detail::TempStringAllocator>("mystery");
     }
 
     if (nlStrCmp(nisType, "trophy") == 0 && cupTrophyHash == 0)
@@ -1196,7 +1082,7 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
             continue;
         }
 
-        int filterLengthMinusNull = (filter.m_data != NULL) ? (filter.m_data->mSize - 1) : 0;
+        int filterLengthMinusNull = (filter.mData != NULL) ? (filter.mData->mData.mSize - 1) : 0;
         if (filterLengthMinusNull != 0)
         {
             const char* filterStr = filter.c_str();
@@ -1242,9 +1128,10 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
         else
         {
             float scale = (useStadiumOffset == NIS_AWAY_STADIUM_OFFSET) ? -1.0f : 1.0f;
-            BasicString<char, Detail::TempStringAllocator> key = Format(((void)0, BasicString<char, Detail::TempStringAllocator>("nisHeader/{0}_offset")), (const char*)GetNisStadiumName());
+            BasicString<char, Detail::TempStringAllocator> s =
+                Format(BasicString<char, Detail::TempStringAllocator>("nisHeader/{0}_offset"), (const char*)GetNisStadiumName());
 
-            float offset = GetConfigFloat(Config::Global(), key.c_str(), 0.0f);
+            float offset = GetConfigFloat(Config::Global(), s.c_str(), 0.0f);
 
             nisHeader.stadiumOffset.f.x = 0.0f;
             nisHeader.stadiumOffset.f.y = scale * offset;
@@ -1252,6 +1139,7 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
         }
 
         bool mirrored = IsMirrored(target, nisHeader.name, winnerType);
+
         for (int i = 0; i < nisHeader.numAnimations; i++)
         {
             mBeginPositions[i] = nisHeader.beginPositions[i];

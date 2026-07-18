@@ -2,6 +2,7 @@
 #include "types.h"
 #include "Game/Audio/AudioLoader.h"
 #include "Game/Audio/AudioStream.h"
+#include "Game/Audio/PriorityStream.h"
 #include "Game/Audio/CrowdMood.h"
 #include "Game/Game.h"
 #include "Game/main.h"

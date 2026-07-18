@@ -1,14 +1,13 @@
-#define BIND_NO_DECL
-#define MEMFUN_NO_DECL
-#define FUNCTION0_SPLIT_BODIES
 #include "Game/SH/SHCupTrophy.h"
 
+#include "Game/GameSceneManager.h"
 #include "Game/GameInfo.h"
 #include "Game/FE/feFinder.h"
 #include "Game/FE/feHelpFuncs.h"
+#include "Game/FE/fePopupMenu.h"
 #include "Game/FE/tlComponentInstance.h"
 
-#include "NL/nlBSearch.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlFormat.h"
 #include "NL/nlFunction.h"
 #include "NL/nlLocalization.h"
@@ -265,11 +264,6 @@ static inline const unsigned short* LookupCupTrophyLoc(unsigned long key)
     return MissingLocString;
 }
 
-static inline BasicStringData<char>* RetainBasicStringDataNoReread(BasicStringData<char>* data)
-{
-    return data != 0 ? (data->mRefCount++, data) : 0;
-}
-
 /**
  * Offset/Address/Size: 0x1F54 | 0x800CB608 | size: 0x7B8
  * TODO: 99.77% match - remaining r30/r31 swap in localized BasicString construction
@@ -377,40 +371,7 @@ void CupTrophyScene::SceneCreated()
     pTotal->SetString(mWonBuffer);
 }
 
-class GameSceneManager
-{
-public:
-    virtual ~GameSceneManager();
-    virtual void* Push(int, int, bool);
-};
-
-enum ePopupMenu
-{
-    POPUP_UNLOCKED_FLOWER_CUP = 32,
-    POPUP_UNLOCKED_STAR_CUP = 33,
-    POPUP_UNLOCKED_BOWSER_CUP = 34,
-    POPUP_UNLOCKED_SUPER_CUPS = 35,
-    POPUP_UNLOCKED_KONGA_STADIUM = 37,
-    POPUP_UNLOCKED_YOSHI_STADIUM = 38,
-    POPUP_UNLOCKED_FORBIDDEN_STADIUM = 39,
-    POPUP_UNLOCKED_SUPER_STADIUM = 40,
-    POPUP_UNLOCKED_LEGEND_DIFFICULTY = 41,
-    POPUP_UNLOCKED_SUPER_TEAM = 42,
-    POPUP_UNLOCKED_CHEAT_GOALIE = 43,
-    POPUP_UNLOCKED_CHEAT_INFINITE = 44,
-    POPUP_UNLOCKED_CHEAT_TILT = 45,
-    POPUP_UNLOCKED_ALL_STS = 46,
-    NUM_POPUP_MENUS = 47,
-};
-
-#include "NL/nlMemFunBody.h"
-#include "NL/nlBindBody.h"
-
-class FEPopupMenu
-{
-public:
-    void Create(ePopupMenu, Function<FnVoidVoid>&);
-};
+#include "NL/nlBind.h"
 
 typedef Detail::MemFunImpl<void, void (CupTrophyScene::*)()> MemFunImpl_CupTrophyScene_v;
 typedef BindExp1<void, MemFunImpl_CupTrophyScene_v, CupTrophyScene*> BindExp1_vfmfcp;
@@ -449,20 +410,10 @@ void CupTrophyScene::HandleUnlockedTriggers()
     {
         if ((gameInfo->mUnlockedTriggers & (1 << i)) != 0)
         {
-            popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(0x1B, 0, false);
-            BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupTrophyScene_v, CupTrophyScene*>(
-                MemFun<CupTrophyScene, void>(&CupTrophyScene::HandleUnlockedTriggers), this);
-
-            {
-                Function<FnVoidVoid> callback;
-                callback.mTag = FUNCTOR;
-
-                FunctorImpl_vfmfcp* functor = new ((FunctorImpl_vfmfcp*)nlMalloc(sizeof(FunctorImpl_vfmfcp), 8, false))
-                    FunctorImpl_vfmfcp(bind);
-
-                callback.mFunctor = functor;
-                popup->Create(PopupMap[i], callback);
-            }
+            popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+            popup->Create(
+                PopupMap[i],
+                Bind<void>(MemFun<CupTrophyScene, void>(&CupTrophyScene::HandleUnlockedTriggers), this));
 
             gameInfo->mUnlockedTriggers &= ((unsigned int)-2 << i);
             return;
@@ -471,7 +422,7 @@ void CupTrophyScene::HandleUnlockedTriggers()
         i++;
     }
 
-    nlSingleton<GameSceneManager>::s_pInstance->Push(0x2E, 0, true);
+    nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_BRAG, SCREEN_NOTHING, true);
 }
 #pragma dont_inline reset
 
@@ -522,7 +473,7 @@ void CupTrophyScene::Update(float fDeltaT)
             }
             else
             {
-                nlSingleton<GameSceneManager>::s_pInstance->Push(0x2E, 1, true);
+                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_BRAG, SCREEN_FORWARD, true);
             }
 
             FEAudio::PlayAnimAudioEvent("sfx_accept", false);
@@ -534,7 +485,7 @@ void CupTrophyScene::Update(float fDeltaT)
     {
         if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(0x1C, 2, true);
+            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_TROPHY_ROOM, SCREEN_BACK, true);
             FEAudio::PlayAnimAudioEvent("sfx_back", false);
             return;
         }
@@ -814,18 +765,10 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         BasicString<char, Detail::TempStringAllocator> zero("0");
 
         BasicString<char, Detail::TempStringAllocator> dayString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(spoil.mCupHistory[record].mDate.mday);
-        dayString = BasicString<char, Detail::TempStringAllocator>(RetainBasicStringDataNoReread(
-            ((spoil.mCupHistory[record].mDate.mday < 10)
-                    ? static_cast<const BasicString<char, Detail::TempStringAllocator>&>(zero.Append(dayString))
-                    : dayString)
-                .m_data));
+        dayString = (spoil.mCupHistory[record].mDate.mday < 10) ? zero.Append(dayString) : dayString;
 
         BasicString<char, Detail::TempStringAllocator> monthString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(spoil.mCupHistory[record].mDate.mon + 1);
-        monthString = BasicString<char, Detail::TempStringAllocator>(RetainBasicStringDataNoReread(
-            ((spoil.mCupHistory[record].mDate.mon + 1 < 10)
-                    ? static_cast<const BasicString<char, Detail::TempStringAllocator>&>(zero.Append(monthString))
-                    : monthString)
-                .m_data));
+        monthString = (spoil.mCupHistory[record].mDate.mon + 1 < 10) ? zero.Append(monthString) : monthString;
 
         BasicString<char, Detail::TempStringAllocator> yearString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(spoil.mCupHistory[record].mDate.year);
 
@@ -836,7 +779,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         unsigned short yearWideString[16];
         nlStrToWcs(yearString.c_str(), yearWideString, 16);
 
-        BasicString<unsigned short, Detail::TempStringAllocator> formatted(static_cast<BasicStringData<unsigned short>*>(0));
+        BasicString<unsigned short, Detail::TempStringAllocator> formatted;
 
         if (spoil.mCupHistory[record].mPlace != -2)
         {

@@ -34,7 +34,7 @@ void AnimatedModelExplodable::CleanUp()
             delete node->mpExplodable;
         }
         node->mpExplodable = (SidelineExplodable*)zero;
-        ((SlotPoolEntry*)node)->m_next = pPool->m_FreeList;
+        ((SlotPoolEntry*)node)->next = pPool->m_FreeList;
         pPool->m_FreeList = (SlotPoolEntry*)node;
     }
 }

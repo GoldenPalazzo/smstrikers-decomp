@@ -1,6 +1,6 @@
 #include "Game/AI/Scripts/ScriptDefines.h"
 
-#include "Game/AI/Scripts/CommonScript.h"
+#include "Game/AI/Scripts/ScriptCaching.h"
 
 #include "Game/AI/Fielder.h"
 #include "Game/Team.h"

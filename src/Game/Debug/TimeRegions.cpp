@@ -1,5 +1,3 @@
-#define NL_SINGLETON_NO_DEFINE
-
 #include "Game/Debug/TimeRegions.h"
 
 #include "Game/BasicStadium.h"

@@ -34,7 +34,7 @@ struct PowerupData : public EventData
 struct PowerupAcquireEventData : public EventData
 {
     PowerupAcquireEventData() { }
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0x1C3; }
 
     /* 0x04 */ int mHomeAway;
 }; // total size: 0x8
@@ -59,7 +59,7 @@ struct ShotAtGoalData : public EventData
 
 struct PassBallData : public EventData
 {
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0x131; }
 
     /* 0x04 */ cPlayer* pPasser;
     /* 0x08 */ cPlayer* pTarget;

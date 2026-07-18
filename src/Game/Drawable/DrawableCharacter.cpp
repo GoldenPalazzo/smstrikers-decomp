@@ -8,7 +8,186 @@
 #include "Game/SAnim/pnFeather.h"
 #include "Game/SAnim/pnBlender.h"
 #include "Game/SAnim/pnSingleAxisBlender.h"
-#include "Game/SAnim/PoseNodeReplayDispatch.h"
+template <int N>
+void Replayable(SaveFrame& frame, char typeId, cPoseNode*& poseNode)
+{
+    if (typeId < 0 || typeId > 3)
+        nlBreak();
+
+    if (typeId == 0)
+    {
+        ((cPN_Blender*)poseNode)->Replay(frame);
+    }
+    else if (typeId == 1)
+    {
+        ((cPN_Feather*)poseNode)->Replay(frame);
+    }
+    else if (typeId == 2)
+    {
+        ((cPN_SAnimController*)poseNode)->Replay(frame);
+    }
+    else if (typeId == 3)
+    {
+        ((cPN_SingleAxisBlender*)poseNode)->Replay(frame);
+    }
+}
+
+template <int N>
+void Replayable(LoadFrame& frame, char typeId, cPoseNode*& poseNode)
+{
+    if (typeId == 0)
+    {
+        cPN_Blender* blender = AllocateBlender();
+        new ((u8*)blender) cPN_Blender();
+        blender->Replay(frame);
+        poseNode = blender;
+    }
+    else if (typeId == 1)
+    {
+        cPN_Feather* feather = AllocateFeather();
+        new ((u8*)feather) cPN_Feather();
+        feather->Replay(frame);
+        poseNode = feather;
+    }
+    else if (typeId == 2)
+    {
+        cPN_SAnimController* controller = AllocateSAnimController();
+        new ((u8*)controller) cPN_SAnimController();
+        controller->Replay(frame);
+        poseNode = controller;
+    }
+    else if (typeId == 3)
+    {
+        cPN_SingleAxisBlender* singleAxis = AllocateSingleAxisBlender();
+        new ((u8*)singleAxis) cPN_SingleAxisBlender();
+        singleAxis->Replay(frame);
+        poseNode = singleAxis;
+    }
+}
+
+template <>
+void Replayable<1>(SaveFrame& frame, char typeId, cPoseNode*& poseNode)
+{
+    if (frame.mInterval == 1)
+    {
+        if (typeId < 0 || typeId > 3)
+            nlBreak();
+
+        if (typeId == 0)
+        {
+            cPN_Blender* blender = (cPN_Blender*)poseNode;
+            Replayable<0>(frame, (cPoseNode&)*blender);
+
+            struct FloatProxy7
+            {
+                float* mF;
+            } proxy7;
+            proxy7.mF = &blender->m_fBlendTime;
+            Replayable<0>(frame, (const FloatCompressor<0, 1, 7>&)proxy7);
+        }
+        else if (typeId == 1)
+        {
+            Replayable<0>(frame, (cPoseNode&)*poseNode);
+        }
+        else if (typeId == 2)
+        {
+            cPN_SAnimController* controller = (cPN_SAnimController*)poseNode;
+            Replayable<0>(frame, (cPoseNode&)*controller);
+
+            struct FloatProxy15
+            {
+                float* mF;
+            } proxy15;
+            proxy15.mF = &controller->m_fTime;
+            Replayable<0>(frame, (const FloatCompressor<0, 1, 15>&)proxy15);
+
+            unsigned int animPtr = 0;
+            animPtr = (unsigned int)controller->m_pSAnim;
+            if (controller->m_bMirror)
+                animPtr |= 1;
+
+            Replayable<0>(frame, animPtr);
+            Replayable<0>(frame, (unsigned int&)controller->m_pAnimRetarget);
+        }
+        else if (typeId == 3)
+        {
+            cPN_SingleAxisBlender* singleAxis = (cPN_SingleAxisBlender*)poseNode;
+            Replayable<0>(frame, (cPoseNode&)*singleAxis);
+
+            struct FloatProxy7b
+            {
+                float* mF;
+            } proxy7b;
+            proxy7b.mF = &singleAxis->m_fSmoothedWeight;
+            Replayable<0>(frame, (const FloatCompressor<0, 1, 7>&)proxy7b);
+        }
+    }
+}
+
+template <>
+void Replayable<1>(LoadFrame& frame, char typeId, cPoseNode*& poseNode)
+{
+    if (frame.mInterval == 1)
+    {
+        if (typeId == 0)
+        {
+            cPN_Blender* blender = AllocateBlender();
+            new ((u8*)blender) cPN_Blender();
+            Replayable<0>(frame, (cPoseNode&)*blender);
+
+            struct FloatProxy7
+            {
+                float* mF;
+            } proxy7;
+            proxy7.mF = &blender->m_fBlendTime;
+            Replayable<0>(frame, (const FloatCompressor<0, 1, 7>&)proxy7);
+            poseNode = blender;
+        }
+        else if (typeId == 1)
+        {
+            cPN_Feather* feather = AllocateFeather();
+            new ((u8*)feather) cPN_Feather();
+            Replayable<0>(frame, (cPoseNode&)*feather);
+            feather->m_fBlendTime = 0.0f;
+            feather->m_pFeatherWeights = NULL;
+            poseNode = feather;
+        }
+        else if (typeId == 2)
+        {
+            cPN_SAnimController* controller = AllocateSAnimController();
+            new ((u8*)controller) cPN_SAnimController();
+            Replayable<0>(frame, (cPoseNode&)*controller);
+
+            struct FloatProxy15
+            {
+                float* mF;
+            } proxy15;
+            proxy15.mF = &controller->m_fTime;
+            Replayable<0>(frame, (const FloatCompressor<0, 1, 15>&)proxy15);
+
+            unsigned int animPtr = 0;
+            Replayable<0>(frame, animPtr);
+            controller->m_bMirror = (animPtr & 1);
+            controller->m_pSAnim = (cSAnim*)(animPtr & ~1);
+            Replayable<0>(frame, (unsigned int&)controller->m_pAnimRetarget);
+            poseNode = controller;
+        }
+        else if (typeId == 3)
+        {
+            cPN_SingleAxisBlender* singleAxis = AllocateSingleAxisBlender();
+            new ((u8*)singleAxis) cPN_SingleAxisBlender();
+            Replayable<0>(frame, (cPoseNode&)*singleAxis);
+
+            struct FloatProxy7b
+            {
+                float* mF;
+            } proxy7b;
+            proxy7b.mF = &singleAxis->m_fSmoothedWeight;
+            Replayable<0>(frame, (const FloatCompressor<0, 1, 7>&)proxy7b);
+            poseNode = singleAxis;
+        }
+    }
+}
 #include "Game/Render/RenderShadow.h"
 #include "Game/GameObjectLighting.h"
 #include "Game/WorldManager.h"
@@ -24,7 +203,6 @@
 #include "NL/nlString.h"
 #include "NL/nlDebug.h"
 #include <dolphin/os.h>
-
 cCharacter* DrawableCharacter::spRenderOnlyThisCharacter = nullptr;
 bool DrawableCharacter::sbRenderOpposingGoalieToo = false;
 bool DrawableCharacter::sCameraRelativeLighting = false;
@@ -154,12 +332,6 @@ inline void Replayable<1, LoadFrame, FloatCompressor<-512, 512, 8> >(LoadFrame& 
     }
 }
 
-template <>
-void ReplayablePolymorphic<1, LoadFrame, cPoseNode>(LoadFrame& frame, cPoseNode*& ptr);
-
-template <>
-void ReplayablePolymorphic<1, SaveFrame, cPoseNode>(SaveFrame& frame, cPoseNode*& ptr);
-
 /**
  * Offset/Address/Size: 0x2C0 | 0x8011C5EC | size: 0x178
  */
@@ -246,25 +418,6 @@ void DrawableCharacter::Replay<LoadFrame>(LoadFrame& frame)
         delete mPoseTree;
         mPoseTree = nullptr;
     }
-}
-
-/**
- * Offset/Address/Size: 0x3DC | 0x8011D3F4 | size: 0x20
- */
-template <>
-void ReplayablePolymorphic<0, LoadFrame, cPoseNode>(LoadFrame& frame, cPoseNode*& ptr)
-{
-    frame.ReplayablePolymorphicPtr<0, cPoseNode>(ptr);
-}
-
-/**
- * Address/Size: 0x8011CBE4 | size: 0x20
- */
-template <>
-void ReplayablePolymorphic<1, LoadFrame, cPoseNode>(LoadFrame& frame, cPoseNode*& ptr)
-{
-    FORCE_DONT_INLINE;
-    frame.ReplayablePolymorphicPtr<1, cPoseNode>(ptr);
 }
 
 /**
@@ -1249,156 +1402,6 @@ cCharacter* DrawableCharacter::OnlyRenderingOneCharacter()
 }
 
 /**
- * Address/Size: 0x8011CC04 | size: 0x50
- */
-template <>
-void Replayable<1, SaveFrame, unsigned char>(SaveFrame& frame, unsigned char& value)
-{
-    FORCE_DONT_INLINE;
-    if (frame.mInterval == 1)
-    {
-        if (frame.mInterval == 1)
-        {
-            memcpy(frame.mStream.mStorage, &value, 1);
-            frame.mStream.mStorage += 1;
-        }
-    }
-}
-
-/**
- * Address/Size: 0x8011CC54 | size: 0x50
- */
-template <>
-void Replayable<1, SaveFrame, unsigned short>(SaveFrame& frame, unsigned short& value)
-{
-    FORCE_DONT_INLINE;
-    if (frame.mInterval == 1)
-    {
-        if (frame.mInterval == 1)
-        {
-            memcpy(frame.mStream.mStorage, &value, sizeof(unsigned short));
-            frame.mStream.mStorage += sizeof(unsigned short);
-        }
-    }
-}
-
-/**
- * Address/Size: 0x8011CCA4 | size: 0x50
- */
-template <>
-void Replayable<1, SaveFrame, unsigned long>(SaveFrame& frame, unsigned long& value)
-{
-    FORCE_DONT_INLINE;
-    if (frame.mInterval == 1)
-    {
-        if (frame.mInterval == 1)
-        {
-            memcpy(frame.mStream.mStorage, &value, sizeof(unsigned long));
-            frame.mStream.mStorage += sizeof(unsigned long);
-        }
-    }
-}
-
-/**
- * Address/Size: 0x8011CCF4 | size: 0x54
- */
-template <>
-void Replayable<1, LoadFrame, unsigned char>(LoadFrame& frame, unsigned char& value)
-{
-    FORCE_DONT_INLINE;
-    if (frame.mInterval == 1)
-    {
-        if (frame.mInterval == 1)
-        {
-            memcpy(&value, frame.mStream.mStorage, sizeof(unsigned char));
-            frame.mStream.mStorage += sizeof(unsigned char);
-        }
-    }
-}
-
-/**
- * Address/Size: 0x8011CD48 | size: 0x54
- */
-template <>
-void Replayable<1, LoadFrame, unsigned short>(LoadFrame& frame, unsigned short& value)
-{
-    FORCE_DONT_INLINE;
-    if (frame.mInterval == 1)
-    {
-        if (frame.mInterval == 1)
-        {
-            memcpy(&value, frame.mStream.mStorage, sizeof(unsigned short));
-            frame.mStream.mStorage += sizeof(unsigned short);
-        }
-    }
-}
-
-/**
- * Address/Size: 0x8011CD9C | size: 0x54
- */
-template <>
-void Replayable<1, LoadFrame, unsigned long>(LoadFrame& frame, unsigned long& value)
-{
-    FORCE_DONT_INLINE;
-    if (frame.mInterval == 1)
-    {
-        if (frame.mInterval == 1)
-        {
-            memcpy(&value, frame.mStream.mStorage, sizeof(unsigned long));
-            frame.mStream.mStorage += sizeof(unsigned long);
-        }
-    }
-}
-
-/**
- * Offset/Address/Size: 0x44CC | 0x8011D17C | size: 0x44
- */
-#pragma dont_inline on
-template <>
-void Replayable<0, LoadFrame, unsigned int>(LoadFrame& frame, unsigned int& value)
-{
-    memcpy(&value, frame.mStream.mStorage, sizeof(unsigned int));
-    frame.mStream.mStorage += sizeof(unsigned int);
-}
-#pragma dont_inline reset
-
-/**
- * Offset/Address/Size: 0x4538 | 0x8011D238 | size: 0x40
- */
-#pragma dont_inline on
-template <>
-void Replayable<0, SaveFrame, unsigned int>(SaveFrame& frame, unsigned int& value)
-{
-    memcpy(frame.mStream.mStorage, &value, sizeof(unsigned int));
-    frame.mStream.mStorage += sizeof(unsigned int);
-}
-#pragma dont_inline reset
-
-/**
- * Offset/Address/Size: 0x4564 | 0x8011D414 | size: 0x44
- */
-#pragma dont_inline on
-template <>
-void Replayable<0, LoadFrame, int>(LoadFrame& frame, int& value)
-{
-    memcpy(&value, frame.mStream.mStorage, sizeof(int));
-    frame.mStream.mStorage += sizeof(int);
-}
-#pragma dont_inline reset
-
-/**
- * Offset/Address/Size: 0x45A8 | 0x8011D458 | size: 0x40
- */
-#pragma dont_inline on
-template <>
-void Replayable<0, SaveFrame, int>(SaveFrame& frame, int& value)
-{
-    memcpy(frame.mStream.mStorage, &value, sizeof(int));
-    frame.mStream.mStorage += sizeof(int);
-}
-#pragma dont_inline reset
-
-/**
  * Offset/Address/Size: 0x482C | 0x8011D6EC | size: 0x74
  */
 template <>
@@ -1599,71 +1602,3 @@ void cPN_Blender::Replay<SaveFrame>(SaveFrame& frame)
     *cursor++ = (char)(unsigned int)blendTime;
     frame.mStream.mStorage = cursor;
 }
-
-#pragma dont_inline on
-template <>
-void ReplayablePolymorphic<1, SaveFrame, cPoseNode>(SaveFrame& frame, cPoseNode*& ptr)
-{
-    // FORCE_DONT_INLINE;
-    char typeId;
-    cPoseNode* current = ptr;
-    if (frame.mInterval == 1)
-    {
-        unsigned char notNull = (current != 0);
-        memcpy(frame.mStream.mStorage, &notNull, 1);
-        frame.mStream.mStorage++;
-
-        if (notNull)
-        {
-            typeId = (char)current->GetType();
-            if (typeId < 0 || typeId > 4)
-                nlBreak();
-
-            memcpy(frame.mStream.mStorage, &typeId, 1);
-            frame.mStream.mStorage++;
-
-            Replayable<1>(frame, typeId, current);
-        }
-    }
-}
-
-template <>
-void ReplayablePolymorphic<0, SaveFrame, cPoseNode>(SaveFrame& frame, cPoseNode*& ptr)
-{
-    char typeId;
-    cPoseNode* current = ptr;
-    unsigned char notNull = (current != 0);
-    memcpy(frame.mStream.mStorage, &notNull, 1);
-    frame.mStream.mStorage++;
-
-    if (notNull)
-    {
-        typeId = (char)current->GetType();
-        if (typeId < 0 || typeId > 4)
-            nlBreak();
-
-        memcpy(frame.mStream.mStorage, &typeId, 1);
-        frame.mStream.mStorage++;
-
-        Replayable<0>(frame, typeId, current);
-    }
-}
-#pragma dont_inline reset
-
-#pragma force_active on
-void DrawableCharacter_stub()
-{
-    float x;
-    SaveFrame sf;
-    LoadFrame lf;
-    cPoseNode* pn = NULL;
-    Replayable<0>(sf, FloatCompressor<0, 1, 7>(x));
-    Replayable<0>(sf, FloatCompressor<0, 1, 15>(x));
-    Replayable<0>(lf, FloatCompressor<0, 1, 7>(x));
-    Replayable<0>(lf, FloatCompressor<0, 1, 15>(x));
-    Replayable<0>(lf, 0, pn);
-    ReplayablePolymorphic<1, SaveFrame, cPoseNode>(sf, pn);
-    cPoseAccumulator& (cPoseAccumulator::*fn)(const cPoseAccumulator&) = &cPoseAccumulator::operator=;
-    (void)fn;
-}
-#pragma force_active reset

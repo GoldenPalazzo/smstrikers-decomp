@@ -1,7 +1,3 @@
-#define LOADER_METHODS_DECLARE_ONLY
-#define CINVENTORY_PHYSICS_DTOR_BODY
-#define PHYSICSOBJECT_PRECOLLIDE_DECLARE_ONLY
-#define PHYSICSROUNDEDCORNER_DTOR_INLINE_DECL
 #include "Game/Physics/Physics.h"
 
 #include "NL/nlMemory.h"
@@ -12,18 +8,12 @@
 #include "Game/Physics/CharacterPhysicsElement.h"
 #include "Game/Physics/CollisionSpace.h"
 #include "Game/Physics/LoadablePhysicsMesh.h"
-#include "Game/InventoryPhysicsDtor.h"
 #include "Game/Physics/PhysicsGroundPlane.h"
+#include "Game/Physics/PhysicsAIBall.h"
 #include "Game/Physics/PhysicsNet.h"
 #include "Game/Physics/PhysicsSphere.h"
 #include "Game/Physics/PhysicsWall.h"
 #include "ode/NLGAdditions.h"
-
-template <>
-char* nlStrNCat<char>(char*, const char*, const char*, unsigned long);
-
-template <>
-ListEntry<char*>* nlListRemoveStart<ListEntry<char*> >(ListEntry<char*>**, ListEntry<char*>**);
 
 typedef ListContainerBase<char*, NewAdapter<ListEntry<char*> > > PhysicsCharListBase;
 
@@ -296,13 +286,6 @@ void PhysicsLoader::ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhys
 }
 
 /**
- * Offset/Address/Size: 0x390 | 0x80132EA0 | size: 0x60
- */
-PhysicsRoundedCorner::~PhysicsRoundedCorner()
-{
-}
-
-/**
  * Offset/Address/Size: 0x14C | 0x80132C5C | size: 0x244
  * TODO: 99.86% match - s_PhysicsMeshes and g_NetPhysicsObjects base
  *       registers are swapped before mesh cleanup.
@@ -323,47 +306,9 @@ void PhysicsLoader::DestroyPhysics()
         entry = entry->next;
     }
 
-    typedef ListContainerBase<PhysicsObject*, NewAdapter<ListEntry<PhysicsObject*> > > PhysListBase;
-    nlWalkList(g_StaticPhysicsPrimitives.m_Head, (PhysListBase*)&g_StaticPhysicsPrimitives, PhysListBase::DeleteEntryFunc());
-    g_StaticPhysicsPrimitives.m_Head = NULL;
-    g_StaticPhysicsPrimitives.m_Tail = NULL;
-
-    nlWalkList(g_NetPhysicsObjects.m_Head, (PhysListBase*)&g_NetPhysicsObjects, PhysListBase::DeleteEntryFunc());
-    volatile nlListContainer<LoadablePhysicsMesh*>* itemList = &s_PhysicsMeshes.m_lItemList;
-    volatile nlListContainer<PhysicsObject*>* netObjects = &g_NetPhysicsObjects;
-    ListEntry<PhysicsObject*>** netTail = &g_NetPhysicsObjects.m_Tail;
-    ListEntry<LoadablePhysicsMesh*>* meshEntry = (ListEntry<LoadablePhysicsMesh*>*)itemList->m_Head;
-
-    netObjects->m_Head = NULL;
-    *netTail = NULL;
-
-    while (meshEntry != NULL)
-    {
-        meshEntry->entry->Destroy();
-        meshEntry = meshEntry->next;
-    }
-
-    typedef ListContainerBase<LoadablePhysicsMesh*, NewAdapter<ListEntry<LoadablePhysicsMesh*> > > MeshListBase;
-    nlWalkList(s_PhysicsMeshes.m_lItemList.m_Head, (MeshListBase*)&s_PhysicsMeshes.m_lItemList, MeshListBase::DeleteEntryFunc());
-    s_PhysicsMeshes.m_lItemList.m_Head = NULL;
-    s_PhysicsMeshes.m_lItemList.m_Tail = NULL;
-
-    nlListContainer<char*>* memList = &s_PhysicsMeshes.m_lMemList;
-    ListEntry<char*>** memTail = &memList->m_Tail;
-    ListEntry<char*>** memHead = &memList->m_Head;
-    while (s_PhysicsMeshes.m_lMemList.m_Head != NULL)
-    {
-        ListEntry<char*>* removed = nlListRemoveStart<ListEntry<char*> >(memHead, memTail);
-        void* mesh;
-        if (&mesh != NULL)
-        {
-            mesh = removed->entry;
-        }
-        ::operator delete(removed);
-        ::operator delete(mesh);
-    }
-
-    s_PhysicsMeshes.m_nItemCount = 0;
+    g_StaticPhysicsPrimitives.Clear();
+    g_NetPhysicsObjects.Clear();
+    s_PhysicsMeshes.Clear();
     g_TerrainMesh = NULL;
 
     delete g_CollisionSpace;

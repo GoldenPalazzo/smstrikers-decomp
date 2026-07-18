@@ -1,7 +1,7 @@
 #include "Game/AI/Scripts/FormationScript.h"
+#include "Game/AI/Fuzzy.h"
+#include "Game/AI/Scripts/ScriptCaching.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
-
-#include "Game/AI/Scripts/SaveConfidence.h"
 
 /**
  * Offset/Address/Size: 0x1604 | 0x8007E640 | size: 0x320

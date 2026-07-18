@@ -1,31 +1,140 @@
 #include "Game/SH/SHSkillSelect.h"
-#include "NL/nlFunction.h"
 
-typedef BindExp1<void, void (*)(bool), bool> BindExp1_vfb;
-typedef Function0<void>::FunctorImpl<BindExp1_vfb> FunctorImpl_vfb;
+#include "Game/FE/feFinder.h"
+#include "Game/FE/feInput.h"
+#include "Game/FE/feSlideMenu.h"
+#include "Game/GameInfo.h"
+#include "Game/GameSceneManager.h"
+#include "NL/nlBind.h"
+#include "NL/nlString.h"
 
-template <>
-void Function0<void>::FunctorImpl<BindExp1_vfb>::operator()()
+static const char* NOVICE_SLIDE_NAME = "NOVICE";
+static const char* INTERMEDIATE_SLIDE_NAME = "INTERMEDIATE";
+static const char* EXPERT_SLIDE_NAME = "EXPERT";
+static const char* PRO_SLIDE_NAME = "PRO";
+
+static void onSelectThird(bool);
+static void onSelectSecond(bool);
+static void onSelectFirst(bool);
+static void SkillSelectMenuBack(bool);
+static void Proceed(bool);
+
+void SkillSelectScene::Update(float dt)
 {
-    mBind.mFuncPtr(mBind.mArg);
+    BaseSceneHandler::Update(dt);
+
+    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
+    {
+        GameplaySettings::eSkillLevel skillLevel;
+        switch (m_SlideSkillSelect->m_currentSlide)
+        {
+        case 0:
+            skillLevel = mIsSuperCup ? GameplaySettings::PROFESSIONAL : GameplaySettings::ROOKIE;
+            break;
+        case 1:
+            skillLevel = mIsSuperCup ? GameplaySettings::SUPERSTAR : GameplaySettings::PROFESSIONAL;
+            break;
+        default:
+            skillLevel = mIsSuperCup ? GameplaySettings::LEGEND : GameplaySettings::SUPERSTAR;
+            break;
+        }
+
+        nlSingleton<GameInfoManager>::s_pInstance->mCurrentCup->mCupSettings.SkillLevel = skillLevel;
+        m_SlideSkillSelect->ApplyFunction();
+    }
+    else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
+    {
+        SkillSelectMenuBack(mIsSuperCup);
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
+    {
+        m_SlideSkillSelect->PrevItem();
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
+    {
+        m_SlideSkillSelect->NextItem();
+    }
 }
 
-// Explicit Clone spec (rather than the header-inlined one) so Clone emits into
-// this TU's .text alongside operator(), matching the target's [Clone, __cl]
-// section grouping. Construct from mBind (not *this) to use the BindType ctor
-// and avoid emitting an out-of-line copy constructor.
-template <>
-Function0<void>::FunctorBase* Function0<void>::FunctorImpl<BindExp1_vfb>::Clone() const
+void SkillSelectScene::SceneCreated()
 {
-    return new ((FunctorImpl_vfb*)nlMalloc(sizeof(FunctorImpl_vfb), 8, false)) FunctorImpl_vfb(mBind);
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+    TLInstance* inst = FEFinder<TLInstance, 4>::Find(
+        presentation,
+        InlineHasher(nlStringLowerHash("SkillSelect")));
+    TLComponentInstance* comp = (TLComponentInstance*)inst;
+
+    m_SlideSkillSelect = new ((FESlideMenu*)nlMalloc(sizeof(FESlideMenu), 8, false)) FESlideMenu(comp);
+
+    {
+        Function<FnVoidVoid> callback(Bind<void, void (*)(bool), bool>(onSelectFirst, mIsSuperCup));
+        m_SlideSkillSelect->AddMenuItem(NOVICE_SLIDE_NAME, callback);
+    }
+
+    {
+        Function<FnVoidVoid> callback(Bind<void, void (*)(bool), bool>(onSelectSecond, mIsSuperCup));
+        m_SlideSkillSelect->AddMenuItem(INTERMEDIATE_SLIDE_NAME, callback);
+    }
+
+    {
+        Function<FnVoidVoid> callback(Bind<void, void (*)(bool), bool>(onSelectThird, mIsSuperCup));
+        m_SlideSkillSelect->AddMenuItem(EXPERT_SLIDE_NAME, callback);
+    }
+
+    m_SlideSkillSelect->m_doWrapAround = true;
+    m_SlideSkillSelect->UpdatePresentation();
 }
 
-// Reconstruction stub (never called): anchors the weak Bind/FunctorImpl
-// instantiations so they emit in this TU. Bind (referenced first) emits last,
-// matching the target .text order [Clone, __cl, __dt, Bind].
-static void _instantiate(void (*fn)(bool), const bool& arg)
+static void onSelectThird(bool isSuperCup)
 {
-    BindExp1_vfb bind = Bind<void, void (*)(bool), bool>(fn, arg);
-    FunctorImpl_vfb* f = new ((FunctorImpl_vfb*)nlMalloc(sizeof(FunctorImpl_vfb), 8, false)) FunctorImpl_vfb(bind);
-    (void)f;
+    Proceed(isSuperCup);
+}
+
+static void onSelectSecond(bool isSuperCup)
+{
+    Proceed(isSuperCup);
+}
+
+static void onSelectFirst(bool isSuperCup)
+{
+    Proceed(isSuperCup);
+}
+
+static void SkillSelectMenuBack(bool isSuperCup)
+{
+    if (isSuperCup)
+    {
+        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SUPER_CUP_CHOOSE_CUP, SCREEN_BACK, true);
+    }
+    else
+    {
+        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_CHOOSE_CUP, SCREEN_BACK, true);
+    }
+}
+
+static void Proceed(bool isSuperCup)
+{
+    if (isSuperCup)
+    {
+        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SUPER_CUP_CHOOSE_CAPTAIN, SCREEN_FORWARD, true);
+    }
+    else
+    {
+        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_CHOOSE_CAPTAIN, SCREEN_FORWARD, true);
+    }
+}
+
+SkillSelectScene::~SkillSelectScene()
+{
+    if (m_SlideSkillSelect != NULL)
+    {
+        delete m_SlideSkillSelect;
+    }
+}
+
+SkillSelectScene::SkillSelectScene(bool isSuperCup)
+    : BaseSceneHandler()
+    , mIsSuperCup(isSuperCup)
+    , m_SlideSkillSelect(NULL)
+{
 }

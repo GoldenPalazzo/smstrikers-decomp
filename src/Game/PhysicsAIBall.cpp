@@ -445,8 +445,6 @@ void PhysicsAIBall::PreUpdate()
 
 /**
  * Offset/Address/Size: 0xD84 | 0x801347B8 | size: 0x47C
- * TODO: 98.52% match - remaining diffs are mostly register assignment shifts
- *       across this/obj/info/numContacts/pFielder.
  */
 ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numContacts)
 {
@@ -540,10 +538,16 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
 
             if ((float)fabs(ballPosition.f.x) > cField::GetGoalLineX(1u) - 2.0f * radius)
             {
-                if ((float)fabs(ballPosition.f.y) < cNet::m_fNetWidth / 2.0f - radius)
+                float fNetWidth = cNet::m_fNetWidth;
+                double fAbsBallY = __fabs(ballPosition.f.y);
+                float fNetLimitY = 0.5f * fNetWidth - radius;
+                if ((float)fAbsBallY < fNetLimitY)
                 {
-                    float netHeight = cNet::m_fNetHeight;
-                    if ((float)fabs(ballPosition.f.z) < netHeight - radius)
+                    double fBallZ = ballPosition.f.z;
+                    float fNetHeight = cNet::m_fNetHeight;
+                    double fAbsBallZ = __fabs(fBallZ);
+                    float fNetLimit = fNetHeight - radius;
+                    if ((float)fAbsBallZ < fNetLimit)
                     {
                         return NO_CONTACT;
                     }

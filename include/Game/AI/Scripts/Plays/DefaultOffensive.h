@@ -8,12 +8,6 @@
 
 class cPlayer;
 
-template <typename T>
-nlVector3& PositionOf(T pObject)
-{
-    return pObject->m_v3Position;
-}
-
 class Fuzzy
 {
 public:

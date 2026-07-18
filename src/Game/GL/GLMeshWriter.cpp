@@ -40,11 +40,11 @@ GLMeshWriterCore::~GLMeshWriterCore()
 
 /**
  * Offset/Address/Size: 0x134 | 0x801E00D4 | size: 0x394
- * TODO: 99.91% match - r21/r22 register swap for streamsSize variable
  */
 bool GLMeshWriterCore::Begin(int numVerts, eGLPrimitive prim, int numStreams, const eGLStream* pStreamIDs, bool bPermanent)
 {
     int i;
+    unsigned long size;
     maximumVerts = numVerts;
     currentIndex = 0;
     elementCount = 0;
@@ -54,17 +54,17 @@ bool GLMeshWriterCore::Begin(int numVerts, eGLPrimitive prim, int numStreams, co
         eGLStream id = pStreamIDs[i];
         stream[id].id = (u8)id;
         int stride = gl_stream_stride[id];
-        unsigned long byteSize = (unsigned long)(numVerts * stride);
+        size = (unsigned long)(numVerts * stride);
         stream[id].stride = (u8)stride;
 
         void* addr;
         if (bPermanent)
         {
-            addr = glResourceAlloc(byteSize, GLM_VertexData);
+            addr = glResourceAlloc(size, GLM_VertexData);
         }
         else
         {
-            addr = glFrameAlloc(byteSize, GLM_VertexData);
+            addr = glFrameAlloc(size, GLM_VertexData);
         }
 
         if (addr == NULL)
@@ -106,21 +106,21 @@ bool GLMeshWriterCore::Begin(int numVerts, eGLPrimitive prim, int numStreams, co
     }
     memset(pPacket, 0, sizeof(glModelPacket));
 
-    unsigned long streamsSize = (unsigned long)(numStreams * 6);
+    size = (unsigned long)(numStreams * 6);
     glModelStream* pPktStreams;
     if (bPermanent)
     {
-        pPktStreams = (glModelStream*)glResourceAlloc(streamsSize, GLM_Header);
+        pPktStreams = (glModelStream*)glResourceAlloc(size, GLM_Header);
     }
     else
     {
-        pPktStreams = (glModelStream*)glFrameAlloc(streamsSize, GLM_Header);
+        pPktStreams = (glModelStream*)glFrameAlloc(size, GLM_Header);
     }
     if (pPktStreams == NULL)
     {
         return false;
     }
-    memset(pPktStreams, 0, streamsSize);
+    memset(pPktStreams, 0, size);
 
     pModel->numPackets = 1;
     pModel->packets = pPacket;

@@ -2,8 +2,9 @@
 #define _NLDLLISTCONTAINER_H_
 
 #include "NL/nlDLRing.h"
-#include "NL/nlAdapter.h"
+#include "NL/NewAdapter.h"
 #include "NL/nlArrayAllocator.h"
+#include "NL/nlSlotPool.h"
 
 template <typename T, typename Adapter>
 class DLListContainerBase
@@ -23,30 +24,16 @@ public:
     {
     }
 
-    typedef void (DLListContainerBase::*ENTRY_DELETE_FUNC)(DLListEntry<T>*);
-
-    static ENTRY_DELETE_FUNC DeleteEntryFunc()
-    {
-        return &DLListContainerBase::DeleteEntry;
-    }
-
-    static void DestroyAllEntries(DLListContainerBase* container)
-    {
-        ENTRY_DELETE_FUNC func = DeleteEntryFunc();
-        nlWalkDLRing<DLListEntry<T>, DLListContainerBase>(container->m_Head, container, func);
-        container->m_Head = NULL;
-    }
-
     ~DLListContainerBase()
     {
-#ifdef NLDLLISTCONTAINER_DESTRUCTOR_NULL_CHECK
-        if (this != NULL)
-        {
-            DestroyAllEntries(this);
-        }
-#else
-        DestroyAllEntries(this);
-#endif
+        Clear();
+    }
+
+    void Clear()
+    {
+        void (DLListContainerBase::*func)(DLListEntry<T>*) = &DLListContainerBase::DeleteEntry;
+        nlWalkDLRing<DLListEntry<T>, DLListContainerBase>(m_Head, this, func);
+        m_Head = NULL;
     }
 
     DLListEntry<T>* Allocate(const T& data)
@@ -78,19 +65,7 @@ public:
 
     T* AllocateAtEnd(unsigned long* outEntry);
 
-#ifdef CHARACTERTEMPLATE_INLINE_DLLIST_DELETEENTRY
-    void DeleteEntry(DLListEntry<T>* entry)
-    {
-        FORCE_DONT_INLINE;
-        if (entry)
-        {
-            entry->entry.~T();
-        }
-        m_Allocator.DeleteEntry(entry);
-    }
-#else
     void DeleteEntry(DLListEntry<T>* entry);
-#endif
 
     /* 0x0 */ Adapter m_Allocator;     // offset 0x0, size 0x18
     /* 0x18 */ DLListEntry<T>* m_Head; // offset 0x18, size 0x4
@@ -117,7 +92,42 @@ T* DLListContainerBase<T, Adapter>::AllocateAtEnd(unsigned long* outEntry)
     return &result->entry;
 }
 
-#if !defined(NLDLLISTCONTAINER_DECLARE_ONLY) && !defined(CHARACTERTEMPLATE_INLINE_DLLIST_DELETEENTRY)
+template <typename T>
+class nlDLListContainer : public DLListContainerBase<T, NewAdapter<DLListEntry<T> > >
+{
+public:
+}; // total size: 0x8
+
+template <typename T>
+class nlDLListSlotPool : public DLListContainerBase<T, BasicSlotPool<DLListEntry<T> > >
+{
+public:
+    nlDLListSlotPool()
+        : DLListContainerBase<T, BasicSlotPool<DLListEntry<T> > >(0)
+    {
+        this->m_Allocator.m_Initial = 16;
+        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&this->m_Allocator, sizeof(DLListEntry<T>));
+        this->m_Allocator.m_Delta = 16;
+    }
+
+    nlDLListSlotPool(const int initial)
+        : DLListContainerBase<T, BasicSlotPool<DLListEntry<T> > >(0)
+    {
+        this->m_Allocator.m_Initial = initial;
+        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&this->m_Allocator, sizeof(DLListEntry<T>));
+        this->m_Allocator.m_Delta = 0;
+    }
+
+    nlDLListSlotPool(const int initial, const int delta)
+        : DLListContainerBase<T, BasicSlotPool<DLListEntry<T> > >(0)
+    {
+        this->m_Allocator.m_Initial = initial;
+        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&this->m_Allocator, sizeof(DLListEntry<T>));
+        this->m_Allocator.m_Delta = delta;
+    }
+
+}; // total size: 0x1C
+
 template <typename T, typename Adapter>
 void DLListContainerBase<T, Adapter>::DeleteEntry(DLListEntry<T>* entry)
 {
@@ -127,12 +137,5 @@ void DLListContainerBase<T, Adapter>::DeleteEntry(DLListEntry<T>* entry)
     }
     m_Allocator.DeleteEntry(entry);
 }
-#endif
-
-template <typename T>
-class nlDLListContainer : public DLListContainerBase<T, NewAdapter<DLListEntry<T> > >
-{
-public:
-}; // total size: 0x8
 
 #endif // _NLDLLISTCONTAINER_H_

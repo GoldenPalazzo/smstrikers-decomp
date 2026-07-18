@@ -6,6 +6,7 @@
 #include "Game/Physics/PhysicsObject.h"
 #include "Game/FixedUpdateTask.h"
 #include "Game/Physics/PhysicsBall.h"
+#include "Game/Physics/PhysicsAIBall.h"
 #include "Game/Field.h"
 #include "Game/Team.h"
 

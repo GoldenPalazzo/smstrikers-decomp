@@ -1,3 +1,4 @@
+#include "Game/Sys/GCStream.h"
 #include "Game/Audio/PriorityStream.h"
 #include "Game/Audio/CrowdMood.h"
 #include "Game/Game.h"
@@ -117,7 +118,7 @@ void PriorityStream::PlayStream(unsigned long StreamId, float Volume, bool Loopi
         ((PLAY_RECORD*)(pSlot + 1))->m_Looping = Looping;
         ((PLAY_RECORD*)(pSlot + 1))->m_FadeIn = FadeIn;
         ((PLAY_RECORD*)(pSlot + 1))->m_ExistingFadeOut = ExistingFadeOut;
-        ((PLAY_RECORD*)(pSlot + 1))->m_VolGroup = (VOLUME_GROUP)volGroup;
+        ((PLAY_RECORD*)(pSlot + 1))->m_VolGroup = (Audio::MasterVolume::VOLUME_GROUP)volGroup;
         ((PLAY_RECORD*)(pSlot + 1))->m_Queue = active;
         ((PLAY_RECORD*)(pSlot + 1))->m_Active = queue;
 
@@ -410,83 +411,6 @@ void PriorityStream::TrackIdleCB()
  *       prologue/state dispatch; function still compiles as void while asm
  *       carries a return register through r30/r3.
  */
-namespace GCAudioStreaming
-{
-class AudioStreamBuffer
-{
-public:
-    unsigned char* m_MRAMBuffer;
-    unsigned long m_BufferSize;
-    unsigned long m_BufferSamples;
-    unsigned long m_StreamId;
-    unsigned long m_UpdateOffset;
-    class AudioStream* m_pStream;
-    unsigned char m_Volume;
-    signed char m_Pan;
-    unsigned char m_SurroundPan;
-    unsigned char m_bLPFOn;
-    unsigned short m_LPFFreq;
-};
-
-class AudioBufferMgr
-{
-public:
-    void FreeBuffer(GCAudioStreaming::AudioStreamBuffer*);
-};
-
-enum STREAM_STATE
-{
-    SS_New = 0,
-    SS_Initd = 1,
-    SS_Warming = 2,
-    SS_Warm = 3,
-    SS_Playing = 4,
-};
-
-enum STREAM_FLAG
-{
-    SF_Play = 0,
-    SF_Loop = 1,
-    SF_CoolOnStop = 2,
-    SF_EndAtUpdate = 3,
-    SF_SeriousStop = 4,
-};
-
-class AudioStream
-{
-public:
-    virtual ~AudioStream();
-    virtual void WarmReadDone(AudioStreamBuffer*);
-    void Purge();
-    void Destructor();
-    virtual void Stop();
-    virtual void Warm(bool);
-    virtual void GetUpdateReadLength();
-    virtual void DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, AudioStreamBuffer*);
-    virtual void CancelPendingReads();
-    virtual bool SafeToPurge();
-
-    unsigned char m_FlagAtDelete;
-    STREAM_STATE m_State;
-    unsigned long m_StreamLength;
-    unsigned long m_StreamPos;
-    AudioStreamBuffer* m_Buffers[2];
-    unsigned long m_LastPlayable;
-    unsigned long m_Volume;
-    unsigned char m_LPFOn;
-    unsigned short m_LPFFreq;
-    unsigned long m_OldLength;
-    AudioBufferMgr& m_BuffMgr;
-    unsigned long m_Flags;
-    unsigned long m_BufferCount;
-};
-
-class StereoAudioStream : public AudioStream
-{
-};
-
-} // namespace GCAudioStreaming
-
 extern "C"
 {
     void sndStreamMixParameterEx(unsigned long stid, unsigned char vol, unsigned char pan, unsigned char span, unsigned char auxa, unsigned char auxb);

@@ -1,4 +1,3 @@
-#define BASICSTRING_NO_COPY_REREAD
 #include "Game/Transitions/ScreenTransitionManager.h"
 
 #include "Game/Transitions/TransitionSequence.h"
@@ -13,16 +12,8 @@
 #include "NL/nlMath.h"
 #include "NL/nlString.h"
 
-/**
- * Offset/Address/Size: 0x0 | 0x80205EF8 | size: 0x58
- */
 template <>
-void AVLTreeBase<unsigned long, ScreenTransition*, NewAdapter<AVLTreeEntry<unsigned long, ScreenTransition*> >, DefaultKeyCompare<unsigned long> >::DeleteValues()
-{
-    FORCE_DONT_INLINE;
-    DestroyTree(&AVLTreeBase::DeleteValue);
-    m_NumElements = 0;
-}
+ScreenTransitionManager* nlSingleton<ScreenTransitionManager>::s_pInstance = 0;
 
 /**
  * Offset/Address/Size: 0x9DC | 0x80205ACC | size: 0xA4
@@ -44,14 +35,10 @@ ScreenTransitionManager::ScreenTransitionManager()
 
 /**
  * Offset/Address/Size: 0x8FC | 0x802059EC | size: 0x80
- * TODO: 99.84% match - remaining mismatch is the call target encoding at the
- * DeleteAllTransitions callsite after forcing out-of-line behavior.
  */
 ScreenTransitionManager::~ScreenTransitionManager()
 {
-    extern void DeleteAllTransitions__23ScreenTransitionManagerFv(ScreenTransitionManager*);
-
-    DeleteAllTransitions__23ScreenTransitionManagerFv(this);
+    DeleteAllTransitions();
 }
 
 /**
@@ -111,7 +98,6 @@ void ScreenTransitionManager::CancelAllTransitions()
     m_pActiveTransition = nullptr;
 }
 
-#pragma inline_depth(0)
 /**
  * Offset/Address/Size: 0x71C | 0x8020580C | size: 0x70
  */
@@ -130,7 +116,6 @@ void ScreenTransitionManager::DeleteAllTransitions()
     m_pActiveTransition = nullptr;
     m_TransitionMap.DeleteValues();
 }
-#pragma inline_depth(256)
 
 /**
  * Offset/Address/Size: 0x5A4 | 0x80205694 | size: 0x178
@@ -349,14 +334,4 @@ void ScreenTransitionManager::AddTransitions(char* loadedData, unsigned long fil
         }
         pToken = parser.NextToken(true);
     }
-}
-
-// At the bottom of ScreenTransitionManager.cpp -- REMOVE once real callers exist.
-void ScreenTransitionManager_stub()
-{
-    NewAdapter<AVLTreeEntry<unsigned long, ScreenTransition*> > adapter;
-    adapter.Delete(0);
-
-    BasicString<char, Detail::TempStringAllocator>* strings = new BasicString<char, Detail::TempStringAllocator>[1];
-    delete[] strings;
 }

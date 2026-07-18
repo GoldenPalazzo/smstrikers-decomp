@@ -1,4 +1,3 @@
-#define NL_SINGLETON_NO_DEFINE
 #include "Game/Goalie.h"
 #include "Game/AI/GoalieLooseBall.h"
 #include "Game/AI/AiUtil.h"
@@ -11,6 +10,7 @@
 #include "Game/SAnim/pnSingleAxisBlender.h"
 #include "Game/Physics/PhysicsGoalie.h"
 #include "Game/Physics/PhysicsFakeBall.h"
+#include "Game/Physics/PhysicsAIBall.h"
 #include "Game/Field.h"
 #include "Game/AnimInventory.h"
 #include "Game/CharacterTriggers.h"

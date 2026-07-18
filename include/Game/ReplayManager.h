@@ -1,8 +1,6 @@
 #ifndef _REPLAYMANAGER_H_
 #define _REPLAYMANAGER_H_
 
-#define BASECAMERA_FOV_IMPL
-
 #include "Game/Sys/eventman.h"
 #include "Game/Camera/FollowCam.h"
 #include "Game/RenderSnapshot.h"
@@ -13,9 +11,6 @@ void Blend(const float* blendFactors, const T& lhs, const T& rhs, T& result)
 {
     result.Blend(blendFactors, lhs, rhs);
 }
-
-// void Replayable<0, SaveFrame, RenderSnapshot>(SaveFrame&, RenderSnapshot&);
-// void Replayable<0, LoadFrame, RenderSnapshot>(LoadFrame&, RenderSnapshot&);
 
 // class RenderSnapshot
 // {
@@ -49,6 +44,8 @@ void Blend(const float* blendFactors, const T& lhs, const T& rhs, T& result)
 
 class ReplayManager
 {
+    ReplayManager();
+
 public:
     ~ReplayManager();
     static ReplayManager* Instance();

@@ -31,6 +31,11 @@ unsigned int nlRandom(unsigned int, unsigned int*);
 void nlSetRandomSeed(unsigned int, unsigned int*);
 void nlInitRandom();
 
+inline unsigned int nlAlignUp(unsigned int value, unsigned int alignment)
+{
+    return (value + alignment - 1) & ~(alignment - 1);
+}
+
 inline float nlAbs(float value)
 {
     return std::fabsf(value);
@@ -75,16 +80,7 @@ public:
         } f;
     };
 
-    void Set(float x, float y, float z)
-    {
-        FORCE_DONT_INLINE;
-        FORCE_DONT_INLINE;
-        FORCE_DONT_INLINE;
-        FORCE_DONT_INLINE;
-        f.x = x;
-        f.y = y;
-        f.z = z;
-    }
+    void Set(float _x, float _y, float _z);
 
     inline float CalculateDistanceSquared2D(const nlVector3& v)
     {
@@ -375,13 +371,7 @@ struct nlMatrix4
     };
 
     void SetIdentity();
-    void SetColumn(int col, const nlVector3& v)
-    {
-        FORCE_DONT_INLINE;
-        m[0][col] = v.f.x;
-        m[1][col] = v.f.y;
-        m[2][col] = v.f.z;
-    }
+    void SetColumn(int col, const nlVector3& v);
 
     // inline version
     void SetColumn_(int col, const nlVector3& v)
@@ -423,18 +413,13 @@ struct nlMatrix4
         return *(nlVector3*)&f.m41;
     }
 
-#ifdef FERENDER_INLINE_ACCESSOR_IMPLS
     void SetTranslation(const nlVector3& v)
     {
-        FORCE_DONT_INLINE;
         f.m41 = v.f.x;
         f.m42 = v.f.y;
         f.m43 = v.f.z;
         f.m44 = 1.0f;
     }
-#else
-    void SetTranslation(const nlVector3&);
-#endif
 
     inline nlVector4 operator*(const nlVector4& v_in) const
     {
@@ -446,6 +431,8 @@ struct nlMatrix4
         return tmp;
     }
 };
+
+void nlVecAdd(nlVector3& out, const nlVector3& a, const nlVector3& b);
 
 /**
  * Convert a nlMatrix3 [3x3] matrix to a [4x3] ODE matrix

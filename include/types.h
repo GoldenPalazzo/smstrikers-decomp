@@ -2,8 +2,6 @@
 #define _TYPES_H
 
 // #include "global.h"
-#define NO_INLINE __attribute__((noinline))
-
 // Custom types
 typedef int BOOL;
 typedef unsigned int uint;
@@ -123,11 +121,6 @@ typedef u16 wchar_t;
         while (true)      \
         {                 \
         }                 \
-    }
-
-#define BUMP_REGISTER(reg) \
-    {                      \
-        asm { mr reg, reg }          \
     }
 
 // clang-format off

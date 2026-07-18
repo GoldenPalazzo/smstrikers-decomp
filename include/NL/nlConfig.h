@@ -31,7 +31,23 @@ public:
         template <typename T>
         T Get() const
         {
-            FORCE_DONT_INLINE;
+            if (type == _BOOL)
+            {
+                return LexicalCast<T, bool>(value.b);
+            }
+            else if (type == _INT)
+            {
+                return LexicalCast<T, int>(value.i);
+            }
+            else if (type == _FLOAT)
+            {
+                return LexicalCast<T, float>(value.f);
+            }
+            else if (type == _STRING)
+            {
+                return LexicalCast<T, const char*>(value.s);
+            }
+            return T();
         }
 
         /* 0x00 */ const char* tag;
@@ -47,10 +63,10 @@ public:
 
     struct Parser
     {
-        virtual void EmptyLine() { FORCE_DONT_INLINE; }
-        virtual void Comment(const BasicString<char, Detail::TempStringAllocator>&) { FORCE_DONT_INLINE; }
-        virtual void Section(const BasicString<char, Detail::TempStringAllocator>&) { FORCE_DONT_INLINE; }
-        virtual void TagValuePair(const BasicString<char, Detail::TempStringAllocator>&, const BasicString<char, Detail::TempStringAllocator>&) { FORCE_DONT_INLINE; }
+        virtual void EmptyLine() { }
+        virtual void Comment(const BasicString<char, Detail::TempStringAllocator>&) { }
+        virtual void Section(const BasicString<char, Detail::TempStringAllocator>&) { }
+        virtual void TagValuePair(const BasicString<char, Detail::TempStringAllocator>&, const BasicString<char, Detail::TempStringAllocator>&) { }
     }; // total size: 0x4
 
     void Parse(const char*, Parser&);
@@ -73,7 +89,6 @@ public:
     template <typename T>
     T Get(const char* key, T defaultValue)
     {
-        FORCE_DONT_INLINE;
         TagValuePair& tvp = FindTvp(key);
         if (tvp.tag == NULL)
         {
@@ -128,7 +143,7 @@ public:
     //     else
     //     {
     //         // Default to empty string for unknown types
-    //         result.m_data = nullptr;
+    //         result.mData = nullptr;
     //         result.m_size = 0;
     //         result.m_capacity = 0;
     //         result.m_refCount = 1;
@@ -188,28 +203,6 @@ struct SetTagValuePair : public Config::Parser
 // };
 
 template <>
-inline BasicString<char, Detail::TempStringAllocator> Config::TagValuePair::Get<BasicString<char, Detail::TempStringAllocator> >() const
-{
-    if (type == _BOOL)
-    {
-        return LexicalCast<BasicString<char, Detail::TempStringAllocator>, bool>(value.b);
-    }
-    else if (type == _INT)
-    {
-        return LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(value.i);
-    }
-    else if (type == _FLOAT)
-    {
-        return LexicalCast<BasicString<char, Detail::TempStringAllocator>, float>(value.f);
-    }
-    else if (type == _STRING)
-    {
-        return LexicalCast<BasicString<char, Detail::TempStringAllocator>, const char*>(value.s);
-    }
-    return BasicString<char, Detail::TempStringAllocator>();
-}
-
-template <>
 inline BasicString<char, Detail::TempStringAllocator> Config::Get<BasicString<char, Detail::TempStringAllocator> >(
     const char* key, BasicString<char, Detail::TempStringAllocator> defaultValue)
 {
@@ -217,7 +210,7 @@ inline BasicString<char, Detail::TempStringAllocator> Config::Get<BasicString<ch
     if (tvp.tag == NULL)
     {
         Set(key, defaultValue);
-        BasicStringData<char>* data = defaultValue.m_data;
+        BasicString<char, Detail::TempStringAllocator>::Data* data = defaultValue.mData;
         if (data != 0)
         {
             data->mRefCount++;

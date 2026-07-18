@@ -9,17 +9,12 @@
 class feVector3
 {
 public:
-#ifdef FERENDER_INLINE_ACCESSOR_IMPLS
     void GetNLVector3(nlVector3& out) const
     {
-        FORCE_DONT_INLINE;
         out.f.x = f.x;
         out.f.y = f.y;
         out.f.z = f.z;
     }
-#else
-    void GetNLVector3(nlVector3&) const;
-#endif
 
     union
     {               // inferred

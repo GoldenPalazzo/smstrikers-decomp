@@ -1,14 +1,20 @@
 #ifndef _SHSKILLSELECT_H_
 #define _SHSKILLSELECT_H_
 
-// void Bind<void, void (*)(bool), bool>(void (*)(bool), const bool&);
+#include "Game/BaseSceneHandler.h"
 
-// class Function0<void>
-// {
-// public:
-//     void FunctorImpl<BindExp1<void, void (*)(bool), bool>>::~FunctorImpl();
-//     void FunctorImpl<BindExp1<void, void (*)(bool), bool>>::operator()();
-//     void FunctorImpl<BindExp1<void, void (*)(bool), bool>>::Clone() const;
-// };
+class FESlideMenu;
+
+class SkillSelectScene : public BaseSceneHandler
+{
+public:
+    virtual void Update(float);
+    virtual void SceneCreated();
+    virtual ~SkillSelectScene();
+    SkillSelectScene(bool);
+
+    /* 0x1C */ bool mIsSuperCup;
+    /* 0x20 */ FESlideMenu* m_SlideSkillSelect;
+}; // total size: 0x24
 
 #endif // _SHSKILLSELECT_H_

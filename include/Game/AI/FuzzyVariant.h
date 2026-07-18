@@ -9,15 +9,11 @@ class FuzzyVariant : public Variant
 {
 public:
     FuzzyVariant() { Reset(); };
-#ifdef FUZZYVARIANT_COPY_CTOR_DECL_ONLY
-    FuzzyVariant(const FuzzyVariant& other);
-#else
     FuzzyVariant(const FuzzyVariant& other)
     {
         Reset();
         *this = other;
     }
-#endif
 
     FuzzyVariant(bool& value)
         : Variant(VariantTypeOf(value), value)

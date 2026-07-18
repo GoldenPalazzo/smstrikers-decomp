@@ -286,9 +286,3 @@ void CrowdManager::EventHandler(Event* event)
     }
     }
 }
-
-void CrowdManager_stub()
-{
-    void (*loadInt)(LoadFrame&, int&) = Replayable<1, LoadFrame, int>;
-    (void)loadInt;
-}

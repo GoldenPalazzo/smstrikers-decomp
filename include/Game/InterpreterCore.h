@@ -2,7 +2,7 @@
 #define _INTERPRETERCORE_H_
 
 #include "types.h"
-#include "NL/nlBSearch.h"
+#include "NL/nlAlgorithm.h"
 
 struct FunctionEntryPoint
 {

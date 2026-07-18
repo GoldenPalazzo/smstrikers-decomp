@@ -2,7 +2,6 @@
 #define _AUDIOLOADER_H_
 
 #include "types.h"
-#include "Game/Audio/AudioStream.h"
 #include "Game/Audio/CrowdMood.h"
 #include "Game/Audio/WorldAudio.h"
 #include "Game/FE/FEAudio.h"
@@ -12,7 +11,7 @@
 #include "Game/Render/Bowser.h"
 #include "Game/Sys/audio.h"
 #include "Game/Sys/GCStream.h"
-#include "NL/nlAVLTreeSlotPool.h"
+#include "NL/nlAVLTree.h"
 #include "NL/nlConfig.h"
 
 extern Config g_FEStreamConfig;
@@ -92,6 +91,7 @@ public:
     static bool Initialize();
     static bool ActivateDPL2(bool, bool);
     static void SetupSoundGroups();
+    static void DeleteStrToIDTables();
     static unsigned long GetWorldSFXTypeFromStr(const char*);
     static unsigned long GetCharSFXTypeFromStr(const char*);
     static unsigned long GetSFXIDFromStr(const char*, SoundStrToIDNode**);

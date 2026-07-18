@@ -1,17 +1,7 @@
-#define NL_NO_LEXICALCAST_NLSTRING_INT
-#define BASICSTRING_OUTLINE_CTOR
-#define BASICSTRING_INDEX_EMPTY_COPY_BYTE_OFFSET
-#define BASICSTRING_INDEX_ALLOC_HELPER
-#define BIND_NO_DECL
-#define BIND_FORCE_DONT_INLINE
-#define FUNCTION1_SPLIT_BODIES
-#define FUNCTION1_BIND_BY_VALUE
-#define MEMFUN_NO_DECL
-#define MEMFUN_FORCE_DONT_INLINE
-#define NLSTRNCPY_FORCE_DONT_INLINE
 #include "Game/SH/SHPausePostGame.h"
 
 #include "Game/Audio/AudioLoader.h"
+#include "Game/Audio/AudioStream.h"
 #include "Game/BaseGameSceneManager.h"
 #include "Game/DB/StatsTracker.h"
 #include "Game/FE/feFinder.h"
@@ -23,32 +13,12 @@
 #include "NL/nlLocalization.h"
 #include "NL/nlString.h"
 
-#include "NL/nlMemFunBody.h"
-#include "NL/nlBindBody.h"
+#include "NL/nlBind.h"
 
 typedef Detail::MemFunImpl<void, void (PausePostGameScene::*)()> MemFunImpl_PausePostGame_t;
 typedef BindExp1<void, MemFunImpl_PausePostGame_t, PausePostGameScene*> BindExp1_PausePostGame_t;
-typedef Function1<void, TLComponentInstance*>::FunctorImpl<BindExp1_PausePostGame_t> PausePostGameFunctor_t;
 
-#define NL_FORMAT_EXPLICIT_WIDE_POINTER_BODY
 #include "NL/nlFormat.h"
-#undef NL_FORMAT_EXPLICIT_WIDE_POINTER_BODY
-
-typedef BasicString<unsigned short, Detail::TempStringAllocator> (*PausePostGameFormat_t)(
-    const BasicString<unsigned short, Detail::TempStringAllocator>&,
-    const unsigned short (&)[8]);
-static PausePostGameFormat_t ForcePausePostGameFormat
-    = &Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[8]>;
-
-template WEAKFUNC BindExp1_PausePostGame_t Bind<void, MemFunImpl_PausePostGame_t, PausePostGameScene*>(
-    MemFunImpl_PausePostGame_t,
-    PausePostGameScene* const&);
-template WEAKFUNC MemFunImpl_PausePostGame_t MemFun<PausePostGameScene, void>(void (PausePostGameScene::*)());
-template WEAKFUNC unsigned short* nlStrNCpy<unsigned short>(unsigned short*, const unsigned short*, unsigned long);
-
-#include "NL/nlFunctionReap.h"
-
-template void nlFunctionReap<PausePostGameFunctor_t>(PausePostGameFunctor_t*);
 
 namespace DoubleHighlite
 {
@@ -96,11 +66,6 @@ PausePostGameScene::~PausePostGameScene()
     // EMPTY
 }
 
-static inline MenuItem<TLComponentInstance>* PausePostGameItemAt(MenuList<TLComponentInstance>& menu, int idx)
-{
-    return &menu.mMenuItems[idx];
-}
-
 static inline u8 PausePostGameHasSide(BasicGameInfo* game, int side)
 {
     for (int i = 0; i < 4; i++)
@@ -131,6 +96,7 @@ void PausePostGameScene::SceneCreated()
     typedef MemFunImpl_PausePostGame_t PauseMemFun;
     typedef BindExp1_PausePostGame_t PauseBind;
     typedef Function1<void, TLComponentInstance*>::FunctorImpl<PauseBind> PauseFunctorImpl;
+    typedef MenuItem<TLComponentInstance>::Callback MenuCallback;
 
     EnableAutoPressed();
 
@@ -161,29 +127,22 @@ void PausePostGameScene::SceneCreated()
 
         instance->SetActiveSlide((i == 0) ? DoubleHighlite::SLIDE_IN : DoubleHighlite::SLIDE_OUT);
 
-        int idx = mMenuItems.mNumItemsAdded;
-        menuItem = PausePostGameItemAt(mMenuItems, idx);
-        mMenuItems.mMenuItems[idx].mType = instance;
-        mMenuItems.mNumItemsAdded++;
+        menuItem = mMenuItems.AddItem(instance);
 
         {
-            Function<TLComponentInstance*> openFunction;
-            openFunction.mTag = FREE_FUNCTION;
-            openFunction.mFreeFunction = DoubleHighlite::OpenItem;
-            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[ON_HIGHLIGHT] = openFunction;
+            MenuCallback openFunction(DoubleHighlite::OpenItem);
+            menuItem->SetCallback(ON_HIGHLIGHT, openFunction);
         }
 
         {
-            Function<TLComponentInstance*> closeFunction;
-            closeFunction.mTag = FREE_FUNCTION;
-            closeFunction.mFreeFunction = DoubleHighlite::CloseItem;
-            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[ON_UNHIGHLIGHT] = closeFunction;
+            MenuCallback closeFunction(DoubleHighlite::CloseItem);
+            menuItem->SetCallback(ON_UNHIGHLIGHT, closeFunction);
         }
 
         {
-            Function<TLComponentInstance*> applyFunction(Bind<void, MemFunImpl_PausePostGame_t, PausePostGameScene*>(
+            MenuCallback applyFunction(Bind<void, MemFunImpl_PausePostGame_t, PausePostGameScene*>(
                 MemFun<PausePostGameScene, void>(FunctionTable[i]), this));
-            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[ON_APPLY] = applyFunction;
+            menuItem->SetCallback(ON_APPLY, applyFunction);
         }
 
         FindComponent(instance->GetActiveSlide(), "highlite");
@@ -193,10 +152,10 @@ void PausePostGameScene::SceneCreated()
             DoubleHighlite::TempDisableSound();
         }
 
-        menuItem->ApplyAction((i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT);
+        menuItem->RunCallback((i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT);
     }
 
-    mMenuItems.mFlags = 1;
+    mMenuItems.SetFlag(1);
 
     for (int i = 0; i < 2; i++)
     {
@@ -224,7 +183,7 @@ void PausePostGameScene::SceneCreated()
         unsigned short wscore[8];
         nlStrToWcs(score.c_str(), wscore, 8);
         memcpy(mScoreBuffer[i], wscore, sizeof(wscore));
-        mScoreBuffer[i][score.m_data ? score.m_data->mSize - 1 : 0] = 0;
+        mScoreBuffer[i][score.size()] = 0;
         text->SetString(mScoreBuffer[i]);
     }
 
@@ -367,26 +326,7 @@ void PausePostGameScene::Update(float dt)
 
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, (eFEINPUT_PAD*)&gPadThatQuit))
     {
-        int currentIndex = mMenuItems.mCurrentIndex;
-        int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[0].mTag;
-
-        if (((u32)((-tag) | tag) >> 31) > 0)
-        {
-            if (mMenuItems.mMenuItems[currentIndex].mDisabled == 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
-
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[currentIndex].mCallbacks[0].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[0].mFunctor)(type);
-                }
-            }
-        }
-
+        mMenuItems.RunCallbackOnCurrent(ON_APPLY);
         FEAudio::PlayAnimAudioEvent("sfx_accept", false);
         return;
     }
@@ -401,143 +341,13 @@ void PausePostGameScene::Update(float dt)
 
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
     {
-        int flags = mMenuItems.mFlags;
-        int skipDisabledFlag;
-        int wrapFlag;
-        int currentIndex;
-        wrapFlag = flags & 1;
-        skipDisabledFlag = flags & 2;
-        currentIndex = mMenuItems.mCurrentIndex;
-        int newIndex = currentIndex - 1;
-
-        while (true)
-        {
-            if (wrapFlag)
-            {
-                if (newIndex < 0)
-                {
-                    newIndex = mMenuItems.mNumItemsAdded - 1;
-                }
-            }
-            else if (newIndex < 0)
-            {
-                return;
-            }
-
-            if (skipDisabledFlag && mMenuItems.mMenuItems[newIndex].mDisabled)
-            {
-                newIndex--;
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        {
-            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFunctor)(type);
-                }
-            }
-        }
-
-        mMenuItems.mCurrentIndex = newIndex;
-
-        {
-            int selIdx = mMenuItems.mCurrentIndex;
-            int tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
-                }
-            }
-        }
-
+        mMenuItems.PreviousItem();
         return;
     }
 
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
     {
-        int flags = mMenuItems.mFlags;
-        int skipDisabledFlag;
-        int wrapFlag;
-        int currentIndex;
-        wrapFlag = flags & 1;
-        skipDisabledFlag = flags & 2;
-        currentIndex = mMenuItems.mCurrentIndex;
-        int newIndex = currentIndex + 1;
-
-        while (true)
-        {
-            if (wrapFlag)
-            {
-                newIndex = newIndex % mMenuItems.mNumItemsAdded;
-            }
-            else if (newIndex >= mMenuItems.mNumItemsAdded)
-            {
-                return;
-            }
-
-            if (skipDisabledFlag && mMenuItems.mMenuItems[newIndex].mDisabled)
-            {
-                newIndex++;
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        {
-            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFunctor)(type);
-                }
-            }
-        }
-
-        mMenuItems.mCurrentIndex = newIndex;
-
-        {
-            int selIdx = mMenuItems.mCurrentIndex;
-            int tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
-            if (((u32)((-tag) | tag) >> 31) > 0)
-            {
-                TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
-                if (tag == FREE_FUNCTION)
-                {
-                    mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
-                }
-                else
-                {
-                    (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
-                }
-            }
-        }
+        mMenuItems.NextItem();
     }
 }
 

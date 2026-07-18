@@ -91,6 +91,8 @@ public:
     virtual void Update(float);
     static FormationEval* Create(FormationManager*, eFormationType, eFormationSet, eFormation);
     void AssignPositionsToFielders(unsigned int*, float (*)[4]);
+    static void AILocToFieldLoc(nlVector3&, const nlVector3&, int);
+    static void FieldLocToAILoc(nlVector3&, const nlVector3&, int);
 
     /* 0x04 */ eFormationType m_eFormationType;
     /* 0x08 */ const FormationSpec* m_pFormationSpec;

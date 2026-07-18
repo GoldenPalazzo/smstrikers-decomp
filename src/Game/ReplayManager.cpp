@@ -6,7 +6,6 @@
 #include "NL/globalpad.h"
 #include "NL/nlConfig.h"
 #include "PowerPC_EABI_Support/Runtime/MWCPlusLib.h"
-#include "PowerPC_EABI_Support/Runtime/global_destructor_chain.h"
 
 extern float g_fSimulationTick;
 extern float g_fFixedUpdateTick;
@@ -14,42 +13,7 @@ extern bool g_bEnableGamecubePadMonkey;
 extern bool g_bTweaking;
 extern bool g_bProfiling;
 
-// Forward declaration for the ReplayManager destructor registered with the
-// global destructor chain below.
-extern "C"
-{
-    void __dt__13ReplayManagerFv(void*, int);
-}
-
-namespace
-{
-static bool sInitialized = false;
-static char sInstanceStorage[sizeof(ReplayManager)];
-static ReplayManager* sInstance = reinterpret_cast<ReplayManager*>(sInstanceStorage);
-static DestructorChain sDestructorChain;
-} // namespace
-
 static f32 CANT_COLLIDE = *(f32*)__float_max;
-
-/**
- * Offset/Address/Size: 0x388 | 0x80112C98 | size: 0x2C
- */
-template <>
-void Replayable<0, LoadFrame, RenderSnapshot>(LoadFrame& frame, RenderSnapshot& current)
-{
-    FORCE_DONT_INLINE;
-    current.Replay<LoadFrame>(frame);
-}
-
-/**
- * Offset/Address/Size: 0x35C | 0x80112C6C | size: 0x2C
- */
-template <>
-void Replayable<0, SaveFrame, RenderSnapshot>(SaveFrame& frame, RenderSnapshot& current)
-{
-    FORCE_DONT_INLINE;
-    current.Replay<SaveFrame>(frame);
-}
 
 #pragma inline_max_size(0)
 #pragma inline_max_total_size(0)
@@ -168,7 +132,7 @@ void Replay::Record(float time, T& snapshot, unsigned int events)
             if (Frame::mSlotPool.m_FreeList != NULL)
             {
                 newFrame = (Frame*)Frame::mSlotPool.m_FreeList;
-                Frame::mSlotPool.m_FreeList = Frame::mSlotPool.m_FreeList->m_next;
+                Frame::mSlotPool.m_FreeList = Frame::mSlotPool.m_FreeList->next;
             }
             newFrame = new (newFrame) Frame(mFree->mBegin + frameSize, mFree->mSize - frameSize, mFree->mNext);
 
@@ -230,6 +194,21 @@ void Replay::Record(float time, T& snapshot, unsigned int events)
 // {
 // }
 
+ReplayManager::ReplayManager()
+    : mCurrent(mSnapshots)
+    , mPrevious(mSnapshots + 1)
+    , mRender(NULL)
+    , mDebugCamera(cFollowCamera::FOLLOW_SELECTABLE)
+    , mEvents(0)
+    , mSpeed(1.0f)
+    , mSpeedUp(0.0f)
+    , mDeltaTime(0.0f)
+    , mTime(0.0f)
+    , mReplay(NULL)
+    , mMemory(NULL)
+{
+}
+
 /**
  * Offset/Address/Size: 0x964 | 0x801126D4 | size: 0x8C
  */
@@ -242,33 +221,8 @@ ReplayManager::~ReplayManager()
  */
 ReplayManager* ReplayManager::Instance()
 {
-    extern void __ct__13cFollowCameraFQ213cFollowCamera12FollowTarget(cFollowCamera*, cFollowCamera::FollowTarget);
-
-    static s8 init;
-    static char rm[sizeof(ReplayManager)];
-    static DestructorChain chain;
-
-    if (!init)
-    {
-        ReplayManager* instance = reinterpret_cast<ReplayManager*>(rm);
-
-        new (instance->mSnapshots) RenderSnapshot[3];
-        instance->mCurrent = instance->mSnapshots;
-        instance->mPrevious = instance->mSnapshots + 1;
-        instance->mRender = 0;
-        __ct__13cFollowCameraFQ213cFollowCamera12FollowTarget(&instance->mDebugCamera, cFollowCamera::FOLLOW_SELECTABLE);
-        instance->mEvents = 0;
-        instance->mSpeed = 1.0f;
-        instance->mSpeedUp = 0.0f;
-        instance->mDeltaTime = 0.0f;
-        instance->mTime = 0.0f;
-        instance->mReplay = 0;
-        instance->mMemory = 0;
-        __register_global_object(instance, __dt__13ReplayManagerFv, &chain);
-        init = 1;
-    }
-
-    return reinterpret_cast<ReplayManager*>(rm);
+    static ReplayManager rm;
+    return &rm;
 }
 
 /**
@@ -537,11 +491,4 @@ void ReplayManager::RenderSnapshotAt(float deltaTime)
     {
         mSnapshots[2].RenderDebugInfo(*mPrevious, *mCurrent, mBlend[0]);
     }
-}
-
-// Force emission of weak inline destructor -- REMOVE once real callers exist.
-void ReplayManager_stub()
-{
-    cFollowCamera* volatile p = 0;
-    delete p;
 }

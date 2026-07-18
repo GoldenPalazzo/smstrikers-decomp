@@ -65,7 +65,7 @@ inline cPN_Feather* AllocateFeather()
     if (cPN_Feather::m_FeatherSlotPool.m_FreeList != nullptr)
     {
         feather = (cPN_Feather*)cPN_Feather::m_FeatherSlotPool.m_FreeList;
-        cPN_Feather::m_FeatherSlotPool.m_FreeList = cPN_Feather::m_FeatherSlotPool.m_FreeList->m_next;
+        cPN_Feather::m_FeatherSlotPool.m_FreeList = cPN_Feather::m_FeatherSlotPool.m_FreeList->next;
     }
 
     return feather;

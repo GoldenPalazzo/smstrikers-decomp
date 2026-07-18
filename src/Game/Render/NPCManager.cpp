@@ -1,5 +1,3 @@
-#define NL_SINGLETON_NO_DEFINE
-
 #include "Game/Render/NPCManager.h"
 
 #include "Game/Game.h"
@@ -197,10 +195,6 @@ NPCManager::NPCManager()
     bowserPhysics->SetCallbackFunction(&Bowser::CollisionCallback);
 }
 
-typedef ListContainerBase<SkinAnimatedNPC*, NewAdapter<ListEntry<SkinAnimatedNPC*> > > NPCListBaseHelper;
-typedef ListContainerBase<cSHierarchy*, NewAdapter<ListEntry<cSHierarchy*> > > HierListBaseHelper;
-typedef ListContainerBase<cSAnim*, NewAdapter<ListEntry<cSAnim*> > > SAnimListBaseHelper;
-
 static inline void DestroyNPCList(nlListContainer<SkinAnimatedNPC*>* npcList)
 {
     ListEntry<SkinAnimatedNPC*>* npcEntry = npcList->m_Head;
@@ -210,82 +204,7 @@ static inline void DestroyNPCList(nlListContainer<SkinAnimatedNPC*>* npcList)
         npcEntry = npcEntry->next;
     }
 
-    nlWalkList(npcList->m_Head, (NPCListBaseHelper*)npcList, NPCListBaseHelper::DeleteEntryFunc());
-    npcList->m_Head = NULL;
-    npcList->m_Tail = NULL;
-}
-
-static inline void DestroyHierarchyInventoryShared(
-    cInventory<cSHierarchy>* pHierInv,
-    ListEntry<char*>**& workA,
-    ListEntry<char*>**& workB)
-{
-    ListEntry<cSHierarchy*>* hierEntry = pHierInv->m_lItemList.m_Head;
-    while (hierEntry != NULL)
-    {
-        hierEntry = hierEntry->next;
-    }
-
-    void (HierListBaseHelper::*cbHier)(ListEntry<cSHierarchy*>*) = HierListBaseHelper::DeleteEntryFunc();
-    nlWalkList(pHierInv->m_lItemList.m_Head, (HierListBaseHelper*)pHierInv, cbHier);
-
-    workA = &pHierInv->m_lMemList.m_Tail;
-    pHierInv->m_lItemList.m_Head = NULL;
-    workB = &pHierInv->m_lMemList.m_Head;
-    pHierInv->m_lItemList.m_Tail = NULL;
-    while (pHierInv->m_lMemList.m_Head != NULL)
-    {
-        ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(workB, workA);
-        void* mesh;
-        if (&mesh != NULL)
-        {
-            mesh = first->entry;
-        }
-        ::operator delete(first);
-        ::operator delete(mesh);
-    }
-
-    pHierInv->m_nItemCount = 0;
-    pHierInv->m_lMemList.~nlListContainer();
-    pHierInv->m_lItemList.~nlListContainer();
-    ::operator delete(pHierInv);
-}
-
-static inline void DestroySAnimInventoryShared(
-    cInventory<cSAnim>* pSAnimInv,
-    ListEntry<char*>**& workA,
-    ListEntry<char*>**& workB)
-{
-    workA = (ListEntry<char*>**)pSAnimInv->m_lItemList.m_Head;
-    while (workA != NULL)
-    {
-        ((ListEntry<cSAnim*>*)workA)->entry->Destroy();
-        workA = (ListEntry<char*>**)((ListEntry<cSAnim*>*)workA)->next;
-    }
-
-    void (SAnimListBaseHelper::*cbAnim)(ListEntry<cSAnim*>*) = SAnimListBaseHelper::DeleteEntryFunc();
-    nlWalkList(pSAnimInv->m_lItemList.m_Head, (SAnimListBaseHelper*)pSAnimInv, cbAnim);
-
-    workB = &pSAnimInv->m_lMemList.m_Tail;
-    pSAnimInv->m_lItemList.m_Head = NULL;
-    workA = &pSAnimInv->m_lMemList.m_Head;
-    pSAnimInv->m_lItemList.m_Tail = NULL;
-    while (pSAnimInv->m_lMemList.m_Head != NULL)
-    {
-        ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(workA, workB);
-        void* mesh;
-        if (&mesh != NULL)
-        {
-            mesh = first->entry;
-        }
-        ::operator delete(first);
-        ::operator delete(mesh);
-    }
-
-    pSAnimInv->m_nItemCount = 0;
-    pSAnimInv->m_lMemList.~nlListContainer();
-    pSAnimInv->m_lItemList.~nlListContainer();
-    ::operator delete(pSAnimInv);
+    npcList->Clear();
 }
 
 /**
@@ -299,20 +218,8 @@ NPCManager::~NPCManager()
     delete mpBowser;
     delete mpChainChomp;
 
-    ListEntry<char*>** workB;
-    ListEntry<char*>** workA;
-
-    cInventory<cSHierarchy>* pHierInv = mpInventorySHierarchy;
-    if (pHierInv != NULL)
-    {
-        DestroyHierarchyInventoryShared(pHierInv, workA, workB);
-    }
-
-    cInventory<cSAnim>* pSAnimInv = mpInventorySAnim;
-    if (pSAnimInv != NULL)
-    {
-        DestroySAnimInventoryShared(pSAnimInv, workA, workB);
-    }
+    delete mpInventorySHierarchy;
+    delete mpInventorySAnim;
 }
 
 /**

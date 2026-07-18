@@ -1,7 +1,7 @@
 #ifndef _FETWEENER_H_
 #define _FETWEENER_H_
 
-#include "NL/nlDLListSlotPool.h"
+#include "NL/nlDLListContainer.h"
 #include "NL/nlMemory.h"
 
 class FETweener

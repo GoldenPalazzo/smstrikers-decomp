@@ -1,4 +1,3 @@
-#define BASICSTRING_COPY_REREAD_TEMP
 #include "Game/BeginFrameTask.h"
 
 #include "Game/Debug/FrameCounter.h"
@@ -223,32 +222,6 @@ void SetupMatrices()
  * Offset/Address/Size: 0x1068 | 0x8016F748 | size: 0x450
  */
 #pragma optimization_level 2
-static inline BasicStringInternal* BuildDefaultStringData()
-{
-    BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-    if (data != 0)
-    {
-        const char* str = "default";
-        data->mData = 0;
-        const char* s = str;
-        data->mSize = 0;
-        data->mCapacity = 0;
-        while (*s++ != 0)
-        {
-            data->mSize++;
-        }
-        data->mSize++;
-        data->mData = (char*)Detail::TempStringAllocator::allocate(data->mSize + 1);
-        data->mCapacity = data->mSize;
-        for (s32 i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *str++;
-        }
-        data->mRefCount = 1;
-    }
-    return data;
-}
-
 static void SetupRenderInfo()
 {
     static bool bGotWait;
@@ -313,20 +286,18 @@ static void SetupRenderInfo()
 
     if (!bGotWait)
     {
-        BasicStringInternal* data = BuildDefaultStringData();
+        BasicString<char, Detail::TempStringAllocator> wait = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
+            "wait_vblank", BasicString<char, Detail::TempStringAllocator>("default"));
 
-        BasicString<char, Detail::TempStringAllocator> waitMode = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
-            "wait_vblank", BasicString<char, Detail::TempStringAllocator>(data));
-
-        if (waitMode == "never")
+        if (wait == "never")
         {
             g_eWaitMode = 1;
         }
-        else if (waitMode == "always")
+        else if (wait == "always")
         {
             g_eWaitMode = 2;
         }
-        else if (waitMode == "float" || waitMode == "floating")
+        else if (wait == "float" || wait == "floating")
         {
             g_eWaitMode = 3;
         }

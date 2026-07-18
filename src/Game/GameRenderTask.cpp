@@ -1,4 +1,3 @@
-#define NL_SINGLETON_NO_DEFINE
 #include "Game/GameRenderTask.h"
 
 #include "types.h"

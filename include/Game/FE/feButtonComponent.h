@@ -4,6 +4,8 @@
 #include "Game/FE/feRender.h"
 #include "Game/FE/tlComponentInstance.h"
 
+class nlFont;
+
 class ButtonComponent
 {
 public:
@@ -20,6 +22,7 @@ public:
     void SetState(ButtonComponent::ButtonState); // not sure if this is correct
     ~ButtonComponent();
     ButtonComponent();
+    static int GetRenderedStringLength(const unsigned short*, const nlFont*);
 
     /* 0x00 */ TLComponentInstance* mButtonInstance;
     /* 0x04 */ TLImageInstance* mButtonImages[3];

@@ -2,7 +2,7 @@
 #define _FONTMANAGER_H_
 
 #include "NL/nlSingleton.h"
-#include "NL/nlDLListSlotPool.h"
+#include "NL/nlDLListContainer.h"
 #include "NL/nlFont.h"
 
 // void nlDLRingIsEnd<DLListEntry<nlFont*>>(DLListEntry<nlFont*>*, DLListEntry<nlFont*>*);

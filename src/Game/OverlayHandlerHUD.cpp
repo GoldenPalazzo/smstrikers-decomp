@@ -1,7 +1,3 @@
-#define BASICSTRING_DELEGATING_CTOR
-#define BASICSTRING_SELECTIVE_NO_COPY_REREAD
-#define NL_SINGLETON_NO_DEFINE
-#define NL_NO_LEXICALCAST_NLSTRING_INT
 #include "Game/OverlayHandlerHUD.h"
 #include "Game/EventDataTypes.h"
 #include "Game/FE/feFinder.h"
@@ -10,7 +6,7 @@
 #include "Game/FE/tlComponentInstance.h"
 #include "NL/nlLexicalCast.h"
 #include "NL/nlFormat.h"
-#include "NL/nlBSearch.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlLocalization.h"
 
 extern cTeam* g_pTeams[];
@@ -408,23 +404,6 @@ void HUDOverlay::Update(float fDeltaT)
 
     DisplayPowerUps();
 }
-
-static inline void ResetHUDOverlayScores(HUDOverlay* overlay)
-{
-    for (int i = 0; i < 2; i++)
-    {
-        overlay->mScore[i] = 0;
-        overlay->mNewScore[i] = 0;
-        BasicString<char, Detail::TempStringAllocator> scoreStr(
-            LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(overlay->mScore[i]),
-            false);
-        nlStrToWcs(scoreStr.c_str(), overlay->mScoreBuffer[i], 0x20);
-        overlay->m_pTextInstanceScore[0][i]->SetString(overlay->mScoreBuffer[i]);
-        overlay->m_pTextInstanceScore[1][i]->SetString(overlay->mScoreBuffer[i]);
-    }
-    overlay->mStartScoreAnimation = false;
-}
-
 /**
  * Offset/Address/Size: 0x2120 | 0x800F8400 | size: 0x8FC
  */
@@ -549,7 +528,7 @@ void HUDOverlay::SceneCreated()
 
     m_pFEScene->m_pFEPackage->GetPresentation()->SetActiveSlide("OUT");
     mIsHUDSlideIn = false;
-    ResetHUDOverlayScores(this);
+    ResetScores();
 }
 
 /**
@@ -781,11 +760,6 @@ void HUDOverlay::DisplayPowerUps()
             }
         }
     }
-}
-
-u32 PowerupAcquireEventData::GetID()
-{
-    return 0x1C3;
 }
 
 /**

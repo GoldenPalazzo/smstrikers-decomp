@@ -13,7 +13,7 @@ public:
     /* 0x08 */ virtual ~cPN_SingleAxisBlender() { };
     static void operator delete(void* ptr)
     {
-        ((SlotPoolEntry*)ptr)->m_next = m_SingleAxisBlenderSlotPool.m_FreeList;
+        ((SlotPoolEntry*)ptr)->next = m_SingleAxisBlenderSlotPool.m_FreeList;
         m_SingleAxisBlenderSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
     }
     /* 0x14 */ virtual void Evaluate(int, float, cPoseAccumulator*) const;
@@ -47,7 +47,7 @@ inline cPN_SingleAxisBlender* AllocateSingleAxisBlender()
     if (cPN_SingleAxisBlender::m_SingleAxisBlenderSlotPool.m_FreeList != NULL)
     {
         pSAB = (cPN_SingleAxisBlender*)cPN_SingleAxisBlender::m_SingleAxisBlenderSlotPool.m_FreeList;
-        cPN_SingleAxisBlender::m_SingleAxisBlenderSlotPool.m_FreeList = cPN_SingleAxisBlender::m_SingleAxisBlenderSlotPool.m_FreeList->m_next;
+        cPN_SingleAxisBlender::m_SingleAxisBlenderSlotPool.m_FreeList = cPN_SingleAxisBlender::m_SingleAxisBlenderSlotPool.m_FreeList->next;
     }
 
     return pSAB;

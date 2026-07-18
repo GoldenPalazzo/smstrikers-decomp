@@ -2,11 +2,14 @@
 #include "Game/FE/feInput.h"
 #include "Game/FE/feRender.h"
 #include "NL/nlDLRing.h"
-#include "NL/nlDLListSlotPool.h"
+#include "NL/nlDLListContainer.h"
 #include "NL/nlDebug.h"
 #include "NL/nlString.h"
 
 extern FEInput* g_pFEInput;
+
+template <>
+FESceneManager* nlSingleton<FESceneManager>::s_pInstance = 0;
 
 SlotPool<PackagePushPopMessage> m_PushPopMessageSlotPool__21PackagePushPopMessage(0x14, 0);
 nlDLListSlotPool<PackagePushPopMessage*> m_pushPopMessageQueue(0x14, 0);
@@ -118,7 +121,7 @@ static inline void FindSceneAndQueuePop(
     if (m_pushPopMessageQueue.m_Allocator.m_FreeList != NULL)
     {
         entry = (DLListEntry<PackagePushPopMessage*>*)m_pushPopMessageQueue.m_Allocator.m_FreeList;
-        m_pushPopMessageQueue.m_Allocator.m_FreeList = m_pushPopMessageQueue.m_Allocator.m_FreeList->m_next;
+        m_pushPopMessageQueue.m_Allocator.m_FreeList = m_pushPopMessageQueue.m_Allocator.m_FreeList->next;
     }
 
     if (entry != NULL)
@@ -199,7 +202,7 @@ void FESceneManager::QueueScenePop()
     if (m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList != NULL)
     {
         msg = (PackagePushPopMessage*)m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList;
-        m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList = m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList->m_next;
+        m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList = m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList->next;
     }
 
     msg->m_szFilename[0] = 0;
@@ -227,7 +230,7 @@ void FESceneManager::QueueScenePush(BaseSceneHandler* pSceneHandler, const char*
     if (m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList != NULL)
     {
         msg = (PackagePushPopMessage*)m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList;
-        m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList = m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList->m_next;
+        m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList = m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList->next;
     }
 
     msg->m_bPush = true;
@@ -245,7 +248,7 @@ void FESceneManager::QueueScenePush(BaseSceneHandler* pSceneHandler, const char*
     if (m_pushPopMessageQueue.m_Allocator.m_FreeList != NULL)
     {
         entry = (DLListEntry<PackagePushPopMessage*>*)m_pushPopMessageQueue.m_Allocator.m_FreeList;
-        m_pushPopMessageQueue.m_Allocator.m_FreeList = m_pushPopMessageQueue.m_Allocator.m_FreeList->m_next;
+        m_pushPopMessageQueue.m_Allocator.m_FreeList = m_pushPopMessageQueue.m_Allocator.m_FreeList->next;
     }
 
     if (entry != NULL)
@@ -274,7 +277,7 @@ static inline void AddSceneHandlerEntry(
     if (alloc.m_FreeList != NULL)
     {
         entry = (DLListEntry<BaseSceneHandler*>*)alloc.m_FreeList;
-        alloc.m_FreeList = alloc.m_FreeList->m_next;
+        alloc.m_FreeList = alloc.m_FreeList->next;
     }
 
     if (entry != NULL)
@@ -383,7 +386,7 @@ void FESceneManager::ProcessPushPopQueue()
 
         {
             SlotPoolEntry* freeEntry = (SlotPoolEntry*)pPackagePushPopMessage;
-            freeEntry->m_next = m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList;
+            freeEntry->next = m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList;
             m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList = freeEntry;
         }
     }

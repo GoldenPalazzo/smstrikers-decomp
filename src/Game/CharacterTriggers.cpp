@@ -3,7 +3,9 @@
 #include "Game/Player.h"
 #include "Game/Ball.h"
 #include "Game/CharacterTemplate.h"
+#include "Game/Effects/EmissionManager.h"
 #include "Game/Game.h"
+#include "Game/Physics/PhysicsAIBall.h"
 #include "Game/AI/Fielder.h"
 #include "Game/AI/Powerups.h"
 #include "Game/GameInfo.h"
@@ -149,6 +151,18 @@ void UpdateEmitterFromBall(EmissionController& emitter)
     }
 }
 
+static inline void SetFreeUpdateCallback(EmissionController* controller, void (*callback)(EmissionController&))
+{
+    Function1<void, EmissionController&> update(callback);
+    controller->SetUpdateCallback(update);
+}
+
+static inline void SetPoseUpdateCallback(EmissionController* controller)
+{
+    Function1<void, EmissionController&> update(UpdateEmitterPoseFromCharacter);
+    controller->SetUpdateCallback(update);
+}
+
 /**
  * Offset/Address/Size: 0x4D18 | 0x801A3AC8 | size: 0x1B4
  */
@@ -183,12 +197,7 @@ EmissionController* EmitGeneric(cCharacter* pCharacter, const char* baseName, co
     EmissionController* pControl = EmissionManager::Create(pGroup, 0);
     SetDefaultVelocity(pControl);
     pControl->m_fGround = 0.02f;
-    {
-        Function<EmissionController&> update;
-        update.mTag = FREE_FUNCTION;
-        update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-        pControl->SetUpdateCallback(update);
-    }
+    SetPoseUpdateCallback(pControl);
     pCharacter->AttachEffect(pControl);
     return pControl;
 }
@@ -296,12 +305,7 @@ void CharacterTriggerHandler(unsigned int uParam)
         EmissionController* pController = EmissionManager::Create(fxGetGroup("landing_feet"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.02f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pController->SetPosition(pCharacter->m_v3Position);
         break;
@@ -312,12 +316,7 @@ void CharacterTriggerHandler(unsigned int uParam)
         EmissionController* pController = EmissionManager::Create(fxGetGroup("toad_goal_hi_0_dust"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.02f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pController->SetPosition(pCharacter->m_v3Position);
         break;
@@ -335,18 +334,11 @@ void CharacterTriggerHandler(unsigned int uParam)
         EmissionController* pController = EmissionManager::Create(fxGetGroup("pull_head_out"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.02f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pController->m_uUserData = GetCharacterIndex(pCharacter);
         {
-            Function<EmissionController&> update2;
-            update2.mTag = FREE_FUNCTION;
-            update2.mFreeFunction = UpdateEmitterFromCharacter;
+            Function1<void, EmissionController&> update2(UpdateEmitterFromCharacter);
             pController->SetUpdateCallback(update2);
         }
         BeginRumbleAction(RUMBLE_MEDIUM_CONTACT, ((cPlayer*)pCharacter)->GetGlobalPad());
@@ -359,18 +351,11 @@ void CharacterTriggerHandler(unsigned int uParam)
         EmissionController* pController = EmissionManager::Create(fxGetGroup("slide_tackle_trail"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.02f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pController->m_uUserData = GetCharacterIndex(pCharacter);
         {
-            Function<EmissionController&> update2;
-            update2.mTag = FREE_FUNCTION;
-            update2.mFreeFunction = UpdateEmitterFromCharacter;
+            Function1<void, EmissionController&> update2(UpdateEmitterFromCharacter);
             pController->SetUpdateCallback(update2);
         }
         break;
@@ -394,12 +379,7 @@ void CharacterTriggerHandler(unsigned int uParam)
         EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_impact"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.0f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pController->SetPosition(g_pBall->m_v3Position);
         pController->SetVelocity(g_pBall->m_v3Velocity);
@@ -500,18 +480,11 @@ void CharacterTriggerHandler(unsigned int uParam)
         EmissionController* pController = EmissionManager::Create(fxGetGroup("dazed"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.02f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pController->m_uUserData = GetCharacterIndex(pCharacter);
         {
-            Function<EmissionController&> update2;
-            update2.mTag = FREE_FUNCTION;
-            update2.mFreeFunction = UpdateEmitterFromCharacter;
+            Function1<void, EmissionController&> update2(UpdateEmitterFromCharacter);
             pController->SetUpdateCallback(update2);
         }
         pCharacter->m_pCharacterSFX->StopPlayingAllRandomCharDialogue();
@@ -536,12 +509,7 @@ void CharacterTriggerHandler(unsigned int uParam)
             EmissionController* pController = EmissionManager::Create(fxGetGroup("divot"), 0);
             SetDefaultVelocity(pController);
             pController->m_fGround = 0.02f;
-            {
-                Function<EmissionController&> update;
-                update.mTag = FREE_FUNCTION;
-                update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-                pController->SetUpdateCallback(update);
-            }
+            SetPoseUpdateCallback(pController);
             pCharacter->AttachEffect(pController);
             pController->SetPosition(g_pBall->m_v3Position);
             pController->SetVelocity(pCharacter->m_v3Velocity);
@@ -554,12 +522,7 @@ void CharacterTriggerHandler(unsigned int uParam)
         EmissionController* pController = EmissionManager::Create(fxGetGroup("landing"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.02f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         BeginRumbleAction(RUMBLE_MEDIUM_CONTACT, ((cPlayer*)pCharacter)->GetGlobalPad());
         break;
@@ -571,12 +534,7 @@ void CharacterTriggerHandler(unsigned int uParam)
         EmissionController* pController = EmissionManager::Create(fxGetGroup("bomb_landing"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.02f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         BeginRumbleAction(RUMBLE_SHOT_CONTACT, ((cPlayer*)pCharacter)->GetGlobalPad());
         break;
@@ -587,18 +545,11 @@ void CharacterTriggerHandler(unsigned int uParam)
         EmissionController* pController = EmissionManager::Create(fxGetGroup("tackle_impact"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.02f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pController->m_uUserData = GetCharacterIndex(pCharacter);
         {
-            Function<EmissionController&> update2;
-            update2.mTag = FREE_FUNCTION;
-            update2.mFreeFunction = UpdateEmitterFromCharacter;
+            Function1<void, EmissionController&> update2(UpdateEmitterFromCharacter);
             pController->SetUpdateCallback(update2);
         }
         BeginRumbleAction(RUMBLE_SOLID_CONTACT, ((cPlayer*)pCharacter)->GetGlobalPad());
@@ -645,18 +596,11 @@ void CharacterTriggerHandler(unsigned int uParam)
         EmissionController* pController = EmissionManager::Create(fxGetGroup("tackle_react"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.02f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pController->m_uUserData = GetCharacterIndex(pCharacter);
         {
-            Function<EmissionController&> update2;
-            update2.mTag = FREE_FUNCTION;
-            update2.mFreeFunction = UpdateEmitterFromCharacter;
+            Function1<void, EmissionController&> update2(UpdateEmitterFromCharacter);
             pController->SetUpdateCallback(update2);
         }
         break;
@@ -667,19 +611,12 @@ void CharacterTriggerHandler(unsigned int uParam)
         EmissionController* pController = EmissionManager::Create(fxGetGroup("shoot_to_score_windup"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.02f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pCharacter->Play3DSFX((Audio::eCharSFX)0x1C, (PosUpdateMethod)1, 100.0f);
         Audio::gCrowdSFX.Play((Audio::eWorldSFX)0x9E, 100.0f, -1.0f, true, 1.0f);
         {
-            Function<EmissionController&> update2;
-            update2.mTag = FREE_FUNCTION;
-            update2.mFreeFunction = UpdateEmitterFromBall;
+            Function1<void, EmissionController&> update2(UpdateEmitterFromBall);
             pController->SetUpdateCallback(update2);
         }
         break;
@@ -723,12 +660,7 @@ void CharacterTriggerHandler(unsigned int uParam)
         EmissionController* pController = EmissionManager::Create(fxGetGroup("shoot_to_score_jump"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.02f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pChar2->AttachEffect(pController);
         pController->SetPosition(pChar2->m_v3Position);
         break;
@@ -1083,12 +1015,7 @@ void EmitBallImpact(cPlayer* pPlayer, bool bSilent)
     EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_impact"), 0);
     SetDefaultVelocity(pController);
     pController->m_fGround = 0.0f;
-    {
-        Function<EmissionController&> update;
-        update.mTag = FREE_FUNCTION;
-        update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-        pController->SetUpdateCallback(update);
-    }
+    SetPoseUpdateCallback(pController);
     pPlayer->AttachEffect(pController);
     pController->SetPosition(g_pBall->m_v3Position);
     pController->SetVelocity(g_pBall->m_v3Velocity);
@@ -1141,12 +1068,7 @@ void EmitBallPass(cPlayer* pPlayer)
     EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_impact"), 0);
     SetDefaultVelocity(pController);
     pController->m_fGround = 0.0f;
-    {
-        Function<EmissionController&> update;
-        update.mTag = FREE_FUNCTION;
-        update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-        pController->SetUpdateCallback(update);
-    }
+    SetPoseUpdateCallback(pController);
     pPlayer->AttachEffect(pController);
     pController->SetPosition(g_pBall->m_v3Position);
 
@@ -1183,12 +1105,7 @@ static inline EmissionController* CreateChipShotDivotEffect(cPlayer* pCharacter)
     EmissionController* pController = EmissionManager::Create(fxGetGroup("divot"), 0);
     SetDefaultVelocity(pController);
     pController->m_fGround = 0.0f;
-    {
-        Function<EmissionController&> update;
-        update.mTag = FREE_FUNCTION;
-        update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-        pController->SetUpdateCallback(update);
-    }
+    SetPoseUpdateCallback(pController);
     pCharacter->AttachEffect(pController);
     return pController;
 }
@@ -1202,7 +1119,6 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
     EmissionController* pControl = NULL;
     EmissionController* pGlowControl = NULL;
     unsigned long kickSound = (unsigned long)-1;
-    Function1<void, EmissionController&> update2;
 
     switch (eNewBallEffect)
     {
@@ -1211,12 +1127,7 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
         EmissionController* pController = EmissionManager::Create(fxGetGroup("shoot_to_score_shot"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.0f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pGlowControl = pController;
         BeginRumbleAction((eRumbleActionPreset)5, pCharacter->GetGlobalPad());
@@ -1234,12 +1145,7 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
                 EmissionController* pController = EmissionManager::Create(fxGetGroup(effectName.c_str()), 0);
                 SetDefaultVelocity(pController);
                 pController->m_fGround = 0.0f;
-                {
-                    Function<EmissionController&> update;
-                    update.mTag = FREE_FUNCTION;
-                    update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-                    pController->SetUpdateCallback(update);
-                }
+                SetPoseUpdateCallback(pController);
                 pCharacter->AttachEffect(pController);
                 pGlowControl = pController;
             }
@@ -1249,12 +1155,7 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
             EmissionController* pController = EmissionManager::Create(fxGetGroup("shoot_to_score_shot"), 0);
             SetDefaultVelocity(pController);
             pController->m_fGround = 0.0f;
-            {
-                Function<EmissionController&> update;
-                update.mTag = FREE_FUNCTION;
-                update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-                pController->SetUpdateCallback(update);
-            }
+            SetPoseUpdateCallback(pController);
             pCharacter->AttachEffect(pController);
             pGlowControl = pController;
         }
@@ -1266,24 +1167,14 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
         EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_shot_perfect"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.0f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pControl = pController;
 
         pController = EmissionManager::Create(fxGetGroup("ball_shot_perfect_glow"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.0f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pGlowControl = pController;
 
@@ -1297,24 +1188,14 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
         EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_pass_perfect"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.0f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pControl = pController;
 
         pController = EmissionManager::Create(fxGetGroup("ball_pass_perfect_glow"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.0f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pGlowControl = pController;
 
@@ -1342,12 +1223,7 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
         EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_shot_onetimer"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.0f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pControl = pController;
         BeginRumbleAction((eRumbleActionPreset)3, pCharacter->GetGlobalPad());
@@ -1369,12 +1245,7 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
         EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_shot"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.0f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pControl = pController;
         BeginRumbleAction((eRumbleActionPreset)1, pCharacter->GetGlobalPad());
@@ -1410,14 +1281,8 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
         pGlowControl->SetPosition(g_pBall->m_v3Position);
         pGlowControl->SetVelocity(pCharacter->m_v3Velocity);
 
-        update2.mTag = FREE_FUNCTION;
-        update2.mFreeFunction = UpdateEmitterFromBall;
+        Function1<void, EmissionController&> update2(UpdateEmitterFromBall);
         pGlowControl->SetUpdateCallback(update2);
-        if (update2.mTag == FUNCTOR)
-        {
-            delete update2.mFunctor;
-        }
-        update2.mTag = EMPTY;
     }
 }
 
@@ -1467,20 +1332,13 @@ void EmitElectrocutionExplosion(cCharacter* pCharacter)
         return;
     }
 
-    Function<EmissionController&> update2;
     EmissionController* pController = EmissionManager::Create(fxGetGroup("electrocution_explosion"), 0);
     SetDefaultVelocity(pController);
     pController->m_fGround = 0.92f;
-    {
-        Function<EmissionController&> update;
-        update.mTag = FREE_FUNCTION;
-        update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-        pController->SetUpdateCallback(update);
-    }
+    SetPoseUpdateCallback(pController);
     pCharacter->AttachEffect(pController);
     pController->m_uUserData = GetCharacterIndex(pCharacter);
-    update2.mTag = FREE_FUNCTION;
-    update2.mFreeFunction = UpdateEmitterFromCharacter;
+    Function1<void, EmissionController&> update2(UpdateEmitterFromCharacter);
     pController->SetUpdateCallback(update2);
 }
 
@@ -1494,17 +1352,10 @@ void EmitDaze(cPlayer* pCharacter)
     pController->m_fGround = 0.0f;
 
     {
-        Function<EmissionController&> update2;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pController->m_uUserData = GetCharacterIndex(pCharacter);
-        update2.mTag = FREE_FUNCTION;
-        update2.mFreeFunction = UpdateEmitterFromCharacter;
+        Function1<void, EmissionController&> update2(UpdateEmitterFromCharacter);
         pController->SetUpdateCallback(update2);
     }
 
@@ -1543,17 +1394,10 @@ void EmitFreeze(cPlayer* pCharacter)
     SetDefaultVelocity(pController);
     pController->m_fGround = 0.0f;
     {
-        Function<EmissionController&> update2;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pController->m_uUserData = GetCharacterIndex(pCharacter);
-        update2.mTag = FREE_FUNCTION;
-        update2.mFreeFunction = UpdateEmitterFromCharacter;
+        Function1<void, EmissionController&> update2(UpdateEmitterFromCharacter);
         pController->SetUpdateCallback(update2);
     }
     BeginRumbleAction(RUMBLE_SHOT_CONTACT, pCharacter->GetGlobalPad());
@@ -1572,17 +1416,10 @@ void EmitUnFreeze(cPlayer* pCharacter)
     SetDefaultVelocity(pController);
     pController->m_fGround = 0.0f;
     {
-        Function<EmissionController&> update2;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pController->m_uUserData = GetCharacterIndex(pCharacter);
-        update2.mTag = FREE_FUNCTION;
-        update2.mFreeFunction = UpdateEmitterFromCharacter;
+        Function1<void, EmissionController&> update2(UpdateEmitterFromCharacter);
         pController->SetUpdateCallback(update2);
     }
     BeginRumbleAction((eRumbleActionPreset)1, pCharacter->GetGlobalPad());
@@ -1643,14 +1480,6 @@ static void ElectrocutionUpdateCallback(EmissionController& ec)
     }
 }
 
-static inline void SetFreeUpdateCallback(EmissionController* pController, void (*fn)(EmissionController&))
-{
-    Function<EmissionController&> update;
-    update.mTag = FREE_FUNCTION;
-    update.mFreeFunction = fn;
-    pController->SetUpdateCallback(update);
-}
-
 /**
  * Offset/Address/Size: 0x1060 | 0x8019FE10 | size: 0x230
  */
@@ -1672,19 +1501,15 @@ void CharacterElectrocutionEffect(cCharacter* pCharacter, const nlVector3& v3Pos
     SetDefaultVelocity(pController);
     pController->m_fGround = 0.0f;
     {
-        Function<EmissionController&> finished;
         SetFreeUpdateCallback(pController, UpdateEmitterPoseFromCharacter);
 
         pCharacter->AttachEffect(pController);
         pController->m_uUserData = GetCharacterIndex(pCharacter);
-        finished.mTag = FREE_FUNCTION;
-        finished.mFreeFunction = ElectrocutionFinishedCallback;
+        Function1<void, EmissionController&> finished(ElectrocutionFinishedCallback);
         pController->SetFinishedCallback(finished);
     }
     {
-        Function<EmissionController&> update2;
-        update2.mTag = FREE_FUNCTION;
-        update2.mFreeFunction = ElectrocutionUpdateCallback;
+        Function1<void, EmissionController&> update2(ElectrocutionUpdateCallback);
         pController->SetUpdateCallback(update2);
     }
     EmitElectricFenceCharacterEffect(v3Position, v3Normal, GetCharacterIndex(pCharacter));
@@ -1709,12 +1534,7 @@ void EmitGoalieCatch(cPlayer* pPlayer, const char* name, bool bRumble)
     EmissionController* pController = EmissionManager::Create(fxGetGroup(name), 0);
     SetDefaultVelocity(pController);
     pController->m_fGround = 0.0f;
-    {
-        Function<EmissionController&> update;
-        update.mTag = FREE_FUNCTION;
-        update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-        pController->SetUpdateCallback(update);
-    }
+    SetPoseUpdateCallback(pController);
     pPlayer->AttachEffect(pController);
     pController->SetPosition(g_pBall->m_v3Position);
 
@@ -1747,26 +1567,16 @@ void EmitGoalieCatch(cPlayer* pPlayer, const char* name, bool bRumble)
  */
 void EmitShootToScoreHyperStrike(cFielder* pFielder)
 {
-    Function1<void, EmissionController&> update2;
     EmissionController* pController = EmissionManager::Create(fxGetGroup("shoot_to_score_hyper"), 0);
     SetDefaultVelocity(pController);
     pController->m_fGround = 0.92f;
-    {
-        Function<EmissionController&> update;
-        update.mTag = FREE_FUNCTION;
-        update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-        pController->SetUpdateCallback(update);
-    }
+    SetPoseUpdateCallback(pController);
     pFielder->AttachEffect(pController);
     pController->SetPosition(g_pBall->m_v3Position);
-    update2.mTag = FREE_FUNCTION;
-    update2.mFreeFunction = UpdateEmitterFromBall;
-    pController->SetUpdateCallback(update2);
-    if (update2.mTag == FUNCTOR)
     {
-        delete update2.mFunctor;
+        Function1<void, EmissionController&> update(UpdateEmitterFromBall);
+        pController->SetUpdateCallback(update);
     }
-    update2.mTag = EMPTY;
     BeginRumbleAction(RUMBLE_SHOOT_TO_SCORE_HYPER, pFielder->GetGlobalPad());
 }
 
@@ -1775,19 +1585,12 @@ void EmitShootToScoreHyperStrike(cFielder* pFielder)
  */
 void EmitWindupAtBall(cCharacter* pCharacter, const char* name)
 {
-    Function<EmissionController&> update2;
     EmissionController* pController = EmissionManager::Create(fxGetGroup(name), 0);
     SetDefaultVelocity(pController);
     pController->m_fGround = 0.0f;
-    {
-        Function<EmissionController&> update;
-        update.mTag = FREE_FUNCTION;
-        update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-        pController->SetUpdateCallback(update);
-    }
+    SetPoseUpdateCallback(pController);
     pCharacter->AttachEffect(pController);
-    update2.mTag = FREE_FUNCTION;
-    update2.mFreeFunction = UpdateEmitterFromBall;
+    Function1<void, EmissionController&> update2(UpdateEmitterFromBall);
     pController->SetUpdateCallback(update2);
 }
 
@@ -1801,12 +1604,7 @@ void EmitWindupAtCharacter(cCharacter* pCharacter, const char* name)
     EmissionController* pController = EmissionManager::Create(fxGetGroup(name), 0);
     SetDefaultVelocity(pController);
     pController->m_fGround = 0.0f;
-    {
-        Function<EmissionController&> update;
-        update.mTag = FREE_FUNCTION;
-        update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-        pController->SetUpdateCallback(update);
-    }
+    SetPoseUpdateCallback(pController);
     pCharacter->AttachEffect(pController);
 }
 
@@ -1884,17 +1682,10 @@ void EmitDust(cPlayer* player, const char* name)
     SetDefaultVelocity(pController);
     pController->m_fGround = 0.0f;
     {
-        Function<EmissionController&> update2;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         player->AttachEffect(pController);
         pController->m_uUserData = GetCharacterIndex(player);
-        update2.mTag = FREE_FUNCTION;
-        update2.mFreeFunction = UpdateEmitterFromCharacter;
+        Function1<void, EmissionController&> update2(UpdateEmitterFromCharacter);
         pController->SetUpdateCallback(update2);
     }
     BeginRumbleAction((eRumbleActionPreset)0, player->GetGlobalPad());
@@ -1909,17 +1700,10 @@ void EmitMushroom(cFielder* pFielder)
     SetDefaultVelocity(pController);
     pController->m_fGround = 0.0f;
     {
-        Function<EmissionController&> update2;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pFielder->AttachEffect(pController);
         pController->m_uUserData = GetCharacterIndex(pFielder);
-        update2.mTag = FREE_FUNCTION;
-        update2.mFreeFunction = UpdateEmitterFromCharacter;
+        Function1<void, EmissionController&> update2(UpdateEmitterFromCharacter);
         pController->SetUpdateCallback(update2);
     }
     PowerupBase::PlayPowerupSound(POWER_UP_MUSHROOM, PowerupBase::PWRUP_SOUND_ACTIVATE, pFielder->m_pPhysicsCharacter, 1.0f);
@@ -1948,17 +1732,10 @@ void EmitStar(cFielder* pFielder)
     SetDefaultVelocity(pController);
     pController->m_fGround = 0.0f;
     {
-        Function<EmissionController&> update2;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pFielder->AttachEffect(pController);
         pController->m_uUserData = GetCharacterIndex(pFielder);
-        update2.mTag = FREE_FUNCTION;
-        update2.mFreeFunction = UpdateEmitterFromCharacter;
+        Function1<void, EmissionController&> update2(UpdateEmitterFromCharacter);
         pController->SetUpdateCallback(update2);
     }
     PowerupBase::PlayPowerupSound(POWER_UP_STAR, PowerupBase::PWRUP_SOUND_ACTIVATE, pFielder->m_pPhysicsCharacter, 1.0f);
@@ -1999,17 +1776,10 @@ void EmitTackleImpact(cPlayer* pCharacter)
     SetDefaultVelocity(pController);
     pController->m_fGround = 0.02f;
     {
-        Function<EmissionController&> update2;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
+        SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pController->m_uUserData = GetCharacterIndex(pCharacter);
-        update2.mTag = FREE_FUNCTION;
-        update2.mFreeFunction = UpdateEmitterFromCharacter;
+        Function1<void, EmissionController&> update2(UpdateEmitterFromCharacter);
         pController->SetUpdateCallback(update2);
     }
     BeginRumbleAction(RUMBLE_SOLID_CONTACT, pCharacter->GetGlobalPad());
@@ -2020,20 +1790,13 @@ void EmitTackleImpact(cPlayer* pCharacter)
  */
 void EmitSlideTackleTrail(cCharacter* pCharacter)
 {
-    Function<EmissionController&> update2;
     EmissionController* pController = EmissionManager::Create(fxGetGroup("slide_tackle_trail"), 0);
     SetDefaultVelocity(pController);
     pController->m_fGround = 0.0f;
-    {
-        Function<EmissionController&> update;
-        update.mTag = FREE_FUNCTION;
-        update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-        pController->SetUpdateCallback(update);
-    }
+    SetPoseUpdateCallback(pController);
     pCharacter->AttachEffect(pController);
     pController->m_uUserData = GetCharacterIndex(pCharacter);
-    update2.mTag = FREE_FUNCTION;
-    update2.mFreeFunction = UpdateEmitterFromCharacter;
+    Function1<void, EmissionController&> update2(UpdateEmitterFromCharacter);
     pController->SetUpdateCallback(update2);
 }
 

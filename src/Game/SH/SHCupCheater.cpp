@@ -1,8 +1,3 @@
-#define NL_SINGLETON_NO_DEFINE
-#define NL_NO_LEXICALCAST_NLSTRING_INT
-#define BIND_NO_DECL
-#define MEMFUN_NO_DECL
-#define FUNCTION0_SPLIT_BODIES
 #include "Game/SH/SHCupCheater.h"
 #include "Game/GameInfo.h"
 #include "Game/SH/SHCupHub.h"
@@ -15,8 +10,7 @@
 #include "NL/nlLexicalCast.h"
 #include "NL/nlMath.h"
 
-#include "NL/nlMemFunBody.h"
-#include "NL/nlBindBody.h"
+#include "NL/nlBind.h"
 
 /**
  * Offset/Address/Size: 0x1C00 | 0x800E9350 | size: 0x4C

@@ -1,11 +1,10 @@
-#define NO_BASICSTRING_IMPL
 #include "Game/SH/SHCupChooseCaptain.h"
 #include "Game/GameInfo.h"
 #include "Game/GameSceneManager.h"
 #include "Game/FE/feHelpFuncs.h"
 #include "NL/gl/glStruct.h"
 #include "NL/nlLocalization.h"
-#include "NL/nlBSearch.h"
+#include "NL/nlAlgorithm.h"
 
 extern nlLocalization* g_pLocalization;
 extern unsigned short LocalizationTableNotFound[];

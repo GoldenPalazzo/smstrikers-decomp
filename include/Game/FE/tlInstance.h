@@ -22,29 +22,9 @@ enum eTimeLineAssetType
 class TLInstance
 {
 public:
-#ifdef FERENDER_INLINE_ACCESSOR_IMPLS
-    // feRender.cpp only: weak copies emitted into this header's linkonce
-    // bucket; FORCE_DONT_INLINE keeps every call site a real bl.
-    eTimeLineAssetType GetType() const
-    {
-        FORCE_DONT_INLINE;
-        return m_type;
-    }
-    bool IsVisible() const
-    {
-        FORCE_DONT_INLINE;
-        return m_bVisible;
-    }
-    FELibObject* GetLibRefObject() const
-    {
-        FORCE_DONT_INLINE;
-        return (FELibObject*)m_component;
-    }
-#else
     eTimeLineAssetType GetType() const;
     bool IsVisible() const;
     FELibObject* GetLibRefObject() const;
-#endif
 
     void SetAssetColour(const nlColour&);
     void SetAssetScale(float, float, float);

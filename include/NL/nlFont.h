@@ -3,7 +3,7 @@
 
 #include "NL/nlMath.h"
 #include "NL/gl/gl.h"
-#include "NL/nlBSearch.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlMemory.h"
 #include "NL/nlString.h"
 #include "NL/nlTextEscape.h"

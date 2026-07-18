@@ -17,8 +17,6 @@ class FlareStruct : public efNode
 public:
     FlareStruct()
     {
-        m_nextNode = NULL;
-        m_prevNode = NULL;
     }
 
     /* 0x08 */ eFlareType type;
@@ -34,13 +32,7 @@ public:
 
     FlareHandler()
     {
-        halos.m_headNode = NULL;
-        halos.m_tailNode = NULL;
-        halos.m_numNodes = 0;
-        glows.m_headNode = NULL;
-        glows.m_tailNode = NULL;
-        glows.m_numNodes = 0;
-    };
+    }
 
     void Initialize();
     void Cleanup();

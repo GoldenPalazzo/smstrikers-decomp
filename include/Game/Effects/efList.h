@@ -6,6 +6,12 @@
 struct efBaseNode
 {
 public:
+    efBaseNode()
+        : m_nextNode(nullptr)
+        , m_prevNode(nullptr)
+    {
+    }
+
     /* 0x0, */ efBaseNode* m_nextNode;
     /* 0x4, */ efBaseNode* m_prevNode;
 };
@@ -19,6 +25,13 @@ public:
 class efBaseList
 {
 public:
+    efBaseList()
+        : m_headNode(nullptr)
+        , m_tailNode(nullptr)
+        , m_numNodes(0)
+    {
+    }
+
     void Insert(efBaseNode*);
     void Append(efBaseNode*);
     efBaseNode* Remove();

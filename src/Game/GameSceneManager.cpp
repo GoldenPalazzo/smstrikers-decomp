@@ -1,5 +1,8 @@
 #include "Game/GameSceneManager.h"
 
+template <>
+GameSceneManager* nlSingleton<GameSceneManager>::s_pInstance = 0;
+
 /**
  * Offset/Address/Size: 0x80 | 0x80096C18 | size: 0x3C
  */

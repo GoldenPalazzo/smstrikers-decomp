@@ -6,8 +6,6 @@
 
 class cTeam;
 
-#include "Game/AI/Scripts/SaveConfidence.h"
-
 extern cFielder* g_pScriptCurrentFielder;
 extern cTeam* g_pScriptCurrentTeam;
 extern cTeam* g_pCurrentlyUpdatingTeam;

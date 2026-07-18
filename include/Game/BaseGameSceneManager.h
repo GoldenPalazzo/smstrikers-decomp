@@ -113,6 +113,8 @@ public:
     bool IsOnStack(SceneList);
     BasicString<char, Detail::TempStringAllocator> GetFileName(SceneList);
     void PushLoadingScene(bool);
+    static bool GetVisible(SceneList);
+    static void SetVisible(SceneList, bool);
 
 public:
     /* 0x04 */ u32 mCurrentStackDepth;

@@ -1,15 +1,11 @@
-#define BASICSTRING_DELEGATING_CTOR
-#define FEPOPUPMENU_BYVAL_DECLS
-#define FUNCTION0_VOLATILE_TAG_DTOR
-#define BASICSTRING_INDEX_EMPTY_COPY_BYTE_OFFSET
 #include "Game/SH/SHChooseCup.h"
-#undef FUNCTION0_VOLATILE_TAG_DTOR
 #include "Game/GameInfo.h"
 #include "Game/GameSceneManager.h"
 #include "Game/FE/fePopupMenu.h"
 #include "Game/FE/feFinder.h"
 #include "NL/gl/glStruct.h"
 #include "NL/nlLocalization.h"
+#include "NL/nlBind.h"
 
 extern void* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
@@ -45,18 +41,6 @@ static inline const unsigned short* LookupLocHash(unsigned long hash)
     if (entry)
         return loc->m_FirstString + entry->StringOffset;
     return MissingLocString;
-}
-
-static inline BasicStringData<unsigned short>* BuildCupStringData(const unsigned short* text)
-{
-    return new (8, true) BasicStringData<unsigned short>(text);
-}
-
-// At the bottom of SHChooseCup.cpp -- REMOVE once real callers exist.
-static void SHChooseCup_stub()
-{
-    BasicString<unsigned short, Detail::TempStringAllocator> s;
-    s.Append((const unsigned short*)0);
 }
 
 // /**
@@ -211,15 +195,6 @@ void confirmedNewCup(bool isSuperCup)
 typedef BindExp1<void, void (*)(bool), bool> BindExp1_vfb;
 typedef Function0<void>::FunctorImpl<BindExp1_vfb> FunctorImpl_vfb;
 
-template <>
-struct BindExp1<void, void (*)(bool), bool>
-{
-    void (*mFuncPtr)(bool);
-    bool mArg;
-
-    BindExp1() { }
-};
-
 /**
  * Offset/Address/Size: 0x1F64 | 0x800DC1E8 | size: 0x154
  */
@@ -297,49 +272,9 @@ ChooseCupSceneV2::~ChooseCupSceneV2()
 {
     delete mCupImage;
 
-    FEScrollText* ticker = mTicker;
-
-    if (ticker != NULL)
+    if (mTicker != NULL)
     {
-        if (ticker != NULL)
-        {
-            if ((char*)ticker + 0x21C)
-            {
-                volatile FEScrollText* vticker = ticker;
-                if ((char*)vticker + 0x21C)
-                {
-                    if (ticker->m_messageFinishedCB.mTag == FUNCTOR)
-                    {
-                        delete ticker->m_messageFinishedCB.mFunctor;
-                    }
-                    ticker->m_messageFinishedCB.mTag = EMPTY;
-                }
-            }
-
-            if ((char*)ticker + 4)
-            {
-                BasicStringData<unsigned short>* data = ticker->m_message.m_data;
-                if (data != NULL)
-                {
-                    if (--data->mRefCount == 0)
-                    {
-                        if (data != NULL)
-                        {
-                            if (data != NULL)
-                            {
-                                delete[] data->mData;
-                            }
-                            if (data != NULL)
-                            {
-                                nlFree(data);
-                            }
-                        }
-                    }
-                }
-            }
-
-            ::operator delete(ticker);
-        }
+        delete mTicker;
     }
 }
 
@@ -898,7 +833,7 @@ void ChooseCupSceneV2::DisplayCup()
     if (DisplayCupCanProceed(this))
     {
         BasicString<unsigned short, Detail::TempStringAllocator> firstHalf(
-            BuildCupStringData(LookupLocHash(CUP_EXPLANATIONS[(int)mCupToDisplay])));
+            LookupLocHash(CUP_EXPLANATIONS[(int)mCupToDisplay]));
 
         if (((nlLocalization*)g_pLocalization)->m_CurrentLanguage != nlLocalization::LangJapanese)
         {
@@ -909,12 +844,12 @@ void ChooseCupSceneV2::DisplayCup()
         if (mCupToDisplay == TROPHY_BOWSER_CUP || mCupToDisplay == TROPHY_SUPER_BOWSER_CUP)
         {
             secondHalf = BasicString<unsigned short, Detail::TempStringAllocator>(
-                BuildCupStringData(LookupLocString("CUPEXP_KNOCKOUT")));
+                LookupLocString("CUPEXP_KNOCKOUT"));
         }
         else
         {
             secondHalf = BasicString<unsigned short, Detail::TempStringAllocator>(
-                BuildCupStringData(LookupLocString("CUPEXP_LEAGUE")));
+                LookupLocString("CUPEXP_LEAGUE"));
         }
 
         BasicString<unsigned short, Detail::TempStringAllocator> descriptor = firstHalf.Append(secondHalf);
@@ -1069,10 +1004,7 @@ static inline bool ProceedCupMode(bool isSuperCup)
 
 static inline void SetupStartNewCupBackCallback(FEPopupMenu* menu)
 {
-    Function<FnVoidVoid> back;
-    back.mTag = FREE_FUNCTION;
-    back.mFreeFunction = FEPopupMenu::Nothing;
-    menu->SetBackButtonCallback(back);
+    menu->SetBackButtonCallback(Function<FnVoidVoid>(FEPopupMenu::Nothing));
 }
 
 /**
@@ -1146,19 +1078,6 @@ void ChooseCupSceneV2::Proceed()
     }
     else
     {
-        typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-        typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-
-        volatile unsigned long hB, hA;
-        volatile unsigned long h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-        unsigned long hash;
-
         FEPopupMenu* menu = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
         menu->Create(
@@ -1166,35 +1085,12 @@ void ChooseCupSceneV2::Proceed()
             Function<FnVoidVoid>(Bind<void, void (*)(bool), bool>(continueCup, mIsSuperCup)),
             Function<FnVoidVoid>(Bind<void, void (*)(bool), bool>(startNewCup, mIsSuperCup)));
 
-        menu->SetBackButtonCallback(Function<FnVoidVoid>(FEPopupMenu::Nothing));
+        SetupStartNewCupBackCallback(menu);
 
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-
-        h0 = 0;
-        h1 = 0;
-        h2 = 0;
-        h3 = 0;
-        h4 = 0;
-        h5 = 0;
-        h6 = 0;
-        h7 = 0;
-
-        hash = nlStringLowerHash("cup in progress");
-        h8 = hash;
-        h9 = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hB = hash;
-        hA = hash;
-
-        TLComponentInstance* text = findComp.byRef(
+        TLComponentInstance* text = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             m_pFEPresentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("cup in progress")));
 
         mCupInProgressVisible = text->m_bVisible;
         text->m_bVisible = false;

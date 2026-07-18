@@ -7,7 +7,7 @@
 #include "Game/AI/Powerups.h"
 #include "Game/AI/AISandbox.h"
 #include "Game/AI/Scripts/ScriptDefines.h"
-#include "Game/AI/Scripts/ScriptQuestions.h"
+#include "Game/AI/Scripts/ScriptCaching.h"
 #include "Game/GameInfo.h"
 #include "Game/MathHelpers.h"
 #include "Game/Camera/CameraMan.h"
@@ -26,53 +26,11 @@
 #include "Game/Render/Presentation.h"
 #include "Game/ReplayChoreo.h"
 #include "Game/Audio/AudioLoader.h"
-#include "PowerPC_EABI_Support/MSL_C++/MSL_Common/utility.h"
-#include "PowerPC_EABI_Support/MSL_C++/MSL_Common/msl_memory.h"
-#include "PowerPC_EABI_Support/MSL_C++/MSL_Common/msl_tree.h"
-#include "Game/AI/FuzzyVariant.h"
-
+#include "Game/Audio/AudioStream.h"
 extern cTeam* g_pTeams[];
 extern PowerupBase* g_pPowerups[];
 extern cCharacter* g_pCurrentlyUpdatingCharacter;
 extern cTeam* g_pCurrentlyUpdatingTeam;
-
-/**
- * Offset/Address/Size: 0x24 | 0x800401E8 | size: 0x4
- */
-void std::allocator<std::pair<const unsigned long, FuzzyVariant> >::destroy(std::pair<const unsigned long, FuzzyVariant>*)
-{
-}
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800401C4 | size: 0x24
-//  */
-// void std::allocator<std::__tree<std::pair<const unsigned long, FuzzyVariant>, std::map<unsigned long, FuzzyVariant, std::less<unsigned long>, std::allocator<std::pair<const unsigned long, FuzzyVariant> > >::value_compare, std::allocator<std::pair<const unsigned long, FuzzyVariant> > >::node>::deallocate(std::__tree<std::pair<const unsigned long, FuzzyVariant>, std::map<unsigned long, FuzzyVariant, std::less<unsigned long>, std::allocator<std::pair<const unsigned long, FuzzyVariant> > >::value_compare, std::allocator<std::pair<const unsigned long, FuzzyVariant> > >::node*, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x4 | 0x800401C0 | size: 0x4
-//  */
-// void Metrowerks::details::compressed_pair_imp<std::allocator<std::pair<const unsigned long, FuzzyVariant> >, unsigned long, 1>::first()
-// {
-// }
-
-typedef std::pair<const unsigned long, FuzzyVariant> _PairT;
-typedef std::map<unsigned long, FuzzyVariant, std::less<unsigned long>, std::allocator<_PairT> > _MapT;
-typedef std::__tree<_PairT, _MapT::value_compare, std::allocator<_PairT> > _TreeT;
-typedef std::allocator<_TreeT::node> _NodeAllocT;
-typedef std::__red_black_tree<1>::anchor _AnchorT;
-typedef std::allocator<_PairT> _PairAllocT;
-
-_NodeAllocT& Metrowerks::details::compressed_pair_imp<_NodeAllocT, _AnchorT, 1>::first()
-{
-    return *this;
-}
-
-_PairAllocT& Metrowerks::details::compressed_pair_imp<_PairAllocT, unsigned long, 1>::first()
-{
-    return *this;
-}
 
 // /**
 //  * Offset/Address/Size: 0xAC | 0x80040190 | size: 0x2C
@@ -101,59 +59,6 @@ _PairAllocT& Metrowerks::details::compressed_pair_imp<_PairAllocT, unsigned long
 // void GoalScoredData::GetID()
 // {
 // }
-
-// /**
-//  * Offset/Address/Size: 0x420 | 0x80040044 | size: 0x20
-//  */
-// void std::__tree<std::pair<const unsigned long, FuzzyVariant>, std::map<unsigned long, FuzzyVariant, std::less<unsigned long>, std::allocator<std::pair<const unsigned long, FuzzyVariant> > >::value_compare, std::allocator<std::pair<const unsigned long, FuzzyVariant> > >::__tree(const std::map<unsigned long, FuzzyVariant, std::less<unsigned long>, std::allocator<std::pair<const unsigned long, FuzzyVariant> > >::value_compare&, const std::allocator<std::pair<const unsigned long, FuzzyVariant> >&)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x3D4 | 0x8003FFF8 | size: 0x4C
- */
-#pragma dont_inline on
-void _TreeT::clear()
-{
-    node* n = (node*)node_alloc_.second().left_;
-    if (n)
-    {
-        destroy(n);
-        alloc_.second() = 0;
-        node_alloc_.second().left_ = 0;
-        comp_.second() = (node*)&node_alloc_.second();
-    }
-}
-#pragma dont_inline reset
-
-/**
- * Offset/Address/Size: 0x3D0 | 0x8003FFF4 | size: 0x4
- */
-_PairAllocT& _TreeT::alloc()
-{
-    return alloc_.first();
-}
-
-/**
- * Offset/Address/Size: 0x3C8 | 0x8003FFEC | size: 0x8
- */
-_NodeAllocT& _TreeT::node_alloc()
-{
-    return node_alloc_.first();
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x8003FC24 | size: 0x3C8
- */
-void _TreeT::destroy(node* __p)
-{
-    if (__p->left_ != 0)
-        destroy(static_cast<node*>(__p->left_));
-    if (__p->right_ != 0)
-        destroy(static_cast<node*>(__p->right_));
-    alloc().destroy(&__p->data_);
-    node_alloc().deallocate(__p, 1);
-}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x8003FBA8 | size: 0x7C
@@ -231,37 +136,6 @@ void _TreeT::destroy(node* __p)
 // void AVLTreeBase<unsigned long, FuzzyVariant, BasicSlotPool<AVLTreeEntry<unsigned long, FuzzyVariant> >, DefaultKeyCompare<unsigned long> >::~AVLTreeBase()
 // {
 // }
-
-/**
- * Offset/Address/Size: 0x0 | 0x8003EF84 | size: 0x80
- */
-ScriptQuestionCache::~ScriptQuestionCache()
-{
-    Clear();
-    if ((_TreeT*)&mQuestionCacheMapSTD)
-    {
-        if ((_TreeT*)&mQuestionCacheMapSTD)
-        {
-            _TreeT::node* n = *(_TreeT::node**)&((_TreeT&)mQuestionCacheMapSTD).node_alloc();
-            if (n)
-            {
-                ((_TreeT&)mQuestionCacheMapSTD).destroy(n);
-            }
-        }
-    }
-}
-
-/**
- * Offset/Address/Size: 0xE0 | 0x8003F064 | size: 0x40
- */
-void ScriptQuestionCache::Clear()
-{
-    FORCE_DONT_INLINE;
-    mQuestionCacheMap.Clear();
-    mQuestionCacheMapSTD.tree_.clear();
-    mCacheHits = 0;
-    mTotalLookups = 0;
-}
 
 // /**
 //  * Offset/Address/Size: 0x80 | 0x8003F004 | size: 0x60
@@ -1627,11 +1501,4 @@ void cGame::SetDifficulty(eDifficultyID diff0, eDifficultyID diff1, eDifficultyI
             pSkillTweaks->fGoalieCanInterceptPass = skillTweaks.fGoalieCanInterceptPass;
         }
     }
-}
-
-void Game_stub()
-{
-    std::map<unsigned long, FuzzyVariant> m;
-    _NodeAllocT na;
-    na.deallocate((_TreeT::node*)0, 0);
 }

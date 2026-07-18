@@ -1,6 +1,3 @@
-#define NL_AVLTREE_DECLARE_ONLY
-#define NL_AVLTREEBASE_DECLARE_ONLY
-
 #include "NL/gl/glConstant.h"
 #include "NL/nlAVLTree.h"
 #include "NL/nlString.h"
@@ -10,20 +7,6 @@ static int level = 0;
 static nlAVLTree<unsigned long, nlVector4, DefaultKeyCompare<unsigned long> >* constants[16] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 
 static nlVector4 vZero = { 0.0f, 0.0f, 0.0f, 0.0f };
-
-typedef AVLTreeEntry<unsigned long, nlVector4> GLCEntry;
-typedef AVLTreeBase<unsigned long, nlVector4, NewAdapter<GLCEntry>, DefaultKeyCompare<unsigned long> > GLCBase;
-
-template <>
-void GLCBase::DeleteEntry(GLCEntry*);
-template <>
-void GLCBase::Clear();
-template <>
-void GLCBase::DestroyTree(void (GLCBase::*)(GLCEntry*));
-template <>
-void GLCBase::PostorderTraversal(GLCEntry*, void (GLCBase::*)(GLCEntry*));
-template <>
-GLCEntry* GLCBase::CastUp(AVLTreeNode*) const;
 
 static inline bool glConstantFindInTree(nlAVLTree<unsigned long, nlVector4, DefaultKeyCompare<unsigned long> >* tree, unsigned long key, nlVector4*& foundValue)
 {
@@ -199,48 +182,4 @@ void gl_ConstantStartup()
         constants[i] = new (nlMalloc(0x14, 8, 0)) nlAVLTree<unsigned long, nlVector4, DefaultKeyCompare<unsigned long> >();
     }
     level = 0;
-}
-
-template <>
-void GLCBase::DeleteEntry(GLCEntry* entry)
-{
-    delete entry;
-}
-
-template <>
-void GLCBase::Clear()
-{
-    DestroyTree(&GLCBase::DeleteEntry);
-    m_NumElements = 0;
-}
-
-template <>
-void GLCBase::DestroyTree(void (GLCBase::*deleteFunc)(GLCEntry*))
-{
-    if (m_Root != NULL)
-    {
-        PostorderTraversal(m_Root, deleteFunc);
-        m_Root = NULL;
-        m_NumElements = 0;
-    }
-}
-
-template <>
-void GLCBase::PostorderTraversal(GLCEntry* curr, void (GLCBase::*cb)(GLCEntry*))
-{
-    if (curr->node.left != NULL)
-    {
-        PostorderTraversal(CastUp(curr->node.left), cb);
-    }
-    if (curr->node.right != NULL)
-    {
-        PostorderTraversal(CastUp(curr->node.right), cb);
-    }
-    (this->*cb)(curr);
-}
-
-template <>
-GLCEntry* GLCBase::CastUp(AVLTreeNode* node) const
-{
-    return (GLCEntry*)node;
 }

@@ -20,7 +20,7 @@ void FETweenManager::startTween(FETweener* pTweener)
     if (((SlotPoolBase*)&m_activeTweenList)->m_FreeList != NULL)
     {
         pEntry = (DLListEntry<FETweener*>*)((SlotPoolBase*)&m_activeTweenList)->m_FreeList;
-        ((SlotPoolBase*)&m_activeTweenList)->m_FreeList = ((SlotPoolBase*)&m_activeTweenList)->m_FreeList->m_next;
+        ((SlotPoolBase*)&m_activeTweenList)->m_FreeList = ((SlotPoolBase*)&m_activeTweenList)->m_FreeList->next;
     }
 
     // Initialize the entry
@@ -218,7 +218,7 @@ void FETweenManager::Update(float fDeltaT)
                 if (((SlotPoolBase*)&m_activeTweenList)->m_FreeList != NULL)
                 {
                     pEntry = (DLListEntry<FETweener*>*)((SlotPoolBase*)&m_activeTweenList)->m_FreeList;
-                    ((SlotPoolBase*)&m_activeTweenList)->m_FreeList = ((SlotPoolBase*)&m_activeTweenList)->m_FreeList->m_next;
+                    ((SlotPoolBase*)&m_activeTweenList)->m_FreeList = ((SlotPoolBase*)&m_activeTweenList)->m_FreeList->next;
                 }
                 if (pEntry != NULL)
                 {
@@ -369,7 +369,7 @@ FETweener* FETweenManager::createTween(float* startVals, float* endVals, float d
     if (((SlotPoolBase*)&m_tweenList)->m_FreeList != NULL)
     {
         pEntry = (DLListEntry<FETweener*>*)((SlotPoolBase*)&m_tweenList)->m_FreeList;
-        ((SlotPoolBase*)&m_tweenList)->m_FreeList = ((SlotPoolBase*)&m_tweenList)->m_FreeList->m_next;
+        ((SlotPoolBase*)&m_tweenList)->m_FreeList = ((SlotPoolBase*)&m_tweenList)->m_FreeList->next;
     }
 
     if (pEntry != NULL)

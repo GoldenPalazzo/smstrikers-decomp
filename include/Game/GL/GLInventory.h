@@ -18,14 +18,12 @@ class freeing_GLInventory
 public:
     ~freeing_GLInventory()
     {
-        FORCE_DONT_INLINE;
         Release();
         delete m_pItems;
     }
 
     void Release()
     {
-        FORCE_DONT_INLINE;
         typedef AVLTreeEntry<unsigned long, ValueType*> Entry;
         typedef nlAVLTree<unsigned long, ValueType*, DefaultKeyCompare<unsigned long> > Tree;
 
@@ -99,14 +97,12 @@ class clearing_GLInventory
 public:
     ~clearing_GLInventory()
     {
-        FORCE_DONT_INLINE;
         m_pItems->Clear();
         delete m_pItems;
     }
 
     void Release()
     {
-        FORCE_DONT_INLINE;
         m_pItems->Clear();
     }
 
@@ -119,14 +115,12 @@ class deleting_GLInventory
 public:
     ~deleting_GLInventory()
     {
-        FORCE_DONT_INLINE;
         Release();
         delete m_pItems;
     }
 
     void Release()
     {
-        FORCE_DONT_INLINE;
         typedef AVLTreeEntry<unsigned long, ValueType*> Entry;
 
         struct NodeStack

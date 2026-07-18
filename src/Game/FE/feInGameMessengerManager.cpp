@@ -90,16 +90,7 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
         for (int i = 0; i < m_numWatchGames; i++)
         {
             eInGameMessages msg = (eInGameMessages)i;
-            int hasMessage;
-
-            if (m_messageList[(int)msg].m_data != NULL)
-            {
-                hasMessage = m_messageList[(int)msg].m_data->mSize - 1;
-            }
-            else
-            {
-                hasMessage = 0;
-            }
+            int hasMessage = m_messageList[(int)msg].size();
 
             if (hasMessage != 0)
             {
@@ -127,16 +118,7 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
         for (int i = 0; i < m_numWatchGames; i++)
         {
             eInGameMessages msg = (eInGameMessages)(i + 2);
-            int hasMessage;
-
-            if (m_messageList[(int)msg].m_data != NULL)
-            {
-                hasMessage = m_messageList[(int)msg].m_data->mSize - 1;
-            }
-            else
-            {
-                hasMessage = 0;
-            }
+            int hasMessage = m_messageList[(int)msg].size();
 
             if (hasMessage != 0)
             {
@@ -186,25 +168,11 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
 
             msg = (eInGameMessages)(i + 4);
 
-            if (m_messageList[(int)msg].m_data != NULL)
-            {
-                hasMessage = m_messageList[(int)msg].m_data->mSize - 1;
-            }
-            else
-            {
-                hasMessage = 0;
-            }
+            hasMessage = m_messageList[(int)msg].size();
 
             if (hasMessage != 0)
             {
-                if (m_messageList[(int)msg].m_data != NULL)
-                {
-                    hasMessage = m_messageList[(int)msg].m_data->mSize - 1;
-                }
-                else
-                {
-                    hasMessage = 0;
-                }
+                hasMessage = m_messageList[(int)msg].size();
 
                 if (hasMessage != 0)
                 {
@@ -221,14 +189,7 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
                     nlListAddEnd<ListEntry<eInGameMessages> >(pHead, pTail, entry);
                 }
 
-                if (m_messageList[(int)msg].m_data != NULL)
-                {
-                    hasMessage = m_messageList[(int)msg].m_data->mSize - 1;
-                }
-                else
-                {
-                    hasMessage = 0;
-                }
+                hasMessage = m_messageList[(int)msg].size();
 
                 if (hasMessage != 0)
                 {
@@ -252,16 +213,7 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
         if (nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode == GameInfoManager::GM_TOURNAMENT)
         {
             eInGameMessages msg = MSG_CUSTOMTOURNNEXTMATCHUP;
-            int hasMessage;
-
-            if (m_messageList[(int)msg].m_data != NULL)
-            {
-                hasMessage = m_messageList[(int)msg].m_data->mSize - 1;
-            }
-            else
-            {
-                hasMessage = 0;
-            }
+            int hasMessage = m_messageList[(int)msg].size();
 
             if (hasMessage != 0)
             {
@@ -295,7 +247,6 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
 FEInGameMessengerManager::~FEInGameMessengerManager()
 {
     Function<FnVoidVoid> cb;
-    cb.mTag = EMPTY;
     m_messenger->SetMessageFinishedCB(cb);
 }
 

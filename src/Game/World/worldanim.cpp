@@ -20,48 +20,6 @@ WorldAnimManager::WorldAnimManager()
     m_pHierarchyInventory = inv;
 }
 
-template <>
-nlAVLTree<unsigned long, AnimationSet*, DefaultKeyCompare<unsigned long> >::~nlAVLTree()
-{
-    FORCE_DONT_INLINE;
-}
-
-template <>
-cInventory<cSAnim>::~cInventory()
-{
-    ListEntry<char*>** pHead;
-    ListEntry<cSAnim*>* meshEntry = m_lItemList.m_Head;
-    while (meshEntry != NULL)
-    {
-        meshEntry->entry->Destroy();
-        meshEntry = meshEntry->next;
-    }
-
-    typedef ListContainerBase<cSAnim*, NewAdapter<ListEntry<cSAnim*> > > ItemListBase;
-    void (ItemListBase::*cb)(ListEntry<cSAnim*>*) = ItemListBase::DeleteEntryFunc();
-    nlWalkList(m_lItemList.m_Head, (ItemListBase*)this, cb);
-
-    m_lItemList.m_Head = NULL;
-    m_lItemList.m_Tail = NULL;
-
-    nlListContainer<char*>* memList = &m_lMemList;
-    ListEntry<char*>** pTail = &memList->m_Tail;
-    pHead = &memList->m_Head;
-    while (m_lMemList.m_Head != NULL)
-    {
-        ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead, pTail);
-        void* mesh;
-        if (&mesh != NULL)
-        {
-            mesh = first->entry;
-        }
-        ::operator delete(first);
-        ::operator delete(mesh);
-    }
-
-    m_nItemCount = 0;
-}
-
 /**
  * Offset/Address/Size: 0x14C | 0x8019AF18 | size: 0x41C
  * TODO: 99.87% match - remaining r26/r31 cursor differences in animation tree traversal
@@ -69,23 +27,6 @@ cInventory<cSAnim>::~cInventory()
 WorldAnimManager::~WorldAnimManager()
 {
     typedef AVLTreeEntry<unsigned long, AnimationSet*> TreeEntry;
-    typedef AVLTreeBase<unsigned long, AnimationSet*, NewAdapter<TreeEntry>, DefaultKeyCompare<unsigned long> > AnimSetTreeBase;
-    typedef ListContainerBase<cSHierarchy*, NewAdapter<ListEntry<cSHierarchy*> > > HierListBase;
-
-    typedef ListContainerBase<char*, NewAdapter<ListEntry<char*> > > MemListBase;
-
-    // Mint the DeleteEntry PTMF consts in target .data slot order: the tree
-    // entry delete first (pools with the copy Clear materializes via
-    // DeleteEntryFunc), then cSHierarchy, then char*; the cSAnim const mints
-    // last inside the AnimationSet inventory teardown below. The block is
-    // dead code, so no instructions are emitted for it.
-    if (0)
-    {
-        AnimSetTreeBase::DeleteEntryFunc();
-        HierListBase::DeleteEntryFunc();
-        MemListBase::DeleteEntryFunc();
-    }
-
     struct NodeStack
     {
         TreeEntry** data;
@@ -121,11 +62,7 @@ WorldAnimManager::~WorldAnimManager()
     {
         TreeEntry* entry = stack->data[stack->count - 1];
         animSet = entry->value;
-        if (animSet != NULL)
-        {
-            animSet->m_animInventory.~cInventory();
-            ::operator delete(animSet);
-        }
+        delete animSet;
         stack->count--;
         TreeEntry* popped = stack->data[stack->count];
         TreeEntry* right = (TreeEntry*)popped->node.right;
@@ -147,35 +84,7 @@ WorldAnimManager::~WorldAnimManager()
         ::operator delete(stack);
     }
     inv = m_pHierarchyInventory;
-    if (inv != NULL)
-    {
-        ListEntry<cSHierarchy*>* hierEntry = inv->m_lItemList.m_Head;
-        while (hierEntry != NULL)
-        {
-            hierEntry = hierEntry->next;
-        }
-        void (HierListBase::*cbHier)(ListEntry<cSHierarchy*>*) = HierListBase::DeleteEntryFunc();
-        nlWalkList(inv->m_lItemList.m_Head, (HierListBase*)inv, cbHier);
-        ListEntry<char*>** pTail2 = &inv->m_lMemList.m_Tail;
-        inv->m_lItemList.m_Head = NULL;
-        ListEntry<char*>** pHead2 = &inv->m_lMemList.m_Head;
-        inv->m_lItemList.m_Tail = NULL;
-        while (inv->m_lMemList.m_Head != NULL)
-        {
-            ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead2, pTail2);
-            void* mesh;
-            if (&mesh != NULL)
-            {
-                mesh = first->entry;
-            }
-            ::operator delete(first);
-            ::operator delete(mesh);
-        }
-        inv->m_nItemCount = 0;
-        inv->m_lMemList.~nlListContainer();
-        inv->m_lItemList.~nlListContainer();
-        ::operator delete(inv);
-    }
+    delete inv;
 }
 
 /**

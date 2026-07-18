@@ -1,6 +1,3 @@
-#define MEMFUN_NO_DECL
-#define BIND_NO_DECL
-#define FUNCTION0_SPLIT_BODIES
 #include "types.h"
 #include "Game/main.h"
 #include "NL/gl/glView.h"
@@ -24,6 +21,7 @@
 #include "Game/Sys/gcmemcard.h"
 #include "Game/Sys/debug.h"
 #include "Game/Audio/AudioLoader.h"
+#include "Game/Audio/AudioStreamAPI.h"
 #include "Game/Audio/AudioEventHandler.h"
 #include "Game/Audio/CrowdMood.h"
 #include "Game/FE/LidOpenMessage.h"
@@ -69,8 +67,7 @@
 #include "dolphin/si.h"
 #include "dolphin/card.h"
 
-#include "NL/nlBindBody.h"
-#include "NL/nlMemFunBody.h"
+#include "NL/nlBind.h"
 
 extern u8 g_DoStackWatermarkTests;
 extern u8 g_StackWatermarkFiller;
@@ -222,33 +219,11 @@ static void SetupViews()
  */
 static void Initialize()
 {
-    {
-        Function1<void, int> dvdMsgCB;
-        dvdMsgCB.mTag = FREE_FUNCTION;
-        dvdMsgCB.mFreeFunction = DisplayDVDMessageSebring;
-        nlRegHandleDVDMessageCB(*(Function<void(int)>*)&dvdMsgCB);
-        if (dvdMsgCB.mTag == FUNCTOR)
-        {
-            delete dvdMsgCB.mFunctor;
-        }
-        dvdMsgCB.mTag = EMPTY;
-    }
-    {
-        Function1<void, int> dvdClrCB;
-        dvdClrCB.mTag = FREE_FUNCTION;
-        dvdClrCB.mFreeFunction = DVDAllClearSebring;
-        nlRegHandleDVDAllClearCB(*(Function<void(int)>*)&dvdClrCB);
-        if (dvdClrCB.mTag == FUNCTOR)
-        {
-            delete dvdClrCB.mFunctor;
-        }
-        dvdClrCB.mTag = EMPTY;
-    }
-    {
-        Function<FnVoidVoid> resetCB(Bind<void, Detail::MemFunImpl<void, void (ResetTask::*)()>, ResetTask*>(
-            MemFun<ResetTask, void>(&ResetTask::FSCheckForReset), &resetTask));
-        nlRegCheckForResetFromFSCB(resetCB);
-    }
+    nlRegHandleDVDMessageCB(Function<void(int)>(DisplayDVDMessageSebring));
+    nlRegHandleDVDAllClearCB(Function<void(int)>(DVDAllClearSebring));
+    nlRegCheckForResetFromFSCB(Function<FnVoidVoid>(
+        Bind<void, Detail::MemFunImpl<void, void (ResetTask::*)()>, ResetTask*>(
+            MemFun<ResetTask, void>(&ResetTask::FSCheckForReset), &resetTask)));
 
     nlInit();
     if (!glStartup())
@@ -371,30 +346,8 @@ static void Initialize()
     }
     else
     {
-        const char* languageSrc;
-        BasicStringData<char>* languageData = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
-        if (languageData != NULL)
-        {
-            languageSrc = "eng";
-            languageData->mData = NULL;
-            languageData->mSize = 0;
-            languageData->mCapacity = 0;
-            const char* s = languageSrc;
-            while (*s++ != 0)
-            {
-                languageData->mSize++;
-            }
-            languageData->mSize++;
-            languageData->mData = (char*)Detail::TempStringAllocator::allocate((languageData->mSize + 1) * sizeof(char));
-            languageData->mCapacity = languageData->mSize;
-            for (int i = 0; i < languageData->mSize; i++)
-            {
-                languageData->mData[i] = *languageSrc++;
-            }
-            languageData->mRefCount = 1;
-        }
         BasicString<char, Detail::TempStringAllocator> userlanguage = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
-            "Language", BasicString<char, Detail::TempStringAllocator>(languageData));
+            "Language", BasicString<char, Detail::TempStringAllocator>("eng"));
 
         if (nlStrICmp(userlanguage.c_str(), "eng") == 0)
         {

@@ -1,142 +1,550 @@
 #include "Game/Physics/PhysicsObject.h"
-#include "Game/Physics/PhysicsMath.h"
 #include "NL/nlMath.h"
 
 float PhysicsObject::DefaultGravity = -9.8f;
 
-void ConvertDMat3ToNLMat4(const float* src, nlMatrix4* dest);
-
 /**
- * Offset/Address/Size: 0x13B8 | 0x802010B4 | size: 0x7C
+ * Offset/Address/Size: 0x0 | 0x801FFCFC | size: 0x70
  */
-PhysicsObject::PhysicsObject(PhysicsWorld* world)
+void ConvertDMat3ToNLMat4(const float* src, nlMatrix4* dest)
 {
-    m_bodyID = NULL;
-    m_geomID = NULL;
-    m_parentObject = NULL;
-    m_gravity = DefaultGravity;
-
-    if (world != NULL)
-    {
-        m_bodyID = dBodyCreate(world->m_World);
-        dBodySetData(m_bodyID, this);
-        dBodySetGravityMode(m_bodyID, 0);
-    }
+    dest->m[0][0] = src[0];
+    dest->m[1][0] = src[1];
+    dest->m[2][0] = src[2];
+    dest->m[0][1] = src[4];
+    dest->m[1][1] = src[5];
+    dest->m[2][1] = src[6];
+    dest->m[0][2] = src[8];
+    dest->m[1][2] = src[9];
+    dest->m[2][2] = src[10];
+    dest->m[3][0] = 0.0f;
+    dest->m[3][1] = 0.0f;
+    dest->m[3][2] = 0.0f;
+    dest->m[3][3] = 1.0f;
+    dest->m[0][3] = 0.0f;
+    dest->m[1][3] = 0.0f;
+    dest->m[2][3] = 0.0f;
 }
 
 /**
- * Offset/Address/Size: 0x1330 | 0x8020102C | size: 0x88
+ * Offset/Address/Size: 0x70 | 0x801FFD6C | size: 0x1A8
  */
-PhysicsObject::~PhysicsObject()
+void PhysicsObject::CloneObject(const PhysicsObject& obj)
 {
-    if (m_bodyID != nullptr)
-    {
-        dBodyDestroy(m_bodyID);
-        m_bodyID = nullptr;
-    }
+    dMass m2, m1;
+    nlMatrix4 m4Rot;
+    nlVector3 v3Pos;
+    nlVector3 v3LinearVel;
+    nlVector3 v3AngularVelocity;
+    f32 mass;
 
-    if (m_geomID != nullptr)
-    {
-        dGeomDestroy(m_geomID);
-        m_geomID = nullptr;
-    }
-}
+    obj.GetPosition(&v3Pos);
+    SetPosition(v3Pos, WORLD_COORDINATES);
 
-/**
- * Offset/Address/Size: 0x12F0 | 0x80200FEC | size: 0x40
- */
-void PhysicsObject::SetDefaultCollideBits()
-{
-    dGeomSetCollideBits(m_geomID, 2);
-    dGeomSetCategoryBits(m_geomID, 2);
-}
+    obj.GetRotation(&m4Rot);
 
-/**
- * Offset/Address/Size: 0x12CC | 0x80200FC8 | size: 0x24
- */
-void PhysicsObject::SetCollide(unsigned int collideBits)
-{
-    dGeomSetCollideBits(m_geomID, collideBits);
-}
-
-/**
- * Offset/Address/Size: 0x12A8 | 0x80200FA4 | size: 0x24
- */
-void PhysicsObject::SetCategory(unsigned int categoryBits)
-{
-    dGeomSetCategoryBits(m_geomID, categoryBits);
-}
-
-/**
- * Offset/Address/Size: 0x1260 | 0x80200F5C | size: 0x48
- */
-void PhysicsObject::CheckForNaN()
-{
-    dBodyGetForce(m_bodyID);
-    dBodyGetTorque(m_bodyID);
-    GetPosition();
-    GetLinearVelocity();
-}
-
-/**
- * Offset/Address/Size: 0x11E8 | 0x80200EE4 | size: 0x78
- */
-void PhysicsObject::PreUpdate()
-{
-    dMass m;
-    if ((m_bodyID != 0) && (m_parentObject == 0))
-    {
-        dMassSetZero(&m);
-        dBodyGetMass(m_bodyID, &m);
-        dBodyAddForce(m_bodyID, 0.f, 0.f, m_gravity * m.mass);
-    }
-    CheckForNaN();
-}
-
-/**
- * Offset/Address/Size: 0x11C8 | 0x80200EC4 | size: 0x20
- */
-void PhysicsObject::PostUpdate()
-{
-    CheckForNaN();
-}
-
-/**
- * Offset/Address/Size: 0x10B0 | 0x80200DAC | size: 0x118
- */
-void PhysicsObject::SetPosition(const nlVector3& pos, PhysicsObject::CoordinateType type)
-{
-    nlMatrix4 rot;     // sp54
-    nlMatrix4 inv_rot; // sp14
-    nlVector3 _pos;    // sp8...sp10
-
-    if ((m_parentObject != NULL) && (type == 0))
-    {
-        m_parentObject->GetRotation(&rot);
-        nlVector3& p = m_parentObject->GetPosition();
-
-        rot.m[3][0] = p.f.x;
-        rot.m[3][1] = p.f.y;
-        rot.m[3][2] = p.f.z;
-        rot.m[3][3] = 1.0f;
-
-        nlInvertRotTransMatrix(inv_rot, rot);
-        nlMultPosVectorMatrix(_pos, pos, inv_rot);
-        if ((m_geomID == NULL) && (m_bodyID != NULL))
-        {
-            dBodySetPosition(m_bodyID, _pos.f.x, _pos.f.y, _pos.f.z);
-            return;
-        }
-        dGeomSetPosition(m_geomID, _pos.f.x, _pos.f.y, _pos.f.z);
-        return;
-    }
+    dMatrix3 _rot;
+    ConvertNLMat4ToDMat3_Transposed(m4Rot, _rot);
 
     if ((m_geomID == NULL) && (m_bodyID != NULL))
     {
-        dBodySetPosition(m_bodyID, pos.f.x, pos.f.y, pos.f.z);
+        dBodySetRotation(m_bodyID, _rot);
+    }
+    else
+    {
+        dGeomSetRotation(m_geomID, _rot);
+    }
+
+    obj.GetLinearVelocity(&v3LinearVel);
+    dBodySetLinearVel(m_bodyID, v3LinearVel.f.x, v3LinearVel.f.y, v3LinearVel.f.z);
+    obj.GetAngularVelocity(&v3AngularVelocity);
+    dBodySetAngularVel(m_bodyID, v3AngularVelocity.f.x, v3AngularVelocity.f.y, v3AngularVelocity.f.z);
+    m_gravity = obj.m_gravity;
+
+    if (obj.m_bodyID != NULL)
+    {
+        // dMass m1;
+        dMassSetZero(&m1);
+        dBodyGetMass(obj.m_bodyID, &m1);
+        mass = m1.mass;
+    }
+    else
+    {
+        mass = -1.f;
+    }
+
+    if (m_bodyID != NULL)
+    {
+        // dMass m2;
+        dMassSetZero(&m2);
+        dBodyGetMass(m_bodyID, &m2);
+        dMassAdjust(&m2, mass);
+        dBodySetMass(m_bodyID, &m2);
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x218 | 0x801FFF14 | size: 0x44
+ */
+ContactType PhysicsObject::Contact(PhysicsObject* obj1, dContact* contact, int param, PhysicsObject* obj2)
+{
+    if (m_parentObject != NULL)
+    {
+        return m_parentObject->Contact(obj1, contact, param, this);
+    }
+    return TWO_WAY_CONTACT;
+}
+
+/**
+ * Offset/Address/Size: 0x25C | 0x801FFF58 | size: 0x30
+ */
+ContactType PhysicsObject::Contact(PhysicsObject* obj1, dContact* contact, int param)
+{
+    return Contact(obj1, contact, param, NULL);
+}
+
+/**
+ * Offset/Address/Size: 0x28C | 0x801FFF88 | size: 0x4C
+ */
+void PhysicsObject::MakeStatic()
+{
+    if (m_bodyID != NULL)
+    {
+        dBodyDestroy(m_bodyID);
+        m_bodyID = NULL;
+    }
+    dGeomSetBody(m_geomID, NULL);
+}
+
+/**
+ * Offset/Address/Size: 0x2D8 | 0x801FFFD4 | size: 0x6C
+ */
+void PhysicsObject::SetMass(float mass)
+{
+    dMass m;
+    if (m_bodyID != nullptr)
+    {
+        dMassSetZero(&m);
+        dBodyGetMass(m_bodyID, &m);
+        dMassAdjust(&m, mass);
+        dBodySetMass(m_bodyID, &m);
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x344 | 0x80200040 | size: 0x50
+ */
+void PhysicsObject::Reconnect(dSpaceID space)
+{
+    dSpaceAdd(space, m_geomID);
+    dGeomSetBody(m_geomID, m_bodyID);
+    if (m_bodyID != 0)
+    {
+        dBodyEnable(m_bodyID);
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x394 | 0x80200090 | size: 0x68
+ */
+dSpaceID PhysicsObject::Disconnect()
+{
+    dSpaceID space;
+    space = dGeomGetSpace(m_geomID);
+    if (space != nullptr)
+    {
+        dSpaceRemove(space, m_geomID);
+    }
+    dGeomSetBody(m_geomID, 0);
+    if (m_bodyID != nullptr)
+    {
+        dBodyDisable(m_bodyID);
+    }
+    return space;
+}
+/**
+ * Offset/Address/Size: 0x3FC | 0x802000F8 | size: 0x24
+ */
+void PhysicsObject::EnableCollisions()
+{
+    dGeomEnable(m_geomID);
+}
+
+/**
+ * Offset/Address/Size: 0x420 | 0x8020011C | size: 0x24
+ */
+void PhysicsObject::DisableCollisions()
+{
+    dGeomDisable(m_geomID);
+}
+
+/**
+ * Offset/Address/Size: 0x444 | 0x80200140 | size: 0xD4
+ */
+void PhysicsObject::SetWorldMatrix(const nlMatrix4& in)
+{
+    dMatrix3 mat;
+    ConvertNLMat4ToDMat3_Transposed(in, mat);
+
+    if ((m_geomID == 0) && (m_bodyID != 0))
+    {
+        dBodySetRotation(m_bodyID, mat);
+    }
+    else
+    {
+        dGeomSetRotation(m_geomID, mat);
+    }
+
+    nlVector3* pos = (nlVector3*)&(in.m[3][0]);
+    SetPosition(*pos, WORLD_COORDINATES);
+}
+
+/**
+ * Offset/Address/Size: 0x518 | 0x80200214 | size: 0x78
+ */
+bool PhysicsObject::SetContactInfo(dContact* contact, PhysicsObject* otherObject, bool first)
+{
+    if (m_parentObject != NULL)
+    {
+        return m_parentObject->SetContactInfo(contact, otherObject, first);
+    }
+
+    if (first != 0)
+    {
+        (contact->surface).mode = 0x14;
+        (contact->surface).soft_cfm = 0.0001f;
+        (contact->surface).mu = 0.9f;
+        (contact->surface).mu2 = 0.0f;
+        (contact->surface).bounce = 0.2f;
+        (contact->surface).bounce_vel = 0.1f;
+    }
+
+    return true;
+}
+
+/**
+ * Offset/Address/Size: 0x590 | 0x8020028C | size: 0x34
+ */
+void PhysicsObject::SetDefaultContactInfo(dContact* contact)
+{
+    (contact->surface).mode = 0x14;
+    (contact->surface).soft_cfm = 0.0001f;
+    (contact->surface).mu = 0.9f;
+    (contact->surface).mu2 = 0.0f;
+    (contact->surface).bounce = .2f;
+    (contact->surface).bounce_vel = .1f;
+}
+
+/**
+ * Offset/Address/Size: 0x5C4 | 0x802002C0 | size: 0x50
+ */
+void PhysicsObject::ZeroForceAccumulators()
+{
+    dBodySetForce(m_bodyID, 0.f, 0.f, 0.f);
+    dBodySetTorque(m_bodyID, 0.f, 0.f, 0.f);
+}
+
+/**
+ * Offset/Address/Size: 0x614 | 0x80200310 | size: 0x30
+ */
+void PhysicsObject::AddForceAtCentreOfMass(const nlVector3& force)
+{
+    dBodyAddForce(m_bodyID, force.f.x, force.f.y, force.f.z);
+}
+
+/**
+ * Offset/Address/Size: 0x644 | 0x80200340 | size: 0x1AC
+ */
+void PhysicsObject::GetAngularVelocity(nlVector3* arg1) const
+{
+    PhysicsObject* temp_r3;
+    PhysicsObject* temp_r3_2;
+    PhysicsObject* temp_r3_3;
+    PhysicsObject* temp_r5;
+    PhysicsObject* temp_r5_2;
+    PhysicsObject* temp_r5_3;
+    PhysicsObject* temp_r5_4;
+
+    temp_r5 = this->m_parentObject;
+    if (temp_r5 != NULL)
+    {
+        temp_r3 = temp_r5->m_parentObject;
+        if (temp_r3 != NULL)
+        {
+            temp_r5_2 = temp_r3->m_parentObject;
+            if (temp_r5_2 != NULL)
+            {
+                temp_r3_2 = temp_r5_2->m_parentObject;
+                if (temp_r3_2 != NULL)
+                {
+                    temp_r5_3 = temp_r3_2->m_parentObject;
+                    if (temp_r5_3 != NULL)
+                    {
+                        temp_r3_3 = temp_r5_3->m_parentObject;
+                        if (temp_r3_3 != NULL)
+                        {
+                            temp_r5_4 = temp_r3_3->m_parentObject;
+                            if (temp_r5_4 != NULL)
+                            {
+                                if (temp_r5_4->m_parentObject != NULL)
+                                {
+                                    temp_r5_4->m_parentObject->GetAngularVelocity(arg1);
+                                    return;
+                                }
+                                const float* v = dBodyGetAngularVel(temp_r5_4->m_bodyID);
+                                arg1->Set(v[0], v[1], v[2]);
+                                return;
+                            }
+                            const float* v = dBodyGetAngularVel(temp_r3_3->m_bodyID);
+                            nlVec3Set(*arg1, v[0], v[1], v[2]);
+                            return;
+                        }
+                        const float* v = dBodyGetAngularVel(temp_r5_3->m_bodyID);
+                        nlVec3Set(*arg1, v[0], v[1], v[2]);
+                        return;
+                    }
+                    const float* v = dBodyGetAngularVel(temp_r3_2->m_bodyID);
+                    nlVec3Set(*arg1, v[0], v[1], v[2]);
+                    return;
+                }
+                const float* v = dBodyGetAngularVel(temp_r5_2->m_bodyID);
+                nlVec3Set(*arg1, v[0], v[1], v[2]);
+                return;
+            }
+            const float* v = dBodyGetAngularVel(temp_r3->m_bodyID);
+            nlVec3Set(*arg1, v[0], v[1], v[2]);
+            return;
+        }
+        const float* v = dBodyGetAngularVel(temp_r5->m_bodyID);
+        nlVec3Set(*arg1, v[0], v[1], v[2]);
         return;
     }
-    dGeomSetPosition(m_geomID, pos.f.x, pos.f.y, pos.f.z);
+    const float* v = dBodyGetAngularVel(this->m_bodyID);
+    nlVec3Set(*arg1, v[0], v[1], v[2]);
+}
+
+/**
+ * Offset/Address/Size: 0x7F0 | 0x802004EC | size: 0x30
+ */
+void PhysicsObject::SetAngularVelocity(const nlVector3& velocity)
+{
+    dBodySetAngularVel(m_bodyID, (float)velocity.f.x, (float)velocity.f.y, (float)velocity.f.z);
+}
+
+/**
+ * Offset/Address/Size: 0x820 | 0x8020051C | size: 0x34
+ */
+nlVector3& PhysicsObject::GetLinearVelocity()
+{
+    GetLinearVelocity(&m_linearVelocity);
+    return m_linearVelocity;
+}
+
+/**
+ * Offset/Address/Size: 0x854 | 0x80200550 | size: 0x1AC
+ */
+void PhysicsObject::GetLinearVelocity(nlVector3* out) const
+{
+    PhysicsObject* temp_r3;
+    PhysicsObject* temp_r3_2;
+    PhysicsObject* temp_r3_3;
+
+    PhysicsObject* temp_r5;
+    PhysicsObject* temp_r5_2;
+    PhysicsObject* temp_r5_3;
+    PhysicsObject* temp_r5_4;
+
+    temp_r5 = m_parentObject;
+    if (temp_r5 != NULL)
+    {
+        temp_r3 = temp_r5->m_parentObject;
+        if (temp_r3 != NULL)
+        {
+            temp_r5_2 = temp_r3->m_parentObject;
+            if (temp_r5_2 != NULL)
+            {
+                temp_r3_2 = temp_r5_2->m_parentObject;
+                if (temp_r3_2 != NULL)
+                {
+                    temp_r5_3 = temp_r3_2->m_parentObject;
+                    if (temp_r5_3 != NULL)
+                    {
+                        temp_r3_3 = temp_r5_3->m_parentObject;
+                        if (temp_r3_3 != NULL)
+                        {
+                            temp_r5_4 = temp_r3_3->m_parentObject;
+                            if (temp_r5_4 != NULL)
+                            {
+                                if ((u32)temp_r5_4->m_parentObject != 0U)
+                                {
+                                    temp_r5_4->m_parentObject->GetLinearVelocity(out);
+                                    return;
+                                }
+                                float* v = (float*)dBodyGetLinearVel(temp_r5_4->m_bodyID);
+                                out->Set(v[0], v[1], v[2]);
+                                return;
+                            }
+                            float* v = (float*)dBodyGetLinearVel(temp_r3_3->m_bodyID);
+                            nlVec3Set(*out, v[0], v[1], v[2]);
+                            return;
+                        }
+                        float* v = (float*)dBodyGetLinearVel(temp_r5_3->m_bodyID);
+                        nlVec3Set(*out, v[0], v[1], v[2]);
+                        return;
+                    }
+                    float* v = (float*)dBodyGetLinearVel(temp_r3_2->m_bodyID);
+                    nlVec3Set(*out, v[0], v[1], v[2]);
+                    return;
+                }
+                float* v = (float*)dBodyGetLinearVel(temp_r5_2->m_bodyID);
+                nlVec3Set(*out, v[0], v[1], v[2]);
+                return;
+            }
+            float* v = (float*)dBodyGetLinearVel(temp_r3->m_bodyID);
+            nlVec3Set(*out, v[0], v[1], v[2]);
+            return;
+        }
+        float* v = (float*)dBodyGetLinearVel(temp_r5->m_bodyID);
+        nlVec3Set(*out, v[0], v[1], v[2]);
+        return;
+    }
+    float* v = (float*)dBodyGetLinearVel(m_bodyID);
+    nlVec3Set(*out, v[0], v[1], v[2]);
+}
+
+/**
+ * Offset/Address/Size: 0xA00 | 0x802006FC | size: 0x30
+ */
+void PhysicsObject::SetLinearVelocity(const nlVector3& velocity)
+{
+    dBodySetLinearVel(m_bodyID, velocity.f.x, velocity.f.y, velocity.f.z);
+}
+
+/**
+ * Offset/Address/Size: 0xA30 | 0x8020072C | size: 0x1E0
+ */
+void PhysicsObject::GetRotation(nlMatrix4* m_out) const
+{
+    const float* dRot;
+    if ((m_geomID == 0) && (m_bodyID != 0))
+    {
+        dRot = dBodyGetRotation(m_bodyID);
+    }
+    else
+    {
+        dRot = dGeomGetRotation(m_geomID);
+    }
+
+    PhysicsObject* parentObj = m_parentObject;
+
+    m_out->m[0][0] = dRot[0];
+    m_out->m[1][0] = dRot[1];
+    m_out->m[2][0] = dRot[2];
+    m_out->m[0][1] = dRot[4];
+    m_out->m[1][1] = dRot[5];
+    m_out->m[2][1] = dRot[6];
+    m_out->m[0][2] = dRot[8];
+    m_out->m[1][2] = dRot[9];
+    m_out->m[2][2] = dRot[10];
+    m_out->m[3][0] = 0.f;
+    m_out->m[3][1] = 0.f;
+    m_out->m[3][2] = 0.f;
+    m_out->m[3][3] = 1.f;
+    m_out->m[0][3] = 0.f;
+    m_out->m[1][3] = 0.f;
+    m_out->m[2][3] = 0.f;
+
+    if (parentObj == NULL)
+        return;
+
+    if ((parentObj->m_geomID == 0) && (parentObj->m_bodyID != 0))
+    {
+        dRot = dBodyGetRotation(parentObj->m_bodyID);
+    }
+    else
+    {
+        dRot = dGeomGetRotation(parentObj->m_geomID);
+    }
+
+    nlMatrix4 parentRot;
+    parentRot.SetColumn(0, *(nlVector3*)&dRot[0]);
+    parentRot.SetColumn(1, *(nlVector3*)&dRot[4]);
+    parentRot.SetColumn(2, *(nlVector3*)&dRot[8]);
+    parentRot.m[3][0] = 0.f;
+    parentRot.m[3][1] = 0.f;
+    parentRot.m[3][2] = 0.f;
+    parentRot.m[3][3] = 1.f;
+    parentRot.m[0][3] = 0.f;
+    parentRot.m[1][3] = 0.f;
+    parentRot.m[2][3] = 0.f;
+
+    PhysicsObject* parent_parentObj = parentObj->m_parentObject;
+    if (parent_parentObj != NULL)
+    {
+        if ((parent_parentObj->m_geomID == 0) && (parent_parentObj->m_bodyID != 0))
+        {
+            dRot = dBodyGetRotation(parent_parentObj->m_bodyID);
+        }
+        else
+        {
+            dRot = dGeomGetRotation(parent_parentObj->m_geomID);
+        }
+        nlMatrix4 rot_tmp1;
+        ConvertDMat3ToNLMat4(dRot, &rot_tmp1);
+
+        PhysicsObject* parent_parent_parentObj = parent_parentObj->m_parentObject;
+        if (parent_parent_parentObj != NULL)
+        {
+            nlMatrix4 rot_tmp2;
+            parent_parent_parentObj->GetRotation(&rot_tmp2);
+            nlMultMatrices(rot_tmp1, rot_tmp1, rot_tmp2);
+        }
+
+        nlMultMatrices(parentRot, parentRot, rot_tmp1);
+    }
+
+    nlMultMatrices(*m_out, *m_out, parentRot);
+}
+
+/**
+ * Offset/Address/Size: 0xC10 | 0x8020090C | size: 0xAC
+ */
+void PhysicsObject::SetRotation(const nlMatrix4& m4_in)
+{
+    dMatrix3 dRot;
+    ConvertNLMat4ToDMat3_Transposed(m4_in, dRot);
+
+    if ((m_geomID == NULL) && (m_bodyID != NULL))
+    {
+        dBodySetRotation(m_bodyID, dRot);
+        return;
+    }
+    dGeomSetRotation(m_geomID, dRot);
+}
+
+/**
+ * Offset/Address/Size: 0xCBC | 0x802009B8 | size: 0x94
+ */
+void PhysicsObject::SetRotation(const nlMatrix3& m3_in)
+{
+    float dRot[12];
+    ConvertNLMat3ToDMat3(m3_in, dRot);
+
+    if ((m_geomID == NULL) && (m_bodyID != NULL))
+    {
+        dBodySetRotation(m_bodyID, dRot);
+        return;
+    }
+    dGeomSetRotation(m_geomID, dRot);
+}
+
+/**
+ * Offset/Address/Size: 0xD50 | 0x80200A4C | size: 0x34
+ */
+nlVector3& PhysicsObject::GetPosition()
+{
+    GetPosition(&m_position);
+    return m_position;
 }
 
 /**
@@ -272,545 +680,136 @@ void PhysicsObject::GetPosition(nlVector3* position) const
 }
 
 /**
- * Offset/Address/Size: 0xD50 | 0x80200A4C | size: 0x34
+ * Offset/Address/Size: 0x10B0 | 0x80200DAC | size: 0x118
  */
-nlVector3& PhysicsObject::GetPosition()
+void PhysicsObject::SetPosition(const nlVector3& pos, PhysicsObject::CoordinateType type)
 {
-    GetPosition(&m_position);
-    return m_position;
-}
+    nlMatrix4 rot;     // sp54
+    nlMatrix4 inv_rot; // sp14
+    nlVector3 _pos;    // sp8...sp10
 
-/**
- * Offset/Address/Size: 0xCBC | 0x802009B8 | size: 0x94
- */
-void PhysicsObject::SetRotation(const nlMatrix3& m3_in)
-{
-    float dRot[12];
-    ConvertNLMat3ToDMat3(m3_in, dRot);
+    if ((m_parentObject != NULL) && (type == 0))
+    {
+        m_parentObject->GetRotation(&rot);
+        nlVector3& p = m_parentObject->GetPosition();
+
+        rot.m[3][0] = p.f.x;
+        rot.m[3][1] = p.f.y;
+        rot.m[3][2] = p.f.z;
+        rot.m[3][3] = 1.0f;
+
+        nlInvertRotTransMatrix(inv_rot, rot);
+        nlMultPosVectorMatrix(_pos, pos, inv_rot);
+        if ((m_geomID == NULL) && (m_bodyID != NULL))
+        {
+            dBodySetPosition(m_bodyID, _pos.f.x, _pos.f.y, _pos.f.z);
+            return;
+        }
+        dGeomSetPosition(m_geomID, _pos.f.x, _pos.f.y, _pos.f.z);
+        return;
+    }
 
     if ((m_geomID == NULL) && (m_bodyID != NULL))
     {
-        dBodySetRotation(m_bodyID, dRot);
+        dBodySetPosition(m_bodyID, pos.f.x, pos.f.y, pos.f.z);
         return;
     }
-    dGeomSetRotation(m_geomID, dRot);
+    dGeomSetPosition(m_geomID, pos.f.x, pos.f.y, pos.f.z);
 }
 
 /**
- * Offset/Address/Size: 0xC10 | 0x8020090C | size: 0xAC
+ * Offset/Address/Size: 0x11C8 | 0x80200EC4 | size: 0x20
  */
-void PhysicsObject::SetRotation(const nlMatrix4& m4_in)
+void PhysicsObject::PostUpdate()
 {
-    dMatrix3 dRot;
-    ConvertNLMat4ToDMat3_Transposed(m4_in, dRot);
-
-    if ((m_geomID == NULL) && (m_bodyID != NULL))
-    {
-        dBodySetRotation(m_bodyID, dRot);
-        return;
-    }
-    dGeomSetRotation(m_geomID, dRot);
+    CheckForNaN();
 }
 
 /**
- * Offset/Address/Size: 0xA30 | 0x8020072C | size: 0x1E0
+ * Offset/Address/Size: 0x11E8 | 0x80200EE4 | size: 0x78
  */
-void PhysicsObject::GetRotation(nlMatrix4* m_out) const
-{
-    const float* dRot;
-    if ((m_geomID == 0) && (m_bodyID != 0))
-    {
-        dRot = dBodyGetRotation(m_bodyID);
-    }
-    else
-    {
-        dRot = dGeomGetRotation(m_geomID);
-    }
-
-    PhysicsObject* parentObj = m_parentObject;
-
-    m_out->m[0][0] = dRot[0];
-    m_out->m[1][0] = dRot[1];
-    m_out->m[2][0] = dRot[2];
-    m_out->m[0][1] = dRot[4];
-    m_out->m[1][1] = dRot[5];
-    m_out->m[2][1] = dRot[6];
-    m_out->m[0][2] = dRot[8];
-    m_out->m[1][2] = dRot[9];
-    m_out->m[2][2] = dRot[10];
-    m_out->m[3][0] = 0.f;
-    m_out->m[3][1] = 0.f;
-    m_out->m[3][2] = 0.f;
-    m_out->m[3][3] = 1.f;
-    m_out->m[0][3] = 0.f;
-    m_out->m[1][3] = 0.f;
-    m_out->m[2][3] = 0.f;
-
-    if (parentObj == NULL)
-        return;
-
-    if ((parentObj->m_geomID == 0) && (parentObj->m_bodyID != 0))
-    {
-        dRot = dBodyGetRotation(parentObj->m_bodyID);
-    }
-    else
-    {
-        dRot = dGeomGetRotation(parentObj->m_geomID);
-    }
-
-    nlMatrix4 parentRot;
-    parentRot.SetColumn(0, *(nlVector3*)&dRot[0]);
-    parentRot.SetColumn(1, *(nlVector3*)&dRot[4]);
-    parentRot.SetColumn(2, *(nlVector3*)&dRot[8]);
-    parentRot.m[3][0] = 0.f;
-    parentRot.m[3][1] = 0.f;
-    parentRot.m[3][2] = 0.f;
-    parentRot.m[3][3] = 1.f;
-    parentRot.m[0][3] = 0.f;
-    parentRot.m[1][3] = 0.f;
-    parentRot.m[2][3] = 0.f;
-
-    PhysicsObject* parent_parentObj = parentObj->m_parentObject;
-    if (parent_parentObj != NULL)
-    {
-        if ((parent_parentObj->m_geomID == 0) && (parent_parentObj->m_bodyID != 0))
-        {
-            dRot = dBodyGetRotation(parent_parentObj->m_bodyID);
-        }
-        else
-        {
-            dRot = dGeomGetRotation(parent_parentObj->m_geomID);
-        }
-        nlMatrix4 rot_tmp1;
-        ConvertDMat3ToNLMat4(dRot, &rot_tmp1);
-
-        PhysicsObject* parent_parent_parentObj = parent_parentObj->m_parentObject;
-        if (parent_parent_parentObj != NULL)
-        {
-            nlMatrix4 rot_tmp2;
-            parent_parent_parentObj->GetRotation(&rot_tmp2);
-            nlMultMatrices(rot_tmp1, rot_tmp1, rot_tmp2);
-        }
-
-        nlMultMatrices(parentRot, parentRot, rot_tmp1);
-    }
-
-    nlMultMatrices(*m_out, *m_out, parentRot);
-}
-
-/**
- * Offset/Address/Size: 0xA00 | 0x802006FC | size: 0x30
- */
-void PhysicsObject::SetLinearVelocity(const nlVector3& velocity)
-{
-    dBodySetLinearVel(m_bodyID, velocity.f.x, velocity.f.y, velocity.f.z);
-}
-
-/**
- * Offset/Address/Size: 0x854 | 0x80200550 | size: 0x1AC
- */
-void PhysicsObject::GetLinearVelocity(nlVector3* out) const
-{
-    PhysicsObject* temp_r3;
-    PhysicsObject* temp_r3_2;
-    PhysicsObject* temp_r3_3;
-
-    PhysicsObject* temp_r5;
-    PhysicsObject* temp_r5_2;
-    PhysicsObject* temp_r5_3;
-    PhysicsObject* temp_r5_4;
-
-    temp_r5 = m_parentObject;
-    if (temp_r5 != NULL)
-    {
-        temp_r3 = temp_r5->m_parentObject;
-        if (temp_r3 != NULL)
-        {
-            temp_r5_2 = temp_r3->m_parentObject;
-            if (temp_r5_2 != NULL)
-            {
-                temp_r3_2 = temp_r5_2->m_parentObject;
-                if (temp_r3_2 != NULL)
-                {
-                    temp_r5_3 = temp_r3_2->m_parentObject;
-                    if (temp_r5_3 != NULL)
-                    {
-                        temp_r3_3 = temp_r5_3->m_parentObject;
-                        if (temp_r3_3 != NULL)
-                        {
-                            temp_r5_4 = temp_r3_3->m_parentObject;
-                            if (temp_r5_4 != NULL)
-                            {
-                                if ((u32)temp_r5_4->m_parentObject != 0U)
-                                {
-                                    temp_r5_4->m_parentObject->GetLinearVelocity(out);
-                                    return;
-                                }
-                                float* v = (float*)dBodyGetLinearVel(temp_r5_4->m_bodyID);
-                                out->Set(v[0], v[1], v[2]);
-                                return;
-                            }
-                            float* v = (float*)dBodyGetLinearVel(temp_r3_3->m_bodyID);
-                            nlVec3Set(*out, v[0], v[1], v[2]);
-                            return;
-                        }
-                        float* v = (float*)dBodyGetLinearVel(temp_r5_3->m_bodyID);
-                        nlVec3Set(*out, v[0], v[1], v[2]);
-                        return;
-                    }
-                    float* v = (float*)dBodyGetLinearVel(temp_r3_2->m_bodyID);
-                    nlVec3Set(*out, v[0], v[1], v[2]);
-                    return;
-                }
-                float* v = (float*)dBodyGetLinearVel(temp_r5_2->m_bodyID);
-                nlVec3Set(*out, v[0], v[1], v[2]);
-                return;
-            }
-            float* v = (float*)dBodyGetLinearVel(temp_r3->m_bodyID);
-            nlVec3Set(*out, v[0], v[1], v[2]);
-            return;
-        }
-        float* v = (float*)dBodyGetLinearVel(temp_r5->m_bodyID);
-        nlVec3Set(*out, v[0], v[1], v[2]);
-        return;
-    }
-    float* v = (float*)dBodyGetLinearVel(m_bodyID);
-    nlVec3Set(*out, v[0], v[1], v[2]);
-}
-
-/**
- * Offset/Address/Size: 0x820 | 0x8020051C | size: 0x34
- */
-nlVector3& PhysicsObject::GetLinearVelocity()
-{
-    GetLinearVelocity(&m_linearVelocity);
-    return m_linearVelocity;
-}
-
-/**
- * Offset/Address/Size: 0x7F0 | 0x802004EC | size: 0x30
- */
-void PhysicsObject::SetAngularVelocity(const nlVector3& velocity)
-{
-    dBodySetAngularVel(m_bodyID, (float)velocity.f.x, (float)velocity.f.y, (float)velocity.f.z);
-}
-
-/**
- * Offset/Address/Size: 0x644 | 0x80200340 | size: 0x1AC
- */
-void PhysicsObject::GetAngularVelocity(nlVector3* arg1) const
-{
-    PhysicsObject* temp_r3;
-    PhysicsObject* temp_r3_2;
-    PhysicsObject* temp_r3_3;
-    PhysicsObject* temp_r5;
-    PhysicsObject* temp_r5_2;
-    PhysicsObject* temp_r5_3;
-    PhysicsObject* temp_r5_4;
-
-    temp_r5 = this->m_parentObject;
-    if (temp_r5 != NULL)
-    {
-        temp_r3 = temp_r5->m_parentObject;
-        if (temp_r3 != NULL)
-        {
-            temp_r5_2 = temp_r3->m_parentObject;
-            if (temp_r5_2 != NULL)
-            {
-                temp_r3_2 = temp_r5_2->m_parentObject;
-                if (temp_r3_2 != NULL)
-                {
-                    temp_r5_3 = temp_r3_2->m_parentObject;
-                    if (temp_r5_3 != NULL)
-                    {
-                        temp_r3_3 = temp_r5_3->m_parentObject;
-                        if (temp_r3_3 != NULL)
-                        {
-                            temp_r5_4 = temp_r3_3->m_parentObject;
-                            if (temp_r5_4 != NULL)
-                            {
-                                if (temp_r5_4->m_parentObject != NULL)
-                                {
-                                    temp_r5_4->m_parentObject->GetAngularVelocity(arg1);
-                                    return;
-                                }
-                                const float* v = dBodyGetAngularVel(temp_r5_4->m_bodyID);
-                                arg1->Set(v[0], v[1], v[2]);
-                                return;
-                            }
-                            const float* v = dBodyGetAngularVel(temp_r3_3->m_bodyID);
-                            nlVec3Set(*arg1, v[0], v[1], v[2]);
-                            return;
-                        }
-                        const float* v = dBodyGetAngularVel(temp_r5_3->m_bodyID);
-                        nlVec3Set(*arg1, v[0], v[1], v[2]);
-                        return;
-                    }
-                    const float* v = dBodyGetAngularVel(temp_r3_2->m_bodyID);
-                    nlVec3Set(*arg1, v[0], v[1], v[2]);
-                    return;
-                }
-                const float* v = dBodyGetAngularVel(temp_r5_2->m_bodyID);
-                nlVec3Set(*arg1, v[0], v[1], v[2]);
-                return;
-            }
-            const float* v = dBodyGetAngularVel(temp_r3->m_bodyID);
-            nlVec3Set(*arg1, v[0], v[1], v[2]);
-            return;
-        }
-        const float* v = dBodyGetAngularVel(temp_r5->m_bodyID);
-        nlVec3Set(*arg1, v[0], v[1], v[2]);
-        return;
-    }
-    const float* v = dBodyGetAngularVel(this->m_bodyID);
-    nlVec3Set(*arg1, v[0], v[1], v[2]);
-}
-
-/**
- * Offset/Address/Size: 0x614 | 0x80200310 | size: 0x30
- */
-void PhysicsObject::AddForceAtCentreOfMass(const nlVector3& force)
-{
-    dBodyAddForce(m_bodyID, force.f.x, force.f.y, force.f.z);
-}
-
-/**
- * Offset/Address/Size: 0x5C4 | 0x802002C0 | size: 0x50
- */
-void PhysicsObject::ZeroForceAccumulators()
-{
-    dBodySetForce(m_bodyID, 0.f, 0.f, 0.f);
-    dBodySetTorque(m_bodyID, 0.f, 0.f, 0.f);
-}
-
-/**
- * Offset/Address/Size: 0x590 | 0x8020028C | size: 0x34
- */
-void PhysicsObject::SetDefaultContactInfo(dContact* contact)
-{
-    (contact->surface).mode = 0x14;
-    (contact->surface).soft_cfm = 0.0001f;
-    (contact->surface).mu = 0.9f;
-    (contact->surface).mu2 = 0.0f;
-    (contact->surface).bounce = .2f;
-    (contact->surface).bounce_vel = .1f;
-}
-
-/**
- * Offset/Address/Size: 0x518 | 0x80200214 | size: 0x78
- */
-bool PhysicsObject::SetContactInfo(dContact* contact, PhysicsObject* otherObject, bool first)
-{
-    if (m_parentObject != NULL)
-    {
-        return m_parentObject->SetContactInfo(contact, otherObject, first);
-    }
-
-    if (first != 0)
-    {
-        (contact->surface).mode = 0x14;
-        (contact->surface).soft_cfm = 0.0001f;
-        (contact->surface).mu = 0.9f;
-        (contact->surface).mu2 = 0.0f;
-        (contact->surface).bounce = 0.2f;
-        (contact->surface).bounce_vel = 0.1f;
-    }
-
-    return true;
-}
-
-/**
- * Offset/Address/Size: 0x444 | 0x80200140 | size: 0xD4
- */
-void PhysicsObject::SetWorldMatrix(const nlMatrix4& in)
-{
-    dMatrix3 mat;
-    ConvertNLMat4ToDMat3_Transposed(in, mat);
-
-    if ((m_geomID == 0) && (m_bodyID != 0))
-    {
-        dBodySetRotation(m_bodyID, mat);
-    }
-    else
-    {
-        dGeomSetRotation(m_geomID, mat);
-    }
-
-    nlVector3* pos = (nlVector3*)&(in.m[3][0]);
-    SetPosition(*pos, WORLD_COORDINATES);
-}
-
-/**
- * Offset/Address/Size: 0x420 | 0x8020011C | size: 0x24
- */
-void PhysicsObject::DisableCollisions()
-{
-    dGeomDisable(m_geomID);
-}
-
-/**
- * Offset/Address/Size: 0x3FC | 0x802000F8 | size: 0x24
- */
-void PhysicsObject::EnableCollisions()
-{
-    dGeomEnable(m_geomID);
-}
-
-/**
- * Offset/Address/Size: 0x394 | 0x80200090 | size: 0x68
- */
-dSpaceID PhysicsObject::Disconnect()
-{
-    dSpaceID space;
-    space = dGeomGetSpace(m_geomID);
-    if (space != nullptr)
-    {
-        dSpaceRemove(space, m_geomID);
-    }
-    dGeomSetBody(m_geomID, 0);
-    if (m_bodyID != nullptr)
-    {
-        dBodyDisable(m_bodyID);
-    }
-    return space;
-}
-/**
- * Offset/Address/Size: 0x344 | 0x80200040 | size: 0x50
- */
-void PhysicsObject::Reconnect(dSpaceID space)
-{
-    dSpaceAdd(space, m_geomID);
-    dGeomSetBody(m_geomID, m_bodyID);
-    if (m_bodyID != 0)
-    {
-        dBodyEnable(m_bodyID);
-    }
-}
-
-/**
- * Offset/Address/Size: 0x2D8 | 0x801FFFD4 | size: 0x6C
- */
-void PhysicsObject::SetMass(float mass)
+void PhysicsObject::PreUpdate()
 {
     dMass m;
-    if (m_bodyID != nullptr)
+    if ((m_bodyID != 0) && (m_parentObject == 0))
     {
         dMassSetZero(&m);
         dBodyGetMass(m_bodyID, &m);
-        dMassAdjust(&m, mass);
-        dBodySetMass(m_bodyID, &m);
+        dBodyAddForce(m_bodyID, 0.f, 0.f, m_gravity * m.mass);
     }
+    CheckForNaN();
 }
 
 /**
- * Offset/Address/Size: 0x28C | 0x801FFF88 | size: 0x4C
+ * Offset/Address/Size: 0x1260 | 0x80200F5C | size: 0x48
  */
-void PhysicsObject::MakeStatic()
+void PhysicsObject::CheckForNaN()
 {
-    if (m_bodyID != NULL)
+    dBodyGetForce(m_bodyID);
+    dBodyGetTorque(m_bodyID);
+    GetPosition();
+    GetLinearVelocity();
+}
+
+/**
+ * Offset/Address/Size: 0x12A8 | 0x80200FA4 | size: 0x24
+ */
+void PhysicsObject::SetCategory(unsigned int categoryBits)
+{
+    dGeomSetCategoryBits(m_geomID, categoryBits);
+}
+
+/**
+ * Offset/Address/Size: 0x12CC | 0x80200FC8 | size: 0x24
+ */
+void PhysicsObject::SetCollide(unsigned int collideBits)
+{
+    dGeomSetCollideBits(m_geomID, collideBits);
+}
+
+/**
+ * Offset/Address/Size: 0x12F0 | 0x80200FEC | size: 0x40
+ */
+void PhysicsObject::SetDefaultCollideBits()
+{
+    dGeomSetCollideBits(m_geomID, 2);
+    dGeomSetCategoryBits(m_geomID, 2);
+}
+
+/**
+ * Offset/Address/Size: 0x1330 | 0x8020102C | size: 0x88
+ */
+PhysicsObject::~PhysicsObject()
+{
+    if (m_bodyID != nullptr)
     {
         dBodyDestroy(m_bodyID);
-        m_bodyID = NULL;
-    }
-    dGeomSetBody(m_geomID, NULL);
-}
-
-/**
- * Offset/Address/Size: 0x25C | 0x801FFF58 | size: 0x30
- */
-ContactType PhysicsObject::Contact(PhysicsObject* obj1, dContact* contact, int param)
-{
-    return Contact(obj1, contact, param, NULL);
-}
-
-/**
- * Offset/Address/Size: 0x218 | 0x801FFF14 | size: 0x44
- */
-ContactType PhysicsObject::Contact(PhysicsObject* obj1, dContact* contact, int param, PhysicsObject* obj2)
-{
-    if (m_parentObject != NULL)
-    {
-        return m_parentObject->Contact(obj1, contact, param, this);
-    }
-    return TWO_WAY_CONTACT;
-}
-
-/**
- * Offset/Address/Size: 0x70 | 0x801FFD6C | size: 0x1A8
- */
-void PhysicsObject::CloneObject(const PhysicsObject& obj)
-{
-    dMass m2, m1;
-    nlMatrix4 m4Rot;
-    nlVector3 v3Pos;
-    nlVector3 v3LinearVel;
-    nlVector3 v3AngularVelocity;
-    f32 mass;
-
-    obj.GetPosition(&v3Pos);
-    SetPosition(v3Pos, WORLD_COORDINATES);
-
-    obj.GetRotation(&m4Rot);
-
-    dMatrix3 _rot;
-    ConvertNLMat4ToDMat3_Transposed(m4Rot, _rot);
-
-    if ((m_geomID == NULL) && (m_bodyID != NULL))
-    {
-        dBodySetRotation(m_bodyID, _rot);
-    }
-    else
-    {
-        dGeomSetRotation(m_geomID, _rot);
+        m_bodyID = nullptr;
     }
 
-    obj.GetLinearVelocity(&v3LinearVel);
-    dBodySetLinearVel(m_bodyID, v3LinearVel.f.x, v3LinearVel.f.y, v3LinearVel.f.z);
-    obj.GetAngularVelocity(&v3AngularVelocity);
-    dBodySetAngularVel(m_bodyID, v3AngularVelocity.f.x, v3AngularVelocity.f.y, v3AngularVelocity.f.z);
-    m_gravity = obj.m_gravity;
-
-    if (obj.m_bodyID != NULL)
+    if (m_geomID != nullptr)
     {
-        // dMass m1;
-        dMassSetZero(&m1);
-        dBodyGetMass(obj.m_bodyID, &m1);
-        mass = m1.mass;
-    }
-    else
-    {
-        mass = -1.f;
-    }
-
-    if (m_bodyID != NULL)
-    {
-        // dMass m2;
-        dMassSetZero(&m2);
-        dBodyGetMass(m_bodyID, &m2);
-        dMassAdjust(&m2, mass);
-        dBodySetMass(m_bodyID, &m2);
+        dGeomDestroy(m_geomID);
+        m_geomID = nullptr;
     }
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x801FFCFC | size: 0x70
+ * Offset/Address/Size: 0x13B8 | 0x802010B4 | size: 0x7C
  */
-void ConvertDMat3ToNLMat4(const float* src, nlMatrix4* dest)
+PhysicsObject::PhysicsObject(PhysicsWorld* world)
 {
-    dest->m[0][0] = src[0];
-    dest->m[1][0] = src[1];
-    dest->m[2][0] = src[2];
-    dest->m[0][1] = src[4];
-    dest->m[1][1] = src[5];
-    dest->m[2][1] = src[6];
-    dest->m[0][2] = src[8];
-    dest->m[1][2] = src[9];
-    dest->m[2][2] = src[10];
-    dest->m[3][0] = 0.0f;
-    dest->m[3][1] = 0.0f;
-    dest->m[3][2] = 0.0f;
-    dest->m[3][3] = 1.0f;
-    dest->m[0][3] = 0.0f;
-    dest->m[1][3] = 0.0f;
-    dest->m[2][3] = 0.0f;
+    m_bodyID = NULL;
+    m_geomID = NULL;
+    m_parentObject = NULL;
+    m_gravity = DefaultGravity;
+
+    if (world != NULL)
+    {
+        m_bodyID = dBodyCreate(world->m_World);
+        dBodySetData(m_bodyID, this);
+        dBodySetGravityMode(m_bodyID, 0);
+    }
 }
+
+#include "NL/vmath.h"

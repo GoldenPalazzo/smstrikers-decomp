@@ -1,5 +1,3 @@
-#define BIND_NO_DECL
-#define FUNCTION1_SPLIT_BODIES
 #include "Game/Render/SidelineExplodable.h"
 #include "Game/Render/AnimatedModelExplodable.h"
 #include "Game/Render/StaticModelExplodable.h"
@@ -16,12 +14,8 @@
 #include "NL/nlString.h"
 #include "types.h"
 
-#include "NL/nlBindBody.h"
+#include "NL/nlBind.h"
 
-// These template helpers' weak bodies live in other TUs; reference them (UND),
-// don't re-emit a redundant weak COMDAT copy (matches target SidelineExplodable.o).
-template <>
-int nlStrNCmp<char>(const char*, const char*, unsigned long);
 template <>
 void nlListAddEnd<SidelineExplodableNode>(SidelineExplodableNode**, SidelineExplodableNode**, SidelineExplodableNode*);
 
@@ -110,14 +104,6 @@ ExplosionFragment::ExplosionFragment()
 // {
 // }
 
-typedef BindExp2<void, void (*)(EmissionController&, ExplosionFragment*), Placeholder<0>, ExplosionFragment*> BindExp2_EC_t;
-
-template <>
-inline void Function1<void, EmissionController&>::FunctorImpl<BindExp2_EC_t>::operator()(EmissionController& arg)
-{
-    mBind.mFunction(arg, mBind.mT1);
-}
-
 static void DeactivateExplosionFragment(ExplosionFragment* self)
 {
     if (self->mpPhysicsObject != NULL)
@@ -139,7 +125,7 @@ static void DeactivateExplosionFragment(ExplosionFragment* self)
     if (entry != NULL)
     {
         node = (DrawableFragmentHandleNode*)entry;
-        DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool.m_FreeList = (SlotPoolEntry*)entry->m_next;
+        DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool.m_FreeList = entry->next;
     }
 
     if (node != NULL)
@@ -170,32 +156,7 @@ ExplosionFragment::~ExplosionFragment()
     EmissionController* pSmokeControl = mpSmokeEmissionController;
     if (pSmokeControl != NULL)
     {
-        Function1<void, EmissionController&> empty;
-        empty.mTag = EMPTY;
-
-        if (pSmokeControl->mUpdateCallback.mTag == FUNCTOR)
-        {
-            delete pSmokeControl->mUpdateCallback.mFunctor;
-        }
-
-        pSmokeControl->mUpdateCallback.mTag = EMPTY;
-        pSmokeControl->mUpdateCallback.mTag = empty.mTag;
-
-        if (pSmokeControl->mUpdateCallback.mTag == FREE_FUNCTION)
-        {
-            pSmokeControl->mUpdateCallback.mFreeFunction = empty.mFreeFunction;
-        }
-        else if (pSmokeControl->mUpdateCallback.mTag == FUNCTOR)
-        {
-            pSmokeControl->mUpdateCallback.mFunctor = empty.mFunctor->Clone();
-        }
-
-        if (empty.mTag == FUNCTOR)
-        {
-            delete empty.mFunctor;
-        }
-
-        *(volatile int*)&empty.mTag = EMPTY;
+        pSmokeControl->mUpdateCallback = Function<FnEmissionController>();
     }
 
     if (mStationaryTransform != NULL)
@@ -315,7 +276,7 @@ static inline void ExplosionFragment_Deactivate(ExplosionFragment* frag, SlotPoo
     if (entry != NULL)
     {
         node = (DrawableFragmentHandleNode*)entry;
-        pPool->m_FreeList = (SlotPoolEntry*)entry->m_next;
+        pPool->m_FreeList = entry->next;
     }
 
     if (node != NULL)
@@ -358,32 +319,7 @@ SidelineExplodable::~SidelineExplodable()
         EmissionController* pSmokeControl = fragment->mpSmokeEmissionController;
         if (pSmokeControl != NULL)
         {
-            Function1<void, EmissionController&> empty;
-            empty.mTag = EMPTY;
-
-            if (pSmokeControl->mUpdateCallback.mTag == FUNCTOR)
-            {
-                delete pSmokeControl->mUpdateCallback.mFunctor;
-            }
-
-            pSmokeControl->mUpdateCallback.mTag = EMPTY;
-            pSmokeControl->mUpdateCallback.mTag = empty.mTag;
-
-            if (pSmokeControl->mUpdateCallback.mTag == FREE_FUNCTION)
-            {
-                pSmokeControl->mUpdateCallback.mFreeFunction = empty.mFreeFunction;
-            }
-            else if (pSmokeControl->mUpdateCallback.mTag == FUNCTOR)
-            {
-                pSmokeControl->mUpdateCallback.mFunctor = empty.mFunctor->Clone();
-            }
-
-            if (empty.mTag == FUNCTOR)
-            {
-                delete empty.mFunctor;
-            }
-
-            *(volatile int*)&empty.mTag = EMPTY;
+            pSmokeControl->mUpdateCallback = Function<FnEmissionController>();
         }
 
         if (fragment->mStationaryTransform != NULL)
@@ -432,7 +368,7 @@ void SidelineExplodable::Initialize(int numFragmentModels)
     if (entry != NULL)
     {
         node = (SidelineExplodableNode*)entry;
-        SidelineExplodableNode::sSidelineExplodableNodeSlotPool.m_FreeList = (SlotPoolEntry*)entry->m_next;
+        SidelineExplodableNode::sSidelineExplodableNodeSlotPool.m_FreeList = entry->next;
     }
 
     if (node != NULL)
@@ -490,32 +426,7 @@ void SidelineExplodable::Update(float fDeltaT)
                     EmissionController* pSmokeControl = fragment->mpSmokeEmissionController;
                     if (pSmokeControl != NULL)
                     {
-                        Function1<void, EmissionController&> empty;
-                        empty.mTag = EMPTY;
-
-                        if (pSmokeControl->mUpdateCallback.mTag == FUNCTOR)
-                        {
-                            delete pSmokeControl->mUpdateCallback.mFunctor;
-                        }
-
-                        pSmokeControl->mUpdateCallback.mTag = EMPTY;
-                        pSmokeControl->mUpdateCallback.mTag = empty.mTag;
-
-                        if (pSmokeControl->mUpdateCallback.mTag == FREE_FUNCTION)
-                        {
-                            pSmokeControl->mUpdateCallback.mFreeFunction = empty.mFreeFunction;
-                        }
-                        else if (pSmokeControl->mUpdateCallback.mTag == FUNCTOR)
-                        {
-                            pSmokeControl->mUpdateCallback.mFunctor = empty.mFunctor->Clone();
-                        }
-
-                        if (empty.mTag == FUNCTOR)
-                        {
-                            delete empty.mFunctor;
-                        }
-
-                        *(volatile int*)&empty.mTag = EMPTY;
+                        pSmokeControl->mUpdateCallback = Function<FnEmissionController>();
                     }
 
                     if (fragment->mStationaryTransform != NULL)
@@ -594,32 +505,7 @@ void SidelineExplodable::DestroyAllActiveFragments(bool renewExplodables)
                     EmissionController* pSmokeControl = fragment->mpSmokeEmissionController;
                     if (pSmokeControl != NULL)
                     {
-                        Function1<void, EmissionController&> empty;
-                        empty.mTag = EMPTY;
-
-                        if (pSmokeControl->mUpdateCallback.mTag == FUNCTOR)
-                        {
-                            delete pSmokeControl->mUpdateCallback.mFunctor;
-                        }
-
-                        pSmokeControl->mUpdateCallback.mTag = EMPTY;
-                        pSmokeControl->mUpdateCallback.mTag = empty.mTag;
-
-                        if (pSmokeControl->mUpdateCallback.mTag == FREE_FUNCTION)
-                        {
-                            pSmokeControl->mUpdateCallback.mFreeFunction = empty.mFreeFunction;
-                        }
-                        else if (pSmokeControl->mUpdateCallback.mTag == FUNCTOR)
-                        {
-                            pSmokeControl->mUpdateCallback.mFunctor = empty.mFunctor->Clone();
-                        }
-
-                        if (empty.mTag == FUNCTOR)
-                        {
-                            delete empty.mFunctor;
-                        }
-
-                        *(volatile int*)&empty.mTag = EMPTY;
+                        pSmokeControl->mUpdateCallback = Function<FnEmissionController>();
                     }
 
                     if (fragment->mStationaryTransform != NULL)
@@ -664,7 +550,7 @@ inline void SidelineExplodable::InitializePhysicsObject(PhysicsObject* pPhysicsO
 
     if (!bIsStationary)
     {
-        int maxAngle = mMaxExplosionAngle;
+        unsigned short maxAngle = mMaxExplosionAngle;
         unsigned short minAngle = mMinExplosionAngle;
         float randomAngle = nlRandomf(0.0f, 1.0f, &nlDefaultSeed);
         short angleDelta = maxAngle - minAngle;
@@ -674,11 +560,11 @@ inline void SidelineExplodable::InitializePhysicsObject(PhysicsObject* pPhysicsO
         fragmentSpeed = nlRandomf(-0.0f, 0.0f, &nlDefaultSeed) + 40.0f;
         float fragmentHeight = nlRandomf(-0.0f, 0.0f, &nlDefaultSeed) + 13.0f;
         float speedAngle = (3.1415927f * fragmentSpeed) / 180.0f;
-        maxAngle = (int)(10430.378f * speedAngle);
+        unsigned short speedAngleU16 = (unsigned short)(int)(10430.378f * speedAngle);
 
-        velPolar.r = fragmentHeight * nlSin((u16)maxAngle + 0x4000);
+        velPolar.r = fragmentHeight * nlSin((u16)(speedAngleU16 + 0x4000));
         nlPolarToCartesian(vel, velPolar);
-        vel.f.z = fragmentHeight * nlSin((u16)maxAngle);
+        vel.f.y = fragmentHeight * nlSin(speedAngleU16);
 
         float angVelX = nlRandomf(-6.0f, 6.0f, &nlDefaultSeed);
         float angVelY = nlRandomf(-6.0f, 6.0f, &nlDefaultSeed);
@@ -719,7 +605,8 @@ void SidelineExplodable::Explode()
         pSmokeControl->SetPosition(*(nlVector3*)&GetWorldMatrix().f.m41);
     }
 
-    CollisionBobombData* pEventData = new ((CollisionBobombData*)&g_pEventManager->CreateValidEvent(0x66, 0x34)->m_data) CollisionBobombData();
+    Event* pEvent = g_pEventManager->CreateValidEvent(0x66, 0x34);
+    CollisionBobombData* pEventData = new ((CollisionBobombData*)((u8*)pEvent + 0x10)) CollisionBobombData();
     pEventData->v3ExplosionLocation = *(nlVector3*)&GetWorldMatrix().f.m41;
 
     int iFragment = 0;
@@ -743,63 +630,63 @@ void SidelineExplodable::Explode()
         if ((u16)handle == 0xFFFF)
             continue;
 
-        ExplosionFragment& fragment = mExplosionFragments.mData[iFragment];
-        fragment.mDrawableFragmentID = handle;
-        SidelineExplodableManager::sFragmentLookupTable[handle] = &fragment;
+        ExplosionFragment* pFragment = &mExplosionFragments.mData[iFragment];
+        pFragment->mDrawableFragmentID = handle;
+        SidelineExplodableManager::sFragmentLookupTable[(u16)handle] = pFragment;
 
         ExplodableCategoryData& fragmentCategoryData = GetCategoryData();
         unsigned long hash = fragmentCategoryData.mFragmentModelList[iFragment];
-        DrawableObject* drawable = WorldManager::s_World->FindDrawableObject(hash);
-        fragment.mFragmentModelHash = drawable->m_uHashID;
+        DrawableObject* pDrawable = WorldManager::s_World->FindDrawableObject(hash);
+        pFragment->mFragmentModelHash = pDrawable->m_uHashID;
 
         if (iFragment < GetCategoryData().mNumStationaryFragments)
-            fragment.mbIsStationary = true;
+            pFragment->mbIsStationary = true;
 
-        nlMatrix4 fragmentInitialTransform;
-        AABBDimensions dim;
-        drawable->GetAABBDimensions(dim, false);
-        drawable->m_bRenderPlanarShadow = true;
+        nlMatrix4 transform;
+        AABBDimensions aabb;
+        pDrawable->GetAABBDimensions(aabb, false);
+        pDrawable->m_bRenderPlanarShadow = true;
 
-        fragment.mfRemainingLifespan = nlRandomf(-0.0f, 0.0f, &nlDefaultSeed) + 2.0f;
+        pFragment->mfRemainingLifespan = nlRandomf(-0.0f, 0.0f, &nlDefaultSeed) + 2.0f;
 
-        if (!fragment.mbIsStationary)
+        if (!pFragment->mbIsStationary)
         {
-            PhysicsBox* box = (PhysicsBox*)::operator new(0x30, 8, false);
-            box = new (box) SidelineExplosionPhysicsObject(g_CollisionSpace, g_PhysicsWorld, dim.mDim.f.x, dim.mDim.f.y, dim.mDim.f.z, &fragment);
-            box->SetDensity(5.0f);
+            SidelineExplosionPhysicsObject* pPhysicsObject = (SidelineExplosionPhysicsObject*)nlMalloc(0x30, 8, false);
+            new (pPhysicsObject) SidelineExplosionPhysicsObject(g_CollisionSpace, g_PhysicsWorld, aabb.mDim.f.x, aabb.mDim.f.y, aabb.mDim.f.z, pFragment);
+            pPhysicsObject->SetCategory(0x400);
+            pPhysicsObject->SetCollide(0xFF);
+            pPhysicsObject->SetDensity(5.0f);
 
             ExplodableCategoryData& transformCategoryData = GetCategoryData();
-            fragmentInitialTransform = transformCategoryData.mInitialTransforms[iFragment];
-            nlMultMatrices(fragmentInitialTransform, fragmentInitialTransform, GetWorldMatrix());
+            transform = transformCategoryData.mInitialTransforms[iFragment];
+            nlMultMatrices(transform, transform, GetWorldMatrix());
 
-            InitializePhysicsObject(box, fragmentInitialTransform, fragment.mbIsStationary);
-            fragment.mpPhysicsObject = box;
+            InitializePhysicsObject(pPhysicsObject, transform, pFragment->mbIsStationary);
+            pFragment->mpPhysicsObject = pPhysicsObject;
         }
         else
         {
             ExplodableCategoryData& transformCategoryData = GetCategoryData();
-            fragmentInitialTransform = transformCategoryData.mInitialTransforms[iFragment];
-            nlMultMatrices(fragmentInitialTransform, fragmentInitialTransform, GetWorldMatrix());
+            transform = transformCategoryData.mInitialTransforms[iFragment];
+            nlMultMatrices(transform, transform, GetWorldMatrix());
 
-            fragment.SetStationaryTransform(fragmentInitialTransform);
-            fragment.mbInfiniteLifespan = true;
+            if (pFragment->mStationaryTransform == NULL)
+                pFragment->mStationaryTransform = (nlMatrix4*)nlMalloc(0x40, 8, false);
+            *pFragment->mStationaryTransform = transform;
+            pFragment->mbInfiniteLifespan = true;
         }
 
-        fragment.mbIsActive = true;
+        pFragment->mbIsActive = true;
         mNumActiveFragments++;
 
-        EmissionController* pSmokeControl = EmissionManager::Create(fxGetGroup("explosion_fragment_smoke"), 0);
-        {
-            Function<EmissionController&> updateFunc(Bind<void>(UpdateEmissionControllerPosition, placeholder0, &fragment));
-            pSmokeControl->SetUpdateCallback(updateFunc);
-        }
-        {
-            Function<EmissionController&> finishedFunc(Bind<void>(EmissionControllerFinished, placeholder0, &fragment));
-            pSmokeControl->SetFinishedCallback(finishedFunc);
-        }
+        EmissionController* pSmokeController = EmissionManager::Create(fxGetGroup("explosion_fragment_smoke"), 0);
+        pSmokeController->SetUpdateCallback(Function1<void, EmissionController&>(
+            Bind<void>(UpdateEmissionControllerPosition, placeholder0, pFragment)));
+        pSmokeController->SetFinishedCallback(Function1<void, EmissionController&>(
+            Bind<void>(EmissionControllerFinished, placeholder0, pFragment)));
 
-        pSmokeControl->SetPosition(*(nlVector3*)&GetWorldMatrix().f.m41);
-        fragment.mpSmokeEmissionController = pSmokeControl;
+        pSmokeController->SetPosition(*(nlVector3*)&GetWorldMatrix().f.m41);
+        pFragment->mpSmokeEmissionController = pSmokeController;
     }
 }
 
@@ -948,7 +835,7 @@ void SidelineExplodableManager::CleanUp()
         while ((node = sUnusedDrawableFragments.m_pStart) != NULL)
         {
             nlListRemoveStart<DrawableFragmentHandleNode>(&sUnusedDrawableFragments.m_pStart, pTail);
-            ((SlotPoolEntry*)node)->m_next = pPool->m_FreeList;
+            ((SlotPoolEntry*)node)->next = pPool->m_FreeList;
             pPool->m_FreeList = (SlotPoolEntry*)node;
         }
 
@@ -989,7 +876,7 @@ void SidelineExplodableManager::Update(float fDeltaT)
             if (entry != NULL)
             {
                 node = (DrawableFragmentHandleNode*)entry;
-                pool.m_FreeList = (SlotPoolEntry*)entry->m_next;
+                pool.m_FreeList = entry->next;
             }
 
             if (node != NULL)
@@ -1111,7 +998,7 @@ void SidelineExplodableManager::RemoveSidelineExplodable(SidelineExplodable* pSi
         if (node->mpExplodable == pSidelineExplodable)
         {
             nlListRemoveElement<SidelineExplodableNode>(&sSidelineExplodableList.m_pStart, node, &sSidelineExplodableList.m_pEnd);
-            ((SlotPoolEntry*)node)->m_next = SidelineExplodableNode::sSidelineExplodableNodeSlotPool.m_FreeList;
+            ((SlotPoolEntry*)node)->next = SidelineExplodableNode::sSidelineExplodableNodeSlotPool.m_FreeList;
             SidelineExplodableNode::sSidelineExplodableNodeSlotPool.m_FreeList = (SlotPoolEntry*)node;
         }
         node = nextnode;
@@ -1377,9 +1264,4 @@ void SidelineExplodableManager::UnAssociateEffectWithNearbyFloatingCamera(Emissi
  */
 SidelineExplosionPhysicsObject::~SidelineExplosionPhysicsObject()
 {
-}
-
-void SidelineExplodable_stub()
-{
-    Vector<ExplosionFragment, DefaultAllocator> v(1, "");
 }

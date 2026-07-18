@@ -1,5 +1,3 @@
-#define BASICSTRING_DELEGATING_CTOR
-#define BASICSTRING_INLINE_ERASE
 #pragma pool_data off
 
 #include "Game/TestTask.h"
@@ -13,16 +11,6 @@
 #include "NL/nlFormat.h"
 
 typedef BasicString<char, Detail::TempStringAllocator> NLString;
-typedef NLString (*Format2FFn)(const NLString&, const float&, const float&);
-
-void TestTask_stub()
-{
-    NLString format;
-    float value1 = 0.0f;
-    float value2 = 0.0f;
-    volatile Format2FFn fn2 = Format<NLString, float, float>;
-    fn2(format, value1, value2);
-}
 
 namespace
 {
@@ -149,64 +137,4 @@ void TestTask::RunFrameRateTest(float dt)
             WriteToTestLog(this, Format(NLString("SUCCES: frame rate test successful, never dropped below {0}"), mMinimumFrameRate).c_str());
         }
     }
-}
-
-typedef FormatImpl<NLString> NLFormatImpl;
-
-static inline void EraseRange(NLString& s, const char* begin, const char* end)
-{
-    s[0];
-    BasicStringData<char>* data = s.m_data;
-    int size = end - begin;
-    int offset = begin - data->mData;
-    char* at = data->mData + offset;
-    while (end != data->mData + data->mSize)
-    {
-        *at = *end;
-        end++;
-        at++;
-    }
-    data->mSize -= size;
-}
-
-/**
- * Offset/Address/Size: 0xCC0 | 0x8016D5BC | size: 0xD74
- * TODO: 99.59% match - copy-on-write temp register swap (r26 vs r27) in the
- * insert path and marker add operand order.
- */
-template <>
-NLFormatImpl& NLFormatImpl::operator% <float>(const float& t)
-{
-    NLString insert = LexicalCast<NLString, float>(t);
-
-    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
-    {
-        if (mString[i] != (char)'{')
-            continue;
-
-        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        char* marker = &mString[i];
-        if (mCurrentPos != marker[1] - '0')
-            continue;
-
-        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        char* markerEnd = &mString[i];
-        if (markerEnd[2] != (char)'}')
-            continue;
-
-        mString[0];
-        EraseRange(mString, ((void)mString[0], (mString.m_data ? mString.m_data->mData : (char*)0) + i), (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3);
-        mString[i];
-        char* mStringData = mString.m_data ? mString.m_data->mData : 0;
-        char* insertBegin = ((void)insert[0], insert.m_data ? insert.m_data->mData : 0);
-        insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0);
-    }
-
-    mCurrentPos++;
-    return *this;
 }

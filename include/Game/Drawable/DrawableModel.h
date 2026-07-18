@@ -4,7 +4,7 @@
 #include "Game/Drawable/DrawableObj.h"
 
 #include "NL/nlMath.h"
-#include "NL/nlAVLTreeSlotPool.h"
+#include "NL/nlAVLTree.h"
 #include "NL/gl/glView.h"
 #include "NL/gl/glModel.h"
 

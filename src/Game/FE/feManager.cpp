@@ -1,6 +1,7 @@
 #include "Game/FE/feManager.h"
 
 #include "Game/Camera/CameraMan.h"
+#include "Game/Camera/animcam.h"
 #include "Game/FE/feInput.h"
 #include "Game/FE/feNSNMessenger.h"
 #include "Game/FE/feSceneManager.h"

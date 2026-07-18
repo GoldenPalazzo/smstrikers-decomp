@@ -77,10 +77,6 @@ void nlDLRingAddEnd(T** head, T* newNode)
     *head = newNode;
 }
 
-#ifdef NLDLRING_SIMPLE_SEPARATE
-template <typename T>
-void nlDLRingRemove(T** head, T* current);
-#else
 template <typename T>
 void nlDLRingRemove(T** head, T* current)
 {
@@ -100,25 +96,16 @@ void nlDLRingRemove(T** head, T* current)
         *head = current->m_prev;
     }
 }
-#endif
 
-#ifdef NLDLRING_SIMPLE_SEPARATE
-template <typename T>
-T* nlDLRingGetStart(T* current);
-#else
 template <typename T>
 T* nlDLRingGetStart(T* current)
 {
-#ifdef NLDLRING_GETSTART_DONT_INLINE
-    FORCE_DONT_INLINE;
-#endif
     if (current == NULL)
     {
         return NULL;
     }
     return current->m_next;
 }
-#endif
 
 template <typename T>
 T* nlDLRingGetEnd(T* current)
@@ -130,10 +117,6 @@ T* nlDLRingGetEnd(T* current)
     return NULL;
 }
 
-#ifdef NLDLRING_SIMPLE_SEPARATE
-template <typename T>
-bool nlDLRingIsEnd(T* head, T* current);
-#else
 template <typename T>
 bool nlDLRingIsEnd(T* head, T* current)
 {
@@ -143,40 +126,6 @@ bool nlDLRingIsEnd(T* head, T* current)
     }
     return head == current;
 }
-#endif
-
-// Most TUs define these generic algorithms here so MWCC groups their deferred
-// instantiations with the surrounding list templates. A TU that needs the
-// original earlier placement includes the standalone guarded header first.
-#ifndef _NLRINGCOUNT_H_
-#define _NLRINGCOUNT_H_
-
-template <typename T>
-u32 nlRingCountElements(T* head)
-{
-    T* current;
-    u32 count = 0;
-
-    if (head == NULL)
-    {
-        return 0;
-    }
-
-    current = head->m_next;
-    while (true)
-    {
-        T* next = current->m_next;
-        count++;
-        if (current == head)
-        {
-            break;
-        }
-        current = next;
-    }
-    return count;
-}
-
-#endif // _NLRINGCOUNT_H_
 
 template <typename T>
 u32 nlDLRingCountElements(T* head)
@@ -289,94 +238,14 @@ void nlDLRingAppendRing(T** head, T* current)
 template <typename T>
 void nlDeleteDLRing(T** head)
 {
-    FORCE_DONT_INLINE;
     nlDeleteRing<T>(head);
 }
-
-/**
- * (EXAMPLE: SkinPairList) Offset/Address/Size: 0xAC | 0x801E21A0 | size: 0x2C
- */
-template <typename T>
-void nlRingAddStart(T** list, T* item)
-{
-    T* head = *list;
-    if (head == nullptr)
-    {
-        *list = item;
-        item->m_next = item;
-        return;
-    }
-
-    item->m_next = head->m_next;
-    head = *list;
-    head->m_next = item;
-}
-
-/**
- * (EXAMPLE: SkinPairList) Offset/Address/Size: 0x70 | 0x801E2164 | size: 0x3C
- */
-template <typename T>
-void nlRingAddEnd(T** list, T* item)
-{
-    nlRingAddStart(list, item);
-    *list = item;
-}
-
-template <typename T>
-T* nlRingGetStart(T* head)
-{
-    if (head == NULL)
-    {
-        return NULL;
-    }
-    return head->m_next;
-}
-
-template <typename T>
-bool nlRingIsEnd(T* head, T* element)
-{
-    if (head == NULL)
-    {
-        return true;
-    }
-    return head == element;
-}
-
 template <typename T, typename CallbackType>
 void nlWalkDLRing(T* head, CallbackType* callback, void (CallbackType::*callbackFunc)(T*))
 {
-#ifdef NLDLRING_FORCE_DONT_INLINE
-    FORCE_DONT_INLINE;
-#endif
     void (CallbackType::*func)(T*) = callbackFunc;
     nlWalkRing(head, callback, func);
 }
-
-#ifndef _NLRINGWALK_H_
-#define _NLRINGWALK_H_
-
-template <typename T, typename CallbackType>
-void nlWalkRing(T* head, CallbackType* callback, void (CallbackType::*callbackFunc)(T*))
-{
-    if (head == NULL)
-    {
-        return;
-    }
-
-    T* current = head->m_next;
-    while (true)
-    {
-        T* next = current->m_next;
-        (callback->*callbackFunc)(current);
-        if (current == head)
-        {
-            break;
-        }
-        current = next;
-    }
-}
-
-#endif // _NLRINGWALK_H_
 
 // =======================================================
 // Iterator for nlDLRing

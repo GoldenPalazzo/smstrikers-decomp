@@ -17,7 +17,6 @@ static nlListContainer<SaveData*> gSaveGrid[7][5];
 static float fDefaultMilestoneValues[2] = { 0.4f, 0.7f };
 
 template class nlListContainer<SaveData*>;
-template class nlListContainer<int>;
 
 struct MyMiniData;
 
@@ -381,7 +380,7 @@ void GoalieSave::InitData(Goalie* pGoalie)
         if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
         {
             pController = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-            cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->m_next;
+            cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
         }
 
         if (pController != NULL)

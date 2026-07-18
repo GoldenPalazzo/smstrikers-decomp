@@ -32,19 +32,10 @@
 namespace Detail
 {
 class TempStringAllocator;
-struct EmptyStringTag;
 } // namespace Detail
 
 template <typename CharT, typename Allocator>
 class BasicString;
-
-// Format function for single float argument (no variadic templates)
-template <typename StringType>
-void Format(StringType& result, const StringType& format, const float& value);
-
-// Format function for two float arguments
-template <typename StringType>
-void Format(StringType& result, const StringType& format, const float& value1, const float& value2);
 
 // Format function returning result (SRP), with generic second param
 template <typename StringType, typename T>
@@ -56,6 +47,11 @@ namespace Detail
 class TempStringAllocator
 {
 public:
+    enum
+    {
+        kAtEnd = true
+    };
+
     static inline void* allocate(size_t size)
     {
         return nlMalloc(size, 8, true);
@@ -66,263 +62,84 @@ public:
         nlFree(ptr);
     }
 };
-
-struct EmptyStringTag
-{
-};
 } // namespace Detail
 
-// BasicString data storage - templated on character type
-template <typename CharT>
-struct BasicStringData
-{
-    CharT* mData;  // offset 0x0
-    int mSize;     // offset 0x4
-    int mCapacity; // offset 0x8
-    int mRefCount; // offset 0xC
-
-    void reserve(int capacity);
-    void insertRange(CharT* at, const CharT* begin, const CharT* end);
-
-#ifdef BASICSTRING_INDEX_ALLOC_HELPER
-    CharT* begin()
-    {
-        return mData;
-    }
-
-    CharT* end()
-    {
-        return mData + mSize - 1;
-    }
-
-    CharT& operator[](int index)
-    {
-        return mData[index];
-    }
-#endif
-
-#ifdef BASICSTRING_INDEX_ALLOC_HELPER
-    BasicStringData(const BasicStringData& other)
-    {
-        mData = (CharT*)nlMalloc(other.mSize * sizeof(CharT), 8, true);
-        mSize = other.mSize;
-        mCapacity = other.mSize;
-        for (int i = 0; i < mSize; i++)
-        {
-            mData[i] = other.mData[i];
-        }
-        mRefCount = 1;
-    }
-#endif
-
-#if defined(BASICSTRING_DELEGATING_CTOR) || defined(BASICSTRING_DATA_CTOR)
-    BasicStringData(const CharT* text)
-    {
-        mData = 0;
-        mSize = 0;
-        mCapacity = 0;
-        const CharT* scan = text;
-        while (*scan++ != 0)
-        {
-            mSize++;
-        }
-        mSize++;
-        mData = (CharT*)nlMalloc((mSize + 1) * sizeof(CharT), 8, true);
-        mCapacity = mSize;
-        for (int i = 0; i < mSize; i++)
-        {
-            mData[i] = *text++;
-        }
-        mRefCount = 1;
-    }
-#endif
-};
-
-// Backward-compatible typedef for char specialization
-typedef BasicStringData<char> BasicStringInternal;
-
-#ifdef BASICSTRING_INDEX_ALLOC_HELPER
-template <typename CharT, typename Allocator>
-static inline BasicStringData<CharT>* BasicStringIndexAlloc()
-{
-    return (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
-}
-
-#endif
-
-// BasicString template class - total size: 0x4 (pointer to BasicStringData)
+// BasicString template class - total size: 0x4 (pointer to Data)
 template <typename CharT, typename Allocator>
 class BasicString
 {
 public:
-#ifdef BASICSTRING_NESTED_DATA_CTOR
-    struct StringVector
+    typedef CharT value_type;
+
+    class Data
     {
-        CharT* mData;
-        int mSize;
-        int mCapacity;
-
-        StringVector(const CharT*& str)
-        {
-            mData = 0;
-            const CharT* s = str;
-            mSize = 0;
-            mCapacity = 0;
-            while (*s++ != 0)
-            {
-                mSize++;
-            }
-            mSize++;
-            mData = (CharT*)Allocator::allocate((mSize + 1) * sizeof(CharT));
-            mCapacity = mSize;
-            for (int i = 0; i < mSize; i++)
-            {
-                mData[i] = *str++;
-            }
-        }
-    };
-
-    struct StringData
-    {
-        StringVector mData;
-        int mRefCount;
-
-        StringData(const CharT* str)
-            : mData(str)
+    public:
+        Data(const CharT* string)
+            : mData(string)
             , mRefCount(1)
         {
         }
-    };
-#endif
 
-    typedef CharT value_type;
-    BasicStringData<CharT>* m_data; // offset 0x0
+        Data(const CharT* begin, const CharT* end)
+            : mData(end - begin + 1, 0)
+            , mRefCount(1)
+        {
+            for (int i = 0; i < mData.mSize - 1; i++)
+            {
+                mData.mData[i] = *begin++;
+            }
+        }
+
+        void reserve(int capacity);
+        void insertRange(CharT* at, const CharT* begin, const CharT* end);
+
+        Data* AddRef()
+        {
+            ++mRefCount;
+            return this;
+        }
+
+        Vector<CharT, Allocator> mData;
+        int mRefCount;
+    };
+
+    Data* mData; // offset 0x0
 
     BasicString()
-        : m_data(0)
+        : mData(0)
     {
     }
 
-    BasicString(const CharT* str)
-#ifndef BASICSTRING_OUTLINE_CTOR
+    BasicString(const CharT* string)
     {
-#ifdef BASICSTRING_NESTED_DATA_CTOR
-        m_data = (BasicStringData<CharT>*)new (8, true) StringData(str);
-#elif defined(BASICSTRING_DELEGATING_CTOR)
-        m_data = new (8, true) BasicStringData<CharT>(str);
-#else
-        BasicStringData<CharT>* data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
-        if (data != 0)
-        {
-            const CharT* src = str;
-            data->mData = 0;
-            data->mSize = 0;
-            data->mCapacity = 0;
-            const CharT* s = src;
-            while (*s++ != 0)
-            {
-                data->mSize++;
-            }
-            data->mSize++;
-            data->mData = (CharT*)Allocator::allocate((data->mSize + 1) * sizeof(CharT));
-            data->mCapacity = data->mSize;
-            for (int i = 0; i < data->mSize; i++)
-            {
-                data->mData[i] = *src++;
-            }
-            data->mRefCount = 1;
-        }
-        m_data = data;
-#endif
-    }
-#endif
-    ;
-
-    BasicString(BasicStringData<CharT>* p)
-        : m_data(p)
-    {
+        void* storage = Allocator::allocate(sizeof(Data));
+        mData = new (storage) Data(string);
     }
 
-    BasicString(Detail::EmptyStringTag)
+    BasicString(const CharT* begin, const CharT* end);
+
+    BasicString(Data* p)
+        : mData(p)
     {
-        BasicStringData<CharT>* data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
-        if (data != 0)
-        {
-            const CharT* str = (const CharT*)L"";
-            data->mData = 0;
-            data->mSize = 0;
-            data->mCapacity = 0;
-            const CharT* s = str;
-            while (*s++ != 0)
-            {
-                data->mSize++;
-            }
-            data->mSize++;
-            data->mData = (CharT*)Allocator::allocate((data->mSize + 1) * sizeof(CharT));
-            data->mCapacity = data->mSize;
-            for (int i = 0; i < data->mSize; i++)
-            {
-                data->mData[i] = *str++;
-            }
-            data->mRefCount = 1;
-        }
-        m_data = data;
     }
 
     BasicString(const BasicString& other)
+        : mData(other.mData != 0 ? other.mData->AddRef() : 0)
     {
-#ifdef BASICSTRING_COPY_REREAD_TEMP
-        BasicStringData<CharT>* data = other.m_data;
-        m_data = (data != 0) ? (data->mRefCount++, other.m_data) : 0;
-#else
-        BasicStringData<CharT>* data = other.m_data;
-        if (data != 0)
-        {
-            data->mRefCount++;
-#ifndef BASICSTRING_NO_COPY_REREAD
-            data = other.m_data;
-#endif
-        }
-        else
-        {
-            data = 0;
-        }
-        m_data = data;
-#endif
     }
-
-#ifdef BASICSTRING_SELECTIVE_NO_COPY_REREAD
-    BasicString(const BasicString& other, bool reread)
-    {
-        BasicStringData<CharT>* data = other.m_data;
-        if (data != 0)
-        {
-            data->mRefCount++;
-            if (reread)
-            {
-                data = other.m_data;
-            }
-        }
-        else
-        {
-            data = 0;
-        }
-        m_data = data;
-    }
-#endif
 
     ~BasicString()
     {
-        if (m_data)
+        if (mData)
         {
-            BasicStringData<CharT>* data = m_data;
+            Data* data = mData;
             if (--data->mRefCount == 0)
             {
                 if (data)
                 {
                     if (data)
                     {
-                        delete[] data->mData;
+                        delete[] data->mData.mData;
                     }
                     if (data)
                     {
@@ -343,88 +160,89 @@ public:
     const CharT* c_str() const
     {
         static CharT emptyString = '\0';
-        return m_data ? m_data->mData : &emptyString;
+        return mData ? mData->mData.mData : &emptyString;
     }
 
-    u32 size() const
+    int size() const
     {
-        return m_data ? m_data->mSize : 0;
+        return mData ? mData->mData.mSize - 1 : 0;
+    }
+
+    CharT* begin()
+    {
+        (*this)[0];
+        return mData ? mData->mData.mData : (CharT*)0;
+    }
+
+    CharT* end()
+    {
+        (*this)[(int)(mData ? mData->mData.mSize - 1 : 0)];
+        return mData ? mData->mData.mData + mData->mData.mSize - 1 : (CharT*)0;
+    }
+
+    const CharT* begin() const
+    {
+        return mData ? mData->mData.mData : (const CharT*)0;
+    }
+
+    const CharT* end() const
+    {
+        return mData ? mData->mData.mData + mData->mData.mSize - 1 : (const CharT*)0;
+    }
+
+    const CharT& operator[](int index) const
+    {
+        return mData->mData.mData[index];
     }
 
     CharT& operator[](int index)
     {
-        BasicStringData<CharT>* oldData = m_data;
-#ifdef BASICSTRING_INDEX_ALLOC_HELPER
-        BasicStringData<CharT>* data;
-#endif
+        Data* oldData = mData;
         if (oldData == 0)
         {
-#ifdef BASICSTRING_INDEX_ALLOC_HELPER
-            data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
-#else
-            BasicStringData<CharT>* data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
-#endif
+            Data* data = (Data*)Allocator::allocate(sizeof(Data));
             if (data != 0)
             {
-                data->mData = (CharT*)Allocator::allocate(sizeof(CharT));
+                data->mData.mData = (CharT*)Allocator::allocate(sizeof(CharT));
                 int sz = 1;
-                data->mSize = sz;
-                data->mCapacity = sz;
+                data->mData.mSize = sz;
+                data->mData.mCapacity = sz;
                 data->mData[0] = 0;
                 data->mRefCount = 1;
-#ifdef BASICSTRING_INDEX_EMPTY_COPY_BYTE_OFFSET
-                CharT* src;
-                int offset;
-                int j;
-                j = 0;
-                offset = 0;
-                src = 0;
-                for (; j < data->mSize - 1; j++)
-                {
-                    *(CharT*)((char*)data->mData + offset) = *src;
-                    src++;
-                    offset += sizeof(CharT);
-                }
-#else
-                for (int j = 0; j < data->mSize - 1; j++)
+                for (int j = 0; j < data->mData.mSize - 1; j++)
                 {
                     data->mData[j] = ((CharT*)0)[j];
                 }
-#endif
             }
-            m_data = data;
+            mData = data;
         }
         else
         {
             if (oldData->mRefCount == 1)
             {
-                oldData = m_data;
+                oldData = mData;
             }
             else
             {
-#ifdef BASICSTRING_INDEX_ALLOC_HELPER
-                data = new (8, true) BasicStringData<CharT>(*oldData);
-#else
-                BasicStringData<CharT>* newData = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
+                Data* newData = (Data*)Allocator::allocate(sizeof(Data));
                 if (newData != 0)
                 {
-                    newData->mData = (CharT*)Allocator::allocate(oldData->mSize * sizeof(CharT));
-                    newData->mSize = oldData->mSize;
-                    newData->mCapacity = oldData->mSize;
-                    for (int j = 0; j < newData->mSize; j++)
+                    newData->mData.mData = (CharT*)Allocator::allocate(oldData->mData.mSize * sizeof(CharT));
+                    newData->mData.mSize = oldData->mData.mSize;
+                    newData->mData.mCapacity = oldData->mData.mSize;
+                    for (int j = 0; j < newData->mData.mSize; j++)
                     {
-                        newData->mData[j] = oldData->mData[j];
+                        newData->mData.mData[j] = oldData->mData.mData[j];
                     }
                     newData->mRefCount = 1;
                 }
-#endif
                 if (--oldData->mRefCount == 0)
                 {
                     if (oldData)
                     {
                         if (oldData)
                         {
-                            delete[] oldData->mData;
+                            delete[] oldData->mData.mData;
                         }
                         if (oldData)
                         {
@@ -432,98 +250,29 @@ public:
                         }
                     }
                 }
-#ifdef BASICSTRING_INDEX_ALLOC_HELPER
-                oldData = data;
-#else
                 oldData = newData;
-#endif
             }
-            m_data = oldData;
+            mData = oldData;
         }
-#ifdef BASICSTRING_INDEX_ALLOC_HELPER
-        return (*m_data)[index];
-#else
-        return m_data->mData[index];
-#endif
+        return mData->mData.mData[index];
     }
-
-    CharT* begin()
-    {
-        (*this)[0];
-#ifdef BASICSTRING_INDEX_ALLOC_HELPER
-        return m_data ? m_data->begin() : (CharT*)0;
-#else
-        return m_data ? m_data->mData : (CharT*)0;
-#endif
-    }
-
-#ifdef BASICSTRING_INDEX_ALLOC_HELPER
-    CharT* end()
-    {
-        (*this)[(int)(m_data ? m_data->mSize - 1 : 0)];
-        return m_data ? m_data->end() : (CharT*)0;
-    }
-#endif
 
     void insert(CharT* at, const CharT* begin, const CharT* end);
 
-    void erase(const CharT* begin, const CharT* end)
-#ifdef BASICSTRING_INLINE_ERASE
-    {
-        (*this)[0];
-#ifdef BASICSTRING_ERASE_AT_FIRST
-        CharT* at;
-        int size = end - begin;
-        const CharT* eraseEnd = end;
-        BasicStringData<CharT>* data = m_data;
-        at = data->mData + (begin - data->mData);
-#else
-        BasicStringData<CharT>* data = m_data;
-        int size = end - begin;
-        const CharT* eraseEnd = end;
-        CharT* at = data->mData + (begin - data->mData);
-#endif
-        while (eraseEnd != data->mData + data->mSize)
-        {
-            *at = *eraseEnd;
-            eraseEnd++;
-            at++;
-        }
-        data->mSize -= size;
-    }
-#endif
-    ;
+    void erase(const CharT* begin, const CharT* end);
 
     void TrimInPlace(const CharT* chars);
 
     BasicString Trim(const CharT* chars) const;
 
-    BasicString Append(const CharT* rhs) const
-#ifdef BASICSTRING_NO_INLINE_APPEND
-        ;
-#else
-    {
-        BasicString r(*this);
-        r.AppendInPlace(rhs);
-        BasicStringData<CharT>* data = r.m_data;
-        if (data != 0)
-        {
-            data->mRefCount++;
-        }
-        else
-        {
-            data = 0;
-        }
-        return BasicString(data);
-    }
-#endif
+    BasicString Append(const CharT* rhs) const;
 
     template <typename OtherAllocator>
     BasicString Append(const BasicString<CharT, OtherAllocator>& rhs) const
     {
         BasicString r(*this);
         r.AppendInPlace(rhs);
-        BasicStringData<CharT>* data = r.m_data;
+        Data* data = r.mData;
         if (data != 0)
         {
             data->mRefCount++;
@@ -536,59 +285,27 @@ public:
     }
 };
 
-#ifdef BASICSTRING_OUTLINE_CTOR
 template <typename CharT, typename Allocator>
-BasicString<CharT, Allocator>::BasicString(const CharT* str)
+inline BasicString<CharT, Allocator>::BasicString(const CharT* begin, const CharT* end)
+    : mData(new (8, Allocator::kAtEnd) Data(begin, end))
 {
-#ifdef BASICSTRING_NESTED_DATA_CTOR
-    m_data = (BasicStringData<CharT>*)new (8, true) StringData(str);
-#else
-    const CharT* src = str;
-    BasicStringData<CharT>* data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
-    if (data != 0)
-    {
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-        const CharT* s = str;
-        unsigned int value;
-        while ((value = *s, ++s, value != 0))
-        {
-            data->mSize++;
-        }
-        data->mSize++;
-        data->mData = (CharT*)Allocator::allocate((data->mSize + 1) * sizeof(CharT));
-        data->mCapacity = data->mSize;
-        for (int i = 0; i < data->mSize; ++i, ++src)
-        {
-            data->mData[i] = *src;
-        }
-        data->mRefCount = 1;
-    }
-    m_data = data;
-#endif
 }
-#endif
 
-#ifndef NO_BASICSTRING_IMPL
 template <typename CharT, typename Allocator>
 BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::operator=(BasicString other)
 {
-    FORCE_DONT_INLINE;
-    BasicStringData<CharT>* tmp = m_data;
-    m_data = other.m_data;
-    other.m_data = tmp;
+    Data* tmp = mData;
+    mData = other.mData;
+    other.mData = tmp;
     return *this;
 }
-#endif
 
-#ifdef BASICSTRING_NO_INLINE_APPEND
 template <typename CharT, typename Allocator>
 BasicString<CharT, Allocator> BasicString<CharT, Allocator>::Append(const CharT* rhs) const
 {
     BasicString r(*this);
     r.AppendInPlace(rhs);
-    BasicStringData<CharT>* data = r.m_data;
+    Data* data = r.mData;
     if (data != 0)
     {
         data->mRefCount++;
@@ -599,7 +316,6 @@ BasicString<CharT, Allocator> BasicString<CharT, Allocator>::Append(const CharT*
     }
     return BasicString(data);
 }
-#endif
 
 template <typename CharT, typename Allocator>
 template <typename OtherAllocator>
@@ -608,28 +324,28 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(cons
     (*this)[0];
 
     CharT* at;
-    BasicStringData<CharT>* currentData = m_data;
+    Data* currentData = mData;
     if (currentData != 0)
     {
-        at = currentData->mData + currentData->mSize - 1;
+        at = currentData->mData.mData + currentData->mData.mSize - 1;
     }
     else
     {
         at = 0;
     }
 
-    BasicStringData<CharT>* rhsData = rhs.m_data;
+    typename BasicString<CharT, OtherAllocator>::Data* rhsData = rhs.mData;
     const CharT* begin;
     if (rhsData != 0)
     {
-        begin = rhsData->mData;
+        begin = rhsData->mData.mData;
     }
     else
     {
         begin = 0;
     }
 
-    insert(at, begin, rhsData != 0 ? rhsData->mData + rhsData->mSize - 1 : 0);
+    insert(at, begin, rhsData != 0 ? rhsData->mData.mData + rhsData->mData.mSize - 1 : 0);
     return *this;
 }
 
@@ -645,9 +361,9 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(cons
     (*this)[0];
 
     CharT* at;
-    if (m_data != 0)
+    if (mData != 0)
     {
-        at = m_data->mData + m_data->mSize - 1;
+        at = mData->mData.mData + mData->mData.mSize - 1;
     }
     else
     {
@@ -663,7 +379,7 @@ BasicString<CharT, Allocator> BasicString<CharT, Allocator>::Trim(const CharT* c
 {
     BasicString r(*this);
     r.TrimInPlace(chars);
-    BasicStringData<CharT>* data = r.m_data;
+    Data* data = r.mData;
     if (data != 0)
     {
         data->mRefCount++;
@@ -687,42 +403,42 @@ static inline void InitBasicStringVector(Vector<CharT>& vec, int count)
     }
 }
 
-template <typename CharT>
-inline void BasicStringData<CharT>::reserve(int capacity)
+template <typename CharT, typename Allocator>
+inline void BasicString<CharT, Allocator>::Data::reserve(int capacity)
 {
-    if (mCapacity < capacity)
+    if (mData.mCapacity < capacity)
     {
         Vector<CharT> newVec;
         InitBasicStringVector(newVec, capacity);
         int i = 0;
-        for (; i < mSize; i++)
+        for (; i < mData.mSize; i++)
         {
-            newVec.mData[i] = mData[i];
+            newVec.mData[i] = mData.mData[i];
         }
-        newVec.mSize = mSize;
+        newVec.mSize = mData.mSize;
         int newVecSize = newVec.mSize;
-        mSize = newVecSize;
+        mData.mSize = newVecSize;
         newVec.mSize = newVecSize;
 
-        int oldCapacity = mCapacity;
-        mCapacity = newVec.mCapacity;
+        int oldCapacity = mData.mCapacity;
+        mData.mCapacity = newVec.mCapacity;
         newVec.mCapacity = oldCapacity;
 
-        CharT* oldBuf = mData;
-        mData = newVec.mData;
+        CharT* oldBuf = mData.mData;
+        mData.mData = newVec.mData;
         newVec.mData = oldBuf;
     }
 }
 
-template <typename CharT>
-inline void BasicStringData<CharT>::insertRange(CharT* at, const CharT* begin, const CharT* end)
+template <typename CharT, typename Allocator>
+inline void BasicString<CharT, Allocator>::Data::insertRange(CharT* at, const CharT* begin, const CharT* end)
 {
     int size = end - begin;
-    int offset = at - mData;
-    reserve(mSize + size);
+    int offset = at - mData.mData;
+    reserve(mData.mSize + size);
 
-    at = mData + offset;
-    CharT* t = mData + mSize - 1;
+    at = mData.mData + offset;
+    CharT* t = mData.mData + mData.mSize - 1;
     while (t >= at)
     {
         *(t + size) = *t;
@@ -734,7 +450,7 @@ inline void BasicStringData<CharT>::insertRange(CharT* at, const CharT* begin, c
         begin++;
         at++;
     }
-    mSize += size;
+    mData.mSize += size;
 }
 
 // TODO: register assignments and stack frame still differ across insert instantiations.
@@ -742,137 +458,130 @@ template <typename CharT, typename Allocator>
 void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const CharT* end)
 {
     (*this)[0];
-    int offset = at - (m_data ? m_data->mData : (CharT*)0);
+    int offset = at - (mData ? mData->mData.mData : (CharT*)0);
     (*this)[0];
     (*this)[0];
 
-    BasicStringData<CharT>* data = m_data;
-    CharT* dataPtr = data ? data->mData : (CharT*)0;
+    Data* data = mData;
+    CharT* dataPtr = data ? data->mData.mData : (CharT*)0;
     data->insertRange(dataPtr + offset, begin, end);
 }
 
-#ifndef BASICSTRING_INLINE_ERASE
 template <typename CharT, typename Allocator>
 void BasicString<CharT, Allocator>::erase(const CharT* begin, const CharT* end)
 {
     (*this)[0];
-#ifdef BASICSTRING_ERASE_AT_FIRST
     CharT* at;
     int size = end - begin;
     const CharT* eraseEnd = end;
-    BasicStringData<CharT>* data = m_data;
-    at = data->mData + (begin - data->mData);
-#else
-    BasicStringData<CharT>* data = m_data;
-    int size = end - begin;
-    const CharT* eraseEnd = end;
-    CharT* at = data->mData + (begin - data->mData);
-#endif
-    while (eraseEnd != data->mData + data->mSize)
+    Data* data = mData;
+    at = data->mData.mData + (begin - data->mData.mData);
+    while (eraseEnd != data->mData.mData + data->mData.mSize)
     {
         *at = *eraseEnd;
         eraseEnd++;
         at++;
     }
-    data->mSize -= size;
-}
-#endif
-
-namespace Detail
-{
-template <typename CharT, typename Allocator>
-static inline CharT* BasicStringTrimEnd(BasicString<CharT, Allocator>* string)
-{
-    (*string)[0];
-    return string->m_data ? string->m_data->mData + string->m_data->mSize - 1 : (CharT*)0;
+    data->mData.mSize -= size;
 }
 
-template <typename CharT, typename Allocator>
-static inline void BasicStringTrimErase(BasicString<CharT, Allocator>* string, const CharT* begin, const CharT* end)
-{
-    (*string)[0];
-    BasicStringData<CharT>* data = string->m_data;
-    int size = end - begin;
-    int offset = begin - data->mData;
-    CharT* at = data->mData + offset;
-    while (end != data->mData + data->mSize)
-    {
-        *at = *end;
-        end++;
-        at++;
-    }
-    data->mSize -= size;
-}
-} // namespace Detail
-
-// TODO: 99.40% match - erase-range temporaries still use r28/r30 opposite the target.
+// TODO: 98.84% match - scan cursor and copy-on-write temporary register swaps remain.
 template <typename CharT, typename Allocator>
 void BasicString<CharT, Allocator>::TrimInPlace(const CharT* chars)
 {
     int i = 0;
-    while (i < (int)(m_data ? m_data->mSize - 1 : 0))
+    const CharT* c;
+    while (i < (int)(mData ? mData->mData.mSize - 1 : 0))
     {
-        const CharT* c;
-        for (c = chars; *c != 0; c++)
+        c = chars;
+        while (*c != 0)
         {
-            CharT& value = (*this)[i];
-            if (*c == value)
+            if (*c == (*this)[i])
                 break;
+            c++;
         }
         if (*c == 0)
             break;
         i++;
     }
 
-    Detail::BasicStringTrimErase(this, begin(), begin() + i);
+    (*this)[0];
+    const CharT* eraseEnd = (mData ? mData->mData.mData : (CharT*)0) + i;
+    (*this)[0];
+    const CharT* eraseBegin = mData ? mData->mData.mData : (CharT*)0;
 
-    i = (int)(m_data ? m_data->mSize - 1 : 0) - 1;
-    while (i >= 0)
     {
-        const CharT* c;
-        for (c = chars; *c != 0; c++)
+        (*this)[0];
+        CharT* at;
+        int size = eraseEnd - eraseBegin;
+        Data* data = mData;
+        int offset = eraseBegin - data->mData.mData;
+        at = data->mData.mData + offset;
+        while (eraseEnd != data->mData.mData + data->mData.mSize)
         {
-            CharT& value = (*this)[i];
-            if (*c == value)
+            *at = *eraseEnd;
+            eraseEnd++;
+            at++;
+        }
+        data->mData.mSize -= size;
+    }
+
+    int last = (int)(mData ? mData->mData.mSize - 1 : 0) - 1;
+    while (last >= 0)
+    {
+        c = chars;
+        while (*c != 0)
+        {
+            if (*c == (*this)[last])
                 break;
+            c++;
         }
         if (*c == 0)
             break;
-        i--;
+        last--;
     }
 
-    Detail::BasicStringTrimErase(this, begin() + i + 1, Detail::BasicStringTrimEnd(this));
-}
+    (*this)[0];
+    const CharT* trailEnd;
+    if (mData)
+        trailEnd = mData->mData.mData + mData->mData.mSize - 1;
+    else
+        trailEnd = (CharT*)0;
+    (*this)[0];
+    const CharT* trailBegin = (mData ? mData->mData.mData : (CharT*)0) + (last + 1);
 
-// Format template function for single float argument
-template <typename StringType>
-void Format(StringType& result, const StringType& format, const float& value)
-{
-    FORCE_DONT_INLINE;
-}
-
-// Format template function for two float arguments
-template <typename StringType>
-void Format(StringType& result, const StringType& format, const float& value1, const float& value2)
-{
-    FORCE_DONT_INLINE;
+    {
+        (*this)[0];
+        CharT* at;
+        int size = trailEnd - trailBegin;
+        Data* data = mData;
+        int offset = trailBegin - data->mData.mData;
+        at = data->mData.mData + offset;
+        while (trailEnd != data->mData.mData + data->mData.mSize)
+        {
+            *at = *trailEnd;
+            trailEnd++;
+            at++;
+        }
+        data->mData.mSize -= size;
+    }
 }
 
 template <typename CharT, typename Allocator>
 bool operator==(const BasicString<CharT, Allocator>& lhs, const char* rhs)
 {
     unsigned int c;
-    BasicStringData<CharT>* data = lhs.m_data;
+    typename BasicString<CharT, Allocator>::Data* data = lhs.mData;
     int i = 0;
 
-    while (i < (data != 0 ? data->mSize - 1 : 0))
+    while (i < (data != 0 ? data->mData.mSize - 1 : 0))
     {
         c = (u8)*rhs;
         if ((CharT)c == 0)
         {
             return false;
         }
-        if ((CharT)c != (CharT)data->mData[i])
+        if ((CharT)c != (CharT)data->mData.mData[i])
         {
             return false;
         }

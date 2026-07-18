@@ -3,7 +3,6 @@
 
 #include "types.h"
 #include "NL/nlMemory.h"
-#include "NL/nlList.h"
 
 typedef void* (*SlotPoolAllocatorFunc)(unsigned long size);
 typedef void (*SlotPoolFreeFunc)(void* data);
@@ -31,12 +30,12 @@ public:
 
 struct SlotPoolBlock
 {
-    SlotPoolBlock* m_next; // Pointer for linked list functionality
+    SlotPoolBlock* next;
 };
 
 struct SlotPoolEntry
 {
-    SlotPoolEntry* m_next; // Pointer for linked list functionality
+    SlotPoolEntry* next;
 };
 
 static void DefaultSlotPoolFree(void*);
@@ -74,7 +73,7 @@ public:
         if (m_FreeList != NULL)
         {
             out = (T*)m_FreeList;
-            m_FreeList = m_FreeList->m_next;
+            m_FreeList = m_FreeList->next;
         }
     }
 
@@ -88,7 +87,7 @@ public:
         if (m_FreeList != NULL)
         {
             entry = (T*)m_FreeList;
-            m_FreeList = m_FreeList->m_next;
+            m_FreeList = m_FreeList->next;
         }
         out = entry;
     }
@@ -104,7 +103,7 @@ public:
     void Free(T* entry)
     {
         SlotPoolEntry* e = (SlotPoolEntry*)entry;
-        e->m_next = m_FreeList;
+        e->next = m_FreeList;
         m_FreeList = e;
     }
 
@@ -134,10 +133,35 @@ public:
         SlotPoolBase::BaseAddNewBlock(this, sizeof(T));
         this->m_Delta = delta;
     }
+}; // total size: 0x18
 
-#ifdef CHARACTERTEMPLATE_SLOTPOOL_DTOR
-    ~SlotPool() {}
-#endif
+template <typename T>
+class BasicSlotPoolHigh : public BasicSlotPool<T>
+{
+public:
+    static void* allocFN(unsigned long size)
+    {
+        return nlMalloc(size, 8, true);
+    }
+
+    static void freeFN(void* ptr)
+    {
+        nlFree(ptr);
+    }
+
+    BasicSlotPoolHigh()
+        : BasicSlotPool<T>()
+    {
+        this->m_AllocFn = allocFN;
+        this->m_FreeFn = freeFN;
+    }
+
+    void DeleteEntry(T* entry)
+    {
+        SlotPoolEntry* e = (SlotPoolEntry*)entry;
+        e->next = this->m_FreeList;
+        this->m_FreeList = e;
+    }
 }; // total size: 0x18
 
 #endif // _NLSLOTPOOL_H_

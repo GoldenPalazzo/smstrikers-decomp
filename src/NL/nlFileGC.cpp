@@ -5,12 +5,69 @@
 #include "NL/glx/glxSwap.h"
 #include "FILE_POS.h"
 #include "direct_io.h"
+#include "dolphin/os/OSMutex.h"
+#include "dolphin/os/OSThread.h"
 #include "types.h"
 #include <string.h>
 
 int nlSNPrintf(char*, unsigned long, const char*, ...);
 void nlBreak();
 
+struct READ_PARAMS
+{
+    /* 0x00 */ _FILE* pFile;
+    /* 0x04 */ void* pBuffer;
+    /* 0x08 */ unsigned long ReadLength;
+    /* 0x0C */ unsigned long ReadPosition;
+}; // total size: 0x10
+
+enum THREAD_STATE
+{
+    TS_New = 0,
+    TS_Waiting = 1,
+    TS_Reading = 2,
+};
+
+class FileThread
+{
+public:
+    static void ThreadProc();
+    static void Init();
+
+    static unsigned long STACK_SIZE;
+
+private:
+    /* 0x000 */ OSThread m_Thread;
+    /* 0x318 */ unsigned char* m_ThreadStack;
+    /* 0x31C */ OSMutex m_Mutex;
+    /* 0x334 */ OSCond m_Cond;
+    /* 0x33C */ unsigned char m_Quit;
+    /* 0x340 */ READ_PARAMS m_PendingRead;
+    /* 0x350 */ THREAD_STATE m_ThreadState;
+}; // total size: 0x358
+
+class TDEVFile : public GCFile
+{
+public:
+    TDEVFile(_FILE* fp)
+        : m_pFile(fp)
+    {
+    }
+    virtual ~TDEVFile();
+    virtual u32 FileSize(unsigned int*);
+    virtual s32 GetReadStatus();
+    virtual void ReadAsync(void*, unsigned long, unsigned long);
+    virtual u32 GetDiscPosition();
+
+    static nlArrayAllocator<TDEVFile>* s_pAllocator;
+    static FileThread s_ReadThread;
+    static unsigned long MAX_OPEN_FILES;
+
+private:
+    /* 0x0C */ _FILE* m_pFile;
+}; // total size: 0x10
+
+class AsyncManager;
 static AsyncManager* s_pAsyncManager;
 static GCFileSystem fileSystem;
 
@@ -18,6 +75,43 @@ static Function<void(int)> g_HandleDVDMessageCallback;
 static Function<void(int)> g_HandleDVDAllClearCallback;
 static Function<void(int)> g_HandleDVDRetryCB;
 static Function<FnVoidVoid> g_CheckForResetCB;
+
+enum eReadState
+{
+    eRS_ISSUE_HEAD_READ = 0,
+    eRS_WAIT_HEAD_READ = 1,
+    eRS_ISSUE_TAIL_READ = 2,
+    eRS_WAIT_TAIL_READ = 3,
+    eRS_READ_COMPLETE = 4,
+};
+
+class AsyncEntry
+{
+public:
+    /* 0x00 */ AsyncEntry* next;
+    /* 0x04 */ AsyncEntry* prev;
+    /* 0x08 */ GCFile* m_pFile;
+    /* 0x0C */ ReadAsyncCallback m_pFunc;
+    /* 0x10 */ void* m_pBuffer;
+    /* 0x14 */ unsigned long m_uSize;
+    /* 0x18 */ unsigned long m_uPosition;
+    /* 0x1C */ unsigned long m_uParam;
+    /* 0x20 */ eReadState Phase;
+    /* 0x24 */ int ReadNumBytes;
+}; // total size: 0x28
+
+class AsyncManager
+{
+public:
+    unsigned char AddEntry(GCFile*, ReadAsyncCallback, void*, unsigned long, unsigned long);
+    int Service();
+
+    /* 0x000 */ AsyncEntry m_asyncEntries[64];
+    /* 0xA00 */ AsyncEntry* m_freeEntryList;
+    /* 0xA04 */ AsyncEntry* m_activeEntryList;
+}; // total size: 0xA08
+
+FileThread TDEVFile::s_ReadThread;
 
 namespace
 {
@@ -63,12 +157,8 @@ struct AsyncToVirMemBufferLoad
 
 namespace
 {
-AsyncToVirMemBufferLoad asyncToVirMemBufferLoad[4];
-}
-static char readBuffer32ByteLength[32];
-namespace
-{
-u8 asyncToVirMemBuffer[0x4000];
+extern char asyncToVirMemBuffer[0x4000];
+extern AsyncToVirMemBufferLoad asyncToVirMemBufferLoad[4];
 }
 
 /**
@@ -465,14 +555,7 @@ static inline unsigned char CheckDVDStatus()
                 glxLoadSaveState();
             }
 
-            if (g_HandleDVDMessageCallback.mTag == 1)
-            {
-                g_HandleDVDMessageCallback.mFreeFunction(Status);
-            }
-            else
-            {
-                (*g_HandleDVDMessageCallback.mFunctor)(Status);
-            }
+            g_HandleDVDMessageCallback(Status);
 
             WasAProblem = 1;
 
@@ -480,16 +563,9 @@ static inline unsigned char CheckDVDStatus()
             {
                 OSYieldThread();
 
-                if (g_CheckForResetCB.mTag != 0)
+                if (g_CheckForResetCB)
                 {
-                    if (g_CheckForResetCB.mTag == 1)
-                    {
-                        g_CheckForResetCB.mFreeFunction();
-                    }
-                    else
-                    {
-                        g_CheckForResetCB.mFunctor->operator()();
-                    }
+                    g_CheckForResetCB();
                 }
             }
             break;
@@ -497,32 +573,18 @@ static inline unsigned char CheckDVDStatus()
         case DVD_STATE_BUSY + 1:
             if (WasAProblem)
             {
-                if (g_HandleDVDRetryCB.mTag != 0)
+                if (g_HandleDVDRetryCB)
                 {
-                    if (g_HandleDVDRetryCB.mTag == 1)
-                    {
-                        g_HandleDVDRetryCB.mFreeFunction(1);
-                    }
-                    else
-                    {
-                        (*g_HandleDVDRetryCB.mFunctor)(1);
-                    }
+                    g_HandleDVDRetryCB(1);
                 }
 
                 while (DVDGetDriveStatus() == DVD_STATE_BUSY)
                 {
                     OSYieldThread();
 
-                    if (g_CheckForResetCB.mTag != 0)
+                    if (g_CheckForResetCB)
                     {
-                        if (g_CheckForResetCB.mTag == 1)
-                        {
-                            g_CheckForResetCB.mFreeFunction();
-                        }
-                        else
-                        {
-                            g_CheckForResetCB.mFunctor->operator()();
-                        }
+                        g_CheckForResetCB();
                     }
                 }
             }
@@ -575,16 +637,9 @@ inline int AsyncManager::Service()
         glxLoadRestoreState();
     }
 
-    if (loadedSaveState && (g_HandleDVDAllClearCallback.mTag != 0))
+    if (loadedSaveState && g_HandleDVDAllClearCallback)
     {
-        if (g_HandleDVDAllClearCallback.mTag == 1)
-        {
-            g_HandleDVDAllClearCallback.mFreeFunction(0);
-        }
-        else
-        {
-            (*g_HandleDVDAllClearCallback.mFunctor)(0);
-        }
+        g_HandleDVDAllClearCallback(0);
     }
 
     return loadedSaveState;
@@ -684,35 +739,16 @@ void nlInitFileSystem()
  */
 unsigned char GameCubeReadBlocking(GCFile* pFile, void* pBuffer, unsigned long uSize)
 {
-    extern void glxLoadSaveState(void);
-    extern void glxLoadRestoreState(void);
-
-    extern Function<void(int)> g_HandleDVDMessageCallback;
-    extern Function<void(int)> g_HandleDVDAllClearCallback;
-    extern Function<void(int)> g_HandleDVDRetryCB;
-    extern Function<FnVoidVoid> g_CheckForResetCB;
     GameCubeReadAsync(pFile, NULL, pBuffer, uSize, 0);
-
-    Function<FnVoidVoid>* checkForResetCB = &g_CheckForResetCB;
-    Function<void(int)>* handleDVDMessageCallback = &g_HandleDVDMessageCallback;
-    Function<void(int)>* handleDVDRetryCB = &g_HandleDVDRetryCB;
-    Function<void(int)>* handleDVDAllClearCallback = &g_HandleDVDAllClearCallback;
 
     goto loop_check;
 
 loop_wait:
     OSYieldThread();
 
-    if (g_CheckForResetCB.mTag != 0)
+    if (g_CheckForResetCB)
     {
-        if (g_CheckForResetCB.mTag == 1)
-        {
-            checkForResetCB->mFreeFunction();
-        }
-        else
-        {
-            checkForResetCB->mFunctor->operator()();
-        }
+        g_CheckForResetCB();
     }
 
 loop_check:
@@ -764,14 +800,7 @@ loop_check:
                     glxLoadSaveState();
                 }
 
-                if (g_HandleDVDMessageCallback.mTag == 1)
-                {
-                    handleDVDMessageCallback->mFreeFunction(driveStatus);
-                }
-                else
-                {
-                    (*handleDVDMessageCallback->mFunctor)(driveStatus);
-                }
+                g_HandleDVDMessageCallback(driveStatus);
 
                 loadedSaveState = 1;
 
@@ -779,16 +808,9 @@ loop_check:
                 {
                     OSYieldThread();
 
-                    if (g_CheckForResetCB.mTag != 0)
+                    if (g_CheckForResetCB)
                     {
-                        if (g_CheckForResetCB.mTag == 1)
-                        {
-                            checkForResetCB->mFreeFunction();
-                        }
-                        else
-                        {
-                            checkForResetCB->mFunctor->operator()();
-                        }
+                        g_CheckForResetCB();
                     }
                 }
                 break;
@@ -798,32 +820,18 @@ loop_check:
             {
                 if (loadedSaveState)
                 {
-                    if (g_HandleDVDRetryCB.mTag != 0)
+                    if (g_HandleDVDRetryCB)
                     {
-                        if (g_HandleDVDRetryCB.mTag == 1)
-                        {
-                            handleDVDRetryCB->mFreeFunction(1);
-                        }
-                        else
-                        {
-                            (*handleDVDRetryCB->mFunctor)(1);
-                        }
+                        g_HandleDVDRetryCB(1);
                     }
 
                     while (DVDGetDriveStatus() == DVD_STATE_BUSY)
                     {
                         OSYieldThread();
 
-                        if (g_CheckForResetCB.mTag != 0)
+                        if (g_CheckForResetCB)
                         {
-                            if (g_CheckForResetCB.mTag == 1)
-                            {
-                                checkForResetCB->mFreeFunction();
-                            }
-                            else
-                            {
-                                checkForResetCB->mFunctor->operator()();
-                            }
+                            g_CheckForResetCB();
                         }
                     }
                 }
@@ -845,16 +853,9 @@ loop_check:
             glxLoadRestoreState();
         }
 
-        if (loadedSaveState && (g_HandleDVDAllClearCallback.mTag != 0))
+        if (loadedSaveState && g_HandleDVDAllClearCallback)
         {
-            if (g_HandleDVDAllClearCallback.mTag == 1)
-            {
-                handleDVDAllClearCallback->mFreeFunction(0);
-            }
-            else
-            {
-                (*handleDVDAllClearCallback->mFunctor)(0);
-            }
+            g_HandleDVDAllClearCallback(0);
         }
     }
 
@@ -865,183 +866,47 @@ loop_check:
     return 1;
 }
 
+inline unsigned char AsyncManager::AddEntry(GCFile* pFile, ReadAsyncCallback pFunc, void* pBuffer, unsigned long uSize, unsigned long uParam)
+{
+    unsigned char bServiceImmediately = 0;
+
+    if (m_freeEntryList != NULL)
+    {
+        AsyncEntry* pEntry = nlDLRingRemoveStart<AsyncEntry>(&m_freeEntryList);
+
+        pEntry->m_pFile = pFile;
+        pEntry->m_pFunc = pFunc;
+        pEntry->m_pBuffer = pBuffer;
+        pEntry->m_uSize = uSize;
+        pEntry->m_uParam = uParam;
+        pEntry->m_uPosition = pFile->m_Position;
+        pEntry->ReadNumBytes = uSize;
+        pEntry->Phase = eRS_ISSUE_HEAD_READ;
+        pEntry->m_pFile->PendingAsync.m_Count++;
+
+        if (m_activeEntryList == NULL)
+        {
+            GCFileSystem fs = fileSystem;
+            bServiceImmediately = (((u32)(1 - fs) | (u32)(fs - 1)) >> 31);
+        }
+
+        nlDLRingAddEnd<AsyncEntry>(&m_activeEntryList, pEntry);
+
+        if (bServiceImmediately)
+        {
+            Service();
+        }
+    }
+
+    return 1;
+}
+
 /**
  * Offset/Address/Size: 0xFE4 | 0x801CFD38 | size: 0x324
  */
-static unsigned char GameCubeReadAsync(GCFile* pFile, ReadAsyncCallback callback, void* pBuffer, unsigned long uSize, unsigned long uParam)
+static unsigned char GameCubeReadAsync(GCFile* pFile, ReadAsyncCallback pFunc, void* pBuffer, unsigned long uSize, unsigned long uParam)
 {
-    extern void glxLoadSaveState(void);
-    extern void glxLoadRestoreState(void);
-
-    extern Function<void(int)> g_HandleDVDMessageCallback;
-    extern Function<void(int)> g_HandleDVDAllClearCallback;
-    extern Function<void(int)> g_HandleDVDRetryCB;
-    extern Function<FnVoidVoid> g_CheckForResetCB;
-
-    u32 loadedSaveState = 0;
-    AsyncManager* manager = s_pAsyncManager;
-
-    if (manager->m_freeEntryList != NULL)
-    {
-        AsyncEntry* entry = nlDLRingRemoveStart<AsyncEntry>(&manager->m_freeEntryList);
-
-        entry->m_pFile = pFile;
-        entry->m_pFunc = callback;
-        entry->m_pBuffer = pBuffer;
-        entry->m_uSize = uSize;
-        entry->m_uParam = uParam;
-        entry->m_uPosition = pFile->m_Position;
-        entry->ReadNumBytes = uSize;
-        entry->Phase = eRS_ISSUE_HEAD_READ;
-        entry->m_pFile->PendingAsync.m_Count++;
-
-        if (manager->m_activeEntryList == NULL)
-        {
-            GCFileSystem fs = fileSystem;
-            loadedSaveState = (((u32)(1 - fs) | (u32)(fs - 1)) >> 31);
-        }
-
-        nlDLRingAddEnd<AsyncEntry>(&manager->m_activeEntryList, entry);
-
-        if ((u8)loadedSaveState)
-        {
-            entry = manager->m_activeEntryList;
-
-            if (entry != NULL)
-            {
-                entry = entry->next;
-
-                if ((OSGetConsoleType() & 0x20000000) != 0)
-                {
-                    OSYieldThread();
-                }
-
-                if (UpdateReadState(entry))
-                {
-                    nlDLRingRemove<AsyncEntry>(&manager->m_activeEntryList, entry);
-                    entry->m_pFile->PendingAsync.m_Count--;
-
-                    if (entry->m_pFunc != NULL)
-                    {
-                        entry->m_pFunc(entry->m_pFile, entry->m_pBuffer, entry->m_uSize, entry->m_uParam);
-                    }
-
-                    nlDLRingAddEnd<AsyncEntry>(&manager->m_freeEntryList, entry);
-                }
-            }
-            else
-            {
-                u8 loadedSaveState = 0;
-                s32 driveStatus;
-                Function<void(int)>* handleDVDMessageCB = &g_HandleDVDMessageCallback;
-                Function<FnVoidVoid>* checkForResetCB = &g_CheckForResetCB;
-                Function<void(int)>* handleDVDRetryCB = &g_HandleDVDRetryCB;
-
-                while (true)
-                {
-                    driveStatus = DVDGetDriveStatus();
-
-                    switch (driveStatus)
-                    {
-                    case DVD_STATE_FATAL_ERROR:
-                    case DVD_STATE_NO_DISK:
-                    case DVD_STATE_COVER_OPEN:
-                    case DVD_STATE_WRONG_DISK:
-                    case DVD_STATE_RETRY:
-                        if (!loadedSaveState)
-                        {
-                            glxLoadSaveState();
-                        }
-
-                        if (g_HandleDVDMessageCallback.mTag == 1)
-                        {
-                            handleDVDMessageCB->mFreeFunction(driveStatus);
-                        }
-                        else
-                        {
-                            (*handleDVDMessageCB->mFunctor)(driveStatus);
-                        }
-
-                        loadedSaveState = 1;
-
-                        while (driveStatus == DVDGetDriveStatus())
-                        {
-                            OSYieldThread();
-
-                            if (g_CheckForResetCB.mTag != 0)
-                            {
-                                if (g_CheckForResetCB.mTag == 1)
-                                {
-                                    checkForResetCB->mFreeFunction();
-                                }
-                                else
-                                {
-                                    checkForResetCB->mFunctor->operator()();
-                                }
-                            }
-                        }
-                        break;
-
-                    case DVD_STATE_BUSY:
-                        if (loadedSaveState)
-                        {
-                            if (g_HandleDVDRetryCB.mTag != 0)
-                            {
-                                if (g_HandleDVDRetryCB.mTag == 1)
-                                {
-                                    handleDVDRetryCB->mFreeFunction(1);
-                                }
-                                else
-                                {
-                                    (*handleDVDRetryCB->mFunctor)(1);
-                                }
-                            }
-
-                            while (DVDGetDriveStatus() == DVD_STATE_BUSY)
-                            {
-                                OSYieldThread();
-
-                                if (g_CheckForResetCB.mTag != 0)
-                                {
-                                    if (g_CheckForResetCB.mTag == 1)
-                                    {
-                                        checkForResetCB->mFreeFunction();
-                                    }
-                                    else
-                                    {
-                                        checkForResetCB->mFunctor->operator()();
-                                    }
-                                }
-                            }
-                        }
-                        break;
-                    }
-
-                    if ((driveStatus == DVD_STATE_END) || (driveStatus == DVD_STATE_FATAL_ERROR))
-                    {
-                        break;
-                    }
-                }
-
-                if (loadedSaveState)
-                {
-                    glxLoadRestoreState();
-                }
-
-                if (loadedSaveState && (g_HandleDVDAllClearCallback.mTag != 0))
-                {
-                    if (g_HandleDVDAllClearCallback.mTag == 1)
-                    {
-                        g_HandleDVDAllClearCallback.mFreeFunction(0);
-                    }
-                    else
-                    {
-                        (*g_HandleDVDAllClearCallback.mFunctor)(0);
-                    }
-                }
-            }
-        }
-    }
+    s_pAsyncManager->AddEntry(pFile, pFunc, pBuffer, uSize, uParam);
 
     pFile->m_Position += uSize;
     return 1;
@@ -1075,36 +940,24 @@ static inline void HandleGCIOErrors(GCFile* pFile)
         OSReport(message);
         nlBreak();
 
-        if (g_CheckForResetCB.mTag != 0)
+        if (g_CheckForResetCB)
         {
-            if (g_CheckForResetCB.mTag == 1)
-            {
-                g_CheckForResetCB.mFreeFunction();
-            }
-            else
-            {
-                g_CheckForResetCB.mFunctor->operator()();
-            }
+            g_CheckForResetCB();
         }
 
         OSYieldThread();
     }
 
-    if (WasAProblem && (g_HandleDVDAllClearCallback.mTag != 0))
+    if (WasAProblem && g_HandleDVDAllClearCallback)
     {
-        if (g_HandleDVDAllClearCallback.mTag == 1)
-        {
-            g_HandleDVDAllClearCallback.mFreeFunction(0);
-        }
-        else
-        {
-            (*g_HandleDVDAllClearCallback.mFunctor)(0);
-        }
+        g_HandleDVDAllClearCallback(0);
     }
 }
 
 static unsigned char UpdateReadState(AsyncEntry* pEntry)
 {
+    static char readBuffer32ByteLength[32] ATTRIBUTE_ALIGN(32);
+
     long nStatus;
     unsigned long uNumRead;
     GCFile* pFile;
@@ -1191,6 +1044,12 @@ static unsigned char UpdateReadState(AsyncEntry* pEntry)
 
 return_false:
     return 0;
+}
+
+namespace
+{
+char asyncToVirMemBuffer[0x4000] ATTRIBUTE_ALIGN(32);
+AsyncToVirMemBufferLoad asyncToVirMemBufferLoad[4];
 }
 
 /**

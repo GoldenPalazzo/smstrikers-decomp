@@ -39,13 +39,90 @@ public:
 class nlChunk
 {
 public:
+    nlChunk* GetNextChunk();
+    u32 GetSize();
+    u32 GetID();
+    nlChunk* GetLastChunk();
+    nlChunk* GetFirstChunk();
+    u8 IsNestedChunk();
+    void* GetData();
+    void* GetUnalignedData();
+    void* GetAlignedData();
+    u32 GetChunkAlignment();
+    bool IsAlignedChunk();
+
     /* 0x00 */ u32 m_ID;
     /* 0x04 */ u32 m_Size;
 }; // size: 0x8
 
+inline nlChunk* nlChunk::GetNextChunk()
+{
+    return (nlChunk*)((u8*)this + GetSize() + sizeof(nlChunk));
+}
+
+inline u32 nlChunk::GetSize()
+{
+    return m_Size;
+}
+
+inline u32 nlChunk::GetID()
+{
+    return m_ID & 0x80FFFFFF;
+}
+
+inline nlChunk* nlChunk::GetLastChunk()
+{
+    return (nlChunk*)((u8*)this + GetSize() + sizeof(nlChunk));
+}
+
+inline nlChunk* nlChunk::GetFirstChunk()
+{
+    return (nlChunk*)((u8*)this + sizeof(nlChunk));
+}
+
+inline u8 nlChunk::IsNestedChunk()
+{
+    return (m_ID & 0x80000000) != 0;
+}
+
+inline void* nlChunk::GetData()
+{
+    bool isAligned = IsAlignedChunk();
+    if (isAligned)
+    {
+        return GetAlignedData();
+    }
+    return GetUnalignedData();
+}
+
+inline void* nlChunk::GetUnalignedData()
+{
+    return this + 1;
+}
+
+inline void* nlChunk::GetAlignedData()
+{
+    u32 alignment = 1u << (GetChunkAlignment() >> 24);
+    return (void*)nlAlignUp((unsigned int)GetUnalignedData(), alignment);
+}
+
+inline u32 nlChunk::GetChunkAlignment()
+{
+    return m_ID & 0x7F000000;
+}
+
+inline bool nlChunk::IsAlignedChunk()
+{
+    return GetChunkAlignment();
+}
+
 class cIdentifier
 {
 public:
+    void Destroy()
+    {
+    }
+
     /* 0x0 */ const char* m_szName;
     /* 0x4 */ unsigned int m_uHashID;
 }; // total size: 0x8

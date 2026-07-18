@@ -22,9 +22,7 @@ class Particle : public efNode
 public:
     Particle()
     {
-        m_nextNode = nullptr;
-        m_prevNode = nullptr;
-    };
+    }
 
 public:
     /* 0x8, */ f32 timeElapsed;

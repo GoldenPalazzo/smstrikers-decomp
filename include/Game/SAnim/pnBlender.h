@@ -45,7 +45,7 @@ inline cPN_Blender* AllocateBlender()
     if (cPN_Blender::m_BlenderSlotPool.m_FreeList != nullptr)
     {
         blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-        cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->m_next;
+        cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->next;
     }
 
     return blender;
@@ -63,7 +63,7 @@ inline cPN_Blender* CreateAndAssignBlender(const cPoseNode* child0, const cPoseN
     if (cPN_Blender::m_BlenderSlotPool.m_FreeList != nullptr)
     {
         blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-        cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->m_next;
+        cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->next;
     }
     return new ((u8*)blender) cPN_Blender((cPoseNode*)child0, (cPoseNode*)child1, blendDuration);
 }

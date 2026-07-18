@@ -7,6 +7,8 @@
 #include "Game/AI/Fielder.h"
 #include "Game/Field.h"
 #include "Game/Ball.h"
+#include "Game/Effects/EmissionManager.h"
+#include "Game/Physics/PhysicsAIBall.h"
 #include "Game/Physics/PhysicsShell.h"
 #include "Game/Physics/PhysicsBanana.h"
 #include "Game/Sys/eventman.h"
@@ -266,10 +268,7 @@ void Bowser::Update(float fDeltaT)
                 EmissionController* pControl = EmissionManager::Create(fxGetGroup("bowser_land"), 0);
                 pControl->SetPosition(mv3Position);
                 pControl->SetPoseAccumulator(*mpPoseAccumulator);
-                Function<EmissionController&> update;
-                update.mTag = FREE_FUNCTION;
-                update.mFreeFunction = UpdateBowserLandEmitter;
-                pControl->SetUpdateCallback(update);
+                pControl->SetUpdateCallback(Function<EmissionController&>(UpdateBowserLandEmitter));
             }
 
             if (mbFirstTime)
@@ -331,12 +330,7 @@ void Bowser::Update(float fDeltaT)
             g_pEventManager->CreateValidEvent(0x65, 0x14);
             EmissionController* pControl = EmissionManager::Create(fxGetGroup("bowser_fire"), 0);
             pControl->m_uUserData = (unsigned long)this;
-            {
-                Function<EmissionController&> update;
-                update.mTag = FREE_FUNCTION;
-                update.mFreeFunction = UpdateFireEmitter;
-                pControl->SetUpdateCallback(update);
-            }
+            pControl->SetUpdateCallback(Function<EmissionController&>(UpdateFireEmitter));
             g_pEventManager->CreateValidEvent(0x64, 0x14);
         }
 
@@ -1099,7 +1093,7 @@ void Bowser::ActionThrow()
         if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
         {
             controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-            cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->m_next;
+            cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
         }
 
         controller = new (controller) cPN_SAnimController(
@@ -1124,7 +1118,7 @@ void Bowser::ActionThrow()
             if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
             {
                 blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-                cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->m_next;
+                cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->next;
             }
 
             // fake match - using the constructor directly is currently not matching because of a mr missing..
@@ -1166,7 +1160,7 @@ void Bowser::ActionThrow()
     if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
     {
         controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->m_next;
+        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
     }
 
     // fake match - using the constructor directly is currently not matching because of a mr missing..
@@ -1227,7 +1221,7 @@ void Bowser::ActionRoll()
     if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
     {
         controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->m_next;
+        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
     }
 
     controller = new (controller) cPN_SAnimController(
@@ -1252,7 +1246,7 @@ void Bowser::ActionRoll()
         if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
         {
             blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-            cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->m_next;
+            cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->next;
         }
 
         // fake match - using the constructor directly is currently not matching because of a mr missing..
@@ -1355,7 +1349,7 @@ void Bowser::ActionDescend(float fBlendTime)
     if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
     {
         controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->m_next;
+        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
     }
 
     controller = new (controller) cPN_SAnimController(mpAnim[1], (const AnimRetarget*)0, PM_HOLD, (void (*)(unsigned int, cPN_SAnimController*))0, (unsigned int)0, (bool)0);
@@ -1376,7 +1370,7 @@ void Bowser::ActionDescend(float fBlendTime)
             if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
             {
                 blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-                cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->m_next;
+                cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->next;
             }
 
             if (blender != NULL)
@@ -1427,7 +1421,7 @@ void Bowser::ActionFall()
     if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
     {
         controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->m_next;
+        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
     }
 
     if (controller != NULL)
@@ -1517,7 +1511,7 @@ void Bowser::ActionJump()
     if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
     {
         controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->m_next;
+        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
     }
 
     if (controller != NULL)
@@ -1546,7 +1540,7 @@ void Bowser::ActionJump()
         if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
         {
             blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-            cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->m_next;
+            cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->next;
         }
 
         if (blender != NULL)
@@ -1782,7 +1776,7 @@ void Bowser::ActionLeave()
     if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
     {
         controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->m_next;
+        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
     }
 
     controller = new (controller) cPN_SAnimController(mpAnim[BOWSER_ANIM_JUMP], (const AnimRetarget*)0, PM_HOLD, (void (*)(unsigned int, cPN_SAnimController*))0, (unsigned int)0, (bool)0);
@@ -1801,7 +1795,7 @@ void Bowser::ActionLeave()
         if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
         {
             blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-            cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->m_next;
+            cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->next;
         }
 
         if (blender != NULL)
@@ -1921,7 +1915,7 @@ void Bowser::ActionIdle()
         if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
         {
             controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-            cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->m_next;
+            cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
         }
 
         controller = new (controller) cPN_SAnimController(
@@ -1946,7 +1940,7 @@ void Bowser::ActionIdle()
             if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
             {
                 blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-                cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->m_next;
+                cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->next;
             }
 
             if (blender != NULL)
@@ -1976,12 +1970,7 @@ void Bowser::ActionIdle()
 
     EmissionController* controller = EmissionManager::Create(fxGetGroup("bowser_fire"), 0);
     controller->m_uUserData = (unsigned long)this;
-    {
-        Function<EmissionController&> update;
-        update.mTag = FREE_FUNCTION;
-        update.mFreeFunction = UpdateFireEmitter;
-        controller->SetUpdateCallback(update);
-    }
+    controller->SetUpdateCallback(Function<EmissionController&>(UpdateFireEmitter));
 
     g_pEventManager->CreateValidEvent(0x64, 0x14);
 }
@@ -2035,7 +2024,7 @@ bool Bowser::CheckForAbort()
             if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
             {
                 controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-                cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->m_next;
+                cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
             }
             controller = new (controller) cPN_SAnimController(pBowser->mpAnim[BOWSER_ANIM_JUMP], (const AnimRetarget*)0, PM_HOLD, (void (*)(unsigned int, cPN_SAnimController*))0, (unsigned int)0, (bool)0);
             cPN_Blender* blender;
@@ -2047,7 +2036,7 @@ bool Bowser::CheckForAbort()
                 if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
                 {
                     blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-                    cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->m_next;
+                    cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->next;
                 }
                 if (blender != NULL)
                     blender = __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(blender, *pBowser->mpFeatherBlender->GetChildPtr(0), controller, 0.2f);
@@ -2137,7 +2126,7 @@ bool Bowser::CheckForAbort()
                 if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
                 {
                     blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-                    cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->m_next;
+                    cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->next;
                 }
                 if (blender != NULL)
                     blender = __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(blender, *pBowser->mpFeatherBlender->GetChildPtr(0), controller, 0.2f);

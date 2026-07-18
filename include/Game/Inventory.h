@@ -47,49 +47,46 @@ public:
         ParseChunks((nlChunk*)memory, (nlChunk*)(memory + length));
     }
 
-#ifdef CINVENTORY_PHYSICS_DTOR_BODY
     ~cInventory();
-#else
-    ~cInventory()
-    {
-        ListEntry<char*>** pTail;
-        ListEntry<char*>** pHead;
-        ListEntry<T*>* meshEntry = m_lItemList.m_Head;
-        while (meshEntry != NULL)
-        {
-            meshEntry->entry->Destroy();
-            meshEntry = meshEntry->next;
-        }
 
-        typedef ListContainerBase<T*, NewAdapter<ListEntry<T*> > > ItemListBase;
-        void (ItemListBase::*cb)(ListEntry<T*>*) = ItemListBase::DeleteEntryFunc();
-        nlWalkList(m_lItemList.m_Head, (ItemListBase*)this, cb);
-
-        m_lItemList.m_Head = NULL;
-        m_lItemList.m_Tail = NULL;
-
-        nlListContainer<char*>* memList = &m_lMemList;
-        pTail = &memList->m_Tail;
-        pHead = &memList->m_Head;
-        while (m_lMemList.m_Head != NULL)
-        {
-            ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead, pTail);
-            void* mesh;
-            if (&mesh != NULL)
-            {
-                mesh = first->entry;
-            }
-            ::operator delete(first);
-            ::operator delete(mesh);
-        }
-
-        m_nItemCount = 0;
-    }
-#endif
+    void Clear();
 
     /* 0x0 */ nlListContainer<T*> m_lItemList;
     /* 0xC */ nlListContainer<char*> m_lMemList;
     /* 0x18 */ int m_nItemCount;
 }; // total size: 0x1C
+
+template <typename T>
+inline cInventory<T>::~cInventory()
+{
+    Clear();
+}
+
+template <typename T>
+inline void cInventory<T>::Clear()
+{
+    ListEntry<T*>* meshEntry = m_lItemList.m_Head;
+    while (meshEntry != NULL)
+    {
+        meshEntry->entry->Destroy();
+        meshEntry = meshEntry->next;
+    }
+
+    m_lItemList.Clear();
+
+    while (m_lMemList.m_Head != NULL)
+    {
+        ListEntry<char*>* first = m_lMemList.RemoveStart();
+        void* mesh;
+        if (&mesh != NULL)
+        {
+            mesh = first->entry;
+        }
+        ::operator delete(first);
+        ::operator delete(mesh);
+    }
+
+    m_nItemCount = 0;
+}
 
 #endif // GAME_INVENTORY_H

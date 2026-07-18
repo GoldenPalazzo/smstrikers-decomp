@@ -2,6 +2,7 @@
 #define _FESLIDEMENU_H_
 
 #include "Game/FE/tlComponentInstance.h"
+#include "NL/nlBind.h"
 #include "NL/nlFunction.h"
 #include "Game/FE/feMenu.h"
 
@@ -14,8 +15,36 @@ public:
         , mUserEnumType(userEnumType)
     {
     }
-    virtual ~SlideMenuItem();
+    virtual ~SlideMenuItem()
+    {
+    }
 
+    TLComponentInstance* GetComponentInstance() const
+    {
+        return mComponentInstance;
+    }
+
+    int GetUserEnumType() const
+    {
+        return mUserEnumType;
+    }
+
+    void SetUserEnumType(int userEnumType)
+    {
+        mUserEnumType = userEnumType;
+    }
+
+    unsigned long GetHashID() const
+    {
+        return mSlideMenuHash;
+    }
+
+    void SetHashID(unsigned long hashID)
+    {
+        mSlideMenuHash = hashID;
+    }
+
+private:
     /* 0x4 */ unsigned long mSlideMenuHash;
     /* 0x8 */ TLComponentInstance* mComponentInstance;
     /* 0xC */ int mUserEnumType;
@@ -35,35 +64,44 @@ public:
     }
     virtual ~SlideMenuList()
     {
-        int numItems = mNumItemsAdded;
+        int numItems = GetNumItemsAdded();
         if (numItems > 0)
         {
-            char (*walker)[0x20] = (char (*)[0x20])this;
             for (int i = 0; i < numItems; i++)
             {
-                MenuItem<SlideMenuItem>* item;
-                if (i == -1)
-                {
-                    item = &mMenuItems[mCurrentIndex];
-                }
-                else
-                {
-                    item = &((SlideMenuList*)walker)->mMenuItems[0];
-                }
-                delete item->mType;
-                walker++;
+                delete GetMenuItem(i)->GetType();
             }
         }
     }
-    virtual void Update(float dt);
+    virtual void Update(float dt)
+    {
+    }
+
+    TLComponentInstance* const& GetComponentInstance() const
+    {
+        return mComponentInstance;
+    }
+
+    MenuItem<SlideMenuItem>* AddItem(unsigned long hashID, int userEnumType)
+    {
+        SlideMenuItem* item = new (nlMalloc(sizeof(SlideMenuItem), 8, true))
+            SlideMenuItem(mComponentInstance, userEnumType);
+        item->SetHashID(hashID);
+
+        MenuItem<SlideMenuItem>* menuItem = MenuList<SlideMenuItem>::AddItem(item);
+        MenuItem<SlideMenuItem>::Callback callback(
+            Bind<void>(MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), this));
+        menuItem->SetCallback(ON_HIGHLIGHT, callback);
+        return menuItem;
+    }
 
     void SetSlide()
     {
-        FORCE_DONT_INLINE;
-        MenuItem<SlideMenuItem>& mi = mMenuItems[mCurrentIndex];
-        mi.mType->mComponentInstance->SetActiveSlide(mi.mType->mSlideMenuHash);
+        SlideMenuItem* item = GetMenuItem()->GetType();
+        item->GetComponentInstance()->SetActiveSlide(item->GetHashID());
     }
 
+private:
     /* 0x214 */ unsigned char mInputLocked;
     /* 0x218 */ TLComponentInstance* mComponentInstance;
 }; // total size: 0x21C
@@ -84,6 +122,24 @@ public:
     bool PrevItem();
     bool NextItem();
     void SetSlideByIndex(unsigned char);
+    bool OnHighlight()
+    {
+        MenuItem* item = &m_menuItems[m_currentSlide];
+        if (!item->ItemCBFuncs[ON_HIGHLIGHT])
+        {
+            return false;
+        }
+        item->ItemCBFuncs[ON_HIGHLIGHT]();
+        return true;
+    }
+    void runCallBack()
+    {
+        MenuItem* item = &m_menuItems[m_currentSlide];
+        if (item->ItemCBFuncs[ON_APPLY])
+        {
+            item->ItemCBFuncs[ON_APPLY]();
+        }
+    }
     bool ApplyFunction();
     MenuItem* AddMenuItem(const char*);
     MenuItem* AddMenuItem(const char*, const Function<FnVoidVoid>&);

@@ -18,21 +18,14 @@ public:
     bool LoadPackage(const char*);
     void UnloadPackage();
     void Update(float);
-#ifdef FERENDER_INLINE_ACCESSOR_IMPLS
     eGLView GetRenderView() const
     {
-        FORCE_DONT_INLINE;
         return (eGLView)m_uRenderView;
     }
     const nlMatrix4& GetCameraMatrix() const
     {
-        FORCE_DONT_INLINE;
         return m_matView;
     }
-#else
-    const nlMatrix4& GetCameraMatrix() const;
-    eGLView GetRenderView() const;
-#endif
 
     /* 0x00 */ FEPackage* m_pFEPackage;
     /* 0x04 */ unsigned long m_uHashID;
