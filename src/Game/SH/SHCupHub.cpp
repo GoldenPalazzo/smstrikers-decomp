@@ -3672,7 +3672,7 @@ void CupHubScene::UpdateRoundMessage(bool hideMessage)
         (_locVar) = LookupLocHash(_hashExpr); \
     }
 
-    GameInfoManager* gameInfo = *(GameInfoManager* volatile*)&nlSingleton<GameInfoManager>::s_pInstance;
+    GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::Instance();
     int roundNumber = gameInfo->GetCurrentRoundNumber();
 
     TLSlide* pCurrentSlide = m_pFEScene->m_pFEPackage->GetPresentation()->m_currentSlide;
