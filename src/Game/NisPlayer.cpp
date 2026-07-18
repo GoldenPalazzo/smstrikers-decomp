@@ -528,13 +528,9 @@ bool NisPlayer::WorldIsFrozen() const
 
 /**
  * Offset/Address/Size: 0x2F64 | 0x80117C40 | size: 0x318
- * TODO: 98.51% match - register allocation diffs for this, loop cursor, load buffer, and string/file temporaries
  */
 void NisPlayer::HandleAsyncs()
 {
-    char* loadAt;
-    nlFile* file;
-
     for (int i = 0; i < 4; i++)
     {
         if (mLoadQueue[i] != 0)
@@ -559,7 +555,7 @@ void NisPlayer::HandleAsyncs()
                     used = mUsedFromFront;
                 }
 
-                loadAt = mMemory + used;
+                char* loadAt = mMemory + used;
                 loadAt = loadAt + (0x20 - ((unsigned int)loadAt & 0x1F));
 
                 if (!mLoadingFromBack)
@@ -578,7 +574,7 @@ void NisPlayer::HandleAsyncs()
 
                 if (useAsyncLoading)
                 {
-                    file = nlOpen(fileName.c_str());
+                    nlFile* file = nlOpen(fileName.c_str());
                     if ((OSGetConsoleType() & 0x20000000) != 0)
                     {
                         nlReadAsync(file, loadAt, mLoadQueue[i]->size, AsyncLoad, (unsigned long)mLoadQueue[i]);
