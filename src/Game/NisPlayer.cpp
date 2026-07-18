@@ -979,11 +979,8 @@ static inline char* GetNisStadiumName()
     return kNisEmpty;
 }
 
-#pragma optimization_level 2
 /**
  * Offset/Address/Size: 0xFAC | 0x80115C88 | size: 0xA9C
- * TODO: 99.85% match - goalie and empty return construction still swap the
- * source and Data pointer registers.
  */
 BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTarget target, NisWinnerType wt) const
 {
@@ -1039,7 +1036,7 @@ BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTar
 
     if (target == NIS_TARGET_HOME_GOALIE || target == NIS_TARGET_AWAY_GOALIE || target == NIS_TARGET_WINNER_GOALIE || target == NIS_TARGET_LOSER_GOALIE)
     {
-        return "goalie";
+        return BasicString<char, Detail::TempStringAllocator>("goalie");
     }
 
     if (target == NIS_TARGET_AWAY_SIDEKICK)
@@ -1047,9 +1044,8 @@ BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTar
         return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1)));
     }
 
-    return kNisEmpty;
+    return BasicString<char, Detail::TempStringAllocator>(kNisEmpty);
 }
-#pragma optimization_level 4
 
 /**
  * Offset/Address/Size: 0x610 | 0x801152EC | size: 0x99C
