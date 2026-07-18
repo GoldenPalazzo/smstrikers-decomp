@@ -101,6 +101,18 @@ inline NLString Detail::LexicalCastImpl<NLString, const char*>::Do(const char* s
 }
 
 template <>
+inline int Detail::LexicalCastImpl<int, const char*>::Do(const char* s)
+{
+    return (int)atof(s);
+}
+
+template <>
+inline float Detail::LexicalCastImpl<float, const char*>::Do(const char* s)
+{
+    return (float)atof(s);
+}
+
+template <>
 inline NLString Detail::LexicalCastImpl<NLString, int>::Do(int t)
 {
     char s[0x40];
@@ -145,7 +157,7 @@ inline NLString Detail::LexicalCastImpl<NLString, bool>::Do(bool t)
 namespace Detail
 {
 template <typename To>
-inline To LexicalCastImpl<To, const char*>::Do(const char* s)
+To LexicalCastImpl<To, const char*>::Do(const char* s)
 {
     return (To)atof(s);
 }
