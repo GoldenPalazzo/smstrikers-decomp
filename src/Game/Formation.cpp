@@ -14,8 +14,6 @@
 #include "NL/nlPrint.h"
 #include "NL/nlString.h"
 
-extern cTeam* g_pTeams[];
-
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 static const float g_fFormationCaptainPosBonus[4] = { 0.55f, 0.5f, 0.0f, 0.0f };
 
@@ -156,26 +154,22 @@ void FormationManager::UnloadFormationSets()
 /**
  * Offset/Address/Size: 0x26E4 | 0x8003A934 | size: 0x78
  */
-FormationSpec* FormationManager::GetFormationSpec(eFormation formation)
+FormationSpec* FormationManager::GetFormationSpec(eFormation specType)
 {
-    FORCE_DONT_INLINE;
-    FormationSpec* result = nullptr;
-    int offset = 0;
-    eFormation id = formation;
+    FormationSpec* pSpec = nullptr;
     int i = 0;
 
     while (i < m_NumFormationSets)
     {
-        result = m_FormationSetArray[i].GetFormationSpecFromID(id);
-        if (result != nullptr)
+        pSpec = m_FormationSetArray[i].GetFormationSpecFromID(specType);
+        if (pSpec != nullptr)
         {
             break;
         }
-        offset += 0x10;
         i++;
     }
 
-    return result;
+    return pSpec;
 }
 
 /**
@@ -239,7 +233,6 @@ void FormationManager::Update(float dt)
  */
 void FormationManager::ChooseNewFormations()
 {
-    FORCE_DONT_INLINE;
     s32 defensiveFormation;
     s32 offensiveFormation;
     s32 ballFormationSet;
@@ -258,7 +251,6 @@ void FormationManager::ChooseNewFormations()
  */
 void FormationManager::SetNewFormationEval(eFormationType formType, eFormation formation)
 {
-    FORCE_DONT_INLINE;
     FormationEval* pFormation;
 
     if (formation == FORMATION_NONE)
@@ -287,7 +279,6 @@ void FormationManager::SetNewFormationEval(eFormationType formType, eFormation f
  */
 void FormationManager::SetNewFormationEval(eFormationType formType, eFormationSet formSet)
 {
-    FORCE_DONT_INLINE;
     FormationEval* pFormation;
 
     if (formSet == FSET_NONE)
@@ -301,7 +292,8 @@ void FormationManager::SetNewFormationEval(eFormationType formType, eFormationSe
         pFormation = m_pFormations[formType];
         if (pFormation != nullptr)
         {
-            FormationSet* pFormationSet = *(FormationSet**)((u8*)pFormation + 0x28);
+            const FormationSet* pFormationSet =
+                static_cast<FormationBallPosition*>(pFormation)->m_pFormationSet;
             if ((s32)formSet == pFormationSet->m_ID)
             {
                 return;
@@ -317,25 +309,17 @@ void FormationManager::SetNewFormationEval(eFormationType formType, eFormationSe
  */
 bool FormationManager::CalculateFielderPosition(nlVector3& v3DestPosition, cFielder* pFielder, bool bInPosition, float fBallPosFormationWeight)
 {
-    float fWeights[3];
-    nlVector3 v3FormationPosition[2][3];
-    float* weights;
-    nlVector3(*formationPosition)[3];
-    nlVector3 v3FutureDesiredPosition;
     float fFielderInPosition;
+    float fWeights[3];
+    nlVector3 v3FutureDesiredPosition;
+    nlVector3 v3FormationPosition[2][3];
 
     int id = pFielder->m_ID;
-    int offset = id << 4;
-    CachedPosition* cached = (CachedPosition*)((u8*)&m_CachedPositions[0] + offset);
-
-    if (cached->bCacheIsValid)
+    if (m_CachedPositions[id].bCacheIsValid)
     {
-        v3DestPosition = cached->vPosition;
-        return cached->bInPosition;
+        v3DestPosition = m_CachedPositions[id].vPosition;
+        return m_CachedPositions[id].bInPosition;
     }
-
-    weights = fWeights;
-    formationPosition = v3FormationPosition;
 
     v3FutureDesiredPosition = v3Zero;
     fFielderInPosition = 0.0f;
@@ -345,46 +329,46 @@ bool FormationManager::CalculateFielderPosition(nlVector3& v3DestPosition, cFiel
         FormationEval* pFormation = m_pFormations[i];
         if (pFormation != nullptr && pFormation->m_pFormationSpec != nullptr)
         {
-            weights[i] = pFormation->GetWeight();
-            pFormation->CalculateDesiredLocation(formationPosition[1][i], pFielder, true);
-            pFormation->CalculateDesiredLocation(formationPosition[0][i], pFielder, false);
+            fWeights[i] = pFormation->GetWeight();
+            pFormation->CalculateDesiredLocation(v3FormationPosition[1][i], pFielder, true);
+            pFormation->CalculateDesiredLocation(v3FormationPosition[0][i], pFielder, false);
         }
         else
         {
-            formationPosition[0][i] = v3Zero;
-            weights[i] = 0.0f;
-            formationPosition[1][i] = v3Zero;
+            v3FormationPosition[0][i] = v3Zero;
+            fWeights[i] = 0.0f;
+            v3FormationPosition[1][i] = v3Zero;
         }
     }
 
-    if (weights[2] >= 0.5f)
+    if (fWeights[2] >= 0.5f)
     {
-        weights[2] = 1.0f;
+        fWeights[2] = 1.0f;
     }
 
     float remainingWeight;
     float weight0;
-    float scaledBallWeight = weights[2] * fBallPosFormationWeight;
-    weight0 = weights[0];
+    float scaledBallWeight = fWeights[2] * fBallPosFormationWeight;
+    weight0 = fWeights[0];
     remainingWeight = 1.0f - scaledBallWeight;
-    weights[2] = scaledBallWeight;
-    weights[0] = weight0 * remainingWeight;
-    weights[1] *= remainingWeight;
+    fWeights[2] = scaledBallWeight;
+    fWeights[0] = weight0 * remainingWeight;
+    fWeights[1] *= remainingWeight;
 
     for (int i = 0; i < 3; i++)
     {
         FormationEval* pFormation = m_pFormations[i];
         if (pFormation != nullptr && pFormation->m_pFormationSpec != nullptr)
         {
-            nlVector3 pos = formationPosition[0][i];
-            float weight = weights[i];
-            float x = v3FutureDesiredPosition.f.x + weight * formationPosition[1][i].f.x;
-            float z = v3FutureDesiredPosition.f.z + weight * formationPosition[1][i].f.z;
-            float y = v3FutureDesiredPosition.f.y + weight * formationPosition[1][i].f.y;
+            nlVector3 pos = v3FormationPosition[0][i];
+            float weight = fWeights[i];
+            float x = v3FutureDesiredPosition.f.x + weight * v3FormationPosition[1][i].f.x;
+            float z = v3FutureDesiredPosition.f.z + weight * v3FormationPosition[1][i].f.z;
+            float y = v3FutureDesiredPosition.f.y + weight * v3FormationPosition[1][i].f.y;
             v3FutureDesiredPosition.f.x = x;
             v3FutureDesiredPosition.f.z = z;
             v3FutureDesiredPosition.f.y = y;
-            fFielderInPosition += weights[i] * pFormation->IsFielderInPosition(pFielder, pos, bInPosition);
+            fFielderInPosition += fWeights[i] * pFormation->IsFielderInPosition(pFielder, pos, bInPosition);
         }
     }
 
@@ -393,7 +377,7 @@ bool FormationManager::CalculateFielderPosition(nlVector3& v3DestPosition, cFiel
 
     m_CachedPositions[id].vPosition = v3DestPosition;
     m_CachedPositions[id].bInPosition = bInPosition;
-    cached->bCacheIsValid = true;
+    m_CachedPositions[id].bCacheIsValid = true;
 
     return bInPosition;
 }
@@ -535,9 +519,6 @@ inline void FormationEval::AILocToFieldLoc(nlVector3& dest, const nlVector3& ai_
 
 /**
  * Offset/Address/Size: 0x1A14 | 0x80039C64 | size: 0x310
- * TODO: 94.18% match - stack frame/register allocation and loop-counter hoist
- * diffs around nested permutation loops (MWCC promotes i_pos array loads to
- * callee-saved regs r29/r30/r31 instead of using volatile r0).
  */
 void FormationEval::AssignPositionsToFielders(unsigned int* pFielderPosAssignments, float (*fFielderToPositionDistance)[4])
 {

@@ -123,7 +123,6 @@ class FormationOffensive : public FormationEval
 {
 public:
     FormationOffensive(FormationManager*, eFormationType, const FormationSpec*);
-    ~FormationOffensive() { }
     float IsFielderInPosition(cFielder*, nlVector3, bool);
     float GetWeight();
 };
@@ -132,7 +131,6 @@ class FormationDefensive : public FormationEval
 {
 public:
     FormationDefensive(FormationManager*, eFormationType, const FormationSpec*);
-    ~FormationDefensive() { }
     float IsFielderInPosition(cFielder*, nlVector3, bool);
     float GetWeight();
 };
