@@ -62,17 +62,12 @@ u32 cSHierarchy::GetNodeID(int nodeIndex) const
  */
 s32 cSHierarchy::GetNodeIndexByID(unsigned int nodeID) const
 {
-    int i = 0;
-    u32* pNodeID = GetNodeIDs();
-
-    for (int count = GetNodeCount(); count > 0; count--)
+    for (int i = 0; i < m_nodeCount; i++)
     {
-        if (nodeID == GetNodeID(i))
+        if (nodeID == m_nodeIDs[i])
         {
             return i;
         }
-        pNodeID++;
-        i++;
     }
     return -1;
 }
@@ -82,7 +77,6 @@ s32 cSHierarchy::GetNodeIndexByID(unsigned int nodeID) const
  */
 s32 cSHierarchy::GetChild(int parentIndex, int childIndex) const
 {
-    FORCE_DONT_INLINE;
     return m_childArrays[parentIndex][childIndex];
 }
 

@@ -859,7 +859,7 @@ config.libs = [
             # related to character (should probably be in Game/Render)
             Object(Matching, "Game/PoseNode.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/PoseAccumulator.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/SHierarchy.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "Game/SHierarchy.cpp", extra_cflags=["-inline auto"]),
 
             Object(Matching, "Game/SAnim.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SAnim/AnimRetargeter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -1130,7 +1130,7 @@ config.libs = [
             Object(Matching, "Game/GL/GLMaterial.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/GL/GLTextureAnim.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/GL/GLVertexAnim.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/GL/GLMeshWriter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/GL/GLMeshWriter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/GL/GLInventory.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/GL/GLRenderBuffer.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/GL/GLSkinMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
