@@ -38,7 +38,7 @@ struct CROWD_SETTINGS
     /* 0x818 */ unsigned char NoStreaming : 1;
 }; // total size: 0x81C
 
-static bool g_Initd;
+bool g_Initd;
 
 template <typename T>
 void Increment(T& Value)
@@ -46,8 +46,8 @@ void Increment(T& Value)
     Value = (T)(Value + 1);
 }
 
-static bool g_DoDecay = true;
-static bool g_CrowdSFXStopped;
+bool g_DoDecay = true;
+bool g_CrowdSFXStopped = true;
 static const MOOD_DEFINITION g_MoodDefs[5] = { };
 static const CROWD_SETTINGS g_Settings = { };
 
@@ -1007,13 +1007,9 @@ inline GCAudioStreaming::MonoAudioStream::MonoAudioStream(GCAudioStreaming::Audi
 
 /**
  * Offset/Address/Size: 0x1300 | 0x8014EA14 | size: 0x3E4
- * TODO: 95.44% match - register assignment differs for the loop counter,
- *       gCrowdSFX, and stream allocation results.
  */
 void CrowdMood::Init()
 {
-    u32 i;
-
     if (g_Initd)
         return;
 
@@ -1036,32 +1032,9 @@ void CrowdMood::Init()
 
     g_CrowdState.ChantState.NextAt = (float)nlRandom(1, &nlDefaultSeed);
     g_CrowdState.HeckleState.NextAt = (float)nlRandom(1, &nlDefaultSeed);
-    g_CrowdState.ChantState.Ready = g_CrowdState.HeckleState.Ready = i = 0;
+    g_CrowdState.ChantState.Ready = g_CrowdState.HeckleState.Ready = 0;
 
-    struct LOOP_LOAD
-    {
-        const char* SampleName;
-        unsigned long AudioId;
-        unsigned long& VoiceId;
-    };
-
-    LOOP_LOAD LoadData[3] = {
-        { g_Settings.NeutralSampleName, Audio::CROWDSFX_EVENT_YEAH_SMALL1, g_CrowdAudio.NeutralVoiceId },
-        { g_Settings.PositiveSampleName, Audio::CROWDSFX_EVENT_YEAH_BIG, g_CrowdAudio.PositiveVoiceId },
-        { g_Settings.NegativeSampleName, Audio::CROWDSFX_EVENT_YEAH_SMALL2, g_CrowdAudio.NegativeVoiceId },
-    };
-
-    for (; i < 3; i++)
-    {
-        Audio::SoundAttributes sndAtr;
-        sndAtr.Init();
-        sndAtr.SetSoundType(LoadData[i].AudioId, false);
-        sndAtr.mf_Volume = 0.0f;
-        LoadData[i].VoiceId = Audio::gCrowdSFX.Play(sndAtr);
-        PlatAudio::SetSFXVolume(LoadData[i].VoiceId, 0.0f);
-    }
-
-    g_CrowdSFXStopped = false;
+    RestartLoops();
     g_CrowdAudio.CurrentSaturationSFXId = (unsigned long)-1;
 
     if (!g_Settings.NoStreaming)
@@ -1553,7 +1526,7 @@ void CrowdMood::InitiateFastCrowdTransition()
 void CrowdMood::SetCrowdVolume(unsigned long Volume, unsigned long FadeTime)
 {
     MOOD_DEFINITION MoodDef;
-    unsigned char crowdOff = GetConfigBool(Config::Global(), "CrowdOff", false);
+    unsigned char crowdOff = GetConfigBool(Config::Global(), "no_crowd", false);
 
     if (crowdOff == 1)
     {
@@ -1895,13 +1868,13 @@ void CrowdMood::RestartLoops()
     {
         const char* SampleName;
         unsigned long AudioId;
-        unsigned long* pVoiceId;
+        unsigned long& VoiceId;
     };
 
     LOOP_LOAD LoadData[3] = {
-        { 0, 0, &g_CrowdAudio.NeutralVoiceId },
-        { 0, 0, &g_CrowdAudio.PositiveVoiceId },
-        { 0, 0, &g_CrowdAudio.NegativeVoiceId },
+        { g_Settings.NeutralSampleName, Audio::CROWDSFX_EVENT_YEAH_SMALL1, g_CrowdAudio.NeutralVoiceId },
+        { g_Settings.PositiveSampleName, Audio::CROWDSFX_EVENT_YEAH_BIG, g_CrowdAudio.PositiveVoiceId },
+        { g_Settings.NegativeSampleName, Audio::CROWDSFX_EVENT_YEAH_SMALL2, g_CrowdAudio.NegativeVoiceId },
     };
 
     u32 i;
@@ -1910,9 +1883,9 @@ void CrowdMood::RestartLoops()
         Audio::SoundAttributes sndAtr;
         sndAtr.Init();
         sndAtr.SetSoundType(LoadData[i].AudioId, false);
-        sndAtr.mf_Volume = 0.0f;
-        *LoadData[i].pVoiceId = Audio::gCrowdSFX.Play(sndAtr);
-        PlatAudio::SetSFXVolume(*LoadData[i].pVoiceId, 0.0f);
+        sndAtr.mf_Volume = 1.0f;
+        LoadData[i].VoiceId = Audio::gCrowdSFX.Play(sndAtr);
+        PlatAudio::SetSFXVolume(LoadData[i].VoiceId, 0.0f);
     }
     g_CrowdSFXStopped = false;
 }
