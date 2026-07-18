@@ -7,28 +7,36 @@
 #include "Game/Drawable/DrawableObj.h"
 
 /**
- * Offset/Address/Size: 0x0 | 0x8011F7A0 | size: 0xF8
+ * Offset/Address/Size: 0x1D4 | 0x8011F974 | size: 0xBC
  */
-void DrawableExplosionFragment::Blend(const float* w, const DrawableExplosionFragment& a, const DrawableExplosionFragment& b)
+void DrawableExplosionFragment::Grab()
 {
-    mVisible = a.mVisible && b.mVisible && (a.mFragmentModelHash == b.mFragmentModelHash);
-
-    if (!mVisible)
+    ExplosionFragment* frag = SidelineExplodableManager::GetFragmentFromHandle(mID);
+    if (frag == NULL)
+    {
+        mVisible = false;
         return;
+    }
 
-    const float t = w[2];
-    const float it = 1.0f - t;
+    mVisible = true;
+    mFragmentModelHash = frag->mFragmentModelHash;
 
-    mPosition.f.x = it * a.mPosition.f.x + t * b.mPosition.f.x;
-    mPosition.f.y = it * a.mPosition.f.y + t * b.mPosition.f.y;
-    mPosition.f.z = it * a.mPosition.f.z + t * b.mPosition.f.z;
+    mPosition = frag->ExplosionFragment::GetPosition();
 
-    nlQuatSlerp(mOrientation, a.mOrientation, b.mOrientation, t);
+    static nlMatrix4 temp;
+    frag->ExplosionFragment::GetRotation(&temp);
+    nlMatrixToQuat(mOrientation, temp);
 
-    mFragmentModelHash = a.mFragmentModelHash;
-    float opacity = (a.mOpacity + b.mOpacity);
-    float factor = 0.5f;
-    mOpacity = opacity * factor; // otherwise it does not match the asm
+    if (frag->mfRemainingLifespan > ExplosionFragment::sfFadeOutTime)
+    {
+        mOpacity = 1.0f;
+    }
+    else
+    {
+        float ratio = frag->mfRemainingLifespan;
+        ratio /= ExplosionFragment::sfFadeOutTime;
+        mOpacity = ratio;
+    }
 }
 
 /**
@@ -65,66 +73,29 @@ void DrawableExplosionFragment::Render() const
 }
 
 /**
- * Offset/Address/Size: 0x1D4 | 0x8011F974 | size: 0xBC
+ * Offset/Address/Size: 0x0 | 0x8011F7A0 | size: 0xF8
  */
-void DrawableExplosionFragment::Grab()
+void DrawableExplosionFragment::Blend(const float* w, const DrawableExplosionFragment& a, const DrawableExplosionFragment& b)
 {
-    ExplosionFragment* frag = SidelineExplodableManager::GetFragmentFromHandle(mID);
-    if (frag == NULL)
-    {
-        mVisible = false;
+    mVisible = a.mVisible && b.mVisible && (a.mFragmentModelHash == b.mFragmentModelHash);
+
+    if (!mVisible)
         return;
-    }
 
-    mVisible = true;
-    mFragmentModelHash = frag->mFragmentModelHash;
+    const float t = w[2];
+    const float it = 1.0f - t;
 
-    mPosition = frag->ExplosionFragment::GetPosition();
+    mPosition.f.x = it * a.mPosition.f.x + t * b.mPosition.f.x;
+    mPosition.f.y = it * a.mPosition.f.y + t * b.mPosition.f.y;
+    mPosition.f.z = it * a.mPosition.f.z + t * b.mPosition.f.z;
 
-    static nlMatrix4 temp;
-    frag->ExplosionFragment::GetRotation(&temp);
-    nlMatrixToQuat(mOrientation, temp);
+    nlQuatSlerp(mOrientation, a.mOrientation, b.mOrientation, t);
 
-    if (frag->mfRemainingLifespan > ExplosionFragment::sfFadeOutTime)
-    {
-        mOpacity = 1.0f;
-    }
-    else
-    {
-        float ratio = frag->mfRemainingLifespan;
-        ratio /= ExplosionFragment::sfFadeOutTime;
-        mOpacity = ratio;
-    }
+    mFragmentModelHash = a.mFragmentModelHash;
+    float opacity = (a.mOpacity + b.mOpacity);
+    float factor = 0.5f;
+    mOpacity = opacity * factor; // otherwise it does not match the asm
 }
 
-/**
- * Offset/Address/Size: 0x0 | 0x8011FA30 | size: 0x7C
- */
-template <>
-void DrawableExplosionFragment::Replay<LoadFrame>(LoadFrame& frame)
-{
-    Replayable<3, LoadFrame, bool>(frame, mVisible);
-    if (mVisible)
-    {
-        Replayable<3, LoadFrame, unsigned long>(frame, mFragmentModelHash);
-        Replayable<3, LoadFrame, nlVector3>(frame, mPosition);
-        Replayable<3, LoadFrame, nlQuaternion>(frame, mOrientation);
-        Replayable<3, LoadFrame, float>(frame, mOpacity);
-    }
-}
-
-/**
- * Offset/Address/Size: 0x7C | 0x8011FAAC | size: 0x7C
- */
-template <>
-void DrawableExplosionFragment::Replay<SaveFrame>(SaveFrame& frame)
-{
-    Replayable<3, SaveFrame, bool>(frame, mVisible);
-    if (mVisible)
-    {
-        Replayable<3, SaveFrame, unsigned long>(frame, mFragmentModelHash);
-        Replayable<3, SaveFrame, nlVector3>(frame, mPosition);
-        Replayable<3, SaveFrame, nlQuaternion>(frame, mOrientation);
-        Replayable<3, SaveFrame, float>(frame, mOpacity);
-    }
-}
+template void DrawableExplosionFragment::Replay<SaveFrame>(SaveFrame&);
+template void DrawableExplosionFragment::Replay<LoadFrame>(LoadFrame&);
