@@ -22,7 +22,7 @@ public:
 
     void HyperStrikeModelAddHelper(unsigned long);
     void UpdateCameraFlashes(float);
-    void LoadGameplayOptimizeOut();
+    void LoadListOfGameplayInvisibleModels();
 
     static void BasicStadiumEventHandler(Event*, void*);
     static BasicStadium* GetCurrentStadium();

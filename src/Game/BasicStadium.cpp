@@ -524,7 +524,7 @@ bool BasicStadium::DoInitialize()
     }
 
     // Optimization file loading
-    LoadGameplayOptimizeOut();
+    LoadListOfGameplayInvisibleModels();
 
     return true;
 }
@@ -606,7 +606,7 @@ void BasicStadium::UpdateCameraFlashes(float dt)
     }
 }
 
-void BasicStadium::LoadGameplayOptimizeOut()
+void BasicStadium::LoadListOfGameplayInvisibleModels()
 {
     char szOptBin[80];
     nlSNPrintf(szOptBin, 0x50, "%s-GameplayInvisibleModels.bin", m_szBaseName);
@@ -641,4 +641,4 @@ BasicStadium* BasicStadium::GetCurrentStadium()
     return pBasicStadiumInstance;
 }
 
-const unsigned long eOC_OPTIMIZE_OUT_FROM_GAMEPLAY = 0x00008000;
+static const unsigned long eOC_OPTIMIZE_OUT_FROM_GAMEPLAY = 0x00008000;
