@@ -19,6 +19,14 @@ public:
         {
         }
 
+        NetMeshVertex(const glModelPacket* packet, unsigned short index)
+            : mpPacket(packet)
+            , mIndex(index)
+            , mParticleIndex(-1)
+            , mbIsConstrained(0)
+        {
+        }
+
         const nlVector3* GetPosition() const;
         void GetNormal(nlVector3& out) const;
         void GetTextureCoord(nlVector2& out) const;

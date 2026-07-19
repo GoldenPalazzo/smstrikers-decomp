@@ -70,7 +70,8 @@ public:
 
     void DeleteValues();
 
-    inline AVLTreeEntry<KeyType, ValueType>* Find(const KeyType& key) const;
+    inline void Find(const KeyType& key, ValueType** foundValue,
+        KeyType** foundKey) const;
     inline ValueType* FindGet(const KeyType& key) const;
     inline bool FindGet(const KeyType& key, ValueType** foundValue) const;
     inline ValueType* Add(const KeyType& key, const ValueType& value);
@@ -106,31 +107,28 @@ public:
 }; // total size: 0x14
 
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
-inline AVLTreeEntry<KeyType, ValueType>*
-AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::Find(
-    const KeyType& key) const
+inline void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::Find(
+    const KeyType& key, ValueType** foundValue, KeyType** foundKey) const
 {
     AVLTreeEntry<KeyType, ValueType>* node = m_Root;
 
     while (node != nullptr)
     {
-        int cmpResult;
-        if (key == node->key)
-        {
-            cmpResult = 0;
-        }
-        else if (key < node->key)
-        {
-            cmpResult = -1;
-        }
-        else
-        {
-            cmpResult = 1;
-        }
+        const KeyType& nodeKey = node->key;
+        CompareType compare;
+        int cmpResult = compare(nodeKey, key);
 
         if (cmpResult == 0)
         {
-            return node;
+            if (foundValue != nullptr)
+            {
+                *foundValue = &node->value;
+            }
+            if (foundKey != nullptr)
+            {
+                *foundKey = &node->key;
+            }
+            break;
         }
         else if (cmpResult < 0)
         {
@@ -141,8 +139,6 @@ AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::Find(
             node = (AVLTreeEntry<KeyType, ValueType>*)node->node.right;
         }
     }
-
-    return nullptr;
 }
 
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
