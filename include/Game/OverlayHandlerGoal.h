@@ -1,7 +1,7 @@
 #ifndef _OVERLAYHANDLERGOAL_H_
 #define _OVERLAYHANDLERGOAL_H_
 
-#include "Game/FE/feNSNMessenger.h"
+#include "Game/FE/BaseOverlayHandler.h"
 #include "Game/Sys/eventman.h"
 
 class GoalOverlay : public BaseOverlayHandler

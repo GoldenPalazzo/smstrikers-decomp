@@ -1,7 +1,7 @@
 #ifndef _OVERLAYHANDLERDEMO_H_
 #define _OVERLAYHANDLERDEMO_H_
 
-#include "Game/FE/feNSNMessenger.h"
+#include "Game/FE/BaseOverlayHandler.h"
 
 class DemoOverlay : public BaseOverlayHandler
 {

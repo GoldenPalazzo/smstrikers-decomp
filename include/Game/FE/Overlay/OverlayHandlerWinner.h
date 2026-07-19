@@ -1,7 +1,7 @@
 #ifndef _OVERLAYHANDLERWINNER_H_
 #define _OVERLAYHANDLERWINNER_H_
 
-#include "Game/FE/feNSNMessenger.h"
+#include "Game/FE/BaseOverlayHandler.h"
 #include "Game/FE/feAsyncImage.h"
 #include "Game/Team.h"
 

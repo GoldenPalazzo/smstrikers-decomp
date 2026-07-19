@@ -1,6 +1,6 @@
 #include "Game/OverlayHandlerGoal.h"
 #include "Game/FE/feFinder.h"
-#include "Game/FE/feNSNMessenger.h"
+#include "Game/FE/tlTextInstance.h"
 #include "Game/Game.h"
 #include "Game/GameInfo.h"
 #include "Game/Goalie.h"

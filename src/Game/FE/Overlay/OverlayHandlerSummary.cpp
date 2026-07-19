@@ -1,6 +1,7 @@
 #include "Game/FE/Overlay/OverlayHandlerSummary.h"
 #include "Game/FE/feFinder.h"
 #include "Game/FE/feSlideMenu.h"
+#include "Game/FE/tlTextInstance.h"
 #include "Game/FE/FEAudio.h"
 #include "Game/FE/feManager.h"
 #include "Game/Audio/CrowdMood.h"

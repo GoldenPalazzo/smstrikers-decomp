@@ -2,7 +2,7 @@
 #define _SHPAUSEOPTIONS_H_
 
 #include "Game/FE/feInput.h"
-#include "Game/FE/feNSNMessenger.h"
+#include "Game/FE/BaseOverlayHandler.h"
 #include "Game/FE/feOptionsSubMenus.h"
 
 class PauseOptionsScene : public BaseOverlayHandler

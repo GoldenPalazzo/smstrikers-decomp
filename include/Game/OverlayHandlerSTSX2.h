@@ -1,7 +1,7 @@
 #ifndef _OVERLAYHANDLERSTSX2_H_
 #define _OVERLAYHANDLERSTSX2_H_
 
-#include "Game/FE/feNSNMessenger.h"
+#include "Game/FE/BaseOverlayHandler.h"
 #include "Game/Sys/eventman.h"
 
 class STSX2Overlay : public BaseOverlayHandler

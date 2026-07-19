@@ -2,7 +2,7 @@
 #define _OVERLAYHANDLERINGAMETEXT_H_
 
 #include "Game/BaseSceneHandler.h"
-#include "Game/FE/feNSNMessenger.h"
+#include "Game/FE/BaseOverlayHandler.h"
 #include "Game/OverlayManager.h"
 #include "types.h"
 

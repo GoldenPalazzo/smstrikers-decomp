@@ -9,223 +9,36 @@ extern void* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
 
-static float MESSAGE_DISPLAY_TIME;
+static float MESSAGE_DISPLAY_TIME = 3.0f;
 
 /**
- * Offset/Address/Size: 0x0 | 0x800A131C | size: 0x1C0
+ * Offset/Address/Size: 0xAC0 | 0x800A1DDC | size: 0x84
  */
-void NSNMessengerScene::EnableScrolling(bool state)
+NSNMessengerScene::NSNMessengerScene()
+    : BaseOverlayHandler(3, POSITION_BOTTOM)
 {
-    if (state)
-    {
-        typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-        typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-        union
-        {
-            FindTextByValue byValue;
-            FindTextByRef byRef;
-        } findText;
-
-        unsigned long hash;
-        volatile InlineHasher hB, hA;
-        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-        findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-
-        hash = nlStringLowerHash("msg");
-        h6.m_Hash = hash;
-        h7.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash("Text");
-        hB.m_Hash = hash;
-        hA.m_Hash = hash;
-
-        TLTextInstance* textinstance = findText.byRef(
-            m_pFEPresentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-
-        if (m_scrollText == NULL)
-        {
-            gl_ScreenInfo* screeninfo = glGetScreenInfo();
-            FEScrollText* scrolltext = new (nlMalloc(0x22C, 8, false)) FEScrollText(textinstance, 0, screeninfo->ScreenWidth);
-            m_scrollText = scrolltext;
-        }
-        else
-        {
-            m_scrollText->ApplyNewTextInstancePointer(textinstance, 8000.0f, 100.0f);
-        }
-    }
-    else
-    {
-        if (m_scrollText != NULL)
-        {
-            delete m_scrollText;
-            m_scrollText = NULL;
-        }
-    }
-}
-
-/**
- * Offset/Address/Size: 0x1C0 | 0x800A14DC | size: 0x8
- */
-bool NSNMessengerScene::IsMessengerOpen() const
-{
-    return m_bVisible;
-}
-
-/**
- * Offset/Address/Size: 0x1C8 | 0x800A14E4 | size: 0x48
- */
-void NSNMessengerScene::CloseMessengerNow()
-{
-    SetVisible(false);
-    m_curState = MS_CLOSED;
-}
-
-/**
- * Offset/Address/Size: 0x210 | 0x800A152C | size: 0x64
- */
-void NSNMessengerScene::CloseMessenger()
-{
-    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
-
-    presentation->SetActiveSlide("Outro");
-    presentation->m_currentSlide->m_time = 0.0f;
-    presentation->m_currentSlide->Update(0.0f);
-
-    m_curState = MS_CLOSING;
-}
-
-static inline const unsigned short* LookupLocText(const char* locMessage)
-{
-    unsigned long hash = nlStringLowerHash(locMessage);
-    nlLocalization* loc = (nlLocalization*)g_pLocalization;
-    if (loc->m_LookupTable == 0)
-    {
-        return LocalizationTableNotFound;
-    }
-    nlLocalization::StringLookup* lookup = nlBSearch<nlLocalization::StringLookup, unsigned long>(hash, loc->m_LookupTable, loc->m_pFile->StringCount);
-    if (lookup != 0)
-    {
-        return loc->m_FirstString + lookup->StringOffset;
-    }
-    return MissingLocString;
-}
-
-/**
- * Offset/Address/Size: 0x274 | 0x800A1590 | size: 0x1A4
- * TODO: 98.71% match - post-call cleanup keeps data in r30 instead of reloading into r29 from stack
- */
-void NSNMessengerScene::SetDisplayMessage(const char* locMessage)
-{
-    const unsigned short* text = LookupLocText(locMessage);
-    SetDisplayMessage(BasicString<unsigned short, Detail::TempStringAllocator>(text));
-}
-
-/**
- * Offset/Address/Size: 0x418 | 0x800A1734 | size: 0x220
- */
-void NSNMessengerScene::SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>& theMessage)
-{
-    m_messageDisplaying = true;
+    m_curState = MS_INVALID;
     m_messageDisplayTime = 0.0f;
+    m_scrollText = NULL;
+}
 
-    const unsigned short* str = theMessage.c_str();
-    memcpy(m_displayMessage, str, 0x1FE);
-
-    FEPresentation* pres = m_pFEScene->m_pFEPackage->GetPresentation();
-
-    TLTextInstance* textBox;
-
-    textBox = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
-        pres,
-        InlineHasher(nlStringLowerHash("Normal")),
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("Group")),
-        InlineHasher(nlStringLowerHash("Text")));
-    textBox->SetString(m_displayMessage);
-
-    textBox = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
-        pres,
-        InlineHasher(nlStringLowerHash("Intro")),
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("Group")),
-        InlineHasher(nlStringLowerHash("Text")));
-    textBox->SetString(m_displayMessage);
-
-    textBox = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
-        pres,
-        InlineHasher(nlStringLowerHash("Outro")),
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("Group")),
-        InlineHasher(nlStringLowerHash("Text")));
-    textBox->SetString(m_displayMessage);
-
+/**
+ * Offset/Address/Size: 0x940 | 0x800A1C5C | size: 0x180
+ */
+NSNMessengerScene::~NSNMessengerScene()
+{
     if (m_scrollText != NULL)
     {
-        m_scrollText->SetDisplayMessage(theMessage);
+        delete m_scrollText;
     }
 }
 
 /**
- * Offset/Address/Size: 0x638 | 0x800A1954 | size: 0x70
+ * Offset/Address/Size: 0x914 | 0x800A1C30 | size: 0x2C
  */
-void NSNMessengerScene::ForceMessengerVisibleNow()
+void NSNMessengerScene::SceneCreated()
 {
-    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
-    SetVisible(true);
-    presentation->SetActiveSlide("Visible");
-    m_curState = MS_OPEN;
-}
-
-/**
- * Offset/Address/Size: 0x6A8 | 0x800A19C4 | size: 0x80
- */
-void NSNMessengerScene::OpenMessengerNow()
-{
-    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
-
-    if (mVisibilityMask & nlTaskManager::m_pInstance->m_CurrState)
-    {
-        SetVisible(true);
-    }
-
-    presentation->SetActiveSlide("Visible");
-    m_curState = MS_OPEN;
-}
-
-/**
- * Offset/Address/Size: 0x728 | 0x800A1A44 | size: 0x8C
- */
-void NSNMessengerScene::OpenMessenger()
-{
-    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
-
-    if (mVisibilityMask & nlTaskManager::m_pInstance->m_CurrState)
-    {
-        SetVisible(true);
-    }
-
-    presentation->SetActiveSlide("Intro");
-    presentation->m_currentSlide->Update(0.0f);
-    m_curState = MS_OPENING;
+    CloseMessengerNow();
 }
 
 /**
@@ -276,107 +89,177 @@ void NSNMessengerScene::Update(float fDeltaT)
 }
 
 /**
- * Offset/Address/Size: 0x914 | 0x800A1C30 | size: 0x2C
+ * Offset/Address/Size: 0x728 | 0x800A1A44 | size: 0x8C
  */
-void NSNMessengerScene::SceneCreated()
+void NSNMessengerScene::OpenMessenger()
 {
-    CloseMessengerNow();
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+
+    if (mVisibilityMask & nlTaskManager::m_pInstance->m_CurrState)
+    {
+        SetVisible(true);
+    }
+
+    presentation->SetActiveSlide("Intro");
+    presentation->m_currentSlide->Update(0.0f);
+    m_curState = MS_OPENING;
 }
 
 /**
- * Offset/Address/Size: 0x940 | 0x800A1C5C | size: 0x180
+ * Offset/Address/Size: 0x6A8 | 0x800A19C4 | size: 0x80
  */
-NSNMessengerScene::~NSNMessengerScene()
+void NSNMessengerScene::OpenMessengerNow()
 {
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+
+    if (mVisibilityMask & nlTaskManager::m_pInstance->m_CurrState)
+    {
+        SetVisible(true);
+    }
+
+    presentation->SetActiveSlide("Normal");
+    m_curState = MS_OPEN;
+}
+
+/**
+ * Offset/Address/Size: 0x638 | 0x800A1954 | size: 0x70
+ */
+void NSNMessengerScene::ForceMessengerVisibleNow()
+{
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+    SetVisible(true);
+    presentation->SetActiveSlide("Normal");
+    m_curState = MS_OPEN;
+}
+
+/**
+ * Offset/Address/Size: 0x418 | 0x800A1734 | size: 0x220
+ */
+void NSNMessengerScene::SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>& theMessage)
+{
+    m_messageDisplaying = true;
+    m_messageDisplayTime = 0.0f;
+
+    const unsigned short* str = theMessage.c_str();
+    memcpy(m_displayMessage, str, 0x1FE);
+
+    FEPresentation* pres = m_pFEScene->m_pFEPackage->GetPresentation();
+
+    TLTextInstance* textBox;
+
+    textBox = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+        pres,
+        InlineHasher(nlStringLowerHash("Normal")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Group")),
+        InlineHasher(nlStringLowerHash("Text")));
+    textBox->SetString(m_displayMessage);
+
+    textBox = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+        pres,
+        InlineHasher(nlStringLowerHash("Intro")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Group")),
+        InlineHasher(nlStringLowerHash("Text")));
+    textBox->SetString(m_displayMessage);
+
+    textBox = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+        pres,
+        InlineHasher(nlStringLowerHash("Outro")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Group")),
+        InlineHasher(nlStringLowerHash("Text")));
+    textBox->SetString(m_displayMessage);
+
     if (m_scrollText != NULL)
     {
-        delete m_scrollText;
+        m_scrollText->SetDisplayMessage(theMessage);
     }
 }
 
-/**
- * Offset/Address/Size: 0xAC0 | 0x800A1DDC | size: 0x84
- */
-NSNMessengerScene::NSNMessengerScene()
-    : BaseOverlayHandler(3, POSITION_BOTTOM)
+static inline const unsigned short* LookupLocText(const char* locMessage)
 {
-    m_curState = MS_INVALID;
-    m_messageDisplayTime = 0.0f;
-    m_scrollText = NULL;
+    unsigned long hash = nlStringLowerHash(locMessage);
+    nlLocalization* loc = (nlLocalization*)g_pLocalization;
+    if (loc->m_LookupTable == 0)
+    {
+        return LocalizationTableNotFound;
+    }
+    nlLocalization::StringLookup* lookup = nlBSearch<nlLocalization::StringLookup, unsigned long>(hash, loc->m_LookupTable, loc->m_pFile->StringCount);
+    if (lookup != 0)
+    {
+        return loc->m_FirstString + lookup->StringOffset;
+    }
+    return MissingLocString;
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x800A1E60 | size: 0xA8
+ * Offset/Address/Size: 0x274 | 0x800A1590 | size: 0x1A4
  */
-inline void NSNMessengerScene::SetMessageFinishedCB(const Function<FnVoidVoid>& cb)
+void NSNMessengerScene::SetDisplayMessage(const char* locMessage)
 {
-    m_messageFinishedCB = cb;
+    const unsigned short* text = LookupLocText(locMessage);
+    SetDisplayMessage(BasicString<unsigned short, Detail::TempStringAllocator>(text));
 }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800A1F08 | size: 0x4
-//  */
-// void BaseSceneHandler::SceneCreated()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x210 | 0x800A152C | size: 0x64
+ */
+void NSNMessengerScene::CloseMessenger()
+{
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800A1F0C | size: 0x38
-//  */
-// void FEFinder<TLTextInstance, 3>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
+    presentation->SetActiveSlide("Outro");
+    presentation->m_currentSlide->m_time = 0.0f;
+    presentation->m_currentSlide->Update(0.0f);
 
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800A1F44 | size: 0x84
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
+    m_curState = MS_CLOSING;
+}
 
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800A1FC8 | size: 0x15C
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x1C8 | 0x800A14E4 | size: 0x48
+ */
+void NSNMessengerScene::CloseMessengerNow()
+{
+    SetVisible(false);
+    m_curState = MS_CLOSED;
+}
 
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800A2124 | size: 0x38
-//  */
-// void FEFinder<TLTextInstance, 3>::Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher, InlineHasher)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x1C0 | 0x800A14DC | size: 0x8
+ */
+bool NSNMessengerScene::IsMessengerOpen() const
+{
+    return m_bVisible;
+}
 
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800A215C | size: 0x84
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long, unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x800A131C | size: 0x1C0
+ */
+void NSNMessengerScene::EnableScrolling(bool state)
+{
+    if (state)
+    {
+        TLTextInstance* textinstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            m_pFEPresentation->m_currentSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("Group")),
+            InlineHasher(nlStringLowerHash("Text")));
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800A223C | size: 0x8
-//  */
-// void NSNMessengerScene::@4@SceneCreated()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x8 | 0x800A2244 | size: 0x8
-//  */
-// void NSNMessengerScene::@4@Update(float)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x10 | 0x800A224C | size: 0x8
-//  */
-// void 0x802A9938..0x802A99C0 | size: 0x88
-// {
-// }
+        if (m_scrollText == NULL)
+        {
+            gl_ScreenInfo* screeninfo = glGetScreenInfo();
+            FEScrollText* scrolltext = new (nlMalloc(0x22C, 8, false)) FEScrollText(textinstance, 0, screeninfo->ScreenWidth);
+            m_scrollText = scrolltext;
+        }
+        else
+        {
+            m_scrollText->ApplyNewTextInstancePointer(textinstance, 8000.0f, 100.0f);
+        }
+    }
+    else if (m_scrollText != NULL)
+    {
+        delete m_scrollText;
+        m_scrollText = NULL;
+    }
+}

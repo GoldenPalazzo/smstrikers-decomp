@@ -1,7 +1,7 @@
 #ifndef _OVERLAYHANDLERSUMMARY_H_
 #define _OVERLAYHANDLERSUMMARY_H_
 
-#include "Game/FE/feNSNMessenger.h"
+#include "Game/FE/BaseOverlayHandler.h"
 #include "Game/FE/feInput.h"
 #include "Game/FE/feButtonComponent.h"
 

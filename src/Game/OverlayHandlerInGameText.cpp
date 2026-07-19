@@ -2,6 +2,7 @@
 #include "Game/BaseSceneHandler.h"
 #include "Game/DB/StatsTracker.h"
 #include "Game/FE/FEPresentation.h"
+#include "Game/FE/tlTextInstance.h"
 #include "Game/FE/tlSlide.h"
 #include "Game/Game.h"
 #include "Game/GameInfo.h"

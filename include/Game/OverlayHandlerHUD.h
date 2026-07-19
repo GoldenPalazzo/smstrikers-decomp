@@ -3,7 +3,7 @@
 
 #include "Game/FE/feAsyncImage.h"
 #include "Game/FE/feTextureResource.h"
-#include "Game/FE/feNSNMessenger.h"
+#include "Game/FE/BaseOverlayHandler.h"
 #include "Game/FE/feRender.h"
 #include "Game/FE/tlTextInstance.h"
 
