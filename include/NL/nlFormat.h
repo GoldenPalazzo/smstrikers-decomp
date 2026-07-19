@@ -29,11 +29,11 @@ public:
 
         for (int i = 0; i < mString.size(); i++)
         {
-            if (mString[i] == '{'
+            if (mString[i] == (typename StringType::value_type)'{'
                 && i + 1 < mString.size()
                 && mString[i + 1] - '0' == mCurrentPos
                 && i + 2 < mString.size()
-                && mString[i + 2] == '}')
+                && mString[i + 2] == (typename StringType::value_type)'}')
             {
                 mString.erase(mString.begin() + i, mString.begin() + i + 3);
                 mString.insert(mString.begin() + i, insert.begin(), insert.end());
@@ -46,7 +46,7 @@ public:
 };
 
 template <typename StringType, typename T0, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-inline StringType Format(
+StringType Format(
     const StringType& string,
     const T0& t0,
     const T1& t1,
@@ -61,7 +61,7 @@ inline StringType Format(
 }
 
 template <typename StringType, typename T0, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-inline StringType Format(
+StringType Format(
     const StringType& string,
     const T0& t0,
     const T1& t1,
@@ -75,7 +75,7 @@ inline StringType Format(
 }
 
 template <typename StringType, typename T0, typename T1, typename T2, typename T3, typename T4, typename T5>
-inline StringType Format(
+StringType Format(
     const StringType& string,
     const T0& t0,
     const T1& t1,
@@ -88,7 +88,7 @@ inline StringType Format(
 }
 
 template <typename StringType, typename T0, typename T1, typename T2, typename T3, typename T4>
-inline StringType Format(
+StringType Format(
     const StringType& string,
     const T0& t0,
     const T1& t1,
@@ -100,7 +100,7 @@ inline StringType Format(
 }
 
 template <typename StringType, typename T0, typename T1, typename T2, typename T3>
-inline StringType Format(
+StringType Format(
     const StringType& string,
     const T0& t0,
     const T1& t1,
@@ -111,7 +111,7 @@ inline StringType Format(
 }
 
 template <typename StringType, typename T0, typename T1, typename T2>
-inline StringType Format(
+StringType Format(
     const StringType& string,
     const T0& t0,
     const T1& t1,
@@ -121,7 +121,7 @@ inline StringType Format(
 }
 
 template <typename StringType, typename T0, typename T1>
-inline StringType Format(
+StringType Format(
     const StringType& string,
     const T0& t0,
     const T1& t1)

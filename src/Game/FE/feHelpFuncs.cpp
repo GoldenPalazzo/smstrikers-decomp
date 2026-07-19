@@ -1,3 +1,20 @@
+#include "types.h"
+#include "strtold.h"
+#include "NL/nlBasicString.h"
+#include "NL/nlPrint.h"
+
+namespace TakeGameMemSnapshot
+{
+namespace Detail
+{
+using ::Detail::TempStringAllocator;
+}
+
+#include "NL/nlFormat.h"
+} // namespace TakeGameMemSnapshot
+
+using TakeGameMemSnapshot::LexicalCast;
+
 #include "Game/FE/feHelpFuncs.h"
 
 #include "Game/FE/FEAudio.h"
@@ -162,132 +179,11 @@ static const char* CHARACTER_ACCEPT_SOUNDS[] = {
 };
 
 // /**
-//  * Offset/Address/Size: 0x130 | 0x800A6640 | size: 0x30
-//  */
-namespace TakeGameMemSnapshot
-{
-namespace Detail
-{
-template <typename To, typename From>
-struct LexicalCastImpl
-{
-    static To Do(From);
-};
-} // namespace Detail
-
-template <typename To, typename From>
-To LexicalCast(const From& value);
-
-template <>
-BasicString<char, ::Detail::TempStringAllocator>
-LexicalCast<BasicString<char, ::Detail::TempStringAllocator>, unsigned int>(const unsigned int& value)
-{
-    return Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStringAllocator>, unsigned int>::Do(value);
-}
-
-template <>
-BasicString<char, ::Detail::TempStringAllocator>
-LexicalCast<BasicString<char, ::Detail::TempStringAllocator>, unsigned long>(const unsigned long& value)
-{
-    return Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStringAllocator>, unsigned long>::Do(value);
-}
-} // namespace TakeGameMemSnapshot
-
-/**
- * Offset/Address/Size: 0x160 | 0x800A6670 | size: 0x100
- */
-#pragma optimization_level 2
-template <>
-BasicString<char, ::Detail::TempStringAllocator>
-TakeGameMemSnapshot::Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStringAllocator>, unsigned int>::Do(unsigned int t)
-{
-    char s[0x40];
-    nlSNPrintf(s, 0x40, "%u", t);
-
-    BasicString<char, ::Detail::TempStringAllocator>::Data* data = (BasicString<char, ::Detail::TempStringAllocator>::Data*)::Detail::TempStringAllocator::allocate(0x10);
-    if (data != 0)
-    {
-        const char* str = s;
-        const char* p = str;
-
-        data->mData.mData = 0;
-        data->mData.mSize = 0;
-        data->mData.mCapacity = 0;
-
-        while (*p++ != 0)
-        {
-            data->mData.mSize++;
-        }
-
-        data->mData.mSize++;
-        data->mData.mData = (char*)::Detail::TempStringAllocator::allocate(data->mData.mSize + 1);
-        data->mData.mCapacity = data->mData.mSize;
-
-        for (int i = 0; i < data->mData.mSize; i++)
-        {
-            data->mData.mData[i] = *str++;
-        }
-
-        data->mRefCount = 1;
-    }
-
-    return (BasicString<char, ::Detail::TempStringAllocator>)data;
-}
-#pragma optimization_level 4
-
-/**
- * Offset/Address/Size: 0x30 | 0x800A6540 | size: 0x100
- */
-#pragma optimization_level 2
-template <>
-BasicString<char, ::Detail::TempStringAllocator>
-TakeGameMemSnapshot::Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStringAllocator>, unsigned long>::Do(unsigned long t)
-{
-    char s[0x40];
-    nlSNPrintf(s, 0x40, "%u", t);
-
-    BasicString<char, ::Detail::TempStringAllocator>::Data* data = (BasicString<char, ::Detail::TempStringAllocator>::Data*)::Detail::TempStringAllocator::allocate(0x10);
-    if (data != 0)
-    {
-        const char* str = s;
-        const char* p = str;
-
-        data->mData.mData = 0;
-        data->mData.mSize = 0;
-        data->mData.mCapacity = 0;
-
-        while (*p++ != 0)
-        {
-            data->mData.mSize++;
-        }
-
-        data->mData.mSize++;
-        data->mData.mData = (char*)::Detail::TempStringAllocator::allocate(data->mData.mSize + 1);
-        data->mData.mCapacity = data->mData.mSize;
-
-        for (int i = 0; i < data->mData.mSize; i++)
-        {
-            data->mData.mData[i] = *str++;
-        }
-
-        data->mRefCount = 1;
-    }
-
-    return (BasicString<char, ::Detail::TempStringAllocator>)data;
-}
-#pragma optimization_level 4
-
-// /**
 //  * Offset/Address/Size: 0x0 | 0x800A6510 | size: 0x30
 //  */
 // void TakeGameMemSnapshot::LexicalCast<BasicString<char, Detail::TempStringAllocator>, unsigned long>(const unsigned long&)
 // {
 // }
-
-/**
- * Offset/Address/Size: 0xED8 | 0x800A579C | size: 0xD74
- * TODO: 99.37% match - r27/r28/r29 register roles differ in the erase and insert COW paths.
- */
 
 // /**
 //  * Offset/Address/Size: 0x164 | 0x800A4A28 | size: 0xD74
@@ -1062,122 +958,7 @@ namespace TakeGameMemSnapshot
 {
 unsigned char gTakenSnapshot;
 float gTimeElapsed;
-
-template <typename StringType>
-class FormatImpl
-{
-public:
-    StringType mString;
-    int mCurrentPos;
-
-    operator StringType() const
-    {
-        return mString;
-    }
-
-    template <typename T>
-    FormatImpl& operator%(const T& t);
-};
-
-template <typename StringType, typename T1, typename T2, typename T3>
-StringType Format(const StringType& format, const T1& value1, const T2& value2, const T3& value3);
-
-template <typename StringType>
-template <typename T>
-FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
-{
-    StringType insert = LexicalCast<StringType, T>(t);
-
-    for (int i = 0; i < (mString.mData ? mString.mData->mData.mSize - 1 : 0); i++)
-    {
-        if (mString[i] != '{')
-            continue;
-
-        if (i + 1 >= (mString.mData ? mString.mData->mData.mSize - 1 : 0))
-            continue;
-
-        typename StringType::value_type* matchString = &mString[i];
-        if (mCurrentPos != matchString[1] - '0')
-            continue;
-
-        if (i + 2 >= (mString.mData ? mString.mData->mData.mSize - 1 : 0))
-            continue;
-
-        typename StringType::value_type* matchStringEnd = &mString[i];
-        if (matchStringEnd[2] != '}')
-            continue;
-
-        typename StringType::value_type* eraseBegin;
-        typename StringType::value_type* eraseEnd;
-        mString[0];
-        eraseEnd = (mString.mData ? mString.mData->mData.mData : (typename StringType::value_type*)0) + i + 3;
-        mString[0];
-        eraseBegin = (mString.mData ? mString.mData->mData.mData : (typename StringType::value_type*)0) + i;
-        mString[0];
-        typename StringType::Data* eraseData = mString.mData;
-        int eraseSize = eraseEnd - eraseBegin;
-        int eraseOffset = eraseBegin - eraseData->mData.mData;
-        typename StringType::value_type* eraseAt = eraseData->mData.mData + eraseOffset;
-        while (eraseEnd != eraseData->mData.mData + eraseData->mData.mSize)
-        {
-            *eraseAt = *eraseEnd;
-            eraseEnd++;
-            eraseAt++;
-        }
-        eraseData->mData.mSize -= eraseSize;
-        StringType& insertRef = insert;
-        mString[i];
-        typename StringType::value_type* mStringData = mString.mData ? mString.mData->mData.mData : 0;
-        insertRef[0];
-        typename StringType::value_type* insertBegin = insertRef.mData ? insertRef.mData->mData.mData : 0;
-        insertRef[(int)(insertRef.mData ? insertRef.mData->mData.mSize - 1 : 0)];
-        mString.insert(mStringData + i, insertBegin, insertRef.mData ? insertRef.mData->mData.mData + insertRef.mData->mData.mSize - 1 : (typename StringType::value_type*)0);
-    }
-
-    mCurrentPos++;
-    return *this;
-}
-
 } // namespace TakeGameMemSnapshot
-
-/**
- * Offset/Address/Size: 0x0 | 0x800A48C4 | size: 0x13C
- */
-template <>
-BasicString<char, ::Detail::TempStringAllocator>
-TakeGameMemSnapshot::Format<BasicString<char, ::Detail::TempStringAllocator>, unsigned long, unsigned int, unsigned int>(
-    const BasicString<char, ::Detail::TempStringAllocator>& format,
-    const unsigned long& value1,
-    const unsigned int& value2,
-    const unsigned int& value3)
-{
-    struct FormatImplLayoutCharTempULUIUI
-    {
-        BasicString<char, ::Detail::TempStringAllocator> mString;
-        int mCurrentPos;
-
-        FormatImplLayoutCharTempULUIUI(BasicString<char, ::Detail::TempStringAllocator>::Data* data)
-            : mString(data)
-            , mCurrentPos(0)
-        {
-        }
-    };
-
-    BasicString<char, ::Detail::TempStringAllocator>::Data* data = format.mData;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-
-    FormatImplLayoutCharTempULUIUI impl(data);
-
-    return BasicString<char, ::Detail::TempStringAllocator>(
-        (BasicString<char, ::Detail::TempStringAllocator>)((((TakeGameMemSnapshot::FormatImpl<BasicString<char, ::Detail::TempStringAllocator> >&)impl) % value1) % value2 % value3));
-}
 
 /**
  * Offset/Address/Size: 0x634 | 0x800A36F0 | size: 0x14
@@ -1193,12 +974,6 @@ void TakeGameMemSnapshot::ResetTimers()
  * TODO: 99.64% match - format string allocation and literal cursor use swapped
  * r30/r31 roles.
  */
-namespace TakeGameMemSnapshot
-{
-template <typename StringType, typename T1, typename T2, typename T3>
-StringType Format(const StringType& fmt, const T1& a, const T2& b, const T3& c);
-}
-
 void TakeGameMemSnapshot::WriteToDisk()
 {
     static const char* StadiumNames[7] = {

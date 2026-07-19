@@ -40,6 +40,10 @@ inline void* operator new[](unsigned long size, unsigned int alignment, bool atE
 {
     return nlMalloc(size, alignment, atEnd);
 }
+inline void* operator new[](unsigned long size, unsigned int alignment, bool atEnd, const char*)
+{
+    return nlMalloc(size, alignment, atEnd);
+}
 void operator delete[](void* ptr);
 void operator delete(void* ptr);
 unsigned int nlVirtualTotalFree();
@@ -66,25 +70,6 @@ extern "C"
 #ifndef memcmp
     int memcmp(const void* ptr1, const void* ptr2, size_t num);
 #endif
-
-    class DefaultAllocator
-    {
-    public:
-        enum
-        {
-            kAtEnd = false
-        };
-
-        static void* allocate(size_t size)
-        {
-            return nlMalloc(size, 8, false); // 8-byte alignment, not at end
-        }
-
-        static void deallocate(void* ptr)
-        {
-            nlFree(ptr);
-        }
-    };
 
 #ifdef __cplusplus
 }

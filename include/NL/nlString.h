@@ -3,6 +3,41 @@
 
 #include "types.h"
 #include "strtold.h"
+#include "NL/nlMemory.h"
+
+namespace Detail
+{
+class TempStringAllocator
+{
+public:
+    enum
+    {
+        kAtEnd = true
+    };
+
+    template <typename T>
+    static T* New(int count, const char* name)
+    {
+        return new (8, kAtEnd, name) T[count];
+    }
+
+    template <typename T>
+    static void Delete(T* ptr)
+    {
+        delete[] ptr;
+    }
+
+    static void* Alloc(int size)
+    {
+        return nlMalloc(size, 8, kAtEnd);
+    }
+
+    static void Free(void* ptr)
+    {
+        nlFree(ptr);
+    }
+};
+} // namespace Detail
 
 #ifndef nlPrintf
 extern int nlPrintf(const char*, ...);

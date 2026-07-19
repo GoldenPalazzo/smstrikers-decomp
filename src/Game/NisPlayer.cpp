@@ -811,32 +811,9 @@ void NisPlayer::Load(char* buffer, unsigned int size, NisHeader& nisHeader)
 
 typedef BasicString<char, Detail::TempStringAllocator> TriggerString;
 
-static inline void EraseTriggerPrefix(TriggerString& s, const char* begin, const char* end)
-{
-    s[0];
-    TriggerString::Data* data = s.mData;
-    int size = end - begin;
-    const char* eraseEnd = end;
-    int offset = begin - data->mData.mData;
-    char* at = data->mData.mData + offset;
-    while (eraseEnd != data->mData.mData + data->mData.mSize)
-    {
-        *at = *eraseEnd;
-        eraseEnd++;
-        at++;
-    }
-    data->mData.mSize -= size;
-}
-
-static inline char* TriggerMutableBegin(TriggerString& s)
-{
-    s[0];
-    return s.mData ? s.mData->mData.mData : (char*)0;
-}
-
 /**
  * Offset/Address/Size: 0x1AE0 | 0x801167BC | size: 0xD08
- * TODO: 99.42% match - remaining register allocation differs in BasicString construction and copy-on-write paths.
+ * TODO: Remaining register allocation differs in BasicString construction and copy-on-write paths.
  */
 void NisPlayer::LoadTriggers(Nis& nis)
 {
@@ -862,10 +839,14 @@ void NisPlayer::LoadTriggers(Nis& nis)
         {
             if (name[i] == '_')
             {
-                EraseTriggerPrefix(name, ((void)name[0], name.mData ? name.mData->mData.mData : (char*)0), ((void)name[0], (name.mData ? name.mData->mData.mData : (char*)0) + i));
+                name.Cow();
+                char* eraseEnd = (name.mData ? name.mData->mData.mData : (char*)0) + i;
+                name.Cow();
+                char* eraseBegin = name.mData ? name.mData->mData.mData : (char*)0;
+                name.erase(eraseBegin, eraseEnd);
 
                 BasicString<char, Detail::TempStringAllocator> all("all");
-                char* at = TriggerMutableBegin(name);
+                char* at = name.begin();
                 TriggerString::Data* allData = all.mData;
                 const char* begin;
                 if (allData != NULL)

@@ -37,32 +37,8 @@ class TempStringAllocator;
 template <typename CharT, typename Allocator>
 class BasicString;
 
-// Format function returning result (SRP), with generic second param
 template <typename StringType, typename T>
 StringType Format(const StringType& format, const T& value);
-
-// Detail namespace with TempStringAllocator
-namespace Detail
-{
-class TempStringAllocator
-{
-public:
-    enum
-    {
-        kAtEnd = true
-    };
-
-    static inline void* allocate(size_t size)
-    {
-        return nlMalloc(size, 8, true);
-    }
-
-    static void deallocate(void* ptr)
-    {
-        nlFree(ptr);
-    }
-};
-} // namespace Detail
 
 // BasicString template class - total size: 0x4 (pointer to Data)
 template <typename CharT, typename Allocator>
@@ -86,8 +62,14 @@ public:
         {
             for (int i = 0; i < mData.mSize - 1; i++)
             {
-                mData.mData[i] = *begin++;
+                mData[i] = begin[i];
             }
+        }
+
+        Data(const Data& other)
+            : mData(other.mData, 0)
+            , mRefCount(1)
+        {
         }
 
         void reserve(int capacity);
@@ -99,8 +81,60 @@ public:
             return this;
         }
 
+        void* operator new(size_t size)
+        {
+            return Allocator::Alloc(size);
+        }
+
+        void operator delete(void* ptr)
+        {
+            if (ptr)
+            {
+                Allocator::Free(ptr);
+            }
+        }
+
+        void DecRef() const
+        {
+            if (--mRefCount == 0)
+            {
+                delete this;
+            }
+        }
+
+        CharT& operator[](int index)
+        {
+            return mData[index];
+        }
+
+        const CharT& operator[](int index) const
+        {
+            return mData[index];
+        }
+
+        CharT* begin()
+        {
+            return mData.mData;
+        }
+
+        CharT* end()
+        {
+            return mData.mData + mData.mSize - 1;
+        }
+
+        Data* Cow()
+        {
+            if (mRefCount == 1)
+            {
+                return this;
+            }
+            Data* data = new Data(*this);
+            DecRef();
+            return data;
+        }
+
         Vector<CharT, Allocator> mData;
-        int mRefCount;
+        mutable int mRefCount;
     };
 
     Data* mData; // offset 0x0
@@ -112,8 +146,7 @@ public:
 
     BasicString(const CharT* string)
     {
-        void* storage = Allocator::allocate(sizeof(Data));
-        mData = new (storage) Data(string);
+        mData = new Data(string);
     }
 
     BasicString(const CharT* begin, const CharT* end);
@@ -170,14 +203,22 @@ public:
 
     CharT* begin()
     {
-        (*this)[0];
-        return mData ? mData->mData.mData : (CharT*)0;
+        Cow();
+        if (mData)
+        {
+            return GetData().begin();
+        }
+        return (CharT*)0;
     }
 
     CharT* end()
     {
-        (*this)[(int)(mData ? mData->mData.mSize - 1 : 0)];
-        return mData ? mData->mData.mData + mData->mData.mSize - 1 : (CharT*)0;
+        Cow();
+        if (mData)
+        {
+            return GetData().end();
+        }
+        return (CharT*)0;
     }
 
     const CharT* begin() const
@@ -195,66 +236,32 @@ public:
         return mData->mData.mData[index];
     }
 
-    CharT& operator[](int index)
+    Data& GetData()
     {
-        Data* oldData = mData;
-        if (oldData == 0)
+        return *mData;
+    }
+
+    const Data& GetData() const
+    {
+        return *mData;
+    }
+
+    void Cow()
+    {
+        if (!mData)
         {
-            Data* data = (Data*)Allocator::allocate(sizeof(Data));
-            if (data != 0)
-            {
-                data->mData.mData = (CharT*)Allocator::allocate(sizeof(CharT));
-                int sz = 1;
-                data->mData.mSize = sz;
-                data->mData.mCapacity = sz;
-                data->mData[0] = 0;
-                data->mRefCount = 1;
-                for (int j = 0; j < data->mData.mSize - 1; j++)
-                {
-                    data->mData[j] = ((CharT*)0)[j];
-                }
-            }
-            mData = data;
+            mData = new Data((const CharT*)0, (const CharT*)0);
         }
         else
         {
-            if (oldData->mRefCount == 1)
-            {
-                oldData = mData;
-            }
-            else
-            {
-                Data* newData = (Data*)Allocator::allocate(sizeof(Data));
-                if (newData != 0)
-                {
-                    newData->mData.mData = (CharT*)Allocator::allocate(oldData->mData.mSize * sizeof(CharT));
-                    newData->mData.mSize = oldData->mData.mSize;
-                    newData->mData.mCapacity = oldData->mData.mSize;
-                    for (int j = 0; j < newData->mData.mSize; j++)
-                    {
-                        newData->mData.mData[j] = oldData->mData.mData[j];
-                    }
-                    newData->mRefCount = 1;
-                }
-                if (--oldData->mRefCount == 0)
-                {
-                    if (oldData)
-                    {
-                        if (oldData)
-                        {
-                            delete[] oldData->mData.mData;
-                        }
-                        if (oldData)
-                        {
-                            nlFree(oldData);
-                        }
-                    }
-                }
-                oldData = newData;
-            }
-            mData = oldData;
+            mData = mData->Cow();
         }
-        return mData->mData.mData[index];
+    }
+
+    CharT& operator[](int index)
+    {
+        Cow();
+        return GetData()[index];
     }
 
     void insert(CharT* at, const CharT* begin, const CharT* end);
@@ -287,7 +294,7 @@ public:
 
 template <typename CharT, typename Allocator>
 inline BasicString<CharT, Allocator>::BasicString(const CharT* begin, const CharT* end)
-    : mData(new (8, Allocator::kAtEnd) Data(begin, end))
+    : mData(new Data(begin, end))
 {
 }
 
@@ -468,21 +475,10 @@ void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const 
 }
 
 template <typename CharT, typename Allocator>
-void BasicString<CharT, Allocator>::erase(const CharT* begin, const CharT* end)
+inline void BasicString<CharT, Allocator>::erase(const CharT* begin, const CharT* end)
 {
-    (*this)[0];
-    CharT* at;
-    int size = end - begin;
-    const CharT* eraseEnd = end;
-    Data* data = mData;
-    at = data->mData.mData + (begin - data->mData.mData);
-    while (eraseEnd != data->mData.mData + data->mData.mSize)
-    {
-        *at = *eraseEnd;
-        eraseEnd++;
-        at++;
-    }
-    data->mData.mSize -= size;
+    Cow();
+    mData->mData.erase(begin, end);
 }
 
 // TODO: 98.84% match - scan cursor and copy-on-write temporary register swaps remain.

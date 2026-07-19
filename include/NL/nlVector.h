@@ -4,6 +4,37 @@
 #include "NL/nlMath.h"
 #include "NL/nlMemory.h"
 
+class DefaultAllocator
+{
+public:
+    enum
+    {
+        kAtEnd = false
+    };
+
+    template <typename T>
+    static T* New(int count, const char* name)
+    {
+        return new (8, kAtEnd, name) T[count];
+    }
+
+    template <typename T>
+    static void Delete(T* ptr)
+    {
+        delete[] ptr;
+    }
+
+    static void* Alloc(int size)
+    {
+        return nlMalloc(size, 8, kAtEnd);
+    }
+
+    static void Free(void* ptr)
+    {
+        nlFree(ptr);
+    }
+};
+
 template <typename T, typename Allocator = DefaultAllocator>
 class Vector
 {
@@ -22,7 +53,7 @@ public:
         }
 
         mSize++;
-        mData = new (8, Allocator::kAtEnd) T[mSize + 1];
+        mData = Allocator::New<T>(mSize + 1, 0);
         mCapacity = mSize;
 
         for (int i = 0; i < mSize; i++)
@@ -30,9 +61,19 @@ public:
             mData[i] = *string++;
         }
     }
+    Vector(const Vector& other, const char* name)
+    {
+        mData = Allocator::New<T>(other.mSize, name);
+        mSize = other.mSize;
+        mCapacity = other.mSize;
+        for (int i = 0; i < mSize; i++)
+        {
+            mData[i] = other.mData[i];
+        }
+    }
     Vector(int count, const char* name)
     {
-        mData = new (8, Allocator::kAtEnd) T[count];
+        mData = Allocator::New<T>(count, name);
         mSize = count;
         mCapacity = count;
         for (int i = 0; i < count; i++)
@@ -42,13 +83,14 @@ public:
     }
     ~Vector()
     {
-        delete[] mData;
+        Allocator::Delete<T>(mData);
     }
     void Swap(Vector& other);
     void reserve(int capacity);
     void resize(int size);
     void push_back(const T& value);
     void insert(T* position, const T* first, const T* last);
+    inline void erase(const T* first, const T* last);
     T& operator[](int index)
     {
         return mData[index];
@@ -100,6 +142,23 @@ void Vector<T, Allocator>::insert(T* at, const T* begin, const T* end)
         at++;
     }
     mSize += size;
+}
+
+template <typename T, typename Allocator>
+inline void Vector<T, Allocator>::erase(const T* begin, const T* end)
+{
+    const T* eraseEnd = end;
+    int size = end - begin;
+    T* at;
+    int offset = begin - mData;
+    at = mData + offset;
+    while (eraseEnd != mData + mSize)
+    {
+        *at = *eraseEnd;
+        eraseEnd++;
+        at++;
+    }
+    mSize -= size;
 }
 
 template <typename T, typename Allocator>
