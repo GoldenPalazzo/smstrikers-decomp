@@ -1078,7 +1078,7 @@ config.libs = [
             Object(Matching, "Game/SH/SHChooseCaptains.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SH/SHChooseCup.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(
-                NonMatching,
+                Matching,
                 "Game/SH/SHChooseSides.cpp",
                 extra_cflags=["-inline auto", "-inline deferred", '-pragma "inline_max_total_size(4608)"'],
             ),

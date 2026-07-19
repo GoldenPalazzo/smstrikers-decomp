@@ -827,7 +827,7 @@ void SHChooseSides2::Update(float fDeltaT)
 
         if (mProceedDelay == 0)
         {
-            FEAudio::PlayAnimAudioEvent("choose_sides_proceed", false);
+            FEAudio::PlayAnimAudioEvent("sfx_accept", false);
 
             if (mContext == PAUSE)
             {
