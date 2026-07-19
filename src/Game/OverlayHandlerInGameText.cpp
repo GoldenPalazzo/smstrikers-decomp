@@ -88,29 +88,6 @@ void BasicString<unsigned short, Detail::TempStringAllocator>::AppendInPlace<Det
 }
 */
 /**
- * Offset/Address/Size: 0x0 | 0x800FC8DC | size: 0xBC
- */
-template <>
-template <>
-BasicString<unsigned short, Detail::TempStringAllocator>
-BasicString<unsigned short, Detail::TempStringAllocator>::Append<Detail::TempStringAllocator>(
-    const BasicString<unsigned short, Detail::TempStringAllocator>& rhs) const
-{
-    BasicString r(*this);
-    r.AppendInPlace(rhs);
-    BasicString<unsigned short, Detail::TempStringAllocator>::Data* data = r.mData;
-    if (data != 0)
-    {
-        data->mRefCount++;
-    }
-    else
-    {
-        data = 0;
-    }
-    return BasicString(data);
-}
-
-/**
  * Offset/Address/Size: 0x2D4 | 0x800FC3DC | size: 0x84
  */
 #pragma dont_inline on
