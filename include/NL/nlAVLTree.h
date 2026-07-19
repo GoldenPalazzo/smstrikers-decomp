@@ -239,19 +239,9 @@ inline bool AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::FindGet
 
     while (node != nullptr)
     {
-        int cmpResult;
-        if (key == node->key)
-        {
-            cmpResult = 0;
-        }
-        else if (key < node->key)
-        {
-            cmpResult = -1;
-        }
-        else
-        {
-            cmpResult = 1;
-        }
+        const KeyType& nodeKey = node->key;
+        CompareType compare;
+        int cmpResult = compare(nodeKey, key);
 
         if (cmpResult == 0)
         {

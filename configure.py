@@ -1277,7 +1277,7 @@ config.libs = [
             # Effects
             Object(Matching, "Game/Effects/efList.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Effects/EffectsTemplate.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Effects/EffectsGroup.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Effects/EffectsGroup.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Effects/ParticleSystem.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Effects/EmissionController.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Effects/EmissionManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

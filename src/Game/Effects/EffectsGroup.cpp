@@ -45,6 +45,33 @@ struct EffectsSpecRaw
     f32 m_fLingerEnd;
 };
 
+static void Tweak_AddScriptEffect(const char*)
+{
+}
+
+EffectsTerrainSpec::EffectsTerrainSpec()
+{
+    m_pTerrainIDs = nullptr;
+    m_uNumTerrains = 0;
+}
+
+EffectsTerrainSpec::~EffectsTerrainSpec()
+{
+    if (m_pTerrainIDs != nullptr)
+    {
+        delete[] m_pTerrainIDs;
+        m_pTerrainIDs = nullptr;
+    }
+}
+
+unsigned long EffectsTerrainSpec::GetHashID() const
+{
+    RunningChecksum checksum;
+    checksum.ChecksumInt(m_uNumTerrains);
+    checksum.ChecksumData(m_pTerrainIDs, m_uNumTerrains * sizeof(unsigned long));
+    return ~checksum.m_nChecksum;
+}
+
 /**
  * Offset/Address/Size: 0xFC8 | 0x801F3A10 | size: 0x38
  */
@@ -59,6 +86,100 @@ bool EffectsTerrainSpec::HasTerrain(unsigned long terrainID) const
     }
 
     return false;
+}
+
+static EffectsTerrainSpec* fxGetTerrainSpec(unsigned long hashID)
+{
+    EffectsTerrainSpec** terrainSpec;
+    if (pTerrainSpecMap->FindGet(hashID, &terrainSpec))
+    {
+        return *terrainSpec;
+    }
+    return nullptr;
+}
+
+static void AddTerrainSpec(EffectsTerrainSpec* spec)
+{
+    unsigned long hashID = spec->GetHashID();
+    pTerrainSpecMap->Add(hashID, spec);
+}
+
+EffectsGroup::EffectsGroup()
+{
+    m_hashID = 0;
+    m_specs = nullptr;
+    m_numSpecs = 0;
+    m_userSpecsPtr = nullptr;
+    m_userSpecs = 0;
+    m_isLingering = false;
+}
+
+EffectsGroup::~EffectsGroup()
+{
+    if (m_specs != nullptr)
+    {
+        if (m_specs != nullptr)
+        {
+            ::operator delete[]((char*)m_specs - 0x10);
+        }
+    }
+    if (m_userSpecs != 0)
+    {
+        for (int i = 0; i < m_userSpecs; i++)
+        {
+            delete m_userSpecsPtr[i];
+            m_userSpecsPtr[i] = nullptr;
+        }
+        delete[] m_userSpecsPtr;
+        m_userSpecsPtr = nullptr;
+    }
+}
+
+bool EffectsGroup::IsPersistent() const
+{
+    return m_isLingering || m_userSpecsPtr != nullptr;
+}
+
+void EffectsGroup::SetUserSpecs(int numSpecs, UserEffectSpec** specs)
+{
+    if (numSpecs > 0)
+    {
+        m_userSpecs = numSpecs;
+        m_userSpecsPtr = specs;
+    }
+}
+
+void EffectsGroup::SetSpecs(int numSpecs, EffectsSpec* specs)
+{
+    m_specs = specs;
+    m_numSpecs = numSpecs;
+
+    for (int i = 0; i < m_numSpecs; i++)
+    {
+        if (m_specs[i].m_fLingerStart >= 0.0f)
+        {
+            m_isLingering = true;
+            break;
+        }
+    }
+}
+
+static unsigned long GetJointID(const char* shortName)
+{
+    char jointName[128];
+    nlStrNCat<char>(jointName, "bip01 ", shortName, 0x80);
+
+    char* cp = jointName;
+    while (*cp != '\0')
+    {
+        if (*cp == '_')
+        {
+            *cp = ' ';
+        }
+        cp++;
+    }
+
+    return nlStringLowerHash(jointName);
 }
 
 /**
@@ -116,7 +237,6 @@ bool parse_spec(SimpleParser* parser, EffectsSpec& spec)
     char* nextToken = nullptr;
     EffectsSpecShadow init;
     EffectsSpecShadow* initAlias = &init;
-    char jointName[128];
 
     init.m_vLocalOffset.f.x = 0.0f;
     init.m_vLocalOffset.f.y = 0.0f;
@@ -217,20 +337,7 @@ bool parse_spec(SimpleParser* parser, EffectsSpec& spec)
 
                 jointToken = parser->NextTokenOnLine(true);
                 spec.m_eAttach = FXBind_Joint;
-                nlStrNCat<char>(jointName, "bip01 ", jointToken, 0x80);
-
-                char* walk = jointName;
-                char c;
-                while ((c = *walk) != '\0')
-                {
-                    if (c == '_')
-                    {
-                        *walk = ' ';
-                    }
-                    walk++;
-                }
-
-                spec.m_uJointID = nlStringLowerHash(jointName);
+                spec.m_uJointID = GetJointID(jointToken);
 
                 token = parser->NextTokenOnLine(true);
                 if (token == nullptr)
@@ -334,51 +441,6 @@ bool parse_spec(SimpleParser* parser, EffectsSpec& spec)
     return true;
 }
 
-static inline int TerrainSpecKeyCompare(const unsigned long& key2, const unsigned long& key1)
-{
-    int result;
-    if (key2 == key1)
-        result = 0;
-    else if (key2 < key1)
-        result = -1;
-    else
-        result = 1;
-    return result;
-}
-
-static inline bool TerrainSpecFindGet(nlAVLTree<unsigned long, EffectsTerrainSpec*, DefaultKeyCompare<unsigned long> >* tree,
-    unsigned long key, EffectsTerrainSpec*** foundValue)
-{
-    AVLTreeEntry<unsigned long, EffectsTerrainSpec*>* node = tree->m_Root;
-
-    while (node != nullptr)
-    {
-        int cmpResult = TerrainSpecKeyCompare(key, node->key);
-
-        if (cmpResult == 0)
-        {
-            if (foundValue != nullptr)
-            {
-                *foundValue = &node->value;
-            }
-            return true;
-        }
-        else
-        {
-            if (cmpResult < 0)
-            {
-                node = (AVLTreeEntry<unsigned long, EffectsTerrainSpec*>*)node->node.left;
-            }
-            else
-            {
-                node = (AVLTreeEntry<unsigned long, EffectsTerrainSpec*>*)node->node.right;
-            }
-        }
-    }
-
-    return false;
-}
-
 /**
  * Offset/Address/Size: 0x80C | 0x801F3254 | size: 0x224
  */
@@ -399,57 +461,21 @@ EffectsTerrainSpec* parse_terrain_spec(SimpleParser* parser)
         terrainIDs[numTerrains++] = nlStringLowerHash(token);
     }
 
-    void* specMem = nlMalloc(sizeof(EffectsTerrainSpec), 8, false);
-    EffectsTerrainSpec* pSpec = (EffectsTerrainSpec*)specMem;
-    if (specMem != nullptr)
-    {
-        ((EffectsTerrainSpec*)specMem)->m_pTerrainIDs = nullptr;
-        ((EffectsTerrainSpec*)specMem)->m_uNumTerrains = 0;
-    }
+    EffectsTerrainSpec* pSpec = new (nlMalloc(sizeof(EffectsTerrainSpec), 8, false)) EffectsTerrainSpec;
 
     pSpec->m_uNumTerrains = numTerrains;
     pSpec->m_pTerrainIDs = (unsigned long*)nlMalloc(numTerrains * sizeof(unsigned long), 8, false);
     memcpy(pSpec->m_pTerrainIDs, terrainIDs, numTerrains << 2);
 
-    RunningChecksum checksum;
-    checksum.ChecksumInt(pSpec->m_uNumTerrains);
-    checksum.ChecksumData(pSpec->m_pTerrainIDs, pSpec->m_uNumTerrains * 4);
-
-    EffectsTerrainSpec** foundValue;
-    EffectsTerrainSpec* existingSpec = TerrainSpecFindGet(pTerrainSpecMap, ~checksum.m_nChecksum, &foundValue) ? *foundValue : nullptr;
+    EffectsTerrainSpec* existingSpec = fxGetTerrainSpec(pSpec->GetHashID());
 
     if (existingSpec == nullptr)
     {
-        unsigned long key;
-        EffectsTerrainSpec* pNewSpec = pSpec;
-        RunningChecksum checksum2;
-        AVLTreeNode* existingNode;
-
-        checksum2.ChecksumInt(pSpec->m_uNumTerrains);
-        checksum2.ChecksumData(pSpec->m_pTerrainIDs, pSpec->m_uNumTerrains * 4);
-        key = ~checksum2.m_nChecksum;
-
-        nlAVLTree<unsigned long, EffectsTerrainSpec*, DefaultKeyCompare<unsigned long> >* map = pTerrainSpecMap;
-        map->AddAVLNode((AVLTreeNode**)&map->m_Root, &key, &pNewSpec, &existingNode, map->m_NumElements);
-
-        if (existingNode == nullptr)
-        {
-            map->m_NumElements++;
-        }
-
+        AddTerrainSpec(pSpec);
         return pSpec;
     }
 
-    if (pSpec != nullptr)
-    {
-        if (pSpec->m_pTerrainIDs != nullptr)
-        {
-            delete[] pSpec->m_pTerrainIDs;
-            pSpec->m_pTerrainIDs = nullptr;
-        }
-
-        ::operator delete(pSpec);
-    }
+    delete pSpec;
 
     return existingSpec;
 }
@@ -592,20 +618,7 @@ static EffectsGroup* parse_group(SimpleParser* parser)
     pGroup = new (nlMalloc(sizeof(EffectsGroup), 8, false)) EffectsGroup;
 
     pGroup->m_hashID = hashID;
-    pGroup->m_specs = pSpecs;
-    pGroup->m_numSpecs = specCount;
-
-    specOffset = 0;
-    for (i = 0; i < pGroup->m_numSpecs; i++)
-    {
-        if (*(f32*)((u8*)pGroup->m_specs + specOffset + 0x38) >= 0.0f)
-        {
-            pGroup->m_isLingering = true;
-            break;
-        }
-
-        specOffset += sizeof(EffectsSpec);
-    }
+    pGroup->SetSpecs(specCount, pSpecs);
 
     i = nlDLRingCountElements(userSpecs.m_Head);
     if (i > 0)
@@ -632,19 +645,15 @@ static EffectsGroup* parse_group(SimpleParser* parser)
             }
         }
 
-        if (i > 0)
-        {
-            pGroup->m_userSpecs = i;
-            pGroup->m_userSpecsPtr = pUserSpecs;
-        }
+        pGroup->SetUserSpecs(i, pUserSpecs);
     }
 
     return pGroup;
 }
 
-static inline void AddGroupNoCollisions(EffectsGroup* group)
+static void AddGroupNoCollisions(EffectsGroup* group)
 {
-    pGroupMap->Add(group->m_hashID, group);
+    pGroupMap->Add(group->GetHashID(), group);
 }
 
 /**
@@ -668,9 +677,9 @@ bool fxLoadGroupBundle(void* data, unsigned long size)
     }
 
     pGroupMap = new (nlMalloc(sizeof(nlAVLTree<unsigned long, EffectsGroup*, DefaultKeyCompare<unsigned long> >), 8, false))
-        nlAVLTree<unsigned long, EffectsGroup*, DefaultKeyCompare<unsigned long> >;
+        nlAVLTree<unsigned long, EffectsGroup*, DefaultKeyCompare<unsigned long> >();
     pTerrainSpecMap = new (nlMalloc(sizeof(nlAVLTree<unsigned long, EffectsTerrainSpec*, DefaultKeyCompare<unsigned long> >), 8, false))
-        nlAVLTree<unsigned long, EffectsTerrainSpec*, DefaultKeyCompare<unsigned long> >;
+        nlAVLTree<unsigned long, EffectsTerrainSpec*, DefaultKeyCompare<unsigned long> >();
 
     SimpleParser parser;
     parser.StartParsing((char*)data, size, true);
@@ -685,22 +694,9 @@ bool fxLoadGroupBundle(void* data, unsigned long size)
 
         if (nlStrCmp<char>(token, "begin") == 0)
         {
-            unsigned long hashID;
             EffectsGroup* group;
-            nlAVLTree<unsigned long, EffectsGroup*, DefaultKeyCompare<unsigned long> >* map;
-            AVLTreeNode* existingNode;
-
             group = parse_group(&parser);
-            hashID = group->m_hashID;
-
-            map = pGroupMap;
-
-            map->AddAVLNode((AVLTreeNode**)&map->m_Root, &hashID, &group, &existingNode, map->m_NumElements);
-
-            if (existingNode == nullptr)
-            {
-                map->m_NumElements++;
-            }
+            AddGroupNoCollisions(group);
         }
         else
         {
@@ -733,7 +729,7 @@ bool fxUnloadGroups()
     return true;
 }
 
-static inline EffectsGroup* fxGetGroup(unsigned long hashID)
+static EffectsGroup* fxGetGroup(unsigned long hashID)
 {
     EffectsGroup** group;
     return pGroupMap->FindGet(hashID, &group) ? *group : nullptr;
@@ -744,7 +740,7 @@ EffectsGroup* fxGetGroup(const char* groupName)
     return fxGetGroup(nlStringHash(groupName));
 }
 
-static inline void fxRegisterUserEffect(UserEffectFactory* factory)
+static void fxRegisterUserEffect(UserEffectFactory* factory)
 {
     gUserEffectTypes[gnUserEffectTypes++] = factory;
 }
