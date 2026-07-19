@@ -565,7 +565,10 @@ void BasicStadium::Update(float dt)
         m_pCloudsObject->m_worldMatrix = mWorld;
     }
 
-    UpdateCameraFlashes(dt);
+    if (m_bCameraFlashesEnabled)
+    {
+        UpdateCameraFlashes(dt);
+    }
 }
 
 /**
@@ -591,17 +594,14 @@ void BasicStadium::Render()
 
 void BasicStadium::UpdateCameraFlashes(float dt)
 {
-    if (m_bCameraFlashesEnabled)
+    if (m_NumCameraFlashPositions != 0)
     {
-        if (m_NumCameraFlashPositions != 0)
+        u32 randomValue = nlRandom(m_NumCameraFlashPositions, &nlDefaultSeed);
+        m_fTimeUntilNextCameraFlash -= dt;
+        if (m_fTimeUntilNextCameraFlash < 0.0f)
         {
-            u32 randomValue = nlRandom(m_NumCameraFlashPositions, &nlDefaultSeed);
-            m_fTimeUntilNextCameraFlash -= dt;
-            if (m_fTimeUntilNextCameraFlash < 0.0f)
-            {
-                EmitCameraFlash(m_CameraFlashPositions[randomValue]);
-                m_fTimeUntilNextCameraFlash = 0.01f + nlRandomf(0.05f, &nlDefaultSeed);
-            }
+            EmitCameraFlash(m_CameraFlashPositions[randomValue]);
+            m_fTimeUntilNextCameraFlash = 0.01f + nlRandomf(0.05f, &nlDefaultSeed);
         }
     }
 }
