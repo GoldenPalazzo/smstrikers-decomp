@@ -1,5 +1,10 @@
 #include "types.h"
+#include "NL/nlBind.h"
+#include "NL/nlFunction.h"
 #include "Game/main.h"
+#include "Game/Audio/AudioStream.h"
+#include "Game/Sys/audio.h"
+#include "Game/Sys/clock.h"
 #include "NL/gl/glView.h"
 #include "NL/gl/glTexture.h"
 #include "NL/gl/glState.h"
@@ -21,14 +26,12 @@
 #include "Game/Sys/gcmemcard.h"
 #include "Game/Sys/debug.h"
 #include "Game/Audio/AudioLoader.h"
-#include "Game/Audio/AudioStreamAPI.h"
 #include "Game/Audio/AudioEventHandler.h"
 #include "Game/Audio/CrowdMood.h"
 #include "Game/FE/LidOpenMessage.h"
 #include "Game/FE/FEAudio.h"
 #include "Game/FE/feInput.h"
 #include "Game/FE/feManager.h"
-#include "Game/ResetTask.h"
 #include "Game/BeginFrameTask.h"
 #include "Game/DispatchEventsTask.h"
 #include "Game/PlatPadUpdateTask.h"
@@ -62,12 +65,12 @@
 #include "Game/NisPlayer.h"
 #include "Game/Render/Presentation.h"
 #include "Game/Render/CrowdManager.h"
+#include "Game/ResetTask.h"
 #include "NL/nlDebug.h"
+#include "NL/nlTask.h"
 #include "dolphin/os/OSThread.h"
 #include "dolphin/si.h"
 #include "dolphin/card.h"
-
-#include "NL/nlBind.h"
 
 extern u8 g_DoStackWatermarkTests;
 extern u8 g_StackWatermarkFiller;
@@ -92,8 +95,28 @@ extern TestTask testTask;
 extern GLInventory glInventory;
 extern ShapeRender g_ShapeRenderer;
 
-static bool g_bProfiling = false;
-static bool g_bTweaking = false;
+class AudioUpdateTask : public nlTask
+{
+public:
+    virtual const char* GetName() { return "Audio"; }
+    virtual void Run(float dt)
+    {
+        Audio::Update(dt);
+    }
+};
+
+class ClockUpdateTask : public nlTask
+{
+public:
+    virtual const char* GetName() { return "Clock"; }
+    virtual void Run(float dt)
+    {
+        ClockManager::Update(dt);
+    }
+};
+
+bool g_bProfiling = false;
+bool g_bTweaking = false;
 bool g_e3_Build = false;
 bool g_Europe = false;
 static bool g_bFranticPausing = false;
@@ -110,9 +133,9 @@ FrontEndTask frontEndTask;
 WorldUpdateTask worldUpdateTask;
 GameRenderTask gameRenderTask;
 ParticleUpdateTask particleUpdateTask;
-ClockUpdateTask clockUpdateTask;
+static ClockUpdateTask clockUpdateTask;
 BeginFrameTask beginFrameTask;
-AudioUpdateTask audioUpdateTask;
+static AudioUpdateTask audioUpdateTask;
 EndFrameTask endFrameTask;
 TweakerTask tweakerTask;
 FixedUpdateTask fixedUpdateTask;
@@ -121,96 +144,13 @@ TestTask testTask;
 ResetTask resetTask;
 
 static void Initialize();
+static void SetupViews();
+static void AddTasks();
 
-int main(void)
+int GetRegion()
 {
-    if (g_DoStackWatermarkTests)
-    {
-        OSClearStack(g_StackWatermarkFiller);
-    }
-
-    Initialize();
-
-    fopen("flushfile.txt", "r");
-
-    Config& config = Config::Global();
-    bool skipfe = GetConfigBool(config, "skipfe", false);
-    nlTaskManager::SetNextState(skipfe ? 2 : 4);
-
-    Config& config2 = Config::Global();
-    bool enableFPE = GetConfigBool(config2, "enableFloatingPointExceptions", false);
-    if (enableFPE)
-    {
-        InstallFloatingPointExceptionHandler();
-    }
-
-    Config& config3 = Config::Global();
-    bool enableCSD = GetConfigBool(config3, "callStackDumper", false);
-    if (enableCSD)
-    {
-        InstallCallStackDumper();
-    }
-
-    for (;;)
-    {
-        nlTaskManager::RunAllTasks();
-        UpdateProfile();
-    }
-}
-
-static void SetupViews()
-{
-    FORCE_DONT_INLINE;
-    static eGLView sort_none[] = {
-        GLV_Shadow0, GLV_Shadow1, GLV_UnsortedPerspective, GLV_InvisiblePlane, GLV_ElectricFence, GLV_UnsortedOrtho, GLV_ShadowBlend0, GLV_ShadowBlend1, GLV_Debug, GLV_Transitions, GLV_CoPlanar0, GLV_CoPlanar
-    };
-
-    static eGLView disabled_views[] = {
-        GLV_ShadowBlend0, GLV_ShadowBlend1, GLV_ScreenBlur, GLV_ScreenBlur2
-    };
-
-    s32 i;
-
-    for (i = 0; i < GLV_Num; i++)
-    {
-        glViewSetTarget((eGLView)i, GLTG_Main);
-    }
-
-    glViewSetSortMode(GLV_FrontEnd, GLVSort_TransformedDepth);
-    glViewSetSortMode(GLV_Anark, GLVSort_Reverse);
-
-    {
-        u32 j;
-        for (j = 0; j < 12; j++)
-        {
-            glViewSetSortMode(sort_none[j], GLVSort_None);
-        }
-    }
-
-    {
-        u32 j;
-        for (j = 0; j < 4; j++)
-        {
-            glViewSetEnable(disabled_views[j], false);
-        }
-    }
-
-    if (!glTextureLoad(glGetTexture("target/warble")))
-    {
-        glViewSetEnable(GLV_Warble, false);
-        glViewSetEnable(GLV_WarbleBlend, false);
-    }
-
-    glViewSetDepthClear(GLV_CameraSpace, true);
-    glViewSetDepthClear(GLV_Transitions, true);
-    glViewSetDepthClear(GLV_Transitions3D, true);
-    glViewSetDepthClear(GLV_Anark3D_BG, true);
-    glViewSetDepthClear(GLV_Anark3D_FG, true);
-
-    ParticleSystem::ClearViews();
-    ParticleSystem::AddView(GLV_Particles);
-
-    ModeledScreenTransition::s_3DView = GLV_Transitions3D;
+    static const int g_Region = 0;
+    return (int)&g_Region;
 }
 
 /**
@@ -222,8 +162,7 @@ static void Initialize()
     nlRegHandleDVDMessageCB(Function<void(int)>(DisplayDVDMessageSebring));
     nlRegHandleDVDAllClearCB(Function<void(int)>(DVDAllClearSebring));
     nlRegCheckForResetFromFSCB(Function<FnVoidVoid>(
-        Bind<void, Detail::MemFunImpl<void, void (ResetTask::*)()>, ResetTask*>(
-            MemFun<ResetTask, void>(&ResetTask::FSCheckForReset), &resetTask)));
+        Bind<void>(MemFun<ResetTask, void>(&ResetTask::FSCheckForReset), &resetTask)));
 
     nlInit();
     if (!glStartup())
@@ -394,30 +333,7 @@ static void Initialize()
         nlSingleton<StatsTracker>::s_pInstance = new (nlMalloc(sizeof(StatsTracker), 8, false)) StatsTracker();
     }
 
-    nlTaskManager::AddTask(&resetTask, 0, -1);
-    nlTaskManager::AddTask(&beginFrameTask, 2, -1);
-    nlTaskManager::AddTask(&dispatchEventsTask, 0x14, -1);
-    nlTaskManager::AddTask(&platPadUpdateTask, 3, -1);
-    nlTaskManager::AddTask(&clockUpdateTask, 5, -1);
-    nlTaskManager::AddTask(&fixedUpdateTask, 7, -1);
-    nlTaskManager::AddTask(&worldUpdateTask, 8, 0x20013);
-    nlTaskManager::AddTask(&gameRenderTask, 0xa, 0x20113);
-    nlTaskManager::AddTask(&frontEndTask, 0xc, 0x117);
-    nlTaskManager::AddTask(&particleUpdateTask, 0xb, 0x20113);
-    nlTaskManager::AddTask(&tweakerTask, 0xd, -1);
-    nlTaskManager::AddTask(&audioUpdateTask, 0xe, -1);
-    nlTaskManager::AddTask(&endFrameTask, 0xf, -1);
-    nlTaskManager::AddTask(&transitionTask, 1, -1);
-    nlTaskManager::AddTask((nlTask*)g_pTheLoadingManagerTask, 6, -1);
-
-    if (!GetConfigBool(Config::Global(), "DisableComListener", false))
-    {
-        nlTaskManager::AddTask(&comUpdateTask, 0x10, -1);
-    }
-    if (GetConfigBool(Config::Global(), "test/enable", false))
-    {
-        nlTaskManager::AddTask(&testTask, 0x12, -1);
-    }
+    AddTasks();
 
     SetupViews();
     g_ShapeRenderer.Initialize();
@@ -454,8 +370,121 @@ static void Initialize()
     }
 }
 
-int GetRegion()
+static void AddTasks()
 {
-    static const int g_Region = 0;
-    return (int)&g_Region;
+    nlTaskManager::AddTask(&resetTask, 0, -1);
+    nlTaskManager::AddTask(&beginFrameTask, 2, -1);
+    nlTaskManager::AddTask(&dispatchEventsTask, 0x14, -1);
+    nlTaskManager::AddTask(&platPadUpdateTask, 3, -1);
+    nlTaskManager::AddTask(&clockUpdateTask, 5, -1);
+    nlTaskManager::AddTask(&fixedUpdateTask, 7, -1);
+    nlTaskManager::AddTask(&worldUpdateTask, 8, 0x20013);
+    nlTaskManager::AddTask(&gameRenderTask, 0xa, 0x20113);
+    nlTaskManager::AddTask(&frontEndTask, 0xc, 0x117);
+    nlTaskManager::AddTask(&particleUpdateTask, 0xb, 0x20113);
+    nlTaskManager::AddTask(&tweakerTask, 0xd, -1);
+    nlTaskManager::AddTask(&audioUpdateTask, 0xe, -1);
+    nlTaskManager::AddTask(&endFrameTask, 0xf, -1);
+    nlTaskManager::AddTask(&transitionTask, 1, -1);
+    nlTaskManager::AddTask((nlTask*)g_pTheLoadingManagerTask, 6, -1);
+
+    if (!GetConfigBool(Config::Global(), "DisableComListener", false))
+    {
+        nlTaskManager::AddTask(&comUpdateTask, 0x10, -1);
+    }
+    if (GetConfigBool(Config::Global(), "test/enable", false))
+    {
+        nlTaskManager::AddTask(&testTask, 0x12, -1);
+    }
+}
+
+static void SetupViews()
+{
+    FORCE_DONT_INLINE;
+    static eGLView sort_none[] = {
+        GLV_Shadow0, GLV_Shadow1, GLV_UnsortedPerspective, GLV_InvisiblePlane, GLV_ElectricFence, GLV_UnsortedOrtho, GLV_ShadowBlend0, GLV_ShadowBlend1, GLV_Debug, GLV_Transitions, GLV_CoPlanar0, GLV_CoPlanar
+    };
+
+    static eGLView disabled_views[] = {
+        GLV_ShadowBlend0, GLV_ShadowBlend1, GLV_ScreenBlur, GLV_ScreenBlur2
+    };
+
+    s32 i;
+
+    for (i = 0; i < GLV_Num; i++)
+    {
+        glViewSetTarget((eGLView)i, GLTG_Main);
+    }
+
+    glViewSetSortMode(GLV_FrontEnd, GLVSort_TransformedDepth);
+    glViewSetSortMode(GLV_Anark, GLVSort_Reverse);
+
+    {
+        u32 j;
+        for (j = 0; j < 12; j++)
+        {
+            glViewSetSortMode(sort_none[j], GLVSort_None);
+        }
+    }
+
+    {
+        u32 j;
+        for (j = 0; j < 4; j++)
+        {
+            glViewSetEnable(disabled_views[j], false);
+        }
+    }
+
+    if (!glTextureLoad(glGetTexture("target/warble")))
+    {
+        glViewSetEnable(GLV_Warble, false);
+        glViewSetEnable(GLV_WarbleBlend, false);
+    }
+
+    glViewSetDepthClear(GLV_CameraSpace, true);
+    glViewSetDepthClear(GLV_Transitions, true);
+    glViewSetDepthClear(GLV_Transitions3D, true);
+    glViewSetDepthClear(GLV_Anark3D_BG, true);
+    glViewSetDepthClear(GLV_Anark3D_FG, true);
+
+    ParticleSystem::ClearViews();
+    ParticleSystem::AddView(GLV_Particles);
+
+    ModeledScreenTransition::s_3DView = GLV_Transitions3D;
+}
+
+int main(void)
+{
+    if (g_DoStackWatermarkTests)
+    {
+        OSClearStack(g_StackWatermarkFiller);
+    }
+
+    Initialize();
+
+    fopen("flushfile.txt", "r");
+
+    Config& config = Config::Global();
+    bool skipfe = GetConfigBool(config, "skipfe", false);
+    nlTaskManager::SetNextState(skipfe ? 2 : 4);
+
+    Config& config2 = Config::Global();
+    bool enableFPE = GetConfigBool(config2, "enableFloatingPointExceptions", false);
+    if (enableFPE)
+    {
+        InstallFloatingPointExceptionHandler();
+    }
+
+    Config& config3 = Config::Global();
+    bool enableCSD = GetConfigBool(config3, "callStackDumper", false);
+    if (enableCSD)
+    {
+        InstallCallStackDumper();
+    }
+
+    for (;;)
+    {
+        nlTaskManager::RunAllTasks();
+        UpdateProfile();
+    }
 }

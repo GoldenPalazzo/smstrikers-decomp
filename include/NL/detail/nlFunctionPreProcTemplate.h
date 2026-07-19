@@ -67,22 +67,23 @@ public:
         Callable mFunctor;
 
     public:
-        FunctorImpl(const Callable& callable)
-            : mFunctor(callable)
-        {
-        }
+        FunctorImpl(const Callable& callable);
 
         /* No explicit destructor. The original uses the implicit virtual
          * destructor generated from FunctorBase. */
 
-        virtual ReturnType operator()(NLF_PARAMETER_DECLARATIONS)
+        virtual ReturnType operator()(NLF_PARAMETER_DECLARATIONS);
+        virtual FunctorBase* Clone() const;
+
+    private:
+        ReturnType Call(BoolToType<false> NLF_COMMA_PARAMETER_DECLARATIONS)
         {
             return mFunctor(NLF_ARGUMENT_NAMES);
         }
 
-        virtual FunctorBase* Clone() const
+        void Call(BoolToType<true> NLF_COMMA_PARAMETER_DECLARATIONS)
         {
-            return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mFunctor);
+            mFunctor(NLF_ARGUMENT_NAMES);
         }
     };
 
@@ -193,6 +194,28 @@ private:
         FunctorBase* mFunctor;
     };
 };
+
+template <NLF_TEMPLATE_PARAMETERS>
+template <typename Callable>
+inline NLF_CLASS<NLF_TEMPLATE_ARGUMENTS>::FunctorImpl<Callable>::FunctorImpl(const Callable& callable)
+    : mFunctor(callable)
+{
+}
+
+template <NLF_TEMPLATE_PARAMETERS>
+template <typename Callable>
+inline ReturnType NLF_CLASS<NLF_TEMPLATE_ARGUMENTS>::FunctorImpl<Callable>::operator()(NLF_PARAMETER_DECLARATIONS)
+{
+    return Call(BoolToType<IsVoid<ReturnType>::value>() NLF_COMMA_ARGUMENT_NAMES);
+}
+
+template <NLF_TEMPLATE_PARAMETERS>
+template <typename Callable>
+inline typename NLF_CLASS<NLF_TEMPLATE_ARGUMENTS>::FunctorBase*
+NLF_CLASS<NLF_TEMPLATE_ARGUMENTS>::FunctorImpl<Callable>::Clone() const
+{
+    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mFunctor);
+}
 
 #if NLF_ARITY == 0
 template <>

@@ -11,6 +11,29 @@ enum Tag
     FUNCTOR = 2,
 };
 
+template <typename T>
+struct IsVoid
+{
+    enum
+    {
+        value = false,
+    };
+};
+
+template <>
+struct IsVoid<void>
+{
+    enum
+    {
+        value = true,
+    };
+};
+
+template <bool Value>
+struct BoolToType
+{
+};
+
 namespace Detail
 {
 template <typename R, typename MemPtr>
@@ -72,9 +95,13 @@ class Function1;
 #define NLF_PARAMETER_TYPES
 #define NLF_PARAMETER_DECLARATIONS
 #define NLF_ARGUMENT_NAMES
+#define NLF_COMMA_PARAMETER_DECLARATIONS
+#define NLF_COMMA_ARGUMENT_NAMES
 #define NLF_ARITY 0
 #include "NL/detail/nlFunctionPreProcTemplate.h"
 #undef NLF_ARITY
+#undef NLF_COMMA_ARGUMENT_NAMES
+#undef NLF_COMMA_PARAMETER_DECLARATIONS
 #undef NLF_ARGUMENT_NAMES
 #undef NLF_PARAMETER_DECLARATIONS
 #undef NLF_PARAMETER_TYPES
@@ -87,11 +114,15 @@ class Function1;
 #define NLF_TEMPLATE_PARAMETERS typename ReturnType, typename P1
 #define NLF_TEMPLATE_ARGUMENTS ReturnType, P1
 #define NLF_PARAMETER_TYPES P1
-#define NLF_PARAMETER_DECLARATIONS P1 p1
-#define NLF_ARGUMENT_NAMES p1
+#define NLF_PARAMETER_DECLARATIONS P1 p0
+#define NLF_ARGUMENT_NAMES p0
+#define NLF_COMMA_PARAMETER_DECLARATIONS , P1 p0
+#define NLF_COMMA_ARGUMENT_NAMES , p0
 #define NLF_ARITY 1
 #include "NL/detail/nlFunctionPreProcTemplate.h"
 #undef NLF_ARITY
+#undef NLF_COMMA_ARGUMENT_NAMES
+#undef NLF_COMMA_PARAMETER_DECLARATIONS
 #undef NLF_ARGUMENT_NAMES
 #undef NLF_PARAMETER_DECLARATIONS
 #undef NLF_PARAMETER_TYPES
@@ -106,9 +137,13 @@ class Function1;
 #define NLF_PARAMETER_TYPES P1, P2, P3
 #define NLF_PARAMETER_DECLARATIONS P1 p1, P2 p2, P3 p3
 #define NLF_ARGUMENT_NAMES p1, p2, p3
+#define NLF_COMMA_PARAMETER_DECLARATIONS , P1 p1, P2 p2, P3 p3
+#define NLF_COMMA_ARGUMENT_NAMES , p1, p2, p3
 #define NLF_ARITY 3
 #include "NL/detail/nlFunctionPreProcTemplate.h"
 #undef NLF_ARITY
+#undef NLF_COMMA_ARGUMENT_NAMES
+#undef NLF_COMMA_PARAMETER_DECLARATIONS
 #undef NLF_ARGUMENT_NAMES
 #undef NLF_PARAMETER_DECLARATIONS
 #undef NLF_PARAMETER_TYPES

@@ -761,7 +761,7 @@ config.libs = [
     GameLib(
         "SMS (Super Mario Strikers)",
         [
-            Object(NonMatching, "Game/main.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "Game/main.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/ComUpdateTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/FrontEndTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/GameRenderTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

@@ -1,6 +1,7 @@
 #ifndef _AUDIOSTREAM_H_
 #define _AUDIOSTREAM_H_
 
+#include "Game/Sys/GCStream.h"
 #include "Game/Audio/AudioStreamAPI.h"
 #include "Game/Audio/PriorityStream.h"
 
