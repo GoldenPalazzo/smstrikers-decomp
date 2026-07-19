@@ -209,7 +209,7 @@ public:
 }; // total size: 0x74
 
 void CompactPowerups();
-static void InitializePowerups();
+void InitializePowerups();
 static PowerupBase* FindPowerUp(unsigned long hashOfDrawable);
 u8 PowerupCreateAndThrow(cFielder*, ePowerUpType, int, Bowser*);
 void PowerupThrowPosition(int nThrowOrder, eThrowStyle eStyle, PowerupBase* pNewPowerup, PowerupBase* pFirstPowerup);

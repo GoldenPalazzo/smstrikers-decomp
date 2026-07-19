@@ -21,6 +21,8 @@ public:
     /* 0x30 */ virtual bool DoInitialize();
 
     void HyperStrikeModelAddHelper(unsigned long);
+    void UpdateCameraFlashes(float);
+    void LoadGameplayOptimizeOut();
 
     static void BasicStadiumEventHandler(Event*, void*);
     static BasicStadium* GetCurrentStadium();

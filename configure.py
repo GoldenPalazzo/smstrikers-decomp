@@ -927,7 +927,7 @@ config.libs = [
             # World
             Object(NonMatching, "Game/world.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/WorldManager.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "Game/BasicStadium.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/BasicStadium.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/World/WorldLoader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/World/worldanim.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 

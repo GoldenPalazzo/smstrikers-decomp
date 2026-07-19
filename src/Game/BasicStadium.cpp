@@ -24,13 +24,11 @@
 #include "Game/Physics/PhysicsNet.h"
 #include "Game/Effects/EmissionManager.h"
 
-extern u32 eOC_OPTIMIZE_OUT_FROM_GAMEPLAY;
-extern bool g_GoalLightEnabled;
+extern const unsigned long eOC_OPTIMIZE_OUT_FROM_GAMEPLAY;
 static float g_fSkyboxRotationTime = 1420.0f;
 static float g_fCloudRotationTime = 720.0f;
-EventManager* g_pEventManager = nullptr;
 
-char szBasicStadiumName[0x40];
+static char szBasicStadiumName[0x40];
 
 const char szBallName[] = "gameplay/ball";
 const char szPowerupsName[] = "gameplay/powerups";
@@ -41,6 +39,7 @@ static u32 uNetHelperHashID;
 static u32 uFieldHelperHashID;
 static u32 uPenaltyHelperHashID;
 static BasicStadium* pBasicStadiumInstance;
+bool g_GoalLightEnabled;
 
 static nlMatrix4 mSkyBoxTM;
 static nlMatrix4 mCloudTM;
@@ -193,33 +192,6 @@ inline void BasicStadium::HyperStrikeModelAddHelper(unsigned long hash)
     if (pObject != NULL)
     {
         AddToHyperSTSDrawables(hash, pObject->AsDrawableModel());
-    }
-}
-
-static inline void LoadGameplayOptimizeOut(BasicStadium* self)
-{
-    char szOptBin[80];
-    nlSNPrintf(szOptBin, 0x50, "%s-GameplayInvisibleModels.bin", self->m_szBaseName);
-    unsigned long fileSize;
-    u32* pCur;
-    u32* pData = (u32*)nlLoadEntireFile(szOptBin, &fileSize, 0x20, AllocateEnd);
-    if (pData != NULL)
-    {
-        unsigned long j;
-        u32 uFlags = eOC_OPTIMIZE_OUT_FROM_GAMEPLAY;
-        pCur = pData;
-        fileSize = fileSize >> 2;
-        for (j = 0; j < fileSize; j++)
-        {
-            DrawableObject* pObj = self->FindDrawableObject(*pCur);
-            if (pObj != NULL)
-            {
-                DrawableModel* pModel = pObj->AsDrawableModel();
-                pModel->m_uObjectCreationFlags |= uFlags;
-            }
-            pCur++;
-        }
-        nlFree(pData);
     }
 }
 
@@ -552,7 +524,7 @@ bool BasicStadium::DoInitialize()
     }
 
     // Optimization file loading
-    LoadGameplayOptimizeOut(this);
+    LoadGameplayOptimizeOut();
 
     return true;
 }
@@ -593,19 +565,7 @@ void BasicStadium::Update(float dt)
         m_pCloudsObject->m_worldMatrix = mWorld;
     }
 
-    if (m_bCameraFlashesEnabled)
-    {
-        if (m_NumCameraFlashPositions != 0)
-        {
-            u32 randomValue = nlRandom(m_NumCameraFlashPositions, &nlDefaultSeed);
-            m_fTimeUntilNextCameraFlash -= dt;
-            if (m_fTimeUntilNextCameraFlash < 0.0f)
-            {
-                EmitCameraFlash(m_CameraFlashPositions[randomValue]);
-                m_fTimeUntilNextCameraFlash = 0.01f + nlRandomf(0.05f, &nlDefaultSeed);
-            }
-        }
-    }
+    UpdateCameraFlashes(dt);
 }
 
 /**
@@ -629,6 +589,50 @@ void BasicStadium::Render()
     }
 }
 
+void BasicStadium::UpdateCameraFlashes(float dt)
+{
+    if (m_bCameraFlashesEnabled)
+    {
+        if (m_NumCameraFlashPositions != 0)
+        {
+            u32 randomValue = nlRandom(m_NumCameraFlashPositions, &nlDefaultSeed);
+            m_fTimeUntilNextCameraFlash -= dt;
+            if (m_fTimeUntilNextCameraFlash < 0.0f)
+            {
+                EmitCameraFlash(m_CameraFlashPositions[randomValue]);
+                m_fTimeUntilNextCameraFlash = 0.01f + nlRandomf(0.05f, &nlDefaultSeed);
+            }
+        }
+    }
+}
+
+void BasicStadium::LoadGameplayOptimizeOut()
+{
+    char szOptBin[80];
+    nlSNPrintf(szOptBin, 0x50, "%s-GameplayInvisibleModels.bin", m_szBaseName);
+    unsigned long fileSize;
+    u32* pCur;
+    u32* pData = (u32*)nlLoadEntireFile(szOptBin, &fileSize, 0x20, AllocateEnd);
+    if (pData != NULL)
+    {
+        unsigned long j;
+        u32 uFlags = eOC_OPTIMIZE_OUT_FROM_GAMEPLAY;
+        pCur = pData;
+        fileSize = fileSize >> 2;
+        for (j = 0; j < fileSize; j++)
+        {
+            DrawableObject* pObj = FindDrawableObject(*pCur);
+            if (pObj != NULL)
+            {
+                DrawableModel* pModel = pObj->AsDrawableModel();
+                pModel->m_uObjectCreationFlags |= uFlags;
+            }
+            pCur++;
+        }
+        nlFree(pData);
+    }
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x8019BD80 | size: 0x8
  */
@@ -636,3 +640,5 @@ BasicStadium* BasicStadium::GetCurrentStadium()
 {
     return pBasicStadiumInstance;
 }
+
+const unsigned long eOC_OPTIMIZE_OUT_FROM_GAMEPLAY = 0x00008000;
