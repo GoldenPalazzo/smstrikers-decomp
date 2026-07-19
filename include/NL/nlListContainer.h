@@ -111,10 +111,6 @@ public:
         SlotPoolBase::BaseAddNewBlock(&this->m_Allocator, sizeof(ListEntry<T>));
         this->m_Allocator.m_Delta = delta;
     }
-
-    ~nlListSlotPool()
-    {
-    }
 };
 
 template <typename T>
