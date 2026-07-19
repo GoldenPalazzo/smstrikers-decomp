@@ -80,7 +80,10 @@ public:
 
     template <typename CallbackType>
     void Walk(CallbackType* cbClass,
-        void (CallbackType::*cb)(const KeyType&, ValueType*));
+        void (CallbackType::*cb)(const KeyType&, ValueType*))
+    {
+        InorderWalk(m_Root, cbClass, cb);
+    }
 
     void DeleteEntry(AVLTreeEntry<KeyType, ValueType>* entry);
     void DeleteValue(AVLTreeEntry<KeyType, ValueType>* entry);
@@ -90,7 +93,15 @@ public:
     template <typename CallbackType>
     void InorderWalk(AVLTreeEntry<KeyType, ValueType>* curr,
         CallbackType* cbClass,
-        void (CallbackType::*cb)(const KeyType&, ValueType*));
+        void (CallbackType::*cb)(const KeyType&, ValueType*))
+    {
+        while (curr != nullptr)
+        {
+            InorderWalk(CastUp(curr->node.left), cbClass, cb);
+            (cbClass->*cb)(curr->key, &curr->value);
+            curr = CastUp(curr->node.right);
+        }
+    }
 
     void PostorderTraversal(AVLTreeEntry<KeyType, ValueType>* curr,
         ENTRY_DELETE_FUNC cb);
@@ -263,15 +274,6 @@ inline bool AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::FindGet
     return false;
 }
 
-template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
-template <typename CallbackType>
-void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::Walk(
-    CallbackType* cbClass,
-    void (CallbackType::*cb)(const KeyType&, ValueType*))
-{
-    InorderWalk(m_Root, cbClass, cb);
-}
-
 template <typename KeyType, typename ValueType, typename CompareType>
 class nlAVLTree
     : public AVLTreeBase<KeyType, ValueType,
@@ -331,20 +333,6 @@ AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::CastUp(
     AVLTreeNode* node) const
 {
     return (AVLTreeEntry<KeyType, ValueType>*)node;
-}
-
-template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
-template <typename CallbackType>
-inline void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::InorderWalk(
-    AVLTreeEntry<KeyType, ValueType>* curr, CallbackType* cbClass,
-    void (CallbackType::*cb)(const KeyType&, ValueType*))
-{
-    while (curr != nullptr)
-    {
-        InorderWalk(CastUp(curr->node.left), cbClass, cb);
-        (cbClass->*cb)(curr->key, &curr->value);
-        curr = CastUp(curr->node.right);
-    }
 }
 
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
