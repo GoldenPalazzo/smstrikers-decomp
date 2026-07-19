@@ -233,19 +233,8 @@ glModel* GLInventory::GetModel(unsigned long id)
 
         while (node != nullptr)
         {
-            int cmpResult;
-            if (id == node->key)
-            {
-                cmpResult = 0;
-            }
-            else if (id < node->key)
-            {
-                cmpResult = -1;
-            }
-            else
-            {
-                cmpResult = 1;
-            }
+            DefaultKeyCompare<unsigned long> compare;
+            int cmpResult = compare(node->key, id);
 
             if (cmpResult == 0)
             {
