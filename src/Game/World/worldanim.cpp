@@ -13,69 +13,20 @@ WorldAnimManager::WorldAnimManager()
 
 /**
  * Offset/Address/Size: 0x14C | 0x8019AF18 | size: 0x41C
- * TODO: 99.87% match - remaining r26/r31 cursor differences in animation tree traversal
  */
 WorldAnimManager::~WorldAnimManager()
 {
-    typedef AVLTreeEntry<unsigned long, AnimationSet*> TreeEntry;
-    struct NodeStack
-    {
-        TreeEntry** data;
-        u32 count;
-    };
+    typedef nlAVLTreeIterator<unsigned long, AnimationSet*, DefaultKeyCompare<unsigned long> > AnimationSetIterator;
 
-    cInventory<cSHierarchy>* inv;
-    AnimationSet* animSet;
-    NodeStack* stack;
-    TreeEntry* node;
-
-    stack = (NodeStack*)nlMalloc(sizeof(NodeStack), 8, false);
-    if (stack != NULL)
+    AnimationSetIterator* iterator = (AnimationSetIterator*)nlMalloc(sizeof(AnimationSetIterator), 8, false);
+    new (iterator) AnimationSetIterator(m_animationSetMap);
+    while (iterator->IsValid())
     {
-        u32 numElements = m_animationSetMap.m_NumElements;
-        node = m_animationSetMap.m_Root;
-        stack->data = (TreeEntry**)nlMalloc((numElements + 1) * sizeof(TreeEntry*), 8, false);
-        stack->count = 0;
-        if (node != NULL)
-        {
-            while (node->node.left != NULL)
-            {
-                stack->data[stack->count] = node;
-                stack->count++;
-                node = (TreeEntry*)node->node.left;
-            }
-            stack->data[stack->count] = node;
-            stack->count++;
-        }
+        delete iterator->Current()->value;
+        iterator->Next();
     }
-
-    while (stack->count > 0)
-    {
-        TreeEntry* entry = stack->data[stack->count - 1];
-        animSet = entry->value;
-        delete animSet;
-        stack->count--;
-        TreeEntry* popped = stack->data[stack->count];
-        TreeEntry* right = (TreeEntry*)popped->node.right;
-        if (right != NULL)
-        {
-            while (right->node.left != NULL)
-            {
-                stack->data[stack->count] = right;
-                stack->count++;
-                right = (TreeEntry*)right->node.left;
-            }
-            stack->data[stack->count] = right;
-            stack->count++;
-        }
-    }
-    if (stack != NULL)
-    {
-        ::operator delete[](stack->data);
-        ::operator delete(stack);
-    }
-    inv = m_pHierarchyInventory;
-    delete inv;
+    delete iterator;
+    delete m_pHierarchyInventory;
 }
 
 /**
