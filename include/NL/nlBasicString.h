@@ -72,6 +72,8 @@ public:
         void reserve(int capacity);
         void insertRange(CharT* at, const CharT* begin, const CharT* end);
 
+        void erase(const CharT* begin, const CharT* end);
+
         Data* AddRef()
         {
             ++mRefCount;
@@ -261,6 +263,9 @@ public:
         return GetData()[index];
     }
 
+    template <typename OtherAllocator>
+    void insert(CharT* at, const BasicString<CharT, OtherAllocator>& rhs);
+
     void insert(CharT* at, const CharT* begin, const CharT* end);
 
     void erase(const CharT* begin, const CharT* end);
@@ -288,6 +293,14 @@ public:
         return BasicString(data);
     }
 };
+
+template <typename CharT, typename Allocator>
+inline void BasicString<CharT, Allocator>::Data::erase(
+    const CharT* begin,
+    const CharT* end)
+{
+    mData.erase(begin, end);
+}
 
 template <typename CharT, typename Allocator>
 inline BasicString<CharT, Allocator>::BasicString(const CharT* begin, const CharT* end)
@@ -472,10 +485,27 @@ void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const 
 }
 
 template <typename CharT, typename Allocator>
+template <typename OtherAllocator>
+inline void BasicString<CharT, Allocator>::insert(CharT* at, const BasicString<CharT, OtherAllocator>& rhs)
+{
+    typename BasicString<CharT, OtherAllocator>::Data* data = rhs.mData;
+    const CharT* begin;
+    if (data)
+    {
+        begin = data->mData.mData;
+    }
+    else
+    {
+        begin = 0;
+    }
+    insert(at, begin, data ? data->mData.mData + data->mData.mSize - 1 : (CharT*)0);
+}
+
+template <typename CharT, typename Allocator>
 inline void BasicString<CharT, Allocator>::erase(const CharT* begin, const CharT* end)
 {
     Cow();
-    mData->mData.erase(begin, end);
+    GetData().erase(begin, end);
 }
 
 // TODO: 98.84% match - scan cursor and copy-on-write temporary register swaps remain.

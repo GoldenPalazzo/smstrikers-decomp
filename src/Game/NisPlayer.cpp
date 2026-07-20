@@ -810,20 +810,14 @@ void NisPlayer::Load(char* buffer, unsigned int size, NisHeader& nisHeader)
     }
 }
 
-typedef BasicString<char, Detail::TempStringAllocator> TriggerString;
-
 /**
  * Offset/Address/Size: 0x1AE0 | 0x801167BC | size: 0xD08
- * TODO: Remaining register allocation differs in BasicString construction and copy-on-write paths.
  */
 void NisPlayer::LoadTriggers(Nis& nis)
 {
-    FORCE_DONT_INLINE;
     BasicString<char, Detail::TempStringAllocator> name(nis.Name());
-    int i;
-    unsigned long nisHash;
 
-    for (i = ((name.mData != NULL) ? (name.mData->mData.mSize - 1) : 0) - 1; i >= 0; i = i - 1)
+    for (int i = name.size() - 1; i >= 0; --i)
     {
         if (name[i] == '.')
         {
@@ -832,33 +826,17 @@ void NisPlayer::LoadTriggers(Nis& nis)
         }
     }
 
-    nisHash = nlStringHash(name.c_str());
+    unsigned long nisHash = nlStringHash(name.c_str());
     if (!FunctionExists(nisHash))
     {
-        int i;
-        for (i = 0; i < ((name.mData != NULL) ? (name.mData->mData.mSize - 1) : 0); i = i + 1)
+        for (int i = 0; i < name.size(); ++i)
         {
             if (name[i] == '_')
             {
-                name.Cow();
-                char* eraseEnd = (name.mData ? name.mData->mData.mData : (char*)0) + i;
-                name.Cow();
-                char* eraseBegin = name.mData ? name.mData->mData.mData : (char*)0;
-                name.erase(eraseBegin, eraseEnd);
+                name.erase(name.begin(), name.begin() + i);
 
                 BasicString<char, Detail::TempStringAllocator> all("all");
-                char* at = name.begin();
-                TriggerString::Data* allData = all.mData;
-                const char* begin;
-                if (allData != NULL)
-                {
-                    begin = allData->mData.mData;
-                }
-                else
-                {
-                    begin = NULL;
-                }
-                name.insert(at, begin, allData != NULL ? allData->mData.mData + allData->mData.mSize - 1 : (char*)0);
+                name.insert(name.begin(), all);
                 break;
             }
         }

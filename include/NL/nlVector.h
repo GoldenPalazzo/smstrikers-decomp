@@ -154,9 +154,7 @@ inline void Vector<T, Allocator>::erase(const T* begin, const T* end)
     at = mData + offset;
     while (eraseEnd != mData + mSize)
     {
-        *at = *eraseEnd;
-        eraseEnd++;
-        at++;
+        *at++ = *eraseEnd++;
     }
     mSize -= size;
 }
