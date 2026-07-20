@@ -1370,7 +1370,7 @@ config.libs = [
             Object(Matching, "NL/gl/glUserData.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/gl/glModel.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/gl/glTexture.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "NL/gl/glConstant.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "NL/gl/glConstant.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "NL/gl/glAppAttach.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/gl/glPlat.cpp", extra_cflags=["-inline auto"]),
         ],
