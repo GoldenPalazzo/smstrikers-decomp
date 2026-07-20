@@ -4,6 +4,9 @@
 #include "NL/nlBasicString.h"
 #include "NL/nlLexicalCast.h"
 
+template <typename StringType, typename T0, typename T1>
+StringType Format(const StringType& string, const T0& t0, const T1& t1);
+
 template <typename StringType, typename T0>
 StringType Format(const StringType& string, const T0& t0);
 
