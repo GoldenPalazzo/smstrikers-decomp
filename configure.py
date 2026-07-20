@@ -1105,7 +1105,7 @@ config.libs = [
             Object(NonMatching, "Game/SH/SHPause.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHPauseOptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(
-                NonMatching,
+                Matching,
                 "Game/SH/SHPausePostGame.cpp",
                 extra_cflags=['-pragma "inline_max_total_size(5120)"', "-inline auto", "-inline deferred"],
             ),
