@@ -959,7 +959,7 @@ config.libs = [
             
 
             Object(Matching, "Game/PadMonkey.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/PadActions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/PadActions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/RumbleActions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Render
