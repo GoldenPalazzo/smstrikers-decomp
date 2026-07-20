@@ -119,10 +119,16 @@ inline bool nlChunk::IsAlignedChunk()
 class cIdentifier
 {
 public:
+    unsigned int GetHashID() const
+    {
+        return m_uHashID;
+    }
+
     void Destroy()
     {
     }
 
+protected:
     /* 0x0 */ const char* m_szName;
     /* 0x4 */ unsigned int m_uHashID;
 }; // total size: 0x8
@@ -131,7 +137,7 @@ class cSAnim : public cIdentifier
 {
 public:
     static cSAnim* Initialize(nlChunk*);
-    static bool IsValidChunkID(u32 id)
+    static u8 IsValidChunkID(u32 id)
     {
         return (id & 0x80FFFFFF) == 0x80017000;
     }

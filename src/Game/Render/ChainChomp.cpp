@@ -56,9 +56,9 @@ ChainChomp::ChainChomp(cSHierarchy& pHierarchy, int nModelID, PhysicsNPC& rPhysO
     mpInEffectSFX = NULL;
     mtStateTimer.SetSeconds(0.0f);
 
-    mpDropAnim = ((AnimationSet*)pInventorySAnim)->FindAnimationByHash(nlStringHash("drop"));
-    mpIdleAnim = ((AnimationSet*)pInventorySAnim)->FindAnimationByHash(nlStringHash("chain_idle"));
-    mpRecoverAnim = ((AnimationSet*)pInventorySAnim)->FindAnimationByHash(nlStringHash("landing"));
+    mpDropAnim = pInventorySAnim->Find((unsigned int)nlStringHash("drop"));
+    mpIdleAnim = pInventorySAnim->Find((unsigned int)nlStringHash("chain_idle"));
+    mpRecoverAnim = pInventorySAnim->Find((unsigned int)nlStringHash("landing"));
 
     mpPhysObj->mpAINPC = this;
 

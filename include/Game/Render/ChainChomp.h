@@ -9,7 +9,7 @@
 #include "Game/Team.h"
 #include "Game/AI/Fielder.h"
 #include "Game/PoseAccumulator.h"
-#include "Game/World/worldanim.h"
+#include "Game/Inventory.h"
 
 enum eChainChompState
 {

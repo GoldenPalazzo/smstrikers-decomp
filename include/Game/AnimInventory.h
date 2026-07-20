@@ -9,15 +9,15 @@
 
 struct AnimProperties
 {
-    /* 0x00 */ const char* name0;
-    /* 0x04 */ const char* name;
+    /* 0x00 */ const char* enumName;
+    /* 0x04 */ const char* animName;
     /* 0x08 */ ePlayMode playMode;
-    /* 0x0C */ float blendTime;
-    /* 0x10 */ bool mirrored;
+    /* 0x0C */ float blendAmount;
+    /* 0x10 */ bool mirror;
     // /* 0x11 */ u8 pad11[3];
-    /* 0x14 */ int ballRotMode;
+    /* 0x14 */ int ballRotationMode;
     /* 0x18 */ int endPhase;
-    /* 0x1C */ u8 matchCharSpd;
+    /* 0x1C */ u8 matchCharacterSpeed;
     // /* 0x1D */ u8 pad1d[3];
 };
 
@@ -37,10 +37,10 @@ public:
     int GetEndPhase(int i);
     u8 GetMatchCharacterSpeed(int i);
 
-    /* 0x00 */ int m_count;
-    /* 0x04 */ cInventory<cSAnim>* m_cont;
-    /* 0x08 */ cSAnim** m_anims;
-    /* 0x0C */ const AnimProperties* m_props;
+    /* 0x00 */ int m_nNumProperties;
+    /* 0x04 */ cInventory<cSAnim>* m_pSAnimInventory;
+    /* 0x08 */ cSAnim** m_pSAnims;
+    /* 0x0C */ const AnimProperties* m_pAnimProperties;
 };
 
 #endif // _ANIMINVENTORY_H_

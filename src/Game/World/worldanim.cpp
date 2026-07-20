@@ -8,16 +8,7 @@
  */
 WorldAnimManager::WorldAnimManager()
 {
-    cInventory<cSHierarchy>* inv = (cInventory<cSHierarchy>*)nlMalloc(sizeof(cInventory<cSHierarchy>), 8, 0);
-    if (inv != NULL)
-    {
-        inv->m_lItemList.m_Head = NULL;
-        inv->m_lItemList.m_Tail = NULL;
-        inv->m_lMemList.m_Head = NULL;
-        inv->m_lMemList.m_Tail = NULL;
-        inv->m_nItemCount = 0;
-    }
-    m_pHierarchyInventory = inv;
+    m_pHierarchyInventory = new (nlMalloc(sizeof(cInventory<cSHierarchy>), 8, false)) cInventory<cSHierarchy>();
 }
 
 /**
@@ -93,7 +84,7 @@ WorldAnimManager::~WorldAnimManager()
 void WorldAnimController::SetAnimation(const char* szAnimationName, ePlayMode playMode)
 {
     u32 hash = nlStringLowerHash(szAnimationName);
-    cSAnim* anim = m_pAnimationSet->FindAnimationByHash(hash);
+    cSAnim* anim = m_pAnimationSet->m_animInventory.Find((unsigned int)hash);
 
     if (m_pPoseTree != NULL)
     {

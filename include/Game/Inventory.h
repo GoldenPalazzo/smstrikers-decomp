@@ -19,7 +19,7 @@ public:
     {
         while (chunk != end)
         {
-            if (T::IsValidChunkID(chunk->m_ID))
+            if (T::IsValidChunkID(chunk->GetID()))
             {
                 T* item = T::Initialize(chunk);
                 m_lItemList.AddStart(item);
@@ -29,7 +29,7 @@ public:
             {
                 nlPrintf("Warning: inventory encountered an unknown chunk type\n");
             }
-            chunk = (nlChunk*)((char*)chunk + chunk->m_Size + 8);
+            chunk = chunk->GetNextChunk();
         }
     }
 
@@ -39,7 +39,7 @@ public:
         ParseChunks((nlChunk*)memory, (nlChunk*)(memory + length));
     }
 
-    void AddFile(const char* filename)
+    void AddFile(char* filename)
     {
         unsigned long length;
         char* memory = (char*)nlLoadEntireFile(filename, &length, 0x20, AllocateStart);
@@ -47,10 +47,47 @@ public:
         ParseChunks((nlChunk*)memory, (nlChunk*)(memory + length));
     }
 
+    nlListIterator<T*> Begin()
+    {
+        return m_lItemList.Begin();
+    }
+
+    T* Find(unsigned int hashID)
+    {
+        for (nlListIterator<T*> iterator = Begin(); iterator.IsValid(); iterator.Next())
+        {
+            if (hashID == iterator.Current()->GetHashID())
+            {
+                return iterator.Current();
+            }
+        }
+        return NULL;
+    }
+
+    T* Find(char* name)
+    {
+        return Find((unsigned int)nlStringHash(name));
+    }
+
+    T* Find(int index)
+    {
+        int i = 0;
+        for (nlListIterator<T*> iterator = Begin(); iterator.IsValid(); iterator.Next())
+        {
+            if (i == index)
+            {
+                return iterator.Current();
+            }
+            i++;
+        }
+        return NULL;
+    }
+
     ~cInventory();
 
     void Clear();
 
+private:
     /* 0x0 */ nlListContainer<T*> m_lItemList;
     /* 0xC */ nlListContainer<char*> m_lMemList;
     /* 0x18 */ int m_nItemCount;

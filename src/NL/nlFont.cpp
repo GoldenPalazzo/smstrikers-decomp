@@ -509,7 +509,13 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
                 }
                 else
                 {
-                    ListEntry<nlFont::GlyphInfo>* pEntry = ExtendedGlyphList.Allocate(nlFont::GlyphInfo());
+                    ListEntry<nlFont::GlyphInfo> localEntry((nlFont::GlyphInfo()));
+                    ListEntry<nlFont::GlyphInfo>* pEntry = NULL;
+                    ExtendedGlyphList.m_Allocator.Allocate(pEntry);
+                    if (pEntry != NULL)
+                    {
+                        *pEntry = localEntry;
+                    }
                     nlListAddStart<ListEntry<nlFont::GlyphInfo> >(pExtHead, pEntry, &ExtendedGlyphList.m_Tail);
                     m_ExtendedGlyphCount++;
                     pInfo = &pEntry->entry;
@@ -596,7 +602,13 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
 
                     pToken = nlStrChr(pToken, ' ') + 1;
                     kp.Kern = atoi(pToken);
-                    ListEntry<nlFont::KernPair>* pEntry = KernList.Allocate(kp);
+                    ListEntry<nlFont::KernPair> localEntry(kp);
+                    ListEntry<nlFont::KernPair>* pEntry = NULL;
+                    KernList.m_Allocator.Allocate(pEntry);
+                    if (pEntry != NULL)
+                    {
+                        *pEntry = localEntry;
+                    }
                     nlListAddStart<ListEntry<nlFont::KernPair> >(pKernHead, pEntry, pKernTail);
                     m_KernTableSize++;
 

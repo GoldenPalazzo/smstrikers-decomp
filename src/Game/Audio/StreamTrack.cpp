@@ -38,7 +38,13 @@ TrackManagerBase::StreamFileLookup::StreamFileLookup(
     while (iter < end)
     {
         LookupT lookup;
-        ListEntryT* entry = LookupList.Allocate(lookup);
+        ListEntryT localEntry(lookup);
+        ListEntryT* entry = NULL;
+        LookupList.m_Allocator.Allocate(entry);
+        if (entry != NULL)
+        {
+            *entry = localEntry;
+        }
         nlListAddEnd(&LookupList.m_Head, &LookupList.m_Tail, entry);
 
         entry->entry.key = nlStringLowerHash(iter->tag);

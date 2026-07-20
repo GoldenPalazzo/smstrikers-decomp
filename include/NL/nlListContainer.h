@@ -11,6 +11,9 @@
 // Include via NL/nlList.h (which includes this at its end) - ListEntry and
 // nlWalkList must be visible first.
 
+template <typename T>
+class nlListIterator;
+
 template <typename T, typename Adapter>
 class ListContainerBase
 {
@@ -38,34 +41,26 @@ public:
 
     void DeleteEntry(ListEntry<T>* entry);
 
-    // Add more list operations as needed
-    void AddEntry(ListEntry<T>* entry)
-    {
-        nlListAddStart<ListEntry<T> >(&m_Head, entry, &m_Tail);
-    }
-
-    ListEntry<T>* Allocate(const T& data)
-    {
-        ListEntry<T> localEntry(data);
-        ListEntry<T>* entry = NULL;
-        m_Allocator.Allocate(entry);
-        if (entry != NULL)
-        {
-            *entry = localEntry;
-        }
-        return entry;
-    }
-
-    void AddEntry(const T& data)
-    {
-        ListEntry<T>* entry = new (m_Allocator.Allocate()) ListEntry<T>(data);
-        nlListAddStart<ListEntry<T> >(&m_Head, entry, &m_Tail);
-    }
-
     void AddStart(const T& data)
     {
-        ListEntry<T>* entry = m_Allocator.New(ListEntry<T>(data));
+        ListEntry<T> value(data);
+        ListEntry<T>* entry = m_Allocator.Allocate();
+        if (entry != NULL)
+        {
+            *entry = value;
+        }
         nlListAddStart<ListEntry<T> >(&m_Head, entry, &m_Tail);
+    }
+
+    void AddEnd(const T& data)
+    {
+        ListEntry<T> value(data);
+        ListEntry<T>* entry = m_Allocator.Allocate();
+        if (entry != NULL)
+        {
+            *entry = value;
+        }
+        nlListAddEnd<ListEntry<T> >(&m_Head, &m_Tail, entry);
     }
 
     ListEntry<T>* RemoveStart()
@@ -73,16 +68,47 @@ public:
         return nlListRemoveStart<ListEntry<T> >(&m_Head, &m_Tail);
     }
 
-    void RemoveEntry(ListEntry<T>* entry)
-    {
-        // Implementation for removing entries
-    }
+    nlListIterator<T> Begin();
 
     // offsets and sizes are dependent on the adapter
     /* 0x0 */ Adapter m_Allocator;
     ListEntry<T>* m_Head;
     ListEntry<T>* m_Tail;
 };
+
+template <typename T>
+class nlListIterator
+{
+public:
+    nlListIterator(ListEntry<T>* current)
+        : m_Curr(current)
+    {
+    }
+
+    bool IsValid() const
+    {
+        return m_Curr != NULL;
+    }
+
+    T& Current() const
+    {
+        return m_Curr->entry;
+    }
+
+    void Next()
+    {
+        m_Curr = m_Curr->next;
+    }
+
+private:
+    /* 0x0 */ ListEntry<T>* m_Curr;
+};
+
+template <typename T, typename Adapter>
+inline nlListIterator<T> ListContainerBase<T, Adapter>::Begin()
+{
+    return nlListIterator<T>(m_Head);
+}
 
 template <typename T, typename Adapter>
 void ListContainerBase<T, Adapter>::DeleteEntry(ListEntry<T>* entry)

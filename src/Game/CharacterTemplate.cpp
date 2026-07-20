@@ -115,46 +115,6 @@ static inline u32 GetHashFromTextureFile(const char* szTextureFileName)
     return 0;
 }
 
-/* Must go through this accessor: taking the inventory pointer straight from
-   g_GoalieTemplate colours it r26 (reusing the just-freed texture-info reg)
-   instead of r29, and folding it into the FindHierarchy call sinks the load
-   past nlStringHash. */
-static inline cInventory<cSHierarchy>* GetHierInv(const tCharacterTemplate* p)
-{
-    return p->pHierarchyInventory;
-}
-
-static inline cSHierarchy* FindHierarchy(ListEntry<cSHierarchy*>* hEntry, u32 hash)
-{
-    cSHierarchy* pHierarchy;
-    while (hEntry != NULL)
-    {
-        pHierarchy = hEntry->entry;
-        if (hash == hEntry->entry->m_uHashID)
-        {
-            return pHierarchy;
-        }
-        hEntry = hEntry->next;
-    }
-    return NULL;
-}
-
-template <typename T>
-static inline nlChunk* AddLoadedInventoryMemory(cInventory<T>* inv, nlChunk* data)
-{
-    ListEntry<char*>* entry = (ListEntry<char*>*)nlMalloc(8, 8, false);
-    if (entry != NULL)
-    {
-        entry->next = NULL;
-        entry->entry = (char*)data;
-    }
-    nlListAddStart<ListEntry<char*> >(
-        (ListEntry<char*>**)&inv->m_lMemList.m_Head,
-        entry,
-        (ListEntry<char*>**)&inv->m_lMemList.m_Tail);
-    return data;
-}
-
 static cAnimInventory* FindDuplicateAnimInventory(int nCurIndex, unsigned long uHashID);
 static char* GetCharacterTriggerFileName(eCharacterClass cc);
 
@@ -194,7 +154,7 @@ void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharact
     pCharacterTemplate->nCharacterModelID[1] = pBlendCharacterModel->id;
 
     pCharacterTemplate->pHierarchyInventory = new (nlMalloc(sizeof(cInventory<cSHierarchy>), 8, false)) cInventory<cSHierarchy>();
-    pCharacterTemplate->pHierarchyInventory->AddFile(charTemplateInfo.szHierarchyFilename);
+    pCharacterTemplate->pHierarchyInventory->AddFile((char*)charTemplateInfo.szHierarchyFilename);
 
     if (!bForViewer)
     {
@@ -224,14 +184,14 @@ void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharact
         pCharacterTemplate->pAnimInventory->AddAnimBundle(charTemplateInfo.szAnimFilename);
         pCharacterTemplate->bAnimInventoryCopy = false;
 
-        cInventory<cSAnim>* pAnimCont = (cInventory<cSAnim>*)pCharacterTemplate->pAnimInventory->m_cont;
+        cInventory<cSAnim>* pAnimCont = pCharacterTemplate->pAnimInventory->m_pSAnimInventory;
         g_pAnimScriptInterp->SetupAnimationTriggers(GetCharacterTriggerFileName(cc), pAnimCont);
     }
 
     if (charTemplateInfo.szAnimRetargetFilename != NULL)
     {
         pCharacterTemplate->pAnimRetargetListInventory = new (nlMalloc(sizeof(cInventory<AnimRetargetList>), 8, false)) cInventory<AnimRetargetList>();
-        pCharacterTemplate->pAnimRetargetListInventory->AddFile(charTemplateInfo.szAnimRetargetFilename);
+        pCharacterTemplate->pAnimRetargetListInventory->AddFile((char*)charTemplateInfo.szAnimRetargetFilename);
     }
     else
     {
@@ -285,28 +245,12 @@ cPlayer* CreateCharacter(int nPlayerID, int nTeamID, eCharacterClass cc, bool bF
 
     AnimRetargetList* pAnimRetarget;
     FielderTweaks* pTweaks;
-    cSHierarchy* pHierarchy = FindHierarchy(pHierInv->m_lItemList.m_Head, hash);
+    cSHierarchy* pHierarchy = pHierInv->Find((unsigned int)hash);
 
     pAnimRetarget = NULL;
     if (g_aCharacterTemplates[cc]->pAnimRetargetListInventory != NULL)
     {
-        int idx = 0;
-        ListEntry<AnimRetargetList*>* retEntry = g_aCharacterTemplates[cc]->pAnimRetargetListInventory->m_lItemList.m_Head;
-        u32 retData;
-        while (retEntry != NULL)
-        {
-            if (idx == 0)
-            {
-                retData = (u32)retEntry->entry;
-                goto retFound;
-            }
-            retEntry = retEntry->next;
-            idx++;
-        }
-        retData = 0;
-
-    retFound:
-        pAnimRetarget = (AnimRetargetList*)retData;
+        pAnimRetarget = g_aCharacterTemplates[cc]->pAnimRetargetListInventory->Find(0);
     }
 
     pTweaks = new (nlMalloc(0x124, 8, false)) FielderTweaks(g_aCharacterTemplateInfo[cc].szTweaksFilename);
@@ -450,30 +394,12 @@ cPlayer* CreateGoalie(eCharacterClass gcc, bool bForViewer)
         CharacterLoadingGuts(g_GoalieTemplate, g_GoalieTemplateInfo, gcc, bForViewer);
     }
 
-    cInventory<cSHierarchy>* pHierInv = GetHierInv(g_GoalieTemplate);
-    u32 hash = nlStringHash(g_GoalieTemplateInfo.szHierarchy);
-
-    cSHierarchy* pHierarchy = FindHierarchy(pHierInv->m_lItemList.m_Head, hash);
+    cSHierarchy* pHierarchy = g_GoalieTemplate->pHierarchyInventory->Find((char*)g_GoalieTemplateInfo.szHierarchy);
 
     AnimRetargetList* pAnimRetarget = NULL;
     if (g_GoalieTemplate->pAnimRetargetListInventory != NULL)
     {
-        int idx = 0;
-        ListEntry<AnimRetargetList*>* retEntry = g_GoalieTemplate->pAnimRetargetListInventory->m_lItemList.m_Head;
-        AnimRetargetList* retResult;
-        while (retEntry != NULL)
-        {
-            if (idx == 0)
-            {
-                retResult = retEntry->entry;
-                goto retDone;
-            }
-            retEntry = retEntry->next;
-            idx++;
-        }
-        retResult = NULL;
-    retDone:
-        pAnimRetarget = retResult;
+        pAnimRetarget = g_GoalieTemplate->pAnimRetargetListInventory->Find(0);
     }
 
     GoalieTweaks* pTweaks = new (nlMalloc(0xF4, 8, false)) GoalieTweaks(g_GoalieTemplateInfo.szTweaksFilename);

@@ -5,7 +5,6 @@
 #include "Game/GameInfo.h"
 #include "Game/Render/AnimatedModelExplodable.h"
 #include "Game/Render/CameraGuy.h"
-#include "Game/World/worldanim.h"
 #include "Game/WorldManager.h"
 #include "NL/nlFile.h"
 #include "NL/nlFileGC.h"
@@ -40,24 +39,6 @@ struct glModelData
     /* 0x04 */ s32 numModels;
 };
 
-static inline cSHierarchy* FindHierarchy(ListEntry<cSHierarchy*>* hEntry, u32 hash)
-{
-    while (hEntry != NULL)
-    {
-        if (hash == hEntry->entry->m_uHashID)
-        {
-            return hEntry->entry;
-        }
-        hEntry = hEntry->next;
-    }
-    return NULL;
-}
-
-static inline cInventory<cSAnim>* KeepNPCAnimInv(cInventory<cSAnim>* pInventory)
-{
-    return pInventory;
-}
-
 /**
  * Offset/Address/Size: 0x8AC | 0x80166770 | size: 0xB3C
  */
@@ -86,9 +67,7 @@ NPCManager::NPCManager()
         if (world->CompareNameToGenericName(stack->m_Stack[stack->m_NumStackEntries - 1]->value->m_szName, "cameraguy") == 0)
         {
             CreateNPCTemplate(0, true);
-            cInventory<cSAnim>* animInv = KeepNPCAnimInv(mpInventorySAnim);
-            u32 hash = nlStringHash("camera_idle");
-            cSAnim* foundAnim = ((AnimationSet*)animInv)->FindAnimationByHash(hash);
+            cSAnim* foundAnim = mpInventorySAnim->Find("camera_idle");
             CameraGuy* guy = new (nlMalloc(sizeof(CameraGuy), 8, false)) CameraGuy(*mNPCTemplate[0].hierarchy, mNPCTemplate[0].modelID);
             guy->Init();
             guy->SetIdleAnim(*foundAnim);
@@ -105,9 +84,7 @@ NPCManager::NPCManager()
         else if (world->CompareNameToGenericName(stack->m_Stack[stack->m_NumStackEntries - 1]->value->m_szName, "standupcamera") == 0)
         {
             CreateNPCTemplate(1, true);
-            cInventory<cSAnim>* animInv = KeepNPCAnimInv(mpInventorySAnim);
-            u32 hash = nlStringHash("standupcamera_idle");
-            cSAnim* foundAnim = ((AnimationSet*)animInv)->FindAnimationByHash(hash);
+            cSAnim* foundAnim = mpInventorySAnim->Find("standupcamera_idle");
             CameraGuy* guy = new (nlMalloc(sizeof(CameraGuy), 8, false)) CameraGuy(*mNPCTemplate[1].hierarchy, mNPCTemplate[1].modelID);
             guy->Init();
             guy->SetIdleAnim(*foundAnim);
@@ -124,9 +101,7 @@ NPCManager::NPCManager()
         else if (world->CompareNameToGenericName(stack->m_Stack[stack->m_NumStackEntries - 1]->value->m_szName, "medic") == 0)
         {
             CreateNPCTemplate(2, true);
-            cInventory<cSAnim>* animInv = KeepNPCAnimInv(mpInventorySAnim);
-            u32 hash = nlStringHash("medic_idle");
-            cSAnim* foundAnim = ((AnimationSet*)animInv)->FindAnimationByHash(hash);
+            cSAnim* foundAnim = mpInventorySAnim->Find("medic_idle");
             SkinAnimatedNPC* npc = new (nlMalloc(sizeof(SkinAnimatedNPC), 8, false)) SkinAnimatedNPC(*mNPCTemplate[2].hierarchy, mNPCTemplate[2].modelID);
             npc->SetAnimState(*foundAnim, 0.2f, (ePlayMode)0);
             npc->mWorldMatrix = stack->m_Stack[stack->m_NumStackEntries - 1]->value->m_worldMatrix;
@@ -141,9 +116,7 @@ NPCManager::NPCManager()
         else if (world->CompareNameToGenericName(stack->m_Stack[stack->m_NumStackEntries - 1]->value->m_szName, "securityguard") == 0)
         {
             CreateNPCTemplate(3, true);
-            cInventory<cSAnim>* animInv = KeepNPCAnimInv(mpInventorySAnim);
-            u32 hash = nlStringHash("securityguard_idle");
-            cSAnim* foundAnim = ((AnimationSet*)animInv)->FindAnimationByHash(hash);
+            cSAnim* foundAnim = mpInventorySAnim->Find("securityguard_idle");
             SkinAnimatedNPC* npc = new (nlMalloc(sizeof(SkinAnimatedNPC), 8, false)) SkinAnimatedNPC(*mNPCTemplate[3].hierarchy, mNPCTemplate[3].modelID);
             npc->SetAnimState(*foundAnim, 0.2f, (ePlayMode)0);
             npc->mWorldMatrix = stack->m_Stack[stack->m_NumStackEntries - 1]->value->m_worldMatrix;
@@ -158,9 +131,7 @@ NPCManager::NPCManager()
         else if (world->CompareNameToGenericName(stack->m_Stack[stack->m_NumStackEntries - 1]->value->m_szName, "blimp") == 0)
         {
             CreateNPCTemplate(4, true);
-            cInventory<cSAnim>* animInv = KeepNPCAnimInv(mpInventorySAnim);
-            u32 hash = nlStringHash("blimp_idle");
-            cSAnim* foundAnim = ((AnimationSet*)animInv)->FindAnimationByHash(hash);
+            cSAnim* foundAnim = mpInventorySAnim->Find("blimp_idle");
             SkinAnimatedNPC* npc = new (nlMalloc(sizeof(SkinAnimatedNPC), 8, false)) SkinAnimatedNPC(*mNPCTemplate[4].hierarchy, mNPCTemplate[4].modelID);
             npc->SetAnimState(*foundAnim, 0.2f, (ePlayMode)0);
             npc->mWorldMatrix = stack->m_Stack[stack->m_NumStackEntries - 1]->value->m_worldMatrix;
@@ -281,7 +252,7 @@ void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
         model = NULL;
     }
 
-    mpInventorySHierarchy->AddFile(gNPCTemplateInfo[templateIndex].hierarchyFilename);
+    mpInventorySHierarchy->AddFile((char*)gNPCTemplateInfo[templateIndex].hierarchyFilename);
 
     if (gNPCTemplateInfo[templateIndex].loadAnimsVirtual)
     {
@@ -295,13 +266,13 @@ void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
     }
     else
     {
-        mpInventorySAnim->AddFile(gNPCTemplateInfo[templateIndex].animFilename);
+        mpInventorySAnim->AddFile((char*)gNPCTemplateInfo[templateIndex].animFilename);
     }
 
     mNPCTemplate[templateIndex].modelID = model == NULL ? -1 : ((glModelData*)model)->numModels;
 
     cInventory<cSHierarchy>* searchInv = mpInventorySHierarchy;
     u32 hash = nlStringHash(gNPCTemplateInfo[templateIndex].hierarchyName);
-    mNPCTemplate[templateIndex].hierarchy = FindHierarchy(searchInv->m_lItemList.m_Head, hash);
+    mNPCTemplate[templateIndex].hierarchy = searchInv->Find((unsigned int)hash);
     mNPCTemplate[templateIndex].loaded = true;
 }

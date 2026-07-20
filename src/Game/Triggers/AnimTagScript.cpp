@@ -45,10 +45,9 @@ u8 AnimTagScriptInterpreter::SetupAnimationTriggers(const char* TriggerFileName,
 {
     BinaryTriggerFile file(TriggerFileName);
 
-    ListEntry<cSAnim*>* node = (ListEntry<cSAnim*>*)pAnimInventory->m_lItemList.m_Head;
-    while (node != NULL)
+    for (nlListIterator<cSAnim*> iterator = pAnimInventory->Begin(); iterator.IsValid(); iterator.Next())
     {
-        u32 key = ((cSAnim*)node->entry)->m_uHashID;
+        u32 key = iterator.Current()->GetHashID();
         file.m_pCurrentAnim = nlBSearch<BinaryTriggerFile::ANIM_RECORD, unsigned long>(key, file.m_pFirstAnim, file.m_pFileData->AnimCount);
 
         if (file.m_pCurrentAnim != NULL)
@@ -74,13 +73,11 @@ u8 AnimTagScriptInterpreter::SetupAnimationTriggers(const char* TriggerFileName,
                 pSlot->ScriptInfo.Trigger = pTriggerRecord->Trigger;
                 pSlot->ScriptInfo.ScriptFuncOffset = pTriggerRecord->ScriptFuncOffset;
 
-                ((cSAnim*)node->entry)->CreateCallback(pTriggerRecord->Frame / (float)((cSAnim*)node->entry)->m_nNumKeys, (unsigned int)pSlot, AnimTagScriptInterpreter::AnimControllerCB);
+                iterator.Current()->CreateCallback(pTriggerRecord->Frame / (float)iterator.Current()->m_nNumKeys, (unsigned int)pSlot, AnimTagScriptInterpreter::AnimControllerCB);
 
                 file.m_CurrentTrigger++;
             }
         }
-
-        node = node->next;
     }
 
     m_ppBytecode[m_BytecodeCount] = nlMalloc(file.m_FileSize - ((u32)((u8*)file.m_pFileData + file.m_pFileData->BytecodeOffset) - (u32)file.m_pFileData), 8, false);

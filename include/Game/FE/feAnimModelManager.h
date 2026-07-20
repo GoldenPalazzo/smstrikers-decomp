@@ -34,18 +34,9 @@ public:
     // Game/Character.h into this header; the real type is `eCharacterClass`.
     // ---------------------------------------------------------------------------
 
-    // REVISE: look up a cached animation by hash id. Walk order / early-out
-    // unconfirmed; the inventory may instead key by something other than m_uHashID.
     cSAnim* GetAnim(unsigned int animHashID)
     {
-        ListEntry<cSAnim*>* entry = mAnimInventory.m_lItemList.m_Head;
-        while (entry != NULL)
-        {
-            if (entry->entry->m_uHashID == animHashID)
-                return entry->entry;
-            entry = entry->next;
-        }
-        return NULL;
+        return mAnimInventory.Find(animHashID);
     }
 
     // REVISE: advance the tweak-model cursor. This branch matches the inlined

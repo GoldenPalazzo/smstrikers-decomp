@@ -11,21 +11,6 @@ class AnimationSet
 {
 public:
     /* 0x0 */ cInventory<cSAnim> m_animInventory;
-
-    inline cSAnim* FindAnimationByHash(u32 hash) const
-    {
-        ListEntry<cSAnim*>* entry = m_animInventory.m_lItemList.m_Head;
-        while (entry != NULL)
-        {
-            cSAnim* candidate = entry->entry;
-            if (hash == entry->entry->m_uHashID)
-            {
-                return candidate;
-            }
-            entry = entry->next;
-        }
-        return nullptr;
-    }
 }; // total size: 0x1C
 
 struct glModel;

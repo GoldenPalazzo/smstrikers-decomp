@@ -61,13 +61,13 @@ Bowser::Bowser(cSHierarchy& rSHierarchy, int nTeam, PhysicsNPC& rPhysNPC, cInven
     mtStateTimer.SetSeconds(0.0f);
     mtActiveTimer.SetSeconds(0.0f);
 
-    mpAnim[0] = ((AnimationSet*)pInventorySAnim)->FindAnimationByHash(nlStringHash("bowser_idle"));
-    mpAnim[1] = ((AnimationSet*)pInventorySAnim)->FindAnimationByHash(nlStringHash("bowser_drop_and_land"));
-    mpAnim[2] = ((AnimationSet*)pInventorySAnim)->FindAnimationByHash(nlStringHash("bowser_exit"));
-    mpAnim[3] = ((AnimationSet*)pInventorySAnim)->FindAnimationByHash(nlStringHash("bowser_walk_fwd"));
-    mpAnim[4] = ((AnimationSet*)pInventorySAnim)->FindAnimationByHash(nlStringHash("bowser_throw"));
-    mpAnim[5] = ((AnimationSet*)pInventorySAnim)->FindAnimationByHash(nlStringHash("bowser_fire_up"));
-    mpAnim[6] = ((AnimationSet*)pInventorySAnim)->FindAnimationByHash(nlStringHash("bowser_roll"));
+    mpAnim[0] = pInventorySAnim->Find((unsigned int)nlStringHash("bowser_idle"));
+    mpAnim[1] = pInventorySAnim->Find((unsigned int)nlStringHash("bowser_drop_and_land"));
+    mpAnim[2] = pInventorySAnim->Find((unsigned int)nlStringHash("bowser_exit"));
+    mpAnim[3] = pInventorySAnim->Find((unsigned int)nlStringHash("bowser_walk_fwd"));
+    mpAnim[4] = pInventorySAnim->Find((unsigned int)nlStringHash("bowser_throw"));
+    mpAnim[5] = pInventorySAnim->Find((unsigned int)nlStringHash("bowser_fire_up"));
+    mpAnim[6] = pInventorySAnim->Find((unsigned int)nlStringHash("bowser_roll"));
 
     mpPhysObj->mpAINPC = this;
     mpHeadTrack = new (nlMalloc(sizeof(cHeadTrack), 8, false)) cHeadTrack();

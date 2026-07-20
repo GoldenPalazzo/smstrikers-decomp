@@ -969,7 +969,7 @@ void GetAnimTriggerInfo(cCharacter* pCharacter, int animIndex, bool (*callback)(
     {
         cSAnim* pTriggerAnim = (cSAnim*)cb->m_nParam1;
         float numKeys = (float)pAnim->m_nNumKeys;
-        if (!callback(cb->m_fTime, numKeys / 60.0f, pTriggerAnim->m_uHashID, 30.0f, pData))
+        if (!callback(cb->m_fTime, numKeys / 60.0f, pTriggerAnim->GetHashID(), 30.0f, pData))
         {
             break;
         }
@@ -988,7 +988,7 @@ float GetCurrentAnimTriggerTime(cCharacter* pCharacter, unsigned long uTriggerID
     while (cb != NULL)
     {
         cSAnim* pCallbackAnim = (cSAnim*)cb->m_nParam1;
-        if (uTriggerID == pCallbackAnim->m_uHashID)
+        if (uTriggerID == pCallbackAnim->GetHashID())
         {
             count++;
             if (count - 1 == uInstanceNumber)

@@ -1,5 +1,4 @@
 #include "Game/AnimInventory.h"
-#include "Game/World/worldanim.h"
 
 #include "NL/nlString.h"
 #include "NL/nlMemory.h"
@@ -8,58 +7,22 @@
 
 cInventory<cSAnim>* g_pDefaultSAnimInventory = nullptr;
 
-typedef ListContainerBase<cSAnim*, NewAdapter<ListEntry<cSAnim*> > > SAnimListBase;
-typedef ListContainerBase<char*, NewAdapter<ListEntry<char*> > > FileListBase;
-
-static inline void ClearAnimList(cInventory<cSAnim>* c)
-{
-    nlWalkList(c->m_lItemList.m_Head, (SAnimListBase*)c, &SAnimListBase::DeleteEntry);
-    c->m_lItemList.m_Head = 0;
-    c->m_lItemList.m_Tail = 0;
-}
-
-static inline void ClearFileList(cInventory<cSAnim>* c)
-{
-    nlWalkList(c->m_lMemList.m_Head, (FileListBase*)&c->m_lMemList, &FileListBase::DeleteEntry);
-    c->m_lMemList.m_Head = 0;
-    c->m_lMemList.m_Tail = 0;
-}
-
-static inline cSAnim* FindAnim(ListEntry<cSAnim*>* pEntry, unsigned int hash)
-{
-    for (; pEntry != 0; pEntry = pEntry->next)
-    {
-        if (hash == pEntry->entry->m_uHashID)
-            return pEntry->entry;
-    }
-    return 0;
-}
-
 /**
  * Offset/Address/Size: 0x438 | 0x800073B4 | size: 0xA0
  */
 cAnimInventory::cAnimInventory(const AnimProperties* props, int count)
 {
-    m_count = count;
-    m_cont = 0;
-    m_anims = 0;
-    m_props = props;
+    m_nNumProperties = count;
+    m_pSAnimInventory = 0;
+    m_pSAnims = 0;
+    m_pAnimProperties = props;
 
-    cInventory<cSAnim>* cont = (cInventory<cSAnim>*)nlMalloc(0x1C, 8, 0);
-    if (cont)
-    {
-        cont->m_lItemList.m_Head = 0;
-        cont->m_lItemList.m_Tail = 0;
-        cont->m_lMemList.m_Head = 0;
-        cont->m_lMemList.m_Tail = 0;
-        cont->m_nItemCount = 0;
-    }
-    m_cont = cont;
+    m_pSAnimInventory = new (nlMalloc(sizeof(cInventory<cSAnim>), 8, false)) cInventory<cSAnim>();
 
     if (g_pDefaultSAnimInventory == 0)
-        g_pDefaultSAnimInventory = m_cont;
+        g_pDefaultSAnimInventory = m_pSAnimInventory;
 
-    m_anims = (cSAnim**)nlMalloc((unsigned long)(m_count << 2), 8, 0);
+    m_pSAnims = (cSAnim**)nlMalloc((unsigned long)(m_nNumProperties << 2), 8, 0);
 }
 
 /**
@@ -67,118 +30,37 @@ cAnimInventory::cAnimInventory(const AnimProperties* props, int count)
  */
 cAnimInventory::~cAnimInventory()
 {
-    cInventory<cSAnim>* c = m_cont;
-    if (c != 0)
-    {
-        ListEntry<cSAnim*>* anim = c->m_lItemList.m_Head;
-        while (anim != 0)
-        {
-            anim->entry->Destroy();
-            anim = anim->next;
-        }
-
-        ClearAnimList(c);
-
-        ListEntry<char*>** tail = &c->m_lMemList.m_Tail;
-        ListEntry<char*>** head = &c->m_lMemList.m_Head;
-        while (c->m_lMemList.m_Head != 0)
-        {
-            ListEntry<char*>* entry = nlListRemoveStart<ListEntry<char*> >(head, tail);
-            char* filename;
-            if (&filename != 0)
-            {
-                filename = entry->entry;
-            }
-            delete entry;
-            delete filename;
-        }
-
-        c->m_nItemCount = 0;
-        if (&c->m_lMemList != 0)
-        {
-            if (&c->m_lMemList != 0)
-            {
-                ClearFileList(c);
-            }
-        }
-
-        if (c != 0)
-        {
-            if (c != 0)
-            {
-                ClearAnimList(c);
-            }
-        }
-        ::operator delete(c);
-    }
-
-    delete[] m_anims;
+    delete m_pSAnimInventory;
+    delete[] m_pSAnims;
     g_pDefaultSAnimInventory = 0;
 }
 
 /**
  * Offset/Address/Size: 0x88 | 0x80007004 | size: 0x214
- * TODO: 99.35% match - r26/r27 swap for file length/end pointer and
- * r28/r29 swap for property/anims byte offsets.
  */
 void cAnimInventory::AddAnimBundle(const char* szFilename)
 {
     int i;
-    char* end;
     int len;
-    char* pMem = (char*)nlLoadEntireFileToVirtualMemory(szFilename, &len, 0x10000, 0, AllocateStart);
-    int bundleLen = len;
-    cInventory<cSAnim>* inv;
-    inv = m_cont;
+    void* pMem;
 
-    ListEntry<char*>* pFileEntry = new (nlMalloc(8, 8, 0)) ListEntry<char*>(pMem);
-    nlListAddStart<ListEntry<char*> >(&inv->m_lMemList.m_Head, pFileEntry, &inv->m_lMemList.m_Tail);
+    pMem = nlLoadEntireFileToVirtualMemory(szFilename, &len, 0x10000, 0, AllocateStart);
+    m_pSAnimInventory->AddFile((char*)pMem, len);
 
-    end = pMem + bundleLen;
-    while (pMem != end)
+    for (i = 0; i < m_nNumProperties; i++)
     {
-        if ((((nlChunk*)pMem)->m_ID & 0x80FFFFFF) == 0x80017000)
-        {
-            cSAnim* pAnim = cSAnim::Initialize((nlChunk*)pMem);
-            ListEntry<cSAnim*>* pAnimEntry = new (nlMalloc(8, 8, 0)) ListEntry<cSAnim*>(pAnim);
-            nlListAddStart<ListEntry<cSAnim*> >(&inv->m_lItemList.m_Head, pAnimEntry, &inv->m_lItemList.m_Tail);
-            inv->m_nItemCount++;
-        }
-        else
-        {
-            nlPrintf("Warning: inventory encountered an unknown chunk type\n");
-        }
-
-        pMem = (char*)(((nlChunk*)pMem)->m_Size + pMem + 8);
-    }
-
-    int animIndex = 0;
-    i = 0;
-    while (i < m_count)
-    {
-        cInventory<cSAnim>* pInv = m_cont;
-        unsigned int hash = nlStringHash(m_props[i].name);
-        cSAnim* pFound = FindAnim(pInv->m_lItemList.m_Head, hash);
-
-        m_anims[animIndex] = pFound;
-        if (m_anims[animIndex] == 0)
+        m_pSAnims[i] = m_pSAnimInventory->Find((char*)m_pAnimProperties[i].animName);
+        if (m_pSAnims[i] == 0)
         {
             nlPrintf("Warning! Could not find \"%s\" in bundle \"%s\"\n",
-                m_props[i].name,
+                m_pAnimProperties[i].animName,
                 szFilename);
-            cInventory<cSAnim>* pDefaultInv = g_pDefaultSAnimInventory;
-            hash = nlStringHash(m_props[i].name);
-            pFound = FindAnim(pDefaultInv->m_lItemList.m_Head, hash);
-
-            m_anims[animIndex] = pFound;
-            if (m_anims[animIndex] == 0)
+            m_pSAnims[i] = g_pDefaultSAnimInventory->Find((char*)m_pAnimProperties[i].animName);
+            if (m_pSAnims[i] == 0)
             {
-                m_anims[animIndex] = m_anims[0];
+                m_pSAnims[i] = m_pSAnims[0];
             }
         }
-
-        animIndex++;
-        i++;
     }
 }
 
@@ -187,7 +69,7 @@ void cAnimInventory::AddAnimBundle(const char* szFilename)
  */
 cSAnim* cAnimInventory::GetAnim(int i)
 {
-    return m_anims[i];
+    return m_pSAnims[i];
 }
 
 /**
@@ -195,7 +77,7 @@ cSAnim* cAnimInventory::GetAnim(int i)
  */
 ePlayMode cAnimInventory::GetPlayMode(int i)
 {
-    return m_props[i].playMode;
+    return m_pAnimProperties[i].playMode;
 }
 
 /**
@@ -203,7 +85,7 @@ ePlayMode cAnimInventory::GetPlayMode(int i)
  */
 float cAnimInventory::GetBlendTime(int i)
 {
-    return m_props[i].blendTime;
+    return m_pAnimProperties[i].blendAmount;
 }
 
 /**
@@ -211,7 +93,7 @@ float cAnimInventory::GetBlendTime(int i)
  */
 bool cAnimInventory::GetMirrored(int i)
 {
-    return m_props[i].mirrored;
+    return m_pAnimProperties[i].mirror;
 }
 
 /**
@@ -219,7 +101,7 @@ bool cAnimInventory::GetMirrored(int i)
  */
 int cAnimInventory::GetBallRotationMode(int i)
 {
-    return m_props[i].ballRotMode;
+    return m_pAnimProperties[i].ballRotationMode;
 }
 
 /**
@@ -227,7 +109,7 @@ int cAnimInventory::GetBallRotationMode(int i)
  */
 int cAnimInventory::GetEndPhase(int i)
 {
-    return m_props[i].endPhase;
+    return m_pAnimProperties[i].endPhase;
 }
 
 /**
@@ -235,7 +117,7 @@ int cAnimInventory::GetEndPhase(int i)
  */
 u8 cAnimInventory::GetMatchCharacterSpeed(int i)
 {
-    return m_props[i].matchCharSpd;
+    return m_pAnimProperties[i].matchCharacterSpeed;
 }
 
 // /**
