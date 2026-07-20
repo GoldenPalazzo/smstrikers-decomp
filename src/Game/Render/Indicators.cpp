@@ -258,7 +258,6 @@ static inline unsigned long GetCharacterGlowTexID(cPlayer* pCharacter)
 
 /**
  * Offset/Address/Size: 0xA8 | 0x8015F30C | size: 0x7C0
- * TODO: 99.90% match - remaining diffs are local static and literal relocation labels.
  */
 static void UpdateAndRenderPlayerIndicators(float)
 {
