@@ -43,333 +43,7 @@ static unsigned char useAsyncLoading = true;
 static char kNisEmpty[] = "";
 } // namespace
 
-/**
- * Offset/Address/Size: 0x0 | 0x801186C4 | size: 0x74C
- */
-void NisPlayer::DoFunctionCall(unsigned int func)
-{
-    switch (func)
-    {
-    case 0:
-    {
-        m_SP--;
-
-        unsigned long p1 = *m_SP;
-        m_SP--;
-        const char* target = (const char*)*m_SP;
-        m_SP--;
-        const char* name = (const char*)*m_SP;
-        m_SP--;
-        float frame = *(float*)m_SP;
-
-        Nis::TriggerParams params;
-        params.float1 = -1.0f;
-        params.param1 = -1;
-        params.param2 = -1;
-        params.param3 = -1;
-        params.param4 = -1;
-        params.param1 = p1;
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_EFFECT, frame, name, target, &params);
-        break;
-    }
-    case 1:
-    {
-        m_SP--;
-        int useStopAtNisEnd = (int)*m_SP;
-        m_SP--;
-        const char* target = (const char*)*m_SP;
-        m_SP--;
-        unsigned long p1 = *m_SP;
-        m_SP--;
-        const char* name = (const char*)*m_SP;
-        m_SP--;
-        float frame = *(float*)m_SP;
-
-        Nis::TriggerParams params;
-        params.float1 = -1.0f;
-        params.param1 = -1;
-        params.param2 = -1;
-        params.param3 = -1;
-        params.param4 = -1;
-        params.param1 = p1;
-        if (useStopAtNisEnd == 1)
-        {
-            params.param2 = 1;
-        }
-
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_PLAY_SOUND, frame, name, target, &params);
-        break;
-    }
-    case 2:
-    {
-        m_SP--;
-        int useStopAtNisEnd = (int)*m_SP;
-        m_SP--;
-        const char* target = (const char*)*m_SP;
-        m_SP--;
-        float volume = *(float*)m_SP;
-        m_SP--;
-        unsigned long p1 = *m_SP;
-        m_SP--;
-        const char* name = (const char*)*m_SP;
-        m_SP--;
-        float frame = *(float*)m_SP;
-
-        Nis::TriggerParams params;
-        params.float1 = -1.0f;
-        params.param1 = -1;
-        params.param2 = -1;
-        params.param3 = -1;
-        params.param4 = -1;
-        params.float1 = volume;
-        params.param1 = p1;
-        if (useStopAtNisEnd == 1)
-        {
-            params.param2 = 1;
-        }
-
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_PLAY_SOUND, frame, name, target, &params);
-        break;
-    }
-    case 3:
-    {
-        m_SP--;
-        int useNameAsTarget = (int)*m_SP;
-        m_SP--;
-        const char* target = (const char*)*m_SP;
-        m_SP--;
-        unsigned long p1 = *m_SP;
-        m_SP--;
-        unsigned long p2 = *m_SP;
-        m_SP--;
-        float frame = *(float*)m_SP;
-
-        Nis::TriggerParams params;
-        params.float1 = -1.0f;
-        params.param1 = -1;
-        params.param2 = -1;
-        params.param3 = -1;
-        params.param4 = -1;
-        params.param1 = p1;
-        params.param2 = p2;
-        if (useNameAsTarget == 1)
-        {
-            params.param3 = 1;
-        }
-
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_PLAY_RANDOM_DIALOGUE, frame, kNisEmpty, target, &params);
-        break;
-    }
-    case 4:
-    {
-        m_SP--;
-        unsigned long p4 = *m_SP;
-        m_SP--;
-        unsigned long p3 = *m_SP;
-        m_SP--;
-        unsigned long p2 = *m_SP;
-        m_SP--;
-        unsigned long p1 = *m_SP;
-        m_SP--;
-        float frame = *(float*)m_SP;
-
-        Nis::TriggerParams params;
-        params.float1 = -1.0f;
-        params.param1 = -1;
-        params.param2 = -1;
-        params.param3 = -1;
-        params.param4 = -1;
-        params.param1 = p1;
-        params.param2 = p2;
-        params.param3 = p3;
-        params.param4 = p4;
-
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_PLAY_STREAM, frame, kNisEmpty, kNisEmpty, &params);
-        break;
-    }
-    case 5:
-    {
-        m_SP--;
-        int useStopAtNisEnd = (int)*m_SP;
-        m_SP--;
-        const char* target = (const char*)*m_SP;
-        m_SP--;
-        const char* name = (const char*)*m_SP;
-        m_SP--;
-        float frame = *(float*)m_SP;
-
-        Nis::TriggerParams params;
-        params.float1 = -1.0f;
-        params.param1 = -1;
-        params.param2 = -1;
-        params.param3 = -1;
-        params.param4 = -1;
-        if (useStopAtNisEnd == 1)
-        {
-            params.param2 = 1;
-        }
-
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_PLAY_SOUND, frame, name, target, &params);
-        break;
-    }
-    case 6:
-    {
-        m_SP--;
-        int useStopAtNisEnd = (int)*m_SP;
-        m_SP--;
-        const char* target = (const char*)*m_SP;
-        m_SP--;
-        float volume = *(float*)m_SP;
-        m_SP--;
-        const char* name = (const char*)*m_SP;
-        m_SP--;
-        float frame = *(float*)m_SP;
-
-        Nis::TriggerParams params;
-        params.float1 = -1.0f;
-        params.param1 = -1;
-        params.param2 = -1;
-        params.param3 = -1;
-        params.param4 = -1;
-        params.float1 = volume;
-        if (useStopAtNisEnd == 1)
-        {
-            params.param2 = 1;
-        }
-
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_PLAY_SOUND, frame, name, target, &params);
-        break;
-    }
-    case 7:
-    {
-        m_SP--;
-        const char* target = (const char*)*m_SP;
-        m_SP--;
-        const char* name = (const char*)*m_SP;
-        m_SP--;
-        float frame = *(float*)m_SP;
-
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_RAISE_EVENT, frame, name, target, NULL);
-        break;
-    }
-    case 8:
-    {
-        m_SP--;
-        float frame = *(float*)m_SP;
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_REGISTER_GOAL_AUDIO, frame, kNisEmpty, kNisEmpty, NULL);
-        break;
-    }
-    case 9:
-    {
-        m_SP--;
-        unsigned long loopActive = *m_SP;
-        m_SP--;
-        unsigned long stopAtNisEnd = *m_SP;
-        m_SP--;
-        float frame = *(float*)m_SP;
-
-        Nis::TriggerParams params;
-        params.float1 = -1.0f;
-        params.param1 = -1;
-        params.param2 = -1;
-        params.param3 = -1;
-        params.param4 = -1;
-
-        if (loopActive != 0)
-        {
-            params.param1 = 1;
-        }
-        else
-        {
-            params.param1 = 0;
-        }
-
-        params.param2 = stopAtNisEnd;
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_SET_ACTIVE_STREAM_LOOPING, frame, kNisEmpty, kNisEmpty, &params);
-        break;
-    }
-    case 10:
-    {
-        m_SP--;
-        float frame = *(float*)m_SP;
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_STOP_ALL_STREAMS, frame, kNisEmpty, kNisEmpty, NULL);
-        break;
-    }
-    case 11:
-    {
-        m_SP--;
-        const char* target = (const char*)*m_SP;
-        m_SP--;
-        unsigned long p1 = *m_SP;
-        m_SP--;
-        const char* name = (const char*)*m_SP;
-        m_SP--;
-        float frame = *(float*)m_SP;
-
-        Nis::TriggerParams params;
-        params.float1 = -1.0f;
-        params.param1 = -1;
-        params.param2 = -1;
-        params.param3 = -1;
-        params.param4 = -1;
-        params.param1 = p1;
-
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_STOP_SOUND, frame, name, target, &params);
-        break;
-    }
-    case 12:
-    {
-        m_SP--;
-        unsigned long p1 = *m_SP;
-        m_SP--;
-        float frame = *(float*)m_SP;
-
-        Nis::TriggerParams params;
-        params.float1 = -1.0f;
-        params.param1 = -1;
-        params.param2 = -1;
-        params.param3 = -1;
-        params.param4 = -1;
-        params.param1 = p1;
-
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_STOP_STREAM, frame, kNisEmpty, kNisEmpty, &params);
-        break;
-    }
-    case 13:
-    {
-        m_SP--;
-        const char* target = (const char*)*m_SP;
-        m_SP--;
-        const char* name = (const char*)*m_SP;
-        m_SP--;
-        float frame = *(float*)m_SP;
-
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_STOP_SOUND, frame, name, target, NULL);
-        break;
-    }
-    case 14:
-    {
-        m_SP--;
-        float delta = *(float*)m_SP;
-        m_SP--;
-        float frame = *(float*)m_SP;
-
-        Nis::TriggerParams params;
-        params.float1 = -1.0f;
-        params.param1 = -1;
-        params.param2 = -1;
-        params.param3 = -1;
-        params.param4 = -1;
-        params.float1 = delta;
-
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_TIME_DILATION, frame, kNisEmpty, kNisEmpty, &params);
-        break;
-    }
-    default:
-        nlBreak();
-        break;
-    }
-}
+#include "NisPlayer_interp.cpp"
 
 /**
  * Offset/Address/Size: 0x3990 | 0x8011866C | size: 0x58
@@ -426,34 +100,34 @@ NisPlayer::NisPlayer()
     if (data != NULL)
     {
         mDictSize = 0;
-        const char* d = data;
+        const char* dictionaryCursor = data;
         while (mDictSize < 256)
         {
             NisHeader& header = mDict[mDictSize];
-            if (sscanf(d, "name %s", header.name) != 1)
+            if (sscanf(dictionaryCursor, "name %s", header.name) != 1)
                 break;
-            SkipLine(d);
-            if (sscanf(d, "\tsize %d", &header.size) != 1)
+            SkipLine(dictionaryCursor);
+            if (sscanf(dictionaryCursor, "\tsize %d", &header.size) != 1)
                 break;
-            SkipLine(d);
-            if (sscanf(d, "\thas_ball %d", &header.numBalls) != 1)
+            SkipLine(dictionaryCursor);
+            if (sscanf(dictionaryCursor, "\thas_ball %d", &header.numBalls) != 1)
                 break;
-            SkipLine(d);
-            if (sscanf(d, "\tnum_animations %d", &header.numAnimations) != 1)
+            SkipLine(dictionaryCursor);
+            if (sscanf(dictionaryCursor, "\tnum_animations %d", &header.numAnimations) != 1)
                 break;
-            SkipLine(d);
-            if (sscanf(d, "\tnum_cameras %d", &header.numCameras) != 1)
+            SkipLine(dictionaryCursor);
+            if (sscanf(dictionaryCursor, "\tnum_cameras %d", &header.numCameras) != 1)
                 break;
-            SkipLine(d);
-            if (sscanf(d, "\tcenter %f, %f, %f", &header.center.f.x, &header.center.f.y, &header.center.f.z) != 3)
+            SkipLine(dictionaryCursor);
+            if (sscanf(dictionaryCursor, "\tcenter %f, %f, %f", &header.center.f.x, &header.center.f.y, &header.center.f.z) != 3)
                 break;
-            SkipLine(d);
-            if (sscanf(d, "\tmin_bounds %f, %f, %f", &header.minBounds.f.x, &header.minBounds.f.y, &header.minBounds.f.z) != 3)
+            SkipLine(dictionaryCursor);
+            if (sscanf(dictionaryCursor, "\tmin_bounds %f, %f, %f", &header.minBounds.f.x, &header.minBounds.f.y, &header.minBounds.f.z) != 3)
                 break;
-            SkipLine(d);
-            if (sscanf(d, "\tmax_bounds %f, %f, %f", &header.maxBounds.f.x, &header.maxBounds.f.y, &header.maxBounds.f.z) != 3)
+            SkipLine(dictionaryCursor);
+            if (sscanf(dictionaryCursor, "\tmax_bounds %f, %f, %f", &header.maxBounds.f.x, &header.maxBounds.f.y, &header.maxBounds.f.z) != 3)
                 break;
-            SkipLine(d);
+            SkipLine(dictionaryCursor);
 
             char* (*toLower)(char*) = nlToLower<char>;
             toLower(header.name);
@@ -461,10 +135,10 @@ NisPlayer::NisPlayer()
             for (int i = 0; i < header.numAnimations; i++)
             {
                 nlVector3 beginPos = { { 0, 0, 0 } };
-                int num = sscanf(d, "\tbegin_pos %f, %f, %f", &beginPos.f.x, &beginPos.f.y, &beginPos.f.z);
-                if (num != 3)
+                int parsedValueCount = sscanf(dictionaryCursor, "\tbegin_pos %f, %f, %f", &beginPos.f.x, &beginPos.f.y, &beginPos.f.z);
+                if (parsedValueCount != 3)
                     break;
-                SkipLine(d);
+                SkipLine(dictionaryCursor);
                 header.beginPositions[i] = beginPos;
             }
             mDictSize++;
@@ -546,17 +220,17 @@ void NisPlayer::HandleAsyncs()
                     mUsedFromBack -= 0x20;
                 }
 
-                int used;
+                int memoryOffset;
                 if (mLoadingFromBack)
                 {
-                    used = mUsedFromBack;
+                    memoryOffset = mUsedFromBack;
                 }
                 else
                 {
-                    used = mUsedFromFront;
+                    memoryOffset = mUsedFromFront;
                 }
 
-                char* loadAt = mMemory + used;
+                char* loadAt = mMemory + memoryOffset;
                 loadAt = loadAt + (0x20 - ((unsigned int)loadAt & 0x1F));
 
                 if (!mLoadingFromBack)
@@ -757,9 +431,9 @@ void NisPlayer::Render() const
 {
     int i;
     nlTaskManager* taskManager = nlTaskManager::m_pInstance;
-    unsigned long currState = taskManager->m_CurrState;
+    unsigned long currentState = taskManager->m_CurrState;
 
-    if (currState != 0x100 || ((taskManager->m_PrevState == 0x100) && (currState != 1)))
+    if (currentState != 0x100 || ((taskManager->m_PrevState == 0x100) && (currentState != 1)))
     {
         return;
     }
@@ -938,7 +612,7 @@ static inline char* GetNisStadiumName()
 /**
  * Offset/Address/Size: 0xFAC | 0x80115C88 | size: 0xA9C
  */
-BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTarget target, NisWinnerType wt) const
+BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTarget target, NisWinnerType winnerType) const
 {
     if (target == NIS_TARGET_STADIUM)
     {
@@ -969,23 +643,23 @@ BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTar
 
     if (target == NIS_TARGET_WINNER_SIDEKICK)
     {
-        return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick((short)mWinnerSide[wt])));
+        return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick((short)mWinnerSide[winnerType])));
     }
 
     if (target == NIS_TARGET_LOSER_SIDEKICK)
     {
-        int side = (mWinnerSide[wt] + 1) % 2;
+        int side = (mWinnerSide[winnerType] + 1) % 2;
         return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick((short)side)));
     }
 
     if (target == NIS_TARGET_WINNER_CAPTAIN)
     {
-        return BasicString<char, Detail::TempStringAllocator>(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)mWinnerSide[wt])));
+        return BasicString<char, Detail::TempStringAllocator>(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)mWinnerSide[winnerType])));
     }
 
     if (target == NIS_TARGET_LOSER_CAPTAIN)
     {
-        int side = (mWinnerSide[wt] + 1) % 2;
+        int side = (mWinnerSide[winnerType] + 1) % 2;
 
         return BasicString<char, Detail::TempStringAllocator>(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)side)));
     }
@@ -1005,7 +679,6 @@ BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTar
 
 /**
  * Offset/Address/Size: 0x610 | 0x801152EC | size: 0x99C
- * TODO: 94.27% match - remaining r30/r31/r28 register rotation and BasicString temporary stack-slot differences
  */
 void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset useStadiumOffset, NisUseFilter useFilter, NisWinnerType winnerType)
 {
@@ -1026,10 +699,10 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
     int numAvailableNis = 0;
     NisHeader* availableNis[10] = { 0 };
 
-    int e;
-    for (e = 0; e < mDictSize && numAvailableNis < 10; e++)
+    int dictionaryIndex;
+    for (dictionaryIndex = 0; dictionaryIndex < mDictSize && numAvailableNis < 10; dictionaryIndex++)
     {
-        if (strstr(mDict[e].name, nisType) == NULL)
+        if (strstr(mDict[dictionaryIndex].name, nisType) == NULL)
         {
             continue;
         }
@@ -1038,18 +711,18 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
         if (filterLengthMinusNull != 0)
         {
             const char* filterStr = filter.c_str();
-            if (mDict[e].name != strstr(mDict[e].name, filterStr))
+            if (mDict[dictionaryIndex].name != strstr(mDict[dictionaryIndex].name, filterStr))
             {
                 continue;
             }
         }
 
-        if (useFilter != NIS_NO_FILTER && nlStrLen(mExtraNameFilter) != 0 && strstr(mDict[e].name, mExtraNameFilter) == NULL)
+        if (useFilter != NIS_NO_FILTER && nlStrLen(mExtraNameFilter) != 0 && strstr(mDict[dictionaryIndex].name, mExtraNameFilter) == NULL)
         {
             continue;
         }
 
-        availableNis[numAvailableNis++] = &mDict[e];
+        availableNis[numAvailableNis++] = &mDict[dictionaryIndex];
     }
 
     if (numAvailableNis == 0)
@@ -1080,10 +753,9 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
         else
         {
             float scale = (useStadiumOffset == NIS_AWAY_STADIUM_OFFSET) ? -1.0f : 1.0f;
-            BasicString<char, Detail::TempStringAllocator> s =
-                Format(BasicString<char, Detail::TempStringAllocator>("nisHeader/{0}_offset"), (const char*)GetNisStadiumName());
+            BasicString<char, Detail::TempStringAllocator> offsetConfigName = Format(BasicString<char, Detail::TempStringAllocator>("nisHeader/{0}_offset"), (const char*)GetNisStadiumName());
 
-            float offset = GetConfigFloat(Config::Global(), s.c_str(), 0.0f);
+            float offset = GetConfigFloat(Config::Global(), offsetConfigName.c_str(), 0.0f);
 
             nisHeader.stadiumOffset.f.x = 0.0f;
             nisHeader.stadiumOffset.f.y = scale * offset;
@@ -1111,9 +783,9 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
 void NisPlayer::PlayCharacterDirection()
 {
     Event* event = g_pEventManager->CreateValidEvent(7, 0x20);
-    CharacterDirectionData* pData = new (&event->m_data) CharacterDirectionData();
-    pData->home = &mBeginPositions[0];
-    pData->away = &mBeginPositions[4];
+    CharacterDirectionData* directionData = new (&event->m_data) CharacterDirectionData();
+    directionData->home = &mBeginPositions[0];
+    directionData->away = &mBeginPositions[4];
     for (int i = 0; i < 10; i++)
     {
         mBeginPositions[i].f.x = nlRandomf(-8.0f, 8.0f, &nlDefaultSeed);
@@ -1138,57 +810,57 @@ void NisPlayer::EventHandler(Event* event)
 
     if (event->m_uEventID == 5)
     {
-        GoalScoredData* gsd;
+        GoalScoredData* goalScoredData;
         if ((s32)event->m_data.GetID() == -1)
         {
             nlPrintf("Error: Trying to get event data on event with none!\n");
-            gsd = NULL;
+            goalScoredData = NULL;
         }
         else if ((s32)event->m_data.GetID() != 0x18A)
         {
             nlPrintf("Error: GetData() failed! Data types do not match!\n");
-            gsd = NULL;
+            goalScoredData = NULL;
         }
         else
         {
-            gsd = (GoalScoredData*)&event->m_data;
+            goalScoredData = (GoalScoredData*)&event->m_data;
         }
 
-        if (gsd != NULL)
+        if (goalScoredData != NULL)
         {
-            if (gsd->uGoalType == 6)
+            if (goalScoredData->uGoalType == 6)
             {
                 g_ForceDoubleBallTransition = 1;
             }
 
-            if (!gsd->pLastTouch[gsd->uTeamIndex]->IsCaptain())
+            if (!goalScoredData->pLastTouch[goalScoredData->uTeamIndex]->IsCaptain())
             {
-                mGoalScorerCharIndex = GetCharacterIndex(gsd->pLastTouch[gsd->uTeamIndex]);
+                mGoalScorerCharIndex = GetCharacterIndex(goalScoredData->pLastTouch[goalScoredData->uTeamIndex]);
             }
         }
     }
 
     if (event->m_uEventID == 0xF)
     {
-        GoalieSaveData* gsd;
+        GoalieSaveData* goalieSaveData;
         if ((s32)event->m_data.GetID() == -1)
         {
             nlPrintf("Error: Trying to get event data on event with none!\n");
-            gsd = NULL;
+            goalieSaveData = NULL;
         }
         else if ((s32)event->m_data.GetID() != 0x13C)
         {
             nlPrintf("Error: GetData() failed! Data types do not match!\n");
-            gsd = NULL;
+            goalieSaveData = NULL;
         }
         else
         {
-            gsd = (GoalieSaveData*)&event->m_data;
+            goalieSaveData = (GoalieSaveData*)&event->m_data;
         }
 
-        if (gsd != NULL)
+        if (goalieSaveData != NULL)
         {
-            if (gsd->pGoalie == g_pCharacters[8])
+            if (goalieSaveData->pGoalie == g_pCharacters[8])
             {
                 mWinnerSide[1] = 0;
             }
@@ -1203,23 +875,23 @@ void NisPlayer::EventHandler(Event* event)
 /**
  * Offset/Address/Size: 0x1F4 | 0x80114ED0 | size: 0x17C
  */
-int NisPlayer::TargetToIndex(NisTarget target, int idx, NisWinnerType wt) const
+int NisPlayer::TargetToIndex(NisTarget target, int index, NisWinnerType winnerType) const
 {
     if (target == NIS_TARGET_HOME_CAPTAIN)
     {
-        return idx;
+        return index;
     }
     if (target == NIS_TARGET_AWAY_CAPTAIN)
     {
-        return idx + 4;
+        return index + 4;
     }
     if (target == NIS_TARGET_HOME_SIDEKICK)
     {
-        return idx + 1;
+        return index + 1;
     }
     if (target == NIS_TARGET_AWAY_SIDEKICK)
     {
-        return idx + 5;
+        return index + 5;
     }
     if (target == NIS_TARGET_HOME_GOALIE)
     {
@@ -1231,37 +903,37 @@ int NisPlayer::TargetToIndex(NisTarget target, int idx, NisWinnerType wt) const
     }
     if (target == NIS_TARGET_LOSER_SIDEKICK)
     {
-        if (mWinnerSide[wt] == 0)
+        if (mWinnerSide[winnerType] == 0)
         {
-            return idx + 5;
+            return index + 5;
         }
-        return idx + 1;
+        return index + 1;
     }
     if (target == NIS_TARGET_WINNER_SIDEKICK)
     {
-        if (mWinnerSide[wt] == 0)
+        if (mWinnerSide[winnerType] == 0)
         {
-            return idx + 1;
+            return index + 1;
         }
-        return idx + 5;
+        return index + 5;
     }
     if (target == NIS_TARGET_LOSER_GOALIE)
     {
-        return (mWinnerSide[wt] == 0) ? 9 : 8;
+        return (mWinnerSide[winnerType] == 0) ? 9 : 8;
     }
     if (target == NIS_TARGET_WINNER_GOALIE)
     {
-        return (mWinnerSide[wt] == 0) ? 9 : 8;
+        return (mWinnerSide[winnerType] == 0) ? 9 : 8;
     }
     if (target == NIS_TARGET_WINNER_CAPTAIN)
     {
-        return (mWinnerSide[wt] == 0) ? 0 : 4;
+        return (mWinnerSide[winnerType] == 0) ? 0 : 4;
     }
     if (target == NIS_TARGET_LOSER_CAPTAIN)
     {
-        return (mWinnerSide[wt] == 0) ? 4 : 0;
+        return (mWinnerSide[winnerType] == 0) ? 4 : 0;
     }
-    return (target == NIS_TARGET_NONE) ? idx : 0;
+    return (target == NIS_TARGET_NONE) ? index : 0;
 }
 
 /**
@@ -1305,6 +977,18 @@ bool NisPlayer::IsMirrored(NisTarget target, const char* name, NisWinnerType win
         }
         return false;
     }
+}
+
+void NisPlayer::Effect(float frame, const char* name, const char* target, NisEffectLifetime lifetime)
+{
+    Nis::TriggerParams params;
+    params.float1 = -1.0f;
+    params.param1 = -1;
+    params.param2 = -1;
+    params.param3 = -1;
+    params.param4 = -1;
+    params.param1 = lifetime;
+    mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_EFFECT, frame, name, target, &params);
 }
 
 /**

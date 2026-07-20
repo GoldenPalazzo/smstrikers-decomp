@@ -835,7 +835,7 @@ config.libs = [
             Object(Matching, "Game/FormationDefines.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/TweaksBase.cpp", extra_cflags=["-inline auto"]),
 
-            Object(NonMatching, "Game/NisPlayer.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/NisPlayer.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Game Render
             Object(Matching, "Game/Render/FlareHandler.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

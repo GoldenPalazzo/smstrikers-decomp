@@ -30,6 +30,12 @@ enum NisUseFilter
     NIS_FILTER = 1,
 };
 
+enum NisEffectLifetime
+{
+    NIS_EFFECT_STOP_AT_END = 0,
+    NIS_EFFECT_TIME_OUT = 1,
+};
+
 class NisPlayer : public InterpreterCore
 {
 public:
@@ -39,6 +45,7 @@ public:
 
     void SetExtraNameFilter(const char*);
     void ResetEffects();
+    void Effect(float, const char*, const char*, NisEffectLifetime);
     bool IsMirrored(NisTarget, const char*, NisWinnerType) const;
     int TargetToIndex(NisTarget, int, NisWinnerType) const;
     void EventHandler(Event*);
@@ -77,9 +84,6 @@ public:
     /* 0xBD28 */ int mWinnerSide[2];            // offset 0xBD28, size 0x8
     /* 0xBD30 */ nlVector3 mBeginPositions[10]; // offset 0xBD30, size 0x78
     /* 0xBDA8 */ char mExtraNameFilter[128];    // offset 0xBDA8, size 0x80
-    /* 0xBE28 */ u8 _padBE28[0x308];            // padding
-    /* 0xC130 */ nlVector3 mCharDirections[10]; // offset 0xC130, size 0x78
-
-}; // total size: 0xC1A8
+}; // total size: 0xBE28
 
 #endif // _NISPLAYER_H_
