@@ -34,16 +34,18 @@ using TakeGameMemSnapshot::LexicalCast;
 #include "NL/MemAlloc.h"
 #include "PowerPC_EABI_Support/MSL_C/MSL_Common/direct_io.h"
 
-extern nlColour MenuHighliteColour;
+namespace DoubleHighlite
+{
+static const char* SLIDE_IN = "in";
+static const char* SLIDE_OUT = "out";
+static bool TEMPDISABLESOUND;
+}
 
 namespace SingleHighlite
 {
-bool TEMPDISABLESOUND = true;
-}
-
-namespace DoubleHighlite
-{
-static bool TEMPDISABLESOUND;
+static const char* SLIDE_IN = "in";
+static const char* SLIDE_OUT = "out";
+bool TEMPDISABLESOUND;
 }
 
 enum nlLanguage
@@ -62,49 +64,7 @@ enum nlLanguage
 
 extern nlLanguage g_Language;
 
-unsigned long TrophyTypeToStringName[13] = {
-    0x3F93A700,
-    0x68141335,
-    0x7902D2A0,
-    0xE384D5B8,
-    0x88EAF9AE,
-    0xFC7AE263,
-    0x3D6FFE4E,
-    0x77EBA4E6,
-    0x51C47AC0,
-    0x09FB969C,
-    0xB520A8AF,
-    0x185EC17B,
-    0x99FCEA51,
-};
-
-unsigned long ModeToStandingsStringName[10] = {
-    0xF17CCCFC,
-    0x9B697E0A,
-    0x61949FBF,
-    0xF302B4AA,
-    0xDD056242,
-    0xDB4C7038,
-    0x6E192E6D,
-    0xE617BFD8,
-    0xE989F0F0,
-    0x14183216,
-};
-
-unsigned long ModeToStringName[10] = {
-    0xF17CCCFC,
-    0x3F93A700,
-    0x68141335,
-    0x7902D2A0,
-    0xE384D5B8,
-    0x88EAF9AE,
-    0xFC7AE263,
-    0x3D6FFE4E,
-    0x77EBA4E6,
-    0x1A97A58C,
-};
-
-unsigned long CCToStringName[13] = {
+static unsigned long CCToStringName[13] = {
     0x35D90F6F,
     0x35F8B919,
     0x11761DAE,
@@ -120,7 +80,49 @@ unsigned long CCToStringName[13] = {
     0x848890BC,
 };
 
-long TeamID2CharacterClassTable[9][2] = {
+static unsigned long ModeToStringName[10] = {
+    0xF17CCCFC,
+    0x3F93A700,
+    0x68141335,
+    0x7902D2A0,
+    0xE384D5B8,
+    0x88EAF9AE,
+    0xFC7AE263,
+    0x3D6FFE4E,
+    0x77EBA4E6,
+    0x1A97A58C,
+};
+
+static unsigned long ModeToStandingsStringName[10] = {
+    0xF17CCCFC,
+    0x9B697E0A,
+    0x61949FBF,
+    0xF302B4AA,
+    0xDD056242,
+    0xDB4C7038,
+    0x6E192E6D,
+    0xE617BFD8,
+    0xE989F0F0,
+    0x14183216,
+};
+
+static unsigned long TrophyTypeToStringName[13] = {
+    0x3F93A700,
+    0x68141335,
+    0x7902D2A0,
+    0xE384D5B8,
+    0x88EAF9AE,
+    0xFC7AE263,
+    0x3D6FFE4E,
+    0x77EBA4E6,
+    0x51C47AC0,
+    0x09FB969C,
+    0xB520A8AF,
+    0x185EC17B,
+    0x99FCEA51,
+};
+
+static const long TeamID2CharacterClassTable[9][2] = {
     { 0x00000000, 0x00000001 },
     { 0x00000001, 0x00000002 },
     { 0x00000002, 0x00000005 },
@@ -132,51 +134,41 @@ long TeamID2CharacterClassTable[9][2] = {
     { 0x00000008, 0x0000000C },
 };
 
+NameIDEntry NameTeamTable[9] = {
+    { "daisy", TEAM_DAISY },
+    { "donkeykong", TEAM_DONKEYKONG },
+    { "luigi", TEAM_LUIGI },
+    { "mario", TEAM_MARIO },
+    { "peach", TEAM_PEACH },
+    { "waluigi", TEAM_WALUIGI },
+    { "wario", TEAM_WARIO },
+    { "yoshi", TEAM_YOSHI },
+    { "mystery", TEAM_MYSTERY },
+};
+
+NameIDEntry NameSidekickTable[4] = {
+    { "toad", SK_TOAD },
+    { "koopa", SK_KOOPA },
+    { "hammerbro", SK_HAMMERBROS },
+    { "birdo", SK_BIRDO },
+};
+
+const unsigned char PAD_COLOURS[4][3] = {
+    { 0xFA, 0xE3, 0x35 },
+    { 0x40, 0xC4, 0xE4 },
+    { 0x08, 0xDD, 0x3F },
+    { 0xB8, 0x49, 0x4C },
+};
+
+unsigned long CONTROLLER_TEXT[4] = { 0xA60, 0xA61, 0xA62, 0xA63 };
+
 static unsigned long RankToRankString[14] = {
     0x006AF952, 0x2BCC86A6, 0x01679D85, 0x0E3857E2, 0x006AC65B, 0x0156517A, 0xA6AFB3A7, 0x0B6EC463, 0x00FBAC6B, 0x01660DED, 0x856B1465, 0x1C76DFC8, 0x969F5329, 0xA08874EE
 };
 
-static const char* TrophyStreamNames[8] = {
-    "FE_Cup_Win_Battle_Mush",
-    "FE_Cup_Win_Battle_Flow",
-    "FE_Cup_Win_Battle_Star",
-    "FE_Cup_Win_Battle_Bows",
-    "FE_Cup_Win_Super_Mush",
-    "FE_Cup_Win_Super_Flow",
-    "FE_Cup_Win_Super_Star",
-    "FE_Cup_Win_Super_Bows",
-};
-
-static const char* CAPTAIN_SLIDE_SOUNDS[] = {
-    "sfx_focus_daisy",
-    "sfx_focus_dk",
-    "sfx_focus_luigi",
-    "sfx_focus_mario",
-    "sfx_focus_peach",
-    "sfx_focus_waluigi",
-    "sfx_focus_wario",
-    "sfx_focus_yoshi",
-    "sfx_focus_mystery",
-};
-
-static const char* SIDEKICK_SOUNDS[] = {
-    "sfx_accept_toad",
-    "sfx_accept_koopa",
-    "sfx_accept_ham",
-    "sfx_accept_birdo",
-};
-
-static const char* CHARACTER_ACCEPT_SOUNDS[] = {
-    "sfx_accept_daisy",
-    "sfx_accept_dk",
-    "sfx_accept_luigi",
-    "sfx_accept_mario",
-    "sfx_accept_peach",
-    "sfx_accept_waluigi",
-    "sfx_accept_wario",
-    "sfx_accept_yoshi",
-    "sfx_accept_mystery",
-};
+nlColour MenuHighliteColour = { 0xFF, 0xFF, 0xFF, 0xB2 };
+nlColour SubMenuHighliteColour = { 0xFF, 0xA8, 0x00, 0xFF };
+nlColour SubMenuUnhighliteColour = { 0xFF, 0xFF, 0xFF, 0xFF };
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800A6510 | size: 0x30
@@ -440,7 +432,7 @@ eCharacterClass ConvertToCharacterClass(eSidekickID sidekickID)
  */
 const char* GetTeamName(eTeamID teamID)
 {
-    return NameTeamTable[teamID].name;
+    return NameTeamTable[teamID].mName;
 }
 
 /**
@@ -452,7 +444,7 @@ const char* GetSidekickName(eSidekickID sidekickID)
     {
         return "myst_sidekick";
     }
-    return NameSidekickTable[sidekickID].name;
+    return NameSidekickTable[sidekickID].mName;
 }
 
 /**
@@ -462,9 +454,9 @@ eTeamID ConvertToTeamID(const char* name)
 {
     for (int i = 0; i < 9; i++)
     {
-        if (nlStrICmp(NameTeamTable[i].name, name) == 0)
+        if (nlStrICmp(NameTeamTable[i].mName, name) == 0)
         {
-            return NameTeamTable[i].id;
+            return (eTeamID)NameTeamTable[i].mID;
         }
     }
     return TEAM_INVALID;
@@ -477,9 +469,9 @@ eSidekickID ConvertToSidekickID(const char* name)
 {
     for (int i = 0; i < 4; i++)
     {
-        if (nlStrICmp(NameSidekickTable[i].name, name) == 0)
+        if (nlStrICmp(NameSidekickTable[i].mName, name) == 0)
         {
-            return NameSidekickTable[i].id;
+            return (eSidekickID)NameSidekickTable[i].mID;
         }
     }
     return SK_INVALID;
@@ -530,110 +522,25 @@ void DoubleHighlite::TempDisableSound()
  */
 void DoubleHighlite::OpenItem(TLComponentInstance* component)
 {
-    typedef TLImageInstance* (*FindImageByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLImageInstance* (*FindImageByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+    TLInstance* highliteimage;
 
-    TLComponentInstance* highlite;
-    TLComponentInstance* head;
-    volatile InlineHasher hB, hA;
-    volatile InlineHasher h9, h8;
-    volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
+    component->SetActiveSlide("in");
 
-    component->SetActiveSlide("high");
+    highliteimage = FindComponent(component->GetActiveSlide(), "highlite");
+    highliteimage->m_bVisible = true;
+    ((TLComponentInstance*)highliteimage)->SetActiveSlide("in");
 
-    head = (TLComponentInstance*)component->GetActiveSlide()->m_instances;
-    highlite = head;
-    unsigned long hash = nlStringLowerHash("highlite");
-    while (highlite)
-    {
-        if (hash == highlite->m_hash)
-        {
-            break;
-        }
+    FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        ((TLComponentInstance*)highliteimage)->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("may_highlite")))
+        ->SetAssetColour(MenuHighliteColour);
 
-        highlite = (TLComponentInstance*)highlite->m_next;
-        if (highlite == head)
-        {
-            highlite = NULL;
-            break;
-        }
-    }
+    FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        ((TLComponentInstance*)highliteimage)->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("may_highlite2")))
+        ->SetAssetColour(MenuHighliteColour);
 
-    highlite->m_bVisible = true;
-    highlite->SetActiveSlide("high");
-
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-    h8.m_Hash = 0;
-    h9.m_Hash = 0;
-
-    hash = nlStringLowerHash("may_highlite");
-    hA.m_Hash = hash;
-    hB.m_Hash = hash;
-
-    {
-        union
-        {
-            FindImageByValue byValue;
-            FindImageByRef byRef;
-        } findImage;
-        findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
-
-        findImage.byRef(
-                     highlite->GetActiveSlide(),
-                     (InlineHasher&)hB,
-                     (InlineHasher&)h9,
-                     (InlineHasher&)h7,
-                     (InlineHasher&)h5,
-                     (InlineHasher&)h3,
-                     (InlineHasher&)h1)
-            ->SetAssetColour(MenuHighliteColour);
-    }
-
-    volatile InlineHasher g7, g6;
-    volatile InlineHasher g4, g3, g2, g1, g0;
-
-    g0.m_Hash = 0;
-    h1.m_Hash = 0;
-    g1.m_Hash = 0;
-    h3.m_Hash = 0;
-    g2.m_Hash = 0;
-    h5.m_Hash = 0;
-    g3.m_Hash = 0;
-    h7.m_Hash = 0;
-    g4.m_Hash = 0;
-    h9.m_Hash = 0;
-
-    hash = nlStringLowerHash("may_highlite2");
-    g6.m_Hash = hash;
-    g7.m_Hash = hash;
-
-    {
-        union
-        {
-            FindImageByValue byValue;
-            FindImageByRef byRef;
-        } findImage;
-        findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
-
-        findImage.byRef(
-                     highlite->GetActiveSlide(),
-                     (InlineHasher&)g7,
-                     (InlineHasher&)h9,
-                     (InlineHasher&)h7,
-                     (InlineHasher&)h5,
-                     (InlineHasher&)h3,
-                     (InlineHasher&)h1)
-            ->SetAssetColour(MenuHighliteColour);
-    }
-
-    highlite->Update(0.0f);
+    ((TLComponentInstance*)highliteimage)->Update(0.0f);
     component->Update(0.0f);
 
     if (TEMPDISABLESOUND == false)
@@ -673,86 +580,23 @@ void SingleHighlite::TempDisableSound()
  */
 void SingleHighlite::OpenItem(TLComponentInstance* component)
 {
-    typedef TLComponentInstance* (*FindComponentByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindComponentByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLImageInstance* (*FindImageByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLImageInstance* (*FindImageByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+    TLComponentInstance* highlight;
+    TLInstance* highlightimage;
 
-    union
-    {
-        FindComponentByValue byValue;
-        FindComponentByRef byRef;
-    } findComponent;
-    union
-    {
-        FindImageByValue byValue;
-        FindImageByRef byRef;
-    } findImage;
-
-    unsigned long hash;
-
-    volatile InlineHasher hB, hA;
-    volatile InlineHasher h9, h8;
-    volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
-
-    findComponent.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-    findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
-
-    component->SetActiveSlide("high");
+    component->SetActiveSlide("in");
     component->Update(0.0f);
 
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-    h8.m_Hash = 0;
-    h9.m_Hash = 0;
-
-    hash = nlStringLowerHash("in");
-    hA.m_Hash = hash;
-    hB.m_Hash = hash;
-    component = findComponent.byRef(
+    highlight = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         component->GetActiveSlide(),
-        (InlineHasher&)hB,
-        (InlineHasher&)h9,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("high")));
 
-    component->SetActiveSlide("high");
-    component->Update(0.0f);
+    highlight->SetActiveSlide("in");
+    highlight->Update(0.0f);
 
-    volatile InlineHasher g7, g6;
-    volatile InlineHasher g4, g3, g2, g1, g0;
-
-    g0.m_Hash = 0;
-    h1.m_Hash = 0;
-    g1.m_Hash = 0;
-    h3.m_Hash = 0;
-    g2.m_Hash = 0;
-    h5.m_Hash = 0;
-    g3.m_Hash = 0;
-    h7.m_Hash = 0;
-    g4.m_Hash = 0;
-    h9.m_Hash = 0;
-
-    hash = nlStringLowerHash("may_highlite");
-    g6.m_Hash = hash;
-    g7.m_Hash = hash;
-    findImage.byRef(
-                 component->GetActiveSlide(),
-                 (InlineHasher&)g7,
-                 (InlineHasher&)h9,
-                 (InlineHasher&)h7,
-                 (InlineHasher&)h5,
-                 (InlineHasher&)h3,
-                 (InlineHasher&)h1)
-        ->SetAssetColour(MenuHighliteColour);
+    highlightimage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        highlight->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("may_highlite")));
+    highlightimage->SetAssetColour(MenuHighliteColour);
 
     if (TEMPDISABLESOUND == false)
     {
@@ -767,87 +611,23 @@ void SingleHighlite::OpenItem(TLComponentInstance* component)
  */
 void SingleHighlite::CloseItem(TLComponentInstance* component)
 {
-    typedef TLComponentInstance* (*FindComponentByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindComponentByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLImageInstance* (*FindImageByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLImageInstance* (*FindImageByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    union
-    {
-        FindComponentByValue byValue;
-        FindComponentByRef byRef;
-    } findComponent;
-    union
-    {
-        FindImageByValue byValue;
-        FindImageByRef byRef;
-    } findImage;
-
-    unsigned long hash;
-
-    volatile InlineHasher hC;
-    volatile InlineHasher hB, hA;
-    volatile InlineHasher h9, h8;
-    volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
-
-    findComponent.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-    findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
+    TLComponentInstance* highlight;
+    TLInstance* highlightimage;
 
     component->SetActiveSlide("out");
     component->Update(0.0f);
 
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-    h8.m_Hash = 0;
-    h9.m_Hash = 0;
-
-    hash = nlStringLowerHash("high");
-    hA.m_Hash = hash;
-    hB.m_Hash = hash;
-    component = findComponent.byRef(
+    highlight = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         component->GetActiveSlide(),
-        (InlineHasher&)hB,
-        (InlineHasher&)h9,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("high")));
 
-    component->SetActiveSlide("out");
-    component->Update(0.0f);
+    highlight->SetActiveSlide("out");
+    highlight->Update(0.0f);
 
-    volatile InlineHasher g7, g6;
-    volatile InlineHasher g5, g4, g3, g2, g1, g0;
-
-    g0.m_Hash = 0;
-    h1.m_Hash = 0;
-    g1.m_Hash = 0;
-    h3.m_Hash = 0;
-    g2.m_Hash = 0;
-    h5.m_Hash = 0;
-    g3.m_Hash = 0;
-    h7.m_Hash = 0;
-    g4.m_Hash = 0;
-    h9.m_Hash = 0;
-
-    hash = nlStringLowerHash("may_highlite");
-    g6.m_Hash = hash;
-    g7.m_Hash = hash;
-    findImage.byRef(
-                 component->GetActiveSlide(),
-                 (InlineHasher&)g7,
-                 (InlineHasher&)h9,
-                 (InlineHasher&)h7,
-                 (InlineHasher&)h5,
-                 (InlineHasher&)h3,
-                 (InlineHasher&)h1)
-        ->SetAssetColour(MenuHighliteColour);
+    highlightimage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        highlight->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("may_highlite")));
+    highlightimage->SetAssetColour(MenuHighliteColour);
 }
 
 /**
@@ -863,7 +643,7 @@ void CaptainSidekickFilename::Build(CaptainSidekickFilename::Type type, char* bu
 
     if (type == TYPE_3 || type == TYPE_4)
     {
-        const char* name = (id == -2) ? "myst_sidekick" : NameSidekickTable[id].name;
+        const char* name = (id == -2) ? "myst_sidekick" : NameSidekickTable[id].mName;
         switch (type)
         {
         case TYPE_3:
@@ -879,7 +659,7 @@ void CaptainSidekickFilename::Build(CaptainSidekickFilename::Type type, char* bu
     }
     else
     {
-        const char* name = (char*)NameTeamTable[id].name;
+        const char* name = (char*)NameTeamTable[id].mName;
         suffix = (flag == 0) ? 'l' : 'r';
         switch (type)
         {
@@ -917,6 +697,18 @@ void EnableAutoPressed()
  */
 /* static */ const char* FECharacterSound::PlayCaptainName(eTeamID teamID)
 {
+    static char* CHARACTER_ACCEPT_SOUNDS[9] = {
+        "sfx_accept_daisy",
+        "sfx_accept_dk",
+        "sfx_accept_luigi",
+        "sfx_accept_mario",
+        "sfx_accept_peach",
+        "sfx_accept_waluigi",
+        "sfx_accept_wario",
+        "sfx_accept_yoshi",
+        "sfx_accept_mystery",
+    };
+
     FEAudio::PlayAnimAudioEvent(CHARACTER_ACCEPT_SOUNDS[teamID], true);
     return CHARACTER_ACCEPT_SOUNDS[teamID];
 }
@@ -926,6 +718,13 @@ void EnableAutoPressed()
  */
 /* static */ void FECharacterSound::PlaySidekickName(eSidekickID sidekickID)
 {
+    static char* SIDEKICK_SOUNDS[4] = {
+        "sfx_accept_toad",
+        "sfx_accept_koopa",
+        "sfx_accept_ham",
+        "sfx_accept_birdo",
+    };
+
     FEAudio::PlayAnimAudioEvent(SIDEKICK_SOUNDS[sidekickID], false);
 }
 
@@ -934,6 +733,18 @@ void EnableAutoPressed()
  */
 /* static */ void FECharacterSound::PlayCaptainSlideIn(eTeamID teamID)
 {
+    static char* CAPTAIN_SLIDE_SOUNDS[9] = {
+        "sfx_focus_daisy",
+        "sfx_focus_dk",
+        "sfx_focus_luigi",
+        "sfx_focus_mario",
+        "sfx_focus_peach",
+        "sfx_focus_waluigi",
+        "sfx_focus_wario",
+        "sfx_focus_yoshi",
+        "sfx_focus_mystery",
+    };
+
     FEAudio::PlayAnimAudioEvent(CAPTAIN_SLIDE_SOUNDS[teamID], false);
 }
 
@@ -971,19 +782,17 @@ void TakeGameMemSnapshot::ResetTimers()
 
 /**
  * Offset/Address/Size: 0x130 | 0x800A31EC | size: 0x504
- * TODO: 99.64% match - format string allocation and literal cursor use swapped
- * r30/r31 roles.
  */
 void TakeGameMemSnapshot::WriteToDisk()
 {
     static const char* StadiumNames[7] = {
-        "luigi",
-        "dk",
-        "daisy",
-        "waluigi",
-        "mario",
-        "peach",
-        "bowser",
+        "pipeline",
+        "palace",
+        "konga",
+        "underground",
+        "biopod",
+        "super",
+        "battledome",
     };
 
     const char* filename = "gamesnapshot.txt";
@@ -1002,18 +811,18 @@ void TakeGameMemSnapshot::WriteToDisk()
     pFile = static_cast<FILE*>(pFile);
 
     BasicString<char, ::Detail::TempStringAllocator> data;
-    data.AppendInPlace(NameTeamTable[GameInfoManager::GetInstance()->GetTeam(0)].name);
+    data.AppendInPlace(NameTeamTable[GameInfoManager::GetInstance()->GetTeam(0)].mName);
     data.AppendInPlace(",");
 
     eSidekickID sk0 = GameInfoManager::GetInstance()->GetSidekick(0);
-    data.AppendInPlace((sk0 == (eSidekickID)-2) ? "myst_sidekick" : NameSidekickTable[sk0].name);
+    data.AppendInPlace((sk0 == (eSidekickID)-2) ? "myst_sidekick" : NameSidekickTable[sk0].mName);
     data.AppendInPlace(",");
 
-    data.AppendInPlace(NameTeamTable[GameInfoManager::GetInstance()->GetTeam(1)].name);
+    data.AppendInPlace(NameTeamTable[GameInfoManager::GetInstance()->GetTeam(1)].mName);
     data.AppendInPlace(",");
 
     eSidekickID sk1 = GameInfoManager::GetInstance()->GetSidekick(1);
-    data.AppendInPlace((sk1 == (eSidekickID)-2) ? "myst_sidekick" : NameSidekickTable[sk1].name);
+    data.AppendInPlace((sk1 == (eSidekickID)-2) ? "myst_sidekick" : NameSidekickTable[sk1].mName);
     data.AppendInPlace(",");
 
     data.AppendInPlace(StadiumNames[GameInfoManager::GetInstance()->GetStadium()]);
@@ -1086,6 +895,17 @@ const char* GetMemCardDescription()
  */
 const char* GetCupStreamName(eTrophyType trophyType)
 {
+    static char* TrophyStreamNames[8] = {
+        "FE_Cup_Win_Battle_Mush",
+        "FE_Cup_Win_Battle_Flow",
+        "FE_Cup_Win_Battle_Star",
+        "FE_Cup_Win_Battle_Bows",
+        "FE_Cup_Win_Super_Mush",
+        "FE_Cup_Win_Super_Flow",
+        "FE_Cup_Win_Super_Star",
+        "FE_Cup_Win_Super_Bows",
+    };
+
     return TrophyStreamNames[trophyType];
 }
 

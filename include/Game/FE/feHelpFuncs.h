@@ -12,21 +12,14 @@
 #include "Game/FE/tlTextInstance.h"
 #include "Game/Render/Nis.h"
 
-struct NameTeamEntry
+struct NameIDEntry
 {
-    const char* name;
-    eTeamID id;
+    const char* mName;
+    int mID;
 };
 
-extern NameTeamEntry NameTeamTable[9];
-
-struct NameSidekickEntry
-{
-    const char* name;
-    eSidekickID id;
-};
-
-extern NameSidekickEntry NameSidekickTable[4];
+extern NameIDEntry NameTeamTable[9];
+extern NameIDEntry NameSidekickTable[4];
 
 void MakeTextBoxReallyWide(TLTextInstance&);
 const char* GetCupStreamName(eTrophyType);
@@ -83,6 +76,13 @@ public:
 
 extern const unsigned char PAD_COLOURS[4][3];
 
+namespace DoubleHighlite
+{
+void CloseItem(TLComponentInstance*);
+void OpenItem(TLComponentInstance*);
+void TempDisableSound();
+} // namespace DoubleHighlite
+
 namespace SingleHighlite
 {
 void CloseItem(TLComponentInstance*);
@@ -91,13 +91,6 @@ void TempDisableSound();
 
 extern bool TEMPDISABLESOUND;
 } // namespace SingleHighlite
-
-namespace DoubleHighlite
-{
-void CloseItem(TLComponentInstance*);
-void OpenItem(TLComponentInstance*);
-void TempDisableSound();
-} // namespace DoubleHighlite
 
 // class GetLOCStandingsName(GameInfoManager
 // {

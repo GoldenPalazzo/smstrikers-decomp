@@ -45,13 +45,23 @@ struct LexicalCastImpl<To, int>
 template <typename To>
 struct LexicalCastImpl<To, unsigned long>
 {
-    static To Do(unsigned long t);
+    static To Do(unsigned long t)
+    {
+        char s[0x40];
+        nlSNPrintf(s, 0x40, "%u", t);
+        return To(s);
+    }
 };
 
 template <typename To>
 struct LexicalCastImpl<To, unsigned int>
 {
-    static To Do(unsigned int t);
+    static To Do(unsigned int t)
+    {
+        char s[0x40];
+        nlSNPrintf(s, 0x40, "%u", t);
+        return To(s);
+    }
 };
 
 template <typename To>
@@ -144,22 +154,6 @@ template <>
 inline float Detail::LexicalCastImpl<float, const char*>::Do(const char* s)
 {
     return (float)atof(s);
-}
-
-template <>
-inline NLString Detail::LexicalCastImpl<NLString, unsigned long>::Do(unsigned long t)
-{
-    char s[0x40];
-    nlSNPrintf(s, 0x40, "%u", t);
-    return NLString(s);
-}
-
-template <>
-inline NLString Detail::LexicalCastImpl<NLString, unsigned int>::Do(unsigned int t)
-{
-    char s[0x40];
-    nlSNPrintf(s, 0x40, "%u", t);
-    return NLString(s);
 }
 
 template <>

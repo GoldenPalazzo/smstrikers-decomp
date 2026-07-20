@@ -7,6 +7,7 @@
 #include "Game/FE/fePresentation.h"
 #include "Game/FE/feInput.h"
 #include "Game/FE/FEAudio.h"
+#include "Game/FE/feHelpFuncs.h"
 #include "Game/SH/SHSaveLoad.h"
 #include "Game/GameSceneManager.h"
 #include "Game/BaseGameSceneManager.h"
@@ -19,20 +20,10 @@ extern nlColour MenuHighliteColour;
 extern nlColour SubMenuHighliteColour;
 extern nlColour SubMenuUnhighliteColour;
 
-namespace SingleHighlite
-{
-void OpenItem(TLComponentInstance*);
-void CloseItem(TLComponentInstance*);
-void TempDisableSound();
-} // namespace SingleHighlite
-
 namespace DoubleHighlite
 {
 static const char* SLIDE_IN = "in";
 static const char* SLIDE_OUT = "out";
-void OpenItem(TLComponentInstance*);
-void CloseItem(TLComponentInstance*);
-void TempDisableSound();
 } // namespace DoubleHighlite
 
 static const char* MAIN_MENU_SLIDE = "Slide1";
