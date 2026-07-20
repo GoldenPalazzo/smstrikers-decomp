@@ -187,7 +187,7 @@ public:
     BasicString& AppendInPlace(const CharT* str);
 
     template <typename OtherAllocator>
-    BasicString& AppendInPlace(const BasicString<CharT, OtherAllocator>& rhs);
+    inline BasicString& AppendInPlace(const BasicString<CharT, OtherAllocator>& rhs);
 
     const CharT* c_str() const
     {

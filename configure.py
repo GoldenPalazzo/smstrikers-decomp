@@ -1076,7 +1076,7 @@ config.libs = [
 
             Object(Matching, "Game/SH/SHBackground.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHChooseCaptains.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/SH/SHChooseCup.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/SH/SHChooseCup.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(
                 Matching,
                 "Game/SH/SHChooseSides.cpp",

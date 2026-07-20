@@ -211,24 +211,15 @@ void startNewCup(bool isSuperCup)
 /**
  * Offset/Address/Size: 0x1EFC | 0x800DC180 | size: 0x68
  */
-class BaseGameSceneManagerCont
-{
-public:
-    virtual ~BaseGameSceneManagerCont();
-    virtual void* Push(int, int, bool);
-};
-
-extern BaseGameSceneManagerCont* g_pGameSceneManager;
-
 void continueCup(bool isSuperCup)
 {
     if (isSuperCup)
     {
-        g_pGameSceneManager->Push(20, 0, true); // SCENE_SUPER_CUP_STANDINGS
+        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SUPER_CUP_STANDINGS, SCREEN_NOTHING, true);
     }
     else
     {
-        g_pGameSceneManager->Push(17, 0, true); // SCENE_CUP_STANDINGS
+        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_STANDINGS, SCREEN_NOTHING, true);
     }
 }
 
