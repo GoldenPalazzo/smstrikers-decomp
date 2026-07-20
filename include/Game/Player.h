@@ -85,7 +85,7 @@ public:
     cPlayer(int nPlayerID, eCharacterClass cc, const int* nModelID, cSHierarchy* pHierarchy, cAnimInventory* pAnimInventory, const CharacterPhysicsData* pPhysicsData, PlayerTweaks* pPlayerTweaks, AnimRetargetList* pAnimRetargetList, eClassTypes eNewClassType);
     virtual ~cPlayer();
 
-    s32 GetUniqueID(int) const;
+    int GetUniqueID(int) const;
     float SuggestPassTargetPosition(nlVector3&, cPlayer*, bool, bool);
     bool SuggestPassDirection(nlVector3&, cPlayer*, bool, bool);
     void SetNoPickUpTime(float);

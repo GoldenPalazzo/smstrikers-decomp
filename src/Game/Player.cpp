@@ -1732,7 +1732,7 @@ void cPlayer::SetNoPickUpTime(float NewNoPickUpTime)
 /**
  * Offset/Address/Size: 0x0 | 0x80057550 | size: 0x20
  */
-s32 cPlayer::GetUniqueID(int nTeamID) const
+int cPlayer::GetUniqueID(int nTeamID) const
 {
     if (nTeamID == -1)
     {

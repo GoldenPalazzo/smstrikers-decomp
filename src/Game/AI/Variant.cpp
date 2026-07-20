@@ -54,7 +54,6 @@ template NLString LexicalCast<NLString, unsigned long>(const unsigned long&);
 /**
  * Offset/Address/Size: 0xC4 | 0x8006632C | size: 0xF2C
  */
-#pragma optimization_level 2
 NLString Variant::ToString() const
 {
     NLString toString;
@@ -71,16 +70,13 @@ NLString Variant::ToString() const
 
         case FT_CHAR:
         {
-            NLString format = "{0}";
-            dataString = Format(format, mData.c);
+            dataString = Format(NLString("{0}"), mData.c);
             break;
         }
 
         case FT_SHORT:
         {
-            NLString format = "{0}";
-            int value = mData.s;
-            dataString = Format(format, value);
+            dataString = Format(NLString("{0}"), (int)mData.s);
             break;
         }
 
@@ -132,7 +128,6 @@ NLString Variant::ToString() const
 
     return toString;
 }
-#pragma optimization_level 4
 
 /**
  * Offset/Address/Size: 0x0 | 0x80066268 | size: 0xC4
