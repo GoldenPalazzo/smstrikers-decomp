@@ -31,6 +31,8 @@ public:
     {
         m_ID = -1;
     }
+    void Init(int, int, const char*);
+    void SetName(const char*);
     nlVector2& GetKeyLocation() const;
     void CalculateExtents(nlVector2&, nlVector2&, const nlVector2&) const;
 
@@ -63,6 +65,8 @@ public:
             delete[] m_FormationDefArray;
         }
     }
+
+    void Init(int, FormationSpec*, int, bool);
 
     FormationSpec* GetFormationSpec(int) const;
     FormationSpec* GetFormationSpecFromID(int) const;

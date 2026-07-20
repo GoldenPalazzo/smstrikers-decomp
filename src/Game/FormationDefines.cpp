@@ -19,6 +19,44 @@ static inline float Remap(float value, float fromMin, float fromMax, float toMin
     return toMin + percent * (toMax - toMin);
 }
 
+static inline void FieldLocToAILoc(nlVector2& dest, const nlVector2& field_location, eTeamSide nTeamSide)
+{
+    float fMinFromX = -20.60211f;
+    float fMaxFromX = 20.60211f;
+    float fMinFromY = -12.0825f;
+    float fMaxFromY = 12.0825f;
+
+    if (nTeamSide == AWAY)
+    {
+        fMinFromX = -fMinFromX;
+        fMaxFromX = -fMaxFromX;
+        fMinFromY = -fMinFromY;
+        fMaxFromY = -fMaxFromY;
+    }
+
+    dest.f.x = Remap(field_location.f.x, fMinFromX, fMaxFromX, 0.0f, 4.0f);
+    dest.f.y = Remap(field_location.f.y, fMinFromY, fMaxFromY, -1.0f, 1.0f);
+}
+
+static inline void AILocToFieldLoc(nlVector2& dest, const nlVector2& ai_location, eTeamSide nTeamSide)
+{
+    float fMinFromX = -20.60211f;
+    float fMaxFromX = 20.60211f;
+    float fMinFromY = -12.0825f;
+    float fMaxFromY = 12.0825f;
+
+    if (nTeamSide == AWAY)
+    {
+        fMinFromX = -fMinFromX;
+        fMaxFromX = -fMaxFromX;
+        fMinFromY = -fMinFromY;
+        fMaxFromY = -fMaxFromY;
+    }
+
+    dest.f.x = Remap(ai_location.f.x, 0.0f, 4.0f, fMinFromX, fMaxFromX);
+    dest.f.y = Remap(ai_location.f.y, -1.0f, 1.0f, fMinFromY, fMaxFromY);
+}
+
 /**
  * Offset/Address/Size: 0xE10 | 0x8003BC20 | size: 0xB4
  */
@@ -51,10 +89,10 @@ void AILocToFieldLoc(nlVector3& result, const nlVector3& input, eTeamSide side)
     f32 maxZ;
     f32 minX = 0.0f;
     f32 normX;
-    f32 maxX = -50.0f;
-    f32 minZ = -35.0f;
-    f32 xScale = 10.0f;
-    f32 yScale = 8.0f;
+    f32 maxX = 4.0f;
+    f32 minZ = -1.0f;
+    f32 xScale = 41.20422f;
+    f32 yScale = 24.165f;
     maxZ = 1.0f;
 
     if (side == AWAY)
@@ -62,7 +100,7 @@ void AILocToFieldLoc(nlVector3& result, const nlVector3& input, eTeamSide side)
         minX = maxX;
         maxX = 0.0f;
         minZ = maxZ;
-        maxZ = -35.0f;
+        maxZ = -1.0f;
     }
 
     normX = (input.f.x - minX) / (maxX - minX);
@@ -71,33 +109,14 @@ void AILocToFieldLoc(nlVector3& result, const nlVector3& input, eTeamSide side)
     if (normX < 0.0f)
         normX = 0.0f;
 
-    result.f.x = normX * xScale + (-5.0f);
+    result.f.x = normX * xScale + (-20.60211f);
     f32 normZ = (input.f.y - minZ) / (maxZ - minZ);
     if (normZ > 1.0f)
         normZ = 1.0f;
     if (normZ < 0.0f)
         normZ = 0.0f;
-    result.f.y = normZ * yScale + (-4.0f);
+    result.f.y = normZ * yScale + (-12.0825f);
     result.f.z = 0.0f;
-}
-
-static inline void AILocToFieldLoc(nlVector2& dest, const nlVector2& ai_location, eTeamSide nTeamSide)
-{
-    float fMinFromX = -20.60211f;
-    float fMaxFromX = 20.60211f;
-    float fMinFromY = -12.0825f;
-    float fMaxFromY = 12.0825f;
-
-    if (nTeamSide == AWAY)
-    {
-        fMinFromX = -fMinFromX;
-        fMaxFromX = -fMaxFromX;
-        fMinFromY = -fMinFromY;
-        fMaxFromY = -fMaxFromY;
-    }
-
-    dest.f.x = Remap(ai_location.f.x, 0.0f, 4.0f, fMinFromX, fMaxFromX);
-    dest.f.y = Remap(ai_location.f.y, -1.0f, 1.0f, fMinFromY, fMaxFromY);
 }
 
 /**
@@ -137,6 +156,65 @@ void FormationSpec::CalculateExtents(nlVector2& minOut, nlVector2& maxOut, const
     maxOut.f.x = fieldHalfWidth + (input.f.x - m_v2Max.f.x);
     minOut.f.y = -fieldHalfHeight + (input.f.y - m_v2Min.f.y);
     maxOut.f.y = fieldHalfHeight + (input.f.y - m_v2Max.f.y);
+}
+
+static inline float FormationMin(float current, float value)
+{
+    if (current <= value)
+        return current;
+    else
+        return value;
+}
+
+static inline float FormationMax(float current, float value)
+{
+    if (current >= value)
+        return current;
+    else
+        return value;
+}
+
+inline void FormationSpec::SetName(const char* name)
+{
+    nlStrNCpy(m_Name, name, 32);
+    m_Name[31] = 0;
+}
+
+inline void FormationSpec::Init(int id, int iKeyIndex, const char* name)
+{
+    m_ID = id;
+    m_iKeyIndex = iKeyIndex;
+    if (name != m_Name)
+    {
+        SetName(name);
+    }
+    m_v2Min.f.x = 999999.9f;
+    m_v2Min.f.y = 999999.9f;
+    m_v2Max.f.x = -999999.9f;
+    m_v2Max.f.y = -999999.9f;
+    m_v2Center.f.x = 0.0f;
+    m_v2Center.f.y = 0.0f;
+
+    for (int i_fielder = 0; i_fielder < 4; i_fielder++)
+    {
+        m_v2Min.f.x = FormationMin(m_v2Min.f.x, m_Positions[i_fielder].m_Location.f.x);
+        m_v2Min.f.y = FormationMin(m_v2Min.f.y, m_Positions[i_fielder].m_Location.f.y);
+        m_v2Max.f.x = FormationMax(m_v2Max.f.x, m_Positions[i_fielder].m_Location.f.x);
+        m_v2Max.f.y = FormationMax(m_v2Max.f.y, m_Positions[i_fielder].m_Location.f.y);
+        {
+            float cx = m_v2Center.f.x + m_Positions[i_fielder].m_Location.f.x;
+            float cy = m_v2Center.f.y + m_Positions[i_fielder].m_Location.f.y;
+            m_v2Center.f.x = cx;
+            m_v2Center.f.y = cy;
+        }
+    }
+
+    {
+        float cx = m_v2Center.f.x * 0.25f;
+        float cy = m_v2Center.f.y * 0.25f;
+        m_v2Center.f.x = cx;
+        m_v2Center.f.y = cy;
+    }
 }
 
 /**
@@ -184,25 +262,29 @@ FormationSpec* FormationSet::GetFormationSpecFromID(int formationID) const
     return NULL;
 }
 
-static inline float FormationMin(float current, float value)
+inline void FormationSet::Init(int id, FormationSpec* formationArray, int numFormations, bool bCreateCopy)
 {
-    if (current <= value)
-        return current;
-    else
-        return value;
-}
+    m_ID = id;
+    m_NumFormationDefs = numFormations;
 
-static inline float FormationMax(float current, float value)
-{
-    if (current >= value)
-        return current;
+    if (bCreateCopy)
+    {
+        m_AutoDelete = true;
+        m_FormationDefArray = new (8, false) FormationSpec[numFormations];
+        for (int i = 0; i < numFormations; i++)
+        {
+            m_FormationDefArray[i] = formationArray[i];
+        }
+    }
     else
-        return value;
+    {
+        m_AutoDelete = false;
+        m_FormationDefArray = formationArray;
+    }
 }
 
 /**
  * Offset/Address/Size: 0x0 | 0x8003AE10 | size: 0xC08
- * TODO: 99.86% match - r16/r22 register swap in default name temporary
  */
 FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_numsets)
 {
@@ -239,12 +321,10 @@ FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_num
 
             FormationSpec& formation = formationList[i_formation];
 
-            (nlStrNCpy(formation.m_Name,
-                 config.Get<BasicString<char, Detail::TempStringAllocator> >(var_name,
-                           BasicString<char, Detail::TempStringAllocator>("Unnamed"))
-                     .c_str(),
-                 32),
-                formation.m_Name[31] = 0);
+            formation.SetName(
+                config.Get<BasicString<char, Detail::TempStringAllocator> >(
+                           var_name, BasicString<char, Detail::TempStringAllocator>("Unnamed"))
+                    .c_str());
 
             nlSNPrintf(var_name, 127, "%s/F%d_KEY_POS", section_name, i_formation);
             int keyIndex = GetConfigInt(config, var_name, -1);
@@ -281,49 +361,13 @@ FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_num
                 position.m_CaptainPreference = captainPref;
             }
 
-            formation.m_ID = formation_id;
-            formation.m_iKeyIndex = keyIndex;
-            formation.m_v2Min.f.x = 999999.9f;
-            formation.m_v2Min.f.y = 999999.9f;
-            formation.m_v2Max.f.x = -999999.9f;
-            formation.m_v2Max.f.y = -999999.9f;
-            formation.m_v2Center.f.x = 0.0f;
-            formation.m_v2Center.f.y = 0.0f;
-
-            for (int n = 0; n < 4; n++)
-            {
-                formation.m_v2Min.f.x = FormationMin(formation.m_v2Min.f.x, formation.m_Positions[n].m_Location.f.x);
-                formation.m_v2Min.f.y = FormationMin(formation.m_v2Min.f.y, formation.m_Positions[n].m_Location.f.y);
-                formation.m_v2Max.f.x = FormationMax(formation.m_v2Max.f.x, formation.m_Positions[n].m_Location.f.x);
-                formation.m_v2Max.f.y = FormationMax(formation.m_v2Max.f.y, formation.m_Positions[n].m_Location.f.y);
-                {
-                    float cx = formation.m_v2Center.f.x + formation.m_Positions[n].m_Location.f.x;
-                    float cy = formation.m_v2Center.f.y + formation.m_Positions[n].m_Location.f.y;
-                    formation.m_v2Center.f.x = cx;
-                    formation.m_v2Center.f.y = cy;
-                }
-            }
-            {
-                float cx = formation.m_v2Center.f.x * 0.25f;
-                float cy = formation.m_v2Center.f.y * 0.25f;
-                formation.m_v2Center.f.x = cx;
-                formation.m_v2Center.f.y = cy;
-            }
+            formation.Init(formation_id, keyIndex, formation.m_Name);
 
             i_formation++;
             formation_id++;
         }
 
-        setList[i_set].m_ID = i_set;
-        setList[i_set].m_NumFormationDefs = i_formation;
-        setList[i_set].m_AutoDelete = true;
-        setList[i_set].m_FormationDefArray = new (8, false) FormationSpec[i_formation];
-
-        for (i_pos = 0; i_pos < i_formation; i_pos++)
-        {
-            FormationSpec& src = formationList[i_pos];
-            setList[i_set].m_FormationDefArray[i_pos] = src;
-        }
+        setList[i_set].Init(i_set, formationList, i_formation, true);
     }
 
     return setList;

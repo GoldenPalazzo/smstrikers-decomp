@@ -832,7 +832,7 @@ config.libs = [
 
             Object(NonMatching, "Game/Team.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Formation.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/FormationDefines.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/FormationDefines.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/TweaksBase.cpp", extra_cflags=["-inline auto"]),
 
             Object(NonMatching, "Game/NisPlayer.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

@@ -13,6 +13,16 @@ struct LexicalCastImpl
 {
     static To Do(const From& f);
 };
+} // namespace Detail
+
+template <typename To, typename From>
+To LexicalCast(const From& from)
+{
+    return Detail::LexicalCastImpl<To, From>::Do(from);
+}
+
+namespace Detail
+{
 
 template <typename To>
 struct LexicalCastImpl<To, const char*>
@@ -60,6 +70,24 @@ template <typename To>
 struct LexicalCastImpl<To, bool>
 {
     static To Do(bool t);
+};
+
+template <typename Allocator>
+struct LexicalCastImpl<BasicString<char, Allocator>, int>
+{
+    static BasicString<char, Allocator> Do(int t);
+};
+
+template <typename Allocator>
+struct LexicalCastImpl<BasicString<char, Allocator>, float>
+{
+    static BasicString<char, Allocator> Do(float t);
+};
+
+template <typename Allocator>
+struct LexicalCastImpl<BasicString<char, Allocator>, bool>
+{
+    static BasicString<char, Allocator> Do(bool t);
 };
 
 template <>
@@ -119,14 +147,6 @@ inline float Detail::LexicalCastImpl<float, const char*>::Do(const char* s)
 }
 
 template <>
-inline NLString Detail::LexicalCastImpl<NLString, int>::Do(int t)
-{
-    char s[0x40];
-    nlSNPrintf(s, 0x40, "%i", t);
-    return NLString(s);
-}
-
-template <>
 inline NLString Detail::LexicalCastImpl<NLString, unsigned long>::Do(unsigned long t)
 {
     char s[0x40];
@@ -150,26 +170,34 @@ inline NLString Detail::LexicalCastImpl<NLString, char>::Do(char t)
     return NLString(s);
 }
 
-template <>
-inline NLString Detail::LexicalCastImpl<NLString, float>::Do(float t)
+namespace Detail
+{
+template <typename Allocator>
+inline BasicString<char, Allocator> LexicalCastImpl<BasicString<char, Allocator>, int>::Do(int t)
+{
+    char s[0x40];
+    nlSNPrintf(s, 0x40, "%i", t);
+    return BasicString<char, Allocator>(s);
+}
+
+template <typename Allocator>
+inline BasicString<char, Allocator> LexicalCastImpl<BasicString<char, Allocator>, float>::Do(float t)
 {
     char s[0x40];
     nlSNPrintf(s, 0x40, "%f", t);
-    return NLString(s);
+    return BasicString<char, Allocator>(s);
 }
 
-template <>
-inline NLString Detail::LexicalCastImpl<NLString, bool>::Do(bool t)
+template <typename Allocator>
+inline BasicString<char, Allocator> LexicalCastImpl<BasicString<char, Allocator>, bool>::Do(bool t)
 {
     if (t)
     {
-        return NLString("true");
+        return BasicString<char, Allocator>("true");
     }
-    return NLString("false");
+    return BasicString<char, Allocator>("false");
 }
 
-namespace Detail
-{
 template <typename To>
 To LexicalCastImpl<To, const char*>::Do(const char* s)
 {
@@ -194,12 +222,6 @@ inline To LexicalCastImpl<To, bool>::Do(bool t)
     return (To)t;
 }
 } // namespace Detail
-
-template <typename To, typename From>
-To LexicalCast(const From& from)
-{
-    return Detail::LexicalCastImpl<To, From>::Do(from);
-}
 
 template <>
 inline NLString LexicalCast<NLString, char>(const char& f)
