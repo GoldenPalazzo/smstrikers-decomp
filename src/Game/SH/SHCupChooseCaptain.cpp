@@ -3,6 +3,7 @@
 #include "Game/GameSceneManager.h"
 #include "Game/FE/feHelpFuncs.h"
 #include "NL/gl/glStruct.h"
+#include "NL/nlFormatFwd.h"
 #include "NL/nlLocalization.h"
 #include "NL/nlAlgorithm.h"
 

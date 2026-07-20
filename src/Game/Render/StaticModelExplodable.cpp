@@ -3,6 +3,7 @@
 #include "Game/Drawable/DrawableObj.h"
 #include "Game/WorldManager.h"
 #include "NL/nlBasicString.h"
+#include "NL/nlFormatFwd.h"
 
 nlList<SidelineExplodableNode> StaticModelExplodable::sStaticModelExplodableList(
     (SidelineExplodableNode*)NULL, (SidelineExplodableNode*)NULL);

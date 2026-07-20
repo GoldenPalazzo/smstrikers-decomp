@@ -4,6 +4,7 @@
 #include "Game/FE/fePopupMenu.h"
 #include "Game/FE/feFinder.h"
 #include "NL/gl/glStruct.h"
+#include "NL/nlFormatFwd.h"
 #include "NL/nlLocalization.h"
 #include "NL/nlBind.h"
 
@@ -12,9 +13,6 @@ extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
 
 unsigned long GetLOCCharacterName(eTeamID, bool, bool);
-
-template <typename StringType, typename ValueType>
-StringType Format(const StringType& format, const ValueType& value);
 
 static inline const unsigned short* LookupLocString(const char* id)
 {

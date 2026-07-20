@@ -37,9 +37,6 @@ class TempStringAllocator;
 template <typename CharT, typename Allocator>
 class BasicString;
 
-template <typename StringType, typename T>
-StringType Format(const StringType& format, const T& value);
-
 // BasicString template class - total size: 0x4 (pointer to Data)
 template <typename CharT, typename Allocator>
 class BasicString

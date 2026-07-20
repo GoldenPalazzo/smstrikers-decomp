@@ -4,6 +4,9 @@
 #include "NL/nlBasicString.h"
 #include "NL/nlLexicalCast.h"
 
+template <typename StringType, typename T0>
+StringType Format(const StringType& string, const T0& t0);
+
 template <typename StringType>
 class FormatImpl
 {
@@ -130,7 +133,7 @@ StringType Format(
 }
 
 template <typename StringType, typename T0>
-inline StringType Format(const StringType& string, const T0& t0)
+StringType Format(const StringType& string, const T0& t0)
 {
     return FormatImpl<StringType>(string) % t0;
 }

@@ -10,6 +10,7 @@
 #include "Game/ReplayManager.h"
 #include "NL/nlConfig.h"
 #include "NL/nlFileGC.h"
+#include "NL/nlFormatFwd.h"
 #include "NL/nlTask.h"
 #include "NL/nlString.h"
 #include "string.h"

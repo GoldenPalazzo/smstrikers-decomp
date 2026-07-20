@@ -2,6 +2,7 @@
 
 #include "NL/nlDLRing.h"
 #include "NL/nlConfig.h"
+#include "NL/nlFormatFwd.h"
 #include "NL/nlString.h"
 #include "NL/platqmath.h"
 

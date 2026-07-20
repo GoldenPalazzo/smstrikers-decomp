@@ -15,6 +15,7 @@
 #include "NL/nlString.h"
 #include "NL/nlPrint.h"
 #include "NL/nlFile.h"
+#include "NL/nlFormatFwd.h"
 #include "NL/gl/glPlat.h"
 #include "NL/gl/glState.h"
 #include "NL/gl/glTexture.h"

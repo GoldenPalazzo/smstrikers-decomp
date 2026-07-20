@@ -155,35 +155,6 @@ SuperLoadingScene::~SuperLoadingScene()
 {
 }
 
-inline unsigned long SuperLoadingScene::LoadImage(BundleFile& bundlefile, eTeamID captain, int playingside, TextureType texturetype)
-{
-    BundleFileDirectoryEntry fileentry;
-    char filename[128] = { };
-    CaptainSidekickFilename::Build((CaptainSidekickFilename::Type)texturetype, filename, 0x80, captain, playingside);
-    bundlefile.GetFileInfo(filename, &fileentry, true);
-    u8* fileData = (u8*)nlMalloc(fileentry.m_length, 0x20, true);
-    bundlefile.ReadFile(filename, fileData, fileentry.m_length);
-    u32 hash = nlStringHash(filename);
-    glTextureAdd(hash, fileData, fileentry.m_length);
-    u32 texturehandle = glGetTexture(filename);
-    delete[] fileData;
-    return texturehandle;
-}
-
-inline void SuperLoadingScene::BuildAndLoadPortraits(eTeamID homecaptain, eTeamID awaycaptain)
-{
-    BundleFile* bundleFile;
-
-    bundleFile = new (nlMalloc(sizeof(BundleFile), 0x20, true)) BundleFile();
-    bundleFile->Open("art/fe/LoadingScreensUI.Res");
-
-    mTextureHandles[0][TT_MAIN] = LoadImage(*bundleFile, homecaptain, 0, TT_MAIN);
-    mTextureHandles[1][TT_MAIN] = LoadImage(*bundleFile, awaycaptain, 1, TT_MAIN);
-
-    bundleFile->Close();
-    delete bundleFile;
-}
-
 /**
  * Offset/Address/Size: 0x1428 | 0x800A7B98 | size: 0x520
  */
@@ -305,6 +276,35 @@ void SuperLoadingScene::Update(float fDeltaT)
             nlSingleton<OverlayManager>::s_pInstance->Pop();
         }
     }
+}
+
+unsigned long SuperLoadingScene::LoadImage(BundleFile& bundlefile, eTeamID captain, int playingside, TextureType texturetype)
+{
+    BundleFileDirectoryEntry fileentry;
+    char filename[128] = { };
+    CaptainSidekickFilename::Build((CaptainSidekickFilename::Type)texturetype, filename, 0x80, captain, playingside);
+    bundlefile.GetFileInfo(filename, &fileentry, true);
+    u8* fileData = (u8*)nlMalloc(fileentry.m_length, 0x20, true);
+    bundlefile.ReadFile(filename, fileData, fileentry.m_length);
+    u32 hash = nlStringHash(filename);
+    glTextureAdd(hash, fileData, fileentry.m_length);
+    u32 texturehandle = glGetTexture(filename);
+    delete[] fileData;
+    return texturehandle;
+}
+
+void SuperLoadingScene::BuildAndLoadPortraits(eTeamID homecaptain, eTeamID awaycaptain)
+{
+    BundleFile* bundleFile;
+
+    bundleFile = new (nlMalloc(sizeof(BundleFile), 0x20, true)) BundleFile();
+    bundleFile->Open("art/fe/LoadingScreensUI.Res");
+
+    mTextureHandles[0][TT_MAIN] = LoadImage(*bundleFile, homecaptain, 0, TT_MAIN);
+    mTextureHandles[1][TT_MAIN] = LoadImage(*bundleFile, awaycaptain, 1, TT_MAIN);
+
+    bundleFile->Close();
+    delete bundleFile;
 }
 
 /**
