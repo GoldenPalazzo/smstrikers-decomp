@@ -6,6 +6,7 @@
 #include "Game/AI/Fielder.h"
 #include "Game/Ball.h"
 #include "Game/Field.h"
+#include "Game/MathHelpers.h"
 
 // Global helper/script-question declarations hoisted from block scope so they
 // resolve to global symbols (Fuzzy is now a namespace, not a class).
@@ -599,13 +600,12 @@ FuzzyVariant Fuzzy::ShouldIMarkBallOwner(cFielder* pFielder)
             confidence = (float)d * ratio;
         }
 
-        cFielder* marker = g_pScriptBallOwner != NULL ? g_pScriptBallOwner->m_pMarker : NULL;
-        float upfield = UpfieldFrom((cPlayer*)marker, (cPlayer*)g_pScriptBallOwner);
-
-        marker = g_pScriptBallOwner != NULL ? g_pScriptBallOwner->m_pMarker : NULL;
-        float incap = Incapacitated((cPlayer*)marker);
-
-        float combined = (incap >= upfield) ? incap : upfield;
+        float combined = nlMaxEquals(
+            Incapacitated(
+                (cPlayer*)(g_pScriptBallOwner != NULL ? g_pScriptBallOwner->m_pMarker : NULL)),
+            UpfieldFrom(
+                (cPlayer*)(g_pScriptBallOwner != NULL ? g_pScriptBallOwner->m_pMarker : NULL),
+                (cPlayer*)g_pScriptBallOwner));
         float notCombined = 1.0f - combined;
 
         float minVal2 = (combined <= notCombined) ? combined : notCombined;
