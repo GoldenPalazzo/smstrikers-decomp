@@ -145,7 +145,9 @@ public:
 
     BasicString(const CharT* string)
     {
-        mData = new Data(string);
+        void* storage = Allocator::Alloc(sizeof(Data));
+        Data* data = ::new (storage) Data(string);
+        mData = data;
     }
 
     BasicString(const CharT* begin, const CharT* end);

@@ -235,54 +235,50 @@ void GoalOverlay::eventHandler(Event* event, void* param)
 
 /**
  * Offset/Address/Size: 0x19A8 | 0x80101A18 | size: 0x159C
- * TODO: 98.36% match - remaining stack-slot offsets and pText/gameInfo saved-register swaps.
  */
 void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2S, int numGoals)
 {
+    TLTextInstance* pText;
+    GameInfoManager* gameInfo;
+    bool isSuperTeam;
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
-
-    TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+    pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("Name")));
 
-    bool isSuperTeam;
-
-    GameInfoManager* const gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
-    eTeamID team = (eTeamID)gameInfo->GetTeam((short)homeAway);
+    eTeamID team = (eTeamID)(gameInfo = nlSingleton<GameInfoManager>::s_pInstance)->GetTeam((short)homeAway);
     nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0);
     nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
 
-    float gameTime = g_pGame->GetGameTime();
+    float time = g_pGame->GetGameTime();
     StatsTracker* stats = nlSingleton<StatsTracker>::s_pInstance;
     if (!stats->mIsOvertime)
     {
         float fGameDuration = g_pGame->m_pGameTweaks->fGameDuration;
-        if (gameTime > fGameDuration)
+        if (time > fGameDuration)
         {
-            gameTime = fGameDuration;
+            time = fGameDuration;
         }
     }
 
-    float remainingTime = g_pGame->m_pGameTweaks->fGameDuration - gameTime;
-    unsigned long minutes = (unsigned long)(gameTime / 60.0f);
+    float remainingTime = g_pGame->m_pGameTweaks->fGameDuration - time;
+    unsigned long minutes = (unsigned long)(time / 60.0f);
 
-    float fSeconds = gameTime - (float)(minutes * 60);
-    unsigned long seconds;
-
+    float fSeconds = time - (float)(minutes * 60);
+    int wholeSeconds;
     if (remainingTime >= 30.0)
     {
         float roundedSeconds = (float)ceil((double)fSeconds);
-        int wholeSeconds = (int)roundedSeconds;
-        seconds = (unsigned long)wholeSeconds;
+        wholeSeconds = (int)roundedSeconds;
     }
     else
     {
         float roundedSeconds = (float)floor((double)fSeconds);
-        int wholeSeconds = (int)roundedSeconds;
-        seconds = (unsigned long)wholeSeconds;
+        wholeSeconds = (int)roundedSeconds;
     }
+    unsigned long seconds = (unsigned long)wholeSeconds;
 
     if (seconds == 60)
     {
@@ -297,9 +293,10 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
     BasicString<unsigned short, Detail::TempStringAllocator> formatted;
     BasicString<unsigned short, Detail::TempStringAllocator> unformatted;
 
-    int oldScore[2] = { 0, 0 };
-    oldScore[0] = mCaptainGoals[0] + mSidekickGoals[0];
-    oldScore[1] = mCaptainGoals[1] + mSidekickGoals[1];
+    int oldScore[2] = {
+        mCaptainGoals[0] + mSidekickGoals[0],
+        mCaptainGoals[1] + mSidekickGoals[1]
+    };
 
     isSuperTeam = (nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)homeAway) == 8);
     if (isSuperTeam)
@@ -327,7 +324,6 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
     nlStrToWcs(minutesString.c_str(), minutesWideString, 32);
     nlStrToWcs(secondsString.c_str(), secondsWideString, 32);
 
-    nlLocalization* loc = g_pLocalization;
     unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x04E76F8B));
     formatted = Format(unformatted, minutesWideString, secondsWideString);
 
@@ -351,95 +347,54 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
         mCaptainGoals[homeAway] += numGoals;
     }
 
-    int scoreLeft = mCaptainGoals[0] + mSidekickGoals[0];
-    int scoreRight = mCaptainGoals[1] + mSidekickGoals[1];
+    int scoreLeft = mCaptainGoals[0] + mSidekickGoals[0],
+        scoreRight = mCaptainGoals[1] + mSidekickGoals[1];
 
     if (mIsInOvertime)
     {
-        unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0xAD90B5E0));
+        formatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0xAD90B5E0));
     }
     else
     {
         if (!mHasSniperCup && gameInfo->HasTrophy((eTrophyType)9) == 1)
         {
-            unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x25801546));
+            formatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x25801546));
             mHasSniperCup = true;
         }
         else if (isCaptainS2S == 1)
         {
-            unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x831AAC58));
+            formatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x831AAC58));
         }
         else if (oldScore[0] == 0 && oldScore[1] == 0)
         {
-            unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x80675849));
+            formatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x80675849));
         }
         else if (scoreLeft == scoreRight)
         {
-            unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x43AB49F3));
+            formatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x43AB49F3));
         }
         else if ((oldScore[0] >= oldScore[1] && scoreLeft < scoreRight) || (oldScore[1] >= oldScore[0] && scoreRight < scoreLeft))
         {
             unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x78446837));
 
-            BasicString<unsigned short, Detail::TempStringAllocator> teamNameStr(
-                LookupLocHash(GetLOCTeamName((eTeamID)team)));
-            formatted = Format(unformatted, teamNameStr);
+            unsigned long captainKey = GetLOCTeamName(team);
+            const unsigned short* captainString = LookupLocHash(captainKey);
+            BasicString<unsigned short, Detail::TempStringAllocator> captain(captainString);
+            formatted = Format(unformatted, captain);
         }
         else if (playerIndex == 0 && mCaptainGoals[homeAway] == 3 && !isSuperTeam)
         {
-            unsigned long hatTrickKey = 0xD8976F68;
-            loc = g_pLocalization;
+            unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0xD8976F68));
 
-            const unsigned short* locString;
-            if (loc->m_LookupTable == 0)
-            {
-                locString = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(hatTrickKey, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry)
-                {
-                    locString = loc->m_FirstString + entry->StringOffset;
-                }
-                else
-                {
-                    locString = MissingLocString;
-                }
-            }
-
-            unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
-
-            BasicString<unsigned short, Detail::TempStringAllocator> teamNameStr(
+            BasicString<unsigned short, Detail::TempStringAllocator> captain(
                 LookupLocHash(GetLOCTeamName((eTeamID)team)));
-            formatted = Format(unformatted, teamNameStr);
+            formatted = Format(unformatted, captain);
         }
         else if (playerIndex == 0)
         {
-            unsigned long captainKey = 0x3DE2ABC1;
-            loc = g_pLocalization;
+            unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x3DE2ABC1));
 
-            const unsigned short* locString;
-            if (loc->m_LookupTable == 0)
-            {
-                locString = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(captainKey, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry)
-                {
-                    locString = loc->m_FirstString + entry->StringOffset;
-                }
-                else
-                {
-                    locString = MissingLocString;
-                }
-            }
-
-            unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
-
-            BasicString<unsigned short, Detail::TempStringAllocator> teamNameStr(
+            BasicString<unsigned short, Detail::TempStringAllocator> captain(
                 LookupLocHash(GetLOCTeamName((eTeamID)team)));
 
             BasicString<char, Detail::TempStringAllocator> numGoalsString(
@@ -447,34 +402,13 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
             unsigned short goalsWideString[32];
             nlStrToWcs(numGoalsString.c_str(), goalsWideString, 32);
 
-            formatted = Format(unformatted, goalsWideString, teamNameStr);
+            formatted = Format(unformatted, goalsWideString, captain);
         }
         else
         {
-            unsigned long sidekickKey = 0x091F7BA8;
-            loc = g_pLocalization;
+            unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x091F7BA8));
 
-            const unsigned short* locString;
-            if (loc->m_LookupTable == 0)
-            {
-                locString = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(sidekickKey, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry)
-                {
-                    locString = loc->m_FirstString + entry->StringOffset;
-                }
-                else
-                {
-                    locString = MissingLocString;
-                }
-            }
-
-            unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
-
-            BasicString<unsigned short, Detail::TempStringAllocator> teamNameStr(
+            BasicString<unsigned short, Detail::TempStringAllocator> captain(
                 LookupLocHash(GetLOCTeamName((eTeamID)team)));
 
             BasicString<char, Detail::TempStringAllocator> numGoalsString(
@@ -482,7 +416,7 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
             unsigned short goalsWideString[32];
             nlStrToWcs(numGoalsString.c_str(), goalsWideString, 32);
 
-            formatted = Format(unformatted, goalsWideString, teamNameStr);
+            formatted = Format(unformatted, goalsWideString, captain);
         }
     }
 
@@ -536,7 +470,6 @@ void GoalOverlay::SetHighlightNumber(int highlightNumber)
 
 /**
  * Offset/Address/Size: 0xDA4 | 0x80100E14 | size: 0x7EC
- * TODO: 99.10% match - remaining gameInfo/winner saved-register swaps.
  */
 void GoalOverlay::DoMatchEndOverlay()
 {
@@ -546,6 +479,8 @@ void GoalOverlay::DoMatchEndOverlay()
     BasicString<unsigned short, Detail::TempStringAllocator> formatted;
     eTeamID winner = TEAM_INVALID;
     unsigned char isFinalGame = false;
+    int scoreLeft;
+    int scoreRight;
 
     if (gameInfo->IsInCupMode())
     {
@@ -589,33 +524,19 @@ void GoalOverlay::DoMatchEndOverlay()
     }
     else
     {
-        int scoreLeft = g_pTeams[0]->m_nScore;
-        int scoreRight = g_pTeams[1]->m_nScore;
+        scoreLeft = g_pTeams[0]->m_nScore;
+        scoreRight = g_pTeams[1]->m_nScore;
 
-        int winnerID;
-        int loserID;
-
-        if (scoreLeft > scoreRight)
-        {
-            winnerID = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0);
-        }
-        else
-        {
-            winnerID = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
-        }
-
-        if (scoreLeft < scoreRight)
-        {
-            loserID = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0);
-        }
-        else
-        {
-            loserID = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
-        }
+        eTeamID winnerID = scoreLeft > scoreRight
+            ? nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)
+            : nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
+        eTeamID loserID = scoreLeft < scoreRight
+            ? nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)
+            : nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
 
         BasicString<unsigned short, Detail::TempStringAllocator> unformatted(LookupLocHash(0x09B4BC7C));
 
-        formatted = Format(unformatted, LookupLocHash(GetLOCCharacterName((eTeamID)winnerID, true, false)), LookupLocHash(GetLOCCharacterName((eTeamID)loserID, true, false)));
+        formatted = Format(unformatted, LookupLocHash(GetLOCCharacterName(winnerID, true, false)), LookupLocHash(GetLOCCharacterName(loserID, true, false)));
     }
 
     TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(

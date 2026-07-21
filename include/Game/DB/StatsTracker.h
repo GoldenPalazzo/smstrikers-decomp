@@ -141,6 +141,7 @@ public:
     void AwardCup(eUserGameResult);
     void WriteCurrentlyPlaying() const;
     bool MoveTeamBUp(TeamStats, TeamStats);
+    bool IsOvertime() { return mIsOvertime; }
 
     /* 0x000 */ BasicGameInfo* mBasicGameInfo;
     /* 0x004 */ EventHandler* mEventHandler;

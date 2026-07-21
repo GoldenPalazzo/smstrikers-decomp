@@ -1,6 +1,11 @@
 #include "Game/OverlayHandlerHUD.h"
+#include "Game/Audio/WorldAudio.h"
+#include "Game/DB/StatsTracker.h"
 #include "Game/EventDataTypes.h"
 #include "Game/FE/feFinder.h"
+#include "Game/FE/feHelpFuncs.h"
+#include "Game/Game.h"
+#include "Game/GameInfo.h"
 #include "Game/Team.h"
 #include "Game/Sys/eventman.h"
 #include "Game/FE/tlComponentInstance.h"
@@ -8,74 +13,15 @@
 #include "NL/nlFormat.h"
 #include "NL/nlAlgorithm.h"
 #include "NL/nlLocalization.h"
+#include "NL/nlPrint.h"
 
-extern cTeam* g_pTeams[];
-extern void* g_pLocalization;
+extern nlLocalization* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
 
-class GameInfoManager
-{
-public:
-    virtual ~GameInfoManager();
-    eTeamID GetTeam(short) const;
-
-    char _padding[0x4955];
-    bool mIsInStrikers101Mode;
-};
-
-unsigned long GetLOCCharacterName(eTeamID, bool, bool);
-
-class HUDGameSettings
-{
-public:
-    char _padding[0x24];
-    float mClockStart;
-};
-
-class cGame
-{
-public:
-    char _padding0[0x4];
-    HUDGameSettings* mGameSettings;
-
-    float GetGameTime();
-};
-
-extern cGame* g_pGame;
-
-class StatsTracker
-{
-public:
-    char _padding[0x4C1];
-    bool mIsOvertime;
-};
-
-namespace Audio
-{
-
-enum eWorldSFX
-{
-    WORLDSFX_HUD_ACCEPT = 83,
-};
-
-class cWorldSFX
-{
-    char _padding[0x34];
-
-public:
-    unsigned long Play(eWorldSFX, float, float, bool, float);
-};
-
-extern cWorldSFX gWorldSFX;
-
-} // namespace Audio
-
-extern int nlSNPrintf(char*, unsigned long, const char*, ...);
-
 static inline const unsigned short* LookupLocHash(unsigned long key)
 {
-    nlLocalization* loc = (nlLocalization*)g_pLocalization;
+    nlLocalization* loc = g_pLocalization;
     if (loc->m_LookupTable == 0)
     {
         return LocalizationTableNotFound;
@@ -131,31 +77,6 @@ static const char* LAYER_NAME = "Layer";
     InlineHasher(nlStringLowerHash(slideName)),                                                                            \
     InlineHasher(nlStringLowerHash(LAYER_NAME)),                                                                           \
     InlineHasher(nlStringLowerHash(name)))
-
-/**
- * Offset/Address/Size: 0x124 | 0x800FA3BC | size: 0xCF0
- */
-
-// void FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator>>::operator%<const unsigned short*>(const unsigned short* const&)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x0 | 0x800FA298 | size: 0x124
- */
-// void Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[8], unsigned short[8]>(const BasicString<unsigned short, Detail::TempStringAllocator>&, const unsigned short(&)[8], const unsigned short(&)[8])
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x0 | 0x800FA290 | size: 0x8
- */
-// u32 PowerupAcquireEventData::GetID()
-// {
-//     return 0x1C3;
-// }
-
-// FEFinder template instantiations (Find/_Find) are generated from the class template body above
 
 /**
  * Offset/Address/Size: 0x36B8 | 0x800F9998 | size: 0xB4
@@ -277,12 +198,12 @@ void HUDOverlay::Update(float fDeltaT)
     }
 
     unsigned long time;
-    bool isOvertime = nlSingleton<StatsTracker>::s_pInstance->mIsOvertime;
+    bool isOvertime = nlSingleton<StatsTracker>::s_pInstance->IsOvertime();
 
     float fTime = g_pGame->GetGameTime();
     float overtimeTime = 59999.0f;
-    float fRemainingTime = g_pGame->mGameSettings->mClockStart - fTime;
-    fTime -= g_pGame->mGameSettings->mClockStart;
+    float fRemainingTime = g_pGame->m_pGameTweaks->fGameDuration - fTime;
+    fTime -= g_pGame->m_pGameTweaks->fGameDuration;
 
     overtimeTime = (fTime > overtimeTime) ? overtimeTime : fTime;
 
@@ -317,7 +238,7 @@ void HUDOverlay::Update(float fDeltaT)
         newTenths = (unsigned long)((fRemainingTime - (float)newSeconds) * 10.0f);
     }
 
-    if (!isOvertime && (float)remainingTime == g_pGame->mGameSettings->mClockStart && mClockColourChanged)
+    if (!isOvertime && (float)remainingTime == g_pGame->m_pGameTweaks->fGameDuration && mClockColourChanged)
     {
         mClockColourChanged = false;
         mOvertimeSFXPlayed = false;
@@ -764,9 +685,6 @@ void HUDOverlay::DisplayPowerUps()
 
 /**
  * Offset/Address/Size: 0x3C0 | 0x800F66A0 | size: 0xDA8
- * TODO: 91.9% match - residual diffs are r26/r27 register swap throughout the
- * per-case BasicString temp construction, plus a uniform +4 stack-offset shift
- * on the FEFinder::Find argument temporaries (0x4c-0xc0 region).
  */
 void HUDOverlay::SetTeamIcons()
 {
@@ -902,17 +820,17 @@ void HUDOverlay::ResetScores()
  */
 void HUDOverlay::SwapPowerUps(int homeAway)
 {
-    int temp = mNumFlareCycles[homeAway][0];
+    int firstFlareCycleCount = mNumFlareCycles[homeAway][0];
     mNumFlareCycles[homeAway][0] = mNumFlareCycles[homeAway][1];
-    mNumFlareCycles[homeAway][1] = temp;
+    mNumFlareCycles[homeAway][1] = firstFlareCycleCount;
 
-    f32 time0 = m_pComponentFlares[homeAway][0]->GetActiveSlide()->m_time;
-    f32 time1 = m_pComponentFlares[homeAway][1]->GetActiveSlide()->m_time;
+    f32 firstFlareTime = m_pComponentFlares[homeAway][0]->GetActiveSlide()->m_time;
+    f32 secondFlareTime = m_pComponentFlares[homeAway][1]->GetActiveSlide()->m_time;
 
     m_pComponentFlares[homeAway][0]->SetActiveSlide("Slide1");
-    m_pComponentFlares[homeAway][0]->Update(time1);
+    m_pComponentFlares[homeAway][0]->Update(secondFlareTime);
     m_pComponentFlares[homeAway][1]->SetActiveSlide("Slide1");
-    m_pComponentFlares[homeAway][1]->Update(time0);
+    m_pComponentFlares[homeAway][1]->Update(firstFlareTime);
 
     for (int i = 0; i < 2; i++)
     {
