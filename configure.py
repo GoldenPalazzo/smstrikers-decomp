@@ -1064,7 +1064,7 @@ config.libs = [
             Object(Matching, "Game/FE/LidOpenMessage.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/FE/BraggingRights.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/FE/Cup/CupTickerManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/FE/Overlay/OverlayHandlerSummary.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/FE/Overlay/OverlayHandlerSummary.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/FE/Overlay/OverlayHandlerWinner.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             Object(Matching, "Game/FE/tlSlide.cpp", extra_cflags=["-inline auto"]),

@@ -14,6 +14,27 @@
 
 extern bool g_e3_Build;
 
+static const char* SUMMARY_SLIDE_NAME = "SUMMARY";
+static const char* TOTAL_SUMMARY_SLIDE_NAME = "TOTAL SUMMARY";
+static const char* USER_SLIDE_NAME = "USER";
+static const char* TOTAL_USER_SLIDE_NAME = "TOTAL USER";
+
+static char* SUMMARY_ROW_NAMES[6] = {
+    "LINE_0",
+    "LINE_1",
+    "LINE_2",
+    "LINE_3",
+    "LINE_4",
+    "LINE_5",
+};
+
+static char* SUMMARY_COL_NAMES[4] = {
+    "numeric_column_sm",
+    "numeric_column_sm2",
+    "numeric_column_sm3",
+    "numeric_column_sm4",
+};
+
 // /**
 //  * Offset/Address/Size: 0x468 | 0x800FF898 | size: 0x84
 //  */
@@ -147,11 +168,6 @@ SummaryOverlay::~SummaryOverlay()
         delete mSlideMenu;
     }
 }
-
-static const char* SUMMARY_SLIDE_NAME = "SUMMARY";
-static const char* TOTAL_SUMMARY_SLIDE_NAME = "TOTAL SUMMARY";
-static const char* USER_SLIDE_NAME = "USER";
-static const char* TOTAL_USER_SLIDE_NAME = "TOTAL USER";
 
 /**
  * Offset/Address/Size: 0x1B00 | 0x800FE6A0 | size: 0x1EC
@@ -306,31 +322,34 @@ void SummaryOverlay::Update(float fDeltaT)
     }
 }
 
+static inline const unsigned short* LookupSummaryLocString(const char* stringId)
+{
+    extern nlLocalization* g_pLocalization;
+    extern const unsigned short LocalizationTableNotFound[];
+    extern const unsigned short MissingLocString[];
+
+    nlLocalization* loc = g_pLocalization;
+    unsigned long key = nlStringLowerHash(stringId);
+
+    if (loc->m_LookupTable == 0)
+    {
+        return LocalizationTableNotFound;
+    }
+
+    if (nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount))
+    {
+        return loc->m_FirstString + entry->StringOffset;
+    }
+
+    return MissingLocString;
+}
+
 /**
  * Offset/Address/Size: 0xA74 | 0x800FD614 | size: 0xDC0
  */
 void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
 {
-    extern nlLocalization* g_pLocalization;
-    extern const unsigned short LocalizationTableNotFound[];
-    extern const unsigned short MissingLocString[];
     extern unsigned long GetLOCCharacterName(eTeamID, bool, bool);
-
-    static char* SUMMARY_ROW_NAMES[6] = {
-        "LINE_0",
-        "LINE_1",
-        "LINE_2",
-        "LINE_3",
-        "LINE_4",
-        "LINE_5",
-    };
-
-    static char* SUMMARY_COL_NAMES[4] = {
-        "numeric_column_sm",
-        "numeric_column_sm2",
-        "numeric_column_sm3",
-        "numeric_column_sm4",
-    };
 
     m_pFEScene->m_pFEPackage->GetPresentation();
     TLComponentInstance* pComponentInstances[2] = { 0, 0 };
@@ -339,16 +358,11 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
     TLTextInstance* pTextInstanceRowHeading;
     int numRows;
     PlayerStats* displayedStats[2];
-    TLTextInstance* pTitleText;
-    int team;
-    int k;
 
-    pTextInstanceRows[0] = 0;
-    pTextInstanceRows[1] = 0;
-    pTextInstanceRows[2] = 0;
-    pTextInstanceRows[3] = 0;
-    pTextInstanceRows[4] = 0;
-    pTextInstanceRows[5] = 0;
+    for (int row = 0; row < 6; row++)
+    {
+        pTextInstanceRows[row] = 0;
+    }
 
     if (matchSummaryType == SUMMARY_MATCH)
     {
@@ -358,48 +372,24 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
     }
     else
     {
-        unsigned long key;
-        nlLocalization* loc;
-        nlLocalization::StringLookup* entry;
-
         displayedStats[0] = &mCumulativePlayerStats[0];
         displayedStats[1] = &mCumulativePlayerStats[1];
         numRows = 6;
 
-        loc = g_pLocalization;
-        key = nlStringLowerHash("TOTAL_MATCH_SUMMARY");
-
-        if (loc->m_LookupTable == 0)
-        {
-            loc = (nlLocalization*)LocalizationTableNotFound;
-        }
-        else
-        {
-            entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-            if (entry)
-            {
-                loc = (nlLocalization*)(loc->m_FirstString + entry->StringOffset);
-            }
-            else
-            {
-                loc = (nlLocalization*)MissingLocString;
-            }
-        }
-
-        WideBasicString unformatted((const unsigned short*)loc);
+        WideBasicString unformatted(LookupSummaryLocString("TOTAL_MATCH_SUMMARY"));
         NLString numGamesString(LexicalCast<NLString, int>((int)nlSingleton<StatsTracker>::s_pInstance->mNumConsecutiveGamesPlayed));
         unsigned short tempBuffer[32];
         nlStrToWcs(numGamesString.c_str(), tempBuffer, 0x40);
         WideBasicString formatted(Format(unformatted, tempBuffer));
         memcpy(mTitleBuffer, formatted.c_str(), 0x80);
 
-        pTitleText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        TLTextInstance* pTitleText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
             InlineHasher(nlStringLowerHash("Title")));
         pTitleText->SetString(mTitleBuffer);
     }
 
-    pTitleText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+    TLTextInstance* pTitleText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pSlide,
         InlineHasher(nlStringLowerHash("Title")));
 
@@ -414,6 +404,7 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
         pTitleText->m_OverloadFlags |= 0x8;
     }
 
+    int team;
     for (team = 0; team < 2; team++)
     {
         NLString statsStrings[6];
@@ -450,12 +441,12 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
         pTextInstanceRowHeading->m_LocStrId = GetLOCCharacterName((eTeamID)displayedStats[team]->mRecordType.mTeamID, false, false);
         pTextInstanceRowHeading->m_OverloadFlags |= 0x8;
 
+        int k;
         for (k = 0; k < numRows; k++)
         {
             pTextInstanceRows[k] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
                 pSlide,
-                InlineHasher(nlStringLowerHash(SUMMARY_ROW_NAMES[k])),
-                InlineHasher(0));
+                InlineHasher(nlStringLowerHash(SUMMARY_ROW_NAMES[k])));
 
             nlStrToWcs(statsStrings[k].c_str(), mBuffersColBySide[team][k], 0x20);
             pTextInstanceRows[k]->SetString(mBuffersColBySide[team][k]);
@@ -466,45 +457,8 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
 /**
  * Offset/Address/Size: 0x0 | 0x800FCBA0 | size: 0xA74
  */
-static inline const unsigned short* LookupSummaryLocHash(nlLocalization* loc, unsigned long key)
-{
-    extern const unsigned short LocalizationTableNotFound[];
-    extern const unsigned short MissingLocString[];
-
-    if (loc->m_LookupTable == 0)
-    {
-        return LocalizationTableNotFound;
-    }
-
-    nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-    if (entry)
-    {
-        return loc->m_FirstString + entry->StringOffset;
-    }
-
-    return MissingLocString;
-}
-
 void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
 {
-    extern nlLocalization* g_pLocalization;
-
-    static char* SUMMARY_ROW_NAMES[6] = {
-        "LINE_0",
-        "LINE_1",
-        "LINE_2",
-        "LINE_3",
-        "LINE_4",
-        "LINE_5",
-    };
-
-    static char* SUMMARY_COL_NAMES[4] = {
-        "numeric_column_sm",
-        "numeric_column_sm2",
-        "numeric_column_sm3",
-        "numeric_column_sm4",
-    };
-
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     TLComponentInstance* pComponentInstances[4] = { 0, 0, 0, 0 };
     TLSlide* pSlide = mSlideMenu->m_pMenuComp->GetActiveSlide();
@@ -513,14 +467,11 @@ void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
     TLTextInstance* pTitleText;
     int j;
     int user;
-    int k;
 
-    pTextInstanceRows[0] = 0;
-    pTextInstanceRows[1] = 0;
-    pTextInstanceRows[2] = 0;
-    pTextInstanceRows[3] = 0;
-    pTextInstanceRows[4] = 0;
-    pTextInstanceRows[5] = 0;
+    for (int row = 0; row < 6; row++)
+    {
+        pTextInstanceRows[row] = 0;
+    }
 
     for (j = 0; j < 4; j++)
     {
@@ -530,13 +481,9 @@ void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
         }
         else
         {
-            nlLocalization* loc;
-
             displayedStats[j] = &mCumulativeUserStats[j];
 
-            loc = g_pLocalization;
-
-            WideBasicString unformatted(LookupSummaryLocHash(loc, nlStringLowerHash("TOTAL_USER_STATS")));
+            WideBasicString unformatted(LookupSummaryLocString("TOTAL_USER_STATS"));
             NLString numGamesString(LexicalCast<NLString, int>((int)nlSingleton<StatsTracker>::s_pInstance->mNumConsecutiveGamesPlayed));
             unsigned short tempBuffer[32];
             nlStrToWcs(numGamesString.c_str(), tempBuffer, 0x40);
@@ -577,6 +524,7 @@ void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
 
         pSlide = pComponentInstances[user]->GetActiveSlide();
 
+        int k;
         for (k = 0; k < 6; k++)
         {
             pTextInstanceRows[k] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
