@@ -21,7 +21,6 @@ struct ColourKey
     int value;
 };
 
-
 /**
  * Offset/Address/Size: 0x12D8 | 0x801F1E9C | size: 0x24
  */
@@ -68,7 +67,7 @@ static void BlendSpan(nlColour* pColour, int cindex, const ColourKey& k0, const 
     nlColour* p = pColour + index;
     while (index < k1.index)
     {
-        p->c[cindex] = current + 0.5f;
+        p->c[cindex] = current + 0.00001f;
         index++;
         current += step;
         p++;
@@ -130,9 +129,6 @@ static void GetColourComponent(SimpleParser* parser, nlColour* pColour, int cind
     }
 }
 
-/**
- * Offset/Address/Size: 0x2A8 | 0x801F0E6C | size: 0xD2C
- */
 static inline float GetFloat(SimpleParser* parser)
 {
     char* token = parser->NextToken(true);
@@ -147,6 +143,25 @@ static inline fxRange GetRange(SimpleParser* parser)
     return value;
 }
 
+static inline void InterpolateColours(EffectsTemplate* dest, const nlColour* source, int numDestColours)
+{
+    for (int i = 0; i < numDestColours; i++)
+    {
+        nlColour a = source[i * 2];
+        nlColour b = source[(i * 2) + 1];
+        nlColour c;
+
+        c.c[0] = (a.c[0] + b.c[0]) / 2;
+        c.c[1] = (a.c[1] + b.c[1]) / 2;
+        c.c[2] = (a.c[2] + b.c[2]) / 2;
+        c.c[3] = (a.c[3] + b.c[3]) / 2;
+        dest->m_cColour[i] = c;
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x2A8 | 0x801F0E6C | size: 0xD2C
+ */
 static EffectsTemplate* parse_template(SimpleParser* parser, bool bQuick)
 {
     char name[128];
@@ -158,7 +173,6 @@ static EffectsTemplate* parse_template(SimpleParser* parser, bool bQuick)
     bool bValue;
     char texname[264];
     char modelname[264];
-    int i;
 
     nlZeroMemory(&t, sizeof(EffectsTemplate));
     t.m_hTexture = (u32)-1;
@@ -492,18 +506,7 @@ static EffectsTemplate* parse_template(SimpleParser* parser, bool bQuick)
         t.m_uModelID = (u32)-1;
     }
 
-    for (i = 0; i < 25; i++)
-    {
-        nlColour c;
-        nlColour b = colours[(i * 2) + 1];
-        nlColour a = colours[i * 2];
-
-        c.c[0] = (a.c[0] + b.c[0]) / 2;
-        c.c[1] = (a.c[1] + b.c[1]) / 2;
-        c.c[2] = (a.c[2] + b.c[2]) / 2;
-        c.c[3] = (a.c[3] + b.c[3]) / 2;
-        t.m_cColour[i] = c;
-    }
+    InterpolateColours(&t, colours, 25);
 
     EffectsTemplate* out = (EffectsTemplate*)nlMalloc(sizeof(EffectsTemplate), 8, false);
     memcpy(out, &t, sizeof(EffectsTemplate));
