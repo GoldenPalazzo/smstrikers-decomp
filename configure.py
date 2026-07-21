@@ -1015,7 +1015,7 @@ config.libs = [
             Object(Matching, "Game/BaseGameSceneManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             Object(Matching, "Game/OverlayManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/OverlayHandlerHUD.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/OverlayHandlerHUD.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/OverlayHandlerInGameText.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/OverlayHandlerSTSX2.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/OverlayHandlerDemo.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
