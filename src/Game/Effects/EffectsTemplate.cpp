@@ -513,6 +513,11 @@ static EffectsTemplate* parse_template(SimpleParser* parser, bool bQuick)
     return out;
 }
 
+static inline void AddTemplateNoCollisions(EffectsTemplate* p)
+{
+    pTemplateMap->Add(p->m_uHashID, p);
+}
+
 /**
  * Offset/Address/Size: 0x27C | 0x801F0E40 | size: 0x2C
  */
@@ -548,20 +553,8 @@ bool fxLoadTemplateBundle(void* data, unsigned long size)
 
         if (nlStrCmp<char>(token, "begin") == 0)
         {
-            EffectsTemplate* template_ptr;
-            EffectsTemplate* template_value;
-            nlAVLTree<unsigned long, EffectsTemplate*, DefaultKeyCompare<unsigned long> >* tree;
-            AVLTreeNode* existingNode;
-
-            template_ptr = parse_template(&parser, false);
-            template_value = template_ptr;
-            tree = pTemplateMap;
-
-            tree->AddAVLNode((AVLTreeNode**)&tree->m_Root, &template_value->m_uHashID, &template_value, &existingNode, tree->m_NumElements);
-            if (existingNode == nullptr)
-            {
-                tree->m_NumElements++;
-            }
+            EffectsTemplate* pTemplate = parse_template(&parser, false);
+            AddTemplateNoCollisions(pTemplate);
         }
         else
         {
@@ -592,51 +585,12 @@ bool fxUnloadTemplates()
 /**
  * Offset/Address/Size: 0x0 | 0x801F0BC4 | size: 0x90
  */
-EffectsTemplate* fxGetTemplate(unsigned long key)
+EffectsTemplate* fxGetTemplate(unsigned long hashID)
 {
-    EffectsTemplate** resultPtr;
-    AVLTreeEntry<unsigned long, EffectsTemplate*>* node;
-    int cmpResult;
-    bool found;
-
-    for (node = pTemplateMap->m_Root; node != nullptr || (found = false, false);)
-    {
-        if (key == node->key)
-        {
-            cmpResult = 0;
-        }
-        else if (key < node->key)
-        {
-            cmpResult = -1;
-        }
-        else
-        {
-            cmpResult = 1;
-        }
-
-        if (cmpResult == 0)
-        {
-            if (&resultPtr != nullptr)
-            {
-                resultPtr = &node->value;
-            }
-            found = true;
-            break;
-        }
-        else if (cmpResult < 0)
-        {
-            node = (AVLTreeEntry<unsigned long, EffectsTemplate*>*)node->node.left;
-        }
-        else
-        {
-            node = (AVLTreeEntry<unsigned long, EffectsTemplate*>*)node->node.right;
-        }
-    }
-
-    if (!found)
+    EffectsTemplate** theTemplate;
+    if (!pTemplateMap->FindGet(hashID, &theTemplate))
     {
         return nullptr;
     }
-
-    return *resultPtr;
+    return *theTemplate;
 }
