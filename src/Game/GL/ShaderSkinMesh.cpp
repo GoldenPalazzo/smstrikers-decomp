@@ -96,17 +96,10 @@ void ShaderSkinMesh::ConnectToPose(cPoseAccumulator*)
  */
 void ShaderSkinMesh::SetBoneMatrix(unsigned long boneID, const nlMatrix4* matrix)
 {
-    AVLTreeNode* existingNode;
     SkinMatrix skinMatrix;
 
     skinMatrix.Set(*matrix);
-
-    boneMatrices.AddAVLNode((AVLTreeNode**)&boneMatrices.m_Root, &boneID, &skinMatrix, &existingNode, boneMatrices.m_NumElements);
-
-    if (existingNode == NULL)
-    {
-        boneMatrices.m_NumElements++;
-    }
+    boneMatrices.Add(boneID, skinMatrix);
 }
 
 /**
@@ -185,79 +178,20 @@ void ShaderSkinMesh::GetPoseMatrices(GLSkinMeshMatrix* pMatrices)
 /**
  * Offset/Address/Size: 0x76C | 0x801E0DB0 | size: 0x17C
  */
-struct EqualFirstCompare
-{
-    int operator()(unsigned long key1, unsigned long key2) const
-    {
-        if (key1 == key2)
-            return 0;
-        if (key1 < key2)
-            return -1;
-        return 1;
-    }
-};
-
-inline bool avlFindCheck(AVLTreeEntry<unsigned long, SkinMatrix>* node, unsigned long key, SkinMatrix*& outValue)
-{
-    while (node != NULL)
-    {
-        int cmpResult = EqualFirstCompare()(key, node->key);
-        if (cmpResult == 0)
-        {
-            if (&outValue != NULL)
-            {
-                outValue = &node->value;
-            }
-            return true;
-        }
-        else
-        {
-            if (cmpResult < 0)
-            {
-                node = (AVLTreeEntry<unsigned long, SkinMatrix>*)node->node.left;
-            }
-            else
-            {
-                node = (AVLTreeEntry<unsigned long, SkinMatrix>*)node->node.right;
-            }
-        }
-    }
-    return false;
-}
-
 void ShaderSkinMesh::SetPoseMatrices(int num, GLSkinMeshMatrix* pMatrices)
 {
-    AVLTreeNode** poseRoot = (AVLTreeNode**)&poseMatrices.m_Root;
     int i = 0;
     for (; i < num; i++)
     {
         SkinMatrix* foundValue;
         unsigned long boneID = pMatrices[i].boneID;
 
-        if (avlFindCheck(boneMatrices.m_Root, boneID, foundValue))
+        if (boneMatrices.FindGet(boneID, &foundValue))
         {
             SkinMatrix skinMatrix;
             skinMatrix.Set(pMatrices[i].matrix);
 
-            AVLTreeNode* existingNode;
-            poseMatrices.AddAVLNode(
-                poseRoot,
-                (void*)&boneID,
-                (void*)&skinMatrix,
-                &existingNode,
-                poseMatrices.m_NumElements);
-
-            SkinMatrix* dest;
-            if (existingNode == NULL)
-            {
-                poseMatrices.m_NumElements++;
-                dest = NULL;
-            }
-            else
-            {
-                dest = &((AVLTreeEntry<unsigned long, SkinMatrix>*)existingNode)->value;
-            }
-            foundValue = dest;
+            foundValue = poseMatrices.Add(boneID, skinMatrix);
             if (foundValue != NULL)
             {
                 *foundValue = skinMatrix;
@@ -458,10 +392,8 @@ void ShaderSkinMesh::Pose(cPoseAccumulator* pPoseAccumulator)
 {
     SkinMatrix* foundMatrix;
     unsigned long nodeID;
-    AVLTreeNode* existingNode;
     SkinMatrix result;
     SkinMatrix skinMat;
-    AVLTreeNode** pRoot = (AVLTreeNode**)&poseMatrices.m_Root;
 
     for (int i = 0; i < pPoseAccumulator->GetNumNodes(); i++)
     {
@@ -469,61 +401,14 @@ void ShaderSkinMesh::Pose(cPoseAccumulator* pPoseAccumulator)
         nlMatrix4* nodeMatrix = GetPoseNodeMatrixPtr(pPoseAccumulator, i);
         nodeID = hierarchy->GetNodeID(i);
 
-        u8 found;
-        {
-            AVLTreeEntry<unsigned long, SkinMatrix>* node = boneMatrices.m_Root;
-            while (node != nullptr)
-            {
-                int cmpResult;
-                if (nodeID == node->key)
-                    cmpResult = 0;
-                else if (nodeID < node->key)
-                    cmpResult = -1;
-                else
-                    cmpResult = 1;
-
-                if (cmpResult == 0)
-                {
-                    if (&foundMatrix != nullptr)
-                    {
-                        foundMatrix = &node->value;
-                    }
-                    found = 1;
-                    goto check_found;
-                }
-                else if (cmpResult < 0)
-                {
-                    node = (AVLTreeEntry<unsigned long, SkinMatrix>*)node->node.left;
-                }
-                else
-                {
-                    node = (AVLTreeEntry<unsigned long, SkinMatrix>*)node->node.right;
-                }
-            }
-            found = 0;
-        }
-
-    check_found:
+        u8 found = boneMatrices.FindGet(nodeID, &foundMatrix);
         if (found)
         {
             skinMat.Set(*nodeMatrix);
 
             nlMultMatrices(result, *foundMatrix, skinMat);
 
-            poseMatrices.AddAVLNode(pRoot, &nodeID, &result, &existingNode, poseMatrices.m_NumElements);
-
-            SkinMatrix* existing;
-            if (existingNode == nullptr)
-            {
-                poseMatrices.m_NumElements++;
-                existing = nullptr;
-            }
-            else
-            {
-                existing = (SkinMatrix*)(((char*)existingNode) + 0x10);
-            }
-
-            foundMatrix = existing;
+            foundMatrix = poseMatrices.Add(nodeID, result);
             if (foundMatrix != nullptr)
             {
                 *foundMatrix = result;
