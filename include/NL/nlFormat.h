@@ -3,12 +3,9 @@
 
 #include "NL/nlBasicString.h"
 #include "NL/nlLexicalCast.h"
-
-template <typename StringType, typename T0, typename T1>
-StringType Format(const StringType& string, const T0& t0, const T1& t1);
-
-template <typename StringType, typename T0>
-StringType Format(const StringType& string, const T0& t0);
+template <typename StringType, typename T0, typename T1, typename T2> StringType Format(const StringType& string, const T0& t0, const T1& t1, const T2& t2);
+template <typename StringType, typename T0, typename T1> StringType Format(const StringType& string, const T0& t0, const T1& t1);
+template <typename StringType, typename T0> StringType Format(const StringType& string, const T0& t0);
 
 template <typename StringType>
 class FormatImpl
@@ -51,86 +48,55 @@ public:
     }
 };
 
+template <typename StringType, typename T0, typename T1>
+StringType Format(const StringType& string, const T0& t0, const T1& t1);
+template <typename StringType, typename T0, typename T1, typename T2>
+StringType Format(const StringType& string, const T0& t0, const T1& t1, const T2& t2);
+template <typename StringType, typename T0, typename T1, typename T2, typename T3>
+StringType Format(const StringType& string, const T0& t0, const T1& t1, const T2& t2, const T3& t3);
+template <typename StringType, typename T0, typename T1, typename T2, typename T3, typename T4>
+StringType Format(const StringType& string, const T0& t0, const T1& t1, const T2& t2, const T3& t3, const T4& t4);
+template <typename StringType, typename T0, typename T1, typename T2, typename T3, typename T4, typename T5>
+StringType Format(const StringType& string, const T0& t0, const T1& t1, const T2& t2, const T3& t3, const T4& t4, const T5& t5);
+
 template <typename StringType, typename T0, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-StringType Format(
-    const StringType& string,
-    const T0& t0,
-    const T1& t1,
-    const T2& t2,
-    const T3& t3,
-    const T4& t4,
-    const T5& t5,
-    const T6& t6,
-    const T7& t7)
+StringType Format(const StringType& string, const T0& t0, const T1& t1, const T2& t2, const T3& t3, const T4& t4, const T5& t5, const T6& t6, const T7& t7)
 {
     return FormatImpl<StringType>(string) % t0 % t1 % t2 % t3 % t4 % t5 % t6 % t7;
 }
 
 template <typename StringType, typename T0, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-StringType Format(
-    const StringType& string,
-    const T0& t0,
-    const T1& t1,
-    const T2& t2,
-    const T3& t3,
-    const T4& t4,
-    const T5& t5,
-    const T6& t6)
+StringType Format(const StringType& string, const T0& t0, const T1& t1, const T2& t2, const T3& t3, const T4& t4, const T5& t5, const T6& t6)
 {
     return FormatImpl<StringType>(string) % t0 % t1 % t2 % t3 % t4 % t5 % t6;
 }
 
 template <typename StringType, typename T0, typename T1, typename T2, typename T3, typename T4, typename T5>
-StringType Format(
-    const StringType& string,
-    const T0& t0,
-    const T1& t1,
-    const T2& t2,
-    const T3& t3,
-    const T4& t4,
-    const T5& t5)
+StringType Format(const StringType& string, const T0& t0, const T1& t1, const T2& t2, const T3& t3, const T4& t4, const T5& t5)
 {
     return FormatImpl<StringType>(string) % t0 % t1 % t2 % t3 % t4 % t5;
 }
 
 template <typename StringType, typename T0, typename T1, typename T2, typename T3, typename T4>
-StringType Format(
-    const StringType& string,
-    const T0& t0,
-    const T1& t1,
-    const T2& t2,
-    const T3& t3,
-    const T4& t4)
+StringType Format(const StringType& string, const T0& t0, const T1& t1, const T2& t2, const T3& t3, const T4& t4)
 {
     return FormatImpl<StringType>(string) % t0 % t1 % t2 % t3 % t4;
 }
 
 template <typename StringType, typename T0, typename T1, typename T2, typename T3>
-StringType Format(
-    const StringType& string,
-    const T0& t0,
-    const T1& t1,
-    const T2& t2,
-    const T3& t3)
+StringType Format(const StringType& string, const T0& t0, const T1& t1, const T2& t2, const T3& t3)
 {
     return FormatImpl<StringType>(string) % t0 % t1 % t2 % t3;
 }
 
 template <typename StringType, typename T0, typename T1, typename T2>
-StringType Format(
-    const StringType& string,
-    const T0& t0,
-    const T1& t1,
-    const T2& t2)
+StringType Format(const StringType& string, const T0& t0, const T1& t1, const T2& t2)
 {
     return FormatImpl<StringType>(string) % t0 % t1 % t2;
 }
 
 template <typename StringType, typename T0, typename T1>
-StringType Format(
-    const StringType& string,
-    const T0& t0,
-    const T1& t1)
+StringType Format(const StringType& string, const T0& t0, const T1& t1)
 {
     return FormatImpl<StringType>(string) % t0 % t1;
 }

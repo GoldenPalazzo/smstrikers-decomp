@@ -3,7 +3,7 @@
 #include "NL/nlLexicalCast.h"
 #include "PowerPC_EABI_Support/Runtime/runtime.h"
 
-static Variant gvNotSet;
+Variant gvNotSet;
 
 // /**
 //  * Offset/Address/Size: 0x268 | 0x8006A194 | size: 0x3C
@@ -20,8 +20,6 @@ static Variant gvNotSet;
 // }
 
 typedef BasicString<char, Detail::TempStringAllocator> NLString;
-
-template NLString LexicalCast<NLString, unsigned long>(const unsigned long&);
 
 // /**
 //  * Offset/Address/Size: 0x34 | 0x80069F60 | size: 0x104

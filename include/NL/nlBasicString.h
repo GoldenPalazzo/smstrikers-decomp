@@ -184,7 +184,13 @@ public:
         }
     }
 
-    BasicString& operator=(BasicString other);
+    BasicString& operator=(BasicString other)
+    {
+        Data* tmp = mData;
+        mData = other.mData;
+        other.mData = tmp;
+        return *this;
+    }
 
     BasicString& AppendInPlace(const CharT* str);
 
@@ -279,21 +285,7 @@ public:
     BasicString Append(const CharT* rhs) const;
 
     template <typename OtherAllocator>
-    BasicString Append(const BasicString<CharT, OtherAllocator>& rhs) const
-    {
-        BasicString r(*this);
-        r.AppendInPlace(rhs);
-        Data* data = r.mData;
-        if (data != 0)
-        {
-            data->mRefCount++;
-        }
-        else
-        {
-            data = 0;
-        }
-        return BasicString(data);
-    }
+    inline BasicString Append(const BasicString<CharT, OtherAllocator>& rhs) const;
 };
 
 template <typename CharT, typename Allocator>
@@ -311,29 +303,76 @@ inline BasicString<CharT, Allocator>::BasicString(const CharT* begin, const Char
 }
 
 template <typename CharT, typename Allocator>
-BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::operator=(BasicString other)
+inline void BasicString<CharT, Allocator>::Data::reserve(int capacity)
 {
-    Data* tmp = mData;
-    mData = other.mData;
-    other.mData = tmp;
-    return *this;
+    if (mData.mCapacity < capacity)
+    {
+        Vector<CharT, Allocator> newVec(capacity, 0);
+        int i = 0;
+        for (; i < mData.mSize; i++)
+        {
+            newVec.mData[i] = mData.mData[i];
+        }
+        newVec.mSize = mData.mSize;
+        mData.Swap(newVec);
+    }
 }
 
 template <typename CharT, typename Allocator>
-BasicString<CharT, Allocator> BasicString<CharT, Allocator>::Append(const CharT* rhs) const
+inline void BasicString<CharT, Allocator>::Data::insertRange(CharT* at, const CharT* begin, const CharT* end)
 {
-    BasicString r(*this);
-    r.AppendInPlace(rhs);
-    Data* data = r.mData;
-    if (data != 0)
+    int size = end - begin;
+    int offset = at - mData.mData;
+    reserve(mData.mSize + size);
+
+    at = mData.mData + offset;
+    CharT* t = mData.mData + mData.mSize - 1;
+    while (t >= at)
     {
-        data->mRefCount++;
+        *(t + size) = *t;
+        t--;
+    }
+    while (begin != end)
+    {
+        *at = *begin;
+        begin++;
+        at++;
+    }
+    mData.mSize += size;
+}
+
+template <typename CharT, typename Allocator>
+inline void BasicString<CharT, Allocator>::erase(const CharT* begin, const CharT* end)
+{
+    Cow();
+    GetData().erase(begin, end);
+}
+
+template <typename CharT, typename Allocator>
+void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const CharT* end)
+{
+    CharT* oldData = this->begin();
+    int offset = at - oldData;
+    Cow();
+    CharT* dataPtr = this->begin();
+    mData->insertRange(dataPtr + offset, begin, end);
+}
+
+template <typename CharT, typename Allocator>
+template <typename OtherAllocator>
+inline void BasicString<CharT, Allocator>::insert(CharT* at, const BasicString<CharT, OtherAllocator>& rhs)
+{
+    typename BasicString<CharT, OtherAllocator>::Data* data = rhs.mData;
+    const CharT* begin;
+    if (data)
+    {
+        begin = data->mData.mData;
     }
     else
     {
-        data = 0;
+        begin = 0;
     }
-    return BasicString(data);
+    insert(at, begin, data ? data->mData.mData + data->mData.mSize - 1 : (CharT*)0);
 }
 
 template <typename CharT, typename Allocator>
@@ -394,6 +433,41 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(cons
 }
 
 template <typename CharT, typename Allocator>
+template <typename OtherAllocator>
+BasicString<CharT, Allocator> BasicString<CharT, Allocator>::Append(const BasicString<CharT, OtherAllocator>& rhs) const
+{
+    BasicString r(*this);
+    r.AppendInPlace(rhs);
+    Data* data = r.mData;
+    if (data != 0)
+    {
+        data->mRefCount++;
+    }
+    else
+    {
+        data = 0;
+    }
+    return BasicString(data);
+}
+
+template <typename CharT, typename Allocator>
+BasicString<CharT, Allocator> BasicString<CharT, Allocator>::Append(const CharT* rhs) const
+{
+    BasicString r(*this);
+    r.AppendInPlace(rhs);
+    Data* data = r.mData;
+    if (data != 0)
+    {
+        data->mRefCount++;
+    }
+    else
+    {
+        data = 0;
+    }
+    return BasicString(data);
+}
+
+template <typename CharT, typename Allocator>
 BasicString<CharT, Allocator> BasicString<CharT, Allocator>::Trim(const CharT* chars) const
 {
     BasicString r(*this);
@@ -410,186 +484,38 @@ BasicString<CharT, Allocator> BasicString<CharT, Allocator>::Trim(const CharT* c
     return BasicString(data);
 }
 
-template <typename CharT>
-static inline void InitBasicStringVector(Vector<CharT>& vec, int count)
-{
-    vec.mData = new (8, true) CharT[count];
-    vec.mSize = count;
-    vec.mCapacity = count;
-    for (int i = 0; i < count; i++)
-    {
-        vec.mData[i] = CharT();
-    }
-}
-
-template <typename CharT, typename Allocator>
-inline void BasicString<CharT, Allocator>::Data::reserve(int capacity)
-{
-    if (mData.mCapacity < capacity)
-    {
-        Vector<CharT> newVec;
-        InitBasicStringVector(newVec, capacity);
-        int i = 0;
-        for (; i < mData.mSize; i++)
-        {
-            newVec.mData[i] = mData.mData[i];
-        }
-        newVec.mSize = mData.mSize;
-        int newVecSize = newVec.mSize;
-        mData.mSize = newVecSize;
-        newVec.mSize = newVecSize;
-
-        int oldCapacity = mData.mCapacity;
-        mData.mCapacity = newVec.mCapacity;
-        newVec.mCapacity = oldCapacity;
-
-        CharT* oldBuf = mData.mData;
-        mData.mData = newVec.mData;
-        newVec.mData = oldBuf;
-    }
-}
-
-template <typename CharT, typename Allocator>
-inline void BasicString<CharT, Allocator>::Data::insertRange(CharT* at, const CharT* begin, const CharT* end)
-{
-    int size = end - begin;
-    int offset = at - mData.mData;
-    reserve(mData.mSize + size);
-
-    at = mData.mData + offset;
-    CharT* t = mData.mData + mData.mSize - 1;
-    while (t >= at)
-    {
-        *(t + size) = *t;
-        t--;
-    }
-    while (begin != end)
-    {
-        *at = *begin;
-        begin++;
-        at++;
-    }
-    mData.mSize += size;
-}
-
-// TODO: register assignments and stack frame still differ across insert instantiations.
-template <typename CharT, typename Allocator>
-void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const CharT* end)
-{
-    (*this)[0];
-    int offset = at - (mData ? mData->mData.mData : (CharT*)0);
-    (*this)[0];
-    (*this)[0];
-
-    Data* data = mData;
-    CharT* dataPtr = data ? data->mData.mData : (CharT*)0;
-    data->insertRange(dataPtr + offset, begin, end);
-}
-
-template <typename CharT, typename Allocator>
-template <typename OtherAllocator>
-inline void BasicString<CharT, Allocator>::insert(CharT* at, const BasicString<CharT, OtherAllocator>& rhs)
-{
-    typename BasicString<CharT, OtherAllocator>::Data* data = rhs.mData;
-    const CharT* begin;
-    if (data)
-    {
-        begin = data->mData.mData;
-    }
-    else
-    {
-        begin = 0;
-    }
-    insert(at, begin, data ? data->mData.mData + data->mData.mSize - 1 : (CharT*)0);
-}
-
-template <typename CharT, typename Allocator>
-inline void BasicString<CharT, Allocator>::erase(const CharT* begin, const CharT* end)
-{
-    Cow();
-    GetData().erase(begin, end);
-}
-
-// TODO: 98.84% match - scan cursor and copy-on-write temporary register swaps remain.
 template <typename CharT, typename Allocator>
 void BasicString<CharT, Allocator>::TrimInPlace(const CharT* chars)
 {
     int i = 0;
-    const CharT* c;
-    while (i < (int)(mData ? mData->mData.mSize - 1 : 0))
+    while (i < size())
     {
-        c = chars;
-        while (*c != 0)
+        const CharT* c;
+        for (c = chars; *c != 0; ++c)
         {
             if (*c == (*this)[i])
                 break;
-            c++;
         }
         if (*c == 0)
             break;
-        i++;
+        ++i;
     }
+    erase(begin(), begin() + i);
 
-    (*this)[0];
-    const CharT* eraseEnd = (mData ? mData->mData.mData : (CharT*)0) + i;
-    (*this)[0];
-    const CharT* eraseBegin = mData ? mData->mData.mData : (CharT*)0;
-
+    i = size() - 1;
+    while (i >= 0)
     {
-        (*this)[0];
-        CharT* at;
-        int size = eraseEnd - eraseBegin;
-        Data* data = mData;
-        int offset = eraseBegin - data->mData.mData;
-        at = data->mData.mData + offset;
-        while (eraseEnd != data->mData.mData + data->mData.mSize)
+        const CharT* c;
+        for (c = chars; *c != 0; ++c)
         {
-            *at = *eraseEnd;
-            eraseEnd++;
-            at++;
-        }
-        data->mData.mSize -= size;
-    }
-
-    int last = (int)(mData ? mData->mData.mSize - 1 : 0) - 1;
-    while (last >= 0)
-    {
-        c = chars;
-        while (*c != 0)
-        {
-            if (*c == (*this)[last])
+            if (*c == (*this)[i])
                 break;
-            c++;
         }
         if (*c == 0)
             break;
-        last--;
+        --i;
     }
-
-    (*this)[0];
-    const CharT* trailEnd;
-    if (mData)
-        trailEnd = mData->mData.mData + mData->mData.mSize - 1;
-    else
-        trailEnd = (CharT*)0;
-    (*this)[0];
-    const CharT* trailBegin = (mData ? mData->mData.mData : (CharT*)0) + (last + 1);
-
-    {
-        (*this)[0];
-        CharT* at;
-        int size = trailEnd - trailBegin;
-        Data* data = mData;
-        int offset = trailBegin - data->mData.mData;
-        at = data->mData.mData + offset;
-        while (trailEnd != data->mData.mData + data->mData.mSize)
-        {
-            *at = *trailEnd;
-            trailEnd++;
-            at++;
-        }
-        data->mData.mSize -= size;
-    }
+    erase(begin() + i + 1, end());
 }
 
 template <typename CharT, typename Allocator>

@@ -18,7 +18,7 @@ struct LexicalCastImpl
 template <typename To, typename From>
 To LexicalCast(const From& from)
 {
-    return Detail::LexicalCastImpl<To, From>::Do(from);
+    return Detail::LexicalCastImpl<To, From>::Do(const_cast<From&>(from));
 }
 
 namespace Detail
@@ -28,6 +28,12 @@ template <typename To>
 struct LexicalCastImpl<To, const char*>
 {
     static To Do(const char* s);
+};
+
+template <typename Allocator>
+struct LexicalCastImpl<BasicString<char, Allocator>, const char*>
+{
+    static BasicString<char, Allocator> Do(const char* s);
 };
 
 template <>
@@ -138,11 +144,15 @@ inline WideBasicString Detail::LexicalCastImpl<WideBasicString, const unsigned s
     return WideBasicString(f);
 }
 
-template <>
-inline NLString Detail::LexicalCastImpl<NLString, const char*>::Do(const char* s)
+namespace Detail
 {
-    return NLString(s);
+template <typename Allocator>
+BasicString<char, Allocator> LexicalCastImpl<BasicString<char, Allocator>, const char*>::Do(
+    const char* s)
+{
+    return BasicString<char, Allocator>(s);
 }
+} // namespace Detail
 
 template <>
 inline int Detail::LexicalCastImpl<int, const char*>::Do(const char* s)
@@ -216,12 +226,6 @@ inline To LexicalCastImpl<To, bool>::Do(bool t)
     return (To)t;
 }
 } // namespace Detail
-
-template <>
-inline NLString LexicalCast<NLString, char>(const char& f)
-{
-    return Detail::LexicalCastImpl<NLString, char>::Do(const_cast<char&>(f));
-}
 
 template <>
 const char* LexicalCast<const char*, const char*>(const char* const& value);
