@@ -17,7 +17,6 @@ BlurHandler* BlurManager::m_activeBlurHandler = NULL;
 SlotPool<BlurHandler> BlurHandler::m_BlurHandlerSlotPool(0x10, 0x10);
 
 static f32 fFlimmerOffset = 0.01f;
-static const nlColour white = { 0xFF, 0xFF, 0xFF, 0xFF };
 
 /**
  * Offset/Address/Size: 0x0 | 0x801627D4 | size: 0x3C
@@ -143,15 +142,12 @@ BlurHandler* BlurManager::GetNewHandler(const char* szTextureName, float fLineWi
 
 /**
  * Offset/Address/Size: 0x2AC | 0x80162A80 | size: 0x514
- * TODO: 98.30% match - remaining diffs are in blended-endpoint pointer collapse (MWCC CSE
- * collapses v3Bottom to v3Top+0xc) and .sdata2 named-vs-anonymous label for static const white.
  */
 void BlurHandler::RenderMesh(unsigned long uTexID)
 {
     u32 count;
     u32 uPointIndex;
     u32 matHandle;
-    nlColour colour;
     f32 nonAdditiveAlpha;
     BlurPointEntry* BPEntry;
 
@@ -207,7 +203,7 @@ void BlurHandler::RenderMesh(unsigned long uTexID)
     glSetCurrentTexture(uTexID, GLTT_Diffuse);
     glSetCurrentProgram(glGetProgram("3d unlit"));
 
-    colour = white;
+    nlColour colour = { 0xFF, 0xFF, 0xFF, 0xFF };
     nonAdditiveAlpha = 0.0f;
 
     if (m_bAdditive)
@@ -265,23 +261,12 @@ void BlurHandler::RenderMesh(unsigned long uTexID)
                 }
 
                 f32 blendPct = ReplayManager::Instance()->mRender->mFrameBlendPercent;
-                BlurPointEntry* ringBuffer = m_pointRingBuffer;
-                nlVector3* pATop = &ringBuffer[pointIndexA].v3Top;
-                nlVector3* pBTop = &ringBuffer[pointIndexB].v3Top;
-                nlVector3* pABottom = &ringBuffer[pointIndexA].v3Bottom;
-                nlVector3* pBBottom = &ringBuffer[pointIndexB].v3Bottom;
-
                 f32 invBlend = 1.0f - blendPct;
 
                 nlVector3 v3Top;
-                v3Top.f.x = invBlend * pATop->f.x + blendPct * pBTop->f.x;
-                v3Top.f.y = invBlend * pATop->f.y + blendPct * pBTop->f.y;
-                v3Top.f.z = invBlend * pATop->f.z + blendPct * pBTop->f.z;
-
                 nlVector3 v3Bottom;
-                v3Bottom.f.x = invBlend * pABottom->f.x + blendPct * pBBottom->f.x;
-                v3Bottom.f.y = invBlend * pABottom->f.y + blendPct * pBBottom->f.y;
-                v3Bottom.f.z = invBlend * pABottom->f.z + blendPct * pBBottom->f.z;
+                nlVec3WeightedSum(v3Top, invBlend, m_pointRingBuffer[pointIndexA].v3Top, blendPct, m_pointRingBuffer[pointIndexB].v3Top);
+                nlVec3WeightedSum(v3Bottom, invBlend, m_pointRingBuffer[pointIndexA].v3Bottom, blendPct, m_pointRingBuffer[pointIndexB].v3Bottom);
 
                 mesh.Colour(colour);
                 nlVector2 tc0;
