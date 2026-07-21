@@ -52,7 +52,7 @@ struct AudioFileData
 }; // total size: 0x28
 
 class LoadingManager;
-class SoundStrToIDNode;
+struct SoundStrToIDNode;
 class Bowser;
 
 class AudioLoader : public Loader
@@ -64,6 +64,7 @@ public:
     static void ResetForRematch();
     static void ResetForNewGame();
     static void ReadEntireSampleFileIntoMem(bool);
+    static unsigned char UnloadInGameAudioData();
     static bool LoadInGameAudioData();
     static unsigned char LoadStadiumSpecificSoundGroups(eStadiumID);
     static void SetupBowserStadiumSoundTable(Bowser*);
@@ -100,15 +101,28 @@ public:
     static void SetupSoundDefinesAVLTree();
 
     static bool gbDisableAudio;
-    static bool gbDisableCrowd;
     static bool gbStream;
+    static bool g_BGM_Off;
+    static bool gbDisableCrowd;
     static bool gbDisableReverb;
     static bool gReverbOn;
-    static bool g_BGM_Off;
     static AudioFileData sebringAudioFileData;
     static nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > gMusyXSoundDefineMap;
-    static nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > gWorldSoundDefineMap;
     static nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > gCharSoundDefineMap;
+    static nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > gWorldSoundDefineMap;
+    static int AUDIO_TITLE_STREAM;
+    static int AUDIO_CUP_MODE_STREAM;
+    static int AUDIO_FE_OPTIONS_STREAM;
+    static int AUDIO_FE_STINGER_STREAM;
+    static int AUDIO_LOAD_LOOP_STREAM;
+    static int AUDIO_PAUSE_STREAM;
+    static int AUDIO_END_GAME_STREAM;
+    static int AUDIO_GAZETTE_POS_STREAM;
+    static int AUDIO_GAZETTE_INTRO_STREAM;
+    static int AUDIO_GAZETTE_NEG_STREAM;
+    static int AUDIO_HOME_GOAL_STREAM;
+    static int AUDIO_TIME_WARNING_STREAM;
+    static int AUDIO_HORN_GOAL_STREAM;
 };
 
 inline unsigned char AudioLoader::IsSoundGroupLoaded(int groupEnum, unsigned long)

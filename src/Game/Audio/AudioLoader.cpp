@@ -1,8 +1,10 @@
+#include "NL/nlAVLTree.h"
 #include "Game/Audio/AudioLoader.h"
 #include "Game/Audio/AudioStream.h"
 #include "Game/Audio/PriorityStream.h"
 #include "Game/Audio/SebringSoundDefines.h"
 #include "Game/Audio/SoundEventScript.h"
+#include "Game/BaseGameSceneManager.h"
 #include "Game/Camera/CameraMan.h"
 #include "Game/Game.h"
 #include "Game/Sys/PlatStream.h"
@@ -11,11 +13,6 @@
 #include "dolphin/arq.h"
 
 int nlSNPrintf(char*, unsigned long, const char*, ...);
-
-// NOTE: gbAsyncLoadEntireSampleFileIntoMemRequestMade, gbStream and the
-// AudioLoader bool statics / gLoaded* group cursors are defined below (after the
-// vtable-bearing globals) so the .sbss / .sdata symbol order and initial values
-// match the target object exactly.
 
 bool AudioLoader::gbStream = true;
 
@@ -33,18 +30,6 @@ typedef DLListContainerBase<
     BasicSlotPool<FadeDLListEntry> >
     FadeDLListContainer;
 typedef DLListEntry<GCAudioStreaming::StereoAudioStream*> StreamDLListEntry;
-
-class BaseSceneHandler;
-
-class BaseGameSceneManager
-{
-public:
-    void* _vtable;
-    u32 mCurrentStackDepth;
-    int m_sceneStack[32];
-    BaseSceneHandler* mBaseSceneHandlerStack[32];
-    int GetSceneType(BaseSceneHandler*);
-};
 
 class GameSceneManager;
 
@@ -130,11 +115,6 @@ extern SoundPropAccessor* gpBOWSERCONCRETESoundPropAccessor;
 extern SoundPropAccessor* gpBOWSERRUBBERSoundPropAccessor;
 extern SoundPropAccessor* gpBOWSERWOODSoundPropAccessor;
 
-// .data: the sebring sound-group table. Each entry is
-// { szGroupName, groupID=0xFFFF, stackEnum=-1, uLoadOrder=-1, loadType=0 }.
-// The 47th (empty-name) entry is the terminator; numSoundGroups is 46 (0x2E).
-// The GRP*_SFX string literals are emitted into .data (and the empty string
-// into .sdata) in this initializer order, ahead of surfaceSoundPropTables.
 SndGroupData sebringAudioGroups[47] = {
     { "GRPFE_Main_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
     { "GRPFE_Char_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
@@ -186,24 +166,78 @@ SndGroupData sebringAudioGroups[47] = {
 };
 
 SoundPropAccessor* surfaceSoundPropTables[14][5] = {
-    { gpBIRDOGRASSSoundPropAccessor, gpBIRDOMETALSoundPropAccessor, gpBIRDOCONCRETESoundPropAccessor, gpBIRDORUBBERSoundPropAccessor, gpBIRDOWOODSoundPropAccessor },
-    { gpDAISYGRASSSoundPropAccessor, gpDAISYMETALSoundPropAccessor, gpDAISYCONCRETESoundPropAccessor, gpDAISYRUBBERSoundPropAccessor, gpDAISYWOODSoundPropAccessor },
-    { gpDKGRASSSoundPropAccessor, gpDKMETALSoundPropAccessor, gpDKCONCRETESoundPropAccessor, gpDKRUBBERSoundPropAccessor, gpDKWOODSoundPropAccessor },
-    { gpHAMBROSGRASSSoundPropAccessor, gpHAMBROSMETALSoundPropAccessor, gpHAMBROSCONCRETESoundPropAccessor, gpHAMBROSRUBBERSoundPropAccessor, gpHAMBROSWOODSoundPropAccessor },
-    { gpKOOPAGRASSSoundPropAccessor, gpKOOPAMETALSoundPropAccessor, gpKOOPACONCRETESoundPropAccessor, gpKOOPARUBBERSoundPropAccessor, gpKOOPAWOODSoundPropAccessor },
-    { gpLUIGIGRASSSoundPropAccessor, gpLUIGIMETALSoundPropAccessor, gpLUIGICONCRETESoundPropAccessor, gpLUIGIRUBBERSoundPropAccessor, gpLUIGIWOODSoundPropAccessor },
-    { gpMARIOGRASSSoundPropAccessor, gpMARIOMETALSoundPropAccessor, gpMARIOCONCRETESoundPropAccessor, gpMARIORUBBERSoundPropAccessor, gpMARIOWOODSoundPropAccessor },
-    { gpPEACHGRASSSoundPropAccessor, gpPEACHMETALSoundPropAccessor, gpPEACHCONCRETESoundPropAccessor, gpPEACHRUBBERSoundPropAccessor, gpPEACHWOODSoundPropAccessor },
-    { gpTOADGRASSSoundPropAccessor, gpTOADMETALSoundPropAccessor, gpTOADCONCRETESoundPropAccessor, gpTOADRUBBERSoundPropAccessor, gpTOADWOODSoundPropAccessor },
-    { gpWALUIGIGRASSSoundPropAccessor, gpWALUIGIMETALSoundPropAccessor, gpWALUIGICONCRETESoundPropAccessor, gpWALUIGIRUBBERSoundPropAccessor, gpWALUIGIWOODSoundPropAccessor },
-    { gpWARIOGRASSSoundPropAccessor, gpWARIOMETALSoundPropAccessor, gpWARIOCONCRETESoundPropAccessor, gpWARIORUBBERSoundPropAccessor, gpWARIOWOODSoundPropAccessor },
-    { gpYOSHIGRASSSoundPropAccessor, gpYOSHIMETALSoundPropAccessor, gpYOSHICONCRETESoundPropAccessor, gpYOSHIRUBBERSoundPropAccessor, gpYOSHIWOODSoundPropAccessor },
-    { gpSUPERGRASSSoundPropAccessor, gpSUPERMETALSoundPropAccessor, gpSUPERCONCRETESoundPropAccessor, gpSUPERRUBBERSoundPropAccessor, gpSUPERWOODSoundPropAccessor },
-    { gpBOWSERGRASSSoundPropAccessor, gpBOWSERMETALSoundPropAccessor, gpBOWSERCONCRETESoundPropAccessor, gpBOWSERRUBBERSoundPropAccessor, gpBOWSERWOODSoundPropAccessor },
+    {
+        gpBIRDOGRASSSoundPropAccessor, gpBIRDOMETALSoundPropAccessor,
+        gpBIRDOCONCRETESoundPropAccessor, gpBIRDORUBBERSoundPropAccessor,
+        gpBIRDOWOODSoundPropAccessor
+    },
+    {
+        gpDAISYGRASSSoundPropAccessor, gpDAISYMETALSoundPropAccessor,
+        gpDAISYCONCRETESoundPropAccessor, gpDAISYRUBBERSoundPropAccessor,
+        gpDAISYWOODSoundPropAccessor
+    },
+    {
+        gpDKGRASSSoundPropAccessor, gpDKMETALSoundPropAccessor,
+        gpDKCONCRETESoundPropAccessor, gpDKRUBBERSoundPropAccessor,
+        gpDKWOODSoundPropAccessor
+    },
+    {
+        gpHAMBROSGRASSSoundPropAccessor, gpHAMBROSMETALSoundPropAccessor,
+        gpHAMBROSCONCRETESoundPropAccessor, gpHAMBROSRUBBERSoundPropAccessor,
+        gpHAMBROSWOODSoundPropAccessor
+    },
+    {
+        gpKOOPAGRASSSoundPropAccessor, gpKOOPAMETALSoundPropAccessor,
+        gpKOOPACONCRETESoundPropAccessor, gpKOOPARUBBERSoundPropAccessor,
+        gpKOOPAWOODSoundPropAccessor
+    },
+    {
+        gpLUIGIGRASSSoundPropAccessor, gpLUIGIMETALSoundPropAccessor,
+        gpLUIGICONCRETESoundPropAccessor, gpLUIGIRUBBERSoundPropAccessor,
+        gpLUIGIWOODSoundPropAccessor
+    },
+    {
+        gpMARIOGRASSSoundPropAccessor, gpMARIOMETALSoundPropAccessor,
+        gpMARIOCONCRETESoundPropAccessor, gpMARIORUBBERSoundPropAccessor,
+        gpMARIOWOODSoundPropAccessor
+    },
+    {
+        gpPEACHGRASSSoundPropAccessor, gpPEACHMETALSoundPropAccessor,
+        gpPEACHCONCRETESoundPropAccessor, gpPEACHRUBBERSoundPropAccessor,
+        gpPEACHWOODSoundPropAccessor
+    },
+    {
+        gpTOADGRASSSoundPropAccessor, gpTOADMETALSoundPropAccessor,
+        gpTOADCONCRETESoundPropAccessor, gpTOADRUBBERSoundPropAccessor,
+        gpTOADWOODSoundPropAccessor
+    },
+    {
+        gpWALUIGIGRASSSoundPropAccessor, gpWALUIGIMETALSoundPropAccessor,
+        gpWALUIGICONCRETESoundPropAccessor, gpWALUIGIRUBBERSoundPropAccessor,
+        gpWALUIGIWOODSoundPropAccessor
+    },
+    {
+        gpWARIOGRASSSoundPropAccessor, gpWARIOMETALSoundPropAccessor,
+        gpWARIOCONCRETESoundPropAccessor, gpWARIORUBBERSoundPropAccessor,
+        gpWARIOWOODSoundPropAccessor
+    },
+    {
+        gpYOSHIGRASSSoundPropAccessor, gpYOSHIMETALSoundPropAccessor,
+        gpYOSHICONCRETESoundPropAccessor, gpYOSHIRUBBERSoundPropAccessor,
+        gpYOSHIWOODSoundPropAccessor
+    },
+    {
+        gpSUPERGRASSSoundPropAccessor, gpSUPERMETALSoundPropAccessor,
+        gpSUPERCONCRETESoundPropAccessor, gpSUPERRUBBERSoundPropAccessor,
+        gpSUPERWOODSoundPropAccessor
+    },
+    {
+        gpBOWSERGRASSSoundPropAccessor, gpBOWSERMETALSoundPropAccessor,
+        gpBOWSERCONCRETESoundPropAccessor, gpBOWSERRUBBERSoundPropAccessor,
+        gpBOWSERWOODSoundPropAccessor
+    },
 };
 
-// .data: the sebring path strings (.pool/.samp/.proj/.sdir) emit here, after
-// surfaceSoundPropTables, followed by the AudioFileData record itself.
 AudioFileData AudioLoader::sebringAudioFileData = {
     "/audio/data/sebring.pool",
     "/audio/data/sebring.samp",
@@ -220,12 +254,6 @@ AudioFileData AudioLoader::sebringAudioFileData = {
 nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::gMusyXSoundDefineMap(0x438, 0);
 nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::gCharSoundDefineMap(0xAF, 0);
 nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::gWorldSoundDefineMap(0xDC, 0);
-
-// AVLTreeBase<int, SoundStrToIDNode*, ...> methods are instantiated implicitly
-// (weak) through the map ctors/dtors and vtable below -- matching the target,
-// where every method is weak. Do NOT add an explicit `template class ...`
-// instantiation here: it forces GLOBAL linkage and drags in unused methods
-// (DeleteValue/DeleteValues) the target object does not contain.
 
 /**
  * Offset/Address/Size: 0x3F48 | 0x80147D14 | size: 0x14C
@@ -260,15 +288,7 @@ void AudioLoader::SetupSoundDefinesAVLTree()
         newNode->musyxStr = SebringSoundDefines[i].musyxStr;
         newNode->uHashVal = nlStringLowerHash(newNode->musyxStr);
 
-        unsigned int key = newNode->uHashVal;
-        AVLTreeNode* existingNode;
-
-        gMusyXSoundDefineMap.AddAVLNode((AVLTreeNode**)&gMusyXSoundDefineMap.m_Root, &key, &newNode, &existingNode, gMusyXSoundDefineMap.m_NumElements);
-
-        if (existingNode == NULL)
-        {
-            gMusyXSoundDefineMap.m_NumElements++;
-        }
+        gMusyXSoundDefineMap.Add(newNode->uHashVal, newNode);
     }
 }
 
@@ -283,10 +303,8 @@ extern const char* gCharSoundTable[];
 void AudioLoader::SetupCharSoundTypesAVLTree()
 {
     const char* const* pSoundTable = Audio::gCharSoundTable;
-    AVLTreeNode** ppRoot;
     int i;
 
-    ppRoot = (AVLTreeNode**)((char*)&gCharSoundDefineMap + 0x1C);
     i = 0;
 
     do
@@ -315,15 +333,7 @@ void AudioLoader::SetupCharSoundTypesAVLTree()
         newNode->typeStr = pSoundTable[i];
         newNode->uHashVal = nlStringLowerHash(newNode->typeStr);
 
-        unsigned int key = newNode->uHashVal;
-        AVLTreeNode* existingNode;
-
-        ((AVLTreeUntemplated*)&gCharSoundDefineMap)->AddAVLNode(ppRoot, &key, &newNode, &existingNode, *(unsigned int*)((char*)&gCharSoundDefineMap + 0x24));
-
-        if (existingNode == NULL)
-        {
-            (*(unsigned int*)((char*)&gCharSoundDefineMap + 0x24))++;
-        }
+        gCharSoundDefineMap.Add(newNode->uHashVal, newNode);
 
         i++;
     } while (i < 173);
@@ -331,7 +341,6 @@ void AudioLoader::SetupCharSoundTypesAVLTree()
 
 /**
  * Offset/Address/Size: 0x3D40 | 0x80147B0C | size: 0xB4
- * TODO: 86% scratch match - prologue lis/addi scheduling differs due to -inline deferred context
  */
 void AudioLoader::SetupWorldSoundTypesAVLTree()
 {
@@ -341,27 +350,9 @@ void AudioLoader::SetupWorldSoundTypesAVLTree()
         pNode->typeStr = Audio::gWorldSoundTable[i];
         pNode->uHashVal = nlStringLowerHash(pNode->typeStr);
 
-        unsigned int key = pNode->uHashVal;
-        AVLTreeNode* existingNode;
-
-        gWorldSoundDefineMap.AddAVLNode(
-            (AVLTreeNode**)&gWorldSoundDefineMap.m_Root,
-            &key,
-            &pNode,
-            &existingNode,
-            gWorldSoundDefineMap.m_NumElements);
-
-        if (existingNode == NULL)
-        {
-            gWorldSoundDefineMap.m_NumElements++;
-        }
+        gWorldSoundDefineMap.Add(pNode->uHashVal, pNode);
     }
 }
-
-// NOTE: These four functions are emitted in reverse source order under
-// `-inline deferred`, so the source is laid out GetSFXIDFromStr ->
-// GetCharSFXTypeFromStr -> GetWorldSFXTypeFromStr -> SetupSoundGroups to
-// reproduce the target .text emission order (SetupSoundGroups lowest addr).
 
 /**
  * Offset/Address/Size: 0x3C60 | 0x80147A2C | size: 0xE0
@@ -416,11 +407,11 @@ unsigned long AudioLoader::GetWorldSFXTypeFromStr(const char* str)
         return -1;
 }
 
-inline void AudioLoader::DeleteStrToIDTables()
+void AudioLoader::DeleteStrToIDTables()
 {
+    gMusyXSoundDefineMap.DeleteValues();
+    gCharSoundDefineMap.DeleteValues();
     gWorldSoundDefineMap.Clear();
-    gCharSoundDefineMap.Clear();
-    gMusyXSoundDefineMap.Clear();
 }
 
 /**
@@ -445,12 +436,6 @@ void AudioLoader::SetupSoundGroups()
 
 /**
  * Offset/Address/Size: 0x35EC | 0x801473B8 | size: 0x408
- *
- * The `goto state_change / no_change / after_no_change` structure is load-bearing:
- * MWCC preserves the original two-test / shared-label shape only via explicit gotos.
- * Structured rewrites (nested if/else, combined boolean, equality) drop 3-5% match
- * because MWCC either duplicates the `return true` block or hoists the repeated
- * loads of `bEnableDPL2` / `PlatAudio::gUsingDolbyProLogic2`.
  */
 bool AudioLoader::ActivateDPL2(bool bEnableDPL2, bool bLoadSampleFile)
 {
@@ -530,10 +515,7 @@ state_change:
 
         nlDLRingRemove(ppHead, pRemove);
 
-        ((SlotPoolEntry*)pFree)->next =
-            pTM->m_StreamDeleteList.m_Allocator.m_FreeList;
-        pTM->m_StreamDeleteList.m_Allocator.m_FreeList =
-            (SlotPoolEntry*)pFree;
+        pTM->m_StreamDeleteList.Deallocate(pFree, NULL);
     }
 
     SlotPoolBase::BaseFreeBlocks(&pTM->m_StreamPool, 0x40);
@@ -1013,8 +995,6 @@ void AudioLoader::SetupSoundBuffers()
 
 /**
  * Offset/Address/Size: 0x20E4 | 0x80145EB0 | size: 0x298
- * TODO: 99.94% match - MWCC shrink-wraps the stack frame and emits local
- * FE/FE2 labels (@856/@857) instead of target @3134/@3135.
  */
 void AudioLoader::LoadFE(bool bLoadSampleFile)
 {
@@ -1276,7 +1256,6 @@ void AudioLoader::LoadNintendoDialogueGroup(bool bAsync)
 
 /**
  * Offset/Address/Size: 0x1E1C | 0x80145BE8 | size: 0x9C
- * TODO: 99.87% match - r3/r4 register swap (this vs bAsync) at offset 0x10
  */
 void AudioLoader::LoadNLGDialogueGroup(bool bAsync)
 {
@@ -1341,12 +1320,6 @@ void AudioLoader::LoadFEButtonSoundGroup()
     PlatAudio::LoadSoundGroup(sebringAudioFileData, 2, 0, true);
 }
 
-/**
- * Inline helper for LoadPermanentSoundGroups. Encapsulates the per-group
- * "check already loaded / guard / IsInited ternary / LoadSoundGroup" pattern.
- * Must be `static inline` so MWCC inlines it into the caller and reproduces
- * the unrolled target assembly.
- */
 static inline void LoadOnePermanentGroup(int g, bool bUseReadFromDiscCallback)
 {
     bool bAlreadyLoaded = false;
@@ -1379,12 +1352,6 @@ static inline void LoadOnePermanentGroup(int g, bool bUseReadFromDiscCallback)
 
 /**
  * Offset/Address/Size: 0x1630 | 0x801453FC | size: 0x75C
- *
- * The repeated `if (!gbDisableAudio)` wrappers and `if (gbDisableAudio) isInited = false;
- * else isInited = Audio::IsInited();` ternary-expansion are load-bearing: MWCC 2.0 with
- * `-O4,p` only emits the target's double-test / dead-branch pattern when the source is
- * spelled this way. Simplified forms (`if (!x && Audio::IsInited())`) collapse the
- * branches and drop match quality.
  */
 void AudioLoader::LoadPermanentSoundGroups(bool bLoadEntireSampleFileIntoMem)
 {
@@ -1575,32 +1542,14 @@ void AudioLoader::UnloadInGame()
 
         nlDLRingRemove(ppHead, pRemove);
 
-        ((SlotPoolEntry*)pFree)->next =
-            pTM->m_StreamDeleteList.m_Allocator.m_FreeList;
-        pTM->m_StreamDeleteList.m_Allocator.m_FreeList =
-            (SlotPoolEntry*)pFree;
+        pTM->m_StreamDeleteList.Deallocate(pFree, NULL);
     }
 
     SlotPoolBase::BaseFreeBlocks(&pTM->m_StreamPool, 0x40);
     SlotPoolBase::BaseFreeBlocks(
         &pTM->m_StreamDeleteList.m_Allocator, 0x0C);
 
-    PlatAudio::UnloadAllSoundGroupsOnStack(sebringAudioFileData, 1);
-
-    gLoadedAwaySidekickGroup = -1;
-    gLoadedHomeSidekickGroup = -1;
-    gLoadedAwayCaptainGroup = -1;
-    gLoadedHomeCaptainGroup = -1;
-    gLoadedSurfaceGroup = -1;
-    gLoadedStadiumGroup = -1;
-
-    if (!gbDisableReverb)
-    {
-        if (!Audio::ShutdownReverb())
-        {
-            nlPrintf("AudioLoader::UnloadInGameAudioData(), Audio::UpdateReverbSettingsToOff() returned false.\n");
-        }
-    }
+    UnloadInGameAudioData();
 
     SoundEventScript::DestroyInstance();
     FEAudio::ResetRandomVoiceToggleSFX();
@@ -1609,7 +1558,6 @@ void AudioLoader::UnloadInGame()
 
 /**
  * Offset/Address/Size: 0x1170 | 0x80144F3C | size: 0x19C
- * TODO: 99.90% match - symbol name diffs only (static const kUpVec generates named label vs anonymous @NNNN in target). Actual instructions identical.
  */
 void AudioLoader::SetupPostPhysicsCameraLoad()
 {
@@ -1667,7 +1615,7 @@ void AudioLoader::SetupPostPhysicsCameraLoad()
     Audio::SetListenerActive(true);
 
 setupCharStadiumSoundTable:
-    ((void (*)())AudioLoader::SetupCharStadiumSoundTable)();
+    AudioLoader::SetupCharStadiumSoundTable();
 }
 
 extern SoundPropAccessor* gpCRITTERWOODSoundPropAccessor;
@@ -1839,7 +1787,7 @@ void AudioLoader::SetupCharStadiumSoundTable()
                 }
                 else
                 {
-                    loaded = ((bool (*)(AudioFileData&, unsigned long, unsigned long, bool))PlatAudio::LoadSoundGroup)(sebringAudioFileData, 13, 1, true);
+                    loaded = PlatAudio::LoadSoundGroup(sebringAudioFileData, 13, 1, true);
                 }
             }
 
@@ -1980,12 +1928,6 @@ bool InitializeReverb(eStadiumID, unsigned char);
 
 /**
  * Offset/Address/Size: 0x1F8 | 0x80143FC4 | size: 0x6EC
- *
- * TODO: 99.73% match - r4/r5 register swap in captain/sidekick load blocks
- *       (same MWCC `-O4,p` register-allocation quirk as
- *       LoadStadiumSpecificSoundGroups). Scoped `const int g` blocks around the
- *       away captain/sidekick reloads are load-bearing to avoid an extra
- *       `lwz r0; mr r31, r0` sequence on gLoaded{Away}{Captain,Sidekick}Group.
  */
 bool AudioLoader::LoadInGameAudioData()
 {
@@ -2367,6 +2309,29 @@ bool AudioLoader::LoadInGameAudioData()
     return true;
 }
 
+unsigned char AudioLoader::UnloadInGameAudioData()
+{
+    bool bResult = PlatAudio::UnloadAllSoundGroupsOnStack(sebringAudioFileData, 1);
+
+    gLoadedAwaySidekickGroup = -1;
+    gLoadedHomeSidekickGroup = -1;
+    gLoadedAwayCaptainGroup = -1;
+    gLoadedHomeCaptainGroup = -1;
+    gLoadedSurfaceGroup = -1;
+    gLoadedStadiumGroup = -1;
+
+    if (!gbDisableReverb)
+    {
+        bResult = Audio::ShutdownReverb();
+        if (!bResult)
+        {
+            nlPrintf("AudioLoader::UnloadInGameAudioData(), Audio::UpdateReverbSettingsToOff() returned false.\n");
+        }
+    }
+
+    return bResult;
+}
+
 /**
  * Offset/Address/Size: 0x1A8 | 0x80143F74 | size: 0x50
  */
@@ -2476,7 +2441,6 @@ void AudioLoader::ResetForRematch()
     nlSingleton<GameInfoManager>::s_pInstance->GetAudioOptions();
     CrowdMood::SetCrowdVolume(0x7f, 0);
 }
-
 /**
  * Offset/Address/Size: 0x0 | 0x80143DCC | size: 0x68
  */

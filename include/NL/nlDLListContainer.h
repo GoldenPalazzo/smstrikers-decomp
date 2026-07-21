@@ -59,8 +59,7 @@ public:
         {
             *outData = entry->entry;
         }
-        entry->m_next = m_Allocator.m_pFree;
-        m_Allocator.m_pFree = entry;
+        m_Allocator.DeleteEntry(entry);
     }
 
     T* AllocateAtEnd(unsigned long* outEntry);

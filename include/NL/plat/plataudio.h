@@ -40,7 +40,7 @@ void musyXFree(void*);
 void* musyXAlloc(u32);
 // void 0x8028D524..0x8028D528 | size: 0x4;
 
-class AudioFileData;
+struct AudioFileData;
 class nlFile;
 
 // class MusyXEffectType;

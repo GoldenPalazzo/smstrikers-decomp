@@ -63,6 +63,13 @@ public:
         BaseFreeBlocks(this, sizeof(T));
     };
 
+    void Initialize(int initial, int delta)
+    {
+        this->m_Initial = initial;
+        BaseAddNewBlock(this, sizeof(T));
+        this->m_Delta = delta;
+    }
+
     // Allocate an entry from the free list
     void Allocate(T*& out)
     {

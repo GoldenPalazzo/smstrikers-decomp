@@ -283,10 +283,7 @@ public:
 
     nlAVLTreeSlotPool(int initial, int delta)
     {
-        this->m_Allocator.m_Initial = initial;
-        SlotPoolBase::BaseAddNewBlock(
-            &this->m_Allocator, sizeof(AVLTreeEntry<KeyType, ValueType>));
-        this->m_Allocator.m_Delta = delta;
+        this->m_Allocator.Initialize(initial, delta);
     }
 };
 
