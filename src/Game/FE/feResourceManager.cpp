@@ -12,22 +12,19 @@
 #include "NL/nlDLListContainer.h"
 #include "NL/glx/glxMemory.h"
 
+static nlAVLTreeSlotPool<unsigned long, FEResourceHandle*, DefaultKeyCompare<unsigned long> > s_loadedResourceList(0x100, 0);
 static unsigned char* s_pResourceLoadBuffer;
+nlDLListSlotPool<FEResourceHandle*> pendingResourceQueue(0x80, 0);
 static FEResourceHandle* s_pCurrentResourceBeingLoaded;
 FESceneResource* s_pCurrentFESceneResourceContext;
 static BundleFile* s_pPermanentBundle;
 static BundleFile* s_pOnDemandBundle;
 static FESceneResource* s_pPermanentBundleSceneResource;
-static nlAVLTreeSlotPool<unsigned long, FEResourceHandle*, DefaultKeyCompare<unsigned long> > s_loadedResourceList(0x100, 0);
-nlDLListSlotPool<FEResourceHandle*> pendingResourceQueue(0x80, 0);
 
-enum ResourceResult
-{
-    FERR_WaitingForResource = 0,
-    FERR_AlreadyLoaded = 1,
-};
+template <>
+FEResourceManager* nlSingleton<FEResourceManager>::s_pInstance = 0;
 
-static inline FEResourceHandle* FindExistingResourceInResourceList_Inline(FEResourceHandle* pFEResourceHandle)
+inline FEResourceHandle* FEResourceManager::FindExistingResourceInResourceList(FEResourceHandle* pFEResourceHandle)
 {
     FEResourceHandle** pPreExistingResourceHandle;
     unsigned long key = pFEResourceHandle->m_hashID;
@@ -68,15 +65,19 @@ check_found:
     return NULL;
 }
 
+inline void FEResourceManager::PlaceHolderForceTextureValid(FETextureResource* pFETextureResource)
+{
+}
+
 static inline eFEResourceType GetResourceType_Inline(FEResourceHandle* pFeResourceHandle)
 {
     return pFeResourceHandle->m_type;
 }
 
-static inline ResourceResult IssueTextureLoadRequest_Inline(FETextureResource* pFeTextureResource)
+inline ResourceResult FEResourceManager::IssueTextureLoadRequest(FETextureResource* pFeTextureResource)
 {
     BundleFileDirectoryEntry fileDirectoryEntry;
-    FETextureResource* pFeExistingTextureResource = (FETextureResource*)FindExistingResourceInResourceList_Inline((FEResourceHandle*)pFeTextureResource);
+    FETextureResource* pFeExistingTextureResource = (FETextureResource*)FindExistingResourceInResourceList((FEResourceHandle*)pFeTextureResource);
 
     if ((pFeExistingTextureResource != NULL)
         && (GetResourceType_Inline(pFeExistingTextureResource) == GetResourceType_Inline(pFeTextureResource)))
@@ -101,7 +102,7 @@ static inline ResourceResult IssueTextureLoadRequest_Inline(FETextureResource* p
     return FERR_WaitingForResource;
 }
 
-static inline ResourceResult IssueSceneContextSwitch_Inline(FESceneResource* pFeSceneResource)
+inline ResourceResult FEResourceManager::IssueSceneContextSwitch(FESceneResource* pFeSceneResource)
 {
     if ((s_pCurrentFESceneResourceContext != NULL)
         && (s_pCurrentFESceneResourceContext != pFeSceneResource)
@@ -118,7 +119,7 @@ static inline ResourceResult IssueSceneContextSwitch_Inline(FESceneResource* pFe
     return FERR_WaitingForResource;
 }
 
-static inline ResourceResult IssueFontLoadRequest_Inline(FEFontResource* pFeFontResource)
+inline ResourceResult FEResourceManager::IssueFontLoadRequest(FEFontResource* pFeFontResource)
 {
     FEResourceHandle* pFeResourceHandle = (FEResourceHandle*)pFeFontResource;
     nlFont* pExistingFont = FontManager::Instance()->GetFontByHashID(pFeResourceHandle->m_hashID);
@@ -127,7 +128,7 @@ static inline ResourceResult IssueFontLoadRequest_Inline(FEFontResource* pFeFont
     return FERR_AlreadyLoaded;
 }
 
-static inline ResourceResult IssueResourceLoadRequest_Inline(FEResourceHandle* pFeResourceHandle,
+inline ResourceResult FEResourceManager::IssueResourceLoadRequest(FEResourceHandle* pFeResourceHandle,
     DLListEntry<FEResourceHandle*>* pQueueEntry,
     DLListEntry<FEResourceHandle*>* pQueueHead)
 {
@@ -140,15 +141,15 @@ static inline ResourceResult IssueResourceLoadRequest_Inline(FEResourceHandle* p
     switch (pFeResourceHandle->m_type)
     {
     case FERT_TEXTURE:
-        resourceRequestResult = IssueTextureLoadRequest_Inline((FETextureResource*)pFeResourceHandle);
+        resourceRequestResult = IssueTextureLoadRequest((FETextureResource*)pFeResourceHandle);
         break;
 
     case FERT_SCENE:
-        resourceRequestResult = IssueSceneContextSwitch_Inline((FESceneResource*)pFeResourceHandle);
+        resourceRequestResult = IssueSceneContextSwitch((FESceneResource*)pFeResourceHandle);
         break;
 
     case FERT_FONT:
-        resourceRequestResult = IssueFontLoadRequest_Inline((FEFontResource*)pFeResourceHandle);
+        resourceRequestResult = IssueFontLoadRequest((FEFontResource*)pFeResourceHandle);
         break;
 
     default:
@@ -179,8 +180,7 @@ void FEResourceManager::Update(float)
         if (pCurrentResource != NULL)
         {
             DLListEntry<FEResourceHandle*>* removedEntry = nlDLRingRemoveStart(pPendingHead);
-            removedEntry->m_next = (DLListEntry<FEResourceHandle*>*)pendingResourceQueue.m_Allocator.m_FreeList;
-            pendingResourceQueue.m_Allocator.m_FreeList = (SlotPoolEntry*)removedEntry;
+            pendingResourceQueue.m_Allocator.Free(removedEntry);
             s_pCurrentResourceBeingLoaded = NULL;
 
             if (*pPendingHead == NULL)
@@ -197,7 +197,7 @@ void FEResourceManager::Update(float)
         DLListEntry<FEResourceHandle*>* pQueueEntry = nlDLRingGetStart(pQueueHead);
         pFeResourceHandle = pQueueEntry->entry;
         s_pCurrentResourceBeingLoaded = pFeResourceHandle;
-        result = IssueResourceLoadRequest_Inline(pFeResourceHandle, pQueueEntry, *pPendingHead);
+        result = IssueResourceLoadRequest(pFeResourceHandle, pQueueEntry, *pPendingHead);
         bQueueNextResource = (result == FERR_AlreadyLoaded);
     }
 }
@@ -393,8 +393,7 @@ void FEResourceManager::UnloadPermanentResourceBundle()
 
             if (removedNode != NULL)
             {
-                removedNode->left = (AVLTreeNode*)s_loadedResourceList.m_Allocator.m_FreeList;
-                s_loadedResourceList.m_Allocator.m_FreeList = (SlotPoolEntry*)removedNode;
+                s_loadedResourceList.m_Allocator.Free((AVLTreeEntry<unsigned long, FEResourceHandle*>*)removedNode);
                 s_loadedResourceList.m_NumElements--;
             }
         }
@@ -408,7 +407,7 @@ void FEResourceManager::UnloadPermanentResourceBundle()
     s_pPermanentBundleSceneResource = NULL;
 }
 
-static inline void RemoveResourceFromResourceList_Inline(FEResourceHandle* pFeResourceHandle)
+inline void FEResourceManager::RemoveResourceFromResourceList(FEResourceHandle* pFeResourceHandle)
 {
     FEResourceHandle** foundValue;
     u32 searchKey = pFeResourceHandle->m_hashID;
@@ -456,8 +455,7 @@ check_found:
 
         if (removedNode != NULL)
         {
-            removedNode->left = (AVLTreeNode*)s_loadedResourceList.m_Allocator.m_FreeList;
-            s_loadedResourceList.m_Allocator.m_FreeList = (SlotPoolEntry*)removedNode;
+            s_loadedResourceList.m_Allocator.Free((AVLTreeEntry<unsigned long, FEResourceHandle*>*)removedNode);
             s_loadedResourceList.m_NumElements--;
         }
     }
@@ -471,7 +469,7 @@ void FEResourceManager::UnloadResource(FEResourceHandle* pFeResourceHandle)
     switch (pFeResourceHandle->m_type)
     {
     case FERT_TEXTURE:
-        RemoveResourceFromResourceList_Inline(pFeResourceHandle);
+        RemoveResourceFromResourceList(pFeResourceHandle);
         break;
     case FERT_SCENE:
         glplatResourceRelease(*(unsigned long long*)((u8*)pFeResourceHandle + 0x18));
@@ -506,6 +504,10 @@ void FEResourceManager::QueueResourceLoad(FEResourceHandle* pHandle)
     }
 
     nlDLRingAddEnd(&pendingResourceQueue.m_Head, entry);
+}
+
+inline FETextureResource* FEResourceManager::CreateTextureResourceFromHandle(unsigned long handle)
+{
 }
 
 /**
@@ -754,6 +756,3 @@ asm FEResourceManager::FEResourceManager()
     blr
     // clang-format on
 }
-
-template <>
-FEResourceManager* nlSingleton<FEResourceManager>::s_pInstance = 0;

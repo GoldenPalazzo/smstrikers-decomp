@@ -34,6 +34,17 @@ public:
     /* 0x10 */ bool m_bValid;
 }; // total size: 0x14
 
+enum ResourceResult
+{
+    FERR_WaitingForResource = 0,
+    FERR_AlreadyLoaded = 1,
+};
+
+class FESceneResource;
+class FETextureResource;
+class FEFontResource;
+template <typename T> class DLListEntry;
+
 class FEResourceManager : public nlTask, public nlSingleton<FEResourceManager>
 {
 public:
@@ -46,7 +57,7 @@ public:
 
     void Cleanup();
     void LoadPermanentResourceBundle(const char*);
-    void LoadPermanentTextures();
+    static void LoadPermanentTextures();
     bool OpenOnDemandResourceBundle(const char*);
     void Initialize();
     void Update(float);
@@ -54,6 +65,19 @@ public:
     void UnloadResource(FEResourceHandle*);
     void UnloadPermanentResourceBundle();
     static void TextureResourceLoadComplete(void*, unsigned long uReadSize, unsigned long uParam);
+
+private:
+    static void PlaceHolderForceTextureValid(FETextureResource* pFETextureResource);
+    static ResourceResult IssueResourceLoadRequest(FEResourceHandle* pFeResourceHandle,
+        DLListEntry<FEResourceHandle*>* pQueueEntry,
+        DLListEntry<FEResourceHandle*>* pQueueHead);
+    static ResourceResult IssueSceneContextSwitch(FESceneResource* pFeSceneResource);
+    static ResourceResult IssueTextureLoadRequest(FETextureResource* pFeTextureResource);
+    static ResourceResult IssueFontLoadRequest(FEFontResource* pFeFontResource);
+    static FETextureResource* CreateTextureResourceFromHandle(unsigned long handle);
+    static FEResourceHandle* FindExistingResourceInResourceList(FEResourceHandle* pFEResourceHandle);
+    static void RemoveResourceFromResourceList(FEResourceHandle* pFEResourceHandle);
+    static void AddResourceToResourceList(FEResourceHandle* pFEResourceHandle);
 
     // static nlSingleton<FEResourceManager> s_pInstance;
 
