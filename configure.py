@@ -1166,7 +1166,7 @@ config.libs = [
             Object(Matching, "Game/GL/ShaderSkinMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # FX
-            Object(NonMatching, "Game/objectblur.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "Game/objectblur.cpp", extra_cflags=["-inline auto"]),
 
             # AnimProps
             Object(Matching, "Game/AnimProps/globalanimproperties.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

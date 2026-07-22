@@ -18,6 +18,8 @@ SlotPool<BlurHandler> BlurHandler::m_BlurHandlerSlotPool(0x10, 0x10);
 
 static f32 fFlimmerOffset = 0.01f;
 
+static const nlColour kWhite = { 0xFF, 0xFF, 0xFF, 0xFF };
+
 /**
  * Offset/Address/Size: 0x0 | 0x801627D4 | size: 0x3C
  */
@@ -203,7 +205,7 @@ void BlurHandler::RenderMesh(unsigned long uTexID)
     glSetCurrentTexture(uTexID, GLTT_Diffuse);
     glSetCurrentProgram(glGetProgram("3d unlit"));
 
-    nlColour colour = { 0xFF, 0xFF, 0xFF, 0xFF };
+    nlColour colour = kWhite;
     nonAdditiveAlpha = 0.0f;
 
     if (m_bAdditive)
@@ -373,7 +375,7 @@ void BlurHandler::AddViewOrientedPoint(const nlVector3& position, const nlVector
 }
 
 /**
- * Offset/Address/Size: 0x3DC | 0x80163158 | size: 0x1C4
+ * Offset/Address/Size: 0x984 | 0x80163158 | size: 0x1C4
  */
 bool BlurHandler::ConstructViewOrientedPoints(nlVector3& topPoint, nlVector3& bottomPoint, nlVector3 position, const nlVector3& forwardVector)
 {
