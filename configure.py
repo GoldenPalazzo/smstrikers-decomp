@@ -890,7 +890,7 @@ config.libs = [
             Object(Matching, "Game/SAnim/pnBlender.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SAnim/pnSingleAxisBlender.cpp", extra_cflags=["-inline auto", "-inline deferred"], mw_version="GC/1.3.2"),
             Object(Matching, "Game/SAnim/pnFeather.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/AnimInventory.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/AnimInventory.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Blinker.cpp", extra_cflags=["-inline auto"]),   
 
             # Net 

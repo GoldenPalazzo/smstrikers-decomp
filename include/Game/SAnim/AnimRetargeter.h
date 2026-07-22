@@ -14,6 +14,8 @@ public:
 class AnimRetargetList : public cIdentifier
 {
 public:
+    typedef char* MemType;
+
     static AnimRetargetList* Initialize(nlChunk*);
     static bool IsValidChunkID(u32 id)
     {

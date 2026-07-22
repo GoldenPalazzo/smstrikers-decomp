@@ -10,6 +10,8 @@ class nlChunk;
 class cSHierarchy : public cIdentifier
 {
 public:
+    typedef char* MemType;
+
     bool PreserveBoneLength(int) const;
     nlVector3* GetTranslationOffset(int) const;
     s32 GetParent(int) const;

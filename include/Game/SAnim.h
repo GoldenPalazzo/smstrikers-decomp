@@ -136,6 +136,8 @@ protected:
 class cSAnim : public cIdentifier
 {
 public:
+    typedef char* MemType;
+
     static cSAnim* Initialize(nlChunk*);
     static u8 IsValidChunkID(u32 id)
     {

@@ -89,7 +89,7 @@ public:
 
 private:
     /* 0x0 */ nlListContainer<T*> m_lItemList;
-    /* 0xC */ nlListContainer<char*> m_lMemList;
+    /* 0xC */ nlListContainer<typename T::MemType> m_lMemList;
     /* 0x18 */ int m_nItemCount;
 }; // total size: 0x1C
 
