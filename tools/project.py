@@ -1094,6 +1094,7 @@ def generate_build_ninja(
                     rule="decompctx",
                     inputs=src_path,
                     implicit=decompctx,
+                    order_only="pre-compile",
                     variables={
                         "includes": includes,
                         "excludes": excludes,

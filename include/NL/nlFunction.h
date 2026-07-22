@@ -1,94 +1,19 @@
 #ifndef _NLFUNCTION_H_
 #define _NLFUNCTION_H_
 
-#include "NL/nlMemory.h"
-#include "types.h"
-
-enum Tag
-{
-    EMPTY = 0,
-    FREE_FUNCTION = 1,
-    FUNCTOR = 2,
-};
-
-template <typename T>
-struct IsVoid
-{
-    enum
-    {
-        value = false,
-    };
-};
-
-template <>
-struct IsVoid<void>
-{
-    enum
-    {
-        value = true,
-    };
-};
-
-template <bool Value>
-struct BoolToType
-{
-};
-
-namespace Detail
-{
-template <typename R, typename MemPtr>
-struct MemFunImpl
-{
-private:
-    MemPtr mMemFun;
-
-public:
-    MemFunImpl(MemPtr function)
-        : mMemFun(function)
-    {
-    }
-
-    template <typename T>
-    R operator()(T* object) const
-    {
-        return (object->*mMemFun)();
-    }
-
-    template <typename T, typename P>
-    R operator()(T* object, P argument) const
-    {
-        return (object->*mMemFun)(argument);
-    }
-};
-} // namespace Detail
-
-/* Original nlFunction.h source order: parameterized overload, then arity 0. */
-template <typename T, typename R, typename P>
-Detail::MemFunImpl<R, R (T::*)(P)> MemFun(R (T::*function)(P))
-{
-    return Detail::MemFunImpl<R, R (T::*)(P)>(function);
-}
-
-template <typename T, typename R>
-Detail::MemFunImpl<R, R (T::*)()> MemFun(R (T::*function)())
-{
-    return Detail::MemFunImpl<R, R (T::*)()>(function);
-}
-
-template <typename Signature>
-class Function;
-
-typedef void FnVoidVoid();
-
-template <typename ReturnType, typename P1>
-class Function1;
+#include "NL/nlFunctionCommon.h"
 
 /* Function<P1> is the one-argument shorthand for Function<void(P1)>. */
+#ifndef _NLFUNCTION_PRIMARY_DEFINED_
+#define _NLFUNCTION_PRIMARY_DEFINED_
 #define NLF_GENERATE_PRIMARY_WRAPPER
 #include "NL/detail/nlFunctionPreProcTemplate.h"
 #undef NLF_GENERATE_PRIMARY_WRAPPER
+#endif
 
 /* Function0<ReturnType> and Function<ReturnType()>. */
+#ifndef _NLFUNCTION_ARITY0_DEFINED_
+#define _NLFUNCTION_ARITY0_DEFINED_
 #define NLF_CLASS Function0
 #define NLF_TEMPLATE_PARAMETERS typename ReturnType
 #define NLF_TEMPLATE_ARGUMENTS ReturnType
@@ -108,8 +33,11 @@ class Function1;
 #undef NLF_TEMPLATE_ARGUMENTS
 #undef NLF_TEMPLATE_PARAMETERS
 #undef NLF_CLASS
+#endif
 
 /* Function1<ReturnType, P1> and Function<ReturnType(P1)>. */
+#ifndef _NLFUNCTION_ARITY1_DEFINED_
+#define _NLFUNCTION_ARITY1_DEFINED_
 #define NLF_CLASS Function1
 #define NLF_TEMPLATE_PARAMETERS typename ReturnType, typename P1
 #define NLF_TEMPLATE_ARGUMENTS ReturnType, P1
@@ -129,8 +57,11 @@ class Function1;
 #undef NLF_TEMPLATE_ARGUMENTS
 #undef NLF_TEMPLATE_PARAMETERS
 #undef NLF_CLASS
+#endif
 
 /* Function3<ReturnType, P1, P2, P3> and the signature wrapper. */
+#ifndef _NLFUNCTION_ARITY3_DEFINED_
+#define _NLFUNCTION_ARITY3_DEFINED_
 #define NLF_CLASS Function3
 #define NLF_TEMPLATE_PARAMETERS typename ReturnType, typename P1, typename P2, typename P3
 #define NLF_TEMPLATE_ARGUMENTS ReturnType, P1, P2, P3
@@ -150,5 +81,6 @@ class Function1;
 #undef NLF_TEMPLATE_ARGUMENTS
 #undef NLF_TEMPLATE_PARAMETERS
 #undef NLF_CLASS
+#endif
 
 #endif // _NLFUNCTION_H_

@@ -159,7 +159,7 @@ config.asflags = [
     "--strip-local-absolute",
     "-I include",
     "-I src",
-    f"-I build/{config.version}/include",
+    f"-I {config.build_dir}/{config.version}/include",
     f"--defsym BUILD_VERSION={version_num}",
 ]
 config.ldflags = [
@@ -175,6 +175,29 @@ if args.map:
 
 # Use for any additional files that should cause a re-configure when modified
 config.reconfig_deps = []
+
+nlfunction_template = Path("include/NL/detail/nlFunctionPreProcTemplate.h")
+nlfunction_generated_headers = [
+    config.build_dir / config.version / "include/NL/detail/nlFunction1PreProcTemplate.h",
+]
+config.custom_build_rules = [
+    {
+        "name": "generate_nlfunction_headers",
+        "command": "$python tools/generate_nlfunction_headers.py $in $out",
+        "description": "GEN $out",
+        "restat": True,
+    }
+]
+config.custom_build_steps = {
+    "pre-compile": [
+        {
+            "outputs": nlfunction_generated_headers,
+            "rule": "generate_nlfunction_headers",
+            "inputs": nlfunction_template,
+            "implicit": Path("tools/generate_nlfunction_headers.py"),
+        }
+    ]
+}
 
 # Progress
 config.progress_use_fancy = True
@@ -209,7 +232,7 @@ cflags_base = [
     "-str reuse",
     "-sym on",
     "-use_lmw_stmw on",
-    f"-i build/{config.version}/include",
+    f"-i {config.build_dir}/{config.version}/include",
     f"-DBUILD_VERSION={version_num}",
     f"-DVERSION_{config.version}",
     '-pragma "supress_warnings on"',
@@ -253,7 +276,7 @@ cflags_runtime_MSL_C = [
     "-use_lmw_stmw on",
     "-str reuse,pool,readonly",
     "-common off",
-    f"-i build/{config.version}/include",
+    f"-i {config.build_dir}/{config.version}/include",
     f"-DBUILD_VERSION={version_num}",
     f"-DVERSION_{config.version}",
 ]
@@ -373,7 +396,7 @@ includes_base = [
 
 system_includes_base = [
     "include",
-    f"build/{config.version}/include",
+    f"{config.build_dir}/{config.version}/include",
 ]
 
 config.linker_version = "GC/1.3.2"
@@ -1102,7 +1125,7 @@ config.libs = [
             Object(NonMatching, "Game/SH/SHMilestoneTrophy.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHMoviePlayer.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHOptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/SH/SHPause.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/SH/SHPause.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHPauseOptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(
                 Matching,

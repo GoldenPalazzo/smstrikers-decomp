@@ -1,7 +1,7 @@
 #ifndef _FEMENU_H_
 #define _FEMENU_H_
 
-#include "NL/nlFunction.h"
+#include "NL/nlFunction1.h"
 
 enum MenuAction
 {

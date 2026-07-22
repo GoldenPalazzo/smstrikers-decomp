@@ -4,10 +4,10 @@
 #include "types.h"
 
 #include "Game/FE/feInput.h"
+#include "Game/FE/feMenu.h"
 #include "Game/BaseSceneHandler.h"
 #include "Game/FE/tlComponentInstance.h"
 #include "Game/FE/feButtonComponent.h"
-#include "Game/FE/feMenu.h"
 
 class PauseMenuScene : public BaseSceneHandler
 {
