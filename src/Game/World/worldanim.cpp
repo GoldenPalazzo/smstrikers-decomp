@@ -1,4 +1,5 @@
 #include "Game/World/worldanim.h"
+#include "Game/World.h"
 #include "NL/nlString.h"
 #include "NL/nlSlotPool.h"
 #include "Game/SAnim.h"
@@ -27,6 +28,101 @@ WorldAnimManager::~WorldAnimManager()
     }
     delete iterator;
     delete m_pHierarchyInventory;
+}
+
+/**
+ * Unreferenced in retail, dead-stripped at link. The retail DWARF for this
+ * compile unit attests the definition (erased body: this r0, szFileName r4)
+ * and worldanim.h's WorldAnimManager class DIE declares it.
+ */
+unsigned char WorldAnimManager::LoadHierarchy(const char* szFileName)
+{
+    m_pHierarchyInventory->AddFile((char*)szFileName);
+    return true;
+}
+
+/**
+ * Unreferenced in retail, dead-stripped at link. The retail DWARF for this
+ * compile unit attests the definition (erased body: this r27, szFileName r26,
+ * szSetName r28; locals AnimationSet* pAnimationSet r1+0x14,
+ * char szLowerSetName[32] r1+0x18).
+ */
+unsigned char WorldAnimManager::LoadAnimationSet(const char* szFileName, const char* szSetName)
+{
+    AnimationSet* pAnimationSet;
+    char szLowerSetName[32];
+
+    nlStrNCpy(szLowerSetName, szSetName, 32);
+    nlToLower(szLowerSetName);
+
+    pAnimationSet = new (nlMalloc(sizeof(AnimationSet), 8, false)) AnimationSet();
+    pAnimationSet->m_animInventory.AddFile((char*)szFileName);
+    m_animationSetMap.Add(nlStringHash(szLowerSetName), pAnimationSet);
+    return true;
+}
+
+/**
+ * Unreferenced in retail, dead-stripped at link. The retail DWARF for this
+ * compile unit attests the definition (erased body: this r31, szName r4).
+ */
+cSHierarchy* WorldAnimManager::FindHierarchy(const char* szName)
+{
+    return m_pHierarchyInventory->Find((unsigned int)nlStringLowerHash(szName));
+}
+
+/**
+ * Unreferenced in retail, dead-stripped at link. The retail DWARF for this
+ * compile unit attests the definition (erased body: this r31,
+ * szAnimationSetName r4; local AnimationSet** ppAnimationSet r1+0x8).
+ */
+AnimationSet* WorldAnimManager::FindAnimationSet(const char* szAnimationSetName)
+{
+    AnimationSet** ppAnimationSet = NULL;
+    m_animationSetMap.Find(nlStringLowerHash(szAnimationSetName), &ppAnimationSet, NULL);
+    if (ppAnimationSet != NULL)
+    {
+        return *ppAnimationSet;
+    }
+    return NULL;
+}
+
+/**
+ * Unreferenced in retail, dead-stripped at link. The retail DWARF for this
+ * compile unit attests the definition (erased body: uHashID r0,
+ * szAnimationName r5; local AnimationSet** ppAnimationSet r1+0x8).
+ */
+cSAnim* WorldAnimManager::FindAnimation(unsigned long uHashID, const char* szAnimationName)
+{
+    AnimationSet** ppAnimationSet = NULL;
+    m_animationSetMap.Find(uHashID, &ppAnimationSet, NULL);
+    if (ppAnimationSet != NULL)
+    {
+        return (*ppAnimationSet)->m_animInventory.Find((unsigned int)nlStringLowerHash(szAnimationName));
+    }
+    return NULL;
+}
+
+/**
+ * Unreferenced in retail, dead-stripped at link. The retail DWARF for this
+ * compile unit attests the definition (erased body: this r31,
+ * szAnimSetAndHierarchyName r28, pWorldContext r29; references
+ * __vt__19WorldAnimController).
+ */
+WorldAnimController::WorldAnimController(const char* szAnimSetAndHierarchyName, World* pWorldContext)
+{
+    m_pPoseAccumulator = NULL;
+    m_pPoseTree = NULL;
+    m_fSpeed = 1.0f;
+    m_pAnimationSet = pWorldContext->m_pWorldAnimManager->FindAnimationSet(szAnimSetAndHierarchyName);
+    m_bIsGanged = false;
+}
+
+/**
+ * Unreferenced in retail, dead-stripped at link. Out-of-line per the retail
+ * DWARF (erased body: this r29; references __vt__19WorldAnimController).
+ */
+WorldAnimController::~WorldAnimController()
+{
 }
 
 /**

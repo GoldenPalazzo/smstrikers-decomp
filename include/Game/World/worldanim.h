@@ -14,11 +14,13 @@ public:
 }; // total size: 0x1C
 
 struct glModel;
+class World;
 
 class WorldAnimController
 {
 public:
-    virtual ~WorldAnimController() { };
+    WorldAnimController(const char* szAnimSetAndHierarchyName, World* pWorldContext);
+    virtual ~WorldAnimController();
     virtual void Update(float) { };
     virtual glModel* GetUpdatedModel(unsigned long, void*) { return 0; };
 
@@ -40,6 +42,12 @@ class WorldAnimManager
 public:
     WorldAnimManager();
     ~WorldAnimManager();
+
+    unsigned char LoadHierarchy(const char* szFileName);
+    unsigned char LoadAnimationSet(const char* szFileName, const char* szSetName);
+    cSHierarchy* FindHierarchy(const char* szName);
+    AnimationSet* FindAnimationSet(const char* szAnimationSetName);
+    cSAnim* FindAnimation(unsigned long uHashID, const char* szAnimationName);
 
     /* 0x0 */ cInventory<cSHierarchy>* m_pHierarchyInventory;                                               // offset 0x0, size 0x4
     /* 0x4 */ nlAVLTree<unsigned long, AnimationSet*, DefaultKeyCompare<unsigned long> > m_animationSetMap; // offset 0x4, size 0x14
