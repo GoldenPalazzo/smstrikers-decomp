@@ -15,8 +15,6 @@ static eGLView defaultView = GLV_Particles;
 
 typedef AVLTreeEntry<unsigned long, LingerMessage*> LMEntry;
 
-static char lingerMessageFormat[] = "%s lingers (%d .. %d)";
-
 struct nlAVLTreeIter
 {
     LMEntry** m_Stack;
@@ -215,7 +213,7 @@ void EmissionManager::Update(float dt)
             LMEntry* entry = iter->m_Stack[iter->m_NumStackEntries - 1];
             LingerMessage* l = entry->value;
 
-            glFontPrintf((eGLView)0x21, 0, y, colour, lingerMessageFormat, l->szMessage, l->nLingers, l->nParticles);
+            glFontPrintf((eGLView)0x21, 0, y, colour, "%s lingers (%d .. %d)", l->szMessage, l->nLingers, l->nParticles);
 
             iter->m_NumStackEntries--;
 
