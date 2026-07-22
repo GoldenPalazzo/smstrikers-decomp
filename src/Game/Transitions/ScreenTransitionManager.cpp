@@ -120,22 +120,11 @@ void ScreenTransitionManager::DeleteAllTransitions()
 /**
  * Offset/Address/Size: 0x5A4 | 0x80205694 | size: 0x178
  */
-/**
- * TODO: 99.07% match - this/name register allocation (r31/r29) and stack-slot
- * placement for outNode/nameString temp differ from target MWCC output.
- */
 void ScreenTransitionManager::AddTransitionToMap(char* name, ScreenTransition* pTransition)
 {
     FORCE_DONT_INLINE;
     u32 transitionHash = glHash(name);
-    AVLTreeNode* outNode;
-
-    m_TransitionMap.AddAVLNode((AVLTreeNode**)&m_TransitionMap.m_Root, &transitionHash, &pTransition, &outNode, m_TransitionMap.m_NumElements);
-
-    if (outNode == nullptr)
-    {
-        m_TransitionMap.m_NumElements++;
-    }
+    m_TransitionMap.Add(transitionHash, pTransition);
 
     BasicString<char, Detail::TempStringAllocator> nameString(name);
     m_Transitions.push_back(nameString);

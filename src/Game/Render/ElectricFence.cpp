@@ -19,14 +19,19 @@
 
 #include <math.h>
 
-static f32 sfStartAngle = 180.0f;
-static f32 sfElectricFenceDisplayAngle;
-static bool sbIsElectricFenceBeingDisplayed;
+static float sfGridTextureSize = 7.0f;
+static float sfNumGridSquares = 16.0f;
+static float sfFadeOutTime = 0.2f;
+static float sfAlignmentOffset1 = 0.25f;
+static float sfAlignmentOffset2 = 0.13f;
 static float sfAngleAnimationRate = 100.0f;
 static float sfTimeBetweenEffects = 0.02f;
 static int sNumRevolutionsToDisplay = 2;
 static float sfAngleRandomOffset = 10.0f;
+static float sfStartAngle = 180.0f;
 static bool sbUseSparksDuringElectricFenceFlyBy = true;
+static bool sbIsElectricFenceBeingDisplayed;
+static float sfElectricFenceDisplayAngle;
 
 const unsigned long UnlitProgram = glGetProgram("3d unlit");
 const unsigned long LitProgram = glGetProgram("3d pointlit");
@@ -35,6 +40,7 @@ const unsigned long BlackTexture = glGetTexture("global/black");
 const unsigned long WhiteTexture = glGetTexture("global/white");
 const unsigned long GridTexture = glGetTexture("global/grid");
 
+int ElectricFenceData::numAllocated;
 nlList<ElectricFenceData> ElectricFenceData::sActiveElectricFences((ElectricFenceData*)NULL, (ElectricFenceData*)NULL);
 SlotPool<ElectricFenceData> ElectricFenceData::sElectricFenceDataPool(16, 16);
 SlotPool<ElectricFenceGeometry> ElectricFenceGeometry::sElectricFenceGeometryPool(4, 4);
@@ -56,9 +62,6 @@ static void GetWallPoint(const nlVector3& impactPosition, float xOffset, float z
     /**
      * TODO: 99.71% match - r29/r31 register allocation swap (impactPosition ptr vs yIsPositive).
      */
-    extern float sfGridTextureSize;
-    extern float sfNumGridSquares;
-    extern float sfAlignmentOffset2;
 
     const nlVector3* const pPoint = &impactPosition;
 
@@ -164,12 +167,8 @@ static void ElectricFenceFinished(EmissionController& controller)
     }
 }
 
-/**
- * Offset/Address/Size: 0xEAC | 0x8016BEDC | size: 0x420
- */
 static inline void RenderElectricFenceFlat(const nlVector3& position, const nlVector3& normal, float intensity)
 {
-    extern float sfGridTextureSize;
     extern const unsigned long GridTexture;
 
     nlMatrix4 matrix;
@@ -287,10 +286,11 @@ static inline ElectricFenceData* CreateAndAssignElectricFenceData(EmissionContro
 }
 
 static void RenderElectricFence(EmissionController& ec);
+/**
+ * Offset/Address/Size: 0xEAC | 0x8016BEDC | size: 0x420
+ */
 static void RenderElectricFence(EmissionController& ec)
 {
-    extern float sfFadeOutTime;
-    extern float sfGridTextureSize;
     extern const unsigned long GridTexture;
 
     EmissionController* pController = &ec;
@@ -458,8 +458,6 @@ void FreeElectricFence()
 
 static inline void CreateElectricFenceGeometry(ElectricFenceGeometry& prim, const nlVector3& impactPosition)
 {
-    extern float sfGridTextureSize;
-
     prim.vertCount = 32;
 
     nlVector3* pdst = prim.position;
@@ -506,9 +504,6 @@ static inline void CreateElectricFenceGeometry(ElectricFenceGeometry& prim, cons
  */
 ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
 {
-    extern float sfGridTextureSize;
-    extern float sfNumGridSquares;
-    extern float sfAlignmentOffset1;
     extern float AIsgn(float);
 
     float zTop, zBottom, step, negHalf, posHalf, z_val, grid, half;

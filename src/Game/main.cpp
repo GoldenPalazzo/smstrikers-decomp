@@ -155,7 +155,6 @@ int GetRegion()
 
 /**
  * Offset/Address/Size: 0x3DC | 0x80173864 | size: 0x1858
- * TODO: 99.80% match - r30/r31 register swap in 3x inlined BasicString(const char*) constructors
  */
 static void Initialize()
 {
@@ -409,9 +408,7 @@ static void SetupViews()
         GLV_ShadowBlend0, GLV_ShadowBlend1, GLV_ScreenBlur, GLV_ScreenBlur2
     };
 
-    s32 i;
-
-    for (i = 0; i < GLV_Num; i++)
+    for (s32 i = 0; i < GLV_Num; i++)
     {
         glViewSetTarget((eGLView)i, GLTG_Main);
     }
@@ -419,20 +416,14 @@ static void SetupViews()
     glViewSetSortMode(GLV_FrontEnd, GLVSort_TransformedDepth);
     glViewSetSortMode(GLV_Anark, GLVSort_Reverse);
 
+    for (u32 j = 0; j < 12; j++)
     {
-        u32 j;
-        for (j = 0; j < 12; j++)
-        {
-            glViewSetSortMode(sort_none[j], GLVSort_None);
-        }
+        glViewSetSortMode(sort_none[j], GLVSort_None);
     }
 
+    for (u32 j = 0; j < 4; j++)
     {
-        u32 j;
-        for (j = 0; j < 4; j++)
-        {
-            glViewSetEnable(disabled_views[j], false);
-        }
+        glViewSetEnable(disabled_views[j], false);
     }
 
     if (!glTextureLoad(glGetTexture("target/warble")))
@@ -464,19 +455,16 @@ int main(void)
 
     fopen("flushfile.txt", "r");
 
-    Config& config = Config::Global();
-    bool skipfe = GetConfigBool(config, "skipfe", false);
+    bool skipfe = GetConfigBool(Config::Global(), "skipfe", false);
     nlTaskManager::SetNextState(skipfe ? 2 : 4);
 
-    Config& config2 = Config::Global();
-    bool enableFPE = GetConfigBool(config2, "enableFloatingPointExceptions", false);
+    bool enableFPE = GetConfigBool(Config::Global(), "enableFloatingPointExceptions", false);
     if (enableFPE)
     {
         InstallFloatingPointExceptionHandler();
     }
 
-    Config& config3 = Config::Global();
-    bool enableCSD = GetConfigBool(config3, "callStackDumper", false);
+    bool enableCSD = GetConfigBool(Config::Global(), "callStackDumper", false);
     if (enableCSD)
     {
         InstallCallStackDumper();
