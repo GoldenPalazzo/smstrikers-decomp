@@ -159,18 +159,12 @@ void ScreenTransitionManager::EnableRandomTransition(const char* filter)
  */
 void ScreenTransitionManager::SelectRandomTransition(const char* filter)
 {
-    struct BasicStringVectorRaw
-    {
-        BasicString<char, Detail::TempStringAllocator>* mData;
-        int mSize;
-        int mCapacity;
-    };
-
-    BasicStringVectorRaw matchingTransitions;
-    matchingTransitions.mData = nullptr;
-    matchingTransitions.mSize = 0;
-    matchingTransitions.mCapacity = 0;
-    ((Vector<BasicString<char, Detail::TempStringAllocator>, DefaultAllocator>*)&matchingTransitions)->reserve(8);
+    FORCE_DONT_INLINE;
+    Vector<BasicString<char, Detail::TempStringAllocator>, DefaultAllocator> candidates;
+    candidates.mData = nullptr;
+    candidates.mSize = 0;
+    candidates.mCapacity = 0;
+    candidates.reserve(8);
 
     for (int i = 0; i < m_Transitions.mSize; i++)
     {
@@ -178,65 +172,26 @@ void ScreenTransitionManager::SelectRandomTransition(const char* filter)
 
         if (strstr(transitionName, filter) != nullptr)
         {
-            ((Vector<BasicString<char, Detail::TempStringAllocator>, DefaultAllocator>*)&matchingTransitions)->push_back(m_Transitions.mData[i]);
+            candidates.push_back(m_Transitions.mData[i]);
         }
     }
 
     m_SelectedTransition = nullptr;
 
-    if (matchingTransitions.mSize > 0)
+    if (candidates.mSize > 0)
     {
-        int randomIndex = nlRandom(matchingTransitions.mSize, &nlDefaultSeed);
-        const char* selectedName = matchingTransitions.mData[randomIndex].c_str();
+        int randomIndex = nlRandom(candidates.mSize, &nlDefaultSeed);
+        const char* selectedName = candidates.mData[randomIndex].c_str();
 
         unsigned long transitionHash = glHash(selectedName);
         ScreenTransition** foundTransition = nullptr;
-        AVLTreeEntry<unsigned long, ScreenTransition*>* current = m_TransitionMap.m_Root;
-        unsigned char found;
-
-        for (; current != nullptr || (found = 0, 0);)
-        {
-            int cmpResult;
-            if (transitionHash == current->key)
-            {
-                cmpResult = 0;
-            }
-            else if (transitionHash < current->key)
-            {
-                cmpResult = -1;
-            }
-            else
-            {
-                cmpResult = 1;
-            }
-
-            if (cmpResult == 0)
-            {
-                if (&foundTransition != nullptr)
-                {
-                    foundTransition = &current->value;
-                }
-                found = 1;
-                break;
-            }
-
-            if (cmpResult < 0)
-            {
-                current = (AVLTreeEntry<unsigned long, ScreenTransition*>*)current->node.left;
-            }
-            else
-            {
-                current = (AVLTreeEntry<unsigned long, ScreenTransition*>*)current->node.right;
-            }
-        }
+        bool found = m_TransitionMap.FindGet(transitionHash, &foundTransition);
 
         if (found)
         {
             m_SelectedTransition = *foundTransition;
         }
     }
-
-    delete[] matchingTransitions.mData;
 }
 
 /**
