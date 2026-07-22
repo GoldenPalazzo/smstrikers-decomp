@@ -107,9 +107,17 @@ struct LexicalCastImpl<BasicString<char, Allocator>, bool>
 };
 
 template <>
-struct LexicalCastImpl<bool, bool>
+struct LexicalCastImpl<bool, int>
 {
-    static bool Do(bool t) { return t; }
+    static bool Do(int t)
+    {
+        bool result;
+        if (t)
+            result = true;
+        else
+            result = false;
+        return result;
+    }
 };
 
 template <>
@@ -223,7 +231,7 @@ inline To LexicalCastImpl<To, float>::Do(float t)
 template <typename To>
 inline To LexicalCastImpl<To, bool>::Do(bool t)
 {
-    return (To)t;
+    return t;
 }
 } // namespace Detail
 
