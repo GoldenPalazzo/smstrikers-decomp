@@ -18,7 +18,7 @@ static unsigned long WhiteTexture = glGetTexture("global/white");
 shortVector2* DrawableNetMesh::spTexcoord[2];
 unsigned long* DrawableNetMesh::spColour[2];
 unsigned short* DrawableNetMesh::spTriIndices[2];
-bool DrawableNetMesh::sbStaticInitialized[2] = {};
+bool DrawableNetMesh::sbStaticInitialized[2] = { };
 int DrawableNetMesh::sNumVertices[2];
 
 static unsigned char sbRenderAnimatedNetMesh = 1;
@@ -29,7 +29,8 @@ static unsigned char sbUseDisplayLists = 0;
 
 static int siInvisiblePlaneAlpha;
 static unsigned long NetMeshTexture = glGetTexture("global/netmesh");
-static unsigned long CheckerTexture = glGetTexture("global/checkers");
+static const unsigned long CheckerTexture = glGetTexture("global/checkers");
+
 /**
  * Offset/Address/Size: 0xC4C | 0x80114BA8 | size: 0x24
  */
