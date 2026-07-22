@@ -70,7 +70,7 @@ static tCharacterTemplate* g_GoalieTemplate;
 
 static s32 skiptexture = 0xFFFFFFFF;
 
-tGoalieTemplateInfo g_GoalieTextureInfo[9] = {
+static tGoalieTemplateInfo g_GoalieTextureInfo[9] = {
     { "daisygoalie", "characters/daisygoalie/daisygoalie.glt", 0 },
     { "donkeykonggoalie", "characters/donkeykonggoalie/donkeykonggoalie.glt", 0 },
     { "luigigoalie", "characters/luigigoalie/luigigoalie.glt", 0 },
