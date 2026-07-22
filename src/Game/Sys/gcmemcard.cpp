@@ -7,18 +7,20 @@
 extern "C" void* memset(void*, int, unsigned long);
 
 MemCard::MemCard(unsigned long slot)
+    : m_State(IS_IDLE)
+    , m_Slot(slot)
+    , m_CardState(CS_IDLE)
+    , m_LastTransferSize(0)
+    , m_SerialID(0)
 {
-    m_State = IS_IDLE;
-    m_Slot = slot;
-    m_CardState = CS_IDLE;
-    m_LastTransferSize = 0;
-    m_SerialID = 0;
     DVDDiskID* id = DVDGetCurrentDiskID();
     memcpy(&m_GameId, id, 4);
     memcpy(&m_CompanyId, ((char*)id) + 4, 2);
 }
 
-static MemCard* MemCards[2] = { new MemCard(0), new MemCard(1) };
+static MemCard* MemCards[2] = { new (8, false) MemCard(0), new (8, false) MemCard(1) };
+MemCard** g_MemCards = MemCards;
+bool MemCard::s_InitDone;
 
 // /**
 //  * Offset/Address/Size: 0x30 | 0x801CB798 | size: 0x24

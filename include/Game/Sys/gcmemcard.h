@@ -46,7 +46,7 @@ struct CARD_INFO
 class MemCardFunctor
 {
 public:
-    MemCardFunctor() { }
+    MemCardFunctor() { *(unsigned long*)m_FunctorMem = 0; }
 
     class MCInternalFunctorBase
     {
@@ -180,7 +180,6 @@ public:
 }; // total size: 0xA620
 
 extern MemCard** g_MemCards;
-extern MemCard* MemCards[2];
 
 // class nlBSearch < nlSortedSlot < MemCard
 // {

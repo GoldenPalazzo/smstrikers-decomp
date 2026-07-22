@@ -23,7 +23,6 @@ FormatCallbacks FormatSystem;
 static void (*g_Callback)(long);
 FileExistsCallbacks FileExistsSystem;
 MemoryCardIDCallbacks MemoryCardIDSystem;
-MemCard** g_MemCards = MemCards;
 struct MemCardIDInfo
 {
     s64 serialID;
@@ -273,7 +272,10 @@ unsigned long LoadCallbacks::LoadIconDataDoneCB(unsigned long Slot, long Result,
  */
 inline unsigned long LoadCallbacks::ReadDoneCB(unsigned long Slot, long Result, void* pUserData)
 {
-    MemCardFunctor functor;
+    union
+    {
+        MemCardFunctor functor;
+    };
     typedef unsigned long (LoadCallbacks::*MemberCB)(unsigned long, long, void*);
     MemberCB cb;
     MemCard::ICON_CONFIG localCfg;
@@ -566,7 +568,10 @@ long SaveCallbacks::DoSave(unsigned long Slot)
 {
     typedef unsigned long (SaveCallbacks::*MemberCB)(unsigned long, long, void*);
     MemberCB cb;
-    MemCardFunctor functor;
+    union
+    {
+        MemCardFunctor functor;
+    };
 
     MemCard::ICON_CONFIG localCfg;
     localCfg.BannerFormat = 0;
@@ -1034,7 +1039,10 @@ unsigned long SaveCallbacks::CreateFileCB(unsigned long Slot, long Result, void*
     gIconCRC = m_IconCRC;
     void* headerData = cache->mIconDataInfo.pHeaderData;
     cb = &SaveCallbacks::FileWriteIconCB;
-    MemCardFunctor functor;
+    union
+    {
+        MemCardFunctor functor;
+    };
     new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<SaveCallbacks>(this, cb, headerData);
     Result = g_MemCards[m_Slot]->WriteFileIconData(m_pSaveFile, cache->mIconDataInfo.pHeaderData, functor);
     if (Result != 0)
@@ -1322,7 +1330,10 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
         gIconCRC = m_IconCRC;
         void* headerData = gIconDataCache.mIconDataInfo.pHeaderData;
         cb2 = &SaveCallbacks::FileWriteIconCB;
-        MemCardFunctor functor;
+        union
+        {
+            MemCardFunctor functor;
+        };
         new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<SaveCallbacks>(this, cb2, headerData);
         long writeResult = g_MemCards[Slot]->WriteFileIconData(m_pSaveFile, gIconDataCache.mIconDataInfo.pHeaderData, functor);
         if (writeResult != 0)
@@ -1394,7 +1405,10 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
         IconCfg.BannerFormat = 2;
         m_pSaveFile = NULL;
         cb = &SaveCallbacks::CreateFileCB;
-        MemCardFunctor functor;
+        union
+        {
+            MemCardFunctor functor;
+        };
         new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<SaveCallbacks>(this, cb);
         long createResult = g_MemCards[Slot]->CreateFile(MarioSoccerFileName, dataSize, &IconCfg, m_pSaveFile, functor);
         mRequiredMemoryCardID = 0;
@@ -1535,7 +1549,10 @@ long SaveLoad::StartSave(int slot, void (*callback)(long))
     typedef unsigned long (SaveCallbacks::*MemberCB)(unsigned long, long, void*);
     MemberCB cb = &SaveCallbacks::CardMountCB;
 
-    MemCardFunctor functor;
+    union
+    {
+        MemCardFunctor functor;
+    };
     new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<SaveCallbacks>(&SaveSystem, cb);
 
     s32 result = g_MemCards[slot]->BeginCardAccess(functor);
@@ -1601,7 +1618,10 @@ unsigned long LoadCallbacks::CardMountCB(unsigned long channel, long result, voi
     MemCard::MC_FILE* pFileLocal = pFile;
     typedef unsigned long (LoadCallbacks::*MemberCB)(unsigned long, long, void*);
     MemberCB cb = &LoadCallbacks::ReadDoneCB;
-    MemCardFunctor functor;
+    union
+    {
+        MemCardFunctor functor;
+    };
     void* functorMem = functor.m_FunctorMem;
     new (functorMem) MemCardFunctor::MCMemberFunctor<LoadCallbacks>(&LoadSystem, cb, pFileLocal);
 
@@ -1663,7 +1683,10 @@ static inline void ConstructIconCfg(MemCard::ICON_CONFIG& IconCfg)
 #pragma opt_propagation off
 long SaveLoad::StartLoad(int Slot, void (*pCB)(long), bool PerformLoad, bool testOnly)
 {
-    MemCardFunctor functor;
+    union
+    {
+        MemCardFunctor functor;
+    };
     typedef unsigned long (LoadCallbacks::*MemberCB)(unsigned long, long, void*);
     MemberCB cb;
     MemCard::ICON_CONFIG IconCfg;
@@ -1757,7 +1780,10 @@ unsigned long DeleteCallbacks::CardMountCB(unsigned long channel, long result, v
     typedef unsigned long (DeleteCallbacks::*MemberCB)(unsigned long, long, void*);
     MemberCB cb = &DeleteCallbacks::DeleteDoneCB;
 
-    MemCardFunctor functor;
+    union
+    {
+        MemCardFunctor functor;
+    };
     new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<DeleteCallbacks>(this, cb);
 
     g_MemCards[channel]->DeleteFile(MarioSoccerFileName, functor);
@@ -1776,7 +1802,10 @@ long SaveLoad::StartDelete(int slot, void (*callback)(long))
     typedef unsigned long (DeleteCallbacks::*MemberCB)(unsigned long, long, void*);
     MemberCB cb = &DeleteCallbacks::CardMountCB;
 
-    MemCardFunctor functor;
+    union
+    {
+        MemCardFunctor functor;
+    };
     new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<DeleteCallbacks>(&DeleteSystem, cb);
 
     s32 result = g_MemCards[slot]->BeginCardAccess(functor);
@@ -1819,7 +1848,10 @@ unsigned long FormatCallbacks::CardMountCB(unsigned long channel, long result, v
     typedef unsigned long (FormatCallbacks::*MemberCB)(unsigned long, long, void*);
     MemberCB cb = &FormatCallbacks::FormatDoneCB;
 
-    MemCardFunctor functor;
+    union
+    {
+        MemCardFunctor functor;
+    };
     new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<FormatCallbacks>(this, cb);
 
     g_MemCards[channel]->FormatCard(functor);
@@ -1838,7 +1870,10 @@ long SaveLoad::StartFormat(int slot, void (*callback)(long))
     typedef unsigned long (FormatCallbacks::*MemberCB)(unsigned long, long, void*);
     MemberCB cb = &FormatCallbacks::CardMountCB;
 
-    MemCardFunctor functor;
+    union
+    {
+        MemCardFunctor functor;
+    };
     new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<FormatCallbacks>(&FormatSystem, cb);
 
     s32 result = g_MemCards[slot]->BeginCardAccess(functor);
@@ -1953,7 +1988,10 @@ long SaveLoad::StartFileExistsCheck(int slot, void (*callback)(long))
     typedef unsigned long (FileExistsCallbacks::*MemberCB)(unsigned long, long, void*);
     MemberCB cb = &FileExistsCallbacks::CardMountCB;
 
-    MemCardFunctor functor;
+    union
+    {
+        MemCardFunctor functor;
+    };
     new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<FileExistsCallbacks>(&FileExistsSystem, cb);
 
     s32 result = g_MemCards[slot]->BeginCardAccess(functor);
@@ -2008,7 +2046,10 @@ long SaveLoad::StartMemoryCardIDCheck(int slot, void (*callback)(long))
     typedef unsigned long (MemoryCardIDCallbacks::*MemberCB)(unsigned long, long, void*);
     MemberCB cb = &MemoryCardIDCallbacks::CardMountCB;
 
-    MemCardFunctor functor;
+    union
+    {
+        MemCardFunctor functor;
+    };
     new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<MemoryCardIDCallbacks>(&MemoryCardIDSystem, cb);
 
     s32 result = g_MemCards[slot]->BeginCardAccess(functor);

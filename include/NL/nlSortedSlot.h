@@ -41,16 +41,13 @@ public:
     nlStaticSortedSlot()
     {
         T* p = reinterpret_cast<T*>(m_EntryData);
-        T* q = p + 1;
         this->m_ArrayAllocator.m_pFree = p;
-        *(T**)p = q;
-        ++q;
-        *(T**)&p[1] = q;
-        for (int i = 2; i < N - 1; ++i)
+        for (int i = 0; i < N - 1; ++i)
         {
-            *(T**)&p[i] = &p[i + 1];
+            *(T**)p = p + 1;
+            ++p;
         }
-        *(T**)&p[N - 1] = 0;
+        *(T**)p = 0;
     }
 
     virtual T* GetNewEntry();
