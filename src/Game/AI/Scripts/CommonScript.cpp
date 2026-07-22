@@ -674,10 +674,22 @@ FuzzyVariant Fuzzy::ShouldIMarkBallOwner(cFielder* pFielder)
     return bestValue;
 }
 
+static inline float max_float(float a, float b)
+{
+    if (a >= b)
+    {
+        return a;
+    }
+    return b;
+}
+
+static inline float nlMaxThree(float a, float b, float c)
+{
+    return max_float(a, max_float(b, c));
+}
+
 /**
  * Offset/Address/Size: 0xC144 | 0x80076314 | size: 0x1044
- * TODO: 97.52% match - remaining fielder/cache register allocation and
- * late result temporary registers differ.
  */
 FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
 {
@@ -687,29 +699,35 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
     float fBestConfidence = 0.0f;
 
     const FuzzyVariant& fvFielder = FuzzyVariant((cPlayer*)TheFielder);
-    volatile unsigned long funcAddr = (unsigned long)ShouldIAttemptOneTimer;
-    unsigned long hash = funcAddr + ((Variant*)&fvFielder)->GetHash();
+    union FunctionAddress
+    {
+        FuzzyVariant (*function)(cFielder*);
+        unsigned long address;
+    } functionAddress;
+    functionAddress.function = ShouldIAttemptOneTimer;
+    unsigned long hash = functionAddress.address + fvFielder.GetHash();
     FuzzyVariant((cPlayer*)TheFielder);
 
-    if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
-        bestValue.Confidence = bestValue.Confidence;
-        const FuzzyVariant& cacheValue = bestValue;
-        ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
-        return bestValue;
+        ScriptQuestionCache* const lookupCache = ScriptQuestionCache::Instance();
+        unsigned char cacheHit = lookupCache->Lookup(hash, bestValue, NULL);
+        if (cacheHit)
+        {
+            fBestConfidence = bestValue.Confidence;
+            bestValue.Confidence = fBestConfidence;
+            ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
+            return bestValue;
+        }
     }
 
-    float fInFrontOfNet = 1.0f - InFrontOfTheirNet(TheFielder);
-    float fTrueConfidence = FarToTheirNet((cPlayer*)TheFielder);
-    if (fInFrontOfNet >= fTrueConfidence)
-    {
-        fTrueConfidence = fInFrontOfNet;
-    }
+    float fTrueConfidence = nlMaxEquals(
+        FarToTheirNet((cPlayer*)TheFielder), 1.0f - InFrontOfTheirNet(TheFielder));
 
     float fFalseConfidence = 1.0f - fTrueConfidence;
+    float fBranchRatio;
     float fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
     float fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-    float fBranchRatio = fMinVal / fMaxVal;
+    fBranchRatio = fMinVal / fMaxVal;
 
     if (fTrueConfidence > 0.0f)
     {
@@ -799,36 +817,16 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
                     fConfidence = (float)(double)fConfidence * fBranchRatio4;
                 }
 
-                float fCloseToGoalie = CloseToTheirGoalie((cPlayer*)TheFielder);
-                float fDanger = InDanger(TheFielder).Confidence;
-                if (fDanger < fCloseToGoalie)
                 {
-                    fDanger = fCloseToGoalie;
-                }
-
-                float fNearToNet = NearToTheirNet((cPlayer*)TheFielder);
-                fDanger = fNearToNet * 0.5f + fDanger * 0.5f;
-
-                float fGoodToShoot = GoodToShoot(TheFielder).Confidence;
-
-                Goalie* pGoalie = NULL;
-                if (TheFielder != NULL)
-                {
-                    pGoalie = TheFielder->m_pTeam->GetOtherTeam()->GetGoalie();
-                }
-                float fGoalieStunned = Stunned(pGoalie);
-
-                if (fDanger >= fGoodToShoot)
-                {
-                    fGoodToShoot = fDanger;
-                }
-                if (fGoalieStunned >= fGoodToShoot)
-                {
-                    fGoodToShoot = fGoalieStunned;
-                }
-
-                {
-                    FuzzyVariant returnValue(fGoodToShoot);
+                    FuzzyVariant returnValue(nlMaxThree(
+                        Stunned(TheFielder != NULL
+                                ? ((TheFielder != NULL) ? TheFielder->m_pTeam->GetOtherTeam() : NULL)->GetGoalie()
+                                : NULL),
+                        GoodToShoot(TheFielder).mData.f,
+                        NearToTheirNet((cPlayer*)TheFielder) / 2.0f
+                            + nlMaxEquals(InDanger(TheFielder).mData.f,
+                                  CloseToTheirGoalie((cPlayer*)TheFielder))
+                                / 2.0f));
                     SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
                     returnValue.SelectionChance = CalcSelectChance(pSkillTweaks->Off_VolleyOneTimerChance, Shooter(TheFielder));
                     if (fConfidence > fBestConfidence)
@@ -850,21 +848,20 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
                 }
 
                 float fDanger;
-                Goalie* pGoalie = NULL;
+                Goalie* pGoalie;
                 if (TheFielder != NULL)
                 {
-                    pGoalie = TheFielder->m_pTeam->GetOtherTeam()->GetGoalie();
+                    cTeam* pOtherTeam = (TheFielder != NULL) ? TheFielder->m_pTeam->GetOtherTeam() : NULL;
+                    pGoalie = pOtherTeam->GetGoalie();
+                }
+                else
+                {
+                    pGoalie = NULL;
                 }
 
                 float fGoalieStunned = Stunned(pGoalie);
-                fDanger = InDanger(TheFielder).Confidence;
-                if (fGoalieStunned >= fDanger)
-                {
-                    fDanger = fGoalieStunned;
-                }
-
-                float fGoodToShoot = GoodToShoot(TheFielder).Confidence;
-                fDanger = fGoodToShoot * 0.5f + fDanger * 0.5f;
+                fDanger = GoodToShoot(TheFielder).mData.f / 2.0f
+                    + nlMaxEquals(InDanger(TheFielder).mData.f, fGoalieStunned) / 2.0f;
 
                 {
                     FuzzyVariant returnValue(fDanger);
@@ -899,8 +896,7 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
 
     bestValue.Confidence = fBestConfidence;
 
-    const FuzzyVariant& cacheValue = bestValue;
-    ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
+    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
     return bestValue;
 }
 

@@ -93,57 +93,11 @@ inline unsigned char ScriptQuestionCache::Lookup(
             return 1;
         }
     }
-    else
+    else if (mQuestionCacheMap.FindGet(hash, &pValue))
     {
-        AVLTreeEntry<unsigned long, FuzzyVariant>* node = mQuestionCacheMap.m_Root;
-        unsigned long key = hash;
-        unsigned char found;
-
-        while (node != NULL)
-        {
-            int cmpResult;
-            if (key == node->key)
-            {
-                cmpResult = 0;
-            }
-            else if (key < node->key)
-            {
-                cmpResult = -1;
-            }
-            else
-            {
-                cmpResult = 1;
-            }
-
-            if (cmpResult == 0)
-            {
-                if (&pValue != NULL)
-                {
-                    pValue = &node->value;
-                }
-                found = 1;
-                goto found_done;
-            }
-            if (cmpResult < 0)
-            {
-                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.left;
-            }
-            else
-            {
-                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.right;
-            }
-        }
-
-        found = 0;
-
-    found_done:
-
-        if (found)
-        {
-            mCacheHits++;
-            returnVal = *pValue;
-            return 1;
-        }
+        mCacheHits++;
+        returnVal = *pValue;
+        return 1;
     }
 
     return 0;
@@ -154,25 +108,16 @@ inline const FuzzyVariant& ScriptQuestionCache::AddToCache(
 {
     if (g_bScriptQuestionCachingOn)
     {
+        const FuzzyVariant& cacheValue = variant;
         if (g_bScriptQuestionCachingUseSTD)
         {
             std::pair<const unsigned long, FuzzyVariant>& pair =
                 mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(key);
-            pair.second = variant;
+            pair.second = cacheValue;
         }
         else
         {
-            AVLTreeNode* existingNode;
-            mQuestionCacheMap.AddAVLNode(
-                (AVLTreeNode**)&mQuestionCacheMap.m_Root,
-                (void*)&key,
-                (void*)&variant,
-                &existingNode,
-                mQuestionCacheMap.m_NumElements);
-            if (existingNode == NULL)
-            {
-                mQuestionCacheMap.m_NumElements++;
-            }
+            mQuestionCacheMap.Add(key, cacheValue);
         }
     }
     return variant;
