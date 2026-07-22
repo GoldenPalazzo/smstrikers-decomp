@@ -208,12 +208,12 @@ class TrackManager : public TrackManagerBase
 public:
     TrackManager(const Function<bool(const char*, char*, unsigned long)>&);
     virtual ~TrackManager() { }
-    virtual void Update(float);
     virtual StreamTrack& CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP);
     virtual void DestroyAllTracks();
+    virtual void OnMasterVolumeChange(Audio::MasterVolume::VOLUME_GROUP);
     virtual StreamTrack* GetTrack(unsigned long Name);
     virtual void StopAllTracks(unsigned long);
-    virtual void OnMasterVolumeChange(Audio::MasterVolume::VOLUME_GROUP);
+    virtual void Update(float);
 
     /* 0x6C */ nlStaticSortedSlot<StreamTrack, N> m_Tracks;
 };
