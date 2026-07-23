@@ -993,7 +993,7 @@ config.libs = [
             Object(NonMatching, "Game/Render/StaticModelExplodable.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Render/AnimatedModelExplodable.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/GameObjectLighting.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Font/fontmanager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Font/fontmanager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             
             # AI
             Object(Matching, "Game/AI/AILoader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
