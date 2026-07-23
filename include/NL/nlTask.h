@@ -26,6 +26,9 @@ public:
     static void RunAllTasks();
     static void AddTask(nlTask*, unsigned int, unsigned int);
     static void Startup(unsigned int);
+    static void Shutdown();
+    static void RemoveTask(nlTask*);
+    static void RemoveAllTasks();
 
     static nlTaskManager* m_pInstance;
 

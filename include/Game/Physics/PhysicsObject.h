@@ -38,16 +38,27 @@ public:
     /* 0x1c */ virtual void PreCollide() { }
     /* 0x20 */ virtual ContactType Contact(PhysicsObject*, dContact*, int);
     /* 0x24 */ virtual ContactType Contact(PhysicsObject*, dContact*, int, PhysicsObject*);
+    void MakeMovable(dxBody* bodyID);
     void MakeStatic();
+    float GetMass() const;
     void SetMass(float);
+    bool IsConnected();
     void Reconnect(dSpaceID);
     dSpaceID Disconnect();
+    bool IsMotionEnabled();
+    void EnableMotion();
+    void DisableMotion();
+    bool AreCollisionsEnabled();
     void EnableCollisions();
     void DisableCollisions();
+    void GetWorldMatrix(nlMatrix4* dest);
     void SetWorldMatrix(const nlMatrix4&);
     void SetDefaultContactInfo(dContact*);
+    void SetAxisAndAngle(float x, float y, float z, float angle);
     void ZeroForceAccumulators();
     void AddForceAtCentreOfMass(const nlVector3&);
+    void AddForceAtPoint(const nlVector3& force, const nlVector3& point);
+    void AddAcceleration(const nlVector3& accel);
     void GetAngularVelocity(nlVector3* vel) const;
     void SetAngularVelocity(const nlVector3& vel);
     nlVector3& GetLinearVelocity();
@@ -60,6 +71,7 @@ public:
     void GetPosition(nlVector3*) const;
     void SetPosition(const nlVector3&, CoordinateType);
     void CheckForNaN();
+    void ApplyGravity();
     void SetCategory(unsigned int);
     void SetCollide(unsigned int);
     void SetDefaultCollideBits();

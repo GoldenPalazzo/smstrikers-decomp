@@ -97,6 +97,7 @@ public:
     void SetScissorBox(const ScissorBox& other) const;
     void DrawString(eGLView, const FontCharString&, const nlVector2&, const nlColour&, const nlColour&, int, nlFont::TextPass, bool, unsigned long*, nlColour*) const;
     unsigned char Load(const char*, char*, unsigned long);
+    void Unload();
     // void GlyphInfo::SortProc(const nlFont::GlyphInfo*, const nlFont::GlyphInfo*);
     // void KernPair::SortProc(const nlFont::KernPair*, const nlFont::KernPair*);
 

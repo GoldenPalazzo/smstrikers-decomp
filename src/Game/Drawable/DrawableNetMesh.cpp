@@ -67,17 +67,15 @@ DrawableNetMesh::~DrawableNetMesh()
 
 /**
  * Offset/Address/Size: 0x91C | 0x80114878 | size: 0x264
- * TODO: 99.64% match - netHeight and half-height still use swapped floating-point registers.
  */
 void DrawableNetMesh::RenderInvisiblePlanes() const
 {
     float goalLineX;
-    float netWidth;
-    float netHeight;
+    nlVector2 netDimensions;
 
     goalLineX = cField::GetGoalLineX(1U);
-    netHeight = cNet::m_fNetHeight;
-    netWidth = cNet::m_fNetWidth;
+    netDimensions.f.x = cNet::m_fNetHeight;
+    netDimensions.f.y = cNet::m_fNetWidth;
 
     glSetDefaultState(true);
     glSetRasterState(GLS_DepthWrite, 1);
@@ -102,36 +100,36 @@ void DrawableNetMesh::RenderInvisiblePlanes() const
     netPlaneX = goalLineX - 0.05f;
     matrix.m[3][0] = netPlaneX;
     matrix.m[3][1] = 0.0f;
-    matrix.m[3][2] = 0.5f * netHeight;
+    matrix.m[3][2] = 0.5f * netDimensions.f.x;
     matrix.m[3][3] = 1.0f;
-    quad.SetupRotatedRectangle(netHeight, netWidth, matrix, false, false);
+    quad.SetupRotatedRectangle(netDimensions.f.x, netDimensions.f.y, matrix, false, false);
     quad.SetColour(c);
     glAttachQuad3(GLV_InvisiblePlane, 1, &quad, true);
 
     netPlaneX = 0.05f + goalLineX;
     matrix.m[3][0] = netPlaneX;
     matrix.m[3][1] = 0.0f;
-    matrix.m[3][2] = 0.5f * netHeight;
+    matrix.m[3][2] = 0.5f * netDimensions.f.x;
     matrix.m[3][3] = 1.0f;
-    quad.SetupRotatedRectangle(netHeight, netWidth, matrix, false, false);
+    quad.SetupRotatedRectangle(netDimensions.f.x, netDimensions.f.y, matrix, false, false);
     quad.SetColour(c);
     glAttachQuad3(GLV_InvisiblePlane, 1, &quad, true);
 
     netPlaneX = -goalLineX - 0.05f;
     matrix.m[3][0] = netPlaneX;
     matrix.m[3][1] = 0.0f;
-    matrix.m[3][2] = 0.5f * netHeight;
+    matrix.m[3][2] = 0.5f * netDimensions.f.x;
     matrix.m[3][3] = 1.0f;
-    quad.SetupRotatedRectangle(netHeight, netWidth, matrix, false, false);
+    quad.SetupRotatedRectangle(netDimensions.f.x, netDimensions.f.y, matrix, false, false);
     quad.SetColour(c);
     glAttachQuad3(GLV_InvisiblePlane, 1, &quad, true);
 
     netPlaneX = 0.05f - goalLineX;
     matrix.m[3][0] = netPlaneX;
     matrix.m[3][1] = 0.0f;
-    matrix.m[3][2] = 0.5f * netHeight;
+    matrix.m[3][2] = 0.5f * netDimensions.f.x;
     matrix.m[3][3] = 1.0f;
-    quad.SetupRotatedRectangle(netHeight, netWidth, matrix, false, false);
+    quad.SetupRotatedRectangle(netDimensions.f.x, netDimensions.f.y, matrix, false, false);
     quad.SetColour(c);
     glAttachQuad3(GLV_InvisiblePlane, 1, &quad, true);
 

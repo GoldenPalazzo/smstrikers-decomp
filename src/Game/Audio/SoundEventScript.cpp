@@ -423,10 +423,3 @@ void SoundEventScript::Call(const char* functionName)
         InterpreterCore::CallFunction(nlStringHash(functionName));
     }
 }
-
-/**
- * Offset/Address/Size: 0x0 | 0x80153E38 | size: 0x60
- */
-SoundEventScript::~SoundEventScript()
-{
-}

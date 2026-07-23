@@ -372,6 +372,7 @@ struct nlMatrix4
 
     void SetIdentity();
     void SetColumn(int col, const nlVector3& v);
+    unsigned char IsRigidTransformation(float tolerance) const;
 
     // inline version
     void SetColumn_(int col, const nlVector3& v)

@@ -18,7 +18,6 @@ public:
         pByteCode = nlLoadEntireFile("audio/soundevents.byte_code", &fileSize, 0x20, AllocateStart);
         LoadByteCode(pByteCode);
     }
-    /* 0x08 */ virtual ~SoundEventScript();
     /* 0x0C */ virtual void DoFunctionCall(unsigned int);
 
     static void CreateInstance();

@@ -85,6 +85,8 @@ public:
     bool IsBool(const char*, bool&) const;
     bool Exists(const char*) const;
     void LoadFromFile(const char*);
+    void LoadFromString(const char*);
+    void ApplyToFile(const char*, const char*);
 
     template <typename T>
     T Get(const char* key, T defaultValue)

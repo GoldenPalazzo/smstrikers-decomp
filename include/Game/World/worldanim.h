@@ -15,6 +15,10 @@ public:
 
 struct glModel;
 class World;
+class DrawableObject;
+class DrawableTmModel;
+class DrawableSkinModel;
+class GLSkinMesh;
 
 class WorldAnimController
 {
@@ -36,6 +40,47 @@ public:
     /* 0x10 */ AnimationSet* m_pAnimationSet;
     /* 0x14 */ bool m_bIsGanged;
 }; // total size: 0x18
+
+class TMAnimController : public WorldAnimController
+{
+public:
+    TMAnimController(const char* szAnimSetAndHierarchyName, World* pWorldContext);
+    virtual ~TMAnimController();
+    virtual void Update(float fTimeDelta);
+    virtual glModel* GetUpdatedModel(); // retail: header-inline (zero-arg overload per DWARF)
+
+    void ForceFrameRebuild();
+    unsigned char BindGeomToAnimNode(const char* szGeomName, const char* szBoneName);
+    unsigned char BindGeomToAnimNode(DrawableTmModel* pTMModel, const char* szBoneName);
+
+protected:
+    /* 0x18 */ DrawableObject* m_pRootModel;
+    /* 0x1C */ unsigned long m_uLastFrameUpdated;
+    /* 0x20 */ World* m_pWorldContext;
+}; // total size: 0x24
+
+class SkinnedAnimController : public WorldAnimController
+{
+public:
+    SkinnedAnimController(const char* szAnimSetAndHierarchyName, World* pWorldContext);
+    virtual ~SkinnedAnimController();
+    virtual void Update(float fTimeDelta);
+    virtual glModel* GetUpdatedModel(unsigned long program, void* pLightData); // retail: header-inline
+
+    void UpdateSkinnedMesh(unsigned long program, void* pLightData);
+    void UpdateAnimation(float fTimeDelta, const nlMatrix4& worldMatrix);
+    void CreateGLSkinMesh(glModel* pModel);
+
+public:
+    /* 0x18 */ GLSkinMesh* m_pSkinMesh;
+    /* 0x1C */ glModel* m_pCachedSkinnedModel;
+    /* 0x20 */ DrawableSkinModel* m_pSkinModel;
+
+protected:
+    /* 0x24 */ unsigned long m_uLastFrameUpdated;
+    /* 0x28 */ unsigned long m_uLastFrameUpdatedSkinMesh;
+    /* 0x2C */ unsigned char m_bDisabled;
+}; // total size: 0x30
 
 class WorldAnimManager
 {

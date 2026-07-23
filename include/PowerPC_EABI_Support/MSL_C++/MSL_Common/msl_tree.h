@@ -182,6 +182,7 @@ public:
     };
 
     __tree(const Compare& comp, const Allocator& alloc);
+    ~__tree();
     Allocator& alloc();
     std::allocator<node>& node_alloc();
     void clear();
@@ -207,6 +208,15 @@ __tree<T, Compare, Allocator>::__tree(const Compare& comp, const Allocator& allo
     , node_alloc_()
     , comp_(comp, (node*)&node_alloc_.second())
 {
+}
+
+template <class T, class Compare, class Allocator>
+inline
+__tree<T, Compare, Allocator>::~__tree()
+{
+    node* n = (node*)node_alloc_.second().left_;
+    if (n != 0)
+        destroy(n);
 }
 
 template <class T, class Compare, class Allocator>

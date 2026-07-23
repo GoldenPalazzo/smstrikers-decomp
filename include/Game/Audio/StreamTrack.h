@@ -157,6 +157,7 @@ public:
     void PlayStream(unsigned long, float, bool, unsigned long, unsigned long, const char*, Audio::MasterVolume::VOLUME_GROUP);
     void QueueStream(unsigned long, float, bool, unsigned long, const char*, Audio::MasterVolume::VOLUME_GROUP);
     void ProcessNewHeadStream();
+    void SetIdleState();
     void StopHead(unsigned long);
     void Stop(unsigned long);
     void StopQStream(QUEUED_STREAM*);
@@ -165,6 +166,7 @@ public:
     void FadeOutDoneStartNext(QUEUED_STREAM*);
     void StartQStreamFadeout(QUEUED_STREAM*, unsigned long, const Function<FnVoidVoid>&);
     void Pause(unsigned long, bool);
+    void UpdateLPF();
     void Resume();
     void AttachStream(GCAudioStreaming::StereoAudioStream*, Audio::MasterVolume::VOLUME_GROUP, unsigned long, unsigned long, bool, bool);
 

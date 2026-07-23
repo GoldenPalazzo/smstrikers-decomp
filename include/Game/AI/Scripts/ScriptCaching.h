@@ -35,18 +35,6 @@ public:
 inline ScriptQuestionCache::~ScriptQuestionCache()
 {
     Clear();
-    if ((ScriptCacheTree*)&mQuestionCacheMapSTD)
-    {
-        if ((ScriptCacheTree*)&mQuestionCacheMapSTD)
-        {
-            ScriptCacheTree::node* n = *(
-                ScriptCacheTree::node**)&((ScriptCacheTree&)mQuestionCacheMapSTD).node_alloc();
-            if (n)
-            {
-                ((ScriptCacheTree&)mQuestionCacheMapSTD).destroy(n);
-            }
-        }
-    }
 }
 
 inline void ScriptQuestionCache::Clear()
