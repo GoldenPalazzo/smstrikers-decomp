@@ -342,7 +342,7 @@ void CharacterTriggerHandler(unsigned int uParam)
             pController->SetUpdateCallback(update2);
         }
         BeginRumbleAction(RUMBLE_MEDIUM_CONTACT, ((cPlayer*)pCharacter)->GetGlobalPad());
-        g_pCurrentlyUpdatingCharacter->Play3DSFX((Audio::eCharSFX)0x45, (PosUpdateMethod)2, 1.0f);
+        g_pCurrentlyUpdatingCharacter->Play3DSFX((Audio::eCharSFX)0x45, (PosUpdateMethod)2, 100.0f);
         break;
     }
 
@@ -378,7 +378,7 @@ void CharacterTriggerHandler(unsigned int uParam)
         Audio::gStadGenSFX.Stop((Audio::eWorldSFX)0xBA, cGameSFX::SFX_STOP_FIRST);
         EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_impact"), 0);
         SetDefaultVelocity(pController);
-        pController->m_fGround = 0.0f;
+        pController->m_fGround = 0.02f;
         SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pController->SetPosition(g_pBall->m_v3Position);
@@ -460,7 +460,7 @@ void CharacterTriggerHandler(unsigned int uParam)
             if (nlSingleton<GameInfoManager>::s_pInstance->GetTeam(teamSlot) == 8)
                 g_pCurrentlyUpdatingCharacter->PlayRandomCharDialogue(6, (PosUpdateMethod)2, 100.0f, -1.0f);
             else
-                g_pCurrentlyUpdatingCharacter->Play3DSFX((Audio::eCharSFX)0x5E, (PosUpdateMethod)2, 1.0f);
+                g_pCurrentlyUpdatingCharacter->Play3DSFX((Audio::eCharSFX)0x5E, (PosUpdateMethod)2, 100.0f);
         }
         break;
 
@@ -498,7 +498,7 @@ void CharacterTriggerHandler(unsigned int uParam)
             pCharacter->PlaySFX(attrs);
         }
         else
-            pCharacter->Play3DSFX((Audio::eCharSFX)0x36, (PosUpdateMethod)2, 1.0f);
+            pCharacter->Play3DSFX((Audio::eCharSFX)0x36, (PosUpdateMethod)2, 100.0f);
         break;
     }
 
@@ -530,7 +530,7 @@ void CharacterTriggerHandler(unsigned int uParam)
 
     case 0xA1638ABB:
     {
-        pCharacter->Play3DSFX((Audio::eCharSFX)0x1B, (PosUpdateMethod)2, 1.0f);
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x1B, (PosUpdateMethod)2, 100.0f);
         EmissionController* pController = EmissionManager::Create(fxGetGroup("bomb_landing"), 0);
         SetDefaultVelocity(pController);
         pController->m_fGround = 0.02f;
@@ -558,11 +558,11 @@ void CharacterTriggerHandler(unsigned int uParam)
 
     case 0x0C3A8B39:
         BeginRumbleAction(RUMBLE_SMALL_CONTACT, ((cPlayer*)pCharacter)->GetGlobalPad());
-        pCharacter->Play3DSFX((Audio::eCharSFX)0x0D, (PosUpdateMethod)2, 1.0f);
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x0D, (PosUpdateMethod)2, 100.0f);
         break;
 
     case 0xB8684601:
-        pCharacter->Play3DSFX((Audio::eCharSFX)0x0D, (PosUpdateMethod)2, 1.0f);
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x0D, (PosUpdateMethod)2, 100.0f);
         break;
 
     case 0x71FED95E:
@@ -578,16 +578,16 @@ void CharacterTriggerHandler(unsigned int uParam)
         break;
 
     case 0xD900F524:
-        pCharacter->Play3DSFX((Audio::eCharSFX)0x0B, (PosUpdateMethod)2, 1.0f);
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x0B, (PosUpdateMethod)2, 100.0f);
         break;
 
     case 0x19076C94:
-        pCharacter->Play3DSFX((Audio::eCharSFX)0x11, (PosUpdateMethod)2, 1.0f);
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x11, (PosUpdateMethod)2, 100.0f);
         g_pCurrentlyUpdatingCharacter->PlayRandomCharDialogue(3, (PosUpdateMethod)2, 100.0f, -1.0f);
         break;
 
     case 0xA89AC233:
-        pCharacter->Play3DSFX((Audio::eCharSFX)0x11, (PosUpdateMethod)2, 1.0f);
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x11, (PosUpdateMethod)2, 100.0f);
         g_pCurrentlyUpdatingCharacter->PlayRandomCharDialogue(2, (PosUpdateMethod)2, 100.0f, -1.0f);
         break;
 
@@ -700,16 +700,16 @@ void CharacterTriggerHandler(unsigned int uParam)
         bool ownsBall = (g_pBall != NULL && g_pCurrentlyUpdatingCharacter == g_pBall->m_pOwner);
         if (!ownsBall && !hasPad)
             break;
-        g_pCurrentlyUpdatingCharacter->Play3DSFX((Audio::eCharSFX)0x0E, (PosUpdateMethod)2, 1.0f);
+        g_pCurrentlyUpdatingCharacter->Play3DSFX((Audio::eCharSFX)0x0E, (PosUpdateMethod)2, 100.0f);
         break;
     }
 
     case 0xEF7B7383:
-        pCharacter->Play3DSFX((Audio::eCharSFX)0x12, (PosUpdateMethod)2, 1.0f);
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x12, (PosUpdateMethod)2, 100.0f);
         break;
 
     case 0x0618ECF3:
-        pCharacter->Play3DSFX((Audio::eCharSFX)0x47, (PosUpdateMethod)2, 1.0f);
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x47, (PosUpdateMethod)2, 100.0f);
         if (g_pCurrentlyUpdatingCharacter->m_eClassType == GOALIE)
         {
             Audio::SoundAttributes attrs;
@@ -761,7 +761,7 @@ void CharacterTriggerHandler(unsigned int uParam)
 
     case 0x21001B24:
         if (pCharacter->m_eClassType == GOALIE)
-            pCharacter->Play3DSFX((Audio::eCharSFX)0x37, (PosUpdateMethod)2, 1.0f);
+            pCharacter->Play3DSFX((Audio::eCharSFX)0x37, (PosUpdateMethod)2, 100.0f);
         break;
 
     case 0xA9BF9E5A:
@@ -773,20 +773,20 @@ void CharacterTriggerHandler(unsigned int uParam)
         break;
 
     case 0xC19CB638:
-        pCharacter->Play3DSFX((Audio::eCharSFX)0x0C, (PosUpdateMethod)1, 1.0f);
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x0C, (PosUpdateMethod)1, 100.0f);
         break;
 
     case 0x884CBC6E:
         if (pCharacter->m_eClassType == GOALIE)
         {
-            pCharacter->Play3DSFX((Audio::eCharSFX)0x62, (PosUpdateMethod)2, 1.0f);
+            pCharacter->Play3DSFX((Audio::eCharSFX)0x62, (PosUpdateMethod)2, 100.0f);
             g_pCurrentlyUpdatingCharacter->PlayRandomCharDialogue(1, (PosUpdateMethod)2, 100.0f, -1.0f);
         }
         break;
 
     case 0x93E76D8E:
         if (pCharacter->m_eClassType == GOALIE)
-            pCharacter->Play3DSFX((Audio::eCharSFX)0x5D, (PosUpdateMethod)2, 1.0f);
+            pCharacter->Play3DSFX((Audio::eCharSFX)0x5D, (PosUpdateMethod)2, 100.0f);
         break;
 
     case 0xD847ABD3:
@@ -816,7 +816,7 @@ void CharacterTriggerHandler(unsigned int uParam)
             g_pCurrentlyUpdatingCharacter->PlaySFX(attrs);
         }
         else
-            pCharacter->Play3DSFX((Audio::eCharSFX)0x54, (PosUpdateMethod)1, 1.0f);
+            pCharacter->Play3DSFX((Audio::eCharSFX)0x54, (PosUpdateMethod)1, 100.0f);
         break;
 
     case 0x1DB5C7FF:
@@ -873,13 +873,13 @@ void CharacterTriggerHandler(unsigned int uParam)
             if (nlSingleton<GameInfoManager>::s_pInstance->GetTeam(teamSlot) == 8)
                 g_pCurrentlyUpdatingCharacter->PlayRandomCharDialogue(0, (PosUpdateMethod)2, 100.0f, -1.0f);
             else
-                g_pCurrentlyUpdatingCharacter->Play3DSFX((Audio::eCharSFX)0x5F, (PosUpdateMethod)2, 1.0f);
+                g_pCurrentlyUpdatingCharacter->Play3DSFX((Audio::eCharSFX)0x5F, (PosUpdateMethod)2, 100.0f);
         }
         break;
 
     case 0x2EF4FA11:
         if (pCharacter->m_eClassType == GOALIE)
-            pCharacter->Play3DSFX((Audio::eCharSFX)0x60, (PosUpdateMethod)2, 1.0f);
+            pCharacter->Play3DSFX((Audio::eCharSFX)0x60, (PosUpdateMethod)2, 100.0f);
         break;
 
     case 0xC7114630:
@@ -889,7 +889,7 @@ void CharacterTriggerHandler(unsigned int uParam)
             if (nlSingleton<GameInfoManager>::s_pInstance->GetTeam(teamSlot) == 8)
                 g_pCurrentlyUpdatingCharacter->PlayRandomCharDialogue(0, (PosUpdateMethod)2, 100.0f, -1.0f);
             else
-                g_pCurrentlyUpdatingCharacter->Play3DSFX((Audio::eCharSFX)0x61, (PosUpdateMethod)2, 1.0f);
+                g_pCurrentlyUpdatingCharacter->Play3DSFX((Audio::eCharSFX)0x61, (PosUpdateMethod)2, 100.0f);
         }
         break;
 
@@ -945,11 +945,11 @@ void CharacterTriggerHandler(unsigned int uParam)
     }
 
     case 0x4C59A919:
-        pCharacter->Play3DSFX((Audio::eCharSFX)0x36, (PosUpdateMethod)2, 1.0f);
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x36, (PosUpdateMethod)2, 100.0f);
         break;
 
     case 0xACDB2215:
-        pCharacter->Play3DSFX((Audio::eCharSFX)0x12, (PosUpdateMethod)2, 1.0f);
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x12, (PosUpdateMethod)2, 100.0f);
         break;
 
     default:
@@ -969,7 +969,7 @@ void GetAnimTriggerInfo(cCharacter* pCharacter, int animIndex, bool (*callback)(
     {
         cSAnim* pTriggerAnim = (cSAnim*)cb->m_nParam1;
         float numKeys = (float)pAnim->m_nNumKeys;
-        if (!callback(cb->m_fTime, numKeys / 60.0f, pTriggerAnim->GetHashID(), 30.0f, pData))
+        if (!callback(cb->m_fTime, numKeys / 30.0f, pTriggerAnim->GetHashID(), 0.0f, pData))
         {
             break;
         }
@@ -1014,7 +1014,7 @@ void EmitBallImpact(cPlayer* pPlayer, bool bSilent)
 
     EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_impact"), 0);
     SetDefaultVelocity(pController);
-    pController->m_fGround = 0.0f;
+    pController->m_fGround = 0.02f;
     SetPoseUpdateCallback(pController);
     pPlayer->AttachEffect(pController);
     pController->SetPosition(g_pBall->m_v3Position);
@@ -1067,7 +1067,7 @@ void EmitBallPass(cPlayer* pPlayer)
 {
     EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_impact"), 0);
     SetDefaultVelocity(pController);
-    pController->m_fGround = 0.0f;
+    pController->m_fGround = 0.02f;
     SetPoseUpdateCallback(pController);
     pPlayer->AttachEffect(pController);
     pController->SetPosition(g_pBall->m_v3Position);
@@ -1104,7 +1104,7 @@ static inline EmissionController* CreateChipShotDivotEffect(cPlayer* pCharacter)
 {
     EmissionController* pController = EmissionManager::Create(fxGetGroup("divot"), 0);
     SetDefaultVelocity(pController);
-    pController->m_fGround = 0.0f;
+    pController->m_fGround = 0.02f;
     SetPoseUpdateCallback(pController);
     pCharacter->AttachEffect(pController);
     return pController;
@@ -1126,7 +1126,7 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
     {
         EmissionController* pController = EmissionManager::Create(fxGetGroup("shoot_to_score_shot"), 0);
         SetDefaultVelocity(pController);
-        pController->m_fGround = 0.0f;
+        pController->m_fGround = 0.02f;
         SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pGlowControl = pController;
@@ -1144,7 +1144,7 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
             {
                 EmissionController* pController = EmissionManager::Create(fxGetGroup(effectName.c_str()), 0);
                 SetDefaultVelocity(pController);
-                pController->m_fGround = 0.0f;
+                pController->m_fGround = 0.02f;
                 SetPoseUpdateCallback(pController);
                 pCharacter->AttachEffect(pController);
                 pGlowControl = pController;
@@ -1154,7 +1154,7 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
         {
             EmissionController* pController = EmissionManager::Create(fxGetGroup("shoot_to_score_shot"), 0);
             SetDefaultVelocity(pController);
-            pController->m_fGround = 0.0f;
+            pController->m_fGround = 0.02f;
             SetPoseUpdateCallback(pController);
             pCharacter->AttachEffect(pController);
             pGlowControl = pController;
@@ -1166,14 +1166,14 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
     {
         EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_shot_perfect"), 0);
         SetDefaultVelocity(pController);
-        pController->m_fGround = 0.0f;
+        pController->m_fGround = 0.02f;
         SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pControl = pController;
 
         pController = EmissionManager::Create(fxGetGroup("ball_shot_perfect_glow"), 0);
         SetDefaultVelocity(pController);
-        pController->m_fGround = 0.0f;
+        pController->m_fGround = 0.02f;
         SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pGlowControl = pController;
@@ -1187,21 +1187,21 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
     {
         EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_pass_perfect"), 0);
         SetDefaultVelocity(pController);
-        pController->m_fGround = 0.0f;
+        pController->m_fGround = 0.02f;
         SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pControl = pController;
 
         pController = EmissionManager::Create(fxGetGroup("ball_pass_perfect_glow"), 0);
         SetDefaultVelocity(pController);
-        pController->m_fGround = 0.0f;
+        pController->m_fGround = 0.02f;
         SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pGlowControl = pController;
 
         BeginRumbleAction((eRumbleActionPreset)1, pCharacter->GetGlobalPad());
         g_pBall->InitiateBallBlur(eNewBallEffect, NULL);
-        pCharacter->Play3DSFX((Audio::eCharSFX)0x3D, (PosUpdateMethod)2, 1.0f);
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x3D, (PosUpdateMethod)2, 100.0f);
 
         const nlVector3& ballPos = g_pBall->m_v3Position;
         const nlVector3& targetPos = g_pBall->m_pPassTarget->m_v3Position;
@@ -1222,7 +1222,7 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
     {
         EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_shot_onetimer"), 0);
         SetDefaultVelocity(pController);
-        pController->m_fGround = 0.0f;
+        pController->m_fGround = 0.02f;
         SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pControl = pController;
@@ -1244,7 +1244,7 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
     {
         EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_shot"), 0);
         SetDefaultVelocity(pController);
-        pController->m_fGround = 0.0f;
+        pController->m_fGround = 0.02f;
         SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
         pControl = pController;
@@ -1334,7 +1334,7 @@ void EmitElectrocutionExplosion(cCharacter* pCharacter)
 
     EmissionController* pController = EmissionManager::Create(fxGetGroup("electrocution_explosion"), 0);
     SetDefaultVelocity(pController);
-    pController->m_fGround = 0.92f;
+    pController->m_fGround = 0.02f;
     SetPoseUpdateCallback(pController);
     pCharacter->AttachEffect(pController);
     pController->m_uUserData = GetCharacterIndex(pCharacter);
@@ -1349,7 +1349,7 @@ void EmitDaze(cPlayer* pCharacter)
 {
     EmissionController* pController = EmissionManager::Create(fxGetGroup("dazed"), 0);
     SetDefaultVelocity(pController);
-    pController->m_fGround = 0.0f;
+    pController->m_fGround = 0.02f;
 
     {
         SetPoseUpdateCallback(pController);
@@ -1372,7 +1372,7 @@ void EmitDaze(cPlayer* pCharacter)
     }
     else
     {
-        pCharacter->Play3DSFX((Audio::eCharSFX)0x36, (PosUpdateMethod)2, 1.0f);
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x36, (PosUpdateMethod)2, 100.0f);
     }
 }
 
@@ -1389,10 +1389,10 @@ void KillDaze(cPlayer* player)
  */
 void EmitFreeze(cPlayer* pCharacter)
 {
-    pCharacter->Play3DSFX((Audio::eCharSFX)0x1f, (PosUpdateMethod)2, 1.0f);
+    pCharacter->Play3DSFX((Audio::eCharSFX)0x1f, (PosUpdateMethod)2, 100.0f);
     EmissionController* pController = EmissionManager::Create(fxGetGroup("freeze"), 0);
     SetDefaultVelocity(pController);
-    pController->m_fGround = 0.0f;
+    pController->m_fGround = 0.02f;
     {
         SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
@@ -1409,12 +1409,12 @@ void EmitFreeze(cPlayer* pCharacter)
  */
 void EmitUnFreeze(cPlayer* pCharacter)
 {
-    pCharacter->Play3DSFX((Audio::eCharSFX)0x20, (PosUpdateMethod)2, 1.0f);
+    pCharacter->Play3DSFX((Audio::eCharSFX)0x20, (PosUpdateMethod)2, 100.0f);
     pCharacter->KillEffect(fxGetGroup("freeze"));
     pCharacter->m_pEffectsTexturing = NULL;
     EmissionController* pController = EmissionManager::Create(fxGetGroup("unfreeze"), 0);
     SetDefaultVelocity(pController);
-    pController->m_fGround = 0.0f;
+    pController->m_fGround = 0.02f;
     {
         SetPoseUpdateCallback(pController);
         pCharacter->AttachEffect(pController);
@@ -1490,16 +1490,16 @@ void CharacterElectrocutionEffect(cCharacter* pCharacter, const nlVector3& v3Pos
         return;
     }
 
-    if (!EmissionManager::IsPlaying(GetCharacterIndex(pCharacter), fxGetGroup("electrocution")))
+    if (!EmissionManager::IsPlaying(GetCharacterIndex(pCharacter), fxGetGroup("electric_fence_character")))
     {
         pCharacter->m_pCharacterSFX->Stop((Audio::eCharSFX)0x46, cGameSFX::SFX_STOP_FIRST);
-        pCharacter->Play3DSFX((Audio::eCharSFX)0x46, (PosUpdateMethod)2, 1.0f);
-        pCharacter->PlayRandomCharDialogue(4, (PosUpdateMethod)2, 1.0f, -1.0f);
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x46, (PosUpdateMethod)2, 100.0f);
+        pCharacter->PlayRandomCharDialogue(4, (PosUpdateMethod)2, 100.0f, -1.0f);
     }
 
-    EmissionController* pController = EmissionManager::Create(fxGetGroup("electric_fence_character"), 0);
+    EmissionController* pController = EmissionManager::Create(fxGetGroup("electrocution"), 0);
     SetDefaultVelocity(pController);
-    pController->m_fGround = 0.0f;
+    pController->m_fGround = 0.02f;
     {
         SetFreeUpdateCallback(pController, UpdateEmitterPoseFromCharacter);
 
@@ -1533,7 +1533,7 @@ void EmitGoalieCatch(cPlayer* pPlayer, const char* name, bool bRumble)
 {
     EmissionController* pController = EmissionManager::Create(fxGetGroup(name), 0);
     SetDefaultVelocity(pController);
-    pController->m_fGround = 0.0f;
+    pController->m_fGround = 0.02f;
     SetPoseUpdateCallback(pController);
     pPlayer->AttachEffect(pController);
     pController->SetPosition(g_pBall->m_v3Position);
@@ -1569,7 +1569,7 @@ void EmitShootToScoreHyperStrike(cFielder* pFielder)
 {
     EmissionController* pController = EmissionManager::Create(fxGetGroup("shoot_to_score_hyper"), 0);
     SetDefaultVelocity(pController);
-    pController->m_fGround = 0.92f;
+    pController->m_fGround = 0.02f;
     SetPoseUpdateCallback(pController);
     pFielder->AttachEffect(pController);
     pController->SetPosition(g_pBall->m_v3Position);
@@ -1587,7 +1587,7 @@ void EmitWindupAtBall(cCharacter* pCharacter, const char* name)
 {
     EmissionController* pController = EmissionManager::Create(fxGetGroup(name), 0);
     SetDefaultVelocity(pController);
-    pController->m_fGround = 0.0f;
+    pController->m_fGround = 0.02f;
     SetPoseUpdateCallback(pController);
     pCharacter->AttachEffect(pController);
     Function1<void, EmissionController&> update2(UpdateEmitterFromBall);
@@ -1600,10 +1600,10 @@ void EmitWindupAtBall(cCharacter* pCharacter, const char* name)
 void EmitWindupAtCharacter(cCharacter* pCharacter, const char* name)
 {
     Audio::gCrowdSFX.Stop((Audio::eWorldSFX)0x9F, cGameSFX::SFX_STOP_FIRST);
-    pCharacter->Play3DSFX((Audio::eCharSFX)0x16, (PosUpdateMethod)1, 1.0f);
+    pCharacter->Play3DSFX((Audio::eCharSFX)0x16, (PosUpdateMethod)1, 100.0f);
     EmissionController* pController = EmissionManager::Create(fxGetGroup(name), 0);
     SetDefaultVelocity(pController);
-    pController->m_fGround = 0.0f;
+    pController->m_fGround = 0.02f;
     SetPoseUpdateCallback(pController);
     pCharacter->AttachEffect(pController);
 }
@@ -1624,17 +1624,17 @@ void KillWindups(cCharacter* pCharacter)
  */
 void KillWindup(cCharacter* pCharacter, const char* name, bool bKill)
 {
-    if (nlStrCmp(name, "shoot_to_score_windup") == 0 && g_pBall->mbHyperSTS && pCharacter->IsPlayingEffect(fxGetGroup(name)))
+    if (nlStrCmp(name, "ball_pass_windup") == 0 && g_pBall->mbHyperSTS && pCharacter->IsPlayingEffect(fxGetGroup(name)))
     {
         pCharacter->StopSFX(Audio::CHARSFX_SHOT_WINDUP);
         pCharacter->StopSFX(Audio::CHARSFX_EFFORTS_HEAD_SHAKE);
     }
-    else if (nlStrCmp(name, "ball_pass_windup") == 0 && pCharacter->IsPlayingEffect(fxGetGroup(name)) && bKill)
+    else if (nlStrCmp(name, "ball_shot_windup") == 0 && pCharacter->IsPlayingEffect(fxGetGroup(name)) && bKill)
     {
         pCharacter->StopSFX(Audio::CHARSFX_SHOT_WINDUP);
         pCharacter->StopSFX(Audio::CHARSFX_EFFORTS_HEAD_SHAKE);
     }
-    else if (nlStrCmp(name, "ball_sts_windup") == 0 && pCharacter->IsPlayingEffect(fxGetGroup(name)))
+    else if (nlStrCmp(name, "shoot_to_score_windup") == 0 && pCharacter->IsPlayingEffect(fxGetGroup(name)))
     {
         Audio::gCrowdSFX.Stop((Audio::eWorldSFX)0x9e, cGameSFX::SFX_STOP_FIRST);
         pCharacter->StopSFX(Audio::CHARSFX_SUPER_KICK_WINDUP);
@@ -1655,7 +1655,7 @@ void KillWindup(cCharacter* pCharacter, const char* name, bool bKill)
             pCharacter->StopSFX(Audio::CHARSFX_EFFORTS_SHOT_WINDUP);
         }
     }
-    else if (nlStrCmp(name, "ball_shot_windup") == 0)
+    else if (nlStrCmp(name, "ball_sts_windup") == 0)
     {
         pCharacter->StopSFX(Audio::CHARSFX_SHOT_WINDUP);
         pCharacter->StopSFX(Audio::CHARSFX_EFFORTS_HEAD_SHAKE);
@@ -1680,7 +1680,7 @@ void EmitDust(cPlayer* player, const char* name)
 {
     EmissionController* pController = EmissionManager::Create(fxGetGroup(name), 0);
     SetDefaultVelocity(pController);
-    pController->m_fGround = 0.0f;
+    pController->m_fGround = 0.02f;
     {
         SetPoseUpdateCallback(pController);
         player->AttachEffect(pController);
@@ -1698,7 +1698,7 @@ void EmitMushroom(cFielder* pFielder)
 {
     EmissionController* pController = EmissionManager::Create(fxGetGroup("mushroom"), 0);
     SetDefaultVelocity(pController);
-    pController->m_fGround = 0.0f;
+    pController->m_fGround = 0.02f;
     {
         SetPoseUpdateCallback(pController);
         pFielder->AttachEffect(pController);
@@ -1706,9 +1706,9 @@ void EmitMushroom(cFielder* pFielder)
         Function1<void, EmissionController&> update2(UpdateEmitterFromCharacter);
         pController->SetUpdateCallback(update2);
     }
-    PowerupBase::PlayPowerupSound(POWER_UP_MUSHROOM, PowerupBase::PWRUP_SOUND_ACTIVATE, pFielder->m_pPhysicsCharacter, 1.0f);
+    PowerupBase::PlayPowerupSound(POWER_UP_MUSHROOM, PowerupBase::PWRUP_SOUND_ACTIVATE, pFielder->m_pPhysicsCharacter, 100.0f);
     pFielder->StopSFX(Audio::CHARSFX_PWRUP_MUSH_IN_EFFECT);
-    pFielder->Play3DSFX(Audio::CHARSFX_PWRUP_MUSH_IN_EFFECT, (PosUpdateMethod)1, 1.0f);
+    pFielder->Play3DSFX(Audio::CHARSFX_PWRUP_MUSH_IN_EFFECT, (PosUpdateMethod)1, 100.0f);
     tDebugPrintManager::Print(DC_SOUND, "***EmitMushroom()***\n");
 }
 
@@ -1718,7 +1718,7 @@ void EmitMushroom(cFielder* pFielder)
 void KillMushroom(cFielder* pFielder)
 {
     pFielder->StopSFX(Audio::CHARSFX_PWRUP_MUSH_IN_EFFECT);
-    PowerupBase::PlayPowerupSound(POWER_UP_MUSHROOM, PowerupBase::PWRUP_SOUND_END, pFielder->m_pPhysicsCharacter, 1.0f);
+    PowerupBase::PlayPowerupSound(POWER_UP_MUSHROOM, PowerupBase::PWRUP_SOUND_END, pFielder->m_pPhysicsCharacter, 100.0f);
     pFielder->EndBlur();
     tDebugPrintManager::Print(DC_SOUND, "***KillMushroom()***\n");
 }
@@ -1730,7 +1730,7 @@ void EmitStar(cFielder* pFielder)
 {
     EmissionController* pController = EmissionManager::Create(fxGetGroup("star"), 0);
     SetDefaultVelocity(pController);
-    pController->m_fGround = 0.0f;
+    pController->m_fGround = 0.02f;
     {
         SetPoseUpdateCallback(pController);
         pFielder->AttachEffect(pController);
@@ -1738,9 +1738,9 @@ void EmitStar(cFielder* pFielder)
         Function1<void, EmissionController&> update2(UpdateEmitterFromCharacter);
         pController->SetUpdateCallback(update2);
     }
-    PowerupBase::PlayPowerupSound(POWER_UP_STAR, PowerupBase::PWRUP_SOUND_ACTIVATE, pFielder->m_pPhysicsCharacter, 1.0f);
+    PowerupBase::PlayPowerupSound(POWER_UP_STAR, PowerupBase::PWRUP_SOUND_ACTIVATE, pFielder->m_pPhysicsCharacter, 100.0f);
     pFielder->StopSFX(Audio::CHARSFX_PWRUP_STAR_IN_EFFECT);
-    pFielder->Play3DSFX(Audio::CHARSFX_PWRUP_STAR_IN_EFFECT, (PosUpdateMethod)1, 1.0f);
+    pFielder->Play3DSFX(Audio::CHARSFX_PWRUP_STAR_IN_EFFECT, (PosUpdateMethod)1, 100.0f);
     pFielder->m_pEffectsTexturing = fxGetTexturing(eFXTex_Star);
     tDebugPrintManager::Print(DC_SOUND, "***EmitStar()***\n");
 }
@@ -1792,7 +1792,7 @@ void EmitSlideTackleTrail(cCharacter* pCharacter)
 {
     EmissionController* pController = EmissionManager::Create(fxGetGroup("slide_tackle_trail"), 0);
     SetDefaultVelocity(pController);
-    pController->m_fGround = 0.0f;
+    pController->m_fGround = 0.02f;
     SetPoseUpdateCallback(pController);
     pCharacter->AttachEffect(pController);
     pController->m_uUserData = GetCharacterIndex(pCharacter);
