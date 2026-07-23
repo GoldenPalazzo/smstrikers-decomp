@@ -469,7 +469,7 @@ void CharacterTriggerHandler(unsigned int uParam)
     {
         if (!g_pCurrentlyUpdatingCharacter->IsPlayingEffect(fxGetGroup("shoot_to_score_windup")))
             break;
-        nlMatrix4& nodeMatrix = GetHeadNodeMatrix(g_pCurrentlyUpdatingCharacter);
+        nlMatrix4& nodeMatrix = g_pCurrentlyUpdatingCharacter->m_pPoseAccumulator->GetNodeMatrix(g_pCurrentlyUpdatingCharacter->GetHeadJointIndex());
         nlVector3 nodePos = *(nlVector3*)&nodeMatrix.m[3][0];
         Audio::SoundAttributes attrs;
         attrs.Init();
@@ -487,7 +487,7 @@ void CharacterTriggerHandler(unsigned int uParam)
     case 0xEE2E062C:
     {
         pCharacter->StopSFX((Audio::eCharSFX)0x4E);
-        nlMatrix4& nodeMatrix = GetHeadNodeMatrix(g_pCurrentlyUpdatingCharacter);
+        nlMatrix4& nodeMatrix = g_pCurrentlyUpdatingCharacter->m_pPoseAccumulator->GetNodeMatrix(g_pCurrentlyUpdatingCharacter->GetHeadJointIndex());
         nlVector3 nodePos = *(nlVector3*)&nodeMatrix.m[3][0];
         Audio::SoundAttributes attrs;
         attrs.Init();
