@@ -278,9 +278,9 @@ public:
 
     void erase(const CharT* begin, const CharT* end);
 
-    void TrimInPlace(const CharT* chars);
+    inline void TrimInPlace(const CharT* chars);
 
-    BasicString Trim(const CharT* chars) const;
+    inline BasicString Trim(const CharT* chars) const;
 
     BasicString Append(const CharT* rhs) const;
 

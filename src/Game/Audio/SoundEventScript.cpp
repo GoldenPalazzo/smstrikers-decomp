@@ -65,6 +65,81 @@ static inline void PlayStream(unsigned long TrackName, unsigned long StreamId, f
     PlayStreamParam(TrackName, StreamId, Volume, Looping, FadeIn, ExistingFadeOut, NULL);
 }
 
+static inline void PlayRandomBooBig(float delay, float fVol, int priority)
+{
+    if (Audio::gCrowdSFX.mbInited)
+    {
+        if (fVol >= 0.0f)
+        {
+            Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_BOO_BIG, fVol, delay, priority, 0.0f);
+        }
+        else
+        {
+            Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_BOO_BIG, 100.0f, delay, priority, 0.0f);
+        }
+    }
+}
+
+static inline void PlayRandomBooSmall(float delay, float fVol, int priority)
+{
+    if (Audio::gCrowdSFX.mbInited)
+    {
+        if (fVol >= 0.0f)
+        {
+            Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_BOO_SMALL, fVol, delay, priority, 0.0f);
+        }
+        else
+        {
+            Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_BOO_SMALL, 100.0f, delay, priority, 0.0f);
+        }
+    }
+}
+
+static inline void PlayRandomYeahSmall(float delay, float fVol, int priority)
+{
+    if (Audio::gCrowdSFX.mbInited)
+    {
+        if (fVol >= 0.0f)
+        {
+            Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_YEAH_SMALL, fVol, delay, priority, 0.0f);
+        }
+        else
+        {
+            Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_YEAH_SMALL, 100.0f, delay, priority, 0.0f);
+        }
+    }
+}
+
+static inline void PlayRandomOhSmall(float delay, float fVol, int priority)
+{
+    if (Audio::gCrowdSFX.mbInited)
+    {
+        if (fVol >= 0.0f)
+        {
+            Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_OH_SMALL, fVol, delay, priority, 0.0f);
+        }
+        else
+        {
+            Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_OH_SMALL, 100.0f, delay, priority, 0.0f);
+        }
+    }
+}
+
+static inline void PlayRandomOhBig(float delay, float fVol, int priority)
+{
+    if (Audio::gCrowdSFX.mbInited)
+    {
+        if (fVol >= 0.0f)
+        {
+            Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_OH_BIG, fVol, delay, priority, 0.0f);
+        }
+        else
+        {
+            Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_OH_BIG, 100.0f, delay, priority, 0.0f);
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x80153FD8 | size: 0x96C
  * TODO: 99.93% match - register allocation differences in cases 4, 5, 14
@@ -142,17 +217,7 @@ void SoundEventScript::DoFunctionCall(unsigned int func)
         float fVol = *(float*)m_SP;
         m_SP--;
         float fDelay = *(float*)m_SP;
-        if (Audio::gCrowdSFX.mbInited)
-        {
-            if (fVol >= 0.0f)
-            {
-                Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_BOO_BIG, fVol, fDelay, range, 0.0f);
-            }
-            else
-            {
-                Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_BOO_BIG, 100.0f, fDelay, range, 0.0f);
-            }
-        }
+        PlayRandomBooBig(fDelay, fVol, range);
         break;
     }
     case 7:
@@ -163,17 +228,7 @@ void SoundEventScript::DoFunctionCall(unsigned int func)
         float fVol = *(float*)m_SP;
         m_SP--;
         float fDelay = *(float*)m_SP;
-        if (Audio::gCrowdSFX.mbInited)
-        {
-            if (fVol >= 0.0f)
-            {
-                Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_BOO_SMALL, fVol, fDelay, range, 0.0f);
-            }
-            else
-            {
-                Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_BOO_SMALL, 100.0f, fDelay, range, 0.0f);
-            }
-        }
+        PlayRandomBooSmall(fDelay, fVol, range);
         break;
     }
     case 8:
@@ -184,17 +239,7 @@ void SoundEventScript::DoFunctionCall(unsigned int func)
         float fVol = *(float*)m_SP;
         m_SP--;
         float fDelay = *(float*)m_SP;
-        if (Audio::gCrowdSFX.mbInited)
-        {
-            if (fVol >= 0.0f)
-            {
-                Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_OH_BIG, fVol, fDelay, range, 0.0f);
-            }
-            else
-            {
-                Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_OH_BIG, 100.0f, fDelay, range, 0.0f);
-            }
-        }
+        PlayRandomOhBig(fDelay, fVol, range);
         break;
     }
     case 9:
@@ -205,17 +250,7 @@ void SoundEventScript::DoFunctionCall(unsigned int func)
         float fVol = *(float*)m_SP;
         m_SP--;
         float fDelay = *(float*)m_SP;
-        if (Audio::gCrowdSFX.mbInited)
-        {
-            if (fVol >= 0.0f)
-            {
-                Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_OH_SMALL, fVol, fDelay, range, 0.0f);
-            }
-            else
-            {
-                Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_OH_SMALL, 100.0f, fDelay, range, 0.0f);
-            }
-        }
+        PlayRandomOhSmall(fDelay, fVol, range);
         break;
     }
     case 10:
@@ -226,17 +261,7 @@ void SoundEventScript::DoFunctionCall(unsigned int func)
         float fVol = *(float*)m_SP;
         m_SP--;
         float fDelay = *(float*)m_SP;
-        if (Audio::gCrowdSFX.mbInited)
-        {
-            if (fVol >= 0.0f)
-            {
-                Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_YEAH_SMALL, fVol, fDelay, range, 0.0f);
-            }
-            else
-            {
-                Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_YEAH_SMALL, 100.0f, fDelay, range, 0.0f);
-            }
-        }
+        PlayRandomYeahSmall(fDelay, fVol, range);
         break;
     }
     case 11:

@@ -26,7 +26,10 @@ class Config
 public:
     struct TagValuePair
     {
-        TagValuePair();
+        TagValuePair()
+        {
+            tag = NULL;
+        }
 
         template <typename T>
         T Get() const
@@ -173,26 +176,6 @@ public:
 }; // total size: 0xC
 
 typedef Config::TagValuePair TagValuePair;
-
-struct SetTagValuePair : public Config::Parser
-{
-    /* 0x04 */ BasicString<char, Detail::TempStringAllocator> mCurrentSection;
-    /* 0x08 */ Config& mConfig;
-    /* 0x0C */ bool mTweaked;
-    /* 0x10 */ float mTweakMinValue;
-    /* 0x14 */ float mTweakMaxValue;
-    /* 0x18 */ float mTweakIncrement;
-
-    SetTagValuePair(Config& cfg)
-        : mConfig(cfg)
-        , mTweaked(false)
-    {
-    }
-
-    virtual void TagValuePair(const BasicString<char, Detail::TempStringAllocator>&, const BasicString<char, Detail::TempStringAllocator>&);
-    virtual void Section(const BasicString<char, Detail::TempStringAllocator>&);
-    virtual void Comment(const BasicString<char, Detail::TempStringAllocator>&);
-}; // total size: 0x1C
 
 // class BasicString<char, Detail
 // {

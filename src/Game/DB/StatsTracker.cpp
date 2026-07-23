@@ -10,6 +10,8 @@
 template <>
 StatsTracker* nlSingleton<StatsTracker>::s_pInstance = 0;
 
+static const char* STATS_FILE = "statsfile.csv";
+
 // /**
 //  * Offset/Address/Size: 0x2C7C | 0x80189818 | size: 0x144
 //  */
@@ -1949,7 +1951,6 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
 {
     unsigned char firstTime = 1;
 
-    extern const char* STATS_FILE;
     if (gameDuration <= 0.0f)
     {
         gameDuration = (float)nlSingleton<GameInfoManager>::s_pInstance->GetGameplayOptions().GameTime;

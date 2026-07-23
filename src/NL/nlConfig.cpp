@@ -8,10 +8,10 @@
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D2C64 | size: 0x13EC
- * TODO: 99.13% match - r21/r22/r24 register differences in initial BString construction
  */
 typedef BasicString<char, Detail::TempStringAllocator> BString;
 typedef Tokenizer<BString> BTokenizer;
+
 void Config::Parse(const char* s, Config::Parser& parser)
 {
     BTokenizer split(BString(s), BString("\n\r"));
@@ -36,8 +36,7 @@ void Config::Parse(const char* s, Config::Parser& parser)
 
         if (line[0] == '[')
         {
-            int lastIdx = (line.mData ? line.mData->mData.mSize - 1 : 0) - 1;
-            if (line[lastIdx] == ']')
+            if (line[(line.mData ? line.mData->mData.mSize - 1 : 0) - 1] == ']')
             {
                 char sectionMarkers[3] = "[]";
                 line.TrimInPlace(sectionMarkers);
@@ -82,20 +81,16 @@ void Config::Parse(const char* s, Config::Parser& parser)
     }
 }
 
-/**
- * Offset/Address/Size: 0x13EC | 0x801D4050 | size: 0x21C
- * TODO: 99.93% match - end pointer temp uses r27 where target keeps it in r30
- */
-static inline void InitFileStringData(BString::Data* data, char* buffer, char* end, s32 length)
+static inline void InitFileStringData(BString::Data* data, char* buffer, char* end)
 {
     if (data != 0)
     {
-        s32 size = length + 1;
+        s32 size = end - buffer + 1;
         data->mData.mData = (char*)nlMalloc(size, 8, true);
         data->mData.mSize = size;
         data->mData.mCapacity = size;
 
-        for (s32 i = 0; i < length + 1; i++)
+        for (s32 i = 0; i < end - buffer + 1; i++)
         {
             data->mData.mData[i] = 0;
         }
@@ -108,6 +103,16 @@ static inline void InitFileStringData(BString::Data* data, char* buffer, char* e
     }
 }
 
+static inline BString::Data* NewFileStringData(char* begin, char* end)
+{
+    BString::Data* data = (BString::Data*)nlMalloc(0x10, 8, true);
+    InitFileStringData(data, begin, end);
+    return data;
+}
+
+/**
+ * Offset/Address/Size: 0x13EC | 0x801D4050 | size: 0x21C
+ */
 BasicString<char, Detail::TempStringAllocator> Config::LoadFileAsString(const char* filename)
 {
     tDebugPrintManager::Print(DC_CONFIG_SYSTEM, "reading config file: %s\n", filename);
@@ -117,11 +122,7 @@ BasicString<char, Detail::TempStringAllocator> Config::LoadFileAsString(const ch
     char* buffer = (char*)nlLoadEntireFile(filename, &fileSize, 0x20, AllocateEnd);
     if (buffer != 0)
     {
-        char* end = buffer + fileSize;
-        BString::Data* data = (BString::Data*)nlMalloc(0x10, 8, true);
-        InitFileStringData(data, buffer, end, end - buffer);
-
-        BasicString<char, Detail::TempStringAllocator> s(data);
+        BasicString<char, Detail::TempStringAllocator> s(NewFileStringData(buffer, buffer + fileSize));
         nlFree(buffer);
         nlFlushFileCash();
         return s;
@@ -138,7 +139,7 @@ void Config::Set(const char* key, const BasicString<char, Detail::TempStringAllo
     Set(key, value.c_str());
 }
 
-static bool IsIntValue(const char* str, int& out)
+static inline bool IsIntValue(const char* str, int& out)
 {
     const char* s = str;
     while (*s != 0)
@@ -155,7 +156,7 @@ static bool IsIntValue(const char* str, int& out)
     return true;
 }
 
-static bool IsFloatValue(const char* str, float& out)
+static inline bool IsFloatValue(const char* str, float& out)
 {
     bool seenPeriod = false;
     const char* s = str;
@@ -425,16 +426,13 @@ TagValuePair& Config::FindTvp(const char* tag)
 
 /**
  * Offset/Address/Size: 0x1FEC | 0x801D4C50 | size: 0x534
- * TODO: 99.08% match - b param r28 vs target r31 and loop index/base register permutation
  */
 bool Config::IsBool(const char* str, bool& b) const
 {
     BasicString<char, Detail::TempStringAllocator> s(str);
     for (int i = 0; i < (s.mData ? s.mData->mData.mSize - 1 : 0); i++)
     {
-        (void)s[i];
-        char* data = s.mData->mData.mData;
-        data[i] = _tolower(s[i]);
+        s[i] = _tolower(s[i]);
     }
     if (s == "true" || s == "yes" || s == "on" || s == "enable")
     {
@@ -482,6 +480,27 @@ bool Config::Exists(const char* tag) const
     return false;
 }
 
+struct SetTagValuePair : public Config::Parser
+{
+    /* 0x04 */ BasicString<char, Detail::TempStringAllocator> mCurrentSection;
+    /* 0x08 */ Config& mConfig;
+    /* 0x0C */ bool mTweaked;
+    /* 0x10 */ float mTweakMinValue;
+    /* 0x14 */ float mTweakMaxValue;
+    /* 0x18 */ float mTweakIncrement;
+
+    SetTagValuePair(Config& cfg)
+        : mConfig(cfg)
+        , mTweaked(false)
+    {
+    }
+
+    virtual inline void Comment(const BasicString<char, Detail::TempStringAllocator>&);
+    virtual inline void Section(const BasicString<char, Detail::TempStringAllocator>&);
+    virtual inline void TagValuePair(
+        const BasicString<char, Detail::TempStringAllocator>&, const BasicString<char, Detail::TempStringAllocator>&);
+}; // total size: 0x1C
+
 /**
  * Offset/Address/Size: 0x25E8 | 0x801D524C | size: 0x138
  */
@@ -498,6 +517,7 @@ void Config::LoadFromFile(const char* filename)
  */
 Config::Config(Config::AllocateWhere allocateWhere)
 {
+#pragma defer_codegen on
     if (allocateWhere == ALLOCATE_LOW)
     {
         mTvpHash = new (nlMalloc(sizeof(TagValuePair) * 1024 + 0x10, 8, false)) TagValuePair[1024];
@@ -513,15 +533,6 @@ Config::Config(Config::AllocateWhere allocateWhere)
 }
 
 /**
- * Offset/Address/Size: 0x2720 | 0x801D5384 | size: 0xAC
- */
-Config& Config::Global()
-{
-    static Config sGlobal(ALLOCATE_LOW);
-    return sGlobal;
-}
-
-/**
  * Offset/Address/Size: 0x27CC | 0x801D5430 | size: 0x68
  */
 Config::~Config()
@@ -533,6 +544,16 @@ Config::~Config()
 
     ::operator delete[](mStringMemory);
 }
+
+/**
+ * Offset/Address/Size: 0x2720 | 0x801D5384 | size: 0xAC
+ */
+Config& Config::Global()
+{
+    static Config sGlobal(ALLOCATE_LOW);
+    return sGlobal;
+}
+#pragma defer_codegen off
 
 /**
  * Offset/Address/Size: 0x2900 | 0x801D5564 | size: 0x4
@@ -606,14 +627,6 @@ void SetTagValuePair::TagValuePair(const BasicString<char, Detail::TempStringAll
 // void Config::Parser::EmptyLine()
 // {
 // }
-
-/**
- * Offset/Address/Size: 0x10 | 0x801D5824 | size: 0xC
- */
-Config::TagValuePair::TagValuePair()
-{
-    tag = NULL;
-}
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D5850 | size: 0xBC
