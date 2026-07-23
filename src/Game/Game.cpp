@@ -279,7 +279,7 @@ void CreateGame()
 void DestroyGame()
 {
     Config& cfg = Config::Global();
-    bool bWriteStats = GetConfigBool(cfg, "write_stats", false);
+    bool bWriteStats = GetConfigBool(cfg, "save_stats", false);
 
     if (bWriteStats)
     {
@@ -288,15 +288,7 @@ void DestroyGame()
 
     nlSingleton<ScriptQuestionCache>::DestroyInstance();
 
-    AISandbox* p = nlSingleton<AISandbox>::s_pInstance;
-    if (p != NULL)
-    {
-        if (p != NULL)
-        {
-            delete p;
-        }
-        nlSingleton<AISandbox>::s_pInstance = 0;
-    }
+    nlSingleton<AISandbox>::DestroyInstance();
 
     delete g_pTeams[0];
     delete g_pTeams[1];
