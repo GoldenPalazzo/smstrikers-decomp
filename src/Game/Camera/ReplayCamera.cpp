@@ -160,13 +160,8 @@ void ReplayCamera::ManualUpdate(float deltaT)
         }
         else
         {
-            mLookAt.f.x = 0.85f * mLookAt.f.x + 0.15f * lookAt.f.x;
-            mLookAt.f.y = 0.85f * mLookAt.f.y + 0.15f * lookAt.f.y;
-            mLookAt.f.z = 0.85f * mLookAt.f.z + 0.15f * lookAt.f.z;
-
-            mPosition.f.x = 0.9f * mPosition.f.x + 0.1f * position.f.x;
-            mPosition.f.y = 0.9f * mPosition.f.y + 0.1f * position.f.y;
-            mPosition.f.z = 0.9f * mPosition.f.z + 0.1f * position.f.z;
+            Dampen(mLookAt, lookAt, 0.15f);
+            Dampen(mPosition, position, 0.1f);
         }
 
         mFov -= deltaT * mDeltaFov;
@@ -206,6 +201,13 @@ void ReplayCamera::CutTo(ReplayCameraPosition camPos)
     mCamPos = camPos;
     mPosition = GetPosition(mCamPos, -1.0f);
     mFov = GetFov(mCamPos);
+}
+
+void ReplayCamera::Dampen(nlVector3& from, const nlVector3& to, float dampFactor)
+{
+    from.f.x = (1.0f - dampFactor) * from.f.x + dampFactor * to.f.x;
+    from.f.y = (1.0f - dampFactor) * from.f.y + dampFactor * to.f.y;
+    from.f.z = (1.0f - dampFactor) * from.f.z + dampFactor * to.f.z;
 }
 
 /**
@@ -323,11 +325,7 @@ nlVector3 ReplayCamera::GetPosition(ReplayCameraPosition position, float directi
         if (position >= REPLAY_CAMERA_POSITION_GENERIC_0 && position <= REPLAY_CAMERA_POSITION_GENERIC_LAST)
         {
             BasicString<char, Detail::TempStringAllocator> prefix("replay/camera_");
-            {
-                BasicString<char, Detail::TempStringAllocator> formatStr("generic_{0}_");
-                int idx = position - REPLAY_CAMERA_POSITION_GENERIC_0;
-                prefix.AppendInPlace(Format(formatStr, idx));
-            }
+            prefix.AppendInPlace(Format(BasicString<char, Detail::TempStringAllocator>("generic_{0}_"), position - REPLAY_CAMERA_POSITION_GENERIC_0));
 
             float xVal = GetConfigFloat(Config::Global(), prefix.Append("x").c_str(), 0.0f) * ((mSideOfInterest == 0) ? -1.0f : 1.0f);
             float yVal = GetConfigFloat(Config::Global(), prefix.Append("y").c_str(), 0.0f);

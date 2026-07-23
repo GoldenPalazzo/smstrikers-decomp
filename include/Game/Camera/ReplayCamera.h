@@ -48,6 +48,11 @@ public:
     float GetFov(ReplayCameraPosition) const;
     nlVector3 GetPosition(ReplayCameraPosition, float) const;
 
+private:
+    static void Dampen(nlVector3& from, const nlVector3& to, float dampFactor);
+
+public:
+
     /* 0x1C */ f32 mDeltaFov;
     /* 0x20 */ f32 mFov;
     /* 0x24 */ s32 mSideOfInterest;
