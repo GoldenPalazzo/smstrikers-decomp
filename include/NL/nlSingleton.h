@@ -4,6 +4,9 @@
 template <class T>
 class nlSingleton
 {
+protected:
+    ~nlSingleton() {}
+
 public:
     static T* Instance() { return s_pInstance; }
     static T* GetInstance() { return s_pInstance; }

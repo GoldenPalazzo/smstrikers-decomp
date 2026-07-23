@@ -10,7 +10,6 @@ FontManager* nlSingleton<FontManager>::s_pInstance = 0;
 
 /**
  * Offset/Address/Size: 0x4CC | 0x80209B60 | size: 0x70
- * TODO: 96.25% match - r30/r31 are swapped across the list-pool initialization.
  */
 FontManager::FontManager()
     : m_fonts(8)
