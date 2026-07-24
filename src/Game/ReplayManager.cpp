@@ -92,9 +92,6 @@ void Replay::Play(float time, T& previous, T& current, float* blend) const
 
 /**
  * Offset/Address/Size: 0x3C | 0x8011294C | size: 0x168
- * TODO: 95.81% match - newFrame is held in a callee-saved register (r25) across
- * the slot-pool allocation and Frame ctor, sharing its zero-init with mReelIdx;
- * our build keeps it in temporaries, shifting the stmw base and the in/out moves.
  */
 template <typename T>
 void Replay::Record(float time, T& snapshot, unsigned int events)
@@ -124,16 +121,7 @@ void Replay::Record(float time, T& snapshot, unsigned int events)
             mFree->mInterval = interval;
             mFree->mEvents = events;
 
-            if (Frame::mSlotPool.m_FreeList == NULL)
-            {
-                SlotPoolBase::BaseAddNewBlock(&Frame::mSlotPool, sizeof(Frame));
-            }
-            Frame* newFrame = NULL;
-            if (Frame::mSlotPool.m_FreeList != NULL)
-            {
-                newFrame = (Frame*)Frame::mSlotPool.m_FreeList;
-                Frame::mSlotPool.m_FreeList = Frame::mSlotPool.m_FreeList->next;
-            }
+            Frame* newFrame = Frame::mSlotPool.Allocate();
             newFrame = new (newFrame) Frame(mFree->mBegin + frameSize, mFree->mSize - frameSize, mFree->mNext);
 
             mFree->mNext = newFrame;

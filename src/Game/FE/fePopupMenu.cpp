@@ -699,6 +699,9 @@ FEPopupMenu::FEPopupMenu()
 
 /**
  * Offset/Address/Size: 0x3000 | 0x8009916C | size: 0x1BB8
+ * TODO: 52.16% match - LookupLoc calls emitted out-of-line here; the target inlines all 41.
+ * Inlining them requires an inline-budget raise that also inlines the BasicString destructor,
+ * which the target keeps out-of-line (45 calls). See notes fepopup-create-lookuploc-dtor-coupling.
  */
 void FEPopupMenu::Create(
     ePopupMenu type,
@@ -723,7 +726,7 @@ void FEPopupMenu::Create(
     {
         WStr cupName(LookupLoc(GetLOCModeName(GameInfoManager::GM_TOURNAMENT)));
         WStr message(LookupLoc(popupentry->mMessage));
-        mPopup.pMessage = new WStr(Format<WStr, WStr>(message, cupName));
+        mPopup.pMessage = new (8, false) WStr(Format<WStr, WStr>(message, cupName));
 
         WStr tournamentTypeName(LookupLoc(0x81A57D85));
         if (GameInfoManager::s_pInstance->mCustomTournamentInfo.m_tournMode == TM_LEAGUE)
@@ -759,9 +762,9 @@ void FEPopupMenu::Create(
         }
 
         message = LookupLoc(popupentry->mOptions[0]);
-        mPopup.pOptionLabels[0] = new WStr(Format<WStr, WStr, WStr, WStr>(message, cupName, tournamentTypeName, roundString));
+        mPopup.pOptionLabels[0] = new (8, false) WStr(Format<WStr, WStr, WStr, WStr>(message, cupName, tournamentTypeName, roundString));
         message = LookupLoc(popupentry->mOptions[1]);
-        mPopup.pOptionLabels[1] = new WStr(Format<WStr, WStr>(message, cupName));
+        mPopup.pOptionLabels[1] = new (8, false) WStr(Format<WStr, WStr>(message, cupName));
         mPopup.pOptionLabels[2] = NULL;
         mPopup.pOptionLabels[3] = NULL;
         mPopup.numOptions = 2;
@@ -772,7 +775,7 @@ void FEPopupMenu::Create(
     {
         WStr cupName(LookupLoc(GetLOCModeName(GameInfoManager::s_pInstance->mCurrentMode)));
         WStr message(LookupLoc(popupentry->mMessage));
-        mPopup.pMessage = new WStr(Format<WStr, WStr>(message, cupName));
+        mPopup.pMessage = new (8, false) WStr(Format<WStr, WStr>(message, cupName));
 
         WStr captainName(LookupLoc(GetLOCTeamName(GameInfoManager::s_pInstance->GetUserSelectedCupTeam())));
         int round = GameInfoManager::s_pInstance->GetCurrentRoundNumber();
@@ -799,9 +802,9 @@ void FEPopupMenu::Create(
         }
 
         message = LookupLoc(popupentry->mOptions[0]);
-        mPopup.pOptionLabels[0] = new WStr(Format<WStr, WStr, WStr, WStr>(message, cupName, captainName, roundString));
+        mPopup.pOptionLabels[0] = new (8, false) WStr(Format<WStr, WStr, WStr, WStr>(message, cupName, captainName, roundString));
         message = LookupLoc(popupentry->mOptions[1]);
-        mPopup.pOptionLabels[1] = new WStr(Format<WStr, WStr>(message, cupName));
+        mPopup.pOptionLabels[1] = new (8, false) WStr(Format<WStr, WStr>(message, cupName));
         mPopup.pOptionLabels[2] = NULL;
         mPopup.pOptionLabels[3] = NULL;
         mPopup.numOptions = 2;
@@ -812,9 +815,9 @@ void FEPopupMenu::Create(
     {
         WStr cupName(LookupLoc(GetLOCModeName(GameInfoManager::s_pInstance->mCurrentMode)));
         WStr message(LookupLoc(popupentry->mMessage));
-        mPopup.pMessage = new WStr(Format<WStr, WStr>(message, cupName));
-        mPopup.pOptionLabels[0] = new WStr(LookupLoc(popupentry->mOptions[0]));
-        mPopup.pOptionLabels[1] = new WStr(LookupLoc(popupentry->mOptions[1]));
+        mPopup.pMessage = new (8, false) WStr(Format<WStr, WStr>(message, cupName));
+        mPopup.pOptionLabels[0] = new (8, false) WStr(LookupLoc(popupentry->mOptions[0]));
+        mPopup.pOptionLabels[1] = new (8, false) WStr(LookupLoc(popupentry->mOptions[1]));
         mPopup.pOptionLabels[2] = NULL;
         mPopup.pOptionLabels[3] = NULL;
         mPopup.numOptions = 2;
@@ -825,9 +828,9 @@ void FEPopupMenu::Create(
     {
         WStr cupName(LookupLoc(GetLOCModeName(GameInfoManager::s_pInstance->mCurrentMode)));
         WStr message(LookupLoc(popupentry->mMessage));
-        mPopup.pMessage = new WStr(Format<WStr, WStr>(message, cupName));
-        mPopup.pOptionLabels[0] = new WStr(LookupLoc(popupentry->mOptions[0]));
-        mPopup.pOptionLabels[1] = new WStr(LookupLoc(popupentry->mOptions[1]));
+        mPopup.pMessage = new (8, false) WStr(Format<WStr, WStr>(message, cupName));
+        mPopup.pOptionLabels[0] = new (8, false) WStr(LookupLoc(popupentry->mOptions[0]));
+        mPopup.pOptionLabels[1] = new (8, false) WStr(LookupLoc(popupentry->mOptions[1]));
         mPopup.pOptionLabels[2] = NULL;
         mPopup.pOptionLabels[3] = NULL;
         mPopup.numOptions = 2;
@@ -845,14 +848,14 @@ void FEPopupMenu::Create(
         NStr numBlocks(LexicalCast<NStr, int>(blocks));
         unsigned short param1[4];
         nlStrToWcs(numBlocks.c_str(), param1, 4);
-        mPopup.pMessage = new WStr(Format<WStr, unsigned short[4]>(unformatted, param1));
+        mPopup.pMessage = new (8, false) WStr(Format<WStr, unsigned short[4]>(unformatted, param1));
 
         mPopup.numOptions = 0;
         for (int i = 0; i < 4; i++)
         {
             if (popupentry->mOptions[i] != 0)
             {
-                mPopup.pOptionLabels[i] = new WStr(LookupLoc(popupentry->mOptions[i]));
+                mPopup.pOptionLabels[i] = new (8, false) WStr(LookupLoc(popupentry->mOptions[i]));
                 mPopup.numOptions++;
             }
             else
@@ -902,13 +905,13 @@ void FEPopupMenu::Create(
             break;
         }
 
-        mPopup.pMessage = new WStr(Format<WStr, WStr>(unformattedmessage, optionname));
+        mPopup.pMessage = new (8, false) WStr(Format<WStr, WStr>(unformattedmessage, optionname));
         if (menustate == MS_GAMEPLAY)
         {
             mUnknownAA5 = true;
         }
-        mPopup.pOptionLabels[0] = new WStr(LookupLoc(popupentry->mOptions[0]));
-        mPopup.pOptionLabels[1] = new WStr(LookupLoc(popupentry->mOptions[1]));
+        mPopup.pOptionLabels[0] = new (8, false) WStr(LookupLoc(popupentry->mOptions[0]));
+        mPopup.pOptionLabels[1] = new (8, false) WStr(LookupLoc(popupentry->mOptions[1]));
         mPopup.pOptionLabels[2] = NULL;
         mPopup.pOptionLabels[3] = NULL;
         mPopup.numOptions = 2;
@@ -919,7 +922,7 @@ void FEPopupMenu::Create(
     {
         if (popupentry->mMessage != 0)
         {
-            mPopup.pMessage = new WStr(LookupLoc(popupentry->mMessage));
+            mPopup.pMessage = new (8, false) WStr(LookupLoc(popupentry->mMessage));
         }
         else
         {
@@ -931,7 +934,7 @@ void FEPopupMenu::Create(
         {
             if (popupentry->mOptions[i] != 0)
             {
-                mPopup.pOptionLabels[i] = new WStr(LookupLoc(popupentry->mOptions[i]));
+                mPopup.pOptionLabels[i] = new (8, false) WStr(LookupLoc(popupentry->mOptions[i]));
                 mPopup.numOptions++;
             }
             else
