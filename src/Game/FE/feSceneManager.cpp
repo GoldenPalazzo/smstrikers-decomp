@@ -261,39 +261,9 @@ void FESceneManager::QueueScenePush(BaseSceneHandler* pSceneHandler, const char*
     nlDLRingAddEnd(&m_pushPopMessageQueue.m_Head, entry);
 }
 
-static inline void AddSceneHandlerEntry(
-    BasicSlotPool<DLListEntry<BaseSceneHandler*> >& alloc,
-    DLListEntry<BaseSceneHandler*>** head,
-    BaseSceneHandler* const& pHandler)
-{
-    DLListEntry<BaseSceneHandler*>* entry = NULL;
-    BaseSceneHandler* localData = pHandler;
-
-    if (alloc.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&alloc, sizeof(DLListEntry<BaseSceneHandler*>));
-    }
-
-    if (alloc.m_FreeList != NULL)
-    {
-        entry = (DLListEntry<BaseSceneHandler*>*)alloc.m_FreeList;
-        alloc.m_FreeList = alloc.m_FreeList->next;
-    }
-
-    if (entry != NULL)
-    {
-        entry->m_next = NULL;
-        entry->m_prev = NULL;
-        entry->entry = localData;
-    }
-
-    nlDLRingAddStart(head, entry);
-}
-
-static inline void LoadSceneInline(
-    BaseSceneHandler* pHandler,
+inline void FESceneManager::LoadScene(
     const char* szFilename,
-    FESceneManager* pInstance)
+    BaseSceneHandler* pHandler)
 {
     FEScene* pFEScene = new (nlMalloc(0x70, 8, false)) FEScene();
     pFEScene->m_uHashID = nlStringLowerHash(szFilename);
@@ -305,7 +275,7 @@ static inline void LoadSceneInline(
     }
     else
     {
-        pFEScene->m_uRenderView = pInstance->m_uDefaultRenderView;
+        pFEScene->m_uRenderView = m_uDefaultRenderView;
         pHandler->m_pFEScene = pFEScene;
         pHandler->SetPresentation(pFEScene->m_pFEPackage->GetPresentation());
         pHandler->SceneCreated();
@@ -315,37 +285,23 @@ static inline void LoadSceneInline(
 
 /**
  * Offset/Address/Size: 0x540 | 0x8020DB8C | size: 0x270
- * TODO: 99.94% match - the scene handler value uses r27 instead of r24 in the push block
  */
 void FESceneManager::ProcessPushPopQueue()
 {
     FESceneManager* pSceneManager = this;
     PackagePushPopMessage* pPackagePushPopMessage;
-    DLListEntry<PackagePushPopMessage*>** queueHead = &m_pushPopMessageQueue.m_Head;
 
-    while (*queueHead != NULL)
+    while (m_pushPopMessageQueue.m_Head != NULL)
     {
-        DLListEntry<PackagePushPopMessage*>* msgEntry = nlDLRingRemoveStart(queueHead);
-
-        if (&pPackagePushPopMessage != NULL)
-        {
-            pPackagePushPopMessage = msgEntry->entry;
-        }
-
-        msgEntry->m_next = (DLListEntry<PackagePushPopMessage*>*)m_pushPopMessageQueue.m_Allocator.m_FreeList;
-        m_pushPopMessageQueue.m_Allocator.m_FreeList = (SlotPoolEntry*)msgEntry;
+        m_pushPopMessageQueue.RemoveStart(&pPackagePushPopMessage);
 
         if (pPackagePushPopMessage->m_bPush != false)
         {
-            AddSceneHandlerEntry(
-                pSceneManager->m_sceneHandlerStack.m_Allocator,
-                &pSceneManager->m_sceneHandlerStack.m_Head,
-                pPackagePushPopMessage->m_pSceneHandler);
+            pSceneManager->m_sceneHandlerStack.AddStart(pPackagePushPopMessage->m_pSceneHandler);
 
-            LoadSceneInline(
-                pPackagePushPopMessage->m_pSceneHandler,
+            FESceneManager::Instance()->LoadScene(
                 pPackagePushPopMessage->m_szFilename,
-                nlSingleton<FESceneManager>::s_pInstance);
+                pPackagePushPopMessage->m_pSceneHandler);
         }
         else
         {
@@ -384,11 +340,7 @@ void FESceneManager::ProcessPushPopQueue()
             delete pFEScene;
         }
 
-        {
-            SlotPoolEntry* freeEntry = (SlotPoolEntry*)pPackagePushPopMessage;
-            freeEntry->next = m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList;
-            m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList = freeEntry;
-        }
+        m_PushPopMessageSlotPool__21PackagePushPopMessage.Delete(pPackagePushPopMessage);
     }
 }
 

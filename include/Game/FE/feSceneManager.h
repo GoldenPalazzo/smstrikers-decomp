@@ -36,6 +36,7 @@ public:
     void RenderActiveScenes();
     void QueueScenePop();
     void QueueScenePush(BaseSceneHandler*, const char*);
+    void LoadScene(const char*, BaseSceneHandler*);
     void ProcessPushPopQueue();
     BaseSceneHandler* GetSceneHandler(unsigned long);
     void ForceImmediateStackProcessing();

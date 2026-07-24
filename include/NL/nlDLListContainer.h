@@ -38,19 +38,25 @@ public:
 
     DLListEntry<T>* Allocate(const T& data)
     {
-        T localData = data;
-        DLListEntry<T>* entry = m_Allocator.m_pFree;
+        DLListEntry<T> value(data);
+        DLListEntry<T>* entry = m_Allocator.Allocate();
         if (entry != NULL)
         {
-            m_Allocator.m_pFree = entry->m_next;
-        }
-        if (entry != NULL)
-        {
-            entry->m_next = NULL;
-            entry->m_prev = NULL;
-            entry->entry = localData;
+            *entry = value;
         }
         return entry;
+    }
+
+    void AddStart(const T& data)
+    {
+        DLListEntry<T>* entry = Allocate(data);
+        nlDLRingAddStart(&m_Head, entry);
+    }
+
+    void RemoveStart(T* outData)
+    {
+        DLListEntry<T>* entry = nlDLRingRemoveStart(&m_Head);
+        Deallocate(entry, outData);
     }
 
     void Deallocate(DLListEntry<T>* entry, T* outData)
