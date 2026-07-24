@@ -444,8 +444,8 @@ void ReplayManager::RenderSnapshotAt(float deltaTime)
             }
 
             mDeltaTime = 0.0f;
-            mDeltaTime -= 0.5f * cPadManager::GetPad(0)->GetPressure(5, true);
-            mDeltaTime += 0.5f * cPadManager::GetPad(0)->GetPressure(6, true);
+            mDeltaTime -= 0.02f * cPadManager::GetPad(0)->GetPressure(5, true);
+            mDeltaTime += 0.02f * cPadManager::GetPad(0)->GetPressure(6, true);
 
             f32 newTime = mTime + mDeltaTime;
             if (newTime < mReplay->BeginTime())
@@ -466,9 +466,9 @@ void ReplayManager::RenderSnapshotAt(float deltaTime)
     if (nlTaskManager::m_pInstance->m_CurrState == 0x10)
     {
         mSpeed = mSpeedUp * deltaTime + mSpeed;
-        if (mSpeed < 0.0f)
+        if (mSpeed < 0.1f)
         {
-            mSpeed = 0.0f;
+            mSpeed = 0.1f;
         }
         mDeltaTime = mSpeed * deltaTime;
         mTime = mTime + mDeltaTime;

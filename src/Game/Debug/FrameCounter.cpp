@@ -94,7 +94,7 @@ void FrameCounter::FinishTiming()
     }
 
     m_FrameHistory[unk34] = totalFrameTime;
-    if (totalFrameTime > 0.016666668f)
+    if (totalFrameTime > 17.0f)
     {
         unk28++;
     }
@@ -109,7 +109,7 @@ void FrameCounter::FinishTiming()
         if (region->m_pConditionFunc())
         {
             region->m_unk14++;
-            if (totalFrameTime > 0.016666668f)
+            if (totalFrameTime > 17.0f)
             {
                 region->m_unk10++;
             }
@@ -188,7 +188,7 @@ void DrawCircle(nlVector3 p0, float fRadius, float fScaleX, nlColour colour)
         const float angleScale = 10430.378f;
         int i = 0;
         const float uvZero = 0.0f;
-        const float angleStep = 0.20943952f;
+        const float angleStep = 0.21666157f;
         nlVector2 uv1;
 
         while (i < 30)

@@ -434,7 +434,7 @@ static bool PlayVocal(const CROWD_VOCAL_DEFINITION& VocalDef, CROWD_STATE::VOCAL
     }
 
     float zero = 0.0f;
-    if (fabsf(VocalDef.Volume - zero) <= 0.01f)
+    if (fabsf(VocalDef.Volume - zero) <= 0.0001f)
     {
         return false;
     }
@@ -583,7 +583,7 @@ static bool PlayVocal(const CROWD_VOCAL_DEFINITION& VocalDef, CROWD_STATE::VOCAL
             }
 
             VocalState.Ready = false;
-            VocalState.SinceLast = 0.0f;
+            VocalState.SinceLast = -1.0f;
             VocalState.NextAt = nlRandomf(1.0f, &nlDefaultSeed);
             return true;
         }
@@ -723,7 +723,7 @@ static void UpdateTiming(float dtArg)
                         g_CrowdState.SinceMoodDest -= f2;
                         g_CrowdState.SinceMoodDest = (g_CrowdState.SinceMoodDest >= 0.0f) ? g_CrowdState.SinceMoodDest : 0.0f;
 
-                        g_CrowdState.DestMoodLevel = (unsigned char)(255.0f * (float)g_CrowdState.SinceMoodDest);
+                        g_CrowdState.DestMoodLevel = (unsigned char)(5.0f * (float)g_CrowdState.SinceMoodDest);
                         g_CrowdState.CurrentMoodBlend[(s8)g_CrowdState.CurrentMood] = (float)g_CrowdState.SinceMoodDest;
                         g_CrowdState.SkipBlend = true;
                     }
@@ -740,7 +740,7 @@ static void UpdateTiming(float dtArg)
         {
             float f2 = (float)g_CrowdState.VolumeFade.Interp;
 
-            if (fabsf(f2 - 1.0f) <= 0.01f)
+            if (fabsf(f2 - 1.0f) <= 0.0001f)
             {
                 g_CrowdState.VolumeFade.Time = 0.0f;
             }

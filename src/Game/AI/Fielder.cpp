@@ -321,14 +321,18 @@ void cFielder::CalculateNewDesire()
         else
             InitDesire(FIELDERDESIRE_WAIT, 0.5f, -1.0f, fvNotSet, fvNotSet);
     }
-    else if (IsGameplayOrOvertime(g_pGame->GetGameState()))
+    else
     {
-        if (GetGlobalPad())
-            InitDesire(FIELDERDESIRE_USER_CONTROLLED, 0.5f, -1.0f, fvNotSet, fvNotSet);
-        else if (g_pGame->IsThoughtAllowed(mThoughtHashCalcDesire))
-            m_pCurrentPlay->CalculateNewDesire();
-        else
-            InitDesire(FIELDERDESIRE_WAIT_FOR_THOUGHT_CAP, 0.5f, -1.0f, fvNotSet, fvNotSet);
+        bool bGameplayOrOvertime = IsGameplayOrOvertime(g_pGame->GetGameState());
+        if (bGameplayOrOvertime)
+        {
+            if (GetGlobalPad())
+                InitDesire(FIELDERDESIRE_USER_CONTROLLED, 0.5f, -1.0f, fvNotSet, fvNotSet);
+            else if (g_pGame->IsThoughtAllowed(mThoughtHashCalcDesire))
+                m_pCurrentPlay->CalculateNewDesire();
+            else
+                InitDesire(FIELDERDESIRE_WAIT_FOR_THOUGHT_CAP, 0.5f, -1.0f, fvNotSet, fvNotSet);
+        }
     }
 
     if (HasNoDesire(this))

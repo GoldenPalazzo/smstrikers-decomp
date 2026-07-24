@@ -2699,8 +2699,6 @@ float Goalie::CheckForDelflectAwayFromNet()
 
 /**
  * Offset/Address/Size: 0x6D80 | 0x8004987C | size: 0x268
- * TODO: 98.38% match - remaining differences are in animation-gate bool/register allocation
- * and resulting branch target offsets in the PRE_CROUCH transition tail.
  */
 bool Goalie::CheckForLooseBallShotInProgress()
 {
@@ -2769,9 +2767,9 @@ bool Goalie::CheckForLooseBallShotInProgress()
                             mGoalieActionState = GOALIEACTION_PRE_CROUCH;
                             mnSubstate = 0;
 
-                            bool bShouldSetAnim = (m_eAnimID != 0x2E) || (m_pCurrentAnimController->m_ePlayMode == 1 && m_pCurrentAnimController->m_fTime == 1.0f);
+                            bool bCurrentAnimFinished;
 
-                            if (bShouldSetAnim)
+                            if (m_eAnimID != 0x2E || (bCurrentAnimFinished = (m_pCurrentAnimController->m_ePlayMode == 1 && m_pCurrentAnimController->m_fTime == 1.0f)))
                             {
                                 SetAnimState(0x2E, true, 0.2f, false, false);
                             }

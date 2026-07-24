@@ -1116,9 +1116,6 @@ static GCFile* DolphinFileOpen(const char* fileName)
 
 /**
  * Offset/Address/Size: 0x19EC | 0x801D0740 | size: 0x18C
- * TODO: 99.9% match - remaining diffs are a scratch-only fopen mode string
- * label mismatch ("rb") and the DVD entry -1 fast path using li r3,0 /
- * direct return instead of li r29,0 through the shared return block.
  */
 nlFile* nlOpen(const char* fileName)
 {
@@ -1126,27 +1123,11 @@ nlFile* nlOpen(const char* fileName)
 
     if (fileSystem == eGC_TDEV)
     {
-        file = TDEVChunkFileOpen(fileName);
+        file = TDEVChunkFileOpenInline(fileName);
     }
     else
     {
-        s32 fileEntrynum;
-
-        fileEntrynum = DVDConvertPathToEntrynum(fileName);
-        if (fileEntrynum == -1)
-        {
-            file = NULL;
-        }
-        else
-        {
-            DolphinFile* pDolphinFile;
-
-            pDolphinFile = new DolphinFile(fileEntrynum);
-            while (pDolphinFile == NULL)
-            {
-            }
-            file = pDolphinFile;
-        }
+        file = DolphinFileOpenInline(fileName);
     }
 
     return file;

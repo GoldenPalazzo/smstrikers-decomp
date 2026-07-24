@@ -146,7 +146,7 @@ void CupTickerManager::SetTickerTextInstance(TLTextInstance* tickerText)
 {
     if (mTicker)
     {
-        mTicker->ApplyNewTextInstancePointer(tickerText, 0.0f, 1.0f);
+        mTicker->ApplyNewTextInstancePointer(tickerText, 8000.0f, 100.0f);
     }
     else
     {

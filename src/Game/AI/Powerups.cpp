@@ -1157,13 +1157,13 @@ PowerupBase::PowerupBase(cFielder* pTarget, ePowerUpType eType, float fRadius, e
 
     m_aOrientation = nlRandom(65000, &nlDefaultSeed);
 
-    if (eType == POWER_UP_BANANA || eType == POWER_UP_RED_SHELL)
+    if (eType != POWER_UP_BANANA && eType != POWER_UP_RED_SHELL)
     {
-        mtNoHitTimer.SetSeconds(1.0f);
+        mtNoHitTimer.SetSeconds(0.4f);
     }
     else
     {
-        mtNoHitTimer.SetSeconds(0.4f);
+        mtNoHitTimer.SetSeconds(1.0f);
     }
 
     m_v3Position.f.x = 0.0f;
@@ -2610,7 +2610,6 @@ found1:
 
 /**
  * Offset/Address/Size: 0x1E00 | 0x8005C6EC | size: 0x250
- * TODO: 99.84% match - jump table relocation symbol mismatch in switch dispatch (@3011 vs generated local label).
  */
 unsigned long PowerupBase::PlayPowerupSound(ePowerUpType type, PowerupBase::PowerupSound powerupSnd, PhysicsObject* pPhysObj, float fVol)
 {
@@ -2676,7 +2675,7 @@ unsigned long PowerupBase::PlayPowerupSound(ePowerUpType type, PowerupBase::Powe
             if ((powerupSnd == PWRUP_SOUND_IN_EFFECT) || (powerupSnd == PWRUP_SOUND_ACTIVATE))
             {
                 sndAtr.UsePhysObj(pPhysObj);
-                *(u8*)&sndAtr.mp_OwnerSFX = 1;
+                sndAtr.mf_ReturnEmitterOnPlay = 1;
             }
             else
             {
@@ -2688,7 +2687,7 @@ unsigned long PowerupBase::PlayPowerupSound(ePowerUpType type, PowerupBase::Powe
             if (powerupSnd == PWRUP_SOUND_IN_EFFECT)
             {
                 sndAtr.UsePhysObj(pPhysObj);
-                *(u8*)&sndAtr.mp_OwnerSFX = 1;
+                sndAtr.mf_ReturnEmitterOnPlay = 1;
             }
             else
             {
@@ -2701,7 +2700,7 @@ unsigned long PowerupBase::PlayPowerupSound(ePowerUpType type, PowerupBase::Powe
 
     if (fVol != 1.0f)
     {
-        sndAtr.mf_Attenuate = fVol * fDefaultVol;
+        sndAtr.mf_Volume = fVol * fDefaultVol;
     }
 
     return Audio::gPowerupSFX.Play(sndAtr);
@@ -3068,27 +3067,25 @@ void RedShell::SeekTarget()
     }
 
     const nlVector3& targetPos = ((cCharacter*)target)->m_v3Position;
-    dy = targetPos.f.y - m_v3Position.f.y;
-    dx = targetPos.f.x - m_v3Position.f.x;
+    dy = targetPos.f.x - m_v3Position.f.x;
+    dx = targetPos.f.y - m_v3Position.f.y;
 
     float distSq = dy * dy + dx * dx;
-
-    // Dead call - result discarded but compiler doesn't optimize it away
     nlSqrt(distSq, true);
 
     float invDist = 1.0f / nlSqrt(distSq, true);
     dx = invDist * dx;
     dy = invDist * dy;
 
-    float velX = m_v3Velocity.f.x;
-    float velY = m_v3Velocity.f.y;
+    float velX = m_v3Velocity.f.y;
+    float velY = m_v3Velocity.f.x;
     fCurrSpeed = nlGetLength2D(velY, velX);
 
-    float turnRate = 5.0f;
+    float turnRate = 8.5f;
     float steerY = turnRate * dy;
     float steerX = turnRate * dx;
-    newVelY = steerY + m_v3Velocity.f.y;
-    newVelX = steerX + m_v3Velocity.f.x;
+    newVelY = steerY + m_v3Velocity.f.x;
+    newVelX = steerX + m_v3Velocity.f.y;
 
     float newSpeed = nlSqrt(newVelY * newVelY + newVelX * newVelX, true);
     float invNewSpeed = 1.0f / newSpeed;
@@ -3244,11 +3241,11 @@ void SpinyShell::Update(float dt)
     if (mtNoHitTimer.m_uPackedTime == 0)
     {
         nlCartesianToPolar(polar2, m_v3Velocity.f.x, m_v3Velocity.f.y);
-        if (polar2.r < 0.5f)
+        if (polar2.r < 3.0f)
         {
             m_bShouldDestroy = true;
         }
-        else if (polar2.r > 5.0f)
+        else if (polar2.r > 20.0f)
         {
             vel = *(const nlVector2*)&m_v3Velocity;
             f32 velX = vel.f.x;
@@ -3257,7 +3254,7 @@ void SpinyShell::Update(float dt)
             f32 sqY = velY * velY;
             f32 recipLen = nlRecipSqrt(sqX + sqY, true);
             nlVec2Set(vel, recipLen * velX, recipLen * velY);
-            nlVec2Set(vel, 5.0f * vel.f.x, 5.0f * vel.f.y);
+            nlVec2Set(vel, 19.0f * vel.f.x, 19.0f * vel.f.y);
             nlVector3 cappedVel;
             cappedVel.f.y = vel.f.y;
             cappedVel.f.x = vel.f.x;

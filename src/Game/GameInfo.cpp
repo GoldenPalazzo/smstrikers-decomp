@@ -3356,7 +3356,8 @@ signed char GameInfoManager::DetermineUserPlacement(Spoil* pSpoil)
     {
         allStats[i] = GetTeamStatsByIndex(i);
 
-        if (allStats[i].mTeamIndex == mCurrentCup->mUserSelectedTeam)
+        eTeamID teamIndex = allStats[i].mTeamIndex;
+        if (teamIndex == mCurrentCup->mUserSelectedTeam)
         {
             userIndex = i;
         }
@@ -3569,14 +3570,16 @@ eTeamID GameInfoManager::FindWinningTeam()
     int numTeams;
     int i;
 
+    unsigned short temp;
     if (mCurrentMode == GM_BOWSER_CUP || mCurrentMode == GM_SUPER_BOWSER_CUP)
     {
-        numTeams = 8;
+        temp = 8;
     }
     else
     {
-        numTeams = mCurrentCup->GetNumTeams();
+        temp = mCurrentCup->GetNumTeams();
     }
+    numTeams = temp;
 
     TeamStats* pTemp = (TeamStats*)tempBuf;
     for (i = 0; i < numTeams; i++)

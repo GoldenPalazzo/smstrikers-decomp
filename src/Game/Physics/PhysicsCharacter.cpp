@@ -53,7 +53,7 @@ PhysicsCharacter::PhysicsCharacter(float radius, float heightScale)
     m_pAICharacter = NULL;
 
     m_gravity = 0.0f;
-    SetMass(17.5f);
+    SetMass(100.0f);
 
     PhysicsColumn* column = (PhysicsColumn*)nlMalloc(0x30, 8, false);
     column = new (column) PhysicsColumn(g_CollisionSpace, g_PhysicsWorld, radius);
@@ -80,7 +80,7 @@ bool PhysicsCharacter::SetContactInfo(dContact* contact, PhysicsObject* other, b
     int objectType = other->GetObjectType();
     if (objectType == 0xF || objectType == 0x10)
     {
-        contact->surface.bounce = 0.0f;
+        contact->surface.bounce = 0.2f;
     }
     return result;
 }

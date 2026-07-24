@@ -57,34 +57,34 @@ void FEAudioEventHandler(Event* pEvent, void*)
     switch (pEvent->m_uEventID)
     {
     case 0x48:
-        Audio::gWorldSFX.Play(Audio::WORLDSFX_PLACEHOLDER, 1.0f, 0.0f, false, 1.0f);
+        Audio::gWorldSFX.Play(Audio::WORLDSFX_PLACEHOLDER, 100.0f, -1.0f, false, 100.0f);
         break;
     case 0x49:
-        Audio::gWorldSFX.Play(Audio::WORLDSFX_PLACEHOLDER, 1.0f, 0.0f, false, 1.0f);
+        Audio::gWorldSFX.Play(Audio::WORLDSFX_PLACEHOLDER, 100.0f, -1.0f, false, 100.0f);
         break;
     case 0x4A:
-        Audio::gWorldSFX.Play(Audio::WORLDSFX_PLACEHOLDER, 1.0f, 0.0f, false, 1.0f);
+        Audio::gWorldSFX.Play(Audio::WORLDSFX_PLACEHOLDER, 100.0f, -1.0f, false, 100.0f);
         break;
     case 0x4B:
-        Audio::gWorldSFX.Play(Audio::WORLDSFX_PLACEHOLDER, 1.0f, 0.0f, false, 1.0f);
+        Audio::gWorldSFX.Play(Audio::WORLDSFX_PLACEHOLDER, 100.0f, -1.0f, false, 100.0f);
         break;
     case 0x4C:
-        Audio::gWorldSFX.Play(Audio::WORLDSFX_FE_BUTTON_GEN_SELECT_ACCEPT, 1.0f, 0.0f, false, 1.0f);
+        Audio::gWorldSFX.Play(Audio::WORLDSFX_FE_BUTTON_GEN_SELECT_ACCEPT, 100.0f, -1.0f, false, 100.0f);
         break;
     case 0x4D:
-        Audio::gWorldSFX.Play(Audio::WORLDSFX_FE_BUTTON_GEN_SELECT_BACK, 1.0f, 0.0f, false, 1.0f);
+        Audio::gWorldSFX.Play(Audio::WORLDSFX_FE_BUTTON_GEN_SELECT_BACK, 100.0f, -1.0f, false, 100.0f);
         break;
     case 0x4E:
         AudioLoader::PlayPauseMenuMusic();
         break;
     case 0x4F:
-        Audio::gWorldSFX.Play(Audio::WORLDSFX_FE_SCREEN_GEN_BEGIN, 1.0f, 0.0f, false, 1.0f);
+        Audio::gWorldSFX.Play(Audio::WORLDSFX_FE_SCREEN_GEN_BEGIN, 100.0f, -1.0f, false, 100.0f);
         break;
     case 0x50:
-        Audio::gWorldSFX.Play(Audio::WORLDSFX_FE_SCREEN_GEN_END, 1.0f, 0.0f, false, 1.0f);
+        Audio::gWorldSFX.Play(Audio::WORLDSFX_FE_SCREEN_GEN_END, 100.0f, -1.0f, false, 100.0f);
         break;
     case 0x51:
-        Audio::gWorldSFX.Play(Audio::WORLDSFX_FE_DENY, 1.0f, 0.0f, false, 1.0f);
+        Audio::gWorldSFX.Play(Audio::WORLDSFX_FE_DENY, 100.0f, -1.0f, false, 100.0f);
         break;
     case 0x52:
     {

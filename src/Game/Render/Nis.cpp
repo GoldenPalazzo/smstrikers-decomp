@@ -655,29 +655,14 @@ void Nis::Trigger::Fire(Nis& nis) const
  */
 void Nis::StopAllOutstandingNisAudio()
 {
-    struct NisAudioDataExt
-    {
-        NisAudioType audioType;
-        union
-        {
-            SFXEmitter* pEmitter;
-            unsigned long index;
-        } identifier;
-        unsigned long soundType;
-        char str[128];
-        unsigned char isEmitter;
-        unsigned char stopAtNisEnd;
-        unsigned char pad[2];
-        NisAudioDataExt* next;
-    };
-
-    NisAudioDataExt* pNisAudioData = (NisAudioDataExt*)mNisAudioDataList;
+    NisAudioData* pNisAudioData = mNisAudioDataList;
     while (pNisAudioData != NULL)
     {
         switch (pNisAudioData->audioType)
         {
         case NIS_AUDIO_TYPE_SFX:
         {
+            NisAudioData* pNextNisAudioData;
             SFXEmitter* pSFXEmitter;
             unsigned char bNisEndedNormally = 0;
             cPN_SAnimController* pController;
@@ -753,8 +738,8 @@ void Nis::StopAllOutstandingNisAudio()
                 }
             }
 
-            nlListRemoveElement(&mNisAudioDataList, (NisAudioData*)pNisAudioData, (NisAudioData**)NULL);
-            NisAudioDataExt* pNextNisAudioData = pNisAudioData->next;
+            nlListRemoveElement(&mNisAudioDataList, pNisAudioData, (NisAudioData**)NULL);
+            pNextNisAudioData = pNisAudioData->next;
 
             pNisAudioData->audioType = NIS_AUDIO_TYPE_NONE;
             pNisAudioData->identifier.index = (unsigned long)-1;

@@ -141,7 +141,7 @@ void ParticleSystem::UpdateCoordSys(nlMatrix4& mCoordSys)
     float refY = refX;
 
     float dot = refX * gravY + refX * gravX + refZ * gravZ;
-    if ((float)__fabs(dot) > 0.999f)
+    if ((float)__fabs(dot) > 0.99f)
     {
         refY = refZ;
         refZ = refX;
@@ -435,7 +435,7 @@ void ParticleSystem::CreateNewParticles(int numParticles)
     {
         baseDir.f.x = 0.0f;
         baseDir.f.y = 0.0f;
-        baseDir.f.z = 1.0f;
+        baseDir.f.z = -1.0f;
     }
     else
     {
@@ -541,7 +541,7 @@ void ParticleSystem::CreateNewParticles(int numParticles)
  */
 void ParticleSystem::UpdateParticle(ParticleReturn* pReturn, Particle* pPart, EffectsTemplate* pTemplate, const nlVector3& viewRight, const nlVector3& viewUp, const nlMatrix4* pCoordSys)
 {
-    int colourIndex = (int)(24.0f * (pPart->timeElapsed / pPart->lifeSpan));
+    int colourIndex = (int)(24.5f * (pPart->timeElapsed / pPart->lifeSpan));
     nlColour* pColours = pTemplate->m_cColour;
     pReturn->c = pColours[colourIndex];
 

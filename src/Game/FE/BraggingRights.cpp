@@ -168,7 +168,6 @@ void BraggingRightsOverlay::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x29A8 | 0x800D49A4 | size: 0x494
- * TODO: 99.94% match - remaining colour byte stores are ordered c2/c1/c0 vs c1/c0/c2
  */
 void BraggingRightsOverlay::IngameSceneCreated()
 {
@@ -257,10 +256,14 @@ void BraggingRightsOverlay::IngameSceneCreated()
 
             nlColour colour;
             const unsigned char* padColour = PAD_COLOURS[mAwardWinners[award]];
+            unsigned char colour2 = padColour[2];
+            unsigned char colour1 = padColour[1];
+            unsigned char colour0 = padColour[0];
+
             colour.c[3] = 0xFF;
-            colour.c[2] = padColour[2];
-            colour.c[1] = padColour[1];
-            colour.c[0] = padColour[0];
+            colour.c[1] = colour1;
+            colour.c[0] = colour0;
+            colour.c[2] = colour2;
 
             pText->SetAssetColour(colour);
         }
