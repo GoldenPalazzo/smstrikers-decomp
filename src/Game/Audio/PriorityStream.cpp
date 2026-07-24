@@ -426,6 +426,10 @@ unsigned long PriorityStream::GrabCrowdStream(unsigned long Fadeout)
     GCAudioStreaming::StereoAudioStream* pStream;
     unsigned long result = 0;
     unsigned long zero = 0;
+    volatile unsigned long iPlayStop;
+    volatile unsigned long iWarmStop;
+    volatile unsigned long iPlayFree;
+    volatile unsigned long iWarmFree;
 
     if (!CrowdMood::IsStreamLocked())
     {
@@ -450,7 +454,7 @@ unsigned long PriorityStream::GrabCrowdStream(unsigned long Fadeout)
                     if (pStream->m_State == GCAudioStreaming::SS_Playing)
                     {
                         GCAudioStreaming::AudioStreamBuffer* pBuffer;
-                        volatile unsigned long i = (unsigned long)(pBuffer = NULL);
+                        iPlayStop = (unsigned long)(pBuffer = NULL);
 
                         if (pStream->m_BufferCount > zero)
                         {
@@ -465,8 +469,8 @@ unsigned long PriorityStream::GrabCrowdStream(unsigned long Fadeout)
                             pStream->m_State = GCAudioStreaming::SS_Warm;
 
                             {
-                                unsigned long ci = i + 1;
-                                i = ci;
+                                unsigned long ci = iPlayStop + 1;
+                                iPlayStop = ci;
                                 if (ci < pStream->m_BufferCount)
                                 {
                                     pBuffer = pStream->m_Buffers[ci];
@@ -491,7 +495,7 @@ unsigned long PriorityStream::GrabCrowdStream(unsigned long Fadeout)
                         if (pStream->m_State > GCAudioStreaming::SS_Initd)
                         {
                             GCAudioStreaming::AudioStreamBuffer* pBuffer;
-                            volatile unsigned long i = (unsigned long)(pBuffer = NULL);
+                            iPlayFree = (unsigned long)(pBuffer = NULL);
 
                             pStream->m_Flags = (pStream->m_Flags & ~(1 << GCAudioStreaming::SF_SeriousStop)) | (1 << GCAudioStreaming::SF_SeriousStop);
 
@@ -505,10 +509,10 @@ unsigned long PriorityStream::GrabCrowdStream(unsigned long Fadeout)
                                 pStream->m_BuffMgr.FreeBuffer(pBuffer);
 
                                 {
-                                    unsigned long idx = i;
+                                    unsigned long idx = iPlayFree;
                                     pStream->m_Buffers[idx] = NULL;
                                     idx = idx + 1;
-                                    i = idx;
+                                    iPlayFree = idx;
                                     if (idx < pStream->m_BufferCount)
                                     {
                                         pBuffer = pStream->m_Buffers[idx];
@@ -534,7 +538,7 @@ unsigned long PriorityStream::GrabCrowdStream(unsigned long Fadeout)
                 if (pStream->m_State == GCAudioStreaming::SS_Playing)
                 {
                     GCAudioStreaming::AudioStreamBuffer* pBuffer;
-                    volatile unsigned long i = (unsigned long)(pBuffer = NULL);
+                    iWarmStop = (unsigned long)(pBuffer = NULL);
 
                     if (pStream->m_BufferCount > zero)
                     {
@@ -549,8 +553,8 @@ unsigned long PriorityStream::GrabCrowdStream(unsigned long Fadeout)
                         pStream->m_State = GCAudioStreaming::SS_Warm;
 
                         {
-                            unsigned long ci = i + 1;
-                            i = ci;
+                            unsigned long ci = iWarmStop + 1;
+                            iWarmStop = ci;
                             if (ci < pStream->m_BufferCount)
                             {
                                 pBuffer = pStream->m_Buffers[ci];
@@ -575,7 +579,7 @@ unsigned long PriorityStream::GrabCrowdStream(unsigned long Fadeout)
                     if (pStream->m_State > GCAudioStreaming::SS_Initd)
                     {
                         GCAudioStreaming::AudioStreamBuffer* pBuffer;
-                        volatile unsigned long i = (unsigned long)(pBuffer = NULL);
+                        iWarmFree = (unsigned long)(pBuffer = NULL);
 
                         pStream->m_Flags = (pStream->m_Flags & ~(1 << GCAudioStreaming::SF_SeriousStop)) | (1 << GCAudioStreaming::SF_SeriousStop);
 
@@ -589,10 +593,10 @@ unsigned long PriorityStream::GrabCrowdStream(unsigned long Fadeout)
                             pStream->m_BuffMgr.FreeBuffer(pBuffer);
 
                             {
-                                unsigned long idx = i;
+                                unsigned long idx = iWarmFree;
                                 pStream->m_Buffers[idx] = NULL;
                                 idx = idx + 1;
-                                i = idx;
+                                iWarmFree = idx;
                                 if (idx < pStream->m_BufferCount)
                                 {
                                     pBuffer = pStream->m_Buffers[idx];
