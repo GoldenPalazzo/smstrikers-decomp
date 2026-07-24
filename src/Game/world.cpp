@@ -72,17 +72,15 @@ int World::CompareNameToGenericName(const char* str1, const char* str2)
 
 /**
  * Offset/Address/Size: 0x5C | 0x80194D20 | size: 0x44
- * TODO: 99.7% match - r3 vs r31 base register on lwz r5,0x120; peephole off prevents scheduling hoist but forces r31 usage
  */
-#pragma push
-#pragma peephole off
 unsigned long World::GetHashIdForGenericName(const char* name) const
 {
-    int len = m_WorldNameLength;
-    nlStrNCpy<char>((char*)this + len + 0xe0, name, (unsigned long)(0x40 - len));
-    return nlStringLowerHash((const char*)this + 0xe0);
+    nlStrNCpy<char>(
+        m_WorldNamePrefix + m_WorldNameLength,
+        name,
+        (unsigned long)(sizeof(m_WorldNamePrefix) - m_WorldNameLength));
+    return nlStringLowerHash(m_WorldNamePrefix);
 }
-#pragma pop
 
 /**
  * Offset/Address/Size: 0xA0 | 0x80194D64 | size: 0x1F0

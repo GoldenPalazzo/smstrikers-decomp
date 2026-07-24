@@ -1,4 +1,5 @@
 #include "Game/AI/Fielder.h"
+#include "Game/MathHelpers.h"
 #include "Game/AI/FielderActions.h"
 #include "Game/AI/AIPlay.h"
 #include "Game/AI/AiUtil.h"
@@ -38,6 +39,11 @@
 #include "NL/nlPrint.h"
 #include "NL/nlString.h"
 #include "math.h"
+
+static inline s16 GetAngleDifference(u32 a, u32 b)
+{
+    return (s16)(a - b);
+}
 
 static f32 CANT_COLLIDE = *(f32*)__float_max;
 
@@ -359,10 +365,13 @@ bool cFielder::CanDoCaptainShootToScore()
     return false;
 }
 
+static inline float GetNormalizedContactTime(const cSAnim* anim, float contactFrame)
+{
+    return contactFrame / (float)anim->m_nNumKeys;
+}
+
 /**
  * Offset/Address/Size: 0xC648 | 0x80025984 | size: 0x1CC
- * TODO: 99.91% match - remaining contact-frame source register in the first
- * ratio divide (`lfs f1` target vs `lfs f9` current).
  */
 bool cFielder::CanLooseBallShoot()
 {
@@ -371,11 +380,10 @@ bool cFielder::CanLooseBallShoot()
         && (g_pBall->m_tShotTimer.m_uPackedTime == 0)
         && (g_pBall->m_unk_0xA6 == 0))
     {
-        u32 nNumKeys = m_pAnimInventory->GetAnim(gOneTimerLeadGroundContactAnims[0].nAnimID)->m_nNumKeys;
+        const cSAnim* guessContactAnim = m_pAnimInventory->GetAnim(gOneTimerLeadGroundContactAnims[0].nAnimID);
         const cBall* pBall = g_pBall;
-        float ratio = gOneTimerLeadGroundContactAnims[0].fAnimContactFrame;
-        ratio /= (float)nNumKeys;
-        float frames = (float)nNumKeys / 30.0f;
+        float ratio = GetNormalizedContactTime(guessContactAnim, gOneTimerLeadGroundContactAnims[0].fAnimContactFrame);
+        float frames = (float)guessContactAnim->m_nNumKeys / 30.0f;
         float contactTime = ratio * frames;
 
         nlVector3 v3PredictedPos;
@@ -412,8 +420,6 @@ bool cFielder::CanLooseBallShoot()
 
 /**
  * Offset/Address/Size: 0xC468 | 0x800257A4 | size: 0x1E0
- * TODO: 99.92% match - remaining contact-frame source register in the first
- * ratio divide (`lfs f1` target vs `lfs f9` current).
  */
 bool cFielder::CanLooseBallPass()
 {
@@ -422,11 +428,10 @@ bool cFielder::CanLooseBallPass()
         && (g_pBall->m_tShotTimer.m_uPackedTime == 0)
         && (g_pBall->m_unk_0xA6 == 0))
     {
-        u32 nNumKeys = m_pAnimInventory->GetAnim(gOneTimerLeadGroundContactAnims[0].nAnimID)->m_nNumKeys;
+        const cSAnim* guessContactAnim = m_pAnimInventory->GetAnim(gOneTimerLeadGroundContactAnims[0].nAnimID);
         const cBall* pBall = g_pBall;
-        float ratio = gOneTimerLeadGroundContactAnims[0].fAnimContactFrame;
-        ratio /= (float)nNumKeys;
-        float frames = (float)nNumKeys / 30.0f;
+        float ratio = GetNormalizedContactTime(guessContactAnim, gOneTimerLeadGroundContactAnims[0].fAnimContactFrame);
+        float frames = (float)guessContactAnim->m_nNumKeys / 30.0f;
         float contactTime = ratio * frames;
 
         nlVector3 v3PredictedPos;
@@ -2095,8 +2100,6 @@ void cFielder::ShootBallDueToContact(unsigned short aAngle)
 
 /**
  * Offset/Address/Size: 0x8F5C | 0x80022298 | size: 0x230
- * TODO: 99.86% match - remaining angle-selection register allocation:
- *       r3/r4 signed delta swap and cmplw operand order drift.
  */
 void cFielder::DoClearBall()
 {
@@ -2117,8 +2120,8 @@ void cFielder::DoClearBall()
     u32 aFacing = m_aActualFacingDirection;
     u32 aBottom = pClearingBottomAngle.a;
     u32 aTop = pClearingTopAngle.a;
-    s16 nBottomDelta = (int)(s16)(aFacing - aBottom);
-    s16 nTopDelta = (int)(s16)(aFacing - aTop);
+    s16 nBottomDelta = GetAngleDifference(aFacing, aBottom);
+    s16 nTopDelta = GetAngleDifference(aFacing, aTop);
 
     if (pShotMeter->mfSShotAimValue > 0.5f)
     {
@@ -2130,8 +2133,8 @@ void cFielder::DoClearBall()
     }
     else
     {
-        u16 nAbsBottomDelta = (u16)((nBottomDelta < 0) ? -nBottomDelta : nBottomDelta);
-        u16 nAbsTopDelta = (u16)((nTopDelta < 0) ? -nTopDelta : nTopDelta);
+        u16 nAbsTopDelta = (u16)abs_s16(nTopDelta);
+        u16 nAbsBottomDelta = (u16)abs_s16(nBottomDelta);
 
         if (nAbsBottomDelta < nAbsTopDelta)
         {
@@ -2418,7 +2421,6 @@ bool cFielder::DoLooseBallContactFromIdle(nlVector3& v3AnimStartPosition, float&
 
 /**
  * Offset/Address/Size: 0x87A8 | 0x80021AE4 | size: 0x270
- * TODO: 99.94% match - remaining commuted fmadds operands in contact-offset rotation block
  */
 bool cFielder::DoLooseBallContactFromRun(nlVector3& v3AnimStartPosition, float& fAnimStartTime, nlVector3& v3BallContactPosition, float& fBallContactTime,
     const LooseBallContactAnimInfo* pBestBallContactAnimInfo, const nlVector3& v3PassIntercept)
@@ -2485,7 +2487,7 @@ bool cFielder::DoLooseBallContactFromRun(nlVector3& v3AnimStartPosition, float& 
     float ySin = v3ContactOffsetLocal.f.y * fSin;
     float xSin = v3ContactOffsetLocal.f.x * fSin;
     pContactOffsetWorld->f.x = (v3ContactOffsetLocal.f.x * fCos) - ySin;
-    pContactOffsetWorld->f.y = (fCos * v3ContactOffsetLocal.f.y) + xSin;
+    pContactOffsetWorld->f.y = (v3ContactOffsetLocal.e[1] * fCos) + xSin;
     pContactOffsetWorld->f.z = v3ContactOffsetLocal.f.z;
 
     float fDesiredSpeedToAnimStart = (float)nNumKeys / 30.0f;
@@ -2513,7 +2515,6 @@ bool cFielder::DoLooseBallContactFromRun(nlVector3& v3AnimStartPosition, float& 
 
 /**
  * Offset/Address/Size: 0x84AC | 0x800217E8 | size: 0x2FC
- * TODO: 99.95% match - remaining commuted fmadds operands in contact-offset rotation block
  */
 bool cFielder::DoLooseBallContactFromRunVolley(nlVector3& v3AnimStartPosition, float& fAnimStartTime, nlVector3& v3BallContactPosition, float& fBallContactTime,
     const LooseBallContactAnimInfo* pBestBallContactAnimInfo, const nlVector3& v3PassIntercept)
@@ -2533,7 +2534,7 @@ bool cFielder::DoLooseBallContactFromRunVolley(nlVector3& v3AnimStartPosition, f
     float ySin = v3ContactOffsetLocal.f.y * fSin;
     float xSin = v3ContactOffsetLocal.f.x * fSin;
     pContactOffsetWorld->f.x = (v3ContactOffsetLocal.f.x * fCos) - ySin;
-    pContactOffsetWorld->f.y = (fCos * v3ContactOffsetLocal.f.y) + xSin;
+    pContactOffsetWorld->f.y = (v3ContactOffsetLocal.e[1] * fCos) + xSin;
     pContactOffsetWorld->f.z = v3ContactOffsetLocal.f.z;
 
     float fContactZ;

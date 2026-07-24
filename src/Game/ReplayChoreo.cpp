@@ -35,7 +35,6 @@ ReplayChoreo& ReplayChoreo::Instance()
 
 /**
  * Offset/Address/Size: 0x0 | 0x801287C0 | size: 0x3B4
- * TODO: 99.96% match - single OR operand order swap in case 0 (or r0,r0,r3 vs or r0,r3,r0)
  */
 void ReplayChoreo::DoFunctionCall(unsigned int func)
 {
@@ -44,7 +43,8 @@ void ReplayChoreo::DoFunctionCall(unsigned int func)
     case 0:
     {
         m_SP--;
-        mCamera.mFocus = *m_SP | mCamera.mFocus;
+        ReplayCameraFocus arg0 = (ReplayCameraFocus)*m_SP;
+        AddCameraFocus(arg0);
         break;
     }
     case 1:

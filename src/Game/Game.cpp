@@ -214,6 +214,39 @@ static inline void ApplyDifficulty(eDifficultyID diff0, eDifficultyID diff1, eDi
     }
 }
 
+static inline void DestroyPowerupsImpl(cGame* pGame)
+{
+    for (int teamIndex = 0; teamIndex < 2; teamIndex++)
+    {
+        cTeam* pTeam = g_pTeams[teamIndex];
+        if (pTeam != NULL)
+        {
+            pTeam->mfPowerupMeter = 0.0f;
+        }
+    }
+
+    for (int i = 0; i < 25; i++)
+    {
+        PowerupBase* pPowerup = g_pPowerups[i];
+        if (pPowerup != NULL)
+        {
+            pPowerup->Destroy(true);
+            g_pPowerups[i] = NULL;
+        }
+    }
+
+    if (BasicStadium::GetCurrentStadium()->mpNPCManager != NULL)
+    {
+        if (BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp != NULL)
+        {
+            if (pGame->mbCaptainShotToScoreOn == false)
+            {
+                BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp->Hide(true);
+            }
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0x1FC4 | 0x8003E7E8 | size: 0x6E0
  * TODO: 99.6% match - register allocation in team, ScriptQuestionCache, and default-string setup
@@ -305,48 +338,10 @@ void DestroyGame()
 
 /**
  * Offset/Address/Size: 0x2024 | 0x8003E598 | size: 0xF4
- * TODO: 99.0% match - r28/r29/r30 register rotation for pGame/i/ppPowerups
  */
 void DestroyPowerups()
 {
-    int i;
-    cGame* pGame;
-    cTeam** ppTeams;
-    cTeam* pTeam;
-
-    ppTeams = g_pTeams;
-    pGame = g_pGame;
-
-    for (i = 0; i < 2; i++)
-    {
-        pTeam = ppTeams[i];
-        if (pTeam != NULL)
-        {
-            pTeam->mfPowerupMeter = 0.0f;
-        }
-    }
-
-    for (i = 0; i < 25; i++)
-    {
-        PowerupBase* pPowerup = g_pPowerups[i];
-        if (pPowerup != NULL)
-        {
-            pPowerup->Destroy(true);
-            g_pPowerups[i] = NULL;
-        }
-    }
-
-    if (BasicStadium::GetCurrentStadium()->mpNPCManager != NULL)
-    {
-        if (BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp != NULL)
-        {
-            if (pGame->mbCaptainShotToScoreOn == false)
-            {
-                BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp->Hide(true);
-            }
-        }
-    }
-
+    DestroyPowerupsImpl(g_pGame);
     CompactPowerups();
 }
 

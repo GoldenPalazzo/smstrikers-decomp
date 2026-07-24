@@ -590,13 +590,6 @@ public:
     unsigned long mThoughtHashInitWindupPass;  // offset 0x3E4, size 0x4
     unsigned long mThoughtHashInitCutAndBreak; // offset 0x3E8, size 0x4
 
-    static const int SlideAttackReactAnims[4];
-    // static const int SlideAttackReactAnims[4] = {
-    //     0x66,
-    //     0x69,
-    //     0x68,
-    //     0x67,
-    // };
 }; // total size: 0x3EC
 
 #endif // _FIELDER_H_

@@ -124,13 +124,6 @@ public:
     static void Flash();
 };
 
-int SlideAttackReactAnims[4] = {
-    0x66,
-    0x69,
-    0x68,
-    0x67,
-};
-
 const static int ShellAttackReactAnims[4] = {
     0x66,
     0x69,
@@ -4188,7 +4181,6 @@ void cFielder::DoSlideAttackStats()
 
 /**
  * Offset/Address/Size: 0x5C0 | 0x800270F8 | size: 0x2E0
- * TODO: Just one reg mismatch on SetFacingAnim
  */
 void cFielder::InitActionSlideAttackReact(cPlayer* pAttacker, bool bSkipEvent)
 {
@@ -4211,8 +4203,15 @@ void cFielder::InitActionSlideAttackReact(cPlayer* pAttacker, bool bSkipEvent)
         InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
         SetAction(ACTION_SLIDE_ATTACK_REACT);
 
-        u16 facingDelta = (u16)(GetFacingDeltaToPosition(pAttacker->m_v3Position) + 0x2000);
-        SetAnimState(SlideAttackReactAnims[facingDelta >> 14], true, 0.2f, false, false);
+        static int SlideAttackReactAnims[4] = {
+            0x66,
+            0x69,
+            0x68,
+            0x67,
+        };
+        s16 aSlideAttackReact = GetFacingDeltaToPosition(pAttacker->m_v3Position);
+        aSlideAttackReact += 0x2000;
+        SetAnimState(SlideAttackReactAnims[(u16)aSlideAttackReact >> 14], true, 0.2f, false, false);
 
         InitMovementFromAnim(0, v3Zero, 1.0f, false);
 

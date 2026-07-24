@@ -344,13 +344,14 @@ void ShapeRender::CreateCylinderGeometry(PrimitiveShape& prim)
 
 /**
  * Offset/Address/Size: 0xAC0 | 0x801FBD50 | size: 0x354
- * TODO: 99.95% match - lit-program register assignment in the second packet loop still differs.
  */
 void ShapeRender::DrawSpherePrimitive(const nlMatrix4& mat_world, float radius, const nlColour& colour) const
 {
     nlMatrix4 mat_hemiTop;
     nlMatrix4 mat_hemiBottom;
     nlMatrix4 mat_rot;
+    unsigned long topLitProgram;
+    void* pLightData;
 
     radius = radius / 100.0f;
 
@@ -367,8 +368,6 @@ void ShapeRender::DrawSpherePrimitive(const nlMatrix4& mat_world, float radius, 
             glSetMatrix(matrix, mat_hemiTop);
         }
 
-        unsigned long litProgram;
-        void* pLightData;
         glModelPacket* packet;
         void* pUserData;
         glModel* pModel = glModelDupNoStreams(m_Hemisphere.model, true, false);
@@ -394,7 +393,7 @@ void ShapeRender::DrawSpherePrimitive(const nlMatrix4& mat_world, float radius, 
 
         packet = pModel->packets;
         pLightData = m_pLightUserData;
-        litProgram = LitProgram;
+        topLitProgram = LitProgram;
 
         while (packet < &pModel->packets[pModel->numPackets])
         {
@@ -403,7 +402,7 @@ void ShapeRender::DrawSpherePrimitive(const nlMatrix4& mat_world, float radius, 
 
             if (g_bLit && pLightData != NULL)
             {
-                packet->state.program = litProgram;
+                packet->state.program = topLitProgram;
                 glUserAttach(pLightData, packet, false);
             }
 
@@ -421,8 +420,6 @@ void ShapeRender::DrawSpherePrimitive(const nlMatrix4& mat_world, float radius, 
         }
 
         glModelPacket* packet;
-        unsigned long litProgram;
-        void* pLightData;
         void* pUserData;
         glModel* pModel = glModelDupNoStreams(m_Hemisphere.model, true, false);
 
@@ -447,7 +444,7 @@ void ShapeRender::DrawSpherePrimitive(const nlMatrix4& mat_world, float radius, 
 
         packet = pModel->packets;
         pLightData = m_pLightUserData;
-        litProgram = LitProgram;
+        const unsigned long bottomLitProgram = LitProgram;
 
         while (packet < &pModel->packets[pModel->numPackets])
         {
@@ -456,7 +453,7 @@ void ShapeRender::DrawSpherePrimitive(const nlMatrix4& mat_world, float radius, 
 
             if (g_bLit && pLightData != NULL)
             {
-                packet->state.program = litProgram;
+                packet->state.program = bottomLitProgram;
                 glUserAttach(pLightData, packet, false);
             }
 

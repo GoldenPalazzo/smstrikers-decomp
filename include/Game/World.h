@@ -99,7 +99,7 @@ public:
     /* 0x060! */ nlAVLTree<unsigned long, DrawableObject*, DefaultKeyCompare<unsigned long> > m_hyperSTSDrawableMap; // verified
     /* 0x070 */ nlAVLTree<unsigned long, HelperObject*, DefaultKeyCompare<unsigned long> > m_helperMap;
     /* 0x080 */ nlVector4 m_frustumPlane[6];
-    /* 0x0E0 */ char m_WorldNamePrefix[64];
+    /* 0x0E0 */ mutable char m_WorldNamePrefix[64];
     /* 0x120 */ int m_WorldNameLength;
     /* 0x124 */ u32 m_LightRampTexA;
     /* 0x128 */ u32 m_LightRampTexB;

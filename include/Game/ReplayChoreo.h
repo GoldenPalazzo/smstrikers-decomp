@@ -10,6 +10,15 @@
 #include "Game/Sys/eventman.h"
 #include "NL/nlBasicString.h"
 
+enum ReplayCameraFocus
+{
+    REPLAY_CAMERA_FOCUS_BALL = 1,
+    REPLAY_CAMERA_FOCUS_CURRENT_OR_LAST_OWNER = 2,
+    REPLAY_CAMERA_FOCUS_NET = 4,
+    REPLAY_CAMERA_FOCUS_GOALIE = 8,
+    REPLAY_CAMERA_FOCUS_NUM = 4,
+};
+
 class ReplayChoreo : public InterpreterCore
 {
 public:
@@ -55,6 +64,7 @@ public:
     }
 
     void DoFunctionCall(unsigned int);
+    void AddCameraFocus(ReplayCameraFocus focus) { mCamera.mFocus |= focus; }
     static ReplayChoreo& Instance();
     void LoadScript();
     void EventHandler(Event*);

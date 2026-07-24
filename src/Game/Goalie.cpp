@@ -1100,7 +1100,6 @@ void Goalie::ExecutePounce(cPlayer* pPlayer, bool bCheckHitDistance)
 
 /**
  * Offset/Address/Size: 0x99F0 | 0x8004C4EC | size: 0x328
- * TODO: 99.98% match - remaining branch target around pass target fallback.
  */
 static inline cPlayer* DoGoalieFindOpenPassTarget(Goalie* pGoalie);
 
@@ -1121,47 +1120,37 @@ void Goalie::InitActionPass(bool useTarget)
 
         mpPassTarget = pPassTarget;
 
-        if (mpPassTarget != NULL)
+        if (mpPassTarget == NULL)
         {
-            bool isValidPassTarget;
+            goto invalidPassTarget;
+        }
 
-            if ((float)fabs(mpPassTarget->m_v3Position.f.x) > (float)fabs(m_v3Position.f.x)
-                && (float)fabs(mpPassTarget->m_v3Position.f.y) < cField::GetPenaltyBoxY())
+        bool isValidPassTarget;
+
+        if ((float)fabs(mpPassTarget->m_v3Position.f.x) > (float)fabs(m_v3Position.f.x)
+            && (float)fabs(mpPassTarget->m_v3Position.f.y) < cField::GetPenaltyBoxY())
+        {
+            isValidPassTarget = false;
+        }
+        else
+        {
+            isValidPassTarget = true;
+        }
+
+        if (isValidPassTarget)
+        {
+            GoalieTweaks* pTweaks = static_cast<GoalieTweaks*>(m_pTweaks);
+
+            float dy = m_v3Position.f.y - mpPassTarget->m_v3Position.f.y;
+            float dx = m_v3Position.f.x - mpPassTarget->m_v3Position.f.x;
+            float fDistanceSq = (dx * dx) + (dy * dy);
+            float fKickDistanceSq = pTweaks->fKickDistanceMin * pTweaks->fKickDistanceMin;
+            float fOverhandThrowDistanceSq = pTweaks->fOverhandThrowDistanceMin * pTweaks->fOverhandThrowDistanceMin;
+            float fOpenTo = OpenTo(this, mpPassTarget);
+
+            if (GetGlobalPad() != NULL)
             {
-                isValidPassTarget = false;
-            }
-            else
-            {
-                isValidPassTarget = true;
-            }
-
-            if (isValidPassTarget)
-            {
-                GoalieTweaks* pTweaks = static_cast<GoalieTweaks*>(m_pTweaks);
-
-                float dy = m_v3Position.f.y - mpPassTarget->m_v3Position.f.y;
-                float dx = m_v3Position.f.x - mpPassTarget->m_v3Position.f.x;
-                float fDistanceSq = (dx * dx) + (dy * dy);
-                float fKickDistanceSq = pTweaks->fKickDistanceMin * pTweaks->fKickDistanceMin;
-                float fOverhandThrowDistanceSq = pTweaks->fOverhandThrowDistanceMin * pTweaks->fOverhandThrowDistanceMin;
-                float fOpenTo = OpenTo(this, mpPassTarget);
-
-                if (GetGlobalPad() != NULL)
-                {
-                    if (GetGlobalPad()->GetPressure(0x15, true) > 0.5f)
-                    {
-                        animID = 2;
-                    }
-                    else if ((fDistanceSq > fOverhandThrowDistanceSq) || (fOpenTo < 0.85f))
-                    {
-                        animID = 0;
-                    }
-                    else
-                    {
-                        animID = 1;
-                    }
-                }
-                else if (fDistanceSq > fKickDistanceSq)
+                if (GetGlobalPad()->GetPressure(0x15, true) > 0.5f)
                 {
                     animID = 2;
                 }
@@ -1174,10 +1163,23 @@ void Goalie::InitActionPass(bool useTarget)
                     animID = 1;
                 }
             }
+            else if (fDistanceSq > fKickDistanceSq)
+            {
+                animID = 2;
+            }
+            else if ((fDistanceSq > fOverhandThrowDistanceSq) || (fOpenTo < 0.85f))
+            {
+                animID = 0;
+            }
             else
             {
-                mpPassTarget = NULL;
+                animID = 1;
             }
+        }
+        else
+        {
+        invalidPassTarget:
+            mpPassTarget = NULL;
         }
     }
 
@@ -2305,9 +2307,6 @@ void Goalie::HandleSTSContact(cBall* pBall)
 
 /**
  * Offset/Address/Size: 0x75B4 | 0x8004A0B0 | size: 0x494
- * TODO: 99.80% match - stack-offset diffs remain in FuzzyVariant temporary layout
- * during pass-target selection, plus operand-order register diffs in the 0.5f
- * velocity scaling multiplies.
  */
 bool Goalie::InitiatePickup()
 {
@@ -2409,24 +2408,7 @@ bool Goalie::InitiatePickup()
             }
             else
             {
-                cPlayer* pPassTarget;
-                if (GetGlobalPad() != NULL)
-                {
-                    pPassTarget = DoFindBestPassTarget(false, false);
-                }
-                else
-                {
-                    FuzzyVariant fvTarget = Fuzzy::GetBestPassTarget(this);
-                    if (fvTarget.Confidence >= 0.5f)
-                    {
-                        pPassTarget = fvTarget.mData.pPlayer;
-                    }
-                    else
-                    {
-                        pPassTarget = DoFindBestPassTarget(false, false);
-                    }
-                }
-
+                cPlayer* pPassTarget = DoGoalieFindOpenPassTarget(this);
                 mpPassTarget = pPassTarget;
             }
 
@@ -2598,7 +2580,6 @@ bool Goalie::IsInsideGoalieBox(const nlVector3& rPos, float fXOffset, float fYOf
 
 /**
  * Offset/Address/Size: 0x6FF0 | 0x80049AE4 | size: 0x268
- * TODO: 99.94% match - remaining difference is fmadds operand order in net-width margin check
  */
 float Goalie::CheckForDelflectAwayFromNet()
 {
@@ -2627,6 +2608,8 @@ float Goalie::CheckForDelflectAwayFromNet()
 
         float saveIgnoreMargin;
         double absX;
+        float netWidth;
+        double absY;
         float result = FakeBallWorld::GetPredictedPlaneIntersectTime(plane, v3TargetPosition, localVelocity);
 
         if (!(result <= 0.0f))
@@ -2636,7 +2619,8 @@ float Goalie::CheckForDelflectAwayFromNet()
 
             bool bInNet;
             if ((float)absX > (cField::GetGoalLineX(1U) - 1.0f)
-                && (float)fabs(v3TargetPosition.f.y) < (saveIgnoreMargin + cNet::m_fNetWidth / 2.0f)
+                && ((netWidth = cNet::m_fNetWidth), (absY = __fabs(v3TargetPosition.f.y)),
+                    (float)absY < (0.5f * netWidth + saveIgnoreMargin))
                 && v3TargetPosition.f.z < (saveIgnoreMargin + cNet::m_fNetHeight))
             {
                 bInNet = true;
@@ -3110,6 +3094,15 @@ static inline f32 DistSq(f32 a, f32 b)
     return (b * b) + (a * a);
 }
 
+static inline f32 DistSq(const nlVector3& a, const nlVector3& b)
+{
+    f32 deltaX = b.f.x;
+    f32 deltaY = b.f.y;
+    deltaY = a.f.y - deltaY;
+    deltaX = a.f.x - deltaX;
+    return nlGetLengthSquared2D(deltaX, deltaY);
+}
+
 /**
  * Offset/Address/Size: 0x64C0 | 0x80048FBC | size: 0xDC
  */
@@ -3123,14 +3116,13 @@ bool Goalie::IsWithinPounceRange()
             return false;
         }
 
+        f32 range = LooseBallAnims::mTrapBallInfo.mfPickupDistance;
+        range += ((GoalieTweaks*)m_pTweaks)->fPounceRange;
         f32 dy = m_v3Position.f.y - pFielder->m_v3Position.f.y;
-        f32 range = LooseBallAnims::mTrapBallInfo.mfPickupDistance + ((GoalieTweaks*)m_pTweaks)->fPounceRange;
         f32 dx = m_v3Position.f.x - pFielder->m_v3Position.f.x;
-        f32 rangeSq = range * range;
-
-        // TODO: 99.0% match - f2/f4 float register swap (selfY/rangeSq). Tested 14+ approaches, 3 compilers - unresolvable MWCC quirk.
-        if ((rangeSq > DistSq(dy, dx))
-            || (rangeSq > DistSq(m_v3Position.f.y - g_pBall->m_v3Position.f.y, m_v3Position.f.x - g_pBall->m_v3Position.f.x)))
+        range *= range;
+        if ((range > nlGetLengthSquared2D(dx, dy))
+            || (range > DistSq(m_v3Position, g_pBall->m_v3Position)))
         {
             return true;
         }
@@ -5090,7 +5082,6 @@ void Goalie::InitActionSaveSetup(bool bCanReposition)
 
 /**
  * Offset/Address/Size: 0x2F9C | 0x80045A98 | size: 0x34C
- * TODO: 99.95% match - fmadds frA/frC operand swap for 0.5f * m_fNetWidth (commutative, same result)
  */
 void Goalie::InitActionSave()
 {
@@ -5100,10 +5091,13 @@ void Goalie::InitActionSave()
         cBall* pBall = g_pBall;
         float saveIgnoreMargin = ((GoalieTweaks*)m_pTweaks)->fSaveIgnoreMargin;
         double shotAbsX = __fabs(pBall->m_v3ShotTarget.f.x);
+        float netWidth;
+        double shotAbsY;
 
         bool bInNet;
         if ((float)shotAbsX > (cField::GetGoalLineX(1U) - 1.0f)
-            && (float)fabs(pBall->m_v3ShotTarget.f.y) < (cNet::m_fNetWidth / 2.0f + saveIgnoreMargin)
+            && ((netWidth = cNet::m_fNetWidth), (shotAbsY = __fabs(pBall->m_v3ShotTarget.f.y)),
+                (float)shotAbsY < (0.5f * netWidth + saveIgnoreMargin))
             && pBall->m_v3ShotTarget.f.z < (saveIgnoreMargin + cNet::m_fNetHeight))
         {
             bInNet = true;
