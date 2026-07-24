@@ -53,6 +53,12 @@ public:
         nlDLRingAddStart(&m_Head, entry);
     }
 
+    void AddEnd(const T& data)
+    {
+        DLListEntry<T>* entry = Allocate(data);
+        nlDLRingAddEnd(&m_Head, entry);
+    }
+
     void RemoveStart(T* outData)
     {
         DLListEntry<T>* entry = nlDLRingRemoveStart(&m_Head);

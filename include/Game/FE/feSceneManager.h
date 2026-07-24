@@ -24,6 +24,8 @@ class BaseSceneHandler;
 
 struct PackagePushPopMessage
 {
+    static SlotPool<PackagePushPopMessage> m_PushPopMessageSlotPool;
+
     /* 0x0 */ bool m_bPush;
     /* 0x4 */ BaseSceneHandler* m_pSceneHandler;
     /* 0x8 */ char m_szFilename[64];
@@ -34,10 +36,12 @@ class FESceneManager : public nlSingleton<FESceneManager>
 public:
     void Update(float);
     void RenderActiveScenes();
+    void QueueAllScenesPop();
     void QueueScenePop();
     void QueueScenePush(BaseSceneHandler*, const char*);
-    void LoadScene(const char*, BaseSceneHandler*);
     void ProcessPushPopQueue();
+    void LoadScene(const char*, BaseSceneHandler*);
+    static bool IsObjectQueuedForPop(BaseSceneHandler*);
     BaseSceneHandler* GetSceneHandler(unsigned long);
     void ForceImmediateStackProcessing();
     bool AreAllScenesValid();

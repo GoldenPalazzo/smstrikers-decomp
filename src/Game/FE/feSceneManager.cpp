@@ -11,7 +11,7 @@ extern FEInput* g_pFEInput;
 template <>
 FESceneManager* nlSingleton<FESceneManager>::s_pInstance = 0;
 
-SlotPool<PackagePushPopMessage> m_PushPopMessageSlotPool__21PackagePushPopMessage(0x14, 0);
+SlotPool<PackagePushPopMessage> PackagePushPopMessage::m_PushPopMessageSlotPool(0x14, 0);
 nlDLListSlotPool<PackagePushPopMessage*> m_pushPopMessageQueue(0x14, 0);
 
 /**
@@ -51,7 +51,7 @@ void FESceneManager::Update(float dt)
     }
 }
 
-static inline bool IsObjectQueuedForPop(BaseSceneHandler* pSceneHandler)
+bool FESceneManager::IsObjectQueuedForPop(BaseSceneHandler* pSceneHandler)
 {
     DLListEntry<PackagePushPopMessage*>* msgEntry = nlDLRingGetStart(m_pushPopMessageQueue.m_Head);
     DLListEntry<PackagePushPopMessage*>* msgHead = m_pushPopMessageQueue.m_Head;
@@ -84,7 +84,7 @@ static inline void FindSceneForPop(
     {
         BaseSceneHandler* pSceneHandler = sceneEntry->entry;
 
-        if (!IsObjectQueuedForPop(pSceneHandler))
+        if (!FESceneManager::IsObjectQueuedForPop(pSceneHandler))
         {
             msg->m_pSceneHandler = sceneEntry->entry;
             break;
@@ -145,7 +145,7 @@ static inline void RenderSceneStack(FESceneManager* pSceneManager)
 
         if (pSceneHandler != pSceneManager->m_topMostScene)
         {
-            if (!IsObjectQueuedForPop(sceneEntry->entry))
+            if (!FESceneManager::IsObjectQueuedForPop(sceneEntry->entry))
             {
                 if (pSceneHandler->m_pFEScene->m_bValid && pSceneHandler->m_bVisible)
                 {
@@ -184,6 +184,36 @@ void FESceneManager::RenderActiveScenes()
     RenderSceneStack(this);
 }
 
+void FESceneManager::QueueAllScenesPop()
+{
+    DLListEntry<BaseSceneHandler*>* sceneEntry = nlDLRingGetStart(m_sceneHandlerStack.m_Head);
+    DLListEntry<BaseSceneHandler*>* sceneHead = m_sceneHandlerStack.m_Head;
+
+    while (sceneEntry != NULL)
+    {
+        BaseSceneHandler* pSceneHandler = sceneEntry->entry;
+        if (!IsObjectQueuedForPop(pSceneHandler))
+        {
+            PackagePushPopMessage* message = PackagePushPopMessage::m_PushPopMessageSlotPool.Allocate();
+            message->m_szFilename[0] = 0;
+            message->m_pSceneHandler = pSceneHandler;
+            message->m_bPush = false;
+            m_pushPopMessageQueue.AddEnd(message);
+        }
+
+        if (nlDLRingIsEnd(sceneHead, sceneEntry) || sceneEntry == NULL)
+        {
+            sceneEntry = NULL;
+        }
+        else
+        {
+            sceneEntry = sceneEntry->m_next;
+        }
+    }
+
+    m_sceneHandlerStack.Clear();
+}
+
 /**
  * Offset/Address/Size: 0x284 | 0x8020D8D0 | size: 0x1A8
  */
@@ -194,15 +224,15 @@ void FESceneManager::QueueScenePop()
 
     msg = NULL;
 
-    if (m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList == NULL)
+    if (PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList == NULL)
     {
-        SlotPoolBase::BaseAddNewBlock(&m_PushPopMessageSlotPool__21PackagePushPopMessage, sizeof(PackagePushPopMessage));
+        SlotPoolBase::BaseAddNewBlock(&PackagePushPopMessage::m_PushPopMessageSlotPool, sizeof(PackagePushPopMessage));
     }
 
-    if (m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList != NULL)
+    if (PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList != NULL)
     {
-        msg = (PackagePushPopMessage*)m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList;
-        m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList = m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList->next;
+        msg = (PackagePushPopMessage*)PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList;
+        PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList = PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList->next;
     }
 
     msg->m_szFilename[0] = 0;
@@ -222,15 +252,15 @@ void FESceneManager::QueueScenePush(BaseSceneHandler* pSceneHandler, const char*
 {
     PackagePushPopMessage* msg = nullptr;
 
-    if (m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList == NULL)
+    if (PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList == NULL)
     {
-        SlotPoolBase::BaseAddNewBlock(&m_PushPopMessageSlotPool__21PackagePushPopMessage, sizeof(PackagePushPopMessage));
+        SlotPoolBase::BaseAddNewBlock(&PackagePushPopMessage::m_PushPopMessageSlotPool, sizeof(PackagePushPopMessage));
     }
 
-    if (m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList != NULL)
+    if (PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList != NULL)
     {
-        msg = (PackagePushPopMessage*)m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList;
-        m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList = m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList->next;
+        msg = (PackagePushPopMessage*)PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList;
+        PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList = PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList->next;
     }
 
     msg->m_bPush = true;
@@ -265,6 +295,7 @@ inline void FESceneManager::LoadScene(
     const char* szFilename,
     BaseSceneHandler* pHandler)
 {
+    FESceneManager* pSceneManager = FESceneManager::Instance();
     FEScene* pFEScene = new (nlMalloc(0x70, 8, false)) FEScene();
     pFEScene->m_uHashID = nlStringLowerHash(szFilename);
 
@@ -275,7 +306,7 @@ inline void FESceneManager::LoadScene(
     }
     else
     {
-        pFEScene->m_uRenderView = m_uDefaultRenderView;
+        pFEScene->m_uRenderView = pSceneManager->m_uDefaultRenderView;
         pHandler->m_pFEScene = pFEScene;
         pHandler->SetPresentation(pFEScene->m_pFEPackage->GetPresentation());
         pHandler->SceneCreated();
@@ -299,7 +330,7 @@ void FESceneManager::ProcessPushPopQueue()
         {
             pSceneManager->m_sceneHandlerStack.AddStart(pPackagePushPopMessage->m_pSceneHandler);
 
-            FESceneManager::Instance()->LoadScene(
+            LoadScene(
                 pPackagePushPopMessage->m_szFilename,
                 pPackagePushPopMessage->m_pSceneHandler);
         }
@@ -340,7 +371,7 @@ void FESceneManager::ProcessPushPopQueue()
             delete pFEScene;
         }
 
-        m_PushPopMessageSlotPool__21PackagePushPopMessage.Delete(pPackagePushPopMessage);
+        PackagePushPopMessage::m_PushPopMessageSlotPool.Delete(pPackagePushPopMessage);
     }
 }
 
@@ -441,115 +472,3 @@ FESceneManager::FESceneManager()
     m_topMostScene = nullptr;
     FERender::Initialize();
 }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8020E080 | size: 0x10
-//  */
-// void DLListContainerBase<BaseSceneHandler*, BasicSlotPool<DLListEntry<BaseSceneHandler*>>>::DeleteEntry(DLListEntry<BaseSceneHandler*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xD0 | 0x8020E150 | size: 0x10
-//  */
-// void DLListContainerBase<PackagePushPopMessage*,
-// BasicSlotPool<DLListEntry<PackagePushPopMessage*>>>::DeleteEntry(DLListEntry<PackagePushPopMessage*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8020E208 | size: 0x64
-//  */
-// void SlotPool<PackagePushPopMessage>::~SlotPool()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x3C | 0x8020E2A8 | size: 0x38
-//  */
-// void nlDLRingRemoveStart<DLListEntry<PackagePushPopMessage*>>(DLListEntry<PackagePushPopMessage*>**)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x74 | 0x8020E2E0 | size: 0x20
-//  */
-// void nlDLRingIsEnd<DLListEntry<PackagePushPopMessage*>>(DLListEntry<PackagePushPopMessage*>*, DLListEntry<PackagePushPopMessage*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x94 | 0x8020E300 | size: 0x20
-//  */
-// void nlDLRingIsEnd<DLListEntry<BaseSceneHandler*>>(DLListEntry<BaseSceneHandler*>*, DLListEntry<BaseSceneHandler*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xB4 | 0x8020E320 | size: 0x18
-//  */
-// void nlDLRingGetStart<DLListEntry<PackagePushPopMessage*>>(DLListEntry<PackagePushPopMessage*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xCC | 0x8020E338 | size: 0x18
-//  */
-// void nlDLRingGetStart<DLListEntry<BaseSceneHandler*>>(DLListEntry<BaseSceneHandler*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xE4 | 0x8020E350 | size: 0x44
-//  */
-// void nlDLRingRemove<DLListEntry<PackagePushPopMessage*>>(DLListEntry<PackagePushPopMessage*>**, DLListEntry<PackagePushPopMessage*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x128 | 0x8020E394 | size: 0x44
-//  */
-// void nlDLRingRemove<DLListEntry<BaseSceneHandler*>>(DLListEntry<BaseSceneHandler*>**, DLListEntry<BaseSceneHandler*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x16C | 0x8020E3D8 | size: 0x3C
-//  */
-// void nlDLRingAddEnd<DLListEntry<PackagePushPopMessage*>>(DLListEntry<PackagePushPopMessage*>**, DLListEntry<PackagePushPopMessage*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x1A8 | 0x8020E414 | size: 0x38
-//  */
-// void nlDLRingAddStart<DLListEntry<PackagePushPopMessage*>>(DLListEntry<PackagePushPopMessage*>**, DLListEntry<PackagePushPopMessage*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x1E0 | 0x8020E44C | size: 0x38
-//  */
-// void nlDLRingAddStart<DLListEntry<BaseSceneHandler*>>(DLListEntry<BaseSceneHandler*>**, DLListEntry<BaseSceneHandler*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8020E4C0 | size: 0x60
-//  */
-// void nlWalkRing<DLListEntry<BaseSceneHandler*>, DLListContainerBase<BaseSceneHandler*,
-// BasicSlotPool<DLListEntry<BaseSceneHandler*>>>>(DLListEntry<BaseSceneHandler*>*, DLListContainerBase<BaseSceneHandler*,
-// BasicSlotPool<DLListEntry<BaseSceneHandler*>>>*, void (DLListContainerBase<BaseSceneHandler*,
-// BasicSlotPool<DLListEntry<BaseSceneHandler*>>>::*)(DLListEntry<BaseSceneHandler*>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x60 | 0x8020E520 | size: 0x60
-//  */
-// void nlWalkRing<DLListEntry<PackagePushPopMessage*>, DLListContainerBase<PackagePushPopMessage*,
-// BasicSlotPool<DLListEntry<PackagePushPopMessage*>>>>(DLListEntry<PackagePushPopMessage*>*, DLListContainerBase<PackagePushPopMessage*,
-// BasicSlotPool<DLListEntry<PackagePushPopMessage*>>>*, void (DLListContainerBase<PackagePushPopMessage*,
-// BasicSlotPool<DLListEntry<PackagePushPopMessage*>>>::*)(DLListEntry<PackagePushPopMessage*>*))
-// {
-// }
