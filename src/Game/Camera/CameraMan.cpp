@@ -490,9 +490,8 @@ void cCameraManager::Remove(eCameraType type, bool bDeleteAfterRemoving)
 
 /**
  * Offset/Address/Size: 0x7F8 | 0x801A6E80 | size: 0x29C
- * TODO: 99.91% match - nlPrintf/float literal label relocations and filter pointer r23 vs r30
  */
-/* static */ void cCameraManager::PushCameraWithTransition(cBaseCamera* pCamera, float fDuration, eCameraTransition transition, void (*pCallback)(eCameraMessage))
+void cCameraManager::PushCameraWithTransition(cBaseCamera* pCamera, float fDuration, eCameraTransition transition, void (*pCallback)(eCameraMessage))
 {
     if (cCameraManager::m_transition != eCT_NONE)
     {
@@ -521,11 +520,8 @@ void cCameraManager::Remove(eCameraType type, bool bDeleteAfterRemoving)
     if ((cCameraManager::PeekCamera() != NULL)
         && (cCameraManager::PeekCamera()->m_pFilter != 0))
     {
-        cRumbleFilter* filter1 = cCameraManager::PeekCamera()->m_pFilter;
-        cRumbleFilter* filter2 = cCameraManager::PeekCamera()->m_pFilter;
-
         nlVector2 diff_pos;
-        nlVec2Set(diff_pos, filter2->v2Pos0.f.x - filter1->v2Pos1.f.x, filter2->v2Pos0.f.y - filter1->v2Pos1.f.y);
+        nlVec2Sub(diff_pos, cCameraManager::PeekCamera()->m_pFilter->v2Pos0, cCameraManager::PeekCamera()->m_pFilter->v2Pos1);
         if (nlSqrt((diff_pos.f.x * diff_pos.f.x) + (diff_pos.f.y * diff_pos.f.y), 1) > 0.0f)
         {
             g_pEventManager->CreateValidEvent(0x58, 0x14);
