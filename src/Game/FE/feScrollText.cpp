@@ -49,7 +49,7 @@ void FEScrollText::ApplyNewTextInstancePointer(TLTextInstance* controltext, floa
     text->m_OverloadedAttributes.BoxSize = boxSize;
     text->m_OverloadFlags |= 0x4;
 }
-static float TEXT_TIME;
+static float TEXT_TIME = 4.5f;
 
 /**
  * Offset/Address/Size: 0x38 | 0x800C8A0C | size: 0x190
@@ -89,21 +89,6 @@ void FEScrollText::Update(float fDeltaT)
     }
 }
 
-static inline const unsigned short* LookupLocTextChar(unsigned long hash)
-{
-    nlLocalization* loc = (nlLocalization*)g_pLocalization;
-    if (loc->m_LookupTable == 0)
-    {
-        return LocalizationTableNotFound;
-    }
-    nlLocalization::StringLookup* lookup = nlBSearch<nlLocalization::StringLookup, unsigned long>(hash, loc->m_LookupTable, loc->m_pFile->StringCount);
-    if (lookup != 0)
-    {
-        return loc->m_FirstString + lookup->StringOffset;
-    }
-    return MissingLocString;
-}
-
 static inline const unsigned short* LookupLocTextChar(nlLocalization* loc, unsigned long hash)
 {
     if (loc->m_LookupTable == 0)
@@ -120,7 +105,6 @@ static inline const unsigned short* LookupLocTextChar(nlLocalization* loc, unsig
 
 /**
  * Offset/Address/Size: 0x1C8 | 0x800C8B9C | size: 0x198
- * TODO: 98.7% match - temporary string cleanup uses data pointer instead of stack-reloaded string data
  */
 void FEScrollText::SetDisplayMessage(const char* locMessage)
 {
@@ -147,7 +131,6 @@ static inline const unsigned short* LookupLocText(unsigned long hash)
 
 /**
  * Offset/Address/Size: 0x360 | 0x800C8D34 | size: 0x190
- * TODO: 98.65% match - cleanup uses data pointer instead of stack-reloaded string data
  */
 void FEScrollText::SetDisplayMessage(unsigned long hash)
 {
@@ -171,11 +154,10 @@ static inline void BuildFontCharStringForScroll(FontCharString& fontcharstring, 
         if (ch == escBegin)
         {
             nlEscapeSequence EscSeq(src);
-            int count = (int)((unsigned int)((int)EscSeq.m_pEnd + 1 - (int)src) >> 1);
-            if (src < EscSeq.m_pEnd)
+            const unsigned short* end = EscSeq.m_pEnd;
+            while (src < end)
             {
-                for (int k = count; k > 0; k--)
-                    *dest++ = *src++;
+                *dest++ = *src++;
             }
         }
         else
@@ -208,7 +190,11 @@ static inline void BuildFontCharStringForScroll(FontCharString& fontcharstring, 
 
 /**
  * Offset/Address/Size: 0x4F0 | 0x800C8EC4 | size: 0x578
- * TODO: 98.97% match - escape-copy guard and temporary glyph key stack slot differ
+ * TODO: 99.64% match - MWCC tie-break wall: the retail build emits an extra
+ * branch at the ch > 0x7F test, allocates the glyph key at r1+0x14 ahead of
+ * the inlined Update() position temporary, and orders the fmuls operands the
+ * other way. Every source form that reproduces the extra branch also rotates
+ * the callee-saved assignment (this moves r31 -> r27).
  */
 void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>& theMessage)
 {
