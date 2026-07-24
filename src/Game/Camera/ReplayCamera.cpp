@@ -7,7 +7,12 @@
 #include "Game/ReplayManager.h"
 #include "Game/CharacterTemplate.h"
 #include "Game/Render/depthoffield.h"
-#include "NL/nlFormat.h"
+#include "NL/nlFormatFwd.h"
+
+static inline float GetSideDirection(int side)
+{
+    return side == 0 ? -1.0f : 1.0f;
+}
 
 // /**
 //  * Offset/Address/Size: 0x18 | 0x801ACB7C | size: 0x8
@@ -139,7 +144,7 @@ void ReplayCamera::ManualUpdate(float deltaT)
         if (mFocus & 0x4)
         {
             nlVector3 netPos = { 0.0f, 0.0f, 0.0f };
-            netPos.f.x = cField::GetGoalLineX(mSideOfInterest == 0 ? -1.0f : 1.0f);
+            netPos.f.x = cField::GetGoalLineX(GetSideDirection(mSideOfInterest));
             numFocusPoints++;
             nlVec3Add(lookAt, lookAt, netPos);
         }
@@ -150,7 +155,7 @@ void ReplayCamera::ManualUpdate(float deltaT)
             nlVec3Scale(lookAt, invCount);
         }
 
-        nlVector3 position = GetPosition(mCamPos, mSideOfInterest == 0 ? -1.0f : 1.0f);
+        nlVector3 position = GetPosition(mCamPos, GetSideDirection(mSideOfInterest));
 
         if (mNoDampenForOneUpdate)
         {
@@ -241,7 +246,6 @@ float ReplayCamera::GetFov(ReplayCameraPosition position) const
 
 /**
  * Offset/Address/Size: 0x0 | 0x801AAD04 | size: 0x11AC
- * TODO: 98.88% match - r28/r29 register swap in generic camera string construction.
  */
 nlVector3 ReplayCamera::GetPosition(ReplayCameraPosition position, float direction) const
 {
@@ -310,13 +314,13 @@ nlVector3 ReplayCamera::GetPosition(ReplayCameraPosition position, float directi
         float highZ = GetConfigFloat(Config::Global(), "replay/camera_high_up_z", 8.0f);
         float minDistBehind = GetConfigFloat(Config::Global(), "replay/camera_high_up_min_dist_behind", 8.0f);
 
-        result.f.x = highX * ((mSideOfInterest == 0) ? -1.0f : 1.0f);
+        result.f.x = highX * GetSideDirection(mSideOfInterest);
         result.f.y = highY;
         result.f.z = highZ;
 
         if ((float)fabs(result.f.x - mLookAt.f.x) < minDistBehind)
         {
-            result.f.x = mLookAt.f.x - minDistBehind * ((mSideOfInterest == 0) ? -1.0f : 1.0f);
+            result.f.x = mLookAt.f.x - minDistBehind * GetSideDirection(mSideOfInterest);
         }
         break;
     }
@@ -327,7 +331,7 @@ nlVector3 ReplayCamera::GetPosition(ReplayCameraPosition position, float directi
             BasicString<char, Detail::TempStringAllocator> prefix("replay/camera_");
             prefix.AppendInPlace(Format(BasicString<char, Detail::TempStringAllocator>("generic_{0}_"), position - REPLAY_CAMERA_POSITION_GENERIC_0));
 
-            float xVal = GetConfigFloat(Config::Global(), prefix.Append("x").c_str(), 0.0f) * ((mSideOfInterest == 0) ? -1.0f : 1.0f);
+            float xVal = GetConfigFloat(Config::Global(), prefix.Append("x").c_str(), 0.0f) * GetSideDirection(mSideOfInterest);
             float yVal = GetConfigFloat(Config::Global(), prefix.Append("y").c_str(), 0.0f);
             float zVal = GetConfigFloat(Config::Global(), prefix.Append("z").c_str(), 0.0f);
             result.f.x = xVal;
