@@ -825,18 +825,7 @@ void Bowser::CollisionCallback(PhysicsObject* pPhysObj, PhysicsObject* pObjA, co
                 shouldDamage = true;
             }
         }
-        if (!shouldDamage)
-        {
-            shouldDamage = false;
-            if (timer != 0)
-            {
-                if (pBall->m_unk_0xA4)
-                {
-                    shouldDamage = true;
-                }
-            }
-        }
-        if (shouldDamage)
+        if (shouldDamage || (shouldDamage = (timer != 0 && pBall->m_unk_0xA4)))
         {
             g_pEventManager->CreateValidEvent(0x62, 0x14);
         }

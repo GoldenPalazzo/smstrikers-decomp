@@ -436,7 +436,7 @@ bool cFielder::CanLooseBallPass()
 
         float fLooseBallRadius = InterpolateRangeClamped(1.75f, 2.75f, 32768.0f, 16384.0f, uFacingDelta);
 
-        if (g_pBall->m_v3Velocity.f.z < 0.0f)
+        if (g_pBall->m_v3Velocity.f.z < 0.05f)
         {
             if (v3PredictedPos.f.z < 1.0f)
             {

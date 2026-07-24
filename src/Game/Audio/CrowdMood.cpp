@@ -229,7 +229,7 @@ void ChangeCrowdVolume(float NewVolume)
     PlayMoodDef(MoodDef);
 
     float zero = 0.0f;
-    if (fabsf(NewVolume - zero) <= 0.01f)
+    if (fabsf(NewVolume - zero) <= 0.0001f)
     {
         GCAudioStreaming::StereoAudioStream* pChant = g_CrowdAudio.pChantStream;
         if (pChant != NULL)
@@ -238,8 +238,9 @@ void ChangeCrowdVolume(float NewVolume)
             {
                 GCAudioStreaming::AudioStreamBuffer* buf;
                 volatile unsigned long i = (unsigned long)(buf = NULL);
+                unsigned long start = 0;
 
-                if (pChant->m_BufferCount > 0)
+                if (start < pChant->m_BufferCount)
                 {
                     buf = pChant->m_Buffers[0];
                 }
@@ -271,8 +272,9 @@ void ChangeCrowdVolume(float NewVolume)
             {
                 GCAudioStreaming::AudioStreamBuffer* buf;
                 volatile unsigned long i = (unsigned long)(buf = NULL);
+                unsigned long start = 0;
 
-                if (pHeckle->m_BufferCount > 0)
+                if (start < pHeckle->m_BufferCount)
                 {
                     buf = pHeckle->m_Buffers[0];
                 }
