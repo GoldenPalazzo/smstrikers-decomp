@@ -106,21 +106,21 @@ bool AsyncImage::Update(bool autoswap)
     }
     if ((mLoadState == LS_LOAD_COMPLETE) && autoswap)
     {
-        bool var_r29;
+        bool shouldReplace;
         if (mLoadState != LS_LOAD_COMPLETE)
         {
-            var_r29 = false;
+            shouldReplace = false;
         }
         else
         {
-            var_r29 = false;
+            shouldReplace = false;
             if ((mImageInstance != NULL) && (mImageInstance->m_pTextureResource->m_bValid) && (glTextureLoad(mTextureHandle) != 0))
             {
-                var_r29 = true;
+                shouldReplace = true;
             }
         }
 
-        if (var_r29)
+        if (shouldReplace)
         {
             glFinish();
             glTextureReplace(mImageInstance->m_pTextureResource->m_glTextureHandle, m_loadBuffer, mTextureSize);

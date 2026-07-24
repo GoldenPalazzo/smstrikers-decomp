@@ -292,8 +292,7 @@ void FormationManager::SetNewFormationEval(eFormationType formType, eFormationSe
         pFormation = m_pFormations[formType];
         if (pFormation != nullptr)
         {
-            const FormationSet* pFormationSet =
-                static_cast<FormationBallPosition*>(pFormation)->m_pFormationSet;
+            const FormationSet* pFormationSet = static_cast<FormationBallPosition*>(pFormation)->m_pFormationSet;
             if ((s32)formSet == pFormationSet->m_ID)
             {
                 return;
@@ -748,10 +747,8 @@ cPlayer* FormationEval::GetKeyPlayer()
     cPlayer* otherCarrier;
     cPlayer* pKeyPlayer;
 
-    {
-        cPlayer* temp = Fuzzy::GetStrategicBallCarrier(team).mData.pPlayer;
-        pKeyPlayer = temp;
-    }
+    cPlayer* strategicBallCarrier = Fuzzy::GetStrategicBallCarrier(team).mData.pPlayer;
+    pKeyPlayer = strategicBallCarrier;
 
     if (pKeyPlayer == NULL)
     {

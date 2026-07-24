@@ -5,49 +5,7 @@
 
 Variant gvNotSet;
 
-// /**
-//  * Offset/Address/Size: 0x268 | 0x8006A194 | size: 0x3C
-//  */
-// void 0x8028D2AC..0x8028D2B0 | size: 0x4
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x168 | 0x8006A094 | size: 0x100
-//  */
-// void Detail::LexicalCastImpl<BasicString<char, Detail::TempStringAllocator>, unsigned long>::Do(unsigned long)
-// {
-// }
-
 typedef BasicString<char, Detail::TempStringAllocator> NLString;
-
-// /**
-//  * Offset/Address/Size: 0x34 | 0x80069F60 | size: 0x104
-//  */
-// void Detail::LexicalCastImpl<BasicString<char, Detail::TempStringAllocator>, char>::Do(char)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x1D38 | 0x80068F90 | size: 0x114
-//  */
-// void Format<BasicString<char, Detail::TempStringAllocator>, unsigned long>(const BasicString<char, Detail::TempStringAllocator>&, const unsigned long&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xEB0 | 0x80068108 | size: 0x114
-//  */
-// void Format<BasicString<char, Detail::TempStringAllocator>, char>(const BasicString<char, Detail::TempStringAllocator>&, const char&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80067258 | size: 0x13C
-//  */
-// void Format<BasicString<char, Detail::TempStringAllocator>, float, float, float>(const BasicString<char, Detail::TempStringAllocator>&, const float&, const float&, const float&)
-// {
-// }
 
 /**
  * Offset/Address/Size: 0xC4 | 0x8006632C | size: 0xF2C

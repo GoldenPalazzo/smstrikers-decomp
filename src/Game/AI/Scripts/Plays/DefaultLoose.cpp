@@ -165,9 +165,7 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
 
         {
             float fNotOtherGoaliePickup;
-            fTrueConfidence = 1.0f - KeepFirst(
-                GoalieAndGonnaPickupBall((cPlayer*)(g_pScriptCurrentFielder ? (g_pScriptCurrentFielder ? g_pScriptCurrentFielder->m_pTeam : (cTeam*)0)->GetGoalie() : (Goalie*)0)),
-                fNotOtherGoaliePickup = NotGoaliePickup(GoalieAndGonnaPickupBall((cPlayer*)(g_pScriptCurrentFielder ? (g_pScriptCurrentFielder ? g_pScriptCurrentFielder->m_pTeam->GetOtherTeam() : (cTeam*)0)->GetGoalie() : (Goalie*)0)))).mData.f;
+            fTrueConfidence = 1.0f - KeepFirst(GoalieAndGonnaPickupBall((cPlayer*)(g_pScriptCurrentFielder ? (g_pScriptCurrentFielder ? g_pScriptCurrentFielder->m_pTeam : (cTeam*)0)->GetGoalie() : (Goalie*)0)), fNotOtherGoaliePickup = NotGoaliePickup(GoalieAndGonnaPickupBall((cPlayer*)(g_pScriptCurrentFielder ? (g_pScriptCurrentFielder ? g_pScriptCurrentFielder->m_pTeam->GetOtherTeam() : (cTeam*)0)->GetGoalie() : (Goalie*)0)))).mData.f;
 
             fTrueConfidence = (fTrueConfidence <= fNotOtherGoaliePickup) ? fTrueConfidence : fNotOtherGoaliePickup;
             float fFalseConfidence = 1.0f - fTrueConfidence;

@@ -254,18 +254,18 @@ bool ClipPositionToSidelines(nlVector3& position, float margin)
     }
     else
     {
-        float temp_f0 = -1.0f * rightBound;
-        if (position.f.x < temp_f0)
+        float leftBound = -1.0f * rightBound;
+        if (position.f.x < leftBound)
         {
-            position.f.x = temp_f0;
+            position.f.x = leftBound;
             wasClipped = true;
         }
     }
 
-    float temp_f1 = -1.0f * topBound;
-    if (position.f.y < temp_f1)
+    float bottomBound = -1.0f * topBound;
+    if (position.f.y < bottomBound)
     {
-        position.f.y = temp_f1;
+        position.f.y = bottomBound;
         wasClipped = true;
     }
     else if (position.f.y > topBound)

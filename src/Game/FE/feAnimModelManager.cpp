@@ -124,10 +124,10 @@ inline void FEAnimModelManager::TweakModelPosition()
     glStateSave(state);
     glFontBegin(false);
 
-    char tempbuffer[128];
-    nlSNPrintf(tempbuffer, 128, "pos: %3.2f, %3.2f, %3.2f -- rot-z: %3.2f", model->mPosition.f.x, model->mPosition.f.y, model->mPosition.f.z, model->mRotation.f.z);
+    char debugText[128];
+    nlSNPrintf(debugText, 128, "pos: %3.2f, %3.2f, %3.2f -- rot-z: %3.2f", model->mPosition.f.x, model->mPosition.f.y, model->mPosition.f.z, model->mRotation.f.z);
 
-    glFontPrint(GLV_Debug, 0, 0, (nlColour) { 0xFF, 0xFF, 0xFF, 0xFF }, tempbuffer);
+    glFontPrint(GLV_Debug, 0, 0, (nlColour) { 0xFF, 0xFF, 0xFF, 0xFF }, debugText);
     glFontEnd();
     glStateRestore(state);
 }

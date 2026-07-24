@@ -368,10 +368,9 @@ u8 cPlayer::SwapController()
                 pPotentialSwapPlayer = m_pTeam->GetPlayer(i);
                 if (pPotentialSwapPlayer != this)
                 {
-                    cGlobalPad* pPotentialSwapPad =
-                        (pPotentialSwapPlayer->m_pController != NULL)
-                            ? pPotentialSwapPlayer->m_pController->m_pPad
-                            : NULL;
+                    cGlobalPad* pPotentialSwapPad = (pPotentialSwapPlayer->m_pController != NULL)
+                                                      ? pPotentialSwapPlayer->m_pController->m_pPad
+                                                      : NULL;
                     if (pPotentialSwapPad == NULL)
                     {
                         if (pSwapPlayer == NULL
@@ -1071,8 +1070,8 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
                 {
                     float fLength = nlSqrt(
                         pSuggestedPassDirection->f.x * pSuggestedPassDirection->f.x
-                        + pSuggestedPassDirection->f.y * pSuggestedPassDirection->f.y
-                        + pSuggestedPassDirection->f.z * pSuggestedPassDirection->f.z,
+                            + pSuggestedPassDirection->f.y * pSuggestedPassDirection->f.y
+                            + pSuggestedPassDirection->f.z * pSuggestedPassDirection->f.z,
                         true);
                     float fScale = fRunningSpeed / fLength;
                     teammateLeadPassVelocity.f.x = fScale * pSuggestedPassDirection->f.x;
@@ -1142,8 +1141,8 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
                             v3PassIntercept = suggestedPassTarget;
                             float fVelLength = nlSqrt(
                                 teammateLeadPassVelocity.f.x * teammateLeadPassVelocity.f.x
-                                + teammateLeadPassVelocity.f.y * teammateLeadPassVelocity.f.y
-                                + teammateLeadPassVelocity.f.z * teammateLeadPassVelocity.f.z,
+                                    + teammateLeadPassVelocity.f.y * teammateLeadPassVelocity.f.y
+                                    + teammateLeadPassVelocity.f.z * teammateLeadPassVelocity.f.z,
                                 true);
                             float fVelScale = fRequiredSpeed / fVelLength;
                             nlVec3Scale(teammateLeadPassVelocity, fVelScale);
@@ -1251,8 +1250,9 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
     else
     {
         s32 facingDirectionTemp = (s32)(nlATan2f(
-            g_pBall->m_v3Position.f.y - pPassTarget->m_v3Position.f.y,
-            g_pBall->m_v3Position.f.x - pPassTarget->m_v3Position.f.x) * 10430.378f);
+                                            g_pBall->m_v3Position.f.y - pPassTarget->m_v3Position.f.y,
+                                            g_pBall->m_v3Position.f.x - pPassTarget->m_v3Position.f.x)
+                                        * 10430.378f);
         facingDirection = (u16)facingDirectionTemp;
     }
 

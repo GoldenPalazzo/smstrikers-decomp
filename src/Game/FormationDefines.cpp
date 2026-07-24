@@ -323,7 +323,7 @@ FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_num
 
             formation.SetName(
                 config.Get<BasicString<char, Detail::TempStringAllocator> >(
-                           var_name, BasicString<char, Detail::TempStringAllocator>("Unnamed"))
+                          var_name, BasicString<char, Detail::TempStringAllocator>("Unnamed"))
                     .c_str());
 
             nlSNPrintf(var_name, 127, "%s/F%d_KEY_POS", section_name, i_formation);

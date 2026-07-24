@@ -662,7 +662,6 @@ void PlayMoodDef(MOOD_DEFINITION& MoodDef)
 
 /**
  * Offset/Address/Size: 0x2A0C | 0x80150120 | size: 0x270
- * TODO: 99.23% match - remaining scheduling differences around DestMoodLevel and SkipBlend writes.
  */
 static void UpdateTiming(float dtArg)
 {
@@ -723,7 +722,7 @@ static void UpdateTiming(float dtArg)
                         g_CrowdState.SinceMoodDest -= f2;
                         g_CrowdState.SinceMoodDest = (g_CrowdState.SinceMoodDest >= 0.0f) ? g_CrowdState.SinceMoodDest : 0.0f;
 
-                        g_CrowdState.DestMoodLevel = (unsigned char)(5.0f * (float)g_CrowdState.SinceMoodDest);
+                        g_CrowdState.DestMoodLevel = (unsigned char)(int)(5.0f * (float)g_CrowdState.SinceMoodDest);
                         g_CrowdState.CurrentMoodBlend[(s8)g_CrowdState.CurrentMood] = (float)g_CrowdState.SinceMoodDest;
                         g_CrowdState.SkipBlend = true;
                     }

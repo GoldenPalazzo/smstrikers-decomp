@@ -92,27 +92,27 @@ void ScrollingTickerScene::SceneCreated()
 {
     FEPresentation* pres = m_pFEScene->m_pFEPackage->GetPresentation();
 
-    TLInstance* temp = FEFinder<TLInstance, 2>::Find(
+    TLInstance* instance = FEFinder<TLInstance, 2>::Find(
         pres,
         InlineHasher(nlStringLowerHash("closed")),
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("ticker_ball_left")));
-    m_leftBallClosedPos = temp->GetPosition();
+    m_leftBallClosedPos = instance->GetPosition();
 
-    temp = FEFinder<TLInstance, 2>::Find(
+    instance = FEFinder<TLInstance, 2>::Find(
         pres,
         InlineHasher(nlStringLowerHash("closed")),
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("ticker_ball_right")));
-    m_rightBallClosedPos = temp->GetPosition();
-    m_ballClosedScale = temp->GetScale();
+    m_rightBallClosedPos = instance->GetPosition();
+    m_ballClosedScale = instance->GetScale();
 
-    temp = FEFinder<TLInstance, 2>::Find(
+    instance = FEFinder<TLInstance, 2>::Find(
         pres,
         InlineHasher(nlStringLowerHash("closed")),
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("Rectangle")));
-    m_grayClosedScale = temp->GetScale();
+    m_grayClosedScale = instance->GetScale();
 
     pres->SetActiveSlide("open");
 

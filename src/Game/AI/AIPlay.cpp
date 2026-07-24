@@ -91,7 +91,6 @@ void AIPlay::CalculateNewDesire()
 {
     float fResult;
 
-    // temp_r3 = this->unkC;
     if ((mpPlayDE != NULL) && (mpPlayDE->CallDTF(mpFielder) > 0.0f))
     {
         fResult = mpPlayDE->m_LastSelectedAction.m_fConfidence;

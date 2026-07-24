@@ -48,22 +48,22 @@ float cNet::GetGoalLineX() const
  */
 void cNet::GetPostLocation(nlVector3& location, unsigned int side, float arg2) const
 {
-    f32 temp_f1;
-    f32 temp_f4;
+    f32 yOffset;
+    f32 sideSign;
 
     location = m_baseLocation;
-    temp_f4 = m_sideSign;
-    location.f.x = -((m_fNetPostRadius * temp_f4) - location.f.x);
-    location.f.x += m_fNetPostOffsetFromGoalLine * temp_f4;
-    temp_f1 = (0.5f * m_fNetWidth) + arg2;
+    sideSign = m_sideSign;
+    location.f.x = -((m_fNetPostRadius * sideSign) - location.f.x);
+    location.f.x += m_fNetPostOffsetFromGoalLine * sideSign;
+    yOffset = (0.5f * m_fNetWidth) + arg2;
 
     if (side == 0)
     {
-        location.f.y -= temp_f1;
+        location.f.y -= yOffset;
         return;
     }
 
-    location.f.y += temp_f1;
+    location.f.y += yOffset;
 }
 
 /**

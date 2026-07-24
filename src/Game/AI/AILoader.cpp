@@ -21,21 +21,7 @@ bool AILoader::StartLoad(LoadingManager*)
 
     g_pBall = new (nlMalloc(0xACU, 8U, 0)) cBall();
 
-    // void* this_00 = nlMalloc(0xACU, 8U, 0);
-    // temp_ret = nlMalloc(0xACU, 8U, 0);
-    // temp_r3 = temp_ret;
-    // var_r4 = (u32)(u64)temp_ret;
-    // var_r0 = temp_r3;
-    // if (var_r0 != NULL)
-    // {
-    //     temp_ret_2 = __ct__5cBallFv(temp_r3);
-    //     var_r4 = (u32)(u64)temp_ret_2;
-    //     var_r0 = temp_ret_2;
-    // }
-    // g_pBall = (FakeBallWorld*)var_r0;
-
     FakeBallWorld::Init(g_pBall);
-    // Init__13FakeBallWorldFP5cBall((FakeBallWorld*)var_r0, (cBall*)var_r4);
 
     CreateCharacters();
 
