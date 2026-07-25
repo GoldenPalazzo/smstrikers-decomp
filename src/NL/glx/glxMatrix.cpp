@@ -42,82 +42,63 @@ void glxCopyMatrix(float (&arg0)[4][4], const nlMatrix4& arg1)
 
 /**
  * Offset/Address/Size: 0x88 | 0x801B65F0 | size: 0x1CC
- * TODO: 97.26% match - remaining f-register allocation differs in initial eye delta loads and side/up translation math.
  */
-void glplatMatrixLookAt(nlMatrix4& arg0, const nlVector3& arg1, const nlVector3& arg2, const nlVector3& arg3)
+void glplatMatrixLookAt(nlMatrix4& m, const nlVector3& eye, const nlVector3& at, const nlVector3& up)
 {
-    float ay = arg1.f.y;
-    float by = arg2.f.y;
-    float ax = arg1.f.x;
-    float bx = arg2.f.x;
-    float f27 = ax - bx;
-    float az = arg1.f.z;
-    float f26 = ay - by;
-    float bz = arg2.f.z;
-    float f0 = f26 * f26;
-    float f28 = az - bz;
+    nlVector3 side;
+    nlVector3 view;
+    nlVector3 cameraUp;
+    float x;
+    float y;
+    float z;
+    float inverseLength = nlRecipSqrt(
+        nlGetLengthSquared3D(
+            x = eye.f.x - at.f.x,
+            y = eye.f.y - at.f.y,
+            z = eye.f.z - at.f.z),
+        true);
+    float upZ = up.f.z;
+    float upY = up.f.y;
+    float forwardX = inverseLength * x;
+    float upX = up.f.x;
+    float forwardY = inverseLength * y;
+    float forwardZ = inverseLength * z;
 
-    float f1 = nlRecipSqrt(f28 * f28 + (f27 * f27 + f0), true);
-    float upz = arg3.f.z;
-    float upy = arg3.f.y;
-    float f31 = f1 * f27;
-    float upx = arg3.f.x;
-    float f30 = f1 * f26;
-    float f29 = f1 * f28;
+    float negUpX = -upX;
+    float upZForwardX = upZ * forwardX;
+    float upZForwardY = upZ * forwardY;
+    float upYForwardX = upY * forwardX;
+    x = upY * forwardZ - upZForwardY;
+    y = negUpX * forwardZ + upZForwardX;
+    z = upX * forwardY - upYForwardX;
 
-    float negUpx = -upx;
-    float fA = upz * f31;
-    float fB = upz * f30;
-    float fC = upy * f31;
-    f28 = upy * f29 - fB;
-    f26 = negUpx * f29 + fA;
-    f27 = upx * f30 - fC;
+    inverseLength = nlRecipSqrt(z * z + (x * x + y * y), true);
 
-    f1 = nlRecipSqrt(f27 * f27 + (f28 * f28 + f26 * f26), true);
-    f27 *= f1;
-    float eyeY = arg1.f.y;
-    f26 *= f1;
-    float eyeX = arg1.f.x;
-    float zDot = f30 * eyeY;
-    float eyeZ = arg1.f.z;
-    float sideDot = f27 * eyeY;
-    arg0.m[0][0] = f26;
-    f28 *= f1;
-    float zero = 0.0f;
-    float negZx = -f31;
-    arg0.m[1][0] = f27;
-    float upYBase = f29 * f26;
-    arg0.m[2][0] = f28;
-    sideDot = f26 * eyeX + sideDot;
-    float one = 1.0f;
-    float upX = f29 * f27;
-    float upY = negZx * f28 + upYBase;
-    sideDot = f28 * eyeZ + sideDot;
-    float upXBase = f30 * f26;
-    upX = f30 * f28 - upX;
-    float upDot = upY * eyeY;
-    sideDot = -sideDot;
-    float upZ = f31 * f27 - upXBase;
-    upDot = upX * eyeX + upDot;
-    arg0.m[3][0] = sideDot;
-    zDot = f31 * eyeX + zDot;
-    arg0.m[0][1] = upX;
-    upDot = upZ * eyeZ + upDot;
-    zDot = f29 * eyeZ + zDot;
-    arg0.m[1][1] = upY;
-    upDot = -upDot;
-    arg0.m[2][1] = upZ;
-    zDot = -zDot;
+    side.f.x = inverseLength * x;
+    side.f.y = inverseLength * y;
+    side.f.z = inverseLength * z;
 
-    arg0.m[3][1] = upDot;
-    arg0.m[0][2] = f31;
-    arg0.m[1][2] = f30;
-    arg0.m[2][2] = f29;
-    arg0.m[3][2] = zDot;
-    arg0.m[0][3] = zero;
-    arg0.m[1][3] = zero;
-    arg0.m[2][3] = zero;
-    arg0.m[3][3] = one;
+    view.f.x = forwardX;
+    view.f.y = forwardY;
+    view.f.z = forwardZ;
+
+    float negForwardX = -view.f.x;
+    float cameraUpX = (view.f.y * side.f.z) - (view.f.z * side.f.y);
+    nlVec3Set(cameraUp,
+        cameraUpX,
+        (negForwardX * side.f.z) + (view.f.z * side.f.x),
+        (view.f.x * side.f.y) - (view.f.y * side.f.x));
+
+    m.SetColumn_(0, side);
+    m.m[3][0] = -nlVec3DotProduct(side, eye);
+    m.SetColumn_(1, cameraUp);
+    m.m[3][1] = -nlVec3DotProduct(cameraUp, eye);
+    m.SetColumn_(2, view);
+    m.m[3][2] = -nlVec3DotProduct(view, eye);
+    m.m[0][3] = 0.0f;
+    m.m[1][3] = 0.0f;
+    m.m[2][3] = 0.0f;
+    m.m[3][3] = 1.0f;
 }
 
 /**
