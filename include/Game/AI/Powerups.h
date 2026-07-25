@@ -210,7 +210,7 @@ public:
 
 void CompactPowerups();
 void InitializePowerups();
-static PowerupBase* FindPowerUp(unsigned long hashOfDrawable);
+PowerupBase* FindPowerUp(unsigned long hashOfDrawable);
 u8 PowerupCreateAndThrow(cFielder*, ePowerUpType, int, Bowser*);
 void PowerupThrowPosition(int nThrowOrder, eThrowStyle eStyle, PowerupBase* pNewPowerup, PowerupBase* pFirstPowerup);
 cFielder* FindPowerupTarget(cFielder*, Bowser*);

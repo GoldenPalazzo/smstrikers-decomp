@@ -1147,7 +1147,7 @@ config.libs = [
             Object(NonMatching, "Game/Drawable/DrawableNetMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Drawable/DrawableCharacter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Drawable/DrawableBall.cpp", extra_cflags=["-inline auto", "-msext on"]),
-            Object(NonMatching, "Game/Drawable/DrawablePowerup.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Drawable/DrawablePowerup.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Drawable/DrawableExplosionFragment.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Interpreter
@@ -1368,7 +1368,7 @@ config.libs = [
             Object(NonMatching, "NL/glx/glxSwap.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/glx/glxFont.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/glx/glxMatrix.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "NL/glx/glxMemory.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "NL/glx/glxMemory.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/glx/glxTexture.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/glx/glxSend.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/glx/glxLoadModel.cpp", extra_cflags=["-inline auto"]),
@@ -1383,7 +1383,7 @@ config.libs = [
             Object(Matching, "NL/gl/glMatrix.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/gl/glMatrixStack.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/gl/glMemory.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "NL/gl/glModify.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "NL/gl/glModify.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/gl/glRenderList.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/gl/glStat.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "NL/gl/glState.cpp", extra_cflags=["-inline auto"]),
