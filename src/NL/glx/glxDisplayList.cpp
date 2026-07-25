@@ -26,7 +26,6 @@ struct DisplayListEx
 
 /**
  * Offset/Address/Size: 0x0 | 0x801C1E5C | size: 0x2A8
- * TODO: 98.15% match - primType/numVertices setup register allocation and inner loop branch forms still differ.
  */
 DisplayList* dlMakeDisplayList(const glModelPacket* packet, bool permanent)
 {
@@ -74,39 +73,37 @@ DisplayList* dlMakeDisplayList(const glModelPacket* packet, bool permanent)
 
     nlZeroMemory(p + actualSize, size - actualSize);
 
+    u8* p8 = p + 3;
+    u8 hasColor = bStitch;
+    u16* pInd = (u16*)packet->indexBuffer;
+
     p[0] = opcodes[packet->primType];
     *(u16*)(p + 1) = packet->numVertices;
-
     i = 0;
+
+    // TODO: Remove the const cast once a clean source form preserves the exact register allocation.
+    while (i < ((glModelPacket*)packet)->numVertices)
     {
-        u32 numVertices = packet->numVertices;
-        u8 hasColor = bStitch;
-        u8* p8 = p + 3;
-        u16* pInd = (u16*)packet->indexBuffer;
-
-        while (i < numVertices)
+        if (hasColor)
         {
-            if (hasColor)
+            *p8++ = 0xFF;
+            for (j = 0; j < packet->numStreams - 1; j++)
             {
-                *p8++ = 0xFF;
-                for (j = packet->numStreams - 1; j > 0; j--)
-                {
-                    *(u16*)p8 = *pInd;
-                    p8 += 2;
-                }
+                *(u16*)p8 = *pInd;
+                p8 += 2;
             }
-            else
-            {
-                for (j = packet->numStreams; j > 0; j--)
-                {
-                    *(u16*)p8 = *pInd;
-                    p8 += 2;
-                }
-            }
-
-            i++;
-            pInd++;
         }
+        else
+        {
+            for (j = 0; j < packet->numStreams; j++)
+            {
+                *(u16*)p8 = *pInd;
+                p8 += 2;
+            }
+        }
+
+        i++;
+        pInd++;
     }
 
     if (permanent)
