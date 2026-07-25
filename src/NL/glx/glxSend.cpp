@@ -85,7 +85,7 @@ static u32 prog_3d_pointlit = glGetProgram("3d pointlit");
 static u32 prog_3d_pointlit_dirt = glGetProgram("3d pointlit dirt");
 static u32 prog_3d_crowd = glGetProgram("3d crowd");
 static u32 prog_3d_crowd_lit = glGetProgram("3d crowd lit");
-static u32 ColourTargetTexture = glGetTexture("target/colour");
+static const u32 ColourTargetTexture = glGetTexture("target/colour");
 
 // .sdata2: forced via section attribute (target has these in .sdata2 with non-zero init)
 static u32 glv_MatrixChanged __attribute__((section(".sdata2"))) = 0x20;

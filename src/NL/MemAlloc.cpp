@@ -11,7 +11,7 @@ extern void nlBreak();
 /**
  * Offset/Address/Size: 0x534 | 0x801CDC80 | size: 0x130
  */
-void MemoryAllocator::Free(void* arg0)
+void MemoryAllocator::Free(void* p)
 {
     FreeBlockList* block;
     MemoryAllocator* self;
@@ -23,12 +23,12 @@ void MemoryAllocator::Free(void* arg0)
     s32 header;
     s32 offset;
 
-    if (arg0 == NULL)
+    if (p == NULL)
     {
         return;
     }
 
-    block = (FreeBlockList*)((char*)arg0 - 4);
+    block = (FreeBlockList*)((char*)p - 4);
     self = this;
     header = *(u32*)block;
     size = header & 0x3FFFFFFF;
@@ -36,7 +36,7 @@ void MemoryAllocator::Free(void* arg0)
     size &= 0xFFFFFFFC;
     if (header & 0x40000000)
     {
-        size += *(u32*)((char*)arg0 + size);
+        size += *(u32*)((char*)p + size);
     }
 
     size += 4;
@@ -47,7 +47,7 @@ void MemoryAllocator::Free(void* arg0)
         size += offset;
     }
 
-    block->m_unk_0x08 = size;
+    block->m_size = size;
     start = nlDLRingGetStart<FreeBlockList>(self->m_free_block_list);
     if ((start > block) || (start == NULL))
     {
@@ -70,10 +70,10 @@ void MemoryAllocator::Free(void* arg0)
     next = block->m_next;
     if (next > block)
     {
-        size = block->m_unk_0x08;
+        size = block->m_size;
         if (((char*)block + size) == (char*)next)
         {
-            block->m_unk_0x08 = size + next->m_unk_0x08;
+            block->m_size = size + next->m_size;
             nlDLRingRemove<FreeBlockList>(&self->m_free_block_list, next);
         }
     }
@@ -81,10 +81,10 @@ void MemoryAllocator::Free(void* arg0)
     prev = block->m_prev;
     if (prev < block)
     {
-        size = prev->m_unk_0x08;
+        size = prev->m_size;
         if (((char*)prev + size) == (char*)block)
         {
-            prev->m_unk_0x08 = size + block->m_unk_0x08;
+            prev->m_size = size + block->m_size;
             nlDLRingRemove<FreeBlockList>(&self->m_free_block_list, block);
         }
     }
@@ -116,7 +116,7 @@ void* MemoryAllocator::Allocate(unsigned long size, unsigned int alignment, bool
 
         do
         {
-            blockSize = cur->m_unk_0x08;
+            blockSize = cur->m_size;
             if (blockSize > alignedSize)
             {
                 u32 endAddr = (u32)cur + blockSize;
@@ -140,7 +140,7 @@ void* MemoryAllocator::Allocate(unsigned long size, unsigned int alignment, bool
             alignment = 4;
             if (remaining > 0xC)
             {
-                cur->m_unk_0x08 = remaining;
+                cur->m_size = remaining;
             }
             else
             {
@@ -187,7 +187,7 @@ void* MemoryAllocator::Allocate(unsigned long size, unsigned int alignment, bool
 
         do
         {
-            blockSize = cur->m_unk_0x08;
+            blockSize = cur->m_size;
             if (blockSize > alignedSize)
             {
                 alignedStart = (u32)cur + alignment;
@@ -209,11 +209,11 @@ void* MemoryAllocator::Allocate(unsigned long size, unsigned int alignment, bool
         {
             FreeBlockList* prev = cur->m_prev;
             nlDLRingRemove<FreeBlockList>(&m_free_block_list, cur);
-            u32 remaining = cur->m_unk_0x08 - offset;
+            u32 remaining = cur->m_size - offset;
             if (remaining > 0xC)
             {
                 FreeBlockList* newFree = (FreeBlockList*)((char*)cur + offset);
-                newFree->m_unk_0x08 = remaining;
+                newFree->m_size = remaining;
                 if (m_free_block_list == NULL || cur == start)
                 {
                     nlDLRingAddStart<FreeBlockList>(&m_free_block_list, newFree);
@@ -222,10 +222,10 @@ void* MemoryAllocator::Allocate(unsigned long size, unsigned int alignment, bool
                 {
                     nlDLRingInsert<FreeBlockList>(&m_free_block_list, prev, newFree);
                 }
-                cur->m_unk_0x08 = offset;
+                cur->m_size = offset;
             }
 
-            u32 currentBlockSize = cur->m_unk_0x08;
+            u32 currentBlockSize = cur->m_size;
             u32 header = savedSize;
             void* allocPtr = (void*)((char*)cur + requestSize);
             u32 suffixSize = currentBlockSize - offset;
@@ -251,27 +251,27 @@ void* MemoryAllocator::Allocate(unsigned long size, unsigned int alignment, bool
 /**
  * Offset/Address/Size: 0xE0 | 0x801CD82C | size: 0xF8
  */
-void MemoryAllocator::Initialize(void* arg0, unsigned int arg1)
+void MemoryAllocator::Initialize(void* memory, unsigned int size)
 {
     FreeBlockList* start;
     FreeBlockList* iter;
     FreeBlockList* next;
     FreeBlockList* prev;
-    u32 size;
+    u32 blockSize;
 
     m_free_block_list = NULL;
-    ((FreeBlockList*)arg0)->m_unk_0x08 = arg1;
+    ((FreeBlockList*)memory)->m_size = size;
     start = nlDLRingGetStart<FreeBlockList>(m_free_block_list);
-    if ((start > (FreeBlockList*)arg0) || (start == NULL))
+    if ((start > (FreeBlockList*)memory) || (start == NULL))
     {
-        nlDLRingAddStart<FreeBlockList>(&m_free_block_list, (FreeBlockList*)arg0);
+        nlDLRingAddStart<FreeBlockList>(&m_free_block_list, (FreeBlockList*)memory);
     }
     else
     {
         iter = start->m_next;
         while (iter != start)
         {
-            if (iter > (FreeBlockList*)arg0)
+            if (iter > (FreeBlockList*)memory)
             {
                 break;
             }
@@ -279,39 +279,45 @@ void MemoryAllocator::Initialize(void* arg0, unsigned int arg1)
             iter = iter->m_next;
         }
 
-        nlDLRingInsert<FreeBlockList>(&m_free_block_list, iter->m_prev, (FreeBlockList*)arg0);
+        nlDLRingInsert<FreeBlockList>(&m_free_block_list, iter->m_prev, (FreeBlockList*)memory);
     }
 
-    next = ((FreeBlockList*)arg0)->m_next;
-    if (next > (FreeBlockList*)arg0)
+    next = ((FreeBlockList*)memory)->m_next;
+    if (next > (FreeBlockList*)memory)
     {
-        size = ((FreeBlockList*)arg0)->m_unk_0x08;
-        if ((FreeBlockList*)((u8*)arg0 + size) == next)
+        blockSize = ((FreeBlockList*)memory)->m_size;
+        if ((FreeBlockList*)((u8*)memory + blockSize) == next)
         {
-            ((FreeBlockList*)arg0)->m_unk_0x08 = size + next->m_unk_0x08;
+            ((FreeBlockList*)memory)->m_size = blockSize + next->m_size;
             nlDLRingRemove<FreeBlockList>(&m_free_block_list, next);
         }
     }
 
-    prev = ((FreeBlockList*)arg0)->m_prev;
-    if (prev < (FreeBlockList*)arg0)
+    prev = ((FreeBlockList*)memory)->m_prev;
+    if (prev < (FreeBlockList*)memory)
     {
-        size = prev->m_unk_0x08;
-        if ((FreeBlockList*)((u8*)prev + size) == (FreeBlockList*)arg0)
+        blockSize = prev->m_size;
+        if ((FreeBlockList*)((u8*)prev + blockSize) == (FreeBlockList*)memory)
         {
-            prev->m_unk_0x08 = size + ((FreeBlockList*)arg0)->m_unk_0x08;
-            nlDLRingRemove<FreeBlockList>(&m_free_block_list, (FreeBlockList*)arg0);
+            prev->m_size = blockSize + ((FreeBlockList*)memory)->m_size;
+            nlDLRingRemove<FreeBlockList>(&m_free_block_list, (FreeBlockList*)memory);
         }
     }
 }
 
-/**
- * Offset/Address/Size: 0xCC | 0x801CD818 | size: 0x14
- */
-void TotalFreeMemCallback::Callback(FreeBlockList* fbl)
+class TotalFreeMemCallback
 {
-    m_unk_0x00 = m_unk_0x00 + fbl->m_unk_0x08;
-}
+public:
+    /**
+     * Offset/Address/Size: 0xCC | 0x801CD818 | size: 0x14
+     */
+    void Callback(FreeBlockList* block)
+    {
+        size = size + block->m_size;
+    }
+
+    /* 0x0 */ u32 size;
+};
 
 /**
  * Offset/Address/Size: 0x74 | 0x801CD7C0 | size: 0x58
@@ -319,27 +325,33 @@ void TotalFreeMemCallback::Callback(FreeBlockList* fbl)
 unsigned int MemoryAllocator::TotalFreeMemory()
 {
     TotalFreeMemCallback callback;
-    callback.m_unk_0x00 = 0;
+    callback.size = 0;
     nlWalkDLRing<FreeBlockList, TotalFreeMemCallback>(m_free_block_list, &callback, &TotalFreeMemCallback::Callback);
-    return callback.m_unk_0x00;
+    return callback.size;
 }
 
-/**
- * Offset/Address/Size: 0x58 | 0x801CD7A4 | size: 0x1C
- */
-void LargestFreeBlockCallback::Callback(FreeBlockList* fbl)
+class LargestFreeBlockCallback
 {
-    u32 temp_r0;
-    u32 var_r5;
-
-    var_r5 = m_unk_0x00;
-    temp_r0 = fbl->m_unk_0x08;
-    if (temp_r0 >= var_r5)
+public:
+    /**
+     * Offset/Address/Size: 0x58 | 0x801CD7A4 | size: 0x1C
+     */
+    void Callback(FreeBlockList* block)
     {
-        var_r5 = temp_r0;
+        u32 blockSize;
+        u32 maxSize;
+
+        maxSize = largest;
+        blockSize = block->m_size;
+        if (blockSize >= maxSize)
+        {
+            maxSize = blockSize;
+        }
+        largest = maxSize;
     }
-    m_unk_0x00 = var_r5;
-}
+
+    /* 0x0 */ u32 largest;
+};
 
 /**
  * Offset/Address/Size: 0x0 | 0x801CD74C | size: 0x58
@@ -347,7 +359,7 @@ void LargestFreeBlockCallback::Callback(FreeBlockList* fbl)
 unsigned int MemoryAllocator::LargestFreeBlock()
 {
     LargestFreeBlockCallback callback;
-    callback.m_unk_0x00 = 0;
+    callback.largest = 0;
     nlWalkDLRing<FreeBlockList, LargestFreeBlockCallback>(m_free_block_list, &callback, &LargestFreeBlockCallback::Callback);
-    return callback.m_unk_0x00;
+    return callback.largest;
 }

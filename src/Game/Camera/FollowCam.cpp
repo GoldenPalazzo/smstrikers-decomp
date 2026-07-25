@@ -7,12 +7,10 @@
 
 #include "NL/gl/glMatrix.h"
 
-cTeam* g_pTeams[2] __attribute__((section(".data"))) = { NULL, NULL };
-
-// extern s32 currentlySelectedTarget$647;
+extern cTeam* g_pTeams[2];
 extern u8 g_bProfiling;
 extern u8 g_bTweaking;
-// extern u8 init$648;
+
 static f32 g_fDistanceSeek = 0.5f;
 static f32 g_fMaxDistance = 40.0f;
 static f32 g_fMinDistance = 2.0f;

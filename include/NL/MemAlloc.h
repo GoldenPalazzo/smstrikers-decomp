@@ -2,19 +2,21 @@
 #define _MEMALLOC_H_
 
 #include "types.h"
-#include "NL/nlDLRing.h"
-
-// void nlDLRingGetEnd<FreeBlockList>(FreeBlockList*);
-// void nlDLRingGetStart<FreeBlockList>(FreeBlockList*);
-// void nlDLRingRemove<FreeBlockList>(FreeBlockList**, FreeBlockList*);
-// void nlDLRingAddStart<FreeBlockList>(FreeBlockList**, FreeBlockList*);
-// void nlDLRingInsert<FreeBlockList>(FreeBlockList**, FreeBlockList*, FreeBlockList*);
+// Load-bearing: nlDLRing.h is not referenced by this header, but it must be
+// included HERE, ahead of the class bodies below. Including it from MemAlloc.cpp
+// *after* this header instead splits MWCC's weak template block into an extra
+// section -- the nlDLRing* helpers stop sharing a section with the nlWalkDLRing
+// instantiations -- which reorders the .text contribution and breaks the DOL
+// SHA1. objdiff and the per-unit report both still show 100%, so only
+// build.sha1 catches it. MemAlloc.cpp is the only TU affected; including
+// nlRing.h here instead of nlDLRing.h does NOT work.
+#include "NL/nlDLRing.h" // IWYU pragma: keep
 
 struct FreeBlockList
 {
     /* 0x0 */ FreeBlockList* m_next;
     /* 0x4 */ FreeBlockList* m_prev;
-    /* 0x8 */ u32 m_unk_0x08;
+    /* 0x8 */ u32 m_size;
 };
 
 class MemoryAllocator
@@ -32,48 +34,7 @@ public:
 extern MemoryAllocator StandardAllocator;
 extern MemoryAllocator VirtualAllocator;
 
-class LargestFreeBlockCallback
-{
-public:
-    void Callback(FreeBlockList*);
-
-    /* 0x0 */ u32 m_unk_0x00;
-};
-
-class TotalFreeMemCallback
-{
-public:
-    void Callback(FreeBlockList*);
-
-    /* 0x0 */ u32 m_unk_0x00;
-};
-
-// Template function declaration for nlWalkDLRing
 template <typename T, typename CallbackType>
 void nlWalkDLRing(T* head, CallbackType* callback, void (CallbackType::*callbackFunc)(T*));
-
-// class nlWalkDLRing<FreeBlockList, LargestFreeBlockCallback>(FreeBlockList*, LargestFreeBlockCallback*, void (LargestFreeBlockCallback
-// {
-// public:
-//     void *)(FreeBlockList*));
-// };
-
-// class nlWalkDLRing<FreeBlockList, TotalFreeMemCallback>(FreeBlockList*, TotalFreeMemCallback*, void (TotalFreeMemCallback
-// {
-// public:
-//     void *)(FreeBlockList*));
-// };
-
-// class nlWalkRing<FreeBlockList, TotalFreeMemCallback>(FreeBlockList*, TotalFreeMemCallback*, void (TotalFreeMemCallback
-// {
-// public:
-//     void *)(FreeBlockList*));
-// };
-
-// class nlWalkRing<FreeBlockList, LargestFreeBlockCallback>(FreeBlockList*, LargestFreeBlockCallback*, void (LargestFreeBlockCallback
-// {
-// public:
-//     void *)(FreeBlockList*));
-// };
 
 #endif // _MEMALLOC_H_
