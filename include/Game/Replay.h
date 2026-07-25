@@ -6,7 +6,6 @@
 #include "NL/nlSlotPool.h"
 #include "Game/Effects/EmissionController.h"
 
-// Forward declarations
 class DrawableCharacter;
 class DrawableBall;
 class DrawableExplosionFragment;
@@ -397,7 +396,6 @@ public:
     {
         Reel()
         {
-            // mQuality = 0;
             mBegin = nullptr;
             mLast = nullptr;
             mAge = 0;
@@ -405,8 +403,12 @@ public:
 
         /* 0x0 */ Frame* mBegin;
         /* 0x4 */ Frame* mLast;
-        /* 0x8 */ int mAge; // or float?
-    }; // total size: 0xC (corrected from 0x10)
+        /* 0x8 */ int mAge;
+        // Do not "fix" this layout from dwarf.txt. The debug ELF's ReplayManager.cpp
+        // compile unit describes a 0x10 Reel (float mAge, int mQuality, mBegin, mLast),
+        // but the retail build indexes mReels with `mulli rX,rY,12`, so the shipped
+        // stride is 0xC and this ordering is what reproduces LockReel exactly.
+    }; // total size: 0xC
 
     Replay(char*, int, int);
     ~Replay();
@@ -427,15 +429,15 @@ public:
     template <typename T>
     void Play(float time, T& previous, T& current, float* blend) const;
 
-    /* 0x00 */ Frame* mFree;            // offset 0x0, size 0x4
-    /* 0x04 */ Reel mReels[4];          // offset 0x4, size 0x40
-    /* 0x34 */ int mReelIdx;            // offset 0x44, size 0x4
-    /* 0x38 */ int mTick;               // offset 0x48, size 0x4
-    /* 0x3C */ int mMemorySize;         // offset 0x4C, size 0x4
-    /* 0x40 */ int mMaxFrameSize;       // offset 0x50, size 0x4
-    /* 0x44 */ int mActualMaxFrameSize; // offset 0x54, size 0x4
-    /* 0x48 */ Reel* mHighlights[3];    // offset 0x58, size 0xC
+    /* 0x00 */ Frame* mFree;
+    /* 0x04 */ Reel mReels[4];
+    /* 0x34 */ int mReelIdx;
+    /* 0x38 */ int mTick;
+    /* 0x3C */ int mMemorySize;
+    /* 0x40 */ int mMaxFrameSize;
+    /* 0x44 */ int mActualMaxFrameSize;
+    /* 0x48 */ Reel* mHighlights[3];
 
-}; // total size: 0x64
+}; // total size: 0x54
 
 #endif // _REPLAY_H_

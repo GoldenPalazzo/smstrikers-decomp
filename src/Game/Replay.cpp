@@ -23,8 +23,7 @@ Replay::Replay(char* memory, int memorySize, int maxFrameSize)
     mFree->mNext = mFree;
     mReels[0].mBegin = mReels[0].mLast = mFree;
 
-    renderMemoryLayout =
-        GetConfigBool(Config::Global(), "draw_replay_bar", false);
+    renderMemoryLayout = GetConfigBool(Config::Global(), "draw_replay_bar", false);
 }
 
 /**
@@ -87,9 +86,9 @@ Replay::Frame* Replay::Next(Replay::Frame* frame, int reelIdx) const
     return nullptr;
 }
 
-inline Replay::Frame* GetFrame(const Replay::Reel* mReels, int reelIdx)
+inline Replay::Frame* GetFrame(const Replay::Reel* reels, int reelIdx)
 {
-    return mReels[reelIdx].mBegin;
+    return reels[reelIdx].mBegin;
 }
 
 /**
@@ -222,8 +221,6 @@ static inline void ReleaseReel(Replay* replay, int idx)
 
 /**
  * Offset/Address/Size: 0x38 | 0x802138E4 | size: 0x39C
- * TODO: 99.85% match. Remaining diffs are register allocation in the
- * first do-while traversal.
  */
 bool Replay::LockReel(float numSeconds, int idx, int quality)
 {

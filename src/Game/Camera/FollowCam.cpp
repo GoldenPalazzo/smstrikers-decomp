@@ -41,14 +41,13 @@ cFollowCamera::cFollowCamera(FollowTarget followTarget)
 
 /**
  * Offset/Address/Size: 0x0 | 0x801A8F18 | size: 0x668
- * TODO: 98.6% match - r28-r31 register allocation differs in camera update math
  */
 void cFollowCamera::Update(float fDeltaT)
 {
     int i;
+    RenderSnapshot* snap;
     cGlobalPad* pController;
     cCharacter* pCharacter;
-    int numAvailableObjs;
     float xPressure;
     float yPressure;
     float fScalar;
@@ -90,23 +89,20 @@ void cFollowCamera::Update(float fDeltaT)
     }
     else if (m_FollowTarget == FOLLOW_SELECTABLE)
     {
-        RenderSnapshot* snap = ReplayManager::Instance()->mRender;
+        snap = ReplayManager::Instance()->mRender;
         static s32 currentlySelectedTarget = 0;
 
-        numAvailableObjs = snap->NumDrawableObjects();
+        const int numAvailableObjs = snap->NumDrawableObjects();
 
         if (!g_bTweaking && fDeltaT > 0.0f)
         {
             if (cPadManager::GetPad(0)->JustPressed(1, false) && !g_bTweaking)
             {
-                int v = currentlySelectedTarget + numAvailableObjs;
-                v -= 1;
-                currentlySelectedTarget = v - (v / numAvailableObjs) * numAvailableObjs;
+                currentlySelectedTarget = (currentlySelectedTarget - 1 + numAvailableObjs) % numAvailableObjs;
             }
             if (cPadManager::GetPad(0)->JustPressed(2, false) && !g_bTweaking)
             {
-                int v = currentlySelectedTarget + 1;
-                currentlySelectedTarget = v - (v / numAvailableObjs) * numAvailableObjs;
+                currentlySelectedTarget = (currentlySelectedTarget + 1) % numAvailableObjs;
             }
         }
 
@@ -155,25 +151,25 @@ void cFollowCamera::Update(float fDeltaT)
             m_aPitch = g_aFollowCamMinPitch;
     }
 
-    const float vx = -m_matView.m[1][2];
-    const float vy = -m_matView.m[0][2];
+    const float vx = -m_matView.m[0][2];
+    const float vy = -m_matView.m[1][2];
 
-    const float dy = (m_v3OOIDampened.f.y - m_v3OOIDampenedPrev.f.y);
     const float dx = (m_v3OOIDampened.f.x - m_v3OOIDampenedPrev.f.x);
+    const float dy = (m_v3OOIDampened.f.y - m_v3OOIDampenedPrev.f.y);
 
     fScalar = 0.0f;
     const float denom = nlSqrt(fScalar + (vx * vx + vy * vy), true);
-    const float t = (fScalar + (vx * dy + vy * dx)) / (denom * denom);
+    const float t = (fScalar + (vx * dx + vy * dy)) / (denom * denom);
 
-    float rx = dy - t * vx;
-    float ry = dx - t * vy;
+    float rx = dx - t * vx;
+    float ry = dy - t * vy;
     const float len = nlSqrt(fScalar + (rx * rx + ry * ry), true);
 
     const float invDist = len / m_fOOIDistance;
     const float angleShortF = 10430.378f * invDist;
     const u16 angleShort = (u16)(int)angleShortF;
 
-    const float signCheck = (ry * vx - rx * vy);
+    const float signCheck = (rx * vy - ry * vx);
     if (signCheck >= 0.0f)
         m_aFacingDirection = m_aFacingDirection - angleShort;
     else

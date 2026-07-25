@@ -1,16 +1,21 @@
-// Include order is load-bearing: nlDLRing.h must be parsed BEFORE MemAlloc.h.
-// MWCC emits one weak-template .text section per declaring header, ordered by
-// parse position, and the original TU groups the nlWalkDLRing instantiations
-// together with the nlDLRing* helpers in a single 0x148 block (see the four
-// .text ranges for this TU in config/G4QE01/splits.txt). Parsing nlDLRing.h
-// after MemAlloc.h splits that block in two and reverses them, which reorders
-// the .text contribution and breaks the DOL SHA1 -- while objdiff and the
-// per-unit report both still report 100%. Do not sort these two lines.
+// Include order is load-bearing; do not sort these lines. MWCC emits one .text
+// section per code-contributing header, ordered by parse position, and this TU
+// reproduces the original's four blocks (config/G4QE01/splits.txt):
+//
+//   0x664  MemAlloc.cpp   the seven MemoryAllocator/Callback functions
+//   0x054  nlWare.h       weak nlPrintf; discarded at link (AnimInventory.cpp
+//                         owns the surviving copy at 0x8000749C), which is why
+//                         the split target records this block as zero-length
+//   0x148  nlDLRing.h     nlWalkDLRing<> instantiations + nlDLRing* helpers
+//   0x0c0  nlRing.h       nlWalkRing<> instantiations
+//
+// Parsing nlDLRing.h after MemAlloc.h splits its 0x148 block in two and reverses
+// the halves, which reorders the .text contribution and breaks the DOL SHA1 --
+// while objdiff and the per-unit report both still report 100%.
+#include "NL/nlWare.h"
+#include "NL/nlDebug.h"
 #include "NL/nlDLRing.h"
 #include "NL/MemAlloc.h"
-
-extern void nlPrintf(const char*, ...);
-extern void nlBreak();
 
 // Built with `-inline deferred`: MWCC emits .text in REVERSE source order, so the
 // functions below are declared last-to-first relative to their addresses. Parse-time
