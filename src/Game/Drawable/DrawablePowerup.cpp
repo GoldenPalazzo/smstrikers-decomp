@@ -201,8 +201,6 @@ void DrawablePowerup::Render(int idx) const
 
 /**
  * Offset/Address/Size: 0x0 | 0x8011EC74 | size: 0xF8
- * TODO: 95.3% match - FPR registers still differ around blend factor
- * temporaries and the mScale store schedule.
  */
 void DrawablePowerup::Blend(const float* blendFactors, const DrawablePowerup& lhs, const DrawablePowerup& rhs)
 {
@@ -210,31 +208,13 @@ void DrawablePowerup::Blend(const float* blendFactors, const DrawablePowerup& lh
     if (!mVisible)
         return;
 
-    float posZ;
-    float posY;
-    float posX;
-    float scale;
-    float t2;
-    float t;
-    float one;
-    float invT;
-
-    t = blendFactors[2];
-    one = 1.0f;
-    invT = one - t;
-    t2 = ((const volatile float*)blendFactors)[2];
-    scale = (one - t2) * lhs.mScale + t2 * rhs.mScale;
-    posX = invT * lhs.mPosition.f.x + t * rhs.mPosition.f.x;
-    posY = invT * lhs.mPosition.f.y + t * rhs.mPosition.f.y;
-    posZ = invT * lhs.mPosition.f.z + t * rhs.mPosition.f.z;
+    float* factors = (float*)blendFactors;
 
     mType = lhs.mType;
-    mScale = scale;
+    mScale = (1.0f - factors[2]) * lhs.mScale + factors[2] * rhs.mScale;
     mRadius = lhs.mRadius;
-    mOrientation = lhs.mOrientation + (s16)((s16)(rhs.mOrientation - lhs.mOrientation) * t);
-    mPosition.f.x = posX;
-    mPosition.f.y = posY;
-    mPosition.f.z = posZ;
+    mOrientation = lhs.mOrientation + (s16)((s16)(rhs.mOrientation - lhs.mOrientation) * blendFactors[2]);
+    nlVecLerp(mPosition, lhs.mPosition, rhs.mPosition, blendFactors[2]);
 }
 
 template void DrawablePowerup::Replay<SaveFrame>(SaveFrame&);
