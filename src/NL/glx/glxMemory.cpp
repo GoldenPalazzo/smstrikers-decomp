@@ -151,6 +151,7 @@ static inline void ResourceAllocMark()
 
 static inline void ResourceAllocTotal(u32* pTotalAlloc, u32* pTotalTex)
 {
+    u32 e;
     GLXMemoryInfo* p = g_uResourceAlloc;
     u32 totalAlloc = 0;
     u32 totalTex = totalAlloc;
@@ -158,7 +159,6 @@ static inline void ResourceAllocTotal(u32* pTotalAlloc, u32* pTotalTex)
     u32 i;
     for (i = 0; i <= marker; i++)
     {
-        u32 e;
         u32 a = p->m_uBytes[0] + p->m_uBytes[1];
         a = a + p->m_uBytes[2];
         a = a + p->m_uBytes[3];
@@ -177,9 +177,6 @@ static inline void ResourceAllocTotal(u32* pTotalAlloc, u32* pTotalTex)
 
 /**
  * Offset/Address/Size: 0x200 | 0x801B6B28 | size: 0x110
- * TODO: 96.47% match - loop-setup register/order diffs: totalAlloc/count/p
- * emitted in a different order, totalTex materialized via li r6,0 instead of
- * mr r6,r5, and p needs an extra mr into r7
  */
 #pragma optimize_for_size on
 void glplatResourceRelease(unsigned long long resourceId)
@@ -197,28 +194,13 @@ void glplatResourceRelease(unsigned long long resourceId)
         g_uResourceMarker--;
     }
 
-    u32 totalAlloc = 0;
-    u32 totalTex = totalAlloc;
-    u32 marker = g_uResourceMarker;
-    u32 i;
-    GLXMemoryInfo* p = g_uResourceAlloc;
-    for (i = 0; i <= marker; i++)
-    {
-        u32 a = p->m_uBytes[0] + p->m_uBytes[1];
-        a = a + p->m_uBytes[2];
-        a = a + p->m_uBytes[3];
-        u32 e = p->m_uBytes[4];
-        u32 g = p->m_uTexBundle;
-        a = a + e;
-        a = a + p->m_uBytes[5];
-        totalAlloc = totalAlloc + a;
-        totalTex = totalTex + (e - g);
-        p++;
-    }
+    u32 totalAlloc;
+    u32 totalTex;
+    ResourceAllocTotal(&totalAlloc, &totalTex);
 
     f32 fConst = 1.0f / 1024.0f;
     f32 fMB = (f32)totalAlloc * fConst;
-    tDebugPrintManager::Print(DC_GLPLAT, "total : (%0.3fMB) %uKB .. %uKB dTex\n", totalAlloc >> 10, totalTex >> 10, fMB * fConst);
+    tDebugPrintManager::Print(DC_GLPLAT, "total : (%0.3fMB) %uKB .. %uKB dTex\n", fMB * fConst, totalAlloc >> 10, totalTex >> 10);
 }
 #pragma optimize_for_size reset
 
@@ -244,7 +226,7 @@ unsigned long long glplatResourceMark()
 
     f32 fConst = 1.0f / 1024.0f;
     f32 fMB = (f32)totalAlloc * fConst;
-    tDebugPrintManager::Print(DC_GLPLAT, "total : (%0.3fMB) %uKB .. %uKB dTex\n", totalAlloc >> 10, totalTex >> 10, fMB * fConst);
+    tDebugPrintManager::Print(DC_GLPLAT, "total : (%0.3fMB) %uKB .. %uKB dTex\n", fMB * fConst, totalAlloc >> 10, totalTex >> 10);
 
     return marker;
 }
