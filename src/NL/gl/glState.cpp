@@ -198,16 +198,7 @@ static inline unsigned long SetTextureStateRefImpl(unsigned long long* pState, e
         }
         else
         {
-            s32 startBit = pInfo->startBit;
-            unsigned long lo = ((u32*)pState)[1];
-            unsigned long hi = ((u32*)pState)[0];
-            unsigned long mask32 = 1UL << (j + startBit);
-            unsigned long notMask = ~mask32;
-            lo = lo & notMask;
-            notMask = (unsigned long)((s32)notMask >> 31);
-            ((u32*)pState)[1] = lo;
-            lo = hi & notMask;
-            ((u32*)pState)[0] = lo;
+            *pState &= ~(1 << (j + pInfo->startBit));
         }
     }
 
@@ -216,8 +207,6 @@ static inline unsigned long SetTextureStateRefImpl(unsigned long long* pState, e
 
 /**
  * Offset/Address/Size: 0x1CC | 0x801DBE10 | size: 0x12C
- * TODO: 99.53% match - clear-bit path uses different temporary registers for
- * the inverted mask and low-word store.
  */
 unsigned long glSetTextureState(unsigned long long& texture, eGLTextureState state, unsigned long value)
 {
