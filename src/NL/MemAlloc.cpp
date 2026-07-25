@@ -1,3 +1,12 @@
+// Include order is load-bearing: nlDLRing.h must be parsed BEFORE MemAlloc.h.
+// MWCC emits one weak-template .text section per declaring header, ordered by
+// parse position, and the original TU groups the nlWalkDLRing instantiations
+// together with the nlDLRing* helpers in a single 0x148 block (see the four
+// .text ranges for this TU in config/G4QE01/splits.txt). Parsing nlDLRing.h
+// after MemAlloc.h splits that block in two and reverses them, which reorders
+// the .text contribution and breaks the DOL SHA1 -- while objdiff and the
+// per-unit report both still report 100%. Do not sort these two lines.
+#include "NL/nlDLRing.h"
 #include "NL/MemAlloc.h"
 
 extern void nlPrintf(const char*, ...);

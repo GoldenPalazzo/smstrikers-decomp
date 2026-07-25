@@ -837,7 +837,7 @@ config.libs = [
             Object(Matching, "Game/Camera/GameplayCam.cpp", extra_cflags=["-inline auto", "-inline deferred"], mw_version="GC/1.3"),
             Object(Matching, "Game/Camera/animcam.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
-            Object(NonMatching, "Game/Replay.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Replay.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/ReplayChoreo.cpp", extra_cflags=["-inline auto", "-inline deferred"]),    
             Object(NonMatching, "Game/ReplayManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/RenderSnapshot.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

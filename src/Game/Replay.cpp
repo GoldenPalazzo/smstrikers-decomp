@@ -326,6 +326,29 @@ afterLoops:
 }
 
 /**
+ * Unreferenced helper, dead-stripped at link. Deferred emission runs
+ * bottom-to-top, so defining it below LockReel emits it ahead of LockReel:
+ * its 0.0f and its s32-to-f32 conversion magic claim .sdata2 slots 0x0 and
+ * 0x8 before LockReel's 1.2f, matching the target pool order
+ * [0.0f, magic, 1.2f]. dwarf.txt attributes an erased Replay::RenderLayout()
+ * to this TU with float locals x/width/w walking the frame ring;
+ * renderMemoryLayout above is the "draw_replay_bar" flag that gated it and is
+ * otherwise unread here.
+ */
+static float ReplayLayoutBarWidth(const Replay::Frame* frame, int memorySize)
+{
+    float width = 0.0f;
+
+    while (frame != nullptr)
+    {
+        width += (float)frame->mSize;
+        frame = frame->mNext;
+    }
+
+    return width / (float)memorySize;
+}
+
+/**
  * Offset/Address/Size: 0x20 | 0x802138CC | size: 0x18
  */
 float Replay::BeginTime() const
