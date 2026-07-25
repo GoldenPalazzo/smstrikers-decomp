@@ -9,11 +9,11 @@ struct Modifier
     /* 0x08 */ s32 m_unk_0x08;
 };
 
-Modifier glModifier[6];
+static Modifier glModifier[6];
 static u32 glNumModifiers = 0;
 
-__declspec(section ".sdata2") static u32 GLTT_Diffuse_bit = 0x00000001;
-__declspec(section ".sdata2") static u32 GLTT_Gloss_bit = 0x00000010;
+static const unsigned long GLTT_Diffuse_bit = 1UL << 0;
+static const unsigned long GLTT_Gloss_bit = 1UL << 4;
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D903C | size: 0x30
@@ -62,8 +62,6 @@ void gl_ModifyClearMappings()
 
 /**
  * Offset/Address/Size: 0x84 | 0x801D90C0 | size: 0x1F8
- * TODO: 96.9% match - MWCC hoists non-const SDA2 loads before struct-pointer loads (3 sites).
- *       Target had const .sdata2 without folding; our MWCC version folds const, so __declspec forces section.
  */
 static inline glModelPacket* gl_ModifyClonePacket(const glModelPacket* pPacket)
 {
@@ -95,50 +93,32 @@ glModelPacket* gl_Modify(const glModelPacket* pPacket)
         case eGLModifier_1:
             if ((u32)glModifier[i].m_unk_0x04 == 0xFFFFFFFF)
             {
-                u32 tex;
-                u32 bit;
-
                 if (newPacket == NULL)
                 {
                     newPacket = gl_ModifyClonePacket(pPacket);
                 }
-
-                tex = glModifier[i].m_unk_0x08;
-                bit = GLTT_Diffuse_bit;
-                newPacket->state.texture[0] = tex;
-                newPacket->state.texconfig = (u8)(bit | newPacket->state.texconfig);
+                newPacket->state.texture[0] = glModifier[i].m_unk_0x08;
+                newPacket->state.texconfig |= GLTT_Diffuse_bit;
             }
             else if (pPacket->state.texture[0] == glModifier[i].m_unk_0x04)
             {
-                u32 tex;
-                u32 bit;
-
                 if (newPacket == NULL)
                 {
                     newPacket = gl_ModifyClonePacket(pPacket);
                 }
-
-                tex = glModifier[i].m_unk_0x08;
-                bit = GLTT_Diffuse_bit;
-                newPacket->state.texture[0] = tex;
-                newPacket->state.texconfig = (u8)(bit | newPacket->state.texconfig);
+                newPacket->state.texture[0] = glModifier[i].m_unk_0x08;
+                newPacket->state.texconfig |= GLTT_Diffuse_bit;
             }
             break;
 
         case eGLModifier_2:
-        {
-            u32 tex;
-            u32 bit;
             if (newPacket == NULL)
             {
                 newPacket = gl_ModifyClonePacket(pPacket);
             }
-            tex = glModifier[i].m_unk_0x08;
-            bit = GLTT_Gloss_bit;
-            newPacket->state.texture[4] = tex;
-            newPacket->state.texconfig = (u8)(bit | newPacket->state.texconfig);
+            newPacket->state.texture[4] = glModifier[i].m_unk_0x08;
+            newPacket->state.texconfig |= GLTT_Gloss_bit;
             break;
-        }
 
         case eGLModifier_3:
             if (newPacket == NULL)
