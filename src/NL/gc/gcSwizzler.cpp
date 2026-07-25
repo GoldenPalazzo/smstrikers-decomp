@@ -44,188 +44,164 @@ u32 GCTextureSize(eGXTextureFormat fmt, int w, int h, int levels, unsigned long 
 
 /**
  * Offset/Address/Size: 0x0 | 0x801C21C4 | size: 0x4A4
- * TODO: 93.98% match - remaining RGBA8 temp-register swaps and
- *   16-bit swizzle indexed-store shape differences.
  */
-void GCSwizzle(void* dst_, const void* src_, unsigned short w, unsigned short h, eGXTextureFormat fmt, bool swap16)
+void GCSwizzle(void* pSwizzledData, const void* pLinearData, unsigned short width, unsigned short height, eGXTextureFormat format, bool bEndianSwap)
 {
-    int pitch_by_fmt;
-    if ((int)fmt == 2)
+    int stride;
+
+    if ((int)format == 2)
     {
-        pitch_by_fmt = w >> 1;
+        stride = width >> 1;
     }
-    else if ((int)fmt == 3)
+    else if ((int)format == 3)
     {
-        pitch_by_fmt = w << 2;
+        stride = width << 2;
+    }
+    else if ((int)format == 6 || (int)format == 8 || (int)format == 4)
+    {
+        stride = width;
     }
     else
     {
-        if ((int)fmt == 6 || (int)fmt == 8 || (int)fmt == 4)
-        {
-            pitch_by_fmt = w;
-        }
-        else
-        {
-            pitch_by_fmt = w << 1;
-        }
+        stride = width << 1;
     }
 
-    unsigned int pitch4 = w << 2;
-    if (pitch_by_fmt == (int)pitch4)
+    if (stride == (width << 2))
     {
-        unsigned int ww = w;
-        unsigned int row_advance_after_strip = ww * 12;
-        nlColour* s = (nlColour*)src_;
-        unsigned char* d = (unsigned char*)dst_;
-        int y = 0;
-        while (y < h)
+        nlColour* pSrc = (nlColour*)pLinearData;
+        nlColour* pTempSrc;
+        unsigned char* pDest = (unsigned char*)pSwizzledData;
+        int y, yy, x, i;
+
+        for (y = 0; y < height; y += 4)
         {
-            int x = 0;
-            while (x < (int)ww)
+            for (x = 0; x < width; x += 4)
             {
-                nlColour* rs = s;
-                unsigned int d_off = 0;
-                for (int i = 0; i < 4; ++i)
+                pTempSrc = pSrc;
+                i = 0;
+                for (yy = 0; yy < 4; yy++)
                 {
-                    unsigned char* rd = d + d_off;
+                    pDest[i + 0x00] = pTempSrc[0].c[3];
+                    pDest[i + 0x01] = pTempSrc[0].c[0];
+                    pDest[i + 0x20] = pTempSrc[0].c[1];
+                    pDest[i + 0x21] = pTempSrc[0].c[2];
 
-                    rd[0x00] = rs[0].c[0x03];
-                    rd[0x01] = rs[0].c[0x00];
-                    rd[0x20] = rs[0].c[0x01];
-                    rd[0x21] = rs[0].c[0x02];
+                    pDest[i + 0x02] = pTempSrc[1].c[3];
+                    pDest[i + 0x03] = pTempSrc[1].c[0];
+                    pDest[i + 0x22] = pTempSrc[1].c[1];
+                    pDest[i + 0x23] = pTempSrc[1].c[2];
 
-                    rd[0x02] = rs[1].c[0x03];
-                    rd[0x03] = rs[1].c[0x00];
-                    rd[0x22] = rs[1].c[0x01];
-                    rd[0x23] = rs[1].c[0x02];
+                    pDest[i + 0x04] = pTempSrc[2].c[3];
+                    pDest[i + 0x05] = pTempSrc[2].c[0];
+                    pDest[i + 0x24] = pTempSrc[2].c[1];
+                    pDest[i + 0x25] = pTempSrc[2].c[2];
 
-                    rd[0x04] = rs[2].c[0x03];
-                    rd[0x05] = rs[2].c[0x00];
-                    rd[0x24] = rs[2].c[0x01];
-                    rd[0x25] = rs[2].c[0x02];
+                    pDest[i + 0x06] = pTempSrc[3].c[3];
+                    pDest[i + 0x07] = pTempSrc[3].c[0];
+                    pDest[i + 0x26] = pTempSrc[3].c[1];
+                    pDest[i + 0x27] = pTempSrc[3].c[2];
 
-                    rd[0x06] = rs[3].c[0x03];
-                    rd[0x07] = rs[3].c[0x00];
-                    rd[0x26] = rs[3].c[0x01];
-                    rd[0x27] = rs[3].c[0x02];
-
-                    d_off += 8;
-                    rs += ww;
+                    i += 8;
+                    pTempSrc += width;
                 }
 
-                s += 4;
-                d += 0x40;
-                x += 4;
+                pSrc += 4;
+                pDest += 64;
             }
-            s += ww * 3;
-            y += 4;
+
+            pSrc += width * 3;
         }
-        return;
     }
-
-    if (pitch_by_fmt == (w << 1))
+    else if (stride == (width << 1))
     {
-        unsigned int ww = w;
-        unsigned int row_advance_after_strip = ww * 6;
-        unsigned char* d = (unsigned char*)dst_;
-        const unsigned char* s = (const unsigned char*)src_;
-        int y = 0;
-        while (y < h)
+        unsigned char* pDest = (unsigned char*)pSwizzledData;
+        const unsigned char* pSrc = (const unsigned char*)pLinearData;
+        const unsigned char* pTempSrc;
+        int y, yy, x, i;
+
+        for (y = 0; y < height; y += 4)
         {
-            int x = 0;
-            while (x < (int)ww)
+            for (x = 0; x < width; x += 4)
             {
-                const unsigned char* rs = s;
-                unsigned int rindex = 0;
-                unsigned int off = 0;
-
-                for (int k = 0; k < 2; ++k)
+                pTempSrc = pSrc;
+                i = 0;
+                for (yy = 0; yy < 2; yy++)
                 {
-                    *(unsigned short*)(d + (rindex << 1)) = *(const unsigned short*)(rs + 0);
-                    *(unsigned short*)(d + ((rindex + 1) << 1)) = *(const unsigned short*)(rs + 2);
-                    *(unsigned short*)(d + ((rindex + 2) << 1)) = *(const unsigned short*)(rs + 4);
-                    *(unsigned short*)(d + ((rindex + 3) << 1)) = *(const unsigned short*)(rs + 6);
+                    *(unsigned short*)(pDest + ((i + 0) << 1)) = *(const unsigned short*)(pTempSrc + 0);
+                    *(unsigned short*)(pDest + ((i + 1) << 1)) = *(const unsigned short*)(pTempSrc + 2);
+                    *(unsigned short*)(pDest + ((i + 2) << 1)) = *(const unsigned short*)(pTempSrc + 4);
+                    *(unsigned short*)(pDest + ((i + 3) << 1)) = *(const unsigned short*)(pTempSrc + 6);
 
-                    off += 8;
-                    rs += (w << 1);
+                    pTempSrc += (width << 1);
 
-                    *(unsigned short*)(d + off) = *(const unsigned short*)(rs + 0);
-                    *(unsigned short*)(d + ((rindex + 5) << 1)) = *(const unsigned short*)(rs + 2);
-                    *(unsigned short*)(d + ((rindex + 6) << 1)) = *(const unsigned short*)(rs + 4);
-                    *(unsigned short*)(d + ((rindex + 7) << 1)) = *(const unsigned short*)(rs + 6);
+                    *(unsigned short*)(pDest + ((i + 4) << 1)) = *(const unsigned short*)(pTempSrc + 0);
+                    *(unsigned short*)(pDest + ((i + 5) << 1)) = *(const unsigned short*)(pTempSrc + 2);
+                    *(unsigned short*)(pDest + ((i + 6) << 1)) = *(const unsigned short*)(pTempSrc + 4);
+                    *(unsigned short*)(pDest + ((i + 7) << 1)) = *(const unsigned short*)(pTempSrc + 6);
 
-                    rindex += 8;
-                    off += 8;
-                    rs += (w << 1);
+                    i += 8;
+                    pTempSrc += (width << 1);
                 }
 
-                s += 8;
-                d += 0x20;
-                x += 4;
+                pSrc += 8;
+                pDest += 32;
             }
-            s += row_advance_after_strip;
-            y += 4;
+
+            pSrc += width * 6;
         }
 
-        if (swap16)
+        if (bEndianSwap)
         {
-            int count = ww * h;
-            unsigned short* p = (unsigned short*)dst_;
-            int i = 0;
-            while (i < count)
+            unsigned short* p = (unsigned short*)pSwizzledData;
+
+            for (i = 0; i < width * height; i++)
             {
                 unsigned short swapped;
-                unsigned short val = p[i];
-                ((unsigned char*)&swapped)[0] = ((unsigned char*)&val)[1];
-                ((unsigned char*)&swapped)[1] = ((unsigned char*)&val)[0];
+                unsigned short value = p[i];
+
+                ((unsigned char*)&swapped)[0] = ((unsigned char*)&value)[1];
+                ((unsigned char*)&swapped)[1] = ((unsigned char*)&value)[0];
+
                 p[i] = swapped;
-                i++;
             }
         }
-        return;
     }
-
-    if (pitch_by_fmt != (int)((unsigned int)w >> 1) && pitch_by_fmt == (int)(unsigned int)w)
+    else if (stride == (int)((unsigned int)width >> 1))
     {
-        unsigned int ww = w;
-        unsigned int row_advance_after_strip = ww * 3;
-        unsigned char* d = (unsigned char*)dst_;
-        const unsigned char* s = (const unsigned char*)src_;
-        for (int y = 0; y < h; y += 4)
+        // 4 bits per pixel is not supported
+    }
+    else if (stride == width)
+    {
+        int y, x, yy;
+        unsigned char* pDest = (unsigned char*)pSwizzledData;
+        const unsigned char* pSrc = (const unsigned char*)pLinearData;
+        const unsigned char* tempSrc;
+
+        for (y = 0; y < height; y += 4)
         {
-            for (int x = 0; x < (int)ww; x += 8)
+            for (x = 0; x < width; x += 8)
             {
-                const unsigned char* rs = s;
+                tempSrc = pSrc;
 
-                for (int k = 0; k < 2; ++k)
+                for (yy = 0; yy < 4; yy++)
                 {
-                    d[0] = rs[0];
-                    d[1] = rs[1];
-                    d[2] = rs[2];
-                    d[3] = rs[3];
-                    d[4] = rs[4];
-                    d[5] = rs[5];
-                    d[6] = rs[6];
-                    d[7] = rs[7];
+                    pDest[0] = tempSrc[0];
+                    pDest[1] = tempSrc[1];
+                    pDest[2] = tempSrc[2];
+                    pDest[3] = tempSrc[3];
+                    pDest[4] = tempSrc[4];
+                    pDest[5] = tempSrc[5];
+                    pDest[6] = tempSrc[6];
+                    pDest[7] = tempSrc[7];
 
-                    rs += ww;
-
-                    d[8] = rs[0];
-                    d[9] = rs[1];
-                    d[10] = rs[2];
-                    d[11] = rs[3];
-                    d[12] = rs[4];
-                    d[13] = rs[5];
-                    d[14] = rs[6];
-                    d[15] = rs[7];
-
-                    rs += ww;
-                    d += 16;
+                    tempSrc += width;
+                    pDest += 8;
                 }
 
-                s += 8;
+                pSrc += 8;
             }
-            s += row_advance_after_strip;
+
+            pSrc += width * 3;
         }
     }
 }

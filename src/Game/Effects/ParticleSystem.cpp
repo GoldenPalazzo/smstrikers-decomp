@@ -115,14 +115,16 @@ void ParticleSystem::UpdateCoordSys()
 
 /**
  * Offset/Address/Size: 0x2404 | 0x801F755C | size: 0x224
- * TODO: 92.45% match - post-nlRecipSqrt forward/mirror X/Y load ordering still differs,
- * cascading into cross-product and up-vector normalization register differences.
+ * TODO: 99.85% match - the two in-place right-vector normalize multiplies emit
+ * "rightN * rsqrt" where the target emits "rsqrt * rightN".
  */
 void ParticleSystem::UpdateCoordSys(nlMatrix4& mCoordSys)
 {
     float rightX, rightY, rightZ;
-    float gravY, gravX, gravZ;
+    float gravX, gravY, gravZ;
     float negGravX;
+    float upZ;
+    float upY;
     float upX;
 
     float lenSq = m_vForward.f.x * m_vForward.f.x + m_vForward.f.y * m_vForward.f.y + m_vForward.f.z * m_vForward.f.z;
@@ -137,14 +139,15 @@ void ParticleSystem::UpdateCoordSys(nlMatrix4& mCoordSys)
     gravZ *= m_Mirror.f.z;
 
     float refX = 0.0f;
+    float refY = 0.0f;
     float refZ = 1.0f;
-    float refY = refX;
 
-    float dot = refX * gravY + refX * gravX + refZ * gravZ;
+    float dot = refX * gravX + refY * gravY + refZ * gravZ;
     if ((float)__fabs(dot) > 0.99f)
     {
-        refY = refZ;
-        refZ = refX;
+        refX = 0.0f;
+        refY = 1.0f;
+        refZ = 0.0f;
     }
 
     negGravX = -gravX;
@@ -156,17 +159,17 @@ void ParticleSystem::UpdateCoordSys(nlMatrix4& mCoordSys)
     lenSq = rightX * rightX + rightY * rightY + rightZ * rightZ;
     rsqrt = nlRecipSqrt(lenSq, doFast);
     rightZ *= rsqrt;
-    rightX = rsqrt * rightX;
+    float rightXN = rsqrt * rightX;
     rightY *= rsqrt;
 
-    float upY = rightZ * gravX - rightX * gravZ;
     upX = rightY * gravZ - rightZ * gravY;
-    float upZ = rightX * gravY - rightY * gravX;
+    upY = -rightXN * gravZ + rightZ * gravX;
+    upZ = rightXN * gravY - rightY * gravX;
 
-    lenSq = upY * upY + upX * upX + upZ * upZ;
+    lenSq = upX * upX + upY * upY + upZ * upZ;
     rsqrt = nlRecipSqrt(lenSq, doFast);
 
-    mCoordSys.e[0] = rightX;
+    mCoordSys.e[0] = rightXN;
     mCoordSys.e[1] = rightY;
     mCoordSys.e[2] = rightZ;
     mCoordSys.e[4] = rsqrt * upX;
