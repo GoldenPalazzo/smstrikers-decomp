@@ -87,6 +87,34 @@ FuzzyVariant GetBestWindupShotAction(cFielder*);
 
 const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 
+static inline void SetCurrentTeamPowerupImpl(cFielder* pFielder, cTeam* pTeam)
+{
+    pFielder->SetPowerup(
+        pTeam->GetCurrentPowerUp().eType,
+        pTeam->GetCurrentPowerUp().nnumOfPowerups,
+        NULL);
+}
+
+static inline void SetCurrentTeamPowerup(cFielder* pFielder, cTeam* pTeam)
+{
+    SetCurrentTeamPowerupImpl(pFielder, pTeam);
+}
+
+static inline ePowerUpType GetTeamPowerupTypeByIndex(cTeam* pTeam, int index)
+{
+    return pTeam->GetPowerUpByIndex(index).eType;
+}
+
+static inline const nlVector3& GetBallPosition(cBall* pBall)
+{
+    return pBall->m_v3Position;
+}
+
+static inline const nlVector3& GetBallVelocity(cBall* pBall)
+{
+    return pBall->m_v3Velocity;
+}
+
 static const LooseBallContactAnimInfo gOneTimerIdleGroundContactAnims[4] = {
     { 0x40, 7.0f, 0xE000, 0x2000 },
     { 0x41, 7.0f, 0xA000, 0xE000 },
@@ -3165,8 +3193,6 @@ void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed,
 
 /**
  * Offset/Address/Size: 0x6E28 | 0x80020164 | size: 0x590
- * TODO: 99.94% match - remaining diffs are f1/f2 assignment in spin delta
- * compare.
  */
 void cFielder::DoRegularShooting()
 {
@@ -3286,9 +3312,12 @@ void cFielder::DoRegularShooting()
         f32 fDeltaX;
         f32 fDeltaY;
         fDeltaY = v3Target.f.y;
-        fDeltaX = v3Target.f.x;
-        fDeltaY -= g_pBall->m_v3Position.f.y;
-        fDeltaX -= g_pBall->m_v3Position.f.x;
+        {
+            float fTargetX = v3Target.f.x;
+            fTargetX = fTargetX;
+            fDeltaY -= g_pBall->m_v3Position.f.y;
+            fDeltaX = fTargetX - g_pBall->m_v3Position.f.x;
+        }
 
         if (fabsf(fDeltaX) < fabsf(fDeltaY))
         {
@@ -3297,7 +3326,7 @@ void cFielder::DoRegularShooting()
         }
         else
         {
-            if (v3Target.f.x * v3Target.f.y > 0.0f)
+            if (*(volatile float*)&v3Target.f.x * *(volatile float*)&v3Target.f.y > 0.0f)
                 bNegZSpin = true;
         }
 
@@ -6543,8 +6572,6 @@ void cFielder::StartRunning()
 
 /**
  * Offset/Address/Size: 0xC14 | 0x80019F50 | size: 0x598
- * TODO: 99.90% match - remaining diffs in slide-attack ball argument setup
- * and USE_POWERUP GetCurrentPowerUp stack slots
  */
 bool cFielder::DoAILooseBallActionSelection()
 {
@@ -6592,7 +6619,7 @@ bool cFielder::DoAILooseBallActionSelection()
             if (!(fActionScore >= 0.5f + (nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom)))
                 break;
             float fTime;
-            if (!CanISlideAttack(g_pBall->m_v3Position, g_pBall->m_v3Velocity, &fTime))
+            if (!CanISlideAttack(GetBallPosition(g_pBall), GetBallVelocity(g_pBall), &fTime))
                 break;
             InitActionSlideAttack(NULL, fTime);
             m_eDesireSubState = 1;
@@ -6649,19 +6676,19 @@ bool cFielder::DoAILooseBallActionSelection()
             if (!m_pTeam->IsCurrentNoPowerup())
             {
                 cTeam* pTeam = m_pTeam;
-                SetPowerup(pTeam->GetCurrentPowerUp().eType,
-                    pTeam->GetCurrentPowerUp().nnumOfPowerups,
-                    NULL);
+                SetCurrentTeamPowerup(this, pTeam);
                 m_pTeam->ClearCurrentPowerUp();
             }
             else
             {
-                if (m_pTeam->GetPowerUpByIndex(1).eType == POWER_UP_NONE)
+                if (GetTeamPowerupTypeByIndex(m_pTeam, 1) == POWER_UP_NONE)
                     break;
                 m_pTeam->TogglePowerup(true);
                 cTeam* pTeam = m_pTeam;
-                SetPowerup(pTeam->GetCurrentPowerUp().eType,
-                    pTeam->GetCurrentPowerUp().nnumOfPowerups,
+                const PowerUpTeamType& countPowerup = pTeam->GetCurrentPowerUp();
+                SetPowerup(
+                    pTeam->GetCurrentPowerUp().eType,
+                    countPowerup.nnumOfPowerups,
                     NULL);
                 m_pTeam->ClearCurrentPowerUp();
             }
@@ -6677,8 +6704,6 @@ bool cFielder::DoAILooseBallActionSelection()
 
 /**
  * Offset/Address/Size: 0x6BC | 0x800199F8 | size: 0x558
- * TODO: 99.9% match - ONETIMER fnmsubs f2/f0 register swap for 0.5f constant,
- * USE_POWERUP GetCurrentPowerUp stack offsets swapped between if/else branches
  */
 bool cFielder::DoAIReceivePassActionSelection()
 {
@@ -6728,8 +6753,7 @@ bool cFielder::DoAIReceivePassActionSelection()
         case FIELDERDESIRE_ONETIMER:
         {
             float fReactionRandom = 0.5f * fPerturbPercent;
-            float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
-            if (!(fActionScore >= 0.5f + fReactionOffset))
+            if (!(fActionScore >= 0.5f + (nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom)))
                 break;
             m_DesireReceivePassSharedVars.iAttemptOneTouchShot = looseBallAction.ExtraData.mData.b ? 2 : 1;
             bDidSomething = true;
@@ -6767,19 +6791,19 @@ bool cFielder::DoAIReceivePassActionSelection()
             if (!m_pTeam->IsCurrentNoPowerup())
             {
                 cTeam* pTeam = m_pTeam;
-                SetPowerup(pTeam->GetCurrentPowerUp().eType,
-                    pTeam->GetCurrentPowerUp().nnumOfPowerups,
-                    NULL);
+                SetCurrentTeamPowerup(this, pTeam);
                 m_pTeam->ClearCurrentPowerUp();
             }
             else
             {
-                if (m_pTeam->GetPowerUpByIndex(1).eType == POWER_UP_NONE)
+                if (GetTeamPowerupTypeByIndex(m_pTeam, 1) == POWER_UP_NONE)
                     break;
                 m_pTeam->TogglePowerup(true);
                 cTeam* pTeam = m_pTeam;
-                SetPowerup(pTeam->GetCurrentPowerUp().eType,
-                    pTeam->GetCurrentPowerUp().nnumOfPowerups,
+                const PowerUpTeamType& countPowerup = pTeam->GetCurrentPowerUp();
+                SetPowerup(
+                    pTeam->GetCurrentPowerUp().eType,
+                    countPowerup.nnumOfPowerups,
                     NULL);
                 m_pTeam->ClearCurrentPowerUp();
             }

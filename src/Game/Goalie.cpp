@@ -596,7 +596,6 @@ void Goalie::CollideWithBallCallback(cBall* pBall)
 
 /**
  * Offset/Address/Size: 0xA178 | 0x8004CC74 | size: 0x6F4
- * TODO: 99.93% match - f0/f2 register swap in loose-ball animation time stores.
  */
 void Goalie::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
 {
@@ -841,17 +840,30 @@ void Goalie::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
             anim = mpLooseBallInfo->mnAnimID;
             if (anim != m_eAnimID)
             {
-                bool bShouldSetLooseAnim = false;
-                if (anim != m_eAnimID || (bShouldSetLooseAnim = (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f)))
+                do
                 {
-                    SetAnimState(anim, true, 0.2f, false, false);
-                }
+                    if (anim == m_eAnimID)
+                    {
+                        cPN_SAnimController* pController = m_pCurrentAnimController;
+                        u8 bShouldSetAnim = false;
+                        if (pController->m_ePlayMode == PM_HOLD && pController->m_fTime == 1.0f)
+                        {
+                            bShouldSetAnim = true;
+                        }
 
-                cPN_SAnimController* pAnim = m_pCurrentAnimController;
-                f32 curTime = pAnim->m_fTime;
-                f32 targetTime = 0.5f * mpLooseBallInfo->mfPickupTime;
-                pAnim->m_fPrevTime = curTime;
-                pAnim->m_fTime = targetTime;
+                        if (!bShouldSetAnim)
+                        {
+                            break;
+                        }
+                    }
+
+                    SetAnimState(anim, true, 0.2f, false, false);
+                } while (0);
+
+                cPN_SAnimController* pController = m_pCurrentAnimController;
+                f32 fPickupTime = mpLooseBallInfo->mfPickupTime;
+                pController->m_fPrevTime = pController->m_fTime;
+                pController->m_fTime = 0.5f * fPickupTime;
                 InitMovementFromAnim(0, v3Zero, 1.0f, false);
             }
 
@@ -2097,7 +2109,6 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
 
 /**
  * Offset/Address/Size: 0x8024 | 0x8004AB20 | size: 0x2CC
- * TODO: 99.94% match - remaining f31 nav-target Y delta load/sub order mismatch.
  */
 bool Goalie::ShouldReposition()
 {
@@ -2169,9 +2180,10 @@ bool Goalie::ShouldReposition()
                     mv3NavTarget.f.x = fTargetX;
                 }
 
-                fTargetX = mv3NavTarget.f.y;
+                float fTargetY = mv3NavTarget.f.y;
+                fTargetY = fTargetY;
                 fDropTime = mv3NavTarget.f.x;
-                fTargetX -= m_v3Position.f.y;
+                fTargetX = fTargetY - m_v3Position.f.y;
                 fDropTime = (f32)(fDropTime - m_v3Position.f.x);
 
                 m_aDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(pBall->m_v3Position.f.y - m_v3Position.f.y, pBall->m_v3Position.f.x - m_v3Position.f.x));
@@ -4900,9 +4912,9 @@ void Goalie::InitActionSaveSetup(bool bCanReposition)
         float fLocalVelX = mv3LocalContactVelocity.f.x;
         float fLocalX = mv3LocalContactPosition.f.x;
         fBlendFactor = (mpSaveData->mv3SavePos.f.x - fLocalX) / fLocalVelX;
+
         fTimeTilSave = fBlendFactor + fTimeTilSave;
         fTimeTilSave = fTimeTilSave;
-
         nlVec3Set(mv3LocalContactPosition,
             fBlendFactor * fLocalVelX + fLocalX,
             fBlendFactor * mv3LocalContactVelocity.f.y + mv3LocalContactPosition.f.y,

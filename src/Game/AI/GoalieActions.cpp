@@ -326,7 +326,6 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x36CC | 0x80051C08 | size: 0x7A0
- * TODO: 99.90% match - 9 register diffs: f0/f2 swap at mfWaitTime check, f30/f28 for fSmooth, f29/f28 for fAbsX
  */
 void Goalie::ActionLooseBallPickup(float fDeltaT)
 {
@@ -523,9 +522,9 @@ void Goalie::ActionLooseBallPickup(float fDeltaT)
         }
 
         float fPercent = (fTimeLeft - mfTargetTime) / (mpLooseBallInfo->mfPickupTime - mfTargetTime);
-        float fSmooth = fPercent * (fPercent * ((-2.0f * fPercent) + 3.0f));
+        fDeltaT = fPercent * (fPercent * ((-2.0f * fPercent) + 3.0f));
 
-        if (!(fSmooth < 0.99f))
+        if (!(fDeltaT < 0.99f))
         {
             return;
         }
@@ -533,31 +532,31 @@ void Goalie::ActionLooseBallPickup(float fDeltaT)
         nlVector3 v3BallVel;
         FakeBallWorld::GetPredictedBallPosition(mpLooseBallInfo->mfAnimDuration * (mpLooseBallInfo->mfPickupTime - fTimeLeft), mv3TargetPosition, v3BallVel);
 
-        TrackTarget(mv3TargetPosition, fSmooth);
+        TrackTarget(mv3TargetPosition, fDeltaT);
 
         nlVector3 v3MyPos;
         nlVector3 animPos = GetJointPosition(m_nHeadJointIndex);
         float fDX = 0.0f;
-        float fAbsX = (float)fabs(animPos.f.x);
+        fPercent = (float)fabs(animPos.f.x);
         float fLimit = cField::GetGoalLineX(1U) - 0.5f;
         float fNetY = 0.5f * cNet::m_fNetWidth;
-        if (fAbsX > fLimit)
+        if (fPercent > fLimit)
         {
             if ((float)fabs(animPos.f.y) > fNetY)
             {
-                fDX = fAbsX - fLimit;
+                fDX = fPercent - fLimit;
             }
         }
 
         nlVector3 leftHandPos;
         nlVector3 rightHandPos = GetJointPosition(m_nRightHandJointIndex);
-        fAbsX = (float)fabs(rightHandPos.f.x);
+        fPercent = (float)fabs(rightHandPos.f.x);
         fLimit = cField::GetGoalLineX(1U) - 0.4f;
-        if (fAbsX > fLimit)
+        if (fPercent > fLimit)
         {
             if ((float)fabs(rightHandPos.f.y) > fNetY)
             {
-                float fDiff = fAbsX - fLimit;
+                float fDiff = fPercent - fLimit;
                 if (fDiff > fDX)
                 {
                     fDX = fDiff;
@@ -566,12 +565,12 @@ void Goalie::ActionLooseBallPickup(float fDeltaT)
         }
 
         leftHandPos = GetJointPosition(m_nLeftHandJointIndex);
-        fAbsX = (float)fabs(leftHandPos.f.x);
-        if (fAbsX > fLimit)
+        fPercent = (float)fabs(leftHandPos.f.x);
+        if (fPercent > fLimit)
         {
             if ((float)fabs(leftHandPos.f.y) > fNetY)
             {
-                float fDiff = fAbsX - fLimit;
+                float fDiff = fPercent - fLimit;
                 if (fDiff > fDX)
                 {
                     fDX = fDiff;
@@ -909,7 +908,6 @@ inline void Goalie::StartRunBlend()
 
 /**
  * Offset/Address/Size: 0x27FC | 0x80050D38 | size: 0x874
- * TODO: 99.94% match - remaining fabs temporary register swaps.
  */
 void Goalie::ActionMoveWB(float fDeltaT)
 {
@@ -1050,7 +1048,9 @@ void Goalie::ActionMoveWB(float fDeltaT)
         {
             bool bClamped = false;
 
-            if ((float)fabs(m_v3Position.f.x) < cField::GetPenaltyBoxX(1U))
+            double fAbsX;
+            fAbsX = __fabs(m_v3Position.f.x);
+            if ((float)fAbsX < cField::GetPenaltyBoxX(1U))
             {
                 u16 dirVal;
                 if (m_v3Position.f.x > 0.0f)
@@ -1065,7 +1065,9 @@ void Goalie::ActionMoveWB(float fDeltaT)
                 bClamped = true;
             }
 
-            if ((float)fabs(m_v3Position.f.y) > cField::GetPenaltyBoxY())
+            double fAbsY;
+            fAbsY = __fabs(m_v3Position.f.y);
+            if ((float)fAbsY > cField::GetPenaltyBoxY())
             {
                 u16 yDir;
                 if (m_v3Position.f.y > 0.0f)
@@ -1200,9 +1202,10 @@ no_pad:
             float angle = nlATan2f(-posY, -posX);
             m_aDesiredFacingDirection = (u16)(s32)(10430.378f * angle);
 
-            float absX = (float)fabs(m_v3Position.f.x);
+            double absX;
+            absX = __fabs(m_v3Position.f.x);
             float goalLineX = cField::GetGoalLineX(1U) - 3.0f;
-            if (absX > goalLineX)
+            if ((float)absX > goalLineX)
             {
             }
             else
@@ -2445,7 +2448,6 @@ void Goalie::ActionSTSAttackSetup(float deltaTime)
 
 /**
  * Offset/Address/Size: 0x2B8 | 0x8004E7F4 | size: 0x414
- * TODO: 99.90% match - remaining diff: 0.306f compare/subtract f0/f2 register swap at offset 0x10c
  */
 void Goalie::ActionSTSAttack(float deltaTime)
 {
@@ -2470,7 +2472,10 @@ void Goalie::ActionSTSAttack(float deltaTime)
 
             if (animTime > 0.306f)
             {
-                float stepScale = deltaTime / (mpLooseBallInfo->mfAnimDuration * (mpLooseBallInfo->mfPickupTime - 0.306f));
+                float movementDuration;
+                float pickupWindow = mpLooseBallInfo->mfPickupTime;
+                movementDuration = mpLooseBallInfo->mfAnimDuration;
+                float stepScale = deltaTime / (movementDuration * (pickupWindow -= 0.306f));
                 nlVector3 movement = { 0.0f, 0.0f, 0.0f };
 
                 movement.f.x = mfTargetDist;

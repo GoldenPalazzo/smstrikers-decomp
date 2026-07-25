@@ -985,19 +985,17 @@ float FarToTheirNet(cPlayer* pPlayer)
 
 /**
  * Offset/Address/Size: 0x4934 | 0x800833BC | size: 0x394
- * TODO: 99.93% match - initial f30/f31 zero load and copy are reversed.
  */
 float Pressured(cFielder* pFielder)
 {
-    float fZero = 0.0f;
-
     if (pFielder == NULL)
     {
-        return fZero;
+        return 0.0f;
     }
 
-    float fCheck = fZero;
-    float fScore = fZero;
+    float fCheck;
+    float fScore;
+    fCheck = fScore = 0.0f;
     const nlVector3* pFielderPos = &pFielder->m_v3Position;
     const nlVector3* pFielderVel = &pFielder->m_v3Velocity;
     int i = 0;
@@ -1050,8 +1048,6 @@ float Pressured(cFielder* pFielder)
             }
             fNearScore = dist;
         }
-
-        fCheck = fCheck;
 
         float fOpponentScore;
         if (pOpponent == NULL)
@@ -1818,9 +1814,6 @@ float OnBreakaway(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0x32DC | 0x80081D64 | size: 0x420
- * TODO: 99.78% match - 6 register diffs remaining: f1/f30 at fDist comparison
- * (MWCC optimizer chooses saved register over return register), cascading to
- * fDepth and fDoDepthScale sections
  */
 float OpenToPosition(const nlVector3& v3From, const nlVector3& v3To, const cTeam* pTeam, const cPlayer* pCurrentPlayer, const cPlayer* pIgnorePlayer, bool bNoGoalies)
 {
@@ -1882,9 +1875,9 @@ float OpenToPosition(const nlVector3& v3From, const nlVector3& v3To, const cTeam
                                 fOpenDist = Interpolate(fOpenDist, 3.5f, fBallHeight);
                             }
                         }
-                        float ldy = v3From.f.y - closestPt.f.y;
                         float ldx = v3From.f.x - closestPt.f.x;
-                        float fFromDist = nlSqrt(ldy * ldy + ldx * ldx, true);
+                        float ldy = v3From.f.y - closestPt.f.y;
+                        float fFromDist = nlSqrt(ldx * ldx + ldy * ldy, true);
                         fOpenDist = InterpolateRangeClamped(
                             g_pGame->m_pFuzzyTweaks->vGetOpenPassLaneOffset.f.x,
                             g_pGame->m_pFuzzyTweaks->vGetOpenPassLaneOffset.f.y,
@@ -1892,7 +1885,9 @@ float OpenToPosition(const nlVector3& v3From, const nlVector3& v3To, const cTeam
                             g_pGame->m_pFuzzyTweaks->vGetOpenPassLaneDist.f.y,
                             fFromDist);
                         float sign = AIsgn(pPlayer->GetAIDefNetLocation(NULL).f.x);
-                        float fDepth = (pPlayer->m_v3Position.f.x - v3To.f.x) * sign;
+                        float fDepthDelta = pPlayer->m_v3Position.f.x - v3To.f.x;
+                        fDepthDelta = fDepthDelta;
+                        float fDepth = fDepthDelta * sign;
                         if (fDepth < 0.0f)
                         {
                             float fDoDepthScale;
@@ -1908,7 +1903,9 @@ float OpenToPosition(const nlVector3& v3From, const nlVector3& v3To, const cTeam
                             {
                                 fDoDepthScale = 0.0f;
                             }
-                            if (fDoDepthScale != 0.0f)
+                            float fZero = 0.0f;
+                            fZero = fZero;
+                            if (fDoDepthScale != fZero)
                             {
                                 fDepth = NormalizeVal(-fDepth, 0.0f, 8.0f);
                                 fDist *= fDepth;
@@ -2125,7 +2122,6 @@ static inline void ScoreOpenPlayerPair(bool CheckMyTeam, cTeam* pOpponentTeam, c
 
 /**
  * Offset/Address/Size: 0x3030 | 0x80081AB8 | size: 0x2AC
- * TODO: 99.91% match - remaining 1 scored diff is SDA label ordering (offset 60 i diff)
  */
 float OpenPosition(const nlVector3& v3Position, cTeam* pOpponentTeam, cPlayer* pCurrentPlayer, const nlVector2* pOpenRadius)
 {
@@ -2161,7 +2157,6 @@ float OpenPosition(const nlVector3& v3Position, cTeam* pOpponentTeam, cPlayer* p
  */
 /**
  * Offset/Address/Size: 0x3DC | 0x800C3820 | size: 0x2AC
- * TODO: 99.97% match - remaining 1 scored diff is SDA label ordering (offset 60 i diff), unfixable in scratch
  */
 float WideOpenPosition(const nlVector3& v3Position, cTeam* pOpponentTeam, cPlayer* pCurrentPlayer)
 {
@@ -3647,7 +3642,6 @@ float UserControlledT(cTeam* pTeam)
 
 /**
  * Offset/Address/Size: 0x744 | 0x8007F1CC | size: 0x494
- * TODO: 99.71% match - first-team classification path still emits f0/f1 score-register mismatches
  */
 float GonnaGetBall(cTeam* team)
 {
@@ -3763,7 +3757,7 @@ float GonnaGetBall(cTeam* team)
     fScore = AbleToInterceptBall(pOpponent);
     fScore += fClosing2;
     fScore = fDist2 + fScore;
-    fAvg = fScore / 3.0f;
+    float fOpponentAvg = fScore / 3.0f;
 
     if (pOpponent == NULL)
     {
@@ -3808,9 +3802,15 @@ float GonnaGetBall(cTeam* team)
         }
     }
 
-    fScore = min_float(fAvg, fScore);
+    fScore = (fScore <= fOpponentAvg) ? fScore : fOpponentAvg;
 
-    score[1] = max_float(fScore, (pOpponent == NULL) ? 0.0f : ((pOpponent->m_pBall != NULL) ? 1.0f : 0.0f));
+    if (pOpponent == NULL)
+        fOpponentAvg = 0.0f;
+    else if (pOpponent->m_pBall != NULL)
+        fOpponentAvg = 1.0f;
+    else
+        fOpponentAvg = 0.0f;
+    score[1] = max_float(fOpponentAvg, fScore);
 
     float total = score[0] + score[1];
     if (total > 0.0f)

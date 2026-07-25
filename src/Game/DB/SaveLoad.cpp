@@ -416,8 +416,6 @@ static inline int BuildDefaultIconHeaderSize(MemCard::ICON_CONFIG& IconCfg)
 
 /**
  * Offset/Address/Size: 0x2DA8 | 0x8018C704 | size: 0x4AC
- * TODO: 99.90% match - serial-mismatch free-space path swaps slotOffset
- * and card2 registers.
  */
 #pragma push
 #pragma opt_propagation off
@@ -486,9 +484,10 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
         s64 serialID = g_MemCards[Slot]->GetSerialID();
         if (mRequiredMemoryCardID != serialID)
         {
-            MemCard* card2;
+            unsigned long slotOffset;
             int numBlocks;
             long serialError = -1001;
+            MemCard* card2;
             if (m_pSaveFile != NULL)
             {
                 g_MemCards[Slot]->CloseFile(m_pSaveFile);
@@ -502,7 +501,7 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
 
             if (serialError == -4)
             {
-                unsigned long slotOffset = Slot << 2;
+                slotOffset = Slot << 2;
                 card2 = g_MemCards[slotOffset >> 2];
                 long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
                 numBlocks = 0;

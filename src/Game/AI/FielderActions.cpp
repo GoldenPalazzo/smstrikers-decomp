@@ -73,10 +73,12 @@ HitReactInfo g_HitReactInfo[4] = {
     { 0x71, 0x0000 },
     { 0x70, 0xc000 },
 };
+
 // extern HitReactInfo g_HitReactInfo[4];
 // static unsigned short g_IdleTurnCompletionDelta = 0xB6; // size: 0x2, address: 0x803976D2
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
+
 static nlVector3 captainStsTargetPos = { 0.0f, 0.0f, 0.0f };
 static bool setCaptainStscaptainStsTargetPos;
 
@@ -122,20 +124,6 @@ class PhotoFlash
 {
 public:
     static void Flash();
-};
-
-const static int ShellAttackReactAnims[4] = {
-    0x66,
-    0x69,
-    0x68,
-    0x67,
-};
-
-int PassingAnims[4] = {
-    0x33,
-    0x36,
-    0x35,
-    0x34,
 };
 
 // /**
@@ -1173,12 +1161,40 @@ nlVector3 GetClosestWallPoint(const nlVector3& pos)
     }
 }
 
+static inline bool CheckForSuccessfulDeke(cFielder* pDeker)
+{
+    bool bSuccess = false;
+    cTeam* pOpposingTeam = pDeker->m_pTeam->GetOtherTeam();
+    int i = 0;
+
+    do
+    {
+        if (!bSuccess)
+        {
+            cFielder* pOpponent = pOpposingTeam->GetFielder(i);
+            if (pOpponent->IsSlideTackling() || pOpponent->IsHitting())
+            {
+                if (CalculateDistanceSquared(pOpponent->m_v3Position, pDeker->m_v3Position) < 6.25f)
+                {
+                    u16 angleDiff = (u16)abs_s16(pOpponent->m_aActualFacingDirection - pDeker->m_aActualFacingDirection);
+                    if (angleDiff > 0x2000)
+                        bSuccess = true;
+                }
+            }
+        }
+        i++;
+    } while (i < 4);
+
+    return bSuccess;
+}
+
 /**
  * Offset/Address/Size: 0x77D8 | 0x8002E310 | size: 0x534
- * TODO: wrong register for pClosestOpponent -> r31 instead of r27
  */
 void cFielder::InitActionDeke(ePadActions padAction)
 {
+    cPlayer* pClosestOpponent;
+
     m_pShotMeter->Abort(this);
 
     InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
@@ -1216,7 +1232,6 @@ void cFielder::InitActionDeke(ePadActions padAction)
                 int i;
                 float fClosestDist;
                 cPlayer* pOpponent;
-                cPlayer* pClosestOpponent;
 
                 pClosestOpponent = nullptr;
                 fClosestDist = 99999.9f;
@@ -1279,34 +1294,7 @@ void cFielder::InitActionDeke(ePadActions padAction)
 
     Play3DSFX(Audio::eCharSFX(nSFX), VECTORS, 100.0f);
 
-    cFielder* pOpponent;
-    int j;
-    cTeam* pOtherTeam;
-    bool bHasNearbyThreat;
-
-    bHasNearbyThreat = false;
-    pOtherTeam = m_pTeam->GetOtherTeam();
-    j = 0;
-
-    do
-    {
-        if (!bHasNearbyThreat)
-        {
-            pOpponent = pOtherTeam->GetFielder(j);
-            if (pOpponent->IsSlideTackling() || pOpponent->IsHitting())
-            {
-                if (CalculateDistanceSquared(pOpponent->m_v3Position, m_v3Position) < 6.25f)
-                {
-                    u16 angleDiff = (u16)abs_s16(pOpponent->m_aActualFacingDirection - m_aActualFacingDirection);
-                    if (angleDiff > 0x2000)
-                        bHasNearbyThreat = true;
-                }
-            }
-        }
-        j++;
-    } while (j < 4);
-
-    mActionDekeVars.bPossibleSuccessfulDeke = bHasNearbyThreat;
+    mActionDekeVars.bPossibleSuccessfulDeke = CheckForSuccessfulDeke(this);
 }
 /**
  * Offset/Address/Size: 0x74A8 | 0x8002DFE0 | size: 0x330
@@ -1871,8 +1859,7 @@ void cFielder::ActionLateOneTimerFromVolley(float)
 
 /**
  * Offset/Address/Size: 0x5DF0 | 0x8002C928 | size: 0x36C
- */
-/**
+ *
  * TODO: 99.86% match - register diffs in rotated contact-offset x/y components.
  */
 void cFielder::DoCommonInitActionLooseBall(const nlVector3& rv3OneTimerTarget)
@@ -2164,15 +2151,21 @@ bool cFielder::DoCalcCanDoPerfectPass(cFielder* pPassTarget, const nlVector3& v3
 
 /**
  * Offset/Address/Size: 0x50A4 | 0x8002BBDC | size: 0x268
- * TODO: 99.87% match - `PassingAnims` address load still uses `r4` base instead of `r3`
  */
 void cFielder::InitActionPass(cPlayer* pPassTarget, bool bVolleyPass, bool bAllowLeadPass)
 {
     InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
     SetAction(ACTION_PASS);
 
-    s16 facingDelta = GetFacingDeltaToPosition(pPassTarget->m_v3Position);
-    SetAnimState(PassingAnims[(u16)(facingDelta + 0x2000) >> 14], true, 0.2f, false, false);
+    static int PassingAnims[4] = {
+        0x33,
+        0x36,
+        0x35,
+        0x34,
+    };
+    signed short nFacingDelta = GetFacingDeltaToPosition(pPassTarget->m_v3Position);
+    nFacingDelta = nFacingDelta + 0x2000;
+    SetAnimState(PassingAnims[(u16)nFacingDelta >> 14], true, 0.2f, false, false);
 
     InitMovementCoast();
 
@@ -2293,7 +2286,6 @@ void cFielder::InitActionBombReact(const nlVector3& v3BombPosition, float fRadiu
 
 /**
  * Offset/Address/Size: 0x4968 | 0x8002B4A0 | size: 0x2D0
- * TODO: Just one reg mismatch on SetFacingAnim
  */
 void cFielder::InitActionBombHitReact(const nlVector3& v3BombPosition)
 {
@@ -2317,7 +2309,9 @@ void cFielder::InitActionBombHitReact(const nlVector3& v3BombPosition)
     SetAction(ACTION_HIT_REACT);
 
     u32 index = (((u16)((u16)GetFacingDeltaToPosition(v3BombPosition)) >> 14) & 3);
-    SetAnimState(g_HitReactInfo[index].nAnimID, true, 0.2f, false, false);
+    register volatile HitReactInfo* pHitReactInfo = g_HitReactInfo;
+    register int nAnimID = pHitReactInfo[index].nAnimID;
+    SetAnimState(nAnimID, true, 0.2f, false, false);
 
     float angleRad = nlATan2f(m_v3Position.f.y - v3BombPosition.f.y, m_v3Position.f.x - v3BombPosition.f.x);
     u16 targetAngle = (u16)(s32)(10430.378f * angleRad);
@@ -2364,10 +2358,16 @@ void cFielder::InitActionBananaReact(const nlVector3&)
 
 /**
  * Offset/Address/Size: 0x4468 | 0x8002AFA0 | size: 0x268
- * TODO: Just one reg mismatch on SetFacingAnim
  */
 void cFielder::InitActionShellReact(const nlVector3& v3CollisionLocation, const nlVector3& v3CollisionVelocity)
 {
+    static int ShellAttackReactAnims[4] = {
+        0x66,
+        0x69,
+        0x68,
+        0x67,
+    };
+
     CleanUpPowerupEffect();
 
     if (g_pBall->m_pOwner == this)
@@ -2381,11 +2381,9 @@ void cFielder::InitActionShellReact(const nlVector3& v3CollisionLocation, const 
     InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
     SetAction(ACTION_SHELL_REACT);
 
-    u16 facingDelta = (u16)(GetFacingDeltaToPosition(v3CollisionLocation) + 0x2000);
-    SetFacingAnim(this, facingDelta, ShellAttackReactAnims);
-
-    // s16 facingDelta = GetFacingDeltaToPosition(v3CollisionLocation);
-    // SetAnimState(ShellAttackReactAnims[(u16)(facingDelta + 0x2000) >> 14], true, 0.2f, false, false);
+    s16 facingDelta = GetFacingDeltaToPosition(v3CollisionLocation);
+    facingDelta += 0x2000;
+    SetAnimState(ShellAttackReactAnims[(u16)facingDelta >> 14], true, 0.2f, false, false);
 
     InitMovementFromAnim(0, v3Zero, 1.0f, false);
 
