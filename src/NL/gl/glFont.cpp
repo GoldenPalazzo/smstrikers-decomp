@@ -62,11 +62,36 @@ int glFontPrintf(eGLView view, int x, int y, const char* format, ...)
     return glFontPrint(view, x, y, col, string);
 }
 
+static inline void _Putchar(glPoly2& poly, float sx, float sy, int charIndex, const nlColour& colour)
+{
+    float s = (float)((charIndex % 8) * 8);
+    float t = (float)((charIndex / 8) * 8);
+    poly.m_uv[0].f.x = s / 64.0f;
+    poly.m_uv[0].f.y = t / 128.0f;
+    poly.m_uv[1].f.x = s / 64.0f;
+    poly.m_uv[1].f.y = (t + 8.0f) / 128.0f;
+    poly.m_uv[2].f.x = (s + 8.0f) / 64.0f;
+    poly.m_uv[2].f.y = (t + 8.0f) / 128.0f;
+    poly.m_uv[3].f.x = (s + 8.0f) / 64.0f;
+    poly.m_uv[3].f.y = t / 128.0f;
+    poly.m_pos[0].f.x = sx;
+    poly.m_pos[0].f.y = sy;
+    poly.m_pos[1].f.x = sx;
+    poly.m_pos[1].f.y = 10.0f + sy;
+    poly.m_pos[2].f.x = 10.0f + sx;
+    poly.m_pos[2].f.y = 10.0f + sy;
+    poly.m_pos[3].f.x = 10.0f + sx;
+    poly.m_pos[3].f.y = sy;
+    poly.depth = font_z;
+    poly.m_colour[0] = colour;
+    poly.m_colour[1] = colour;
+    poly.m_colour[2] = colour;
+    poly.m_colour[3] = colour;
+}
+
 /**
  * Offset/Address/Size: 0x1DC | 0x801D8574 | size: 0x3EC
- * TODO: 99.3% match - r4/r6 drop-shadow loop cursor.
  */
-#pragma optimize_for_size on
 int glFontPrint(eGLView view, int virtual_x, int virtual_y, const nlColour& colour, const char* str)
 {
     if (nlStrLen(str) == 0)
@@ -86,41 +111,15 @@ int glFontPrint(eGLView view, int virtual_x, int virtual_y, const nlColour& colo
     }
     nlStrLen(str);
     int numChars = 0;
+    int i;
+    int j;
     glPoly2* pPoly = g_poly;
     const char* cp = str;
     while (*cp != '\0')
     {
         if ((*cp >= 0x20) && (*cp <= 0x7E))
         {
-            int j = ((*cp - 0x20) % 8) * 8;
-            int i = ((*cp - 0x20) / 8) * 8;
-            float us = 0.015625f;
-            float vs = 0.0078125f;
-            float s = (float)j;
-            float t = (float)i;
-            float s0 = s * us;
-            float t0 = t * vs;
-            pPoly->m_uv[0].f.x = s0;
-            pPoly->m_uv[0].f.y = t0;
-            pPoly->m_uv[1].f.x = s0;
-            pPoly->m_uv[1].f.y = (t + 8.0f) * vs;
-            pPoly->m_uv[2].f.x = (s + 8.0f) * us;
-            pPoly->m_uv[2].f.y = (t + 8.0f) * vs;
-            pPoly->m_uv[3].f.x = (s + 8.0f) * us;
-            pPoly->m_uv[3].f.y = t0;
-            pPoly->m_pos[0].f.x = screen_x;
-            pPoly->m_pos[0].f.y = screen_y;
-            pPoly->m_pos[1].f.x = screen_x;
-            pPoly->m_pos[1].f.y = 10.0f + screen_y;
-            pPoly->m_pos[2].f.x = 10.0f + screen_x;
-            pPoly->m_pos[2].f.y = 10.0f + screen_y;
-            pPoly->m_pos[3].f.x = 10.0f + screen_x;
-            pPoly->m_pos[3].f.y = screen_y;
-            pPoly->depth = font_z;
-            *(u32*)&pPoly->m_colour[0].c[0] = *(u32*)&colour.c[0];
-            *(u32*)&pPoly->m_colour[1].c[0] = *(u32*)&colour.c[0];
-            *(u32*)&pPoly->m_colour[2].c[0] = *(u32*)&colour.c[0];
-            *(u32*)&pPoly->m_colour[3].c[0] = *(u32*)&colour.c[0];
+            _Putchar(*pPoly, screen_x, screen_y, *cp - 0x20, colour);
             pPoly++;
             numChars++;
         }
@@ -135,66 +134,35 @@ int glFontPrint(eGLView view, int virtual_x, int virtual_y, const nlColour& colo
     if (bDrop != false)
     {
         pPoly = g_poly;
-        glPoly2* p = pPoly;
-        int n = numChars;
-        while (n > 0)
+        for (i = 0; i < numChars; i++)
         {
-            p->m_colour[0].c[0] = 0;
-            p->m_colour[0].c[1] = 0;
-            p->m_colour[0].c[2] = 0;
-            p->m_colour[0].c[3] = 0xFF;
-            p->m_pos[0].f.x += 3.0f;
-            p->m_pos[0].f.y += 3.0f;
-            p->m_colour[1].c[0] = 0;
-            p->m_colour[1].c[1] = 0;
-            p->m_colour[1].c[2] = 0;
-            p->m_colour[1].c[3] = 0xFF;
-            p->m_pos[1].f.x += 3.0f;
-            p->m_pos[1].f.y += 3.0f;
-            p->m_colour[2].c[0] = 0;
-            p->m_colour[2].c[1] = 0;
-            p->m_colour[2].c[2] = 0;
-            p->m_colour[2].c[3] = 0xFF;
-            p->m_pos[2].f.x += 3.0f;
-            p->m_pos[2].f.y += 3.0f;
-            p->m_colour[3].c[0] = 0;
-            p->m_colour[3].c[1] = 0;
-            p->m_colour[3].c[2] = 0;
-            p->m_colour[3].c[3] = 0xFF;
-            p->m_pos[3].f.x += 3.0f;
-            p->m_pos[3].f.y += 3.0f;
-            p->depth += -0.001f;
-            p++;
-            n--;
+            for (j = 0; j < 4; j++)
+            {
+                pPoly[i].m_colour[j].c[0] = 0;
+                pPoly[i].m_colour[j].c[1] = 0;
+                pPoly[i].m_colour[j].c[2] = 0;
+                pPoly[i].m_colour[j].c[3] = 0xFF;
+                pPoly[i].m_pos[j].f.x += 3.0f;
+                pPoly[i].m_pos[j].f.y += 3.0f;
+            }
+            pPoly[i].depth += -0.001f;
         }
         glAttachPoly2(view, numChars, g_poly, 0, 0);
-        n = numChars;
-        while (n > 0)
+        float fz = font_z;
+        for (i = 0; i < numChars; i++)
         {
+            for (j = 0; j < 4; j++)
             {
-                float fz = font_z;
-                *(u32*)&pPoly->m_colour[0].c[0] = *(u32*)&colour.c[0];
-                pPoly->m_pos[0].f.x -= 3.0f;
-                pPoly->m_pos[0].f.y -= 3.0f;
-                *(u32*)&pPoly->m_colour[1].c[0] = *(u32*)&colour.c[0];
-                pPoly->m_pos[1].f.x -= 3.0f;
-                pPoly->m_pos[1].f.y -= 3.0f;
-                *(u32*)&pPoly->m_colour[2].c[0] = *(u32*)&colour.c[0];
-                pPoly->m_pos[2].f.x -= 3.0f;
-                pPoly->m_pos[2].f.y -= 3.0f;
-                *(u32*)&pPoly->m_colour[3].c[0] = *(u32*)&colour.c[0];
-                pPoly->m_pos[3].f.x -= 3.0f;
-                pPoly->m_pos[3].f.y -= 3.0f;
-                pPoly->depth = fz;
-                pPoly++;
+                *(u32*)&pPoly[i].m_colour[j].c[0] = *(u32*)&colour.c[0];
+                pPoly[i].m_pos[j].f.x -= 3.0f;
+                pPoly[i].m_pos[j].f.y -= 3.0f;
             }
-            n--;
+            pPoly[i].depth = fz;
         }
     }
     glAttachPoly2(view, numChars, g_poly, 0, 0);
     return numChars;
 }
-#pragma optimize_for_size reset
 
 /**
  * Offset/Address/Size: 0x5C8 | 0x801D8960 | size: 0x18
