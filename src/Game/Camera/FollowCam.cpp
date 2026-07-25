@@ -22,11 +22,9 @@ static u16 g_aFollowCamMinPitch = 0x4B9;
 static f32 g_fFollowCamMaxZOffset = 3.0f;
 static f32 g_fFollowCamMinZOffset = 0.6f;
 
-inline float nlLerp(float a, float b, float t)
-{
-    return a + t * (b - a);
-}
-
+/**
+ * Offset/Address/Size: 0x668 | 0x801A9580 | size: 0x90
+ */
 cFollowCamera::cFollowCamera(FollowTarget followTarget)
 {
     m_FollowTarget = followTarget;
