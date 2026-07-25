@@ -9,55 +9,22 @@ namespace
 bool renderMemoryLayout = false;
 }
 
-static inline Replay::Frame* ReplayAllocFrame(char* memory, int memorySize)
-{
-    Replay::Frame* frame = nullptr;
-    SlotPool<Replay::Frame>* pool = &Replay::Frame::mSlotPool;
-
-    if (pool->m_FreeList == nullptr)
-    {
-        SlotPoolBase::BaseAddNewBlock(pool, sizeof(Replay::Frame));
-    }
-
-    if (pool->m_FreeList != nullptr)
-    {
-        frame = (Replay::Frame*)pool->m_FreeList;
-        pool->m_FreeList = ((SlotPoolEntry*)frame)->next;
-    }
-
-    if (frame != nullptr)
-    {
-        frame->mTime = 0.0f;
-        frame->mBegin = memory;
-        frame->mSize = memorySize;
-        frame->mInterval = 0;
-        frame->mEvents = 0;
-        frame->mReelIdx = -1;
-        frame->mNext = nullptr;
-    }
-
-    return frame;
-}
-
 /**
  * Offset/Address/Size: 0x7C8 | 0x80214074 | size: 0x188
  */
 Replay::Replay(char* memory, int memorySize, int maxFrameSize)
-    : mFree(ReplayAllocFrame(memory, memorySize))
+    : mFree(new (Frame::mSlotPool.Allocate()) Frame(memory, memorySize, nullptr))
+    , mReelIdx(0)
+    , mTick(0)
+    , mMemorySize(memorySize)
+    , mMaxFrameSize(maxFrameSize)
+    , mActualMaxFrameSize(0)
 {
-    mReelIdx = 0;
-    mTick = 0;
-    mMemorySize = memorySize;
-    mMaxFrameSize = maxFrameSize;
-    mActualMaxFrameSize = 0;
-
     mFree->mNext = mFree;
-    Frame* freeFrame = mFree;
-    mReels[0].mLast = freeFrame;
-    mReels[0].mBegin = freeFrame;
+    mReels[0].mBegin = mReels[0].mLast = mFree;
 
-    register Config& config = Config::Global();
-    renderMemoryLayout = GetConfigBool(config, "draw_replay_bar", false);
+    renderMemoryLayout =
+        GetConfigBool(Config::Global(), "draw_replay_bar", false);
 }
 
 /**
