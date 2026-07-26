@@ -95,6 +95,10 @@ ChainChomp::~ChainChomp()
  */
 void ChainChomp::Update(float fDeltaT)
 {
+    nlVector3 v3RecoverPosition;
+    nlVector3 v3UpdatedPosition;
+    nlVector3 v3FallPosition;
+
     switch (meChainChompState)
     {
     case CHAIN_STATE_FALL:
@@ -115,9 +119,9 @@ void ChainChomp::Update(float fDeltaT)
             meChainChompState = CHAIN_STATE_RECOVER;
             SetAnimState(*mpRecoverAnim, 0.0f, PM_HOLD);
 
-            nlVector3 v3NewPosition = mv3Position;
-            v3NewPosition.f.z = 0.0f;
-            SetPosition(v3NewPosition);
+            v3FallPosition = mv3Position;
+            v3FallPosition.f.z = 0.0f;
+            SetPosition(v3FallPosition);
             mv3Velocity = v3Zero;
 
             Event* pEvent = g_pEventManager->CreateValidEvent(0x33, 0x1C);
@@ -129,9 +133,9 @@ void ChainChomp::Update(float fDeltaT)
     case CHAIN_STATE_RECOVER:
         if (mpAnimController->m_fTime < 0.625)
         {
-            nlVector3 v3NewPosition = mpTarget->m_v3Position;
-            v3NewPosition.f.z = 0.0f;
-            SetPosition(v3NewPosition);
+            v3RecoverPosition = mpTarget->m_v3Position;
+            v3RecoverPosition.f.z = 0.0f;
+            SetPosition(v3RecoverPosition);
         }
 
         if (mpAnimController->TestTrigger(0.75f))
@@ -319,11 +323,10 @@ void ChainChomp::Update(float fDeltaT)
     }
 
     {
-        nlVector3 v3NewPosition;
-        v3NewPosition.f.x = mv3Position.f.x + fDeltaT * mv3Velocity.f.x;
-        v3NewPosition.f.y = mv3Position.f.y + fDeltaT * mv3Velocity.f.y;
-        v3NewPosition.f.z = mv3Position.f.z + fDeltaT * mv3Velocity.f.z;
-        SetPosition(v3NewPosition);
+        v3UpdatedPosition.f.x = mv3Position.f.x + fDeltaT * mv3Velocity.f.x;
+        v3UpdatedPosition.f.y = mv3Position.f.y + fDeltaT * mv3Velocity.f.y;
+        v3UpdatedPosition.f.z = mv3Position.f.z + fDeltaT * mv3Velocity.f.z;
+        SetPosition(v3UpdatedPosition);
     }
 
     if (mpInEffectSFX != NULL)

@@ -140,7 +140,6 @@ void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
 
 /**
  * Offset/Address/Size: 0x11C0 | 0x801FC450 | size: 0x2DC
- * TODO: 98.52% match - saved-FPR allocation for pre-loop zero and angle constants still differs.
  */
 void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
 {
@@ -152,20 +151,14 @@ void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
     nlVector2* tdst;
     int nSegment;
     float z0;
-    float z0Sq;
     float angleFactor;
     float segmentFactor;
-    float half;
-    float one;
     float texDenom;
     float x0;
     float y0;
     float x1;
     float y1;
-    float x0Sq;
-    float y0Sq;
-    float x1Sq;
-    float y1Sq;
+    float sinAngle;
     float invLen;
 
     prim.vertCount = 0x20;
@@ -173,13 +166,11 @@ void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
     prim.normal = (nlVector3*)glResourceAlloc(0x180, GLM_VertexData);
     prim.texcoord = (nlVector2*)glResourceAlloc(0x100, GLM_VertexData);
 
+    float half = 0.5f;
+    float one = 1.0f;
     z0 = 0.0f;
-    z0Sq = z0;
-    z0 *= z0Sq;
     angleFactor = 10430.378f;
     segmentFactor = 0.41887903f;
-    half = 0.5f;
-    one = 1.0f;
     texDenom = 15.0f;
 
     pdst = prim.position;
@@ -190,42 +181,35 @@ void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
     {
         angle = (int)(angleFactor * ((float)nSegment * segmentFactor));
 
-        x0 = half * (one * nlSin((u16)angle));
+        sinAngle = nlSin((u16)angle);
+        x0 = half * (one * sinAngle);
 
         angle90 = (u16)angle + 0x4000;
         y0 = half * (one * nlSin((u16)angle90));
 
-        x1 = z0 * (half * nlSin((u16)angle));
-        y1 = z0 * (half * nlSin((u16)angle90));
-
-        x0Sq = x0 * x0;
-        y0Sq = y0 * y0;
+        x1 = half * (z0 * nlSin((u16)angle));
+        y1 = half * (z0 * nlSin((u16)angle90));
 
         vNormal.f.x = x0;
         vNormal.f.y = y0;
         vNormal.f.z = z0;
 
-        invLen = nlRecipSqrt(z0Sq + (x0Sq + y0Sq), true);
+        invLen = nlRecipSqrt(vNormal.GetLengthSq3D(), true);
 
         pdst->f.x = x0;
-        vNormal.f.y = invLen * vNormal.f.y;
-        vNormal.f.x = invLen * vNormal.f.x;
+        nlVec3Scale(vNormal, invLen);
         pdst->f.y = y0;
         pdst->f.z = z0;
-        vNormal.f.z = invLen * vNormal.f.z;
         *ndst = vNormal;
 
         tdst->f.x = (float)nSegment / texDenom;
         tdst->f.y = z0;
 
-        x1Sq = x1 * x1;
-        y1Sq = y1 * y1;
-
         vNormal.f.x = x1;
         vNormal.f.y = y1;
         vNormal.f.z = z0;
 
-        invLen = nlRecipSqrt(z0Sq + (x1Sq + y1Sq), true);
+        invLen = nlRecipSqrt(vNormal.GetLengthSq3D(), true);
 
         pdst[1].f.x = x1;
         pdst[1].f.y = y1;

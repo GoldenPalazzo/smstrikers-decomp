@@ -161,7 +161,6 @@ static inline void* FindStream(glModelPacket* pPacket, int streamID)
 
 /**
  * Offset/Address/Size: 0x183C | 0x80121648 | size: 0x598
- * TODO: 99.92% match - colour-stream display list cursor updates the base register before the +4 byte step
  */
 static void Fresnelify(glModelPacket* pPacket, eGLView view)
 {
@@ -199,12 +198,8 @@ static void Fresnelify(glModelPacket* pPacket, eGLView view)
                 u16 ns = ((u16*)&pList->indices)[0];
                 int stride = (ns - 1) * 2 + 1;
                 int offset = stride * index;
-                u8* ptr8 = (u8*)pList->list;
-                ptr8 += offset;
-                pVert = (u16*)ptr8;
-                ptr8 = (u8*)pVert;
-                ptr8 += 4;
-                pVert = (u16*)ptr8;
+                pVert = (u16*)((u8*)pList->list + offset);
+                pVert += 2;
             }
             else
             {
@@ -246,12 +241,8 @@ static void Fresnelify(glModelPacket* pPacket, eGLView view)
                 u16 ns = ((u16*)&pList->indices)[0];
                 int stride = (ns - 1) * 2 + 1;
                 int offset = stride * index;
-                u8* ptr8 = (u8*)pList->list;
-                ptr8 += offset;
-                pVert = (u16*)ptr8;
-                ptr8 = (u8*)pVert;
-                ptr8 += 4;
-                pVert = (u16*)ptr8;
+                pVert = (u16*)((u8*)pList->list + offset);
+                pVert += 2;
             }
             else
             {
@@ -293,12 +284,8 @@ static void Fresnelify(glModelPacket* pPacket, eGLView view)
                 u16 ns = ((u16*)&pList->indices)[0];
                 int stride = (ns - 1) * 2 + 1;
                 int offset = stride * index;
-                u8* ptr8 = (u8*)pList->list;
-                ptr8 += offset;
-                pVert = (u16*)ptr8;
-                ptr8 = (u8*)pVert;
-                ptr8 += 4;
-                pVert = (u16*)ptr8;
+                pVert = (u16*)((u8*)pList->list + offset);
+                pVert += 2;
             }
             else
             {

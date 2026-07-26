@@ -2719,58 +2719,23 @@ int AddDelayedSFX(const SoundAttributes& sfxData, unsigned long uSFXID, float vo
             tDebugPrintManager::Print(DC_SOUND, "Too many delayed sfx - finding oldest slot and killing it\n");
 
             float min = gDelayedSFX[0].mf_DebugTimer;
-            slot = 0;
+            int minIndex = 0;
             for (int i = 1; i < 15; i++)
             {
                 if (gDelayedSFX[i].mf_DebugTimer < min)
                 {
                     min = gDelayedSFX[i].mf_DebugTimer;
-                    slot = i;
+                    minIndex = i;
                 }
             }
+            slot = minIndex;
         }
 
         if (slot < 0)
             goto error;
 
         gDelayedSFX[slot].Init();
-        gDelayedSFX[slot].me_ClassType = sfxData.me_ClassType;
-        gDelayedSFX[slot].mu_Type = sfxData.mu_Type;
-        gDelayedSFX[slot].mu_SfxID = sfxData.mu_SfxID;
-        gDelayedSFX[slot].mu_VoiceID = sfxData.mu_VoiceID;
-        gDelayedSFX[slot].mf_Volume = sfxData.mf_Volume;
-        gDelayedSFX[slot].mf_VolReverb = sfxData.mf_VolReverb;
-        gDelayedSFX[slot].mf_Attenuate = sfxData.mf_Attenuate;
-        gDelayedSFX[slot].mf_VolAdjustment = sfxData.mf_VolAdjustment;
-        gDelayedSFX[slot].mf_Panning = sfxData.mf_Panning;
-        gDelayedSFX[slot].mf_DelayTime = sfxData.mf_DelayTime;
-        gDelayedSFX[slot].mf_DebugTimer = sfxData.mf_DebugTimer;
-        gDelayedSFX[slot].mb_Is3D = sfxData.mb_Is3D;
-        gDelayedSFX[slot].mb_IsPlaying = sfxData.mb_IsPlaying;
-        gDelayedSFX[slot].mb_KeepTrack = sfxData.mb_KeepTrack;
-        gDelayedSFX[slot].mb_HasCutoff = sfxData.mb_HasCutoff;
-        gDelayedSFX[slot].mb_Update3DContinuously = sfxData.mb_Update3DContinuously;
-        gDelayedSFX[slot].mb_Pausable = sfxData.mb_Pausable;
-        gDelayedSFX[slot].mb_Restartable = sfxData.mb_Restartable;
-        gDelayedSFX[slot].mb_UseDoppler = sfxData.mb_UseDoppler;
-        gDelayedSFX[slot].mf_ReturnEmitterOnPlay = sfxData.mf_ReturnEmitterOnPlay;
-        gDelayedSFX[slot].mf_CutoffTime = sfxData.mf_CutoffTime;
-        gDelayedSFX[slot].mp_OwnerSFX = sfxData.mp_OwnerSFX;
-        gDelayedSFX[slot].mp_PhysObj = sfxData.mp_PhysObj;
-        gDelayedSFX[slot].pos.vPos = sfxData.pos.vPos;
-        gDelayedSFX[slot].dir.vDir = sfxData.dir.vDir;
-        gDelayedSFX[slot].posUpdateMethod = sfxData.posUpdateMethod;
-        gDelayedSFX[slot].ms_EventName = sfxData.ms_EventName;
-        gDelayedSFX[slot].mi_SFXPriority = sfxData.mi_SFXPriority;
-        gDelayedSFX[slot].mi_GroupPriority = sfxData.mi_GroupPriority;
-        gDelayedSFX[slot].mi_VolGroup = sfxData.mi_VolGroup;
-        gDelayedSFX[slot].mi_EmitterGroup = sfxData.mi_EmitterGroup;
-        gDelayedSFX[slot].mb_FilterOn = sfxData.mb_FilterOn;
-        gDelayedSFX[slot].mu_FilterFreq = sfxData.mu_FilterFreq;
-        gDelayedSFX[slot].mu_Pitch = sfxData.mu_Pitch;
-        gDelayedSFX[slot].mb_NoPhasingFilter = sfxData.mb_NoPhasingFilter;
-        gDelayedSFX[slot].m_unk_0x7B = sfxData.m_unk_0x7B;
-        gDelayedSFX[slot].m_unk_0x7C = sfxData.m_unk_0x7C;
+        gDelayedSFX[slot] = sfxData;
 
         if (pOwnerSFX != NULL)
         {

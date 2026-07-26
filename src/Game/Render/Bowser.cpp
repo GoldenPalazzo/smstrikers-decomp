@@ -1670,10 +1670,14 @@ void Bowser::ActionHide()
     }
 }
 
+static inline void ResetBowserAttackState(Bowser* pBowser)
+{
+    Bowser::SetTiltParameters(0.0f);
+    pBowser->mAttackType = BOWSER_ATTACK_ROLL;
+}
+
 /**
  * Offset/Address/Size: 0x177C | 0x8015A4F0 | size: 0x314
- * TODO: 99.39% match - inlined SetTiltParameters(0.0f) temp stack slots are
- * swapped between the first and second call sites.
  */
 void Bowser::ActionReset()
 {
@@ -1710,9 +1714,7 @@ void Bowser::ActionReset()
         if (!(mAttackType == BOWSER_ATTACK_STOMP && mStompStage != 2))
         {
             oldAttackType = mAttackType;
-
-            SetTiltParameters(0.0f);
-            mAttackType = BOWSER_ATTACK_ROLL;
+            ResetBowserAttackState(this);
 
             if (g_pGame->m_pGameTweaks->unk310 < 0.0f)
             {
@@ -2077,8 +2079,7 @@ bool Bowser::CheckForAbort()
         if (!(pBowser->mAttackType == BOWSER_ATTACK_STOMP && pBowser->mStompStage != 2))
         {
             savedAttackType = pBowser->mAttackType;
-            SetTiltParameters(0.0f);
-            pBowser->mAttackType = BOWSER_ATTACK_ROLL;
+            ResetBowserAttackState(pBowser);
             if (g_pGame->m_pGameTweaks->unk310 < 0.0f)
                 g_pGame->ResetBowser();
             if (pBowser->mbAlive)
