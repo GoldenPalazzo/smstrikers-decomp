@@ -4,6 +4,27 @@
 #include "NL/gl/glMatrix.h"
 #include "NL/nlMemory.h"
 
+class glRasterState
+{
+public:
+    /* 0x00 */ unsigned long m_State;
+}; // total size: 0x4
+
+class glTextureState
+{
+public:
+    unsigned long SetTextureState(eGLTextureState, unsigned long);
+    unsigned long GetTextureState(eGLTextureState);
+
+    /* 0x00 */ unsigned long long m_State;
+}; // total size: 0x8
+
+class glMaterialState
+{
+public:
+    /* 0x00 */ unsigned long m_State;
+}; // total size: 0x4
+
 static glStateBundle _bundle;
 
 static unsigned long defaultRasterState = 0;
@@ -158,8 +179,6 @@ void glSetRasterStateDefaults()
     _state.m_State = defaultRasterState;
 }
 
-static inline unsigned long SetTextureStateImpl(unsigned long long* pState, eGLTextureState state, unsigned long value);
-
 static inline unsigned long SetTextureStateRefImpl(unsigned long long* pState, eGLTextureState state, unsigned long value)
 {
     s32* pNumBits;
@@ -213,46 +232,56 @@ unsigned long glSetTextureState(unsigned long long& texture, eGLTextureState sta
     return SetTextureStateRefImpl(&texture, state, value);
 }
 
-static inline unsigned long SetTextureStateImpl(unsigned long long* pState, eGLTextureState state, unsigned long value)
+static inline gl_StateBitfield* GetTextureStateAndInfo(
+    glTextureState& textureState,
+    eGLTextureState state,
+    unsigned long& out)
 {
     gl_StateBitfield* pInfo = &packed_texture[state];
-    unsigned long long tex = *pState;
-    unsigned long out = 0;
-    s32 cnt = (s32)out;
-    unsigned long long cmp = (unsigned long long)out;
-    unsigned long one = 1;
     s32 numBits = pInfo->numBits;
+    unsigned long long texture = textureState.m_State;
+    out = 0;
+    s32 cnt = (s32)out;
+    unsigned long one = 1;
+    unsigned long long cmp = (unsigned long long)out;
 
     for (; cnt < numBits; cnt++)
     {
         unsigned long long mask = 1ULL << (cnt + pInfo->startBit);
-        if ((tex & mask) != cmp)
+        if ((texture & mask) != cmp)
         {
             out |= (one << cnt);
         }
     }
 
-    numBits = pInfo->numBits;
-    cnt = 0;
-    for (; cnt < numBits; cnt++)
+    return pInfo;
+}
+
+inline unsigned long glTextureState::GetTextureState(
+    eGLTextureState state)
+{
+    unsigned long out;
+    GetTextureStateAndInfo(*this, state, out);
+    return out;
+}
+
+inline unsigned long glTextureState::SetTextureState(
+    eGLTextureState state, unsigned long value)
+{
+    unsigned long out;
+    gl_StateBitfield* pInfo = GetTextureStateAndInfo(*this, state, out);
+    s32 numBits = pInfo->numBits;
+
+    for (s32 cnt = 0; cnt < numBits; cnt++)
     {
-        unsigned long hi;
-        unsigned long lo;
         if (value & (1 << cnt))
         {
-            unsigned long long mask = 1ULL << (cnt + pInfo->startBit);
-            hi = (unsigned long)(*pState >> 32) | (unsigned long)(mask >> 32);
-            lo = (unsigned long)*pState | (unsigned long)mask;
+            m_State |= (1ULL << (cnt + pInfo->startBit));
         }
         else
         {
-            u32 startBit = pInfo->startBit;
-            unsigned long mask32 = 1UL << (cnt + startBit);
-            unsigned long notMask = ~mask32;
-            lo = (unsigned long)*pState & notMask;
-            hi = (unsigned long)(*pState >> 32) & (unsigned long)((s32)notMask >> 31);
+            m_State &= ~(1 << (cnt + pInfo->startBit));
         }
-        *pState = ((unsigned long long)lo) | ((unsigned long long)hi << 32);
     }
 
     return out;
@@ -260,12 +289,10 @@ static inline unsigned long SetTextureStateImpl(unsigned long long* pState, eGLT
 
 /**
  * Offset/Address/Size: 0x2F8 | 0x801DBF3C | size: 0x118
- * TODO: 98.9% match - r30/r31 register swap for out vs texHi due to MWCC u64
- * register allocation interleaving. All instructions match, only register diffs.
  */
 unsigned long glSetTextureState(eGLTextureState state, unsigned long value)
 {
-    return SetTextureStateImpl(&_textureState.m_State, state, value);
+    return _textureState.SetTextureState(state, value);
 }
 
 static inline unsigned long GetTextureStateImpl(unsigned long long* pTexture, eGLTextureState texturestate)
@@ -757,7 +784,7 @@ void gl_StateStartup()
     defaultRasterState = rasterDefault;
 
     glSetTextureState(GLTS_DiffuseLevel, 63);
-    glSetTextureState(GLTS_DetailLevel, 0);
+    glSetTextureState(_textureState.m_State, GLTS_DetailLevel, 0);
     glSetTextureState(GLTS_ShadowLevel, 63);
     glSetTextureState(GLTS_SelfIllumLevel, 63);
     glSetTextureState(GLTS_GlossLevel, 63);
