@@ -88,34 +88,34 @@ bool IsSFXPlaying(unsigned long id)
 
 /**
  * Offset/Address/Size: 0x38 | 0x801C4834 | size: 0xC0
- * TODO: 94.17% match - r0/r5 register swap for true/gEmitters@l and lfs f0 scheduling
  */
-void PlatAudio::InitEmitter(unsigned long idx)
+void PlatAudio::InitEmitter(unsigned long index)
 {
-    gEmitters[idx].bKeepTrack = true;
-    SFXEmitter* emitter = &gEmitters[idx];
-    SND_PARAMETER_INFO** ppInfo = &emitter->pMIDIControllerInfo;
-
-    emitter->Init();
-
-    emitter->pos.vPos.f.x = 0.0f;
-    emitter->pos.vPos.f.y = 0.0f;
-    emitter->pos.vPos.f.z = 0.0f;
-    emitter->dir.vDir.f.x = 0.0f;
-    emitter->dir.vDir.f.y = 0.0f;
-    emitter->dir.vDir.f.z = 0.0f;
-    emitter->posUpdateMethod = NONE;
-
-    SND_PARAMETER_INFO* pInfo = *ppInfo;
-    if (pInfo != NULL)
+    gEmitters[index].bKeepTrack = true;
+    gEmitters[index].soundType = (unsigned long)-1;
+    gEmitters[index].fTimeStamp = -1.0f;
+    gEmitters[index].bIsStopping = false;
+    gEmitters[index].bInUse = false;
+    gEmitters[index].bIsFilterOn = false;
+    gEmitters[index].m_unk_0x5F = false;
+    gEmitters[index].pPhysObj = NULL;
+    gEmitters[index].pOwner = NULL;
+    gEmitters[index].pos.pvPos = NULL;
+    gEmitters[index].dir.pvDir = NULL;
+    gEmitters[index].pos.vPos.f.x = 0.0f;
+    gEmitters[index].pos.vPos.f.y = 0.0f;
+    gEmitters[index].pos.vPos.f.z = 0.0f;
+    gEmitters[index].dir.vDir.f.x = 0.0f;
+    gEmitters[index].dir.vDir.f.y = 0.0f;
+    gEmitters[index].dir.vDir.f.z = 0.0f;
+    gEmitters[index].posUpdateMethod = NONE;
+    if (gEmitters[index].pMIDIControllerInfo != NULL)
     {
-        if (pInfo->paraArray != NULL)
-        {
-            delete[] (char*)pInfo->paraArray;
-        }
-        delete *ppInfo;
+        if (gEmitters[index].pMIDIControllerInfo->paraArray != NULL)
+            delete[] (char*)gEmitters[index].pMIDIControllerInfo->paraArray;
+        delete gEmitters[index].pMIDIControllerInfo;
     }
-    *ppInfo = NULL;
+    gEmitters[index].pMIDIControllerInfo = NULL;
 }
 
 /**
@@ -144,13 +144,10 @@ SFXEmitter* GetSFXEmitter(unsigned long id)
 
 /**
  * Offset/Address/Size: 0x15C | 0x801C4958 | size: 0x35C
- * TODO: 96.81% match - remaining reset-block register allocation around emitter pointer and debug print
  */
 SFXEmitter* GetFreeEmitter(unsigned long& index)
 {
     int i;
-    int emitterOffset;
-    SND_PARAMETER_INFO** ppInfo;
 
     index = 0;
     for (i = 0; i < 64; i++)
@@ -158,7 +155,7 @@ SFXEmitter* GetFreeEmitter(unsigned long& index)
         if (!sndCheckEmitter((SND_EMITTER*)&gEmitters[i]) && sndFXCheck(sndEmitterVoiceID((SND_EMITTER*)&gEmitters[i])) == -1
             && !gEmitters[i].bIsStopping && !gEmitters[i].bInUse)
         {
-            emitterOffset = i * sizeof(SFXEmitter);
+            int emitterOffset = i * sizeof(SFXEmitter);
             sndRemoveEmitter((SND_EMITTER*)((u8*)gEmitters + emitterOffset));
             gEmitters[i].bInUse = true;
             index = i;
@@ -170,10 +167,9 @@ SFXEmitter* GetFreeEmitter(unsigned long& index)
     if (i == 64)
     {
         int minIndex;
-        float* pFirstTimeStamp = &gEmitters[0].fTimeStamp;
         i = 1;
         minIndex = 0;
-        float min = *pFirstTimeStamp;
+        float min = gEmitters[0].fTimeStamp;
         while (i < 64)
         {
             if (gEmitters[i].fTimeStamp < min)
@@ -184,36 +180,11 @@ SFXEmitter* GetFreeEmitter(unsigned long& index)
             i++;
         }
 
-        emitterOffset = minIndex * sizeof(SFXEmitter);
+        int emitterOffset = minIndex * sizeof(SFXEmitter);
         sndRemoveEmitter((SND_EMITTER*)((u8*)gEmitters + emitterOffset));
         gEmitters[minIndex].bInUse = true;
         index = minIndex;
-        gEmitters[minIndex].bKeepTrack = true;
-        gEmitters[minIndex].soundType = (unsigned long)-1;
-        *(float*)((u8*)pFirstTimeStamp + emitterOffset) = -1.0f;
-        gEmitters[minIndex].bIsStopping = false;
-        gEmitters[minIndex].bInUse = false;
-        gEmitters[minIndex].bIsFilterOn = false;
-        gEmitters[minIndex].m_unk_0x5F = false;
-        gEmitters[minIndex].pPhysObj = NULL;
-        gEmitters[minIndex].pOwner = NULL;
-        gEmitters[minIndex].pos.pvPos = NULL;
-        gEmitters[minIndex].dir.pvDir = NULL;
-        gEmitters[minIndex].pos.vPos.f.x = 0.0f;
-        gEmitters[minIndex].pos.vPos.f.y = 0.0f;
-        gEmitters[minIndex].pos.vPos.f.z = 0.0f;
-        gEmitters[minIndex].dir.vDir.f.x = 0.0f;
-        gEmitters[minIndex].dir.vDir.f.y = 0.0f;
-        gEmitters[minIndex].dir.vDir.f.z = 0.0f;
-        gEmitters[minIndex].posUpdateMethod = NONE;
-        ppInfo = &gEmitters[minIndex].pMIDIControllerInfo;
-        if (*ppInfo != NULL)
-        {
-            if ((*ppInfo)->paraArray != NULL)
-                delete[] (char*)(*ppInfo)->paraArray;
-            delete *ppInfo;
-        }
-        *ppInfo = NULL;
+        InitEmitter(minIndex);
         tDebugPrintManager::Print(DC_SOUND, "Audio::GetFreeEmitter(): Ran out of free emitters, killing oldest one...\n");
     }
 
