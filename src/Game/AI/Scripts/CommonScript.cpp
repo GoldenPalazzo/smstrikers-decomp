@@ -178,6 +178,53 @@ struct StdMapNode
 
 #include "Game/AI/Scripts/ScriptCaching.h"
 
+static inline unsigned long StrategicQuestionHash(
+    unsigned long functionAddress,
+    FuzzyVariant& argument)
+{
+    return functionAddress + ((Variant*)&argument)->GetHash();
+}
+
+static inline void StrategicAddAVL(
+    ScriptQuestionCache* cache,
+    unsigned long& key,
+    const FuzzyVariant& variant)
+{
+    AVLTreeNode* existingNode;
+    cache->mQuestionCacheMap.AddAVLNode(
+        (AVLTreeNode**)&cache->mQuestionCacheMap.m_Root,
+        (void*)&key,
+        (void*)&variant,
+        &existingNode,
+        cache->mQuestionCacheMap.m_NumElements);
+    if (existingNode == NULL)
+    {
+        cache->mQuestionCacheMap.m_NumElements++;
+    }
+}
+
+static inline void StrategicAddToCache(
+    ScriptQuestionCache* cache,
+    unsigned long hash,
+    const FuzzyVariant& variant)
+{
+    unsigned long key = hash;
+    if (g_bScriptQuestionCachingOn)
+    {
+        unsigned char useSTD = g_bScriptQuestionCachingUseSTD;
+        const FuzzyVariant* variantPtr = &variant;
+        if (useSTD)
+        {
+            std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(key);
+            pair.second = *variantPtr;
+        }
+        else
+        {
+            StrategicAddAVL(cache, key, *variantPtr);
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0xF1B0 | 0x80079380 | size: 0x7D4
  * TODO: 99.37% match - residual hash/cache register rotation and
@@ -191,36 +238,18 @@ FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
 
     FuzzyVariant fvTeam(TheTeam);
     volatile unsigned long funcAddr = (unsigned long)GetStrategicBallCarrier;
-    unsigned long hash = funcAddr + ((Variant*)&fvTeam)->GetHash();
-    AVLTreeNode* existingNode2;
-    AVLTreeNode* existingNode1;
-    unsigned long hashCopy2;
-    unsigned long hashCopy1;
+    unsigned long hash = StrategicQuestionHash(funcAddr, fvTeam);
     FuzzyVariant fvTeam2(TheTeam);
 
-    if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
-        bestValue.Confidence = bestValue.Confidence;
-        hashCopy1 = hash;
-        ScriptQuestionCache* addCache = ScriptQuestionCache::Instance();
-        if (g_bScriptQuestionCachingOn)
+        ScriptQuestionCache* const lookupCache = ScriptQuestionCache::Instance();
+        unsigned char cacheHit = lookupCache->Lookup(hash, bestValue, NULL);
+        if (cacheHit)
         {
-            const FuzzyVariant& cacheValue = bestValue;
-            if (g_bScriptQuestionCachingUseSTD)
-            {
-                std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1);
-                pair.second = cacheValue;
-            }
-            else
-            {
-                addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy1, (void*)&cacheValue, &existingNode1, addCache->mQuestionCacheMap.m_NumElements);
-                if (existingNode1 == NULL)
-                {
-                    addCache->mQuestionCacheMap.m_NumElements++;
-                }
-            }
+            bestValue.Confidence = bestValue.Confidence;
+            StrategicAddToCache(ScriptQuestionCache::Instance(), hash, bestValue);
+            return bestValue;
         }
-        return bestValue;
     }
 
     for (int i = 0; i < 4; i++)
@@ -246,25 +275,7 @@ FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
     }
 
     bestValue.Confidence = fBestConfidence;
-    hashCopy2 = hash;
-    ScriptQuestionCache* addCache = ScriptQuestionCache::Instance();
-    if (g_bScriptQuestionCachingOn)
-    {
-        const FuzzyVariant& cacheValue = bestValue;
-        if (g_bScriptQuestionCachingUseSTD)
-        {
-            std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
-            pair.second = cacheValue;
-        }
-        else
-        {
-            addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy2, (void*)&cacheValue, &existingNode2, addCache->mQuestionCacheMap.m_NumElements);
-            if (existingNode2 == NULL)
-            {
-                addCache->mQuestionCacheMap.m_NumElements++;
-            }
-        }
-    }
+    StrategicAddToCache(ScriptQuestionCache::Instance(), hash, bestValue);
     return bestValue;
 }
 
@@ -281,33 +292,18 @@ FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
 
     FuzzyVariant fvTeam(TheTeam);
     volatile unsigned long funcAddr = (unsigned long)GetBestBallInterceptor;
-    unsigned long hash = funcAddr + ((Variant*)&fvTeam)->GetHash();
+    unsigned long hash = StrategicQuestionHash(funcAddr, fvTeam);
     FuzzyVariant fvTeam2(TheTeam);
 
-    if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
-        bestValue.Confidence = bestValue.Confidence;
-        unsigned long hashCopy = hash;
-        ScriptQuestionCache* addCache = ScriptQuestionCache::Instance();
-        if (g_bScriptQuestionCachingOn)
+        ScriptQuestionCache* const lookupCache = ScriptQuestionCache::Instance();
+        unsigned char cacheHit = lookupCache->Lookup(hash, bestValue, NULL);
+        if (cacheHit)
         {
-            const FuzzyVariant& cacheValue = bestValue;
-            if (g_bScriptQuestionCachingUseSTD)
-            {
-                std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy);
-                pair.second = cacheValue;
-            }
-            else
-            {
-                AVLTreeNode* existingNode;
-                addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy, (void*)&cacheValue, &existingNode, addCache->mQuestionCacheMap.m_NumElements);
-                if (existingNode == NULL)
-                {
-                    addCache->mQuestionCacheMap.m_NumElements++;
-                }
-            }
+            bestValue.Confidence = bestValue.Confidence;
+            StrategicAddToCache(ScriptQuestionCache::Instance(), hash, bestValue);
+            return bestValue;
         }
-        return bestValue;
     }
 
     for (int i = 0; i < 4; i++)
@@ -336,26 +332,7 @@ FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
     }
 
     bestValue.Confidence = fBestConfidence;
-    unsigned long hashCopy = hash;
-    ScriptQuestionCache* addCache = ScriptQuestionCache::Instance();
-    if (g_bScriptQuestionCachingOn)
-    {
-        const FuzzyVariant& cacheValue = bestValue;
-        if (g_bScriptQuestionCachingUseSTD)
-        {
-            std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy);
-            pair.second = cacheValue;
-        }
-        else
-        {
-            AVLTreeNode* existingNode;
-            addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy, (void*)&cacheValue, &existingNode, addCache->mQuestionCacheMap.m_NumElements);
-            if (existingNode == NULL)
-            {
-                addCache->mQuestionCacheMap.m_NumElements++;
-            }
-        }
-    }
+    StrategicAddToCache(ScriptQuestionCache::Instance(), hash, bestValue);
     return bestValue;
 }
 
