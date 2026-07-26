@@ -21,8 +21,6 @@ extern "C"
 namespace GCAudioStreaming
 {
 
-nlArrayAllocator<AudioStream::READ_CB_INFO> AudioStream::READ_CB_INFO::s_AllocPool;
-
 inline AudioStreamBuffer* AudioBufferMgr::GetFreeBuffer(AudioStream* pStream)
 {
     AudioBufferMgr& mgr = pStream->m_BuffMgr;
@@ -67,26 +65,8 @@ inline AudioStreamBuffer* AudioBufferMgr::GetFreeBuffer(AudioStream* pStream)
 
 unsigned char ARRAY_ALLOCATOR_MEMORY_class_name_s_AllocPool[sizeof(GCAudioStreaming::AudioStream::READ_CB_INFO) * 32];
 
-namespace
-{
-struct GCStreamAllocPoolInit
-{
-    GCStreamAllocPoolInit()
-    {
-        typedef GCAudioStreaming::AudioStream::READ_CB_INFO Slot;
-        Slot* mem = (Slot*)ARRAY_ALLOCATOR_MEMORY_class_name_s_AllocPool;
-        Slot* entry = mem;
-        for (int i = 1; i < 32; i++)
-        {
-            entry->m_next = &mem[i];
-            entry++;
-        }
-        GCAudioStreaming::AudioStream::READ_CB_INFO::s_AllocPool.m_pFree = &mem[0];
-        mem[31].m_next = 0;
-    }
-};
-GCStreamAllocPoolInit s_GCStreamAllocPoolInit;
-} // namespace
+nlArrayAllocator<GCAudioStreaming::AudioStream::READ_CB_INFO> GCAudioStreaming::AudioStream::READ_CB_INFO::s_AllocPool(
+    (GCAudioStreaming::AudioStream::READ_CB_INFO*)ARRAY_ALLOCATOR_MEMORY_class_name_s_AllocPool, 32);
 
 // /**
 //  * Offset/Address/Size: 0x4AC | 0x801C9630 | size: 0x140

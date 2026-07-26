@@ -31,6 +31,11 @@ enum THREAD_STATE
 class FileThread
 {
 public:
+    FileThread()
+        : m_ThreadStack(NULL)
+    {
+    }
+
     static void ThreadProc();
     static void Init();
 

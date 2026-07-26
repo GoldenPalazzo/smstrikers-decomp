@@ -40,14 +40,7 @@ class nlStaticSortedSlot : public nlSortedSlot<T, N>
 public:
     nlStaticSortedSlot()
     {
-        T* p = reinterpret_cast<T*>(m_EntryData);
-        this->m_ArrayAllocator.m_pFree = p;
-        for (int i = 0; i < N - 1; ++i)
-        {
-            *(T**)p = p + 1;
-            ++p;
-        }
-        *(T**)p = 0;
+        this->m_ArrayAllocator.Init(reinterpret_cast<T*>(m_EntryData), N);
     }
 
     virtual T* GetNewEntry();

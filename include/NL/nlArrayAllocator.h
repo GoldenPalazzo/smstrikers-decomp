@@ -7,6 +7,25 @@ template <typename T>
 class nlArrayAllocator
 {
 public:
+    nlArrayAllocator()
+    {
+    }
+
+    nlArrayAllocator(T* mem, unsigned long count)
+    {
+        Init(mem, count);
+    }
+
+    void Init(T* mem, unsigned long count)
+    {
+        m_pFree = mem;
+        for (unsigned long i = 0; i < count - 1; ++i)
+        {
+            *(T**)(mem + i) = mem + i + 1;
+        }
+        *(T**)(mem + count - 1) = 0;
+    }
+
     T* Allocate()
     {
         T* entry = m_pFree;

@@ -42,7 +42,7 @@ static bool g_bMovieMustStop;
 static unsigned long long resourceMarker;
 static void* g_GrabTextureData;
 static unsigned long g_GrabTextureSize;
-static unsigned long GrabTextureHandle = glGetTexture("target/grab_texture");
+static const unsigned long GrabTextureHandle = glGetTexture("target/grab_texture");
 static PlatTexture* pTex[4] = { 0 };
 static THPVideoInfo videoInfo;
 

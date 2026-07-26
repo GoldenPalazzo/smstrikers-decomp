@@ -11,7 +11,9 @@
 
 static const nlVector3 v3Zero = { 0.f, 0.f, 0.f };
 
-SlotPool<BallCacheInfo> BallCacheInfo::mBallCacheInfoSlotPool;
+static f32 CANT_COLLIDE = *(f32*)__float_max;
+
+SlotPool<BallCacheInfo> BallCacheInfo::mBallCacheInfoSlotPool(16, 16);
 nlDLListSlotPool<BallCacheInfo*> FakeBallWorld::mBallCacheList;
 
 class SimpleCollisionSpace : public CollisionSpace

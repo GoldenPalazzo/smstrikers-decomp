@@ -59,7 +59,7 @@ unsigned char DrawableModel::sbBallShadowDisabled;
 
 static nlAVLTreeSlotPool<unsigned long, AABBDimensions, DefaultKeyCompare<unsigned long> > boundingBoxCache(16, 16);
 
-static unsigned long BallModelID = nlStringHash("gameplay/ball");
+static const unsigned long BallModelID = nlStringHash("gameplay/ball");
 
 static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p, bool bGlow);
 

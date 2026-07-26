@@ -14,8 +14,8 @@
 #include "NL/nlString.h"
 #include "Game/Sys/debug.h"
 
-static u32 GrabTextureName = glGetTexture("target/grab_texture");
-static u32 DOFTextureName = glGetTexture("target/dof");
+static const u32 GrabTextureName = glGetTexture("target/grab_texture");
+static const u32 DOFTextureName = glGetTexture("target/dof");
 static void* clearz_mem = 0;
 static u32 glx_SharedMemory = 0;
 static u32 glx_SharedSize = 0;

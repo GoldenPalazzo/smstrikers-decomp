@@ -219,7 +219,7 @@ static unsigned long LightTexture = glGetTexture("global/lightramp");
 static unsigned long BlackTexture = glGetTexture("global/black");
 static unsigned long WhiteTexture = glGetTexture("global/white");
 static unsigned long CharacterDirtProgram = glGetProgram("3d pointlit dirt");
-static unsigned long CharacterProgram = glGetProgram("3d pointlit");
+static const unsigned long CharacterProgram = glGetProgram("3d pointlit");
 
 static int g_nShowBones;
 static const int g_nOnscreenUpdate[3] = { 4, 3, 2 };
