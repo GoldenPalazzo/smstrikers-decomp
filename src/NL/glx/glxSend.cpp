@@ -74,11 +74,6 @@ static _GXTevScale glx_tevscale;     // .sbss:0x58
 static int glx_aniso;                // .sbss:0x5C
 static u8 glx_InvXposeChar;          // .sbss:0x60
 
-namespace
-{
-extern u32 glv_MatrixChanged;
-}
-
 static void glud_Specular(void*);
 
 // Program-handle statics (initialized at __sinit_)
@@ -118,8 +113,6 @@ struct GLScissorUserData
 
 static GXAttr gx_texattr[6];
 static GLViewportUserData g_viewport;
-static bool bDeferredEnvDiffuse;
-static signed char init;
 
 static void glx_SwitchTextureState(const glModelPacket*);
 static unsigned long glx_SwitchTexConfig(const glModelPacket*);
@@ -215,6 +208,13 @@ static inline GXColor makeColor(f32 r, f32 g, f32 b, f32 a)
     return c;
 }
 
+static inline nlColour getWorldAmbient()
+{
+    nlColour colour = { 0, 0, 0, 0 };
+    nlColourSet(colour, world_ambient.c[0], world_ambient.c[1], world_ambient.c[2], world_ambient.c[3]);
+    return colour;
+}
+
 static void GetConstants()
 {
     nlVector4 vMult;
@@ -307,13 +307,8 @@ void glx_SendReset()
 
     GetConstants();
 
-    {
-        nlColour amb;
-        nlColour temp = { };
-        nlColourSet(temp, world_ambient.c[0], world_ambient.c[1], world_ambient.c[2], world_ambient.c[3]);
-        amb = temp;
-        gxSetChanAmbColour(0, amb);
-    }
+    nlColour ambient = getWorldAmbient();
+    gxSetChanAmbColour(0, ambient);
     gxSetChanMatColour(0, nlWhite);
     gxSetChanAmbColour(1, nlBlack);
     gxSetChanMatColour(1, nlWhite);
@@ -354,12 +349,15 @@ void glx_SendEnd()
     glx_SwitchUserData(nullptr);
 }
 
+extern const u32 glv_MatrixChanged;
+
 static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
 {
-    int texnum;
-    unsigned long texconfig;
     int i;
+    int bit;
+    int texnum;
     unsigned long extra;
+    GXAttr attr;
 
 #define SET_TEV_ORDER(stage, coord, map, chan) \
     GXSetTevOrder((GXTevStageID)(stage), (GXTexCoordID)(coord), (GXTexMapID)(map), (GXChannelID)(chan))
@@ -374,11 +372,10 @@ static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
 #define SET_TEX_GEN(stage, type, src, mtx) \
     gxSetTexCoordGen((int)(stage), (_GXTexGenType)(type), (_GXTexGenSrc)(src), (u32)(mtx))
 
-    texconfig = p->state.texconfig;
-    glx_texconfig = texconfig;
+    glx_texconfig = p->state.texconfig;
     extra = 0x40;
 
-    if (texconfig & 0x10)
+    if (glx_texconfig & 0x10)
     {
         if (glx_normals == 0)
         {
@@ -392,7 +389,8 @@ static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
         glx_allowSpecular = 0;
     }
 
-    i = (int)gx_vtxfmt + 1;
+    i = (int)gx_vtxfmt;
+    i++;
     gx_texattr[0] = GX_VA_NULL;
     gx_texattr[1] = GX_VA_NULL;
     gx_texattr[2] = GX_VA_NULL;
@@ -402,20 +400,16 @@ static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
     if (i >= 1)
         i = 0;
 
-    texnum = 0;
     gx_vtxfmt = (_GXVtxFmt)i;
     glx_NumIndices = 0;
-    i = 0;
-    while (true)
+    for (bit = texnum = 0; bit < 6; bit++)
     {
-        if (i >= 6)
-            break;
-        if (texconfig & (1 << i))
+        if (glx_texconfig & (1 << bit))
         {
-            gx_texattr[i] = (GXAttr)(texnum + 13);
+            attr = (GXAttr)(texnum + 13);
+            gx_texattr[bit] = attr;
             texnum++;
         }
-        i++;
     }
 
     gxSetTevColourOp(0, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
@@ -986,6 +980,16 @@ static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
     return extra;
 }
 
+static inline void setGreyKColor(GXTevKColorID stage, u8 value)
+{
+    GXColor colour = { 0, 0, 0, 0 };
+    colour.r = value;
+    colour.g = value;
+    colour.b = value;
+    colour.a = value;
+    GXSetTevKColor(stage, colour);
+}
+
 static void glx_SwitchTextureState(const glModelPacket* p)
 {
     int bit;
@@ -1018,7 +1022,7 @@ static void glx_SwitchTextureState(const glModelPacket* p)
         if (level != glx_konstlevel[0])
         {
             int val = (int)(255.5f * level);
-            GXSetTevKColor(GX_KCOLOR0, (GXColor) { (u8)val, (u8)val, (u8)val, (u8)val });
+            setGreyKColor(GX_KCOLOR0, (u8)val);
             glx_konstlevel[0] = level;
         }
 
@@ -1027,7 +1031,7 @@ static void glx_SwitchTextureState(const glModelPacket* p)
         if (level != glx_konstlevel[1])
         {
             int val = (int)(255.5f * level);
-            GXSetTevKColor(GX_KCOLOR1, (GXColor) { (u8)val, (u8)val, (u8)val, (u8)val });
+            setGreyKColor(GX_KCOLOR1, (u8)val);
             glx_konstlevel[1] = level;
         }
 
@@ -1039,7 +1043,7 @@ static void glx_SwitchTextureState(const glModelPacket* p)
         if (level != glx_konstlevel[2])
         {
             int val = (int)(255.5f * level);
-            GXSetTevKColor(GX_KCOLOR2, (GXColor) { (u8)val, (u8)val, (u8)val, (u8)val });
+            setGreyKColor(GX_KCOLOR2, (u8)val);
             glx_konstlevel[2] = level;
         }
 
@@ -1048,87 +1052,129 @@ static void glx_SwitchTextureState(const glModelPacket* p)
         if (level != glx_konstlevel[3])
         {
             int val = (int)(255.5f * level);
-            GXSetTevKColor(GX_KCOLOR3, (GXColor) { (u8)val, (u8)val, (u8)val, (u8)val });
+            setGreyKColor(GX_KCOLOR3, (u8)val);
             glx_konstlevel[3] = level;
         }
     }
 
-    texnum = 0;
-    for (bit = 0; bit < 6; bit++)
+    for (bit = texnum = 0; bit < 6; bit++)
     {
-        if (!(glx_texconfig & (1 << bit)))
-            continue;
-
-        if (bit == 5)
+        if (glx_texconfig & (1 << bit))
         {
-            mode[1] = GX_CLAMP;
-            mode[0] = GX_CLAMP;
-        }
-        else
-        {
-            tmode = (eGLTextureMode)glGetTextureState((eGLTextureState)bit);
-            switch (tmode)
+            if (bit == 5)
             {
-            case GLTM_WrapWrap:
-                mode[0] = GX_REPEAT;
-                mode[1] = GX_REPEAT;
-                break;
-            case GLTM_WrapClamp:
-                mode[0] = GX_REPEAT;
                 mode[1] = GX_CLAMP;
-                break;
-            case GLTM_ClampWrap:
                 mode[0] = GX_CLAMP;
-                mode[1] = GX_REPEAT;
-                break;
-            case GLTM_ClampClamp:
-                mode[0] = GX_CLAMP;
-                mode[1] = GX_CLAMP;
-                break;
-            default:
-                break;
             }
-        }
-
-        GXInitTexObjWrapMode(&glx_texobj[texnum], mode[0], mode[1]);
-
-        filter = (eGLTextureFilter)glGetTextureState((eGLTextureState)(bit + 6));
-        switch (filter)
-        {
-        case GLTF_Linear:
-        {
-            PlatTexture* tex = (PlatTexture*)glx_texture[texnum];
-            if (tex->m_Levels == 1)
-                GXInitTexObjFilter(&glx_texobj[texnum], GX_LINEAR, GX_LINEAR);
-            else if (tex->m_Format == GXTex_CI8)
-                GXInitTexObjFilter(&glx_texobj[texnum], GX_LIN_MIP_NEAR, GX_LINEAR);
             else
             {
-                static GXAnisotropy aniso[] = { GX_ANISO_1, GX_ANISO_2, GX_ANISO_4 };
-                GXInitTexObjFilter(&glx_texobj[texnum], GX_LIN_MIP_LIN, GX_LINEAR);
-                GXInitTexObjMaxAniso(&glx_texobj[texnum], aniso[glx_aniso]);
+                tmode = (eGLTextureMode)glGetTextureState((eGLTextureState)bit);
+                switch (tmode)
+                {
+                case GLTM_WrapWrap:
+                    mode[0] = GX_REPEAT;
+                    mode[1] = GX_REPEAT;
+                    break;
+                case GLTM_WrapClamp:
+                    mode[0] = GX_REPEAT;
+                    mode[1] = GX_CLAMP;
+                    break;
+                case GLTM_ClampWrap:
+                    mode[0] = GX_CLAMP;
+                    mode[1] = GX_REPEAT;
+                    break;
+                case GLTM_ClampClamp:
+                    mode[0] = GX_CLAMP;
+                    mode[1] = GX_CLAMP;
+                    break;
+                default:
+                    break;
+                }
             }
-            break;
-        }
-        case GLTF_Point:
-        {
-            PlatTexture* tex = (PlatTexture*)glx_texture[texnum];
-            GXTexFilter minFilt;
-            if (tex->m_Levels == 1)
-                minFilt = GX_NEAR;
-            else
-                minFilt = GX_NEAR_MIP_NEAR;
-            GXInitTexObjFilter(&glx_texobj[texnum], minFilt, GX_NEAR);
-            break;
-        }
-        }
 
-        glx_texdirty |= (1 << texnum);
-        texnum++;
+            GXInitTexObjWrapMode(&glx_texobj[texnum], mode[0], mode[1]);
+
+            filter = (eGLTextureFilter)glGetTextureState((eGLTextureState)(bit + 6));
+            switch (filter)
+            {
+            case GLTF_Linear:
+            {
+                PlatTexture* tex = (PlatTexture*)glx_texture[texnum];
+                if (tex->m_Levels == 1)
+                    GXInitTexObjFilter(&glx_texobj[texnum], GX_LINEAR, GX_LINEAR);
+                else if (tex->m_Format == GXTex_CI8)
+                    GXInitTexObjFilter(&glx_texobj[texnum], GX_LIN_MIP_NEAR, GX_LINEAR);
+                else
+                {
+                    static GXAnisotropy aniso[] = { GX_ANISO_1, GX_ANISO_2, GX_ANISO_4 };
+                    GXInitTexObjFilter(&glx_texobj[texnum], GX_LIN_MIP_LIN, GX_LINEAR);
+                    GXInitTexObjMaxAniso(&glx_texobj[texnum], aniso[glx_aniso]);
+                }
+                break;
+            }
+            case GLTF_Point:
+            {
+                PlatTexture* tex = (PlatTexture*)glx_texture[texnum];
+                GXTexFilter minFilt;
+                if (tex->m_Levels == 1)
+                    minFilt = GX_NEAR;
+                else
+                    minFilt = GX_NEAR_MIP_NEAR;
+                GXInitTexObjFilter(&glx_texobj[texnum], minFilt, GX_NEAR);
+                break;
+            }
+            }
+
+            glx_texdirty |= (1 << texnum);
+            texnum++;
+        }
     }
 }
 
 static const u32 glv_TexConfigChanged = 0x80;
+
+static inline void glx_SwitchTexture(const glModelPacket* p)
+{
+    static u32 errorTextures[2] = { 0, 0 };
+    static signed char init;
+    int bit;
+    int texnum;
+    PlatTexture* pTex;
+    unsigned long texhandle;
+
+    if (!init)
+    {
+        errorTextures[0] = glGetTexture("global/white");
+        errorTextures[1] = glGetTexture("global/magenta");
+        init = 1;
+    }
+
+    for (bit = texnum = 0; bit < 6; bit++)
+    {
+        if (glx_texconfig & (1 << bit))
+        {
+            texhandle = p->state.texture[bit];
+            pTex = glx_GetTex(texhandle, false, prev_view != GLV_Debug);
+            if (pTex == NULL || pTex->m_bMissingTexture)
+            {
+                texhandle = errorTextures[(glGetCurrentFrame() & 4) >> 2];
+                pTex = glx_GetTex(texhandle, true, false);
+            }
+
+            memcpy(&glx_texobj[texnum], &pTex->m_TexObj, sizeof(GXTexObj));
+            if (pTex->m_nPaletteEntries != 0)
+            {
+                memcpy(&glx_tlutobj[texnum], &pTex->m_TlutObj, sizeof(GXTlutObj));
+            }
+
+            glx_texture[texnum] = (u32)pTex;
+            glx_texdirty |= 1 << texnum;
+            texnum++;
+        }
+    }
+
+    glx_SwitchTextureState(p);
+}
 
 static void glx_SwitchRaster(const glModelPacket* p)
 {
@@ -1347,7 +1393,7 @@ static void glx_LoadLight(GLLightUserData* pLight, _GXLightID lightId)
     if (!init)
     {
         init = 1;
-        refMult = 1.0f;
+        refMult = 0.666f;
     }
 
     if (!init_0)
@@ -1449,9 +1495,7 @@ static void glx_LoadLight(GLLightUserData* pLight, _GXLightID lightId)
         worldDir.f.z = worldZ;
 
         {
-            float lengthSq = worldDir.f.x * worldDir.f.x;
-            lengthSq += worldDir.f.y * worldDir.f.y;
-            lengthSq += worldDir.f.z * worldDir.f.z;
+            float lengthSq = worldDir.GetLengthSq3D();
             float recipLength = nlRecipSqrt(lengthSq, true);
 
             nlVec3Scale(worldDir, recipLength);
@@ -1459,11 +1503,11 @@ static void glx_LoadLight(GLLightUserData* pLight, _GXLightID lightId)
 
         nlMultDirVectorMatrix(viewDir, worldDir, mview);
 
-        nlVec3Scale(viewDir, -1.0f);
+        nlVec3Scale(viewDir, 1048576.0f);
 
         GXInitLightPos(&light, viewDir.f.x, viewDir.f.y, viewDir.f.z);
         GXInitLightAttnA(&light, 1.0f, 0.0f, 0.0f);
-        GXInitLightDistAttn(&light, -1.0f, 1.0f, GX_DA_OFF);
+        GXInitLightDistAttn(&light, 1048576.0f, 1.0f, GX_DA_OFF);
     }
     else
     {
@@ -1623,9 +1667,7 @@ static inline void glx_LoadDirectionalLight(GLDirectionalLightUserData* pLight, 
 
     nlVector3 viewDir;
     nlMultDirVectorMatrix(viewDir, pLight->direction, mview);
-    viewDir.f.z = 1048576.0f * viewDir.f.z;
-    viewDir.f.x = 1048576.0f * viewDir.f.x;
-    viewDir.f.y = 1048576.0f * viewDir.f.y;
+    nlVec3Scale(viewDir, 1048576.0f);
     GXInitLightPos(&light, viewDir.f.x, viewDir.f.y, viewDir.f.z);
 
     GXInitLightAttnA(&light, 1.0f, 0.0f, 0.0f);
@@ -1784,7 +1826,7 @@ static inline void glx_LoadSpecular(GLSpecularUserData* pLight, GXLightID lightI
 
 static void glud_Specular(void* pData)
 {
-    static u32 gxLights[4] = { 1, 2, 4, 8 };
+    static u32 gxLights[4] = { GX_LIGHT4, GX_LIGHT5, GX_LIGHT6, GX_LIGHT7 };
 
     unsigned long* p32 = (unsigned long*)pData;
     unsigned long numLights = *p32;
@@ -1902,12 +1944,35 @@ static void glud_Skin(void* pData, const glModelPacket* pPacket)
     }
 }
 
+static inline void glx_TextureSwapMode(bool bSwap)
+{
+    static bool bEnabled;
+    static signed char init;
+
+    if (!init)
+    {
+        bEnabled = false;
+        init = 1;
+    }
+
+    if (bSwap)
+    {
+        GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP3);
+        bEnabled = true;
+    }
+    else if (bEnabled)
+    {
+        GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+        gxSetTevAlphaOp(0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, true, GX_TEVPREV);
+        gxSetTevAlphaOp(1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, true, GX_TEVPREV);
+        bEnabled = false;
+    }
+}
+
 static inline void glud_ShadowVolume(void* pData)
 {
     if (*(s32*)pData == 3)
     {
-        static bool bEnabled;
-        static signed char init;
         static GXColor c0 = {
             64,
             64,
@@ -1916,15 +1981,7 @@ static inline void glud_ShadowVolume(void* pData)
         };
 
         glx_DirtyFlags = 0x80;
-
-        if (!init)
-        {
-            bEnabled = false;
-            init = 1;
-        }
-
-        GXSetTevSwapMode((GXTevStageID)0, (GXTevSwapSel)0, (GXTevSwapSel)3);
-        bEnabled = true;
+        glx_TextureSwapMode(true);
         gxSetNumTevStages(3);
 
         gxSetTevAlphaOp(0, (_GXTevOp)0xE, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
@@ -2001,50 +2058,92 @@ static inline void glud_Scissor(const GLScissorUserData* pScissor)
     GXSetScissor(xOrig, yOrig, wd, ht);
 }
 
+static inline void glud_MobileDiffuse(bool bOn)
+{
+    Mtx texmtx;
+    Mtx texs;
+    Mtx text;
+    static int n;
+    static signed char init;
+
+    if (bOn)
+    {
+        gxSetTexCoordGen(0, GX_TG_MTX3x4, GX_TG_NRM, 0x39);
+        memcpy(texmtx, gx_modelview, sizeof(Mtx));
+        PSMTXScale(texs, 0.5f, -0.5f, 0.0f);
+        PSMTXTrans(text, 0.5f, 0.5f, 1.0f);
+        PSMTXConcat(texs, texmtx, texmtx);
+        PSMTXConcat(text, texmtx, texmtx);
+
+        if (!init)
+        {
+            n = 5;
+            init = 1;
+        }
+
+        float fTransScale = 1.0f / (float)n;
+        u32 frame = glGetCurrentFrame();
+        u32 frameDiv = frame / n;
+        u32 frameMod = frame - frameDiv * n;
+        float fTrans = fTransScale * frameMod;
+        fTrans = 2.0f * fTrans - 1.0f;
+        texmtx[0][2] = fTrans;
+        texmtx[1][2] = fTrans;
+
+        GXLoadTexMtxImm(texmtx, 0x39, GX_MTX3x4);
+    }
+    else
+    {
+        gxSetTexCoordGen(0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
+    }
+}
+
 static inline void glud_EnvDiffuse(bool bOn)
 {
-    if (!glx_allowSpecular)
-    {
-        return;
-    }
-
-    if (bDeferredEnvDiffuse)
-    {
-        glx_envdiffuse = bOn;
-        return;
-    }
-
     Mtx texs;
     Mtx text;
     Mtx invMat;
     Mtx envMat;
 
-    PSMTXScale(texs, 0.5f, -0.5f, 0.0f);
-    PSMTXTrans(text, 0.5f, 0.5f, 1.0f);
-    PSMTXConcat(text, texs, envMat);
-    GXLoadTexMtxImm(envMat, 0x5B, GX_MTX3x4);
-
-    PSMTXInvXpose(gx_modelview, invMat);
-    GXLoadTexMtxImm(invMat, 0x39, GX_MTX3x4);
-
-    GXTexCoordID coord = (GXTexCoordID)glx_GlossMapCoord;
-    GXTevStageID stage = (GXTevStageID)glx_GlossMapStage;
-    GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_NRM, 0x39, GX_TRUE, 0x5B);
-    GXSetTevOrder(stage, coord, (GXTexMapID)coord, GX_COLOR0A0);
-
-    if (glx_texconfig & 0x20)
+    if (bOn)
     {
-        GXSetTevColorIn(stage, (GXTevColorArg)0xF, (GXTevColorArg)0xB, (GXTevColorArg)8, (GXTevColorArg)0xF);
+        PSMTXScale(texs, 0.5f, -0.5f, 0.0f);
+        PSMTXTrans(text, 0.5f, 0.5f, 1.0f);
+        PSMTXConcat(text, texs, envMat);
+        GXLoadTexMtxImm(envMat, 0x5B, GX_MTX3x4);
+
+        PSMTXInvXpose(gx_modelview, invMat);
+        GXLoadTexMtxImm(invMat, 0x39, GX_MTX3x4);
+
+        u32 value = glx_GlossMapCoord;
+        GXTevStageID stage = (GXTevStageID)glx_GlossMapStage;
+        GXSetTexCoordGen2((GXTexCoordID)value, GX_TG_MTX3x4, GX_TG_NRM, 0x39, GX_TRUE, 0x5B);
+        GXSetTevOrder(stage, (GXTexCoordID)value, (GXTexMapID)value, GX_COLOR0A0);
+
+        if (glx_texconfig & 0x20)
+        {
+            GXSetTevColorIn(
+                stage, (GXTevColorArg)0xF, (GXTevColorArg)0xB, (GXTevColorArg)8, (GXTevColorArg)0xF);
+        }
+        else
+        {
+            GXSetTevColorIn(
+                stage, (GXTevColorArg)0xF, (GXTevColorArg)0xB, (GXTevColorArg)8, (GXTevColorArg)0);
+        }
     }
     else
     {
-        GXSetTevColorIn(stage, (GXTevColorArg)0xF, (GXTevColorArg)0xB, (GXTevColorArg)8, (GXTevColorArg)0);
+        if (glx_GlossMapStage >= 0)
+        {
+            gxSetTexCoordGen(
+                glx_GlossMapStage, GX_TG_MTX2x4, (GXTexGenSrc)(glx_GlossMapStage + 4), GX_IDENTITY);
+            glx_DirtyFlags |= glv_TexConfigChanged;
+        }
     }
 }
 
 static inline void glud_Viewport(void* pData)
 {
-    glx_viewport = true;
     GLViewportUserData* pViewport = (GLViewportUserData*)pData;
     g_viewport.x = pViewport->x;
     g_viewport.y = pViewport->y;
@@ -2052,6 +2151,11 @@ static inline void glud_Viewport(void* pData)
     g_viewport.h = pViewport->h;
     g_viewport.view = pViewport->view;
     g_viewport.projection = pViewport->projection;
+}
+
+static inline void glud_ConstantColour(void* pData)
+{
+    GXSetTevColor(GX_TEVREG2, *(GXColor*)pData);
 }
 
 inline void EnableTranslucent(bool enable)
@@ -2102,8 +2206,17 @@ inline void EnableNoRasterizedAlpha(bool enable)
     }
 }
 
+static inline void setWorldAmbient()
+{
+    nlColour ambient = getWorldAmbient();
+    gxSetChanAmbColour(0, ambient);
+}
+
 static void glx_SwitchUserData(const glModelPacket* p)
 {
+    static bool bDeferredEnvDiffuse;
+    static signed char init;
+
     if (!init)
     {
         bDeferredEnvDiffuse = true;
@@ -2116,13 +2229,7 @@ static void glx_SwitchUserData(const glModelPacket* p)
         glx_ReloadSpecLights = true;
     }
 
-    {
-        nlColour amb;
-        nlColour temp = { };
-        nlColourSet(temp, world_ambient.c[0], world_ambient.c[1], world_ambient.c[2], world_ambient.c[3]);
-        amb = temp;
-        gxSetChanAmbColour(0, amb);
-    }
+    setWorldAmbient();
 
     if (glx_prevLightMask)
     {
@@ -2173,8 +2280,9 @@ static void glx_SwitchUserData(const glModelPacket* p)
         {
             if (pTable[GLUD_Viewport] != 0)
             {
-                void* pViewportData = glUserGetData((void*)pTable[GLUD_Viewport]);
-                memcpy(&mview, *(void**)((u8*)pViewportData + 8), 0x40);
+                GLViewportUserData* pViewport =
+                    (GLViewportUserData*)glUserGetData((void*)pTable[GLUD_Viewport]);
+                memcpy(&mview, (void*)pViewport->view, sizeof(nlMatrix4));
                 glxCopyMatrix(gx_mview, mview);
             }
         }
@@ -2239,7 +2347,17 @@ static void glx_SwitchUserData(const glModelPacket* p)
             break;
 
         case GLUD_EnvDiffuse:
-            glud_EnvDiffuse(true);
+            if (glx_allowSpecular)
+            {
+                if (bDeferredEnvDiffuse)
+                {
+                    glx_envdiffuse = true;
+                }
+                else
+                {
+                    glud_EnvDiffuse(true);
+                }
+            }
             break;
 
         case GLUD_MobileDiffuse:
@@ -2252,10 +2370,11 @@ static void glx_SwitchUserData(const glModelPacket* p)
 
         case GLUD_ConstantColour:
             glx_constantcolour = true;
-            GXSetTevColor((GXTevRegID)3, *(GXColor*)pData);
+            glud_ConstantColour(pData);
             break;
 
         case GLUD_Viewport:
+            glx_viewport = true;
             glud_Viewport(pData);
             break;
 
@@ -2267,12 +2386,100 @@ static void glx_SwitchUserData(const glModelPacket* p)
 
 static const u32 ColourTargetTexture = glGetTexture("target/colour");
 
-static void glx_DrawPacket(const glModelPacket* packet)
+static inline void force_LoadTexture(int stage, unsigned long handle)
+{
+    PlatTexture* pTex = glx_GetTex(handle, true, true);
+    glx_texture[stage] = (u32)pTex;
+    memcpy(&glx_texobj[stage], &pTex->m_TexObj, sizeof(GXTexObj));
+    GXInitTexObjWrapMode(&glx_texobj[stage], (GXTexWrapMode)0, (GXTexWrapMode)0);
+    GXInitTexObjFilter(&glx_texobj[stage], (GXTexFilter)1, (GXTexFilter)1);
+    glx_texdirty |= 1 << stage;
+}
+
+static inline void _Indirect(bool bOn)
 {
     static float indMtx[2][3] = {
         { 1.0f, 0.0f, 0.0f },
         { 0.0f, 1.0f, 0.0f },
     };
+
+    if (bOn)
+    {
+        force_LoadTexture(1, glGetTexture("target/offset"));
+        GXSetNumIndStages(1);
+        GXSetIndTexOrder((GXIndTexStageID)0, (GXTexCoordID)0, (GXTexMapID)1);
+        GXSetIndTexCoordScale((GXIndTexStageID)0, (GXIndTexScale)1, (GXIndTexScale)1);
+        GXSetTevIndWarp((GXTevStageID)0, (GXIndTexStageID)0, 1, 0, (GXIndTexMtxID)1);
+
+        float scale = 1.0f / glx_IndDivisor;
+        indMtx[0][0] = scale;
+        indMtx[1][1] = scale;
+        GXSetIndTexMtx((GXIndTexMtxID)1, indMtx, 1);
+    }
+    else
+    {
+        GXSetNumIndStages(0);
+        GXSetTevDirect((GXTevStageID)0);
+    }
+}
+
+static inline void AdjustViewport(bool bOn)
+{
+    s32 x, y, w, h;
+    nlMatrix4 mProj;
+    nlMatrix4 mView;
+    Mtx44 proj;
+    Mtx view;
+
+    if (bOn)
+    {
+        x = g_viewport.x;
+        y = g_viewport.y;
+        w = g_viewport.w;
+        h = g_viewport.h;
+
+        memcpy(&mProj, (const void*)g_viewport.projection, sizeof(nlMatrix4));
+        memcpy(&mView, (const void*)g_viewport.view, sizeof(nlMatrix4));
+        glxCopyMatrix(proj, mProj);
+        glxCopyMatrix(view, mView);
+        GXLoadPosMtxImm(view, 0);
+
+        _GXProjectionType type;
+        if (-1.0f == mProj.e[14])
+        {
+            type = (_GXProjectionType)0;
+        }
+        else
+        {
+            type = (_GXProjectionType)1;
+        }
+        GXSetProjection(proj, type);
+        GXSetCurrentMtx(0);
+        GXSetViewport((float)x, (float)y, (float)w, (float)h, 0.0f, 1.0f);
+        GXSetScissor(x, y, w, h);
+    }
+    else
+    {
+        GXLoadPosMtxImm(gx_modelview, 0);
+
+        _GXProjectionType type;
+        if (-1.0f == mproj.m[3][2])
+        {
+            type = (_GXProjectionType)0;
+        }
+        else
+        {
+            type = (_GXProjectionType)1;
+        }
+        GXSetProjection(gx_proj, type);
+        GXSetCurrentMtx(0);
+        GXSetViewport(0.0f, 0.0f, 640.0f, 448.0f, 0.0f, 1.0f);
+        GXSetScissor(0, 0, 0x280, 0x1C0);
+    }
+}
+
+static void glx_DrawPacket(const glModelPacket* packet)
+{
     static _GXPrimitive primitives[6] = {
         GX_TRIANGLES,
         GX_TRIANGLESTRIP,
@@ -2282,41 +2489,15 @@ static void glx_DrawPacket(const glModelPacket* packet)
         GX_LINESTRIP,
     };
 
-    u32 i;
-    u32 j;
-    bool bFogWasDisabled = false;
-    bool bIndirect = false;
-    u32 mask;
-    _GXTlut tlutID;
-    s32 vh;
-    s32 vx;
-    s32 vy;
-    s32 vw;
     glModelPacket* p = (glModelPacket*)packet;
+    u8 bFogWasDisabled = false, bIndirect = false;
+    u32 i, j, mask;
+    _GXTlut tlutID;
 
     // === Block 1: WarbleBlend indirect-texture setup ===
     if ((prev_view == GLV_WarbleBlend) && (p->state.texture[0] == ColourTargetTexture))
     {
-        PlatTexture* tex = glx_GetTex(glGetTexture("target/offset"), true, true);
-
-        glx_texture[1] = (u32)tex;
-        memcpy(&glx_texobj[1], &tex->m_TexObj, sizeof(GXTexObj));
-        GXInitTexObjWrapMode(&glx_texobj[1], (GXTexWrapMode)0, (GXTexWrapMode)0);
-        GXInitTexObjFilter(&glx_texobj[1], (GXTexFilter)1, (GXTexFilter)1);
-        glx_texdirty |= 2;
-
-        GXSetNumIndStages(1);
-        GXSetIndTexOrder((GXIndTexStageID)0, (GXTexCoordID)0, (GXTexMapID)1);
-        GXSetIndTexCoordScale((GXIndTexStageID)0, (GXIndTexScale)1, (GXIndTexScale)1);
-        GXSetTevIndWarp((GXTevStageID)0, (GXIndTexStageID)0, 1, 0, (GXIndTexMtxID)1);
-
-        {
-            float scale = 1.0f / glx_IndDivisor;
-            indMtx[0][0] = scale;
-            indMtx[1][1] = scale;
-        }
-
-        GXSetIndTexMtx((GXIndTexMtxID)1, indMtx, 1);
+        _Indirect(true);
         bIndirect = true;
     }
 
@@ -2353,67 +2534,11 @@ static void glx_DrawPacket(const glModelPacket* packet)
     // === Block 4: Env-diffuse / Mobile-diffuse matrix setup ===
     if (glx_envdiffuse)
     {
-        Mtx finalMtx;
-        Mtx invMtx;
-        Mtx transMtx;
-        Mtx scaleMtx;
-        u32 glossMapStage;
-        u32 glossMapCoord;
-
-        PSMTXScale(scaleMtx, 0.5f, -0.5f, 0.0f);
-        PSMTXTrans(transMtx, 0.5f, 0.5f, 1.0f);
-        PSMTXConcat(transMtx, scaleMtx, finalMtx);
-        GXLoadTexMtxImm(finalMtx, 0x5B, (_GXTexMtxType)0);
-
-        PSMTXInvXpose(gx_modelview, invMtx);
-        GXLoadTexMtxImm(invMtx, 0x39, (_GXTexMtxType)0);
-
-        glossMapCoord = glx_GlossMapCoord;
-        glossMapStage = glx_GlossMapStage;
-
-        GXSetTexCoordGen2((GXTexCoordID)glossMapCoord, (GXTexGenType)0, (GXTexGenSrc)1, 0x39, true, 0x5B);
-        GXSetTevOrder((GXTevStageID)glossMapStage, (GXTexCoordID)glossMapCoord, (GXTexMapID)glossMapCoord, (GXChannelID)4);
-
-        if (glx_texconfig & 0x20)
-        {
-            GXSetTevColorIn((GXTevStageID)glossMapStage, (GXTevColorArg)15, (GXTevColorArg)11, (GXTevColorArg)8, (GXTevColorArg)15);
-        }
-        else
-        {
-            GXSetTevColorIn((GXTevStageID)glossMapStage, (GXTevColorArg)15, (GXTevColorArg)11, (GXTevColorArg)8, (GXTevColorArg)0);
-        }
+        glud_EnvDiffuse(true);
     }
     else if (glx_mobilediffuse)
     {
-        Mtx transMtx;
-        Mtx scaleMtx;
-        Mtx mvCopy;
-        static int n;
-        static signed char init;
-
-        gxSetTexCoordGen(0, (_GXTexGenType)0, (_GXTexGenSrc)1, 0x39);
-        memcpy(mvCopy, gx_modelview, sizeof(Mtx));
-        PSMTXScale(scaleMtx, 0.5f, -0.5f, 0.0f);
-        PSMTXTrans(transMtx, 0.5f, 0.5f, 1.0f);
-        PSMTXConcat(scaleMtx, mvCopy, mvCopy);
-        PSMTXConcat(transMtx, mvCopy, mvCopy);
-
-        if (!init)
-        {
-            n = 5;
-            init = 1;
-        }
-
-        float invN = 1.0f / (float)n;
-        u32 frame = glGetCurrentFrame();
-        u32 frameDiv = frame / n;
-        u32 frameMod = frame - frameDiv * n;
-        float offset = invN * frameMod;
-        offset = 2.0f * offset - 1.0f;
-        mvCopy[0][2] = offset;
-        mvCopy[1][2] = offset;
-
-        GXLoadTexMtxImm(mvCopy, 0x39, (_GXTexMtxType)0);
+        glud_MobileDiffuse(true);
     }
 
     // === Block 5: Alpha state (translucent / norasterized / constantcolour) ===
@@ -2441,34 +2566,7 @@ static void glx_DrawPacket(const glModelPacket* packet)
     // === Block 6: Viewport setup (when glx_viewport flag is set) ===
     if (glx_viewport)
     {
-        Mtx mv34;
-        Mtx44 proj44;
-        nlMatrix4 srcView;
-        nlMatrix4 srcProj;
-        vx = g_viewport.x;
-        vy = g_viewport.y;
-        vw = g_viewport.w;
-        vh = g_viewport.h;
-
-        memcpy(&srcProj, (const void*)g_viewport.projection, sizeof(nlMatrix4));
-        memcpy(&srcView, (const void*)g_viewport.view, sizeof(nlMatrix4));
-        glxCopyMatrix(proj44, srcProj);
-        glxCopyMatrix(mv34, srcView);
-        GXLoadPosMtxImm(mv34, 0);
-
-        _GXProjectionType setupProjType;
-        if (-1.0f == srcProj.e[14])
-        {
-            setupProjType = (_GXProjectionType)0;
-        }
-        else
-        {
-            setupProjType = (_GXProjectionType)1;
-        }
-        GXSetProjection(proj44, setupProjType);
-        GXSetCurrentMtx(0);
-        GXSetViewport((float)vx, (float)vy, (float)vw, (float)vh, 0.0f, 1.0f);
-        GXSetScissor(vx, vy, vw, vh);
+        AdjustViewport(true);
     }
 
     // === Block 7: Draw - emit primitives or display list ===
@@ -2488,11 +2586,13 @@ static void glx_DrawPacket(const glModelPacket* packet)
     {
         if (glx_NumIndices == 0)
         {
-            GXCallDisplayList(dlGetDisplayList(p->indexBuffer), dlGetSize(p->indexBuffer));
+            i = dlGetSize(p->indexBuffer);
+            GXCallDisplayList(dlGetDisplayList(p->indexBuffer), i);
         }
         else if (glx_CompiledDraw && (glx_NumIndices == p->numStreams) && dlIsDisplayList(p->indexBuffer))
         {
-            GXCallDisplayList(dlGetDisplayList(p->indexBuffer), dlGetSize(p->indexBuffer));
+            i = dlGetSize(p->indexBuffer);
+            GXCallDisplayList(dlGetDisplayList(p->indexBuffer), i);
         }
         else if (glx_AllowUncompiledDraws && glGetRasterState(p->state.raster, (eGLState)8) != 1)
         {
@@ -2521,9 +2621,11 @@ static void glx_DrawPacket(const glModelPacket* packet)
                             u16 ns = ((u16*)&dl->indices)[0];
                             s32 stride = ns * 2;
                             s32 offset = j * stride;
-                            u8* ptr8 = (u8*)dl->list;
-                            ptr8 += offset;
-                            ptr = (u16*)(ptr8 + 3);
+                            u8* ptr8 = (u8*)dl->list + offset;
+                            ptr = (u16*)ptr8;
+                            ptr8 = (u8*)ptr;
+                            ptr8 += 3;
+                            ptr = (u16*)ptr8;
                         }
                         GXWGFifo.u16 = *ptr;
                     }
@@ -2547,8 +2649,7 @@ static void glx_DrawPacket(const glModelPacket* packet)
     // === Block 8: Restore states ===
     if (bIndirect)
     {
-        GXSetNumIndStages(0);
-        GXSetTevDirect((GXTevStageID)0);
+        _Indirect(false);
     }
 
     if (bFogWasDisabled)
@@ -2559,15 +2660,11 @@ static void glx_DrawPacket(const glModelPacket* packet)
     // === Block 8b: Env-diffuse / Mobile-diffuse tex-coord-gen restore ===
     if (glx_envdiffuse)
     {
-        if (glx_GlossMapStage >= 0)
-        {
-            gxSetTexCoordGen(glx_GlossMapStage, (_GXTexGenType)1, (_GXTexGenSrc)(glx_GlossMapStage + 4), 0x3C);
-            glx_DirtyFlags |= glv_TexConfigChanged;
-        }
+        glud_EnvDiffuse(false);
     }
     else if (glx_mobilediffuse)
     {
-        gxSetTexCoordGen(0, (_GXTexGenType)1, (_GXTexGenSrc)4, 0x3C);
+        glud_MobileDiffuse(false);
     }
 
     // === Block 8c: Alpha state restore ===
@@ -2595,47 +2692,96 @@ static void glx_DrawPacket(const glModelPacket* packet)
     // === Block 9: Viewport restore (when user-viewport was active) ===
     if (glx_viewport)
     {
-        GXLoadPosMtxImm(gx_modelview, 0);
-
-        _GXProjectionType projType;
-        if (-1.0f == mproj.m[3][2])
-        {
-            projType = (_GXProjectionType)0;
-        }
-        else
-        {
-            projType = (_GXProjectionType)1;
-        }
-        GXSetProjection(gx_proj, projType);
-        GXSetCurrentMtx(0);
-        GXSetViewport(0.0f, 0.0f, 640.0f, 448.0f, 0.0f, 1.0f);
-        GXSetScissor(0, 0, 0x280, 0x1C0);
+        AdjustViewport(false);
     }
 
     GXSetCurrentMtx(0);
 }
 
+static inline void glx_SwitchProgram(const glModelPacket* p)
+{
+    unsigned long program = p->state.program;
+
+    if (glx_program == prog_2d_movie && program != prog_2d_movie)
+    {
+        GXSetTevKAlphaSel(GX_TEVSTAGE1, GX_TEV_KASEL_1);
+    }
+
+    glx_normals =
+        program == prog_3d_pointlit || program == prog_3d_pointlit_dirt || program == prog_3d_crowd_lit;
+    glx_program = program;
+}
+
+static inline void glx_SwitchViews(eGLView view)
+{
+    if (view != prev_view)
+    {
+        prev_view = view;
+        glx_IsCoPlanarView = view == GLV_CoPlanar0 || view == GLV_CoPlanar;
+        glViewGetProjectionMatrix(view, mproj);
+        glViewGetViewMatrix(view, mview);
+        glxCopyMatrix(gx_mview, mview);
+        glxCopyMatrix(gx_proj, mproj);
+
+        GXProjectionType type;
+        if (mproj.m[3][2] == -1.0f)
+        {
+            type = GX_PERSPECTIVE;
+        }
+        else
+        {
+            type = GX_ORTHOGRAPHIC;
+        }
+        GXSetProjection(gx_proj, type);
+        glx_SwitchUserData(NULL);
+
+        glx_ReloadPointLights = true;
+        glx_ReloadSpecLights = true;
+        nlColour ambient = getWorldAmbient();
+        gxSetChanAmbColour(0, ambient);
+        gxSetChanMatColour(0, nlWhite);
+        gxSetChanAmbColour(1, nlBlack);
+        gxSetChanMatColour(1, nlWhite);
+    }
+}
+
+static inline void glx_SwitchMatrix(const glModelPacket* p)
+{
+    unsigned long matrix = p->state.matrix;
+    Mtx mNorm;
+
+    if (matrix == glGetIdentityMatrix())
+    {
+        modelview = mview;
+    }
+    else
+    {
+        nlMultMatrices(modelview, *(const nlMatrix4*)matrix, mview);
+    }
+    glxCopyMatrix(gx_modelview, modelview);
+    GXLoadPosMtxImm(gx_modelview, 0);
+    if (glx_normals)
+    {
+        if (glx_InvXpose)
+        {
+            PSMTXInvXpose(gx_modelview, mNorm);
+            GXLoadNrmMtxImm(mNorm, 0);
+        }
+        else
+        {
+            GXLoadNrmMtxImm(gx_modelview, 0);
+        }
+    }
+    GXSetCurrentMtx(0);
+}
+
 void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
 {
-    static bool bEnabled;
-    static signed char init;
-
     if (p != NULL)
     {
         if (glx_DirtyFlags != 0)
         {
-            if (!init)
-            {
-                bEnabled = false;
-                init = 1;
-            }
-            if (bEnabled)
-            {
-                GXSetTevSwapMode((GXTevStageID)0, (GXTevSwapSel)0, (GXTevSwapSel)0);
-                gxSetTevAlphaOp(0, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
-                gxSetTevAlphaOp(1, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
-                bEnabled = false;
-            }
+            glx_TextureSwapMode(false);
             flags |= glx_DirtyFlags;
             glx_DirtyFlags = 0;
         }
@@ -2647,49 +2793,12 @@ void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
         {
             if (flags & 1)
             {
-                if (view != prev_view)
-                {
-                    prev_view = view;
-                    glx_IsCoPlanarView = (view == GLV_CoPlanar0 || view == GLV_CoPlanar);
-                    glViewGetProjectionMatrix(view, mproj);
-                    glViewGetViewMatrix(view, mview);
-                    glxCopyMatrix(gx_mview, mview);
-                    glxCopyMatrix(gx_proj, mproj);
-                    GXProjectionType projType;
-                    if (mproj.m[3][2] == -1.0f)
-                        projType = GX_PERSPECTIVE;
-                    else
-                        projType = GX_ORTHOGRAPHIC;
-                    GXSetProjection(gx_proj, projType);
-                    glx_SwitchUserData(NULL);
-
-                    nlColour amb;
-                    nlColour temp = { };
-                    glx_ReloadPointLights = 1;
-                    glx_ReloadSpecLights = 1;
-                    nlColourSet(temp, world_ambient.c[0], world_ambient.c[1], world_ambient.c[2], world_ambient.c[3]);
-                    amb = temp;
-                    gxSetChanAmbColour(0, amb);
-                    gxSetChanMatColour(0, nlWhite);
-                    gxSetChanAmbColour(1, nlBlack);
-                    gxSetChanMatColour(1, nlWhite);
-                }
+                glx_SwitchViews(view);
             }
 
             if (flags & 2)
             {
-                u32 newProg = p->state.program;
-                if (glx_program == prog_2d_movie && newProg != prog_2d_movie)
-                {
-                    GXSetTevKAlphaSel((GXTevStageID)1, (GXTevKAlphaSel)0);
-                }
-                u8 normals = 0;
-                if (newProg == prog_3d_pointlit || newProg == prog_3d_pointlit_dirt || newProg == prog_3d_crowd_lit)
-                {
-                    normals = 1;
-                }
-                glx_normals = normals;
-                glx_program = newProg;
+                glx_SwitchProgram(p);
             }
 
             if (flags & 0x80)
@@ -2705,43 +2814,7 @@ void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
 
         if (flags & 0x14)
         {
-            static u32 errorTextures[2] = { 0, 0 };
-            static signed char errorTextures_init;
-            if (!errorTextures_init)
-            {
-                errorTextures[0] = glGetTexture("global/white");
-                errorTextures[1] = glGetTexture("global/magenta");
-                errorTextures_init = 1;
-            }
-
-            int texnum;
-            int i;
-            for (i = texnum = 0; i < 6; i++)
-            {
-                if (!(glx_texconfig & (1 << i)))
-                    continue;
-
-                bool notDebug = (prev_view != GLV_Debug);
-                PlatTexture* tex = glx_GetTex(p->state.texture[i], false, notDebug);
-
-                if (tex == NULL || tex->m_bMissingTexture)
-                {
-                    s32 frame = glGetCurrentFrame();
-                    u32 errHandle = errorTextures[(frame & 4) >> 2];
-                    tex = glx_GetTex(errHandle, true, false);
-                }
-
-                memcpy(&glx_texobj[texnum], &tex->m_TexObj, sizeof(_GXTexObj));
-                if (tex->m_nPaletteEntries != 0)
-                {
-                    memcpy(&glx_tlutobj[texnum], &tex->m_TlutObj, sizeof(_GXTlutObj));
-                }
-
-                glx_texture[texnum] = (u32)tex;
-                glx_texdirty |= (1 << texnum);
-                texnum++;
-            }
-            glx_SwitchTextureState(p);
+            glx_SwitchTexture(p);
         }
 
         if (flags & 0x08)
@@ -2751,31 +2824,7 @@ void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
 
         if (flags & 0x20)
         {
-            unsigned long mtx = p->state.matrix;
-            if (mtx == glGetIdentityMatrix())
-            {
-                modelview = mview;
-            }
-            else
-            {
-                nlMultMatrices(modelview, *(const nlMatrix4*)mtx, mview);
-            }
-            glxCopyMatrix(gx_modelview, modelview);
-            GXLoadPosMtxImm(gx_modelview, 0);
-            if (glx_normals)
-            {
-                if (glx_InvXpose)
-                {
-                    Mtx nrmMtx;
-                    PSMTXInvXpose(gx_modelview, nrmMtx);
-                    GXLoadNrmMtxImm(nrmMtx, 0);
-                }
-                else
-                {
-                    GXLoadNrmMtxImm(gx_modelview, 0);
-                }
-            }
-            GXSetCurrentMtx(0);
+            glx_SwitchMatrix(p);
         }
 
         if (flags & 0x40)
@@ -2790,7 +2839,4 @@ void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
     }
 }
 
-namespace
-{
-u32 glv_MatrixChanged = 0x20;
-}
+static const u32 glv_MatrixChanged __attribute__((section(".sdata2"))) = 0x20;
