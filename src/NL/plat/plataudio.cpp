@@ -773,9 +773,15 @@ unsigned long PlaySFX(const SFXStartInfo& info)
     return sndFXStartParaInfo((u16)pInfo->uSFXID, uVolume, uPan, 0, &tempParaInfo);
 }
 
+static inline void ResetSoundGroup(SndGroupData& group)
+{
+    group.stackEnum = -1;
+    group.uLoadOrder = -1;
+    group.loadType = SND_GROUP_LOAD_NOT_LOADED;
+}
+
 /**
  * Offset/Address/Size: 0xF5C | 0x801C5758 | size: 0x120
- * TODO: 99.38% match - r6/r7 register swap for loop counter vs grp pointer
  */
 bool UnloadAllSoundGroupsOnStack(AudioFileData& fileData, unsigned long stackEnum)
 {
@@ -799,45 +805,17 @@ bool UnloadAllSoundGroupsOnStack(AudioFileData& fileData, unsigned long stackEnu
 
     stack_list[stackEnum].unkC = 0;
 
-    {
-        SndGroupData* grp;
-        i = 0;
-        while (i < fileData.numSoundGroups)
-        {
-            grp = &fileData.soundGroups[i];
-            if (stackEnum == (unsigned long)grp->stackEnum)
-            {
-                grp->stackEnum = -1;
-                grp->uLoadOrder = -1;
-                grp->loadType = (LoadType)0;
-            }
-            i++;
-        }
-    }
-
-    return true;
-}
-
-static inline SndGroupData* GetSoundGroupAt(SndGroupData* data, int idx)
-{
-    return &data[idx];
-}
-
-static inline void ResetSoundGroupsOnStack(AudioFileData& fileData, unsigned long stackEnum)
-{
-    SndGroupData* grp;
-    int i = 0;
+    i = 0;
     while (i < fileData.numSoundGroups)
     {
-        grp = GetSoundGroupAt(fileData.soundGroups, i);
-        if (stackEnum == (unsigned long)grp->stackEnum)
+        if (stackEnum == (unsigned long)fileData.soundGroups[i].stackEnum)
         {
-            grp->stackEnum = -1;
-            grp->uLoadOrder = -1;
-            grp->loadType = (LoadType)0;
+            ResetSoundGroup(fileData.soundGroups[i]);
         }
         i++;
     }
+
+    return true;
 }
 
 static inline bool UnloadTopSoundGroupOnStack(AudioFileData& fileData, unsigned long stackEnum)
@@ -861,13 +839,22 @@ static inline bool UnloadTopSoundGroupOnStack(AudioFileData& fileData, unsigned 
     }
 
     stack_list[stackEnum].unkC = 0;
-    ResetSoundGroupsOnStack(fileData, stackEnum);
+
+    i = 0;
+    while (i < fileData.numSoundGroups)
+    {
+        if (stackEnum == (unsigned long)fileData.soundGroups[i].stackEnum)
+        {
+            ResetSoundGroup(fileData.soundGroups[i]);
+        }
+        i++;
+    }
+
     return true;
 }
 
 /**
  * Offset/Address/Size: 0x107C | 0x801C5878 | size: 0x150
- * TODO: 99.52% match - r5/r7 counter/offset swap in the first soundGroups loop
  */
 bool UnloadAllSoundGroups(AudioFileData& fileData)
 {
@@ -880,17 +867,11 @@ bool UnloadAllSoundGroups(AudioFileData& fileData)
         UnloadTopSoundGroupOnStack(fileData, i);
     }
 
+    i = 0;
+    while (i < fileData.numSoundGroups)
     {
-        SndGroupData* grp;
-        i = 0;
-        while (i < fileData.numSoundGroups)
-        {
-            grp = GetSoundGroupAt(fileData.soundGroups, i);
-            grp->stackEnum = -1;
-            grp->uLoadOrder = -1;
-            grp->loadType = (LoadType)0;
-            i++;
-        }
+        ResetSoundGroup(fileData.soundGroups[i]);
+        i++;
     }
 
     return true;
