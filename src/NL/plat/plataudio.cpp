@@ -47,10 +47,10 @@ SFXEmitter gEmitters[64];
 
 struct _struct_stack_list_0x10
 {
-    /* 0x00 */ u32* unk0;        /* inferred */
-    /* 0x04 */ unsigned long id; /* stack id for sndStack functions */
-    /* 0x08 */ s32 unk8;         /* inferred */
-    /* 0x0C */ u32 unkC;         /* inferred */
+    /* 0x00 */ u32* workMem;         /* inferred */
+    /* 0x04 */ unsigned long id;     /* stack id for sndStack functions */
+    /* 0x08 */ s32 stackSize;        /* inferred */
+    /* 0x0C */ u32 numGroupsOnStack; /* inferred */
 };
 
 static struct _struct_stack_list_0x10 stack_list[2] = {
@@ -58,8 +58,21 @@ static struct _struct_stack_list_0x10 stack_list[2] = {
     { NULL, 0xFFFFFFFFU, 0x2B4000, 0U },
 };
 
-static void* (*const sndHookMalloc)(size_t) = musyXAlloc;
-static void (*const sndHookFree)(void*) = musyXFree;
+static const SND_HOOKS sndHooks = { musyXAlloc, musyXFree };
+
+// Field names and layout from the retail DWARF. Only referenced by the MIDI song helpers, which the
+// linker dead-strips; kept at global scope so those helpers mangle as retail does (R12MidiFileData).
+struct MidiFileData
+{
+    /* 0x00 */ char* szMidiFile;
+    /* 0x04 */ unsigned short songGroup;
+    /* 0x08 */ unsigned char* song_buffer;
+    /* 0x0C */ unsigned long songID;
+    /* 0x10 */ unsigned long seqID;
+    /* 0x14 */ float seqVolume;
+    /* 0x18 */ float seqTempo;
+    /* 0x1C */ unsigned char bPaused;
+}; // total size: 0x20
 
 struct EffectSettings
 {
@@ -80,9 +93,9 @@ u32 GetSndIDError()
 /**
  * Offset/Address/Size: 0x8 | 0x801C4804 | size: 0x30
  */
-bool IsSFXPlaying(unsigned long id)
+bool IsSFXPlaying(unsigned long uVoiceID)
 {
-    SND_VOICEID result = sndFXCheck(id);
+    SND_VOICEID result = sndFXCheck(uVoiceID);
     return result != -1;
 }
 
@@ -121,25 +134,25 @@ void PlatAudio::InitEmitter(unsigned long index)
 /**
  * Offset/Address/Size: 0xF8 | 0x801C48F4 | size: 0x20
  */
-bool RemoveEmitter(SFXEmitter* emitter)
+bool RemoveEmitter(SFXEmitter* pSFXEmitter)
 {
-    return sndRemoveEmitter((SND_EMITTER*)emitter);
+    return sndRemoveEmitter((SND_EMITTER*)pSFXEmitter);
 }
 
 /**
  * Offset/Address/Size: 0x118 | 0x801C4914 | size: 0x30
  */
-bool RemoveEmitter(unsigned long idx)
+bool RemoveEmitter(unsigned long index)
 {
-    return sndRemoveEmitter((SND_EMITTER*)&gEmitters[idx]);
+    return sndRemoveEmitter((SND_EMITTER*)&gEmitters[index]);
 }
 
 /**
  * Offset/Address/Size: 0x148 | 0x801C4944 | size: 0x14
  */
-SFXEmitter* GetSFXEmitter(unsigned long id)
+SFXEmitter* GetSFXEmitter(unsigned long index)
 {
-    return &gEmitters[id];
+    return &gEmitters[index];
 }
 
 /**
@@ -194,17 +207,17 @@ SFXEmitter* GetFreeEmitter(unsigned long& index)
 /**
  * Offset/Address/Size: 0x4B8 | 0x801C4CB4 | size: 0x20
  */
-SND_VOICEID GetEmitterVoiceID(SFXEmitter* emitter)
+SND_VOICEID GetEmitterVoiceID(SFXEmitter* pSFXEmitter)
 {
-    return sndEmitterVoiceID((SND_EMITTER*)emitter);
+    return sndEmitterVoiceID((SND_EMITTER*)pSFXEmitter);
 }
 
 /**
  * Offset/Address/Size: 0x4D8 | 0x801C4CD4 | size: 0x20
  */
-bool IsEmitterActive(SFXEmitter* emitter)
+bool IsEmitterActive(SFXEmitter* pSFXEmitter)
 {
-    return sndCheckEmitter((SND_EMITTER*)emitter);
+    return sndCheckEmitter((SND_EMITTER*)pSFXEmitter);
 }
 
 /**
@@ -212,8 +225,8 @@ bool IsEmitterActive(SFXEmitter* emitter)
  */
 void Update3DSFXEmitter(SFXEmitter* pSFXEmitter, const nlVector3& position, const nlVector3& direction, float maxVol)
 {
-    float var_f0;
-    float temp_f6 = 127.0f * maxVol;
+    float adj;
+    float rounded = 127.0f * maxVol;
 
     SND_FVECTOR svPos;
     svPos.x = position.f.x;
@@ -225,16 +238,16 @@ void Update3DSFXEmitter(SFXEmitter* pSFXEmitter, const nlVector3& position, cons
     svDir.y = direction.f.y;
     svDir.z = direction.f.z;
 
-    if (temp_f6 < 0.0f)
+    if (rounded < 0.0f)
     {
-        var_f0 = -0.5f;
+        adj = -0.5f;
     }
     else
     {
-        var_f0 = 0.5f;
+        adj = 0.5f;
     }
-    temp_f6 += var_f0;
-    sndUpdateEmitter(&pSFXEmitter->emitter, &svPos, &svDir, (u8)(s32)temp_f6, NULL);
+    rounded += adj;
+    sndUpdateEmitter(&pSFXEmitter->emitter, &svPos, &svDir, (u8)(s32)rounded, NULL);
 }
 
 /**
@@ -336,23 +349,23 @@ unsigned long Add3DSFXEmitter(const EmitterStartInfo& info)
 
     if (info.fVolReverb != 100.0f)
     {
-        float var_f1 = info.fVolReverb;
-        float var_f2 = 127.0f;
-        float var_f0 = 0.0f;
+        float reverbVol = info.fVolReverb;
+        float volScale = 127.0f;
+        float rounded = 0.0f;
         pParaArray[0].ctrl = 0x5B;
-        var_f1 = var_f2 * var_f1;
-        if (var_f1 < var_f0)
+        reverbVol = volScale * reverbVol;
+        if (reverbVol < rounded)
         {
-            var_f0 = -0.5f;
+            rounded = -0.5f;
         }
         else
         {
-            var_f0 = 0.5f;
+            rounded = 0.5f;
         }
-        var_f0 = var_f1 + var_f0;
+        rounded = reverbVol + rounded;
 
         currParaIndex = 1;
-        pParaArray[0].paraData.value7 = (u8)(s32)var_f0;
+        pParaArray[0].paraData.value7 = (u8)(s32)rounded;
     }
 
     if (info.pitch != 0x2000)
@@ -369,20 +382,20 @@ unsigned long Add3DSFXEmitter(const EmitterStartInfo& info)
 
     if (info.bActivateFilter)
     {
-        unsigned long idx = currParaIndex;
+        unsigned long paraIndex = currParaIndex;
         unsigned long freq = info.filterFreq;
 
-        pParaArray[idx].ctrl = 0x4F;
-        pParaArray[idx].paraData.value14 = 0x2000;
+        pParaArray[paraIndex].ctrl = 0x4F;
+        pParaArray[paraIndex].paraData.value14 = 0x2000;
 
         if (freq > 0x3FFF)
         {
             freq = 0x3FFF;
         }
 
-        idx = currParaIndex + 1;
-        pParaArray[idx].ctrl = 1;
-        pParaArray[idx].paraData.value14 = (u16)freq;
+        paraIndex = currParaIndex + 1;
+        pParaArray[paraIndex].ctrl = 1;
+        pParaArray[paraIndex].paraData.value14 = (u16)freq;
 
         if (pSFXEmitter != NULL)
         {
@@ -396,41 +409,41 @@ unsigned long Add3DSFXEmitter(const EmitterStartInfo& info)
     }
 
     {
-        float var_f0;
-        float temp_f6 = 127.0f * info.minVol;
-        if (temp_f6 < 0.0f)
+        float adj;
+        float rounded = 127.0f * info.minVol;
+        if (rounded < 0.0f)
         {
-            var_f0 = -0.5f;
+            adj = -0.5f;
         }
         else
         {
-            var_f0 = 0.5f;
+            adj = 0.5f;
         }
-        temp_f6 += var_f0;
+        rounded += adj;
 
-        u8 minVol = (u8)(s32)temp_f6;
+        u8 minVol = (u8)(s32)rounded;
 
-        temp_f6 = 127.0f * info.maxVol;
-        if (temp_f6 < 0.0f)
+        rounded = 127.0f * info.maxVol;
+        if (rounded < 0.0f)
         {
-            var_f0 = -0.5f;
+            adj = -0.5f;
         }
         else
         {
-            var_f0 = 0.5f;
+            adj = 0.5f;
         }
-        temp_f6 += var_f0;
+        rounded += adj;
 
-        return sndAddEmitter2StudioPara((SND_EMITTER*)pSFXEmitter, &svPos, &svDir, info.maxDist, info.comp, flags, (u16)info.uSFXID, (u8)(s32)temp_f6, minVol, 0, pParaInfo);
+        return sndAddEmitter2StudioPara((SND_EMITTER*)pSFXEmitter, &svPos, &svDir, info.maxDist, info.comp, flags, (u16)info.uSFXID, (u8)(s32)rounded, minVol, 0, pParaInfo);
     }
 }
 
 /**
  * Offset/Address/Size: 0x86C | 0x801C5068 | size: 0x20
  */
-void Remove3DSFXListener(SND_LISTENER* listener)
+void Remove3DSFXListener(SND_LISTENER* pListener)
 {
-    sndRemoveListener(listener);
+    sndRemoveListener(pListener);
 }
 
 /**
@@ -438,25 +451,25 @@ void Remove3DSFXListener(SND_LISTENER* listener)
  */
 void Update3DSFXListener(SND_LISTENER* pListener, const nlVector3& position, const nlVector3& direction, const nlVector3& heading, const nlVector3& up, float overallEmitterVol)
 {
-    SND_FVECTOR sndPos;
-    sndPos.x = position.f.x;
-    sndPos.y = position.f.y;
-    sndPos.z = position.f.z;
+    SND_FVECTOR svPos;
+    svPos.x = position.f.x;
+    svPos.y = position.f.y;
+    svPos.z = position.f.z;
 
-    SND_FVECTOR sndDir;
-    sndDir.x = direction.f.x;
-    sndDir.y = direction.f.y;
-    sndDir.z = direction.f.z;
+    SND_FVECTOR svDir;
+    svDir.x = direction.f.x;
+    svDir.y = direction.f.y;
+    svDir.z = direction.f.z;
 
-    SND_FVECTOR sndHeading;
-    sndHeading.x = heading.f.x;
-    sndHeading.y = heading.f.y;
-    sndHeading.z = heading.f.z;
+    SND_FVECTOR svHeading;
+    svHeading.x = heading.f.x;
+    svHeading.y = heading.f.y;
+    svHeading.z = heading.f.z;
 
-    SND_FVECTOR sndUp;
-    sndUp.x = up.f.x;
-    sndUp.y = up.f.y;
-    sndUp.z = up.f.z;
+    SND_FVECTOR svUp;
+    svUp.x = up.f.x;
+    svUp.y = up.f.y;
+    svUp.z = up.f.z;
 
     f32 rounded = 127.0f * overallEmitterVol;
     f32 adj;
@@ -470,35 +483,35 @@ void Update3DSFXListener(SND_LISTENER* pListener, const nlVector3& position, con
     }
     rounded += adj;
 
-    sndUpdateListener(pListener, &sndPos, &sndDir, &sndHeading, &sndUp, (u8)(s32)rounded, NULL);
+    sndUpdateListener(pListener, &svPos, &svDir, &svHeading, &svUp, (u8)(s32)rounded, NULL);
 }
 
 /**
  * Offset/Address/Size: 0x954 | 0x801C5150 | size: 0x10C
  */
-void Add3DSFXListener(SND_LISTENER* li, const nlVector3& pos, const nlVector3& dir, const nlVector3& heading, const nlVector3& up, float front_sur, float back_sur, float vol, float volPosOffset, bool doppler, float soundSpeed)
+void Add3DSFXListener(SND_LISTENER* pListener, const nlVector3& position, const nlVector3& direction, const nlVector3& heading, const nlVector3& up, float frontAudibleDist, float backAudibleDist, float overallEmitterVol, float volPosOffset, bool bUseDoppler, float fSpeedOfSound)
 {
-    SND_FVECTOR sndPos;
-    sndPos.x = pos.f.x;
-    sndPos.y = pos.f.y;
-    sndPos.z = pos.f.z;
+    SND_FVECTOR svPos;
+    svPos.x = position.f.x;
+    svPos.y = position.f.y;
+    svPos.z = position.f.z;
 
-    SND_FVECTOR sndDir;
-    sndDir.x = dir.f.x;
-    sndDir.y = dir.f.y;
-    sndDir.z = dir.f.z;
+    SND_FVECTOR svDir;
+    svDir.x = direction.f.x;
+    svDir.y = direction.f.y;
+    svDir.z = direction.f.z;
 
-    SND_FVECTOR sndHeading;
-    sndHeading.x = heading.f.x;
-    sndHeading.y = heading.f.y;
-    sndHeading.z = heading.f.z;
+    SND_FVECTOR svHeading;
+    svHeading.x = heading.f.x;
+    svHeading.y = heading.f.y;
+    svHeading.z = heading.f.z;
 
-    SND_FVECTOR sndUp;
-    sndUp.x = up.f.x;
-    sndUp.y = up.f.y;
-    sndUp.z = up.f.z;
+    SND_FVECTOR svUp;
+    svUp.x = up.f.x;
+    svUp.y = up.f.y;
+    svUp.z = up.f.z;
 
-    f32 rounded = 127.0f * vol;
+    f32 rounded = 127.0f * overallEmitterVol;
     f32 adj;
     if (rounded < 0.0f)
     {
@@ -510,126 +523,124 @@ void Add3DSFXListener(SND_LISTENER* li, const nlVector3& pos, const nlVector3& d
     }
     rounded += adj;
 
-    u32 flags = doppler ? 1 : 0;
+    u32 flags = bUseDoppler ? 1 : 0;
 
-    sndAddListenerEx(li, &sndPos, &sndDir, &sndHeading, &sndUp, front_sur, back_sur, soundSpeed, volPosOffset, flags, (u8)(s32)rounded, NULL);
+    sndAddListenerEx(pListener, &svPos, &svDir, &svHeading, &svUp, frontAudibleDist, backAudibleDist, fSpeedOfSound, volPosOffset, flags, (u8)(s32)rounded, NULL);
 }
 
 /**
  * Offset/Address/Size: 0xA60 | 0x801C525C | size: 0x68
  */
-bool SetPitchBendOnSFX(SND_VOICEID vid, u16 value)
+bool SetPitchBendOnSFX(SND_VOICEID uVoiceID, u16 pitch)
 {
-    if (vid == -1 || sndFXCheck(vid) == -1)
+    if (uVoiceID == -1 || sndFXCheck(uVoiceID) == -1)
     {
         return true;
     }
-    return sndFXCtrl14(vid, 0x80, value);
+    return sndFXCtrl14(uVoiceID, 0x80, pitch);
 }
 
 /**
  * Offset/Address/Size: 0xAC8 | 0x801C52C4 | size: 0x7C
  */
-bool SetFilterFreqOnSFX(SND_VOICEID vid, u16 value)
+bool SetFilterFreqOnSFX(SND_VOICEID uVoiceID, u16 value)
 {
-    u16 v = value;
+    u16 freq = value;
     if (value > 0x3FFFU)
     {
-        v = 0x3FFF;
+        freq = 0x3FFF;
     }
 
-    if (vid == -1 || sndFXCheck(vid) == -1)
+    if (uVoiceID == -1 || sndFXCheck(uVoiceID) == -1)
     {
         return true;
     }
-    return sndFXCtrl14(vid, 0x1, v);
+    return sndFXCtrl14(uVoiceID, 0x1, freq);
 }
 
 /**
  * Offset/Address/Size: 0xB44 | 0x801C5340 | size: 0x20
  */
-// void SetMIDIControllerVal14Bit(unsigned long, unsigned char, unsigned short)
-bool SetMIDIControllerVal14Bit(SND_VOICEID vid, u8 ctrl, u16 value)
+bool SetMIDIControllerVal14Bit(SND_VOICEID uVoiceID, u8 ctrl, u16 value)
 {
-    return sndFXCtrl14(vid, ctrl, value);
+    return sndFXCtrl14(uVoiceID, ctrl, value);
 }
 
 /**
  * Offset/Address/Size: 0xB64 | 0x801C5360 | size: 0x58
  */
-void SetVolGroupVolume(u8 volGroup, float volume, u16 time)
+void SetVolGroupVolume(u8 volGroup, float fVol, u16 fadeTime)
 {
-    f32 temp_f1;
-    f32 var_f0;
+    f32 scaledVol;
+    f32 adj;
 
-    temp_f1 = 127.0f * volume;
-    if (temp_f1 < 0.0f)
+    scaledVol = 127.0f * fVol;
+    if (scaledVol < 0.0f)
     {
-        var_f0 = -0.5f;
+        adj = -0.5f;
     }
     else
     {
-        var_f0 = 0.5f;
+        adj = 0.5f;
     }
-    sndVolume((s8)(temp_f1 + var_f0), time, volGroup);
+    sndVolume((s8)(scaledVol + adj), fadeTime, volGroup);
 }
 
 /**
  * Offset/Address/Size: 0xBBC | 0x801C53B8 | size: 0x24
  */
-bool SetSFXVolumeGroup(u32 fid, u8 vGroup)
+bool SetSFXVolumeGroup(u32 uSFXID, u8 volGroup)
 {
-    return sndFXAssignVolGroup2FXId((SND_FXID)fid, vGroup);
+    return sndFXAssignVolGroup2FXId((SND_FXID)uSFXID, volGroup);
 }
 
 /**
  * Offset/Address/Size: 0xBE0 | 0x801C53DC | size: 0x68
  */
-bool SetSFXReverbVol(SND_VOICEID vid, float value)
+bool SetSFXReverbVol(SND_VOICEID uVoiceID, float fVol)
 {
-    int v;
+    int roundedVol;
 
-    // u8 ctrl = 0x5B;
-    if (value == 100.0f)
+    if (fVol == 100.0f)
     {
-        value = 0.0f; // Fallback
+        fVol = 0.0f; // Fallback
     }
 
-    float value2 = 127.0f * value;
-    value2 += (value2 < 0.0f ? -0.5f : 0.5f);
-    v = value2;
-    return sndFXCtrl(vid, 0x5B, v);
+    float vol = 127.0f * fVol;
+    vol += (vol < 0.0f ? -0.5f : 0.5f);
+    roundedVol = vol;
+    return sndFXCtrl(uVoiceID, 0x5B, roundedVol);
 }
 
 /**
  * Offset/Address/Size: 0xC48 | 0x801C5444 | size: 0x88
  */
-void SetSFXVolume(unsigned long voiceID, float volume)
+void SetSFXVolume(unsigned long uVoiceID, float fVolume)
 {
-    volume = (volume >= 0.0f) ? volume : 0.0f;
-    volume = (volume <= 1.0f) ? volume : 1.0f;
+    fVolume = (fVolume >= 0.0f) ? fVolume : 0.0f;
+    fVolume = (fVolume <= 1.0f) ? fVolume : 1.0f;
 
-    float v = 127.0f * volume;
-    float r = (v < 0.0f) ? -0.5f : 0.5f;
-    v = v + r;
-    sndFXCtrl(voiceID, 7, (u8)(s32)v);
+    float rounded = 127.0f * fVolume;
+    float adj = (rounded < 0.0f) ? -0.5f : 0.5f;
+    rounded = rounded + adj;
+    sndFXCtrl(uVoiceID, 7, (u8)(s32)rounded);
 }
 
 /**
  * Offset/Address/Size: 0xCD0 | 0x801C54CC | size: 0x48
  */
-bool StopSFX(unsigned long handle)
+bool StopSFX(unsigned long uVoiceID)
 {
-    if (handle == 0xFFFFFFFF)
+    if (uVoiceID == 0xFFFFFFFF)
     {
         return false;
     }
-    bool result = sndFXKeyOff(handle);
-    if (result)
+    bool bKeyOffSet = sndFXKeyOff(uVoiceID);
+    if (bKeyOffSet)
     {
         return true;
     }
-    return result;
+    return bKeyOffSet;
 }
 
 /**
@@ -646,33 +657,33 @@ unsigned long PlaySFX(const SFXStartInfo& info)
     SND_PARAMETER_INFO tempParaInfo;
     SND_PARAMETER tempParaArray[4];
 
-    float f2 = pInfo->fVolume;
-    if (100.0f == f2)
+    float vol = pInfo->fVolume;
+    if (100.0f == vol)
     {
         uVolume = 0xFF;
     }
-    else if (f2 > 1.0f)
+    else if (vol > 1.0f)
     {
         uVolume = 0x7F;
     }
-    else if (f2 < 0.0f)
+    else if (vol < 0.0f)
     {
         uVolume = 0;
     }
     else
     {
-        float f0;
-        f2 = 127.0f * f2;
-        if (f2 < 0.0f)
+        float rounded;
+        vol = 127.0f * vol;
+        if (vol < 0.0f)
         {
-            f0 = -0.5f;
+            rounded = -0.5f;
         }
         else
         {
-            f0 = 0.5f;
+            rounded = 0.5f;
         }
-        f0 = f2 + f0;
-        uVolume = (u8)(s32)f0;
+        rounded = vol + rounded;
+        uVolume = (u8)(s32)rounded;
     }
 
     if (100.0f == pInfo->fPan)
@@ -682,13 +693,13 @@ unsigned long PlaySFX(const SFXStartInfo& info)
     else
     {
         float f3 = 0.5f;
-        float f1 = 127.0f * (f3 * (1.0f + pInfo->fPan));
-        if (f1 < 0.0f)
+        float scaledPan = 127.0f * (f3 * (1.0f + pInfo->fPan));
+        if (scaledPan < 0.0f)
         {
             f3 = -0.5f;
         }
-        float f0 = f1 + f3;
-        uPan = (u8)(s32)f0;
+        float rounded = scaledPan + f3;
+        uPan = (u8)(s32)rounded;
     }
 
     numPara = 0;
@@ -721,20 +732,20 @@ unsigned long PlaySFX(const SFXStartInfo& info)
 
     if (100.0f != pInfo->fVolReverb)
     {
-        float f0;
-        float f1v = 127.0f * pInfo->fVolReverb;
+        float rounded;
+        float scaledReverbVol = 127.0f * pInfo->fVolReverb;
         pParaArray[0].ctrl = 0x5B;
-        if (f1v < 0.0f)
+        if (scaledReverbVol < 0.0f)
         {
-            f0 = -0.5f;
+            rounded = -0.5f;
         }
         else
         {
-            f0 = 0.5f;
+            rounded = 0.5f;
         }
-        f0 = f1v + f0;
+        rounded = scaledReverbVol + rounded;
         currParaIndex = 1;
-        pParaArray[0].paraData.value7 = (u8)(s32)f0;
+        pParaArray[0].paraData.value7 = (u8)(s32)rounded;
     }
 
     if (pInfo->uPitchBend != 0x2000)
@@ -745,32 +756,54 @@ unsigned long PlaySFX(const SFXStartInfo& info)
         }
 
         {
-            unsigned long idx = currParaIndex;
-            pParaArray[idx].ctrl = 0x80;
-            pParaArray[idx].paraData.value14 = pInfo->uPitchBend;
-            currParaIndex = idx + 1;
+            unsigned long paraIndex = currParaIndex;
+            pParaArray[paraIndex].ctrl = 0x80;
+            pParaArray[paraIndex].paraData.value14 = pInfo->uPitchBend;
+            currParaIndex = paraIndex + 1;
         }
     }
 
     if (pInfo->bActivateFilter)
     {
-        int idx = currParaIndex;
+        int paraIndex = currParaIndex;
         unsigned long freq = pInfo->filterFreq;
 
-        pParaArray[idx].ctrl = 0x4F;
-        pParaArray[idx].paraData.value14 = 0x2000;
+        pParaArray[paraIndex].ctrl = 0x4F;
+        pParaArray[paraIndex].paraData.value14 = 0x2000;
 
         if (freq > 0x3FFF)
         {
             freq = 0x3FFF;
         }
 
-        idx = currParaIndex + 1;
-        pParaArray[idx].ctrl = 1;
-        pParaArray[idx].paraData.value14 = (u16)freq;
+        paraIndex = currParaIndex + 1;
+        pParaArray[paraIndex].ctrl = 1;
+        pParaArray[paraIndex].paraData.value14 = (u16)freq;
     }
 
     return sndFXStartParaInfo((u16)pInfo->uSFXID, uVolume, uPan, 0, &tempParaInfo);
+}
+
+/**
+ * Dead-stripped by the linker in retail. The MAP lists a family of MIDI song helpers as UNUSED in
+ * plataudio.o at this point in the file - SetMidiTempo, SetMidiVolume, StopMidiSong, ResumeMidiSong,
+ * PauseMidiSong, XFadeMidiSong, PlayMidiSong, UnloadMidiSong and LoadMidiSong (0x80 bytes) - none of
+ * which anything calls. They are compiled into the object and then discarded at link time, so they
+ * contribute nothing to the DOL.
+ *
+ * They still matter for the link: string literals are interned at parse time, so "Failed to open
+ * file %s\n" claims its .data slot here (@1555 in the retail object) - ahead of every literal used
+ * by UnloadAllSoundGroupsOnStack and everything after it. Without this, the literal is first seen in
+ * SetupSoundBuffers, lands at the end of .data instead of at 0x8C, and shifts eight strings plus the
+ * @l halves of every instruction that references them.
+ *
+ * Only the failure path of LoadMidiSong is reconstructed - enough to anchor the literal. The bodies
+ * are unrecoverable: dead-stripped code leaves no disassembly to match against.
+ */
+static bool LoadMidiSong(MidiFileData& fileData)
+{
+    tDebugPrintManager::Print(DC_SOUND, "Failed to open file %s\n", fileData.szMidiFile);
+    return false;
 }
 
 static inline void ResetSoundGroup(SndGroupData& group)
@@ -793,7 +826,7 @@ bool UnloadAllSoundGroupsOnStack(AudioFileData& fileData, unsigned long stackEnu
         return 0;
     }
 
-    for (i = 0; (unsigned long)i < stack_list[stackEnum].unkC; i++)
+    for (i = 0; (unsigned long)i < stack_list[stackEnum].numGroupsOnStack; i++)
     {
         if (!sndPopGroup())
         {
@@ -803,7 +836,7 @@ bool UnloadAllSoundGroupsOnStack(AudioFileData& fileData, unsigned long stackEnu
         PrintSoundStackInfo();
     }
 
-    stack_list[stackEnum].unkC = 0;
+    stack_list[stackEnum].numGroupsOnStack = 0;
 
     i = 0;
     while (i < fileData.numSoundGroups)
@@ -828,7 +861,7 @@ static inline bool UnloadTopSoundGroupOnStack(AudioFileData& fileData, unsigned 
         return false;
     }
 
-    for (i = 0; (unsigned long)i < stack_list[stackEnum].unkC; i++)
+    for (i = 0; (unsigned long)i < stack_list[stackEnum].numGroupsOnStack; i++)
     {
         if (!sndPopGroup())
         {
@@ -838,7 +871,7 @@ static inline bool UnloadTopSoundGroupOnStack(AudioFileData& fileData, unsigned 
         PrintSoundStackInfo();
     }
 
-    stack_list[stackEnum].unkC = 0;
+    stack_list[stackEnum].numGroupsOnStack = 0;
 
     i = 0;
     while (i < fileData.numSoundGroups)
@@ -884,7 +917,7 @@ bool UnloadSoundGroup(AudioFileData& fileData, unsigned long groupEnum)
 {
     u32 uTickStart = nlGetTicker();
 
-    if ((unsigned long)fileData.soundGroups[groupEnum].uLoadOrder == stack_list[fileData.soundGroups[groupEnum].stackEnum].unkC - 1)
+    if ((unsigned long)fileData.soundGroups[groupEnum].uLoadOrder == stack_list[fileData.soundGroups[groupEnum].stackEnum].numGroupsOnStack - 1)
     {
         if (!(unsigned char)sndStackSetCurrent(stack_list[fileData.soundGroups[groupEnum].stackEnum].id))
         {
@@ -898,7 +931,7 @@ bool UnloadSoundGroup(AudioFileData& fileData, unsigned long groupEnum)
             return false;
         }
 
-        stack_list[fileData.soundGroups[groupEnum].stackEnum].unkC--;
+        stack_list[fileData.soundGroups[groupEnum].stackEnum].numGroupsOnStack--;
 
         u32 uTickEnd = nlGetTicker();
         f32 fTime = nlGetTickerDifference(uTickStart, uTickEnd) / 1000.0f;
@@ -991,8 +1024,8 @@ bool LoadSoundGroup(AudioFileData& fileData, unsigned long groupEnum, unsigned l
     fileData.soundGroups[groupEnum].stackEnum = stackEnum;
 
     int loadType = 1;
-    unsigned long uLoadOrder = stack_list[stackEnum].unkC;
-    stack_list[stackEnum].unkC = uLoadOrder + 1;
+    unsigned long uLoadOrder = stack_list[stackEnum].numGroupsOnStack;
+    stack_list[stackEnum].numGroupsOnStack = uLoadOrder + 1;
     fileData.soundGroups[groupEnum].uLoadOrder = uLoadOrder;
 
     if (pTransferHelperLoadFromDisc != NULL)
@@ -1061,43 +1094,42 @@ bool LoadSoundGroup(AudioFileData& fileData, unsigned long groupEnum, unsigned l
 
 /**
  * Offset/Address/Size: 0x1678 | 0x801C5E74 | size: 0x16C
- * 99.95% match - i diffs only (string pool index differences)
  */
 void SetupSoundBuffers(AudioFileData& fileData, bool bStream)
 {
-    unsigned long fileSize1;
-    unsigned long fileSize2;
-    unsigned long fileSize3;
-    char* fn;
-    unsigned char* buf;
+    unsigned long uPoolReadLength;
+    unsigned long uProjReadLength;
+    unsigned long uSdirReadLength;
+    char* szFileName;
+    unsigned char* pBuffer;
 
     u32 uTickStart = nlGetTicker();
 
     if (!fileData.pool_buffer)
     {
-        fn = fileData.szPoolFile;
-        buf = (unsigned char*)nlLoadEntireFile(fn, &fileSize1, 0x20, AllocateStart);
-        if (!buf)
-            tDebugPrintManager::Print(DC_SOUND, "Failed to open file %s\n", fn);
-        fileData.pool_buffer = buf;
+        szFileName = fileData.szPoolFile;
+        pBuffer = (unsigned char*)nlLoadEntireFile(szFileName, &uPoolReadLength, 0x20, AllocateStart);
+        if (!pBuffer)
+            tDebugPrintManager::Print(DC_SOUND, "Failed to open file %s\n", szFileName);
+        fileData.pool_buffer = pBuffer;
     }
 
     if (!fileData.proj_buffer)
     {
-        fn = fileData.szProjectFile;
-        buf = (unsigned char*)nlLoadEntireFile(fn, &fileSize2, 0x20, AllocateStart);
-        if (!buf)
-            tDebugPrintManager::Print(DC_SOUND, "Failed to open file %s\n", fn);
-        fileData.proj_buffer = buf;
+        szFileName = fileData.szProjectFile;
+        pBuffer = (unsigned char*)nlLoadEntireFile(szFileName, &uProjReadLength, 0x20, AllocateStart);
+        if (!pBuffer)
+            tDebugPrintManager::Print(DC_SOUND, "Failed to open file %s\n", szFileName);
+        fileData.proj_buffer = pBuffer;
     }
 
     if (!fileData.sdir_buffer)
     {
-        fn = fileData.szDirFile;
-        buf = (unsigned char*)nlLoadEntireFile(fn, &fileSize3, 0x20, AllocateStart);
-        if (!buf)
-            tDebugPrintManager::Print(DC_SOUND, "Failed to open file %s\n", fn);
-        fileData.sdir_buffer = buf;
+        szFileName = fileData.szDirFile;
+        pBuffer = (unsigned char*)nlLoadEntireFile(szFileName, &uSdirReadLength, 0x20, AllocateStart);
+        if (!pBuffer)
+            tDebugPrintManager::Print(DC_SOUND, "Failed to open file %s\n", szFileName);
+        fileData.sdir_buffer = pBuffer;
     }
 
     gAreSoundBuffersSetup = 1;
@@ -1134,8 +1166,8 @@ void Shutdown()
     for (int i = 0; i < 2; i++)
     {
         ARFree(&length);
-        delete stack_list[i].unk0;
-        stack_list[i].unk0 = NULL;
+        delete stack_list[i].workMem;
+        stack_list[i].workMem = NULL;
     }
 
     AIReset();
@@ -1145,16 +1177,12 @@ void Shutdown()
 
 /**
  * Offset/Address/Size: 0x187C | 0x801C6078 | size: 0x11C
- * 99.86% match - i diffs only (sndHookMalloc/sndHookFree symbol names vs @495 anonymous label)
  */
-bool Initialize(bool bUseDSP)
+bool Initialize(bool bUseDPL2)
 {
-    SND_HOOKS hooks;
-
     tDebugPrintManager::Print(DC_SOUND, "GameCube Platform Audio Initialized\n");
 
-    hooks.malloc = sndHookMalloc;
-    hooks.free = sndHookFree;
+    SND_HOOKS hooks = sndHooks;
 
     ARInit(aramMemArray, 2);
     ARQInit();
@@ -1166,7 +1194,7 @@ bool Initialize(bool bUseDSP)
 
     u32 flags = 0;
     flags |= 0x2;
-    if (bUseDSP)
+    if (bUseDPL2)
     {
         flags |= 0x1;
     }
@@ -1177,11 +1205,11 @@ bool Initialize(bool bUseDSP)
     }
 
     _struct_stack_list_0x10* pStack = &stack_list[1];
-    u32 aramAddr = ARAlloc(pStack->unk8);
-    u32 stackSize = sndStackGetSize();
-    u32* buffer = (u32*)nlMalloc(stackSize, 8, false);
-    pStack->id = sndStackAdd(buffer, aramAddr, pStack->unk8);
-    pStack->unk0 = buffer;
+    u32 aramBase = ARAlloc(pStack->stackSize);
+    u32 workMemSize = sndStackGetSize();
+    u32* workMemPtr = (u32*)nlMalloc(workMemSize, 8, false);
+    pStack->id = sndStackAdd(workMemPtr, aramBase, pStack->stackSize);
+    pStack->workMem = workMemPtr;
 
     sndVolume(0x7F, 0, 0xFF);
     sndOutputMode(SND_OUTPUTMODE_STEREO);
@@ -1306,17 +1334,17 @@ unsigned char ReadEntireSampleFileIntoMem(const char* sampleFile)
 /**
  * Offset/Address/Size: 0x1C44 | 0x801C6440 | size: 0x54
  */
-void ARAMTransferHelperLoadEntireFile::LoadEntireFileCallback(nlFile* pFile, void* pBuffer, unsigned int size, unsigned long halfIndex)
+void ARAMTransferHelperLoadEntireFile::LoadEntireFileCallback(nlFile* pFile, void* buffer, unsigned int size, unsigned long uParam)
 {
-    unsigned int fileSize;
-    if (halfIndex == 0)
+    unsigned int AllocSize;
+    if (uParam == 0)
     {
-        gpEntireSampleFileBufferFirstHalf = (void*)((char*)pBuffer - size);
+        gpEntireSampleFileBufferFirstHalf = (void*)((char*)buffer - size);
     }
     else
     {
-        gpEntireSampleFileBufferSecondHalf = (void*)((char*)pBuffer - size);
-        ARAMTransferHelperLoadEntireFile::m_uFileSize = nlFileSize(pFile, &fileSize);
+        gpEntireSampleFileBufferSecondHalf = (void*)((char*)buffer - size);
+        ARAMTransferHelperLoadEntireFile::m_uFileSize = nlFileSize(pFile, &AllocSize);
         nlClose(ARAMTransferHelperLoadEntireFile::s_pFile);
         ARAMTransferHelperLoadEntireFile::s_pFile = NULL;
     }
@@ -1327,12 +1355,12 @@ void ARAMTransferHelperLoadEntireFile::LoadEntireFileCallback(nlFile* pFile, voi
  */
 void* ARAMTransferHelperLoadEntireFile::sndPushGroupCallback(unsigned long uOffset, unsigned long uSize)
 {
-    unsigned long uRemSize = uSize;
+    unsigned long uRequestedSize = uSize;
     unsigned char* pARAMBlock = ARAMTransferHelperLoadEntireFile::m_pARAMHelper->m_pARAMXferBlockBaseAddress;
 
-    while (uRemSize != 0)
+    while (uRequestedSize != 0)
     {
-        unsigned long uCopySize = uRemSize < 0x20000 ? uRemSize : (unsigned long)0x20000;
+        unsigned long uCopySize = uRequestedSize < 0x20000 ? uRequestedSize : (unsigned long)0x20000;
 
         if (uOffset > gEntireSampleFileFirstHalfAllocSize + gEntireSampleFileSecondHalfAllocSize)
         {
@@ -1354,14 +1382,14 @@ void* ARAMTransferHelperLoadEntireFile::sndPushGroupCallback(unsigned long uOffs
             unsigned long firstHalfSize = gEntireSampleFileFirstHalfAllocSize;
             if (uOffset > firstHalfSize)
             {
-                unsigned char* pSrc2 = (unsigned char*)gpEntireSampleFileBufferSecondHalf + (uOffset - firstHalfSize);
-                memcpy(pARAMBlock, pSrc2, uCopySize);
+                unsigned char* pSrc = (unsigned char*)gpEntireSampleFileBufferSecondHalf + (uOffset - firstHalfSize);
+                memcpy(pARAMBlock, pSrc, uCopySize);
             }
             else if (uOffset + uCopySize > firstHalfSize)
             {
-                unsigned long firstCopySize2 = firstHalfSize - uOffset;
-                memcpy(pARAMBlock, (unsigned char*)gpEntireSampleFileBufferFirstHalf + uOffset, firstCopySize2);
-                memcpy(pARAMBlock + firstCopySize2, gpEntireSampleFileBufferSecondHalf, uCopySize - firstCopySize2);
+                unsigned long firstHalfCopySize = firstHalfSize - uOffset;
+                memcpy(pARAMBlock, (unsigned char*)gpEntireSampleFileBufferFirstHalf + uOffset, firstHalfCopySize);
+                memcpy(pARAMBlock + firstHalfCopySize, gpEntireSampleFileBufferSecondHalf, uCopySize - firstHalfCopySize);
             }
             else
             {
@@ -1369,7 +1397,7 @@ void* ARAMTransferHelperLoadEntireFile::sndPushGroupCallback(unsigned long uOffs
             }
         }
 
-        uRemSize -= uCopySize;
+        uRequestedSize -= uCopySize;
         uOffset += uCopySize;
         pARAMBlock += uCopySize;
     }
@@ -1380,15 +1408,15 @@ void* ARAMTransferHelperLoadEntireFile::sndPushGroupCallback(unsigned long uOffs
 /**
  * Offset/Address/Size: 0x1DD4 | 0x801C65D0 | size: 0x148
  */
-void* ARAMTransferHelper::sndPushGroupCallback(unsigned long arg0, unsigned long arg1)
+void* ARAMTransferHelper::sndPushGroupCallback(unsigned long uOffset, unsigned long uSize)
 {
-    unsigned long uSize = arg1;
+    unsigned long uRequestedSize = uSize;
     unsigned char* pARAMBlock = ARAMTransferHelper::m_pARAMHelper->m_pARAMXferBlockBaseAddress;
-    unsigned long uOffset = arg0;
+    unsigned long uCurrentOffset = uOffset;
 
-    while (uSize != 0)
+    while (uRequestedSize != 0)
     {
-        if (uOffset >= ARAMTransferHelper::m_pARAMHelper->m_uCachedDataOffset && uOffset < ARAMTransferHelper::m_pARAMHelper->m_uCachedDataOffset + 0x20000)
+        if (uCurrentOffset >= ARAMTransferHelper::m_pARAMHelper->m_uCachedDataOffset && uCurrentOffset < ARAMTransferHelper::m_pARAMHelper->m_uCachedDataOffset + 0x20000)
         {
             if (!ARAMTransferHelper::m_bFileOpened)
             {
@@ -1396,15 +1424,15 @@ void* ARAMTransferHelper::sndPushGroupCallback(unsigned long arg0, unsigned long
                 ARAMTransferHelper::m_bFileOpened = 1;
             }
 
-            unsigned long uOffsetInBlock = uOffset - ARAMTransferHelper::m_pARAMHelper->m_uCachedDataOffset;
+            unsigned long uOffsetInBlock = uCurrentOffset - ARAMTransferHelper::m_pARAMHelper->m_uCachedDataOffset;
             unsigned long uRemainingInCache = 0x20000 - uOffsetInBlock;
-            unsigned long uCopySize = uSize;
-            if (uRemainingInCache <= uSize)
+            unsigned long uCopySize = uRequestedSize;
+            if (uRemainingInCache <= uRequestedSize)
                 uCopySize = uRemainingInCache;
 
             memcpy(pARAMBlock, ARAMTransferHelper::m_pARAMHelper->m_pDiskCacheBaseAddress + uOffsetInBlock, uCopySize);
-            uSize -= uCopySize;
-            uOffset += uCopySize;
+            uRequestedSize -= uCopySize;
+            uCurrentOffset += uCopySize;
             pARAMBlock += uCopySize;
         }
         else
@@ -1415,13 +1443,13 @@ void* ARAMTransferHelper::sndPushGroupCallback(unsigned long arg0, unsigned long
                 ARAMTransferHelper::m_bFileOpened = 1;
             }
 
-            unsigned long uSeekPosition = uOffset & ~0x1FFFF;
+            unsigned long uSeekPosition = uCurrentOffset & ~0x1FFFF;
             nlSeek(ARAMTransferHelper::m_pFile, uSeekPosition, 0);
 
             nlFile* pFile = ARAMTransferHelper::m_pFile;
-            unsigned long uFileRemaining = ARAMTransferHelper::m_pARAMHelper->m_uFileSize - uSeekPosition;
+            unsigned long uFileDataRemaining = ARAMTransferHelper::m_pARAMHelper->m_uFileSize - uSeekPosition;
             unsigned char* pDiskCache = ARAMTransferHelper::m_pARAMHelper->m_pDiskCacheBaseAddress;
-            unsigned long uReadSize = uFileRemaining < 0x20000 ? uFileRemaining : (unsigned long)0x20000;
+            unsigned long uReadSize = uFileDataRemaining < 0x20000 ? uFileDataRemaining : (unsigned long)0x20000;
             nlRead(pFile, pDiskCache, uReadSize);
             ARAMTransferHelper::m_pARAMHelper->m_uCachedDataOffset = uSeekPosition;
         }
@@ -1486,11 +1514,11 @@ bool UpdateAuxEffectA(MusyXEffectType type, void* auxEffectSettings)
 
 } // namespace PlatAudio
 
-static inline void (*InitAuxEffect(MusyXEffectType type, void* data))(u8 reason, SND_AUX_INFO* info, void* user)
+static inline void (*InitAuxEffect(MusyXEffectType auxEffect, void* auxEffectSettings))(u8 reason, SND_AUX_INFO* info, void* user)
 {
     void (*callback)(u8 reason, SND_AUX_INFO* info, void* user);
 
-    switch (type)
+    switch (auxEffect)
     {
     case MUSYX_EFFECT_NONE:
         callback = NULL;
@@ -1498,7 +1526,7 @@ static inline void (*InitAuxEffect(MusyXEffectType type, void* data))(u8 reason,
         break;
     case MUSYX_EFFECT_REVERB:
         callback = sndAuxCallbackReverbSTD;
-        if (!sndAuxCallbackPrepareReverbSTD((SND_AUX_REVERBSTD*)data))
+        if (!sndAuxCallbackPrepareReverbSTD((SND_AUX_REVERBSTD*)auxEffectSettings))
         {
             nlPrintf("InitAuxEffect: MUSYX_EFFECT_REVERB passed in, callback return is NULL.\n");
             callback = NULL;
@@ -1506,7 +1534,7 @@ static inline void (*InitAuxEffect(MusyXEffectType type, void* data))(u8 reason,
         break;
     case MUSYX_EFFECT_REVERB_HI:
         callback = sndAuxCallbackReverbHI;
-        if (!sndAuxCallbackPrepareReverbHI((SND_AUX_REVERBHI*)data))
+        if (!sndAuxCallbackPrepareReverbHI((SND_AUX_REVERBHI*)auxEffectSettings))
         {
             nlPrintf("InitAuxEffect: MUSYX_EFFECT_REVERB_HI passed in, callback return is NULL.\n");
             callback = NULL;
@@ -1514,7 +1542,7 @@ static inline void (*InitAuxEffect(MusyXEffectType type, void* data))(u8 reason,
         break;
     case MUSYX_EFFECT_CHORUS:
         callback = sndAuxCallbackChorus;
-        if (!sndAuxCallbackPrepareChorus((SND_AUX_CHORUS*)data))
+        if (!sndAuxCallbackPrepareChorus((SND_AUX_CHORUS*)auxEffectSettings))
         {
             nlPrintf("InitAuxEffect: MUSYX_EFFECT_CHORUS passed in, callback return is NULL.\n");
             callback = NULL;
@@ -1522,7 +1550,7 @@ static inline void (*InitAuxEffect(MusyXEffectType type, void* data))(u8 reason,
         break;
     case MUSYX_EFFECT_DELAY:
         callback = sndAuxCallbackDelay;
-        if (!sndAuxCallbackPrepareDelay((SND_AUX_DELAY*)data))
+        if (!sndAuxCallbackPrepareDelay((SND_AUX_DELAY*)auxEffectSettings))
         {
             nlPrintf("InitAuxEffect: MUSYX_EFFECT_DELAY passed in, callback return is NULL.\n");
             callback = NULL;
@@ -1543,10 +1571,10 @@ static inline void (*InitAuxEffect(MusyXEffectType type, void* data))(u8 reason,
 /**
  * Offset/Address/Size: 0x2028 | 0x801C6824 | size: 0x244
  */
-static bool AddAuxEffect(MusyXEffectType type, void* data, bool arg2, unsigned char arg3)
+static bool AddAuxEffect(MusyXEffectType type, void* auxEffectSettings, bool bA, unsigned char studio)
 {
     FORCE_DONT_INLINE;
-    if ((arg2 == 0) && (PlatAudio::gUsingDolbyProLogic2) && (type != 0))
+    if ((bA == 0) && (PlatAudio::gUsingDolbyProLogic2) && (type != 0))
     {
         return false;
     }
@@ -1557,7 +1585,7 @@ static bool AddAuxEffect(MusyXEffectType type, void* data, bool arg2, unsigned c
 
     if (PlatAudio::gUsingDolbyProLogic2)
     {
-        if (arg2)
+        if (bA)
         {
             pAuxEffectSettings = &gDPL2AuxAEffectSettings;
             pAuxEffect = (MusyXEffectType*)&gDPL2AuxAEffect;
@@ -1568,7 +1596,7 @@ static bool AddAuxEffect(MusyXEffectType type, void* data, bool arg2, unsigned c
             pAuxEffect = (MusyXEffectType*)&gDPL2AuxBEffect;
         }
     }
-    else if (arg2)
+    else if (bA)
     {
         pAuxEffectSettings = &gAuxAEffectSettings;
         pAuxEffect = (MusyXEffectType*)&gAuxAEffect;
@@ -1579,7 +1607,7 @@ static bool AddAuxEffect(MusyXEffectType type, void* data, bool arg2, unsigned c
         pAuxEffect = (MusyXEffectType*)&gAuxBEffect;
     }
 
-    callback = InitAuxEffect(type, data);
+    callback = InitAuxEffect(type, auxEffectSettings);
 
     if (callback == NULL)
     {
@@ -1588,15 +1616,15 @@ static bool AddAuxEffect(MusyXEffectType type, void* data, bool arg2, unsigned c
     }
 
     *pAuxEffect = type;
-    *(void**)pAuxEffectSettings = data;
+    *(void**)pAuxEffectSettings = auxEffectSettings;
 
-    if (arg2)
+    if (bA)
     {
-        sndSetAuxProcessingCallbacks(arg3, callback, *(void**)pAuxEffectSettings, 0xFF, 0, NULL, NULL, 0xFF, 0);
+        sndSetAuxProcessingCallbacks(studio, callback, *(void**)pAuxEffectSettings, 0xFF, 0, NULL, NULL, 0xFF, 0);
     }
     else
     {
-        sndSetAuxProcessingCallbacks(arg3, NULL, NULL, 0xFF, 0, callback, *(void**)pAuxEffectSettings, 0xFF, 0);
+        sndSetAuxProcessingCallbacks(studio, NULL, NULL, 0xFF, 0, callback, *(void**)pAuxEffectSettings, 0xFF, 0);
     }
 
     return true;
@@ -1608,9 +1636,9 @@ namespace PlatAudio
 /**
  * Offset/Address/Size: 0x226C | 0x801C6A68 | size: 0x28
  */
-bool AddAuxEffectA(MusyXEffectType type, void* data, unsigned char arg)
+bool AddAuxEffectA(MusyXEffectType type, void* auxEffectSettings, unsigned char studio)
 {
-    return AddAuxEffect(type, data, true, arg);
+    return AddAuxEffect(type, auxEffectSettings, true, studio);
 }
 
 /**
@@ -1620,10 +1648,10 @@ bool ShutdownAuxEffectA()
 {
     if (gUsingDolbyProLogic2)
     {
-        s32 effect = gDPL2AuxAEffect;
-        s32 settings = gDPL2AuxAEffectSettings;
+        s32 auxEffect = gDPL2AuxAEffect;
+        s32 auxEffectSettings = gDPL2AuxAEffectSettings;
 
-        if (effect == 0)
+        if (auxEffect == 0)
         {
             nlPrintf("PlatAudio::ShutdownAuxEffect() trying to shutdown with MUSYX_EFFECT_NONE.\n");
             return true;
@@ -1631,25 +1659,25 @@ bool ShutdownAuxEffectA()
 
         sndSetAuxProcessingCallbacks(0, NULL, NULL, 0xFF, 0, NULL, NULL, 0xFF, 0);
 
-        switch (effect)
+        switch (auxEffect)
         {
         case MUSYX_EFFECT_REVERB:
-            if (!sndAuxCallbackShutdownReverbSTD((SND_AUX_REVERBSTD*)settings))
+            if (!sndAuxCallbackShutdownReverbSTD((SND_AUX_REVERBSTD*)auxEffectSettings))
                 return false;
             break;
         case MUSYX_EFFECT_REVERB_HI:
-            if (!sndAuxCallbackShutdownReverbHI((SND_AUX_REVERBHI*)settings))
+            if (!sndAuxCallbackShutdownReverbHI((SND_AUX_REVERBHI*)auxEffectSettings))
             {
                 nlPrintf("sndAuxCallbackShutdownReverbHI() returned false.\n");
                 return false;
             }
             break;
         case MUSYX_EFFECT_CHORUS:
-            if (!sndAuxCallbackShutdownChorus((SND_AUX_CHORUS*)settings))
+            if (!sndAuxCallbackShutdownChorus((SND_AUX_CHORUS*)auxEffectSettings))
                 return false;
             break;
         case MUSYX_EFFECT_DELAY:
-            if (!sndAuxCallbackShutdownDelay((SND_AUX_DELAY*)settings))
+            if (!sndAuxCallbackShutdownDelay((SND_AUX_DELAY*)auxEffectSettings))
                 return false;
             break;
         }
@@ -1658,10 +1686,10 @@ bool ShutdownAuxEffectA()
     }
     else
     {
-        s32 effect = gAuxAEffect;
-        s32 settings = gAuxAEffectSettings;
+        s32 auxEffect = gAuxAEffect;
+        s32 auxEffectSettings = gAuxAEffectSettings;
 
-        if (effect == 0)
+        if (auxEffect == 0)
         {
             nlPrintf("PlatAudio::ShutdownAuxEffect() trying to shutdown with MUSYX_EFFECT_NONE.\n");
             return true;
@@ -1669,25 +1697,25 @@ bool ShutdownAuxEffectA()
 
         sndSetAuxProcessingCallbacks(0, NULL, NULL, 0xFF, 0, NULL, NULL, 0xFF, 0);
 
-        switch (effect)
+        switch (auxEffect)
         {
         case MUSYX_EFFECT_REVERB:
-            if (!sndAuxCallbackShutdownReverbSTD((SND_AUX_REVERBSTD*)settings))
+            if (!sndAuxCallbackShutdownReverbSTD((SND_AUX_REVERBSTD*)auxEffectSettings))
                 return false;
             break;
         case MUSYX_EFFECT_REVERB_HI:
-            if (!sndAuxCallbackShutdownReverbHI((SND_AUX_REVERBHI*)settings))
+            if (!sndAuxCallbackShutdownReverbHI((SND_AUX_REVERBHI*)auxEffectSettings))
             {
                 nlPrintf("sndAuxCallbackShutdownReverbHI() returned false.\n");
                 return false;
             }
             break;
         case MUSYX_EFFECT_CHORUS:
-            if (!sndAuxCallbackShutdownChorus((SND_AUX_CHORUS*)settings))
+            if (!sndAuxCallbackShutdownChorus((SND_AUX_CHORUS*)auxEffectSettings))
                 return false;
             break;
         case MUSYX_EFFECT_DELAY:
-            if (!sndAuxCallbackShutdownDelay((SND_AUX_DELAY*)settings))
+            if (!sndAuxCallbackShutdownDelay((SND_AUX_DELAY*)auxEffectSettings))
                 return false;
             break;
         }
@@ -1725,9 +1753,9 @@ bool ActivateDPL2()
 /**
  * Offset/Address/Size: 0x24F8 | 0x801C6CF4 | size: 0x60
  */
-void SetOutputMode(MusyXOutputType outputType)
+void SetOutputMode(MusyXOutputType output)
 {
-    switch (outputType)
+    switch (output)
     {
     case MusyXOutputType_MONO:
         sndOutputMode(SND_OUTPUTMODE_MONO);
@@ -1745,7 +1773,6 @@ void SetOutputMode(MusyXOutputType outputType)
 
 /**
  * Offset/Address/Size: 0x2558 | 0x801C6D54 | size: 0x278
- * TODO: 99.37% match - remaining i-diffs are local static/string pool symbol IDs in this partially decompiled TU.
  */
 void PrintSoundStackInfo()
 {
@@ -1755,8 +1782,8 @@ void PrintSoundStackInfo()
 
     for (int i = 0; i < 2; i++)
     {
-        u32 available = sndStackGetAvailableSampleMemory(stack_list[i].id);
-        nlPrintf("Available sample memory in sound stack ID %d: %d\n", stack_list[i].id, available);
+        u32 uAvailSampleMem = sndStackGetAvailableSampleMemory(stack_list[i].id);
+        nlPrintf("Available sample memory in sound stack ID %d: %d\n", stack_list[i].id, uAvailSampleMem);
 
         if (bRunOnce)
         {
@@ -1774,22 +1801,22 @@ void PrintSoundStackInfo()
 
         if (stack_list[i].id == 0xFFFFFFFE)
         {
-            if (available < prevAvailPrimaryStackSampleMem)
+            if (uAvailSampleMem < prevAvailPrimaryStackSampleMem)
             {
-                tDebugPrintManager::Print(DC_SOUND, "Primary sound stack ARAM used: %d\n", prevAvailPrimaryStackSampleMem - available);
-                prevAvailPrimaryStackSampleMem = available;
+                tDebugPrintManager::Print(DC_SOUND, "Primary sound stack ARAM used: %d\n", prevAvailPrimaryStackSampleMem - uAvailSampleMem);
+                prevAvailPrimaryStackSampleMem = uAvailSampleMem;
             }
-            else if (available > prevAvailPrimaryStackSampleMem)
+            else if (uAvailSampleMem > prevAvailPrimaryStackSampleMem)
             {
-                tDebugPrintManager::Print(DC_SOUND, "Primary sound stack ARAM freed: %d\n", available - prevAvailPrimaryStackSampleMem);
-                prevAvailPrimaryStackSampleMem = available;
+                tDebugPrintManager::Print(DC_SOUND, "Primary sound stack ARAM freed: %d\n", uAvailSampleMem - prevAvailPrimaryStackSampleMem);
+                prevAvailPrimaryStackSampleMem = uAvailSampleMem;
             }
-            else if (available == prevAvailPrimaryStackSampleMem)
+            else if (uAvailSampleMem == prevAvailPrimaryStackSampleMem)
             {
                 tDebugPrintManager::Print(DC_SOUND, "Primary sound stack ARAM used/freed: 0\n");
             }
 
-            if (available == PlatAudio::gPrimaryStackSize - 0x500)
+            if (uAvailSampleMem == PlatAudio::gPrimaryStackSize - 0x500)
             {
                 prevAvailPrimaryStackSampleMem = PlatAudio::gPrimaryStackSize - 0x500;
                 tDebugPrintManager::Print(DC_SOUND, "Primary sound stack is now empty.\n");
@@ -1797,22 +1824,22 @@ void PrintSoundStackInfo()
         }
         else
         {
-            if (available < prevAvailSecondaryStackSampleMem)
+            if (uAvailSampleMem < prevAvailSecondaryStackSampleMem)
             {
-                tDebugPrintManager::Print(DC_SOUND, "Secondary sound stack ARAM used: %d\n", prevAvailSecondaryStackSampleMem - available);
-                prevAvailSecondaryStackSampleMem = available;
+                tDebugPrintManager::Print(DC_SOUND, "Secondary sound stack ARAM used: %d\n", prevAvailSecondaryStackSampleMem - uAvailSampleMem);
+                prevAvailSecondaryStackSampleMem = uAvailSampleMem;
             }
-            else if (available > prevAvailSecondaryStackSampleMem)
+            else if (uAvailSampleMem > prevAvailSecondaryStackSampleMem)
             {
-                tDebugPrintManager::Print(DC_SOUND, "Secondary sound stack ARAM freed: %d\n", available - prevAvailSecondaryStackSampleMem);
-                prevAvailSecondaryStackSampleMem = available;
+                tDebugPrintManager::Print(DC_SOUND, "Secondary sound stack ARAM freed: %d\n", uAvailSampleMem - prevAvailSecondaryStackSampleMem);
+                prevAvailSecondaryStackSampleMem = uAvailSampleMem;
             }
-            else if (available == prevAvailSecondaryStackSampleMem)
+            else if (uAvailSampleMem == prevAvailSecondaryStackSampleMem)
             {
                 tDebugPrintManager::Print(DC_SOUND, "Secondary sound stack ARAM used/freed: 0\n");
             }
 
-            if (available == 0x2B4000)
+            if (uAvailSampleMem == 0x2B4000)
             {
                 prevAvailSecondaryStackSampleMem = 0x2B4000;
                 tDebugPrintManager::Print(DC_SOUND, "Secondary sound stack is now empty.\n");
@@ -1830,17 +1857,17 @@ void PrintAvailableARAMMemory()
 {
     for (int i = 0; i < 2; i++)
     {
-        u32 available = sndStackGetAvailableSampleMemory(stack_list[i].id);
-        tDebugPrintManager::Print(DC_MEMORY, "Free Aram: %u\n", available);
+        u32 uAvailSampleMem = sndStackGetAvailableSampleMemory(stack_list[i].id);
+        tDebugPrintManager::Print(DC_MEMORY, "Free Aram: %u\n", uAvailSampleMem);
     }
 }
 
 /**
  * Offset/Address/Size: 0x2844 | 0x801C7040 | size: 0x20
  */
-void musyXFree(void* ptr)
+void musyXFree(void* addr)
 {
-    nlFree(ptr);
+    nlFree(addr);
 }
 
 /**
@@ -1850,13 +1877,6 @@ void* musyXAlloc(u32 size)
 {
     return nlMalloc(size, 0x20, false);
 }
-
-// /**
-//  * Offset/Address/Size: 0x288C | 0x801C7088 | size: 0x3C
-//  */
-// void 0x8028D524..0x8028D528 | size: 0x4
-// {
-// }
 
 ARAMTransferHelper* ARAMTransferHelper::m_pARAMHelper;
 unsigned char ARAMTransferHelper::m_bFileOpened;

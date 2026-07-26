@@ -35,16 +35,12 @@ enum MusyXOutputType
 };
 
 void PrintSoundStackInfo();
-// void PrintAvailableARAMMemory();
 void musyXFree(void*);
 void* musyXAlloc(u32);
-// void 0x8028D524..0x8028D528 | size: 0x4;
 
 struct AudioFileData;
 class nlFile;
 
-// class MusyXEffectType;
-// class MusyXOutputType;
 class SFXStartInfo
 {
 public:
@@ -76,56 +72,6 @@ struct SoundProperties
     /* 0x18 */ int priority;
 }; // total size: 0x1C
 
-// struct SFXEmitter__
-// {
-//     /* 0x00 */ SND_EMITTER* m_sndEmitter; // Possibly a pointer to a sound instance or data block
-//     /* 0x04 */ s32 m_unk_0x04;            // Sound ID or index (-1 = unused)
-//     /* 0x08 */ u32 m_unk_0x08;
-//     /* 0x0C */ f32 m_unk_0x0C;
-//     /* 0x10 */ f32 m_unk_0x10;
-//     /* 0x14 */ f32 m_unk_0x14;
-//     /* 0x18 */ f32 m_unk_0x18;
-//     /* 0x1C */ f32 m_unk_0x1C;
-//     /* 0x20 */ f32 m_unk_0x20;
-//     /* 0x24 */ f32 m_unk_0x24;
-//     /* 0x28 */ u32 m_unk_0x28; // Frequently checked/cleared
-//     /* 0x2C */ u32 m_unk_0x2C;
-//     /* 0x30 */ u32 m_unk_0x30;
-//     /* 0x34 */ u32 m_unk_0x34;
-//     /* 0x38 */ u32 m_unk_0x38;
-//     /* 0x3C */ u32 m_unk_0x3C;
-//     /* 0x40 */ u32 m_unk_0x40;
-//     /* 0x44 */ u32 m_unk_0x44;
-//     /* 0x48 */ u32 m_unk_0x48;
-//     /* 0x4C */ u32 m_unk_0x4C;
-//     /* 0x50 */ u32 m_unk_0x50;
-//     /* 0x54 */ u8 m_padding[0x34];
-// };
-
-// struct SFXEmitter
-// {
-//     // /* 0x00 */ char pad0[0x50];
-//     SND_EMITTER m_sndEmitter;
-//     /* 0x50 */ s8 unk50;    /* inferred */
-//                             // /* 0x51 */ char pad51[3];                       /* maybe part of unk50[4]? */
-//     /* 0x54 */ s32 unk54;   /* inferred */
-//     /* 0x58 */ f32 unk58;   /* inferred */
-//     /* 0x5C */ u8 unk5C;    /* inferred */
-//     /* 0x5D */ u8 unk5D;    /* inferred */
-//     /* 0x5E */ s8 unk5E;    /* inferred */
-//     /* 0x5F */ s8 unk5F;    /* inferred */
-//     /* 0x60 */ s32 unk60;   /* inferred */
-//     /* 0x64 */ s32 unk64;   /* inferred */
-//     /* 0x68 */ f32 unk68;   /* inferred */
-//     /* 0x6C */ f32 unk6C;   /* inferred */
-//     /* 0x70 */ f32 unk70;   /* inferred */
-//     /* 0x74 */ f32 unk74;   /* inferred */
-//     /* 0x78 */ f32 unk78;   /* inferred */
-//     /* 0x7C */ f32 unk7C;   /* inferred */
-//     /* 0x80 */ s32 unk80;   /* inferred */
-//     /* 0x84 */ void* unk84; /* inferred */
-// };
-
 struct SFXEmitter
 {
     /* 0x00 */ SND_EMITTER emitter;
@@ -138,16 +84,16 @@ struct SFXEmitter
     /* 0x5F */ bool m_unk_0x5F;
     /* 0x60 */ PhysicsObject* pPhysObj;
     /* 0x64 */ void* pOwner;
-    union
+    /* 0x68 */ union
     {
-        const nlVector3* pvPos; // offset 0x0, size 0x4
-        nlVector3 vPos;         // offset 0x0, size 0xC
-    } pos;                      // offset 0x68, size 0xC
-    union
+        const nlVector3* pvPos;
+        nlVector3 vPos;
+    } pos;
+    /* 0x74 */ union
     {
-        const nlVector3* pvDir; // offset 0x0, size 0x4
-        nlVector3 vDir;         // offset 0x0, size 0xC
-    } dir;                      // offset 0x74, size 0xC
+        const nlVector3* pvDir;
+        nlVector3 vDir;
+    } dir;
     /* 0x80 */ PosUpdateMethod posUpdateMethod;
     /* 0x84 */ SND_PARAMETER_INFO* pMIDIControllerInfo;
 
@@ -190,7 +136,6 @@ struct SoundStrToIDNode
 
 struct EmitterStartInfo
 {
-
     /* 0x00 */ SFXEmitter* pSFXEmitter;
     /* 0x04 */ unsigned long uSFXID;
     /* 0x08 */ unsigned long groupID;
@@ -216,10 +161,13 @@ namespace PlatAudio
 
 extern bool gUsingDolbyProLogic2;
 
-// public:
+// Retail mangles these as `__9PlatAudio`, which MWCC produces identically for a namespace and for
+// a class, so a namespace reproduces the symbols exactly. Note that means `static` here would give
+// internal linkage rather than the static-member linkage the original had - InitEmitter is called
+// from audio.cpp and AudioEventHandler.cpp and must stay externally visible.
 u32 GetSndIDError();
 bool IsSFXPlaying(unsigned long);
-static void InitEmitter(unsigned long);
+void InitEmitter(unsigned long);
 bool RemoveEmitter(SFXEmitter*);
 bool RemoveEmitter(unsigned long);
 SFXEmitter* GetSFXEmitter(unsigned long);
@@ -232,11 +180,11 @@ void Remove3DSFXListener(SND_LISTENER*);
 void Update3DSFXListener(SND_LISTENER*, const nlVector3&, const nlVector3&, const nlVector3&, const nlVector3&, float);
 void Add3DSFXListener(SND_LISTENER*, const nlVector3&, const nlVector3&, const nlVector3&, const nlVector3&, float, float, float, float,
     bool, float);
-bool SetPitchBendOnSFX(SND_VOICEID vid, u16 value);
-bool SetFilterFreqOnSFX(SND_VOICEID vid, u16 value);
-bool SetMIDIControllerVal14Bit(SND_VOICEID vid, u8 ctrl, u16 value);
-void SetVolGroupVolume(u8 volGroup, float volume, u16 time);
-bool SetSFXVolumeGroup(u32 fid, u8 vGroup);
+bool SetPitchBendOnSFX(SND_VOICEID uVoiceID, u16 pitch);
+bool SetFilterFreqOnSFX(SND_VOICEID uVoiceID, u16 freq);
+bool SetMIDIControllerVal14Bit(SND_VOICEID uVoiceID, u8 ctrl, u16 value);
+void SetVolGroupVolume(u8 volGroup, float fVol, u16 fadeTime);
+bool SetSFXVolumeGroup(u32 uSFXID, u8 volGroup);
 bool SetSFXReverbVol(unsigned long, float);
 void SetSFXVolume(unsigned long, float);
 bool StopSFX(unsigned long);

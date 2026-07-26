@@ -1354,7 +1354,7 @@ config.libs = [
             Object(Matching, "NL/plat/platpad.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/plat/platvmath.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "NL/plat/platqmath.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "NL/plat/plataudio.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "NL/plat/plataudio.cpp", extra_cflags=["-inline auto"]),
 
             # Ext/GC
             Object(NonMatching, "NL/gc/gcSwizzler.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
