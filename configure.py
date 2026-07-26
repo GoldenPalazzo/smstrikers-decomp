@@ -1374,7 +1374,7 @@ config.libs = [
             Object(NonMatching, "NL/glx/glxLoadModel.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/glx/glxGX.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/glx/glxDisplayList.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "NL/glx/glxTarget.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "NL/glx/glxTarget.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             
             Object(Matching, "NL/gl/gl.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/gl/glDraw2.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

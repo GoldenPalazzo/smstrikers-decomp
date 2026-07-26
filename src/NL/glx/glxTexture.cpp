@@ -697,82 +697,30 @@ PlatTexture* glx_GetGridTexture(int width, int height)
 
 /**
  * Offset/Address/Size: 0x12EC | 0x801B85A8 | size: 0x53C
- * TODO: 95.28% match - target materializes gridColor in r6 and keeps pData/y/x
- *       in r12/r11/r10; current loads gridColor and shifts loop registers.
  */
 static PlatTexture* glx_MakeGridTexture(int w, int h)
 {
-    PlatTexture* pTex;
     u8 bits[4] = { 5, 6, 5, 0 };
-
-    // Allocate PlatTexture
-    pTex = (PlatTexture*)nlMalloc(sizeof(PlatTexture), 8, false);
-
-    if (pTex != NULL)
-    {
-        pTex->m_unk8 = 0x50544558;
-        pTex->m_Width = 0;
-        pTex->m_Height = 0;
-        pTex->m_Levels = 0;
-        pTex->m_MaxLevel = 0;
-        pTex->m_Format = GXTex_Num;
-        pTex->m_nPaletteEntries = 0;
-        pTex->m_bMissingTexture = false;
-        pTex->m_SwizzledData = NULL;
-        pTex->m_LinearData = NULL;
-        pTex->m_PaletteData = NULL;
-        memset(&pTex->m_TexObj, 0, 0x20);
-        memset(&pTex->m_TlutObj, 0, 0xC);
-        memset(pTex->m_Bits, 0xFF, 4);
-    }
-
-    // Free linear data if present
-    if (pTex->m_LinearData != NULL)
-    {
-        nlFree(pTex->m_LinearData);
-        pTex->m_LinearData = NULL;
-    }
-
-    // Set dimensions and format
-    pTex->m_Width = (u16)w;
-    pTex->m_Height = (u16)h;
-    pTex->m_Levels = 1;
-    pTex->m_MaxLevel = 1;
-    pTex->m_Format = GXTex_RGB565;
-
-    // Allocate texture data
-    u32 textureSize = GCTextureSize(GXTex_RGB565, w, h, 1, -1);
-    pTex->m_SwizzledData = nlMalloc(textureSize, 0x20, false);
-    pTex->m_LinearData = nlMalloc(textureSize, 0x20, false);
-
-    // Copy bits
+    PlatTexture* pTex = new (nlMalloc(sizeof(PlatTexture), 8, false)) PlatTexture();
+    pTex->Create(w, h, GXTex_RGB565, 1, true, true);
     memcpy(pTex->m_Bits, bits, 4);
-
-    // Generate checkerboard pattern
+    u16 gridColor = 0xFFFF;
+    int x;
     int y;
-    const unsigned short gridColorValue = 0xFFFF;
     u16* pData = (u16*)pTex->m_LinearData;
-    const unsigned short* pGridColor = &gridColorValue;
-    u32 gridColor = *pGridColor;
 
     for (y = 0; y < h; y++)
     {
-        if ((y / 4) & 1)
+        for (x = 0; x < w; x++)
         {
-            // Odd row of grid blocks
-            for (int x = 0; x < w; x++)
+            int gridx = x / 4;
+            if ((y / 4) & 1)
             {
-                int gridx = x / 4;
-                pData[y * w + x] = gridColor & ~(gridx & 1 ? 0 : -1);
+                pData[y * w + x] = (gridx & 1) == 0 ? 0 : gridColor;
             }
-        }
-        else
-        {
-            // Even row of grid blocks
-            for (int x = 0; x < w; x++)
+            else
             {
-                int gridx = x / 4;
-                pData[y * w + x] = gridColor & ~(gridx & 1 ? -1 : 0);
+                pData[y * w + x] = (gridx & 1) ? 0 : gridColor;
             }
         }
     }
