@@ -201,6 +201,18 @@ void Goalie::Update(float dt)
     }
 }
 
+static inline cFielder* AsCollidingFielder(cPlayer* pPlayer)
+{
+    return static_cast<cFielder*>(pPlayer);
+}
+
+static inline float ScaleGoalieDeflectRandom(float scale, float randomValue)
+{
+    float result = scale * randomValue;
+    result = result;
+    return result;
+}
+
 /**
  * Offset/Address/Size: 0xA86C | 0x8004D368 | size: 0xD2C
  * TODO: 98.40% match - remaining r28/r29 fielder copy and f-register order differences in rolling pickup/deflect velocity.
@@ -290,13 +302,13 @@ void Goalie::CollideWithBallCallback(cBall* pBall)
 
         case GOALIEACTION_LOOSEBALL_PURSUE_ROLLING:
         {
-            pFldr = static_cast<cFielder*>(pOwner);
+            cFielder* pPursueFielder = AsCollidingFielder(pOwner);
             if (pOwner != NULL)
             {
                 if (IsOnSameTeam(pOwner))
                     break;
 
-                if (!pFldr->IsFallenDown(0.0f) && !pFldr->IsInvincible() && pOwner != NULL && pOwner->m_eClassType == FIELDER)
+                if (!pPursueFielder->IsFallenDown(0.0f) && !pPursueFielder->IsInvincible() && pOwner != NULL && pOwner->m_eClassType == FIELDER)
                 {
                     if (!((cFielder*)pOwner)->IsFallenDown(0.0f))
                     {
@@ -329,8 +341,11 @@ void Goalie::CollideWithBallCallback(cBall* pBall)
 
                 {
                     cPN_SAnimController* pAnim = m_pCurrentAnimController;
-                    float targetTime = 0.5f * mpLooseBallInfo->mfPickupTime;
+                    float pickupTime = mpLooseBallInfo->mfPickupTime;
+                    pickupTime = pickupTime;
+                    float targetTime = 0.5f * pickupTime;
                     float currentTime = pAnim->m_fTime;
+                    currentTime = currentTime;
                     pAnim->m_fPrevTime = currentTime;
                     pAnim->m_fTime = targetTime;
                 }
@@ -480,20 +495,17 @@ void Goalie::CollideWithBallCallback(cBall* pBall)
                         static FilteredRandomReal randgenVScale;
                         static FilteredRandomReal randgenZVel;
 
-                        float fForwardScale = 1.0f + 1.0f * randgenFScale.genrand();
-                        float fVelScale = 0.75f * randgenVScale.genrand();
-                        fVelScale = 0.75f + fVelScale;
+                        float fForwardScale = 1.0f + ScaleGoalieDeflectRandom(1.0f, randgenFScale.genrand());
+                        float fVelRandom = randgenVScale.genrand();
+                        float fVelScale = 0.75f;
+                        fVelRandom = fVelScale * fVelRandom;
+                        fVelScale += fVelRandom;
 
                         nlVector3 v3NewVel;
-                        float fNewZ = fForwardScale * fForwardZ;
-                        float fNewY = fForwardScale * fForwardY;
-                        float fNewX = fForwardScale * fForwardX;
-                        fNewZ += fVelScale * m_v3Velocity.f.z;
-                        fNewY += fVelScale * m_v3Velocity.f.y;
-                        fNewX += fVelScale * m_v3Velocity.f.x;
-                        v3NewVel.f.z = fNewZ;
-                        v3NewVel.f.x = fNewX;
-                        v3NewVel.f.y = fNewY;
+                        nlVec3Set(v3NewVel,
+                            fVelScale * m_v3Velocity.f.x + fForwardScale * fForwardX,
+                            fVelScale * m_v3Velocity.f.y + fForwardScale * fForwardY,
+                            fVelScale * m_v3Velocity.f.z + fForwardScale * fForwardZ);
 
                         float fZVel = 2.0f * randgenZVel.genrand();
                         v3NewVel.f.z = 3.0f + fZVel;
@@ -2086,8 +2098,20 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
     {
         float halfNetMinusOne = 0.5f * cNet::m_fNetWidth - 1.0f;
         float negHalfNetMinusOne = -halfNetMinusOne;
-        desiredY = goalie_clamp_min(desiredY, negHalfNetMinusOne);
-        desiredY = goalie_clamp_max(desiredY, halfNetMinusOne);
+        if (desiredY >= negHalfNetMinusOne)
+        {
+        }
+        else
+        {
+            desiredY = negHalfNetMinusOne;
+        }
+        if (desiredY <= halfNetMinusOne)
+        {
+        }
+        else
+        {
+            desiredY = halfNetMinusOne;
+        }
         desiredX = goalLine * pNet->m_sideSign;
         desiredVec.f.x = desiredX - m_v3Position.f.x;
         desiredVec.f.y = desiredY - m_v3Position.f.y;
@@ -2097,8 +2121,20 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
     ang = (unsigned short)(10430.378f * nlATan2f(desiredVec.f.y, desiredVec.f.x));
 
     float negGoalLine = -goalLine;
-    desiredX = goalie_clamp_min(desiredX, negGoalLine);
-    desiredX = goalie_clamp_max(desiredX, goalLine);
+    if (desiredX >= negGoalLine)
+    {
+    }
+    else
+    {
+        desiredX = negGoalLine;
+    }
+    if (desiredX <= goalLine)
+    {
+    }
+    else
+    {
+        desiredX = goalLine;
+    }
 
     pos.f.x = 0.8f * desiredX + 0.2f * m_v3Position.f.x;
     pos.f.y = 0.8f * desiredY + 0.2f * m_v3Position.f.y;
@@ -2916,7 +2952,6 @@ bool Goalie::CheckForSTSAttack()
                 {
                     fTargetTime = fTimeToImpact;
                 }
-
                 mfTargetTime = fTargetTime;
                 mpLooseBallInfo = &LooseBallAnims::mAttackSTSInfo;
                 CleanGoalieAction();
@@ -5853,13 +5888,12 @@ bool Goalie::CanInterceptPass()
 
         mpSaveData = NULL;
 
-        f32 dxBallToTarget = pBall->m_v3Position.f.x - mpPassTarget->m_v3Position.f.x;
-        f32 dyBallToTarget = pBall->m_v3Position.f.y - mpPassTarget->m_v3Position.f.y;
-        f32 dyBallToGoalie = pBall->m_v3Position.f.y - m_v3Position.f.y;
-        f32 dxBallToGoalie = pBall->m_v3Position.f.x - m_v3Position.f.x;
-
-        f32 distTargetSq = dxBallToTarget * dxBallToTarget + dyBallToTarget * dyBallToTarget;
-        f32 distGoalieSq = dxBallToGoalie * dxBallToGoalie + dyBallToGoalie * dyBallToGoalie;
+        f32 distTargetSq = nlGetLengthSquared2D(
+            pBall->m_v3Position.f.x - mpPassTarget->m_v3Position.f.x,
+            pBall->m_v3Position.f.y - mpPassTarget->m_v3Position.f.y);
+        f32 distGoalieSq = nlGetLengthSquared2D(
+            pBall->m_v3Position.f.x - m_v3Position.f.x,
+            pBall->m_v3Position.f.y - m_v3Position.f.y);
 
         u16 saveAngle;
         u32 uSaveType;
@@ -5905,10 +5939,11 @@ bool Goalie::CanInterceptPass()
 
             if (mpSaveData != NULL)
             {
-                f32 dx = mBlendInfo.mv3BlendedSavePos.f.x - mv3LocalContactPosition.f.x;
-                f32 dy = mBlendInfo.mv3BlendedSavePos.f.y - mv3LocalContactPosition.f.y;
-                f32 dz = mBlendInfo.mv3BlendedSavePos.f.z - mv3LocalContactPosition.f.z;
-                if (dx * dx + dy * dy + dz * dz > fInterceptRangeSq)
+                if (nlGetLengthSquared3D(
+                        mBlendInfo.mv3BlendedSavePos.f.x - mv3LocalContactPosition.f.x,
+                        mBlendInfo.mv3BlendedSavePos.f.y - mv3LocalContactPosition.f.y,
+                        mBlendInfo.mv3BlendedSavePos.f.z - mv3LocalContactPosition.f.z)
+                    > fInterceptRangeSq)
                 {
                     mpSaveData = NULL;
                 }
@@ -5965,10 +6000,11 @@ bool Goalie::CanInterceptPass()
 
                 if (mpSaveData != NULL)
                 {
-                    f32 dx2 = mBlendInfo.mv3BlendedSavePos.f.x - mv3LocalContactPosition.f.x;
-                    f32 dy2 = mBlendInfo.mv3BlendedSavePos.f.y - mv3LocalContactPosition.f.y;
-                    f32 dz2 = mBlendInfo.mv3BlendedSavePos.f.z - mv3LocalContactPosition.f.z;
-                    if (dx2 * dx2 + dy2 * dy2 + dz2 * dz2 > fInterceptRangeSq)
+                    if (nlGetLengthSquared3D(
+                            mBlendInfo.mv3BlendedSavePos.f.x - mv3LocalContactPosition.f.x,
+                            mBlendInfo.mv3BlendedSavePos.f.y - mv3LocalContactPosition.f.y,
+                            mBlendInfo.mv3BlendedSavePos.f.z - mv3LocalContactPosition.f.z)
+                        > fInterceptRangeSq)
                     {
                         mpSaveData = NULL;
                     }
@@ -6082,6 +6118,11 @@ static inline cPlayer* DoGoalieFindOpenPassTarget(Goalie* pGoalie)
     return pPassTarget;
 }
 
+static inline float GetGoaliePassDistance(float dx, float dy)
+{
+    return nlSqrt(dx * dx + dy * dy, true);
+}
+
 /**
  * Offset/Address/Size: 0xF30 | 0x80043A2C | size: 0x8A4
  * TODO: 99.64% - pass-target angle conversion and shooter-distance FP scheduling remain.
@@ -6139,7 +6180,6 @@ void Goalie::DoPassRelease()
                 {
                     aFacing += 0x8000;
                 }
-
                 if (aFacing < 0x5550)
                 {
                     aFacing = 0x5550;
@@ -6161,10 +6201,14 @@ void Goalie::DoPassRelease()
                     aAbsDiff = -aDiff;
                 }
 
-                bool bValidPassTarget;
-                if ((u16)aAbsDiff <= 0x2AA8)
+                if ((u16)aAbsDiff > 0x2AA8)
                 {
-                    if ((float)fabs(m_v3Position.f.x) < (float)fabs(mpPassTarget->m_v3Position.f.x)
+                    goto InvalidPassTarget;
+                }
+
+                {
+                    bool bValidPassTarget;
+                    if ((float)fabs(mpPassTarget->m_v3Position.f.x) > (float)fabs(*(volatile float*)&m_v3Position.f.x)
                         && (float)fabs(mpPassTarget->m_v3Position.f.y) < cField::GetPenaltyBoxY())
                     {
                         bValidPassTarget = false;
@@ -6173,12 +6217,18 @@ void Goalie::DoPassRelease()
                     {
                         bValidPassTarget = true;
                     }
+
+                    if (!bValidPassTarget)
+                    {
+                        goto InvalidPassTarget;
+                    }
                 }
 
-                if (!bValidPassTarget)
-                {
-                    mpPassTarget = NULL;
-                }
+                goto ValidPassTarget;
+
+            InvalidPassTarget:
+                mpPassTarget = NULL;
+            ValidPassTarget:;
             }
         }
     }
@@ -6210,7 +6260,7 @@ void Goalie::DoPassRelease()
 
             float dx = m_v3Position.f.x - v3BallTarget.f.x;
             float dy = m_v3Position.f.y - v3BallTarget.f.y;
-            float fDistance = nlSqrt((dx * dx) + (dy * dy), true);
+            float fDistance = GetGoaliePassDistance(dx, dy);
             float fShotSpeed = InterpolateRangeClamped(22.0f, 28.0f, 5.0f, 15.0f, fDistance);
             v3BallTarget.f.z += 0.5f;
 

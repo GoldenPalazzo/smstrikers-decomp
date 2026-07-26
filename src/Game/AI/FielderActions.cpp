@@ -3119,8 +3119,9 @@ static void FreezeEveryoneButCaptain(cFielder* pCaptain)
     for (int i = 0; i < 2; i++)
     {
         cTeam* pTeam = g_pTeams[i];
+        int j;
         cFielder* pFielder;
-        for (int j = 0; j < 4; j++)
+        for (j = 0; j < 4; j++)
         {
             pFielder = pTeam->GetFielder(j);
             if (pCaptain != pFielder)
@@ -3404,9 +3405,13 @@ void cFielder::ActionShootToScore(float)
 
             mActionShootToScoreVars.fGreenRegionWidth = fNewWidth;
 
-            if (mActionShootToScoreVars.fGreenRegionWidth < g_pGame->m_pGameTweaks->unk29C)
+            float fMinimumGreenRegionWidth = g_pGame->m_pGameTweaks->unk29C;
+            fMinimumGreenRegionWidth = fMinimumGreenRegionWidth;
+            float fCurrentGreenRegionWidth = mActionShootToScoreVars.fGreenRegionWidth;
+            fCurrentGreenRegionWidth = fCurrentGreenRegionWidth;
+            if (fCurrentGreenRegionWidth < fMinimumGreenRegionWidth)
             {
-                mActionShootToScoreVars.fGreenRegionWidth = g_pGame->m_pGameTweaks->unk29C;
+                mActionShootToScoreVars.fGreenRegionWidth = fMinimumGreenRegionWidth;
             }
         }
 

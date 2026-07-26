@@ -1716,9 +1716,10 @@ float OnBreakaway(cFielder* pFielder)
     float fScore = 0.0f;
     int i;
     cFielder* pOpponent;
-    float fWeight = 1.0f;
+    float fWeight;
     for (i = 0; i < 4; i++)
     {
+        fWeight = 1.0f;
         pOpponent = pFielder->m_pTeam->GetOtherTeam()->GetFielder(i);
         float fInterceptScore;
         float fUpfieldScore;
@@ -2652,16 +2653,14 @@ float CloseToSideline(const nlVector3& v3Position, const nlVector2* vDistanceCon
     }
 
     const u8* pBase = (const u8*)cField::mSidelines;
-    s32 offset;
     s32 i = 0;
-    offset = i;
     f32 fZero = 0.0f;
     f32 posX = v3Position.f.x;
     f32 posY = v3Position.f.y;
 
-    for (; i < 4; i++, offset += 0xC)
+    for (; i < 4; i++)
     {
-        const sSideLinePlane* sideline = (const sSideLinePlane*)(pBase + offset);
+        const sSideLinePlane* sideline = (const sSideLinePlane*)(pBase + i * sizeof(sSideLinePlane));
         nlVector3 v3SidelinePos = v3Position;
         v3SidelinePos.f.z = fZero;
 
@@ -2716,19 +2715,12 @@ static inline float NearToSidelineImpl(const nlVector3& v3Position, const nlVect
     float fScore = 0.0f;
     int i = 0;
     const u8* pBase = (const u8*)cField::mSidelines;
-    s32 offset = i;
-    u32 posU0 = ((const u32*)&v3Position)[0];
-    u32 posU1 = ((const u32*)&v3Position)[1];
-    u32 posU2 = ((const u32*)&v3Position)[2];
     f32 fZero = fScore;
 
-    for (; i < 4; i++, offset += 0xC)
+    for (; i < 4; i++)
     {
-        const sSideLinePlane* sideline = (const sSideLinePlane*)(pBase + offset);
-        nlVector3 v3Pt;
-        ((u32*)&v3Pt)[2] = posU2;
-        ((u32*)&v3Pt)[0] = posU0;
-        ((u32*)&v3Pt)[1] = posU1;
+        const sSideLinePlane* sideline = (const sSideLinePlane*)(pBase + i * sizeof(sSideLinePlane));
+        nlVector3 v3Pt = v3Position;
         v3Pt.f.z = fZero;
 
         if (fZero == sideline->vNormal.f.x)

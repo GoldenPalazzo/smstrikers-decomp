@@ -135,10 +135,12 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
         }
         if (pBall->m_pOwner != NULL)
             goto handleOwner;
-        if (pInfo->mfPickupTime > pAnim->m_fTime)
+        float fPickupTime = pInfo->mfPickupTime;
+        if (pAnim->m_fTime < fPickupTime)
         {
-            float fRatio = pAnim->m_fTime / pInfo->mfPickupTime;
-            float fTimeRemaining = pInfo->mfAnimDuration * pInfo->mfPickupTime - pAnim->m_fTime * pInfo->mfAnimDuration;
+            float fRatio = pAnim->m_fTime / fPickupTime;
+            float fPickupDuration = fPickupTime * pInfo->mfAnimDuration;
+            float fTimeRemaining = fPickupDuration - pInfo->mfAnimDuration * pAnim->m_fTime;
             float fGoalLineX = cField::GetGoalLineX(1U);
             float fTimeScale = 0.25f * fTimeRemaining;
             float fLimit = fGoalLineX - 0.2f;
@@ -155,7 +157,7 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
                     fClampedX = fLimit;
                 else
                     fClampedX = -fLimit;
-                if ((float)fabs(pBall->m_v3Position.f.x) < fLimit)
+                if ((float)fabs(*(volatile float*)&pBall->m_v3Position.f.x) < fLimit)
                 {
                     float fBallX = pBall->m_v3Position.f.x;
                     float fBallY = pBall->m_v3Position.f.y;
@@ -241,10 +243,13 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
         DoNavigation(fDeltaT, 0.0f, NAVI_FOLLOW_TARGET);
         const nlVector3& v3HeadPos = GetJointPosition(m_nHeadJointIndex);
         v3HeadCopyElse = v3HeadPos;
-        float fDX = 0.0f;
-        float fAbsX = (float)fabs(v3HeadCopyElse.f.x);
+        float fAbsX;
+        float fNetY;
+        float fDX;
+        fDX = 0.0f;
+        fAbsX = (float)fabs(v3HeadCopyElse.f.x);
         float fLimitH = cField::GetGoalLineX(1U) - 0.5f;
-        float fNetY = 0.5f * cNet::m_fNetWidth;
+        fNetY = 0.5f * cNet::m_fNetWidth;
         if (fAbsX > fLimitH)
         {
             if ((float)fabs(v3HeadCopyElse.f.y) > fNetY)
@@ -287,17 +292,21 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
         }
         const LooseBallInfo* pInfoE = mpLooseBallInfo;
         cBall* pBallE = g_pBall;
+        float fAbsBallX;
+        float fGuessX;
+        float fGuessY;
+        float fCatchRadSq;
         float fCatchRadius = 0.6f + pInfoE->mfPickupDistance;
         float fPickupTimeE = pInfoE->mfPickupTime;
         float fAnimDurE = pInfoE->mfAnimDuration;
         float fTimeProduct = fPickupTimeE * fAnimDurE;
-        float fCatchRadSq = fCatchRadius * fCatchRadius;
-        float fGuessY = fTimeProduct * pBallE->m_v3Velocity.f.y + pBall->m_v3Position.f.y;
-        float fGuessX = fTimeProduct * pBallE->m_v3Velocity.f.x + pBall->m_v3Position.f.x;
+        fCatchRadSq = fCatchRadius * fCatchRadius;
+        fGuessY = fTimeProduct * pBallE->m_v3Velocity.f.y + pBall->m_v3Position.f.y;
+        fGuessX = fTimeProduct * pBallE->m_v3Velocity.f.x + pBall->m_v3Position.f.x;
         if (mfTargetTime < 0.02f)
             goto doPlayNewAnim;
         {
-            float fAbsBallX = (float)fabs(pBall->m_v3Position.f.x);
+            fAbsBallX = (float)fabs(pBall->m_v3Position.f.x);
             float fGoalLine2 = cField::GetGoalLineX(1U) - 1.0f;
             if (fAbsBallX > fGoalLine2)
                 goto doPlayNewAnim;

@@ -398,6 +398,17 @@ static inline float GetNormalizedContactTime(const cSAnim* anim, float contactFr
     return contactFrame / (float)anim->m_nNumKeys;
 }
 
+inline bool cFielder::CanPassTargetAttemptOneTouch(cFielder* pPassTarget)
+{
+    return pPassTarget != NULL
+        && pPassTarget != this
+        && pPassTarget->m_pTeam == m_pTeam
+        && pPassTarget->GetGlobalPad() == NULL
+        && (pPassTarget->m_eFielderDesireState == FIELDERDESIRE_RECEIVE_PASS_FROM_IDLE
+            || pPassTarget->m_eFielderDesireState == FIELDERDESIRE_RECEIVE_PASS_FROM_RUN)
+        && g_pBall->m_pPrevOwner == this;
+}
+
 /**
  * Offset/Address/Size: 0xC648 | 0x80025984 | size: 0x1CC
  */
@@ -409,16 +420,15 @@ bool cFielder::CanLooseBallShoot()
         && (g_pBall->m_unk_0xA6 == 0))
     {
         const cSAnim* guessContactAnim = m_pAnimInventory->GetAnim(gOneTimerLeadGroundContactAnims[0].nAnimID);
-        const cBall* pBall = g_pBall;
         float ratio = GetNormalizedContactTime(guessContactAnim, gOneTimerLeadGroundContactAnims[0].fAnimContactFrame);
         float frames = (float)guessContactAnim->m_nNumKeys / 30.0f;
         float contactTime = ratio * frames;
 
         nlVector3 v3PredictedPos;
         nlVec3Set(v3PredictedPos,
-            (contactTime * pBall->m_v3Velocity.f.x) + pBall->m_v3Position.f.x,
-            (contactTime * pBall->m_v3Velocity.f.y) + pBall->m_v3Position.f.y,
-            (contactTime * pBall->m_v3Velocity.f.z) + pBall->m_v3Position.f.z);
+            (contactTime * g_pBall->m_v3Velocity.f.x) + g_pBall->m_v3Position.f.x,
+            (contactTime * g_pBall->m_v3Velocity.f.y) + g_pBall->m_v3Position.f.y,
+            (contactTime * g_pBall->m_v3Velocity.f.z) + g_pBall->m_v3Position.f.z);
 
         s16 facingDelta = GetFacingDeltaToPosition(v3PredictedPos);
         u16 uFacingDelta = (facingDelta < 0) ? -facingDelta : facingDelta;
@@ -457,16 +467,15 @@ bool cFielder::CanLooseBallPass()
         && (g_pBall->m_unk_0xA6 == 0))
     {
         const cSAnim* guessContactAnim = m_pAnimInventory->GetAnim(gOneTimerLeadGroundContactAnims[0].nAnimID);
-        const cBall* pBall = g_pBall;
         float ratio = GetNormalizedContactTime(guessContactAnim, gOneTimerLeadGroundContactAnims[0].fAnimContactFrame);
         float frames = (float)guessContactAnim->m_nNumKeys / 30.0f;
         float contactTime = ratio * frames;
 
         nlVector3 v3PredictedPos;
         nlVec3Set(v3PredictedPos,
-            (contactTime * pBall->m_v3Velocity.f.x) + pBall->m_v3Position.f.x,
-            (contactTime * pBall->m_v3Velocity.f.y) + pBall->m_v3Position.f.y,
-            (contactTime * pBall->m_v3Velocity.f.z) + pBall->m_v3Position.f.z);
+            (contactTime * g_pBall->m_v3Velocity.f.x) + g_pBall->m_v3Position.f.x,
+            (contactTime * g_pBall->m_v3Velocity.f.y) + g_pBall->m_v3Position.f.y,
+            (contactTime * g_pBall->m_v3Velocity.f.z) + g_pBall->m_v3Position.f.z);
 
         s16 facingDelta = GetFacingDeltaToPosition(v3PredictedPos);
         u16 uFacingDelta = (facingDelta < 0) ? -facingDelta : facingDelta;
@@ -616,6 +625,77 @@ static inline void DoPenaltyCardBookingInline(cFielder* pFouler, cFielder* pFoul
     pData->pFoulee = pFoulee;
 }
 
+static inline void TestCollisionForInvicibilityInline(cFielder* pFielder, cFielder* pOpponent)
+{
+    cFielder* pReactee = NULL;
+    cFielder* pAttacker = NULL;
+    static ePowerUpType currPowerup = POWER_UP_STAR;
+
+    if (pFielder->m_ePowerup == POWER_UP_STAR)
+    {
+        currPowerup = pFielder->m_ePowerup;
+    }
+
+    if (pFielder->IsOnSameTeam(pOpponent))
+    {
+        return;
+    }
+
+    ePowerUpType thisPowerup = pFielder->m_ePowerup;
+
+    do
+    {
+        bool bThisInvincible = (thisPowerup == POWER_UP_STAR && pFielder->m_tPowerupEffectTime.m_uPackedTime != 0) || (pFielder->mActionShootToScoreVars.isCurrentlyInvincible != 0);
+        if (bThisInvincible)
+        {
+            bool bOtherInvincible = (pOpponent->m_ePowerup == POWER_UP_STAR && pOpponent->m_tPowerupEffectTime.m_uPackedTime != 0) || (pOpponent->mActionShootToScoreVars.isCurrentlyInvincible != 0);
+            if (!bOtherInvincible)
+            {
+                pReactee = pOpponent;
+                pAttacker = pFielder;
+                break;
+            }
+        }
+
+        bool bOtherInvincible = (pOpponent->m_ePowerup == POWER_UP_STAR && pOpponent->m_tPowerupEffectTime.m_uPackedTime != 0) || (pOpponent->mActionShootToScoreVars.isCurrentlyInvincible != 0);
+        if (bOtherInvincible)
+        {
+            bool bThisInvincible2 = (thisPowerup == POWER_UP_STAR && pFielder->m_tPowerupEffectTime.m_uPackedTime != 0) || (pFielder->mActionShootToScoreVars.isCurrentlyInvincible != 0);
+            if (!bThisInvincible2)
+            {
+                pReactee = pFielder;
+                pAttacker = pOpponent;
+            }
+        }
+    } while (false);
+
+    if (pReactee == NULL)
+        return;
+
+    if (pReactee->IsFallenDown(0.0f))
+        return;
+
+    pReactee->InitActionSlideAttackReact(pFielder, true);
+
+    PowerupBase::PlayPowerupSound(currPowerup, PowerupBase::PWRUP_SOUND_HIT, pFielder->m_pPhysicsCharacter, 100.0f);
+
+    if (pAttacker->CanPickupBall(g_pBall))
+    {
+        pAttacker->PickupBall(g_pBall);
+    }
+
+    if (g_pGame->IsGameplayOrOvertime())
+    {
+        nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_POWERUPS_HIT,
+            pReactee->m_pTeam->m_nSide,
+            pReactee->m_ID,
+            0,
+            0,
+            0,
+            0);
+    }
+}
+
 /**
  * Offset/Address/Size: 0xAEBC | 0x800241F8 | size: 0x151C
  * TODO: 99.64% match - remaining diffs are pData/hitter register assignment
@@ -628,70 +708,27 @@ void cFielder::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
     if (pPlayerCollidedWith->m_eClassType != FIELDER)
         return;
 
-    cFielder* hitter = 0;
     cFielder* pFielderCollidedWith = (cFielder*)pPlayerCollidedWith;
-    cFielder* hittee = hitter;
+    TestCollisionForInvicibilityInline(this, pFielderCollidedWith);
 
-    static ePowerUpType currPowerup = POWER_UP_STAR;
-
-    if (m_ePowerup == POWER_UP_STAR)
-        currPowerup = m_ePowerup;
-
-    if (!IsOnSameTeam(pFielderCollidedWith))
-    {
-        if (IsInvincible() && !pFielderCollidedWith->IsInvincible())
-        {
-            hittee = pFielderCollidedWith;
-            hitter = this;
-        }
-        else if (pFielderCollidedWith->IsInvincible() && !IsInvincible())
-        {
-            hittee = this;
-            hitter = pFielderCollidedWith;
-        }
-
-        if (hittee != 0)
-        {
-            if (hittee->IsFallenDown(0.0f))
-                goto done;
-
-            hittee->InitActionSlideAttackReact(this, true);
-            PowerupBase::PlayPowerupSound(currPowerup, PowerupBase::PWRUP_SOUND_HIT, m_pPhysicsCharacter, 100.0f);
-
-            if (hitter->CanPickupBall(g_pBall))
-                hitter->PickupBall(g_pBall);
-
-            if (g_pGame->IsGameplayOrOvertime())
-                StatsTracker::Track(STATS_POWERUPS_HIT, hittee->m_pTeam->m_nSide, hittee->m_ID, 0, 0, 0, 0);
-        }
-    }
-
-done:
     if (pFielderCollidedWith->m_pTeam == m_pTeam)
         return;
 
     if (IsFallenDown(0.0f))
         return;
 
-    cPN_SAnimController* pAnimCtrl = pFielderCollidedWith->m_pCurrentAnimController;
-    float hitIntensity = (30.0f * pAnimCtrl->m_fTime) * ((float)(unsigned int)pAnimCtrl->m_pSAnim->m_nNumKeys / 30.0f);
-    u8 gotHit = pFielderCollidedWith->m_tFrozenTimer.m_uPackedTime == 0 && pFielderCollidedWith->m_eActionState == ACTION_HIT && hitIntensity >= 4.0f && hitIntensity <= 14.0f;
+    u8 gotHit = pFielderCollidedWith->IsHitting();
 
     if (gotHit)
     {
-        cPN_SAnimController* pMyAnimCtrl = m_pCurrentAnimController;
         u8 hitteeIsHitter = 1;
-        u8 bAlsoHitting = 0;
-        float myHitIntensity = (30.0f * pMyAnimCtrl->m_fTime) * ((float)(unsigned int)pMyAnimCtrl->m_pSAnim->m_nNumKeys / 30.0f);
-
-        if (m_tFrozenTimer.m_uPackedTime == 0 && m_eActionState == ACTION_HIT && myHitIntensity >= 4.0f && myHitIntensity <= 14.0f)
-        {
-            bAlsoHitting = 1;
-        }
+        u8 bAlsoHitting = IsHitting();
 
         if (bAlsoHitting)
         {
-            if (fabsf(pMyAnimCtrl->m_fTime - 0.35f) <= fabsf(pFielderCollidedWith->m_pCurrentAnimController->m_fTime - 0.35f))
+            float fMyHitTime = fabsf(m_pCurrentAnimController->m_fTime - 0.35f);
+            float fOtherHitTime = fabsf(pFielderCollidedWith->m_pCurrentAnimController->m_fTime - 0.35f);
+            if (fMyHitTime <= fOtherHitTime)
                 hitteeIsHitter = 0;
         }
 
@@ -4741,6 +4778,12 @@ void cFielder::SetPosition(const nlVector3& v3Position)
     m_fDistanceToDesiredPosition = -9999.9f;
 }
 
+static inline bool IsNearlyZero(float value, float zero)
+{
+    float bNearlyZero = (float)(fabsf(value - zero) <= 0.0001f);
+    return bNearlyZero == zero;
+}
+
 /**
  * Offset/Address/Size: 0x3F70 | 0x8001D2AC | size: 0x5A8
  * TODO: 99.83% match - remaining f3/f4 delta register swap in the initial distance block.
@@ -4855,7 +4898,7 @@ void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVect
                 fMaxSpeed = m_pTweaks->fRunningSpeed;
             }
         }
-        else if (turboRequest == TR_FORCED_ON || (turboRequest == TR_MOVING_TARGET && 0.0f == (float)(fabsf(fDesiredPositionRateOfChange - fZero) <= 0.0001f)))
+        else if (turboRequest == TR_FORCED_ON || (turboRequest == TR_MOVING_TARGET && IsNearlyZero(fDesiredPositionRateOfChange, fZero)))
         {
             fMinSpeed = ((FielderTweaks*)m_pTweaks)->fRunningTurboSpeed;
         }
@@ -4890,14 +4933,14 @@ void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVect
                 fMaxSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
             }
         }
-        else if (turboRequest == TR_FORCED_ON || (turboRequest == TR_MOVING_TARGET && 0.0f == (float)(fabsf(fDesiredPositionRateOfChange - fZero) <= 0.0001f)))
+        else if (turboRequest == TR_FORCED_ON || (turboRequest == TR_MOVING_TARGET && IsNearlyZero(fDesiredPositionRateOfChange, fZero)))
         {
             fMinSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1;
         }
     }
 
     float bDistZero = (float)(fabsf(fDistSq - fZero) <= 0.0001f);
-    if (0.0f != bDistZero)
+    if (bDistZero != fZero)
     {
         fMinSpeed = 0.0f;
         fMaxSpeed = 0.0f;
@@ -5429,13 +5472,7 @@ void cFielder::TestButtonsRunning()
     if (GetGlobalPad()->JustPressed(PAD_PASS, true))
     {
         cFielder* pPassTarget = (cFielder*)g_pBall->GetPassTargetFielder();
-        bool bIsVolleyPassToMe = (pPassTarget != NULL
-                                  && pPassTarget != this
-                                  && pPassTarget->m_pTeam == m_pTeam
-                                  && pPassTarget->GetGlobalPad() == NULL
-                                  && (pPassTarget->m_eFielderDesireState == FIELDERDESIRE_RECEIVE_PASS_FROM_IDLE
-                                      || pPassTarget->m_eFielderDesireState == FIELDERDESIRE_RECEIVE_PASS_FROM_RUN)
-                                  && g_pBall->m_pPrevOwner == this);
+        bool bIsVolleyPassToMe = CanPassTargetAttemptOneTouch(pPassTarget);
 
         if (bIsVolleyPassToMe)
         {
@@ -5473,13 +5510,7 @@ void cFielder::TestButtonsRunning()
     else if (GetGlobalPad()->JustPressed(PAD_SLIDE_ATTACK, true) || GetGlobalPad()->JustPressed(PAD_SHOOT, true))
     {
         cFielder* pPassTarget = (cFielder*)g_pBall->GetPassTargetFielder();
-        bool bIsVolleyShotToMe = (pPassTarget != NULL
-                                  && pPassTarget != this
-                                  && pPassTarget->m_pTeam == m_pTeam
-                                  && pPassTarget->GetGlobalPad() == NULL
-                                  && (pPassTarget->m_eFielderDesireState == FIELDERDESIRE_RECEIVE_PASS_FROM_IDLE
-                                      || pPassTarget->m_eFielderDesireState == FIELDERDESIRE_RECEIVE_PASS_FROM_RUN)
-                                  && g_pBall->m_pPrevOwner == this);
+        bool bIsVolleyShotToMe = CanPassTargetAttemptOneTouch(pPassTarget);
 
         if (bIsVolleyShotToMe)
         {
@@ -6581,7 +6612,7 @@ bool cFielder::DoAILooseBallActionSelection()
 
     eFielderDesireState action;
     cPlayer* pTarget;
-    bool bDidSomething = false;
+    register bool bDidSomething = false;
 
     FuzzyVariant looseBallAction = Fuzzy::GetBestLooseBallAction(this);
 
@@ -6840,8 +6871,7 @@ bool cFielder::DoAIWindupActionSelection()
     extern cTeam* g_pCurrentlyUpdatingTeam;
     static FilteredRandomChance randchancegen;
 
-    cFielder* pThis = this;
-    FuzzyVariant looseBallAction = Fuzzy::GetBestWindupShotAction(pThis);
+    FuzzyVariant looseBallAction = Fuzzy::GetBestWindupShotAction(this);
 
     bool bSelectChance = randchancegen.genrand(looseBallAction.SelectionChance);
     bool bDidSomething = false;
@@ -6877,8 +6907,8 @@ bool cFielder::DoAIWindupActionSelection()
             if (!(fActionScore >= 0.6f + fReactionOffset))
                 break;
             cPlayer* pTarget = looseBallAction.ExtraData.mData.pPlayer;
-            pThis->EndDesire(false);
-            pThis->InitDesire(FIELDERDESIRE_PASS, looseBallAction.Confidence, -1.0f, FuzzyVariant(pTarget), FuzzyVariant(OpenTo(g_pScriptCurrentFielder, pTarget) < 0.5f));
+            EndDesire(false);
+            InitDesire(FIELDERDESIRE_PASS, looseBallAction.Confidence, -1.0f, FuzzyVariant(pTarget), FuzzyVariant(OpenTo(g_pScriptCurrentFielder, pTarget) < 0.5f));
             bDidSomething = true;
             break;
         }
@@ -6888,8 +6918,8 @@ bool cFielder::DoAIWindupActionSelection()
             float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
             if (!(fActionScore >= 0.4f + fReactionOffset))
                 break;
-            pThis->EndDesire(false);
-            pThis->InitDesire(FIELDERDESIRE_DEKE, 0.5f, -1.0f, fvNotSet, fvNotSet);
+            EndDesire(false);
+            InitDesire(FIELDERDESIRE_DEKE, 0.5f, -1.0f, fvNotSet, fvNotSet);
             bDidSomething = true;
             break;
         }
@@ -6900,34 +6930,34 @@ bool cFielder::DoAIWindupActionSelection()
             float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
             if (!(fActionScore >= 0.4f + fReactionOffset))
                 break;
-            if (powerupType != pThis->m_pTeam->GetCurrentPowerUp().eType)
+            if (powerupType != m_pTeam->GetCurrentPowerUp().eType)
                 break;
-            if (pThis->m_nPowerupAnimID >= 0)
+            if (m_nPowerupAnimID >= 0)
                 break;
-            if (pThis->m_ePowerup == POWER_UP_STAR)
+            if (m_ePowerup == POWER_UP_STAR)
                 break;
-            if (pThis->m_tFrozenTimer.m_uPackedTime != 0)
+            if (m_tFrozenTimer.m_uPackedTime != 0)
                 break;
-            if (pThis->IsFallenDown(0.0f) && (pThis->m_pTeam->IsCurrentStar() || pThis->m_pTeam->IsCurrentMushroom()))
+            if (IsFallenDown(0.0f) && (m_pTeam->IsCurrentStar() || m_pTeam->IsCurrentMushroom()))
                 break;
-            if (!pThis->m_pTeam->IsCurrentNoPowerup())
+            if (!m_pTeam->IsCurrentNoPowerup())
             {
-                cTeam* pTeam = pThis->m_pTeam;
-                pThis->SetPowerup(pTeam->GetCurrentPowerUp().eType,
-                    pTeam->GetCurrentPowerUp().nnumOfPowerups,
-                    NULL);
-                pThis->m_pTeam->ClearCurrentPowerUp();
+                cTeam* pTeam = m_pTeam;
+                SetCurrentTeamPowerup(this, pTeam);
+                m_pTeam->ClearCurrentPowerUp();
             }
             else
             {
-                if (pThis->m_pTeam->GetPowerUpByIndex(1).eType == POWER_UP_NONE)
+                if (GetTeamPowerupTypeByIndex(m_pTeam, 1) == POWER_UP_NONE)
                     break;
-                pThis->m_pTeam->TogglePowerup(true);
-                cTeam* pTeam = pThis->m_pTeam;
-                pThis->SetPowerup(pTeam->GetCurrentPowerUp().eType,
-                    pTeam->GetCurrentPowerUp().nnumOfPowerups,
+                m_pTeam->TogglePowerup(true);
+                cTeam* pTeam = m_pTeam;
+                const PowerUpTeamType& countPowerup = pTeam->GetCurrentPowerUp();
+                SetPowerup(
+                    pTeam->GetCurrentPowerUp().eType,
+                    countPowerup.nnumOfPowerups,
                     NULL);
-                pThis->m_pTeam->ClearCurrentPowerUp();
+                m_pTeam->ClearCurrentPowerUp();
             }
             break;
         }
@@ -6937,7 +6967,7 @@ bool cFielder::DoAIWindupActionSelection()
             float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
             if (!(fActionScore >= 0.6f + fReactionOffset))
                 break;
-            pThis->m_pShotMeter->ShotReleased(pThis);
+            m_pShotMeter->ShotReleased(this);
             bDidSomething = true;
             break;
         }

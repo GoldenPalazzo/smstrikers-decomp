@@ -168,6 +168,7 @@ public:
     bool CanDoCaptainShootToScore();
     bool CanLooseBallShoot();
     bool CanLooseBallPass();
+    inline bool CanPassTargetAttemptOneTouch(cFielder*);
     bool CanReceivePass();
     void SetMark(cFielder*);
     bool CollideWithShellCallback(ePowerupSize, bool, const nlVector3&, const nlVector3&);
