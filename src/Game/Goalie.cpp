@@ -4824,9 +4824,14 @@ void Goalie::InitActionMoveWB()
     mpPassTarget = NULL;
 }
 
+static inline float CalculateSaveBlendFactor(float velocity, float saveX, float localX)
+{
+    return (saveX - localX) / velocity;
+}
+
 /**
  * Offset/Address/Size: 0x32E8 | 0x80045DE4 | size: 0x70C
- * TODO: 99.87% match - remaining first blend factor/time register coloring.
+ * TODO: 99.94% match - remaining first save-time result register coloring.
  */
 void Goalie::InitActionSaveSetup(bool bCanReposition)
 {
@@ -4946,7 +4951,7 @@ void Goalie::InitActionSaveSetup(bool bCanReposition)
         float fBlendFactor;
         float fLocalVelX = mv3LocalContactVelocity.f.x;
         float fLocalX = mv3LocalContactPosition.f.x;
-        fBlendFactor = (mpSaveData->mv3SavePos.f.x - fLocalX) / fLocalVelX;
+        fBlendFactor = CalculateSaveBlendFactor(fLocalVelX, mpSaveData->mv3SavePos.f.x, fLocalX);
 
         fTimeTilSave = fBlendFactor + fTimeTilSave;
         fTimeTilSave = fTimeTilSave;

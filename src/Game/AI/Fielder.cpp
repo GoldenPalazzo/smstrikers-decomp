@@ -4784,16 +4784,20 @@ static inline bool IsNearlyZero(float value, float zero)
     return bNearlyZero == zero;
 }
 
+static inline float PositionDelta(float rhs, float lhs)
+{
+    return lhs - rhs;
+}
+
 /**
  * Offset/Address/Size: 0x3F70 | 0x8001D2AC | size: 0x5A8
- * TODO: 99.83% match - remaining f3/f4 delta register swap in the initial distance block.
  */
 void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVector3& v3Pos, eTurboRequest turboRequest, float fInRadiusMult, float fOutRadiusMult)
 {
     nlVector3 v3FixedPos = v3Pos;
     cField::FixOutOfBoundsPosition(v3FixedPos, 0.2f);
 
-    float fDeltaY = v3FixedPos.f.y - m_v3Position.f.y;
+    float fDeltaY = PositionDelta(m_v3Position.f.y, v3FixedPos.f.y);
     float fDeltaYFromDesired = v3FixedPos.f.y - m_v3DesiredPosition.f.y;
     float fDeltaX = v3FixedPos.f.x - m_v3Position.f.x;
     float fDeltaXFromDesired = v3FixedPos.f.x - m_v3DesiredPosition.f.x;

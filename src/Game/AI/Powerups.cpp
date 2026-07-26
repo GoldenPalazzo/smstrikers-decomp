@@ -3522,8 +3522,6 @@ void Bobomb::Update(float dt)
 
 /**
  * Offset/Address/Size: 0x80 | 0x8005A96C | size: 0x3A8
- * TODO: 99.91% match - 4 register diffs at 0x264, 0x284, 0x288, and 0x2A0:
- *       g_pGame and m_pPhysicsObject loads use r4/r3 in the opposite order.
  */
 void Bobomb::ThrowAt(cFielder*, Bowser*)
 {
@@ -3628,10 +3626,11 @@ skip_anticipation:
         v3BobombVelocity.f.z = -(t * (0.5f * m_pPhysicsObject->m_gravity));
 
         cGame* game = g_pGame;
+        GameTweaks* gameTweaks = game->m_pGameTweaks;
 
         if (v3BobombVelocity.f.z > game->m_pGameTweaks->fBobombMaxZSpeed)
         {
-            v3BobombVelocity.f.z = game->m_pGameTweaks->fBobombMaxZSpeed;
+            v3BobombVelocity.f.z = gameTweaks->fBobombMaxZSpeed;
         }
 
         m_v3Velocity = v3BobombVelocity;

@@ -152,16 +152,6 @@ SaveInfo gSaveInfo[70] = {
     { -1, 0, 0, 0x00000000, { -1, -1, -1, -1 }, "Empty" },
 };
 
-/**
- * Offset/Address/Size: 0x0 | 0x80056BC8 | size: 0x3C
- * TODO: 96.00% match - prologue scheduling mismatch remains.
- * Target orders `lwz r7, 0(r5)` before `stw r0, 0x24(r1)`.
- */
-template void nlWalkDLRing<DLListEntry<MyMiniData*>, DLListContainerBase<MyMiniData*, NewAdapter<DLListEntry<MyMiniData*> > > >(
-    DLListEntry<MyMiniData*>* head,
-    DLListContainerBase<MyMiniData*, NewAdapter<DLListEntry<MyMiniData*> > >* callback,
-    void (DLListContainerBase<MyMiniData*, NewAdapter<DLListEntry<MyMiniData*> > >::*callbackFunc)(DLListEntry<MyMiniData*>*));
-
 typedef ListContainerBase<SaveData*, NewAdapter<ListEntry<SaveData*> > > SaveListBase;
 
 static inline void ClearSaveGrid()
@@ -453,10 +443,21 @@ struct MyMiniData
     nlListContainer<SaveData*>* list;
 };
 
-struct MyMiniListShim
+class MyMiniEntryCursor
 {
-    NewAdapter<DLListEntry<MyMiniData*> > m_Allocator;
-    DLListEntry<MyMiniData*>* m_Head;
+public:
+    MyMiniEntryCursor(DLListEntry<MyMiniData*>* entry)
+        : m_Entry(entry)
+    {
+    }
+
+    bool IsValid() const { return m_Entry != NULL; }
+    DLListEntry<MyMiniData*>* Current() const { return m_Entry; }
+    void Clear() { m_Entry = NULL; }
+    void Next() { m_Entry = m_Entry->m_next; }
+
+private:
+    DLListEntry<MyMiniData*>* m_Entry;
 };
 
 /**
@@ -528,16 +529,11 @@ static void InsertSorted(nlDLListContainer<MyMiniData*>& list, MyMiniData* data)
 /**
  * Offset/Address/Size: 0x1FC0 | 0x800553E0 | size: 0x2BC
  */
-/**
- * TODO: 99.51% match - traversal after near-search list construction still
- * uses lower current/head registers and the final cleanup call target differs.
- */
 SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3LocalPos, float fTime, bool bDoNearSearch, unsigned int uSaveType, bool bFromTakeoff)
 {
     int i;
     int j;
     SaveData* pSaveData;
-    MyMiniListShim mylist;
     MyMiniData griddata[7][5];
     int across;
     int up;
@@ -575,6 +571,7 @@ SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3
 
     if (bDoNearSearch && pSaveData == NULL)
     {
+        nlDLListContainer<MyMiniData*> mylist;
         mylist.m_Head = NULL;
 
         for (across = 0; across < 7; across++)
@@ -596,16 +593,17 @@ SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3
             }
         }
 
-        DLListEntry<MyMiniData*>* current = nlDLRingGetStart(mylist.m_Head);
-        DLListEntry<MyMiniData*>* head = mylist.m_Head;
+        MyMiniEntryCursor cursor(nlDLRingGetStart(mylist.m_Head));
+        MyMiniEntryCursor head(mylist.m_Head);
 
-        if (nlDLRingIsEnd(head, current) || current == NULL)
-            current = NULL;
+        if (nlDLRingIsEnd(head.Current(), cursor.Current()) || !cursor.IsValid())
+            cursor.Clear();
         else
-            current = current->m_next;
+            cursor.Next();
 
-        while (current != NULL)
+        while (cursor.IsValid())
         {
+            DLListEntry<MyMiniData*>* current = cursor.Current();
             MyMiniData* data = current->entry;
             nlListContainer<SaveData*>* cellList = data->list;
 
@@ -622,19 +620,11 @@ SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3
                 if (pSaveData != NULL)
                     break;
             }
-
-            if (nlDLRingIsEnd(head, current) || current == NULL)
-                current = NULL;
+            if (nlDLRingIsEnd(head.Current(), current) || current == NULL)
+                cursor.Clear();
             else
-                current = current->m_next;
+                cursor.Next();
         }
-
-        typedef DLListContainerBase<MyMiniData*, NewAdapter<DLListEntry<MyMiniData*> > > MiniDataList;
-        nlWalkDLRing<DLListEntry<MyMiniData*>, MiniDataList>(
-            mylist.m_Head,
-            (MiniDataList*)&mylist,
-            &MiniDataList::DeleteEntry);
-        mylist.m_Head = NULL;
     }
 
     return pSaveData;
@@ -642,13 +632,11 @@ SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3
 
 /**
  * Offset/Address/Size: 0x1A1C | 0x80054E3C | size: 0x5A4
- * TODO: 99.79% match - list cursor and milestone offsets use r27-r30 in a rotated order.
  */
 SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<SaveData*>& SaveList, const nlVector3& v3LocalPos, float fTime, unsigned int uSaveType, bool bFromTakeoff)
 {
     float fClosest = 10000.0f;
     SaveBlendInfo tempBlendInfo;
-    ListEntry<SaveData*>* pEntry;
     nlVector3 v3AdjLocalPos;
     float fSaveTime;
     SaveData* pConnected;
@@ -661,11 +649,11 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
 
     int milestone = bFromTakeoff ? 1 : 0;
     SaveData* pClosest = NULL;
+    nlListIterator<SaveData*> iterator = SaveList.Begin();
 
-    pEntry = SaveList.m_Head;
-    while (pEntry != NULL)
+    while (iterator.IsValid())
     {
-        SaveData* pCur = pEntry->entry;
+        SaveData* pCur = iterator.Current();
 
         if (!(uSaveType & pCur->muSaveType))
             goto advance;
@@ -746,7 +734,7 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
         }
 
     advance:
-        pEntry = pEntry->next;
+        iterator.Next();
     }
 
     if (pClosest != NULL)
@@ -1367,14 +1355,14 @@ static inline void AddPointToGrid(SaveData* pSaveData, const nlVector3& v3Point)
 
     nlListContainer<SaveData*>& cell = gSaveGrid[i][j];
 
-    ListEntry<SaveData*>* entry = cell.m_Head;
-    if (entry != NULL)
+    nlListIterator<SaveData*> iterator = cell.Begin();
+    if (iterator.IsValid())
     {
-        while (entry != NULL)
+        while (iterator.IsValid())
         {
-            if (entry->entry == pSaveData)
+            if (iterator.Current() == pSaveData)
                 return;
-            entry = entry->next;
+            iterator.Next();
         }
     }
 
@@ -1631,9 +1619,18 @@ static inline void Local2GridCoords(float y, float z, int& i, int& j)
         j = 4;
 }
 
+static inline int AbsInt(int value)
+{
+    return value < 0 ? -value : value;
+}
+
+static inline float IdentityFloat(float value)
+{
+    return value;
+}
+
 /**
  * Offset/Address/Size: 0x390 | 0x800537B0 | size: 0x3F0
- * TODO: 99.19% match - save-data pointers, loop count, and grid-cell registers remain shifted in the inlined AddPointToGrid path.
  */
 void GoalieSave::AddSegmentToGrid(SaveData* pSaveData1, SaveData* pSaveData2)
 {
@@ -1646,7 +1643,7 @@ void GoalieSave::AddSegmentToGrid(SaveData* pSaveData1, SaveData* pSaveData2)
 
     Local2GridCoords(pSaveData1->mv3SavePos.f.y, pSaveData1->mv3SavePos.f.z, i, j);
     Local2GridCoords(pSaveData2->mv3SavePos.f.y, pSaveData2->mv3SavePos.f.z, m, n);
-    divisions = abs(j - n) + abs(i - m);
+    divisions = AbsInt(i - m) + AbsInt(j - n);
     nlVec3Sub(v3Delta, pSaveData2->mv3SavePos, pSaveData1->mv3SavePos);
     if (divisions > 0)
     {
@@ -1658,7 +1655,7 @@ void GoalieSave::AddSegmentToGrid(SaveData* pSaveData1, SaveData* pSaveData2)
         if (nlGetLengthSquared2D(pSaveData1->mv3SavePos.f.y - v3CurPos.f.y,
                 pSaveData1->mv3SavePos.f.z - v3CurPos.f.z)
             < nlGetLengthSquared2D(pSaveData2->mv3SavePos.f.y - v3CurPos.f.y,
-                pSaveData2->mv3SavePos.f.z - v3CurPos.f.z))
+                IdentityFloat(pSaveData2->mv3SavePos.f.z - v3CurPos.f.z)))
             pCurSaveData = pSaveData1;
         else
             pCurSaveData = pSaveData2;
