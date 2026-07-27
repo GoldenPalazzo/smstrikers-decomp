@@ -414,8 +414,6 @@ float CalcIdealShootingPositionScore(const nlVector3& v3TestPosition, const nlVe
 
 /**
  * Offset/Address/Size: 0x594 | 0x80062EE4 | size: 0x47C
- * TODO: 99.62% match - register assignment differences remain in the sideline,
- * pass-target velocity, and lead-pass distance calculations
  */
 float SSearchBestPass::EvaluatePosition(const nlVector3& position, const nlVector3& v3OtherPosition, eFieldDirection eSearchDir, unsigned short aDirection)
 {
@@ -449,12 +447,7 @@ float SSearchBestPass::EvaluatePosition(const nlVector3& position, const nlVecto
     if (m_SSearchOpenLane.m_pPassTarget != NULL)
     {
         nlVector3 v3PassTargetVelocity = m_SSearchOpenLane.m_pPassTarget->m_v3Velocity;
-        float fVelY = v3PassTargetVelocity.f.y;
-        float fVelZ = v3PassTargetVelocity.f.z;
-        float fVxSq = v3PassTargetVelocity.f.x * v3PassTargetVelocity.f.x;
-        float fVySq = fVelY * fVelY;
-        float fVzSq = fVelZ * fVelZ;
-        float fPassTargetVelocitySq = fVxSq + fVySq + fVzSq;
+        float fPassTargetVelocitySq = v3PassTargetVelocity.GetLengthSq3D();
 
         if (fPassTargetVelocitySq >= 12.25f)
         {
@@ -462,17 +455,15 @@ float SSearchBestPass::EvaluatePosition(const nlVector3& position, const nlVecto
 
             nlVec3Scale(v3PassTargetVelocity, fInvPassTargetVelocity);
 
-            float fDy = position.f.y - v3OtherPosition.f.y;
-            float fDx = position.f.x - v3OtherPosition.f.x;
-            float fDz = position.f.z - v3OtherPosition.f.z;
-            float fDistSq = fDy * fDy + fDx * fDx + fDz * fDz;
+            nlVector3 v3VelDir;
+            nlVec3Sub(v3VelDir, position, v3OtherPosition);
+            float fDistSq = v3VelDir.GetLengthSq3D();
 
             if (fDistSq > 0.2f)
             {
                 float fInvDist = nlRecipSqrt(fDistSq, true);
-                float fDot = (fInvDist * fDy) * v3PassTargetVelocity.f.x
-                           + (fInvDist * fDx) * v3PassTargetVelocity.f.y
-                           + (fInvDist * fDz) * v3PassTargetVelocity.f.z;
+                nlVec3Scale(v3VelDir, fInvDist);
+                float fDot = nlVec3DotProduct(v3VelDir, v3PassTargetVelocity);
 
                 fWeightedSum += 0.15f * (0.0f >= fDot ? 0.0f : fDot);
                 fTotalWeight += 0.15f;
@@ -498,6 +489,9 @@ float SSearchBestPass::EvaluatePosition(const nlVector3& position, const nlVecto
                 fTotalWeight += 0.15f;
             }
 
+            float fDy4;
+            float fDx4;
+            float fDistToTarget;
             float fPassSpeed;
             if (m_bAllowLeadPass)
             {
@@ -512,9 +506,9 @@ float SSearchBestPass::EvaluatePosition(const nlVector3& position, const nlVecto
             float fDx3 = m_SSearchOpenLane.m_pBallOwner->m_v3Position.f.y - position.f.y;
             float fOwnerDistNorm = nlSqrt(fDy3 * fDy3 + fDx3 * fDx3, true) / fPassSpeed;
 
-            float fDy4 = m_SSearchOpenLane.m_pPassTarget->m_v3Position.f.x - position.f.x;
-            float fDx4 = m_SSearchOpenLane.m_pPassTarget->m_v3Position.f.y - position.f.y;
-            float fDistToTarget = nlSqrt(fDy4 * fDy4 + fDx4 * fDx4, true);
+            fDy4 = m_SSearchOpenLane.m_pPassTarget->m_v3Position.f.x - position.f.x;
+            fDx4 = m_SSearchOpenLane.m_pPassTarget->m_v3Position.f.y - position.f.y;
+            fDistToTarget = nlSqrt(fDy4 * fDy4 + fDx4 * fDx4, true);
 
             float fZero = 0.0f;
             float fNearZero = (float)(fabsf(fOwnerDistNorm - fZero) <= 0.0001f);
