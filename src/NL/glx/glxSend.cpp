@@ -2489,10 +2489,15 @@ static void glx_DrawPacket(const glModelPacket* packet)
         GX_LINESTRIP,
     };
 
-    glModelPacket* p = (glModelPacket*)packet;
-    u8 bFogWasDisabled = false, bIndirect = false;
+    glModelPacket* p;
     u32 i, j, mask;
+    u8 bIndirect;
+    u8 bFogWasDisabled;
     _GXTlut tlutID;
+
+    p = (glModelPacket*)packet;
+    bFogWasDisabled = false;
+    bIndirect = false;
 
     // === Block 1: WarbleBlend indirect-texture setup ===
     if ((prev_view == GLV_WarbleBlend) && (p->state.texture[0] == ColourTargetTexture))
@@ -2586,13 +2591,11 @@ static void glx_DrawPacket(const glModelPacket* packet)
     {
         if (glx_NumIndices == 0)
         {
-            i = dlGetSize(p->indexBuffer);
-            GXCallDisplayList(dlGetDisplayList(p->indexBuffer), i);
+            GXCallDisplayList(dlGetDisplayList(p->indexBuffer), dlGetSize(p->indexBuffer));
         }
         else if (glx_CompiledDraw && (glx_NumIndices == p->numStreams) && dlIsDisplayList(p->indexBuffer))
         {
-            i = dlGetSize(p->indexBuffer);
-            GXCallDisplayList(dlGetDisplayList(p->indexBuffer), i);
+            GXCallDisplayList(dlGetDisplayList(p->indexBuffer), dlGetSize(p->indexBuffer));
         }
         else if (glx_AllowUncompiledDraws && glGetRasterState(p->state.raster, (eGLState)8) != 1)
         {
