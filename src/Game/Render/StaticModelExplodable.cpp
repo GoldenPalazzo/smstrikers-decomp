@@ -217,7 +217,6 @@ StaticModelExplodable::StaticModelExplodable(StaticModelExplodableCategory categ
     m_pUnexplodedModel->m_uObjectFlags |= 1;
 
     cloneCount++;
-    mCategory = category;
 }
 
 /**
