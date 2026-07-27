@@ -88,11 +88,15 @@ public:
         typedef nlDLListSlotPool<STREAM_FADE_CTRL> FadeList;
 
         void Update(float dT);
-        ~FadeManager()
+        void Clear()
         {
             m_Fades.Clear();
             SlotPoolBase::BaseFreeBlocks(
                 &m_Fades.m_Allocator, sizeof(DLListEntry<STREAM_FADE_CTRL>));
+        }
+        ~FadeManager()
+        {
+            Clear();
         }
         void CompleteFade(STREAM_FADE_CTRL*);
         void UpdateFade(STREAM_FADE_CTRL*);
