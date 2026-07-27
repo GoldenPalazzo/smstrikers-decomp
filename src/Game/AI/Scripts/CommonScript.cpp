@@ -185,50 +185,10 @@ static inline unsigned long StrategicQuestionHash(
     return functionAddress + ((Variant*)&argument)->GetHash();
 }
 
-static inline void StrategicAddAVL(
-    ScriptQuestionCache* cache,
-    unsigned long& key,
-    const FuzzyVariant& variant)
-{
-    AVLTreeNode* existingNode;
-    cache->mQuestionCacheMap.AddAVLNode(
-        (AVLTreeNode**)&cache->mQuestionCacheMap.m_Root,
-        (void*)&key,
-        (void*)&variant,
-        &existingNode,
-        cache->mQuestionCacheMap.m_NumElements);
-    if (existingNode == NULL)
-    {
-        cache->mQuestionCacheMap.m_NumElements++;
-    }
-}
-
-static inline void StrategicAddToCache(
-    ScriptQuestionCache* cache,
-    unsigned long hash,
-    const FuzzyVariant& variant)
-{
-    unsigned long key = hash;
-    if (g_bScriptQuestionCachingOn)
-    {
-        unsigned char useSTD = g_bScriptQuestionCachingUseSTD;
-        const FuzzyVariant* variantPtr = &variant;
-        if (useSTD)
-        {
-            std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(key);
-            pair.second = *variantPtr;
-        }
-        else
-        {
-            StrategicAddAVL(cache, key, *variantPtr);
-        }
-    }
-}
-
 /**
  * Offset/Address/Size: 0xF1B0 | 0x80079380 | size: 0x7D4
- * TODO: 99.37% match - residual hash/cache register rotation and
- * add-cache key stack slots
+ * TODO: 99.90% match - the inlined Lookup's cache pointer colours r30 where
+ * retail uses r26; every other instruction is identical.
  */
 FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
 {
@@ -237,25 +197,27 @@ FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
     float fBestConfidence = 0.0f;
 
     FuzzyVariant fvTeam(TheTeam);
-    volatile unsigned long funcAddr = (unsigned long)GetStrategicBallCarrier;
-    unsigned long hash = StrategicQuestionHash(funcAddr, fvTeam);
+    union FunctionAddress
+    {
+        FuzzyVariant (*function)(cTeam*);
+        unsigned long address;
+    } functionAddress;
+    functionAddress.function = GetStrategicBallCarrier;
+    unsigned long hash = StrategicQuestionHash(functionAddress.address, fvTeam);
     FuzzyVariant fvTeam2(TheTeam);
 
+    if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
-        ScriptQuestionCache* const lookupCache = ScriptQuestionCache::Instance();
-        unsigned char cacheHit = lookupCache->Lookup(hash, bestValue, NULL);
-        if (cacheHit)
-        {
-            bestValue.Confidence = bestValue.Confidence;
-            StrategicAddToCache(ScriptQuestionCache::Instance(), hash, bestValue);
-            return bestValue;
-        }
+        fBestConfidence = bestValue.Confidence;
+        bestValue.Confidence = fBestConfidence;
+        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
+        return bestValue;
     }
 
     for (int i = 0; i < 4; i++)
     {
-        cFielder* fielder = TheTeam->GetFielder(i);
-        float fTrueConfidence = StrategicBallOwner(fielder);
+        cFielder* pFielder = TheTeam->GetFielder(i);
+        float fTrueConfidence = StrategicBallOwner(pFielder);
         float fFalseConfidence = 1.0f - fTrueConfidence;
         float fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
         float fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
@@ -269,20 +231,20 @@ FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
             if (fConfidence > fBestConfidence)
             {
                 fBestConfidence = fConfidence;
-                bestValue = FuzzyVariant((cPlayer*)fielder);
+                bestValue = FuzzyVariant((cPlayer*)pFielder);
             }
         }
     }
 
     bestValue.Confidence = fBestConfidence;
-    StrategicAddToCache(ScriptQuestionCache::Instance(), hash, bestValue);
+    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
     return bestValue;
 }
 
 /**
  * Offset/Address/Size: 0xE9DC | 0x80078BAC | size: 0x7D4
- * TODO: 99.37% match - residual hash/cache register rotation and stack
- * slots for cache insertion temporaries
+ * TODO: 99.90% match - the inlined Lookup's cache pointer colours r30 where
+ * retail uses r26; every other instruction is identical.
  */
 FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
 {
@@ -291,19 +253,21 @@ FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
     float fBestConfidence = 0.0f;
 
     FuzzyVariant fvTeam(TheTeam);
-    volatile unsigned long funcAddr = (unsigned long)GetBestBallInterceptor;
-    unsigned long hash = StrategicQuestionHash(funcAddr, fvTeam);
+    union FunctionAddress
+    {
+        FuzzyVariant (*function)(cTeam*);
+        unsigned long address;
+    } functionAddress;
+    functionAddress.function = GetBestBallInterceptor;
+    unsigned long hash = StrategicQuestionHash(functionAddress.address, fvTeam);
     FuzzyVariant fvTeam2(TheTeam);
 
+    if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
-        ScriptQuestionCache* const lookupCache = ScriptQuestionCache::Instance();
-        unsigned char cacheHit = lookupCache->Lookup(hash, bestValue, NULL);
-        if (cacheHit)
-        {
-            bestValue.Confidence = bestValue.Confidence;
-            StrategicAddToCache(ScriptQuestionCache::Instance(), hash, bestValue);
-            return bestValue;
-        }
+        fBestConfidence = bestValue.Confidence;
+        bestValue.Confidence = fBestConfidence;
+        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
+        return bestValue;
     }
 
     for (int i = 0; i < 4; i++)
@@ -332,7 +296,7 @@ FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
     }
 
     bestValue.Confidence = fBestConfidence;
-    StrategicAddToCache(ScriptQuestionCache::Instance(), hash, bestValue);
+    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
     return bestValue;
 }
 
@@ -663,6 +627,22 @@ static inline float max_float(float a, float b)
 static inline float nlMaxThree(float a, float b, float c)
 {
     return max_float(a, max_float(b, c));
+}
+
+static inline float nlMaxFour(float a, float b, float c, float d)
+{
+    return max_float(a, max_float(b, max_float(c, d)));
+}
+
+static inline float WeightedScore2(float fScoreA, float fWeightA, float fScoreB, float fWeightB)
+{
+    return fScoreA * fWeightA + fScoreB * fWeightB;
+}
+
+static inline float WeightedScore3(
+    float fScoreA, float fWeightA, float fScoreB, float fWeightB, float fScoreC, float fWeightC)
+{
+    return fScoreA * fWeightA + fScoreB * fWeightB + fScoreC * fWeightC;
 }
 
 /**
@@ -1884,48 +1864,41 @@ FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0x71F4 | 0x800713C4 | size: 0xE28
- * TODO: repo 97.09% / scratch 97.40% - cache key stack slots and weighted-score register order differ.
  */
 FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
 {
 
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
+    float fBestConfidence = 0.0f;
     float fFalseConfidence;
     float fBranchRatio;
-    float fBestConfidence = 0.0f;
 
     FuzzyVariant fvFielder(TheFielder);
-    unsigned long hash = (unsigned long)GoodToChipShot;
-    hash += ((Variant*)&fvFielder)->GetHash();
+    union FunctionAddress
+    {
+        FuzzyVariant (*function)(cFielder*);
+        unsigned long address;
+    } functionAddress;
+    functionAddress.function = GoodToChipShot;
+    unsigned long hash = functionAddress.address + ((Variant*)&fvFielder)->GetHash();
     FuzzyVariant fvFielder2(TheFielder);
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
-        const FuzzyVariant& cacheValue = bestValue;
-        ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
+        fBestConfidence = bestValue.Confidence;
+        bestValue.Confidence = fBestConfidence;
+        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
         return bestValue;
     }
 
-    float fTrueConfidence = ReceivingVolleyPass((cPlayer*)TheFielder);
-    float fInFrontOfNet = 1.0f - InFrontOfTheirNet(TheFielder);
-
-    Goalie* pGoalieOnScreen;
-    if (TheFielder != NULL)
-    {
-        cTeam* pOtherTeam = (TheFielder != NULL) ? TheFielder->m_pTeam->GetOtherTeam() : NULL;
-        pGoalieOnScreen = pOtherTeam->GetGoalie();
-    }
-    else
-    {
-        pGoalieOnScreen = NULL;
-    }
-
-    float fGoalieOffScreen = 1.0f - OnScreen((cPlayer*)pGoalieOnScreen);
-    float fFarToNet = FarToTheirNet((cPlayer*)TheFielder);
-    fTrueConfidence = (fInFrontOfNet >= fTrueConfidence) ? fInFrontOfNet : fTrueConfidence;
-    fTrueConfidence = (fGoalieOffScreen >= fTrueConfidence) ? fGoalieOffScreen : fTrueConfidence;
-    fTrueConfidence = (fFarToNet >= fTrueConfidence) ? fFarToNet : fTrueConfidence;
+    float fTrueConfidence = nlMaxFour(
+        FarToTheirNet((cPlayer*)TheFielder),
+        1.0f - OnScreen((cPlayer*)(TheFielder != NULL
+                    ? ((TheFielder != NULL) ? TheFielder->m_pTeam->GetOtherTeam() : NULL)->GetGoalie()
+                    : NULL)),
+        1.0f - InFrontOfTheirNet(TheFielder),
+        ReceivingVolleyPass((cPlayer*)TheFielder));
 
     fFalseConfidence = 1.0f - fTrueConfidence;
     float fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
@@ -1964,13 +1937,13 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
         float fNetOpeness = LikelyToScore(TheFielder);
         float fPositionWeighting = g_pGame->m_pGameTweaks->unk2E4;
         float fNetWeighting = g_pGame->m_pGameTweaks->unk2E8;
-        float fTotalWeight = 0.0f;
         float fTotalSum = 0.0f;
+        float fTotalWeight = 0.0f;
 
-        fTotalWeight += fPositionWeighting;
         fTotalSum += fPositionScore * fPositionWeighting;
-        fTotalWeight += fNetWeighting;
+        fTotalWeight += fPositionWeighting;
         fTotalSum += fNetOpeness * fNetWeighting;
+        fTotalWeight += fNetWeighting;
 
         fPositionScore = 0.0f;
         if (fTotalWeight > 0.0f)
@@ -2026,7 +1999,7 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
                 {
                     fBestConfidence = fConfidence;
                     float fOpenToNet = OpenToTheirNet(TheFielder);
-                    FuzzyVariant fvResult(fOpenToNet * 0.4f + fOutOfNetScore * 0.6f);
+                    FuzzyVariant fvResult(WeightedScore2(fOutOfNetScore, 0.6f, fOpenToNet, 0.4f));
                     bestValue = fvResult;
                 }
             }
@@ -2051,7 +2024,7 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
             if (fConfidence > fBestConfidence)
             {
                 fBestConfidence = fConfidence;
-                FuzzyVariant fvResult(fPositionScore * 0.4f + fOutOfNetScore * 0.6f);
+                FuzzyVariant fvResult(WeightedScore2(fOutOfNetScore, 0.6f, fPositionScore, 0.4f));
                 bestValue = fvResult;
             }
         }
@@ -2070,16 +2043,14 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
             {
                 fBestConfidence = fConfidence;
                 float fNearToNet = NearToTheirNet((cPlayer*)TheFielder);
-                FuzzyVariant fvResult(fOutOfNetScore * 0.3f + fPositionScore * 0.5f + fNearToNet * 0.2f);
+                FuzzyVariant fvResult(WeightedScore3(fPositionScore, 0.5f, fOutOfNetScore, 0.3f, fNearToNet, 0.2f));
                 bestValue = fvResult;
             }
         }
     }
 
     bestValue.Confidence = fBestConfidence;
-
-    const FuzzyVariant& cacheValue2 = bestValue;
-    ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue2, NULL);
+    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
 
     return bestValue;
 }
