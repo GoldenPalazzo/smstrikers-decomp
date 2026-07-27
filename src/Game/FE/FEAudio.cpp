@@ -141,7 +141,6 @@ void FEAudio::ResetRandomVoiceToggleSFX()
 
 /**
  * Offset/Address/Size: 0x290 | 0x8009F03C | size: 0x360
- * TODO: 99.93% match - pGIM uses a different register
  */
 void FEAudio::PlayRandomVoiceToggleSFX()
 {
@@ -159,9 +158,9 @@ void FEAudio::PlayRandomVoiceToggleSFX()
             init = 1;
         }
 
-        GameInfoManager* const pGIM = nlSingleton<GameInfoManager>::s_pInstance;
-        pGIM->GetSidekick(0);
-        pGIM->GetSidekick(0);
+        GameInfoManager& gameInfo = *GameInfoManager::GetInstance();
+        gameInfo.GetSidekick(0);
+        gameInfo.GetSidekick(0);
 
         Audio::eCharSFX newSound;
         unsigned int randomElementIndex = nlRandom(26, &nlDefaultSeed);

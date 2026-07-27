@@ -1520,84 +1520,11 @@ static void glx_LoadLight(GLLightUserData* pLight, _GXLightID lightId)
     GXLoadLightObjImm(&light, lightId);
 }
 
-static inline void glud_Ambient(void* pData)
-{
-    nlColour colour;
-    nlFloatColour* pColour = (nlFloatColour*)pData;
-    colour.c[0] = (u8)(255.0f * pColour->c[0]);
-    colour.c[1] = (u8)(255.0f * pColour->c[1]);
-    colour.c[2] = (u8)(255.0f * pColour->c[2]);
-    colour.c[3] = (u8)(255.0f * pColour->c[3]);
-    gxSetChanAmbColour(0, colour);
-}
-
-static inline void glud_Diffuse(void* pData)
-{
-    nlColour colour;
-    nlFloatColour* pColour = (nlFloatColour*)pData;
-    colour.c[0] = (u8)(255.0f * pColour->c[0]);
-    colour.c[1] = (u8)(255.0f * pColour->c[1]);
-    colour.c[2] = (u8)(255.0f * pColour->c[2]);
-    colour.c[3] = (u8)(255.0f * pColour->c[3]);
-    gxSetChanMatColour(0, colour);
-
-    u32 lightMask = glx_prevLightMask;
-    if (lightMask)
-    {
-        if (g_bAllowLighting)
-        {
-            glx_prevLightMask = lightMask;
-            GXSetChanCtrl(GX_COLOR0, GX_TRUE, GX_SRC_REG, GX_SRC_REG, lightMask, GX_DF_CLAMP, GX_AF_SPOT);
-        }
-    }
-}
-
-#pragma dont_inline on
-static void glud_Light(void* pUserData)
-{
-    static u32 gxLights[4] = { 1, 2, 4, 8 };
-
-    LightData* lightData = (LightData*)pUserData;
-    u32 lightMask;
-    s32 light_id;
-    GLLightUserData* pLight;
-    GLLightUserData* pEndLight;
-
-    if (lightData->numLights != 0)
-    {
-        pLight = (GLLightUserData*)((u8*)pUserData + 4);
-        light_id = 0;
-        lightMask = 0;
-        pEndLight = &pLight[lightData->numLights];
-        while (pLight < pEndLight)
-        {
-            if (light_id >= 4)
-            {
-                break;
-            }
-            lightMask |= gxLights[light_id];
-            if (glx_ReloadPointLights != 0)
-            {
-                glx_LoadLight(pLight, (GXLightID)gxLights[light_id]);
-            }
-            pLight++;
-            light_id += 1;
-        }
-
-        glx_ReloadPointLights = 0;
-        if (g_bAllowLighting != 0)
-        {
-            glx_prevLightMask = lightMask;
-            GXSetChanCtrl(GX_COLOR0, GX_TRUE, GX_SRC_REG, GX_SRC_VTX, lightMask, GX_DF_CLAMP, GX_AF_SPOT);
-        }
-    }
-}
-#pragma dont_inline reset
-
 static inline void glx_LoadDirectionalLight(GLDirectionalLightUserData* pLight, GXLightID lightID)
 {
     GXLightObj light;
     GXColor colour;
+    nlVector3 viewDir;
     {
         int value = (int)(pLight->colour.c[0] * 255.5f);
         if (value < 0)
@@ -1665,7 +1592,6 @@ static inline void glx_LoadDirectionalLight(GLDirectionalLightUserData* pLight, 
 
     GXInitLightColor(&light, colour);
 
-    nlVector3 viewDir;
     nlMultDirVectorMatrix(viewDir, pLight->direction, mview);
     nlVec3Scale(viewDir, 1048576.0f);
     GXInitLightPos(&light, viewDir.f.x, viewDir.f.y, viewDir.f.z);
@@ -1673,46 +1599,6 @@ static inline void glx_LoadDirectionalLight(GLDirectionalLightUserData* pLight, 
     GXInitLightAttnA(&light, 1.0f, 0.0f, 0.0f);
     GXInitLightDistAttn(&light, 1048576.0f, 1.0f, GX_DA_OFF);
     GXLoadLightObjImm(&light, lightID);
-}
-
-static inline void glud_DirectionalLight(void* pData)
-{
-    static u32 gxLights[4] = { 1, 2, 4, 8 };
-
-    unsigned long* p32 = (unsigned long*)pData;
-    unsigned long numLights = *p32;
-    unsigned long lightMask;
-    int index;
-    GLDirectionalLightUserData* pLight;
-    GLDirectionalLightUserData* pEndLight;
-    u32* pGXLight;
-
-    glx_ReloadPointLights = true;
-    if (numLights != 0)
-    {
-        pLight = (GLDirectionalLightUserData*)((u8*)pData + 4);
-        lightMask = 0;
-        index = 0;
-        pEndLight = pLight + numLights;
-        pGXLight = gxLights;
-
-        while (pLight < pEndLight)
-        {
-            if (index >= 4)
-            {
-                break;
-            }
-
-            lightMask |= *pGXLight++;
-            glx_LoadDirectionalLight(pLight++, (GXLightID)gxLights[index++]);
-        }
-
-        if (g_bAllowLighting != 0)
-        {
-            glx_prevLightMask = lightMask;
-            GXSetChanCtrl(GX_COLOR0, GX_TRUE, GX_SRC_REG, GX_SRC_VTX, lightMask, GX_DF_CLAMP, GX_AF_SPOT);
-        }
-    }
 }
 
 static inline void glx_LoadSpecular(GLSpecularUserData* pLight, GXLightID lightID)
@@ -1824,6 +1710,118 @@ static inline void glx_LoadSpecular(GLSpecularUserData* pLight, GXLightID lightI
     GXLoadLightObjImm(&light, lightID);
 }
 
+static inline void glud_Ambient(void* pData)
+{
+    nlFloatColour* pColour = (nlFloatColour*)pData;
+    nlColour colour;
+    colour.c[0] = (u8)(255.0f * pColour->c[0]);
+    colour.c[1] = (u8)(255.0f * pColour->c[1]);
+    colour.c[2] = (u8)(255.0f * pColour->c[2]);
+    colour.c[3] = (u8)(255.0f * pColour->c[3]);
+    gxSetChanAmbColour(0, colour);
+}
+
+static inline void glud_Diffuse(void* pData)
+{
+    nlFloatColour* pColour = (nlFloatColour*)pData;
+    nlColour colour;
+    colour.c[0] = (u8)(255.0f * pColour->c[0]);
+    colour.c[1] = (u8)(255.0f * pColour->c[1]);
+    colour.c[2] = (u8)(255.0f * pColour->c[2]);
+    colour.c[3] = (u8)(255.0f * pColour->c[3]);
+    gxSetChanMatColour(0, colour);
+
+    u32 lightMask = glx_prevLightMask;
+    if (lightMask)
+    {
+        if (g_bAllowLighting)
+        {
+            glx_prevLightMask = lightMask;
+            GXSetChanCtrl(GX_COLOR0, GX_TRUE, GX_SRC_REG, GX_SRC_REG, lightMask, GX_DF_CLAMP, GX_AF_SPOT);
+        }
+    }
+}
+
+#pragma dont_inline on
+static void glud_Light(void* pUserData)
+{
+    static u32 gxLights[4] = { 1, 2, 4, 8 };
+
+    LightData* lightData = (LightData*)pUserData;
+    u32 lightMask;
+    s32 light_id;
+    GLLightUserData* pLight;
+    GLLightUserData* pEndLight;
+
+    if (lightData->numLights != 0)
+    {
+        pLight = (GLLightUserData*)((u8*)pUserData + 4);
+        light_id = 0;
+        lightMask = 0;
+        pEndLight = &pLight[lightData->numLights];
+        while (pLight < pEndLight)
+        {
+            if (light_id >= 4)
+            {
+                break;
+            }
+            lightMask |= gxLights[light_id];
+            if (glx_ReloadPointLights != 0)
+            {
+                glx_LoadLight(pLight, (GXLightID)gxLights[light_id]);
+            }
+            pLight++;
+            light_id += 1;
+        }
+
+        glx_ReloadPointLights = 0;
+        if (g_bAllowLighting != 0)
+        {
+            glx_prevLightMask = lightMask;
+            GXSetChanCtrl(GX_COLOR0, GX_TRUE, GX_SRC_REG, GX_SRC_VTX, lightMask, GX_DF_CLAMP, GX_AF_SPOT);
+        }
+    }
+}
+#pragma dont_inline reset
+
+static inline void glud_DirectionalLight(void* pData)
+{
+    static GXLightID gxLights[4] = { GX_LIGHT0, GX_LIGHT1, GX_LIGHT2, GX_LIGHT3 };
+
+    unsigned long* p32 = (unsigned long*)pData;
+    unsigned long numLights = *p32;
+    register unsigned long lightMask;
+    register int index;
+    register GLDirectionalLightUserData* pLight;
+    register GLDirectionalLightUserData* pEndLight;
+
+    glx_ReloadPointLights = true;
+    if (numLights != 0)
+    {
+        pLight = (GLDirectionalLightUserData*)((u8*)pData + 4);
+        index = 0;
+        lightMask = 0;
+        pEndLight = &pLight[numLights];
+
+        while (pLight < pEndLight)
+        {
+            if (index >= 4)
+            {
+                break;
+            }
+
+            lightMask |= gxLights[index];
+            glx_LoadDirectionalLight(pLight++, (GXLightID)gxLights[index++]);
+        }
+
+        if (g_bAllowLighting != 0)
+        {
+            glx_prevLightMask = lightMask;
+            GXSetChanCtrl(GX_COLOR0, GX_TRUE, GX_SRC_REG, GX_SRC_VTX, lightMask, GX_DF_CLAMP, GX_AF_SPOT);
+        }
+    }
+}
+
 static void glud_Specular(void* pData)
 {
     static u32 gxLights[4] = { GX_LIGHT4, GX_LIGHT5, GX_LIGHT6, GX_LIGHT7 };
@@ -1868,6 +1866,145 @@ static void glud_Specular(void* pData)
             gxSetNumChans(2);
             GXSetChanCtrl(GX_COLOR1, GX_TRUE, GX_SRC_REG, GX_SRC_REG, lightMask, GX_DF_NONE, GX_AF_SPEC);
         }
+    }
+}
+
+static inline void glx_TextureSwapMode(bool bSwap)
+{
+    static bool bEnabled;
+    static signed char init;
+
+    if (!init)
+    {
+        bEnabled = false;
+        init = 1;
+    }
+
+    if (bSwap)
+    {
+        GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP3);
+        bEnabled = true;
+    }
+    else if (bEnabled)
+    {
+        GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+        gxSetTevAlphaOp(0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, true, GX_TEVPREV);
+        gxSetTevAlphaOp(1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, true, GX_TEVPREV);
+        bEnabled = false;
+    }
+}
+
+static inline void glud_ShadowVolume(void* pData)
+{
+    if (*(s32*)pData == 3)
+    {
+        static GXColor c0 = {
+            64,
+            64,
+            64,
+            64,
+        };
+
+        glx_DirtyFlags = 0x80;
+        glx_TextureSwapMode(true);
+        gxSetNumTevStages(3);
+
+        gxSetTevAlphaOp(0, (_GXTevOp)0xE, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
+        gxSetTevAlphaOp(1, (_GXTevOp)1, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
+
+        GXSetTevColorIn((GXTevStageID)0, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)4);
+        GXSetTevColorIn((GXTevStageID)1, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0);
+        GXSetTevColorIn((GXTevStageID)2, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0);
+
+        gxSetTevAlphaIn(0, (_GXTevAlphaArg)4, (_GXTevAlphaArg)1, (_GXTevAlphaArg)6, (_GXTevAlphaArg)7);
+        gxSetTevAlphaIn(1, (_GXTevAlphaArg)7, (_GXTevAlphaArg)6, (_GXTevAlphaArg)0, (_GXTevAlphaArg)6);
+        gxSetTevAlphaIn(2, (_GXTevAlphaArg)7, (_GXTevAlphaArg)0, (_GXTevAlphaArg)2, (_GXTevAlphaArg)7);
+
+        GXSetTevColor((GXTevRegID)1, c0);
+        GXSetTevColor((GXTevRegID)2, rshadow_colour[prev_view == GLV_ShadowBlend1]);
+    }
+}
+
+static inline void glud_EnvDiffuse(bool bOn)
+{
+    Mtx texs, text, invMat, envMat;
+    register GXTevStageID stage;
+    register GXTexCoordID coord;
+
+    if (bOn)
+    {
+        PSMTXScale(texs, 0.5f, -0.5f, 0.0f);
+        PSMTXTrans(text, 0.5f, 0.5f, 1.0f);
+        PSMTXConcat(text, texs, envMat);
+        GXLoadTexMtxImm(envMat, 0x5B, GX_MTX3x4);
+
+        PSMTXInvXpose(gx_modelview, invMat);
+        GXLoadTexMtxImm(invMat, 0x39, GX_MTX3x4);
+
+        coord = (GXTexCoordID)glx_GlossMapCoord;
+        stage = (GXTevStageID)glx_GlossMapStage;
+        GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_NRM, 0x39, GX_TRUE, 0x5B);
+        GXSetTevOrder(stage, coord, (GXTexMapID)coord, GX_COLOR0A0);
+
+        if (glx_texconfig & 0x20)
+        {
+            GXSetTevColorIn(
+                stage, (GXTevColorArg)0xF, (GXTevColorArg)0xB, (GXTevColorArg)8, (GXTevColorArg)0xF);
+        }
+        else
+        {
+            GXSetTevColorIn(
+                stage, (GXTevColorArg)0xF, (GXTevColorArg)0xB, (GXTevColorArg)8, (GXTevColorArg)0);
+        }
+    }
+    else
+    {
+        if (glx_GlossMapStage >= 0)
+        {
+            gxSetTexCoordGen(
+                glx_GlossMapStage, GX_TG_MTX2x4, (GXTexGenSrc)(glx_GlossMapStage + 4), GX_IDENTITY);
+            glx_DirtyFlags |= glv_TexConfigChanged;
+        }
+    }
+}
+
+static inline void glud_MobileDiffuse(bool bOn)
+{
+    Mtx texmtx;
+    Mtx texs;
+    Mtx text;
+    static int n;
+    static signed char init;
+
+    if (bOn)
+    {
+        gxSetTexCoordGen(0, GX_TG_MTX3x4, GX_TG_NRM, 0x39);
+        memcpy(texmtx, gx_modelview, sizeof(Mtx));
+        PSMTXScale(texs, 0.5f, -0.5f, 0.0f);
+        PSMTXTrans(text, 0.5f, 0.5f, 1.0f);
+        PSMTXConcat(texs, texmtx, texmtx);
+        PSMTXConcat(text, texmtx, texmtx);
+
+        if (!init)
+        {
+            n = 5;
+            init = 1;
+        }
+
+        float fTransScale = 1.0f / (float)n;
+        u32 frame = glGetCurrentFrame();
+        u32 frameDiv = frame / n;
+        u32 frameMod = frame - frameDiv * n;
+        float fTrans = fTransScale * frameMod;
+        fTrans = 2.0f * fTrans - 1.0f;
+        texmtx[0][2] = fTrans;
+        texmtx[1][2] = fTrans;
+
+        GXLoadTexMtxImm(texmtx, 0x39, GX_MTX3x4);
+    }
+    else
+    {
+        gxSetTexCoordGen(0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
     }
 }
 
@@ -1944,60 +2081,9 @@ static void glud_Skin(void* pData, const glModelPacket* pPacket)
     }
 }
 
-static inline void glx_TextureSwapMode(bool bSwap)
+static inline void glud_ConstantColour(void* pData)
 {
-    static bool bEnabled;
-    static signed char init;
-
-    if (!init)
-    {
-        bEnabled = false;
-        init = 1;
-    }
-
-    if (bSwap)
-    {
-        GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP3);
-        bEnabled = true;
-    }
-    else if (bEnabled)
-    {
-        GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-        gxSetTevAlphaOp(0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, true, GX_TEVPREV);
-        gxSetTevAlphaOp(1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, true, GX_TEVPREV);
-        bEnabled = false;
-    }
-}
-
-static inline void glud_ShadowVolume(void* pData)
-{
-    if (*(s32*)pData == 3)
-    {
-        static GXColor c0 = {
-            64,
-            64,
-            64,
-            64,
-        };
-
-        glx_DirtyFlags = 0x80;
-        glx_TextureSwapMode(true);
-        gxSetNumTevStages(3);
-
-        gxSetTevAlphaOp(0, (_GXTevOp)0xE, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
-        gxSetTevAlphaOp(1, (_GXTevOp)1, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
-
-        GXSetTevColorIn((GXTevStageID)0, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)4);
-        GXSetTevColorIn((GXTevStageID)1, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0);
-        GXSetTevColorIn((GXTevStageID)2, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0);
-
-        gxSetTevAlphaIn(0, (_GXTevAlphaArg)4, (_GXTevAlphaArg)1, (_GXTevAlphaArg)6, (_GXTevAlphaArg)7);
-        gxSetTevAlphaIn(1, (_GXTevAlphaArg)7, (_GXTevAlphaArg)6, (_GXTevAlphaArg)0, (_GXTevAlphaArg)6);
-        gxSetTevAlphaIn(2, (_GXTevAlphaArg)7, (_GXTevAlphaArg)0, (_GXTevAlphaArg)2, (_GXTevAlphaArg)7);
-
-        GXSetTevColor((GXTevRegID)1, c0);
-        GXSetTevColor((GXTevRegID)2, rshadow_colour[prev_view == GLV_ShadowBlend1]);
-    }
+    GXSetTevColor(GX_TEVREG2, *(GXColor*)pData);
 }
 
 static inline void glud_Translucent(void* pData)
@@ -2034,6 +2120,72 @@ static inline void glud_NoRasterizedAlpha()
     glx_norasterizedalpha = true;
 }
 
+static inline void glud_Viewport(void* pData, GLViewportUserData* pDest)
+{
+    GLViewportUserData* pViewport = (GLViewportUserData*)pData;
+    g_viewport.x = pViewport->x;
+    pDest->y = pViewport->y;
+    pDest->w = pViewport->w;
+    pDest->h = pViewport->h;
+    pDest->view = pViewport->view;
+    pDest->projection = pViewport->projection;
+}
+
+static inline void AdjustViewport(bool bOn)
+{
+    s32 x, y, w, h;
+    nlMatrix4 mProj;
+    nlMatrix4 mView;
+    Mtx44 proj;
+    Mtx view;
+
+    if (bOn)
+    {
+        x = g_viewport.x;
+        y = g_viewport.y;
+        w = g_viewport.w;
+        h = g_viewport.h;
+
+        memcpy(&mProj, (const void*)g_viewport.projection, sizeof(nlMatrix4));
+        memcpy(&mView, (const void*)g_viewport.view, sizeof(nlMatrix4));
+        glxCopyMatrix(proj, mProj);
+        glxCopyMatrix(view, mView);
+        GXLoadPosMtxImm(view, 0);
+
+        _GXProjectionType type;
+        if (-1.0f == mProj.e[14])
+        {
+            type = (_GXProjectionType)0;
+        }
+        else
+        {
+            type = (_GXProjectionType)1;
+        }
+        GXSetProjection(proj, type);
+        GXSetCurrentMtx(0);
+        GXSetViewport((float)x, (float)y, (float)w, (float)h, 0.0f, 1.0f);
+        GXSetScissor(x, y, w, h);
+    }
+    else
+    {
+        GXLoadPosMtxImm(gx_modelview, 0);
+
+        _GXProjectionType type;
+        if (-1.0f == mproj.m[3][2])
+        {
+            type = (_GXProjectionType)0;
+        }
+        else
+        {
+            type = (_GXProjectionType)1;
+        }
+        GXSetProjection(gx_proj, type);
+        GXSetCurrentMtx(0);
+        GXSetViewport(0.0f, 0.0f, 640.0f, 448.0f, 0.0f, 1.0f);
+        GXSetScissor(0, 0, 0x280, 0x1C0);
+    }
+}
+
 static inline void glud_Scissor(const GLScissorUserData* pScissor)
 {
     u32 xOrig;
@@ -2056,106 +2208,6 @@ static inline void glud_Scissor(const GLScissorUserData* pScissor)
         ht = pScissor->ht;
     }
     GXSetScissor(xOrig, yOrig, wd, ht);
-}
-
-static inline void glud_MobileDiffuse(bool bOn)
-{
-    Mtx texmtx;
-    Mtx texs;
-    Mtx text;
-    static int n;
-    static signed char init;
-
-    if (bOn)
-    {
-        gxSetTexCoordGen(0, GX_TG_MTX3x4, GX_TG_NRM, 0x39);
-        memcpy(texmtx, gx_modelview, sizeof(Mtx));
-        PSMTXScale(texs, 0.5f, -0.5f, 0.0f);
-        PSMTXTrans(text, 0.5f, 0.5f, 1.0f);
-        PSMTXConcat(texs, texmtx, texmtx);
-        PSMTXConcat(text, texmtx, texmtx);
-
-        if (!init)
-        {
-            n = 5;
-            init = 1;
-        }
-
-        float fTransScale = 1.0f / (float)n;
-        u32 frame = glGetCurrentFrame();
-        u32 frameDiv = frame / n;
-        u32 frameMod = frame - frameDiv * n;
-        float fTrans = fTransScale * frameMod;
-        fTrans = 2.0f * fTrans - 1.0f;
-        texmtx[0][2] = fTrans;
-        texmtx[1][2] = fTrans;
-
-        GXLoadTexMtxImm(texmtx, 0x39, GX_MTX3x4);
-    }
-    else
-    {
-        gxSetTexCoordGen(0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
-    }
-}
-
-static inline void glud_EnvDiffuse(bool bOn)
-{
-    Mtx texs;
-    Mtx text;
-    Mtx invMat;
-    Mtx envMat;
-
-    if (bOn)
-    {
-        PSMTXScale(texs, 0.5f, -0.5f, 0.0f);
-        PSMTXTrans(text, 0.5f, 0.5f, 1.0f);
-        PSMTXConcat(text, texs, envMat);
-        GXLoadTexMtxImm(envMat, 0x5B, GX_MTX3x4);
-
-        PSMTXInvXpose(gx_modelview, invMat);
-        GXLoadTexMtxImm(invMat, 0x39, GX_MTX3x4);
-
-        u32 value = glx_GlossMapCoord;
-        GXTevStageID stage = (GXTevStageID)glx_GlossMapStage;
-        GXSetTexCoordGen2((GXTexCoordID)value, GX_TG_MTX3x4, GX_TG_NRM, 0x39, GX_TRUE, 0x5B);
-        GXSetTevOrder(stage, (GXTexCoordID)value, (GXTexMapID)value, GX_COLOR0A0);
-
-        if (glx_texconfig & 0x20)
-        {
-            GXSetTevColorIn(
-                stage, (GXTevColorArg)0xF, (GXTevColorArg)0xB, (GXTevColorArg)8, (GXTevColorArg)0xF);
-        }
-        else
-        {
-            GXSetTevColorIn(
-                stage, (GXTevColorArg)0xF, (GXTevColorArg)0xB, (GXTevColorArg)8, (GXTevColorArg)0);
-        }
-    }
-    else
-    {
-        if (glx_GlossMapStage >= 0)
-        {
-            gxSetTexCoordGen(
-                glx_GlossMapStage, GX_TG_MTX2x4, (GXTexGenSrc)(glx_GlossMapStage + 4), GX_IDENTITY);
-            glx_DirtyFlags |= glv_TexConfigChanged;
-        }
-    }
-}
-
-static inline void glud_Viewport(void* pData)
-{
-    GLViewportUserData* pViewport = (GLViewportUserData*)pData;
-    g_viewport.x = pViewport->x;
-    g_viewport.y = pViewport->y;
-    g_viewport.w = pViewport->w;
-    g_viewport.h = pViewport->h;
-    g_viewport.view = pViewport->view;
-    g_viewport.projection = pViewport->projection;
-}
-
-static inline void glud_ConstantColour(void* pData)
-{
-    GXSetTevColor(GX_TEVREG2, *(GXColor*)pData);
 }
 
 inline void EnableTranslucent(bool enable)
@@ -2212,10 +2264,21 @@ static inline void setWorldAmbient()
     gxSetChanAmbColour(0, ambient);
 }
 
-static void glx_SwitchUserData(const glModelPacket* p)
+static void glx_SwitchUserData(register const glModelPacket* p)
 {
     static bool bDeferredEnvDiffuse;
     static signed char init;
+    register unsigned long* pTable;
+    register GLViewportUserData* pViewportDest;
+    register unsigned long pViewportHigh;
+    register const glModelPacket* pSaved;
+    register int i;
+    void* pData;
+
+    asm {
+        mr r30, p
+        mr pSaved, r30
+    }
 
     if (!init)
     {
@@ -2263,12 +2326,15 @@ static void glx_SwitchUserData(const glModelPacket* p)
     GXSetScissor(0, 0, 640, 448);
     glx_CoPlanar = false;
 
-    if (p == NULL)
+    if (pSaved == NULL)
     {
         return;
     }
 
-    unsigned long* pTable = (unsigned long*)p->userData;
+    asm {
+        lwz r31, 0(pSaved)
+        mr pTable, r31
+    }
     if (pTable == NULL)
     {
         return;
@@ -2288,15 +2354,19 @@ static void glx_SwitchUserData(const glModelPacket* p)
         }
     }
 
-    for (int i = 0; i < GLUD_Num; i++, pTable++)
+    asm {
+        lis pViewportHigh, g_viewport@ha
+        addi r29, pViewportHigh, g_viewport@l
+        mr pViewportDest, r29
+    }
+
+    for (i = 0; i < GLUD_Num; i++, pTable++)
     {
         if (*pTable == 0)
         {
             continue;
         }
-
-        void* pData = glUserGetData((void*)*pTable);
-
+        pData = glUserGetData((void*)*pTable);
         switch (i)
         {
         case GLUD_CoPlanar:
@@ -2365,7 +2435,7 @@ static void glx_SwitchUserData(const glModelPacket* p)
             break;
 
         case GLUD_Skin:
-            glud_Skin(pData, p);
+            glud_Skin(pData, pSaved);
             break;
 
         case GLUD_ConstantColour:
@@ -2375,15 +2445,15 @@ static void glx_SwitchUserData(const glModelPacket* p)
 
         case GLUD_Viewport:
             glx_viewport = true;
-            glud_Viewport(pData);
+            glud_Viewport(pData, pViewportDest);
             break;
 
         default:
             break;
         }
+
     }
 }
-
 static const u32 ColourTargetTexture = glGetTexture("target/colour");
 
 static inline void force_LoadTexture(int stage, unsigned long handle)
@@ -2420,61 +2490,6 @@ static inline void _Indirect(bool bOn)
     {
         GXSetNumIndStages(0);
         GXSetTevDirect((GXTevStageID)0);
-    }
-}
-
-static inline void AdjustViewport(bool bOn)
-{
-    s32 x, y, w, h;
-    nlMatrix4 mProj;
-    nlMatrix4 mView;
-    Mtx44 proj;
-    Mtx view;
-
-    if (bOn)
-    {
-        x = g_viewport.x;
-        y = g_viewport.y;
-        w = g_viewport.w;
-        h = g_viewport.h;
-
-        memcpy(&mProj, (const void*)g_viewport.projection, sizeof(nlMatrix4));
-        memcpy(&mView, (const void*)g_viewport.view, sizeof(nlMatrix4));
-        glxCopyMatrix(proj, mProj);
-        glxCopyMatrix(view, mView);
-        GXLoadPosMtxImm(view, 0);
-
-        _GXProjectionType type;
-        if (-1.0f == mProj.e[14])
-        {
-            type = (_GXProjectionType)0;
-        }
-        else
-        {
-            type = (_GXProjectionType)1;
-        }
-        GXSetProjection(proj, type);
-        GXSetCurrentMtx(0);
-        GXSetViewport((float)x, (float)y, (float)w, (float)h, 0.0f, 1.0f);
-        GXSetScissor(x, y, w, h);
-    }
-    else
-    {
-        GXLoadPosMtxImm(gx_modelview, 0);
-
-        _GXProjectionType type;
-        if (-1.0f == mproj.m[3][2])
-        {
-            type = (_GXProjectionType)0;
-        }
-        else
-        {
-            type = (_GXProjectionType)1;
-        }
-        GXSetProjection(gx_proj, type);
-        GXSetCurrentMtx(0);
-        GXSetViewport(0.0f, 0.0f, 640.0f, 448.0f, 0.0f, 1.0f);
-        GXSetScissor(0, 0, 0x280, 0x1C0);
     }
 }
 

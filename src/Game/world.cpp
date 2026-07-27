@@ -1335,6 +1335,11 @@ static inline nlFloatColour MakeIntensityColour(float r, float g, float b, float
     return colour;
 }
 
+static inline void* World_GetSTSIntensity(const World* pWorld)
+{
+    return pWorld->m_pSTSIntensity;
+}
+
 /**
  * Offset/Address/Size: 0x1B7C | 0x80196840 | size: 0x12C
  */
@@ -1343,8 +1348,7 @@ void* World::GetCustomSpecularData(glModelPacket* pPacket, bool bPerm)
     GLSpecularUserData* pCursor;
     u32* p32;
     int numLights;
-    void* pSTSIntensity;
-    pSTSIntensity = m_pSTSIntensity;
+    void* pSTSIntensity = World_GetSTSIntensity(this);
 
     u8 glossLevel = (u8)glGetTextureState(pPacket->state.texturestate, GLTS_GlossLevel);
 

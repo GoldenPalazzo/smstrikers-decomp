@@ -434,7 +434,7 @@ void PowerupThrowPosition(int nThrowOrder, eThrowStyle eStyle, PowerupBase* pNew
 
 /**
  * Offset/Address/Size: 0x4F00 | 0x8005F7EC | size: 0xA98
- * TODO: 98.8% match - first powerup, target, and loop register allocation still differ.
+ * TODO: 99.03% linked match - first powerup, target, and loop register allocation still differ.
  */
 u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPowerups, Bowser* pBowser)
 {
@@ -641,12 +641,12 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
         pTargetFielders[a] = pTargetTeam->GetFielder(a);
     }
 
-    for (a = 0; a < nnumOfPowerups; a++)
+    for (j = 0; j < nnumOfPowerups; j++)
     {
         PowerupBase** pRegistry = g_pPowerups;
         bFoundLocation = false;
 
-        for (j = 0; j < 25; j++, pRegistry++)
+        for (i = 0; i < 25; i++, pRegistry++)
         {
             if (bFoundLocation)
             {
@@ -657,17 +657,22 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
             {
                 continue;
             }
+
             switch (eType)
             {
             case POWER_UP_BANANA:
             {
-                if (pThrower->m_eCharacterClass == 2)
+                switch (pThrower->m_eCharacterClass)
                 {
+                case DONKEYKONG:
                     eSize = POWERUPSIZE_MEDIUM;
-                }
-                else if (pThrower->m_pTeam->GetCaptain()->m_eCharacterClass == 2)
-                {
-                    eSize = POWERUPSIZE_MEDIUM;
+                    break;
+                default:
+                    if (pThrower->m_pTeam->GetCaptain()->m_eCharacterClass == DONKEYKONG)
+                    {
+                        eSize = POWERUPSIZE_MEDIUM;
+                    }
+                    break;
                 }
 
                 switch (eSize)
@@ -700,7 +705,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                     break;
                 }
 
-                new (pBanana) Banana(pTarget, j, fBananaRadius, eSize, bExplode);
+                new (pBanana) Banana(pTarget, i, fBananaRadius, eSize, bExplode);
 
                 pPowerup = pBanana;
                 break;
@@ -732,7 +737,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                     Bobomb::m_BobombSlotPool.m_FreeList = Bobomb::m_BobombSlotPool.m_FreeList->next;
                 }
 
-                new (pBobomb) Bobomb(pTarget, j, fBobombRadius, eSize, true);
+                new (pBobomb) Bobomb(pTarget, i, fBobombRadius, eSize, true);
 
                 pPowerup = pBobomb;
                 break;
@@ -764,8 +769,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                     GreenShell::m_GreenShellSlotPool.m_FreeList = GreenShell::m_GreenShellSlotPool.m_FreeList->next;
                 }
 
-                new (pPowerup) GreenShell(pTarget, j, fGreenShellRadius, eSize, bExplode);
-
+                new (pPowerup) GreenShell(pTarget, i, fGreenShellRadius, eSize, bExplode);
                 break;
             }
             case POWER_UP_FREEZE_SHELL:
@@ -795,8 +799,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                     FreezeShell::m_FreezeShellSlotPool.m_FreeList = FreezeShell::m_FreezeShellSlotPool.m_FreeList->next;
                 }
 
-                new (pPowerup) FreezeShell(pTarget, j, fFreezeShellRadius, eSize, bExplode);
-
+                new (pPowerup) FreezeShell(pTarget, i, fFreezeShellRadius, eSize, bExplode);
                 break;
             }
             case POWER_UP_RED_SHELL:
@@ -826,8 +829,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                     RedShell::m_RedShellSlotPool.m_FreeList = RedShell::m_RedShellSlotPool.m_FreeList->next;
                 }
 
-                new (pPowerup) RedShell(pTarget, j, fRedShellRadius, eSize, bExplode);
-
+                new (pPowerup) RedShell(pTarget, i, fRedShellRadius, eSize, bExplode);
                 break;
             }
             case POWER_UP_SPINY_SHELL:
@@ -857,8 +859,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                     SpinyShell::m_SpinyShellSlotPool.m_FreeList = SpinyShell::m_SpinyShellSlotPool.m_FreeList->next;
                 }
 
-                new (pPowerup) SpinyShell(pTarget, j, fSpinyShellRadius, eSize, bExplode);
-
+                new (pPowerup) SpinyShell(pTarget, i, fSpinyShellRadius, eSize, bExplode);
                 break;
             }
             default:
@@ -874,11 +875,11 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
             }
             else
             {
-                PowerupThrowPosition(a, eStyle, pPowerup, pFirstPowerup);
+                PowerupThrowPosition(j, eStyle, pPowerup, pFirstPowerup);
 
                 if (pPowerup->m_eType == POWER_UP_RED_SHELL)
                 {
-                    for (i = 0; i < 4; i++)
+                    for (int i = 0; i < 4; i++)
                     {
                         if (pFirstPowerup->m_pTarget == pTargetFielders[i])
                         {
