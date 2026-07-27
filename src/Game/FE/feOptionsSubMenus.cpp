@@ -555,7 +555,6 @@ void OptionsCheatsMenu::Revert()
 
 /**
  * Offset/Address/Size: 0x3D3C | 0x800B8D80 | size: 0x7D4
- * TODO: 99.77% match - callback and FEFinder temporaries still use different stack slots.
  */
 void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstance* compinstance, FEPresentation* presentation, bool unlocked, int startindex)
 {
@@ -579,8 +578,7 @@ void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstan
 
         TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             compinstance->GetActiveSlide(),
-            InlineHasher(nlStringLowerHash("OFF")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("OFF")));
 
         pText->SetStringId("CHEAT_LOCKED");
 
@@ -602,8 +600,7 @@ void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstan
 
         TLComponentInstance* pArrowComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             pMenuComp->GetActiveSlide(),
-            InlineHasher(nlStringLowerHash("ARROWS")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("ARROWS")));
 
         pArrowComp->m_bVisible = false;
         pMenuComp->SetActiveSlide("OUT");
@@ -632,7 +629,6 @@ void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstan
 
 /**
  * Offset/Address/Size: 0x34B0 | 0x800B84F4 | size: 0x88C
- * TODO: 99.69% match - callback temporary stack slots still differ in slide menu item setup.
  */
 void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstance, CustomPowerups startOption, FEPresentation* presentation)
 {
@@ -755,8 +751,7 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
         {
             pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
                 compinstance->GetActiveSlide(),
-                InlineHasher(nlStringLowerHash("EXPLOSIVE")),
-                InlineHasher(0));
+                InlineHasher(nlStringLowerHash("EXPLOSIVE")));
 
             pText->SetStringId("CHEAT_LOCKED");
 
@@ -773,8 +768,7 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
 
             pArrowComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
                 pMenuComp->GetActiveSlide(),
-                InlineHasher(nlStringLowerHash("ARROWS")),
-                InlineHasher(0));
+                InlineHasher(nlStringLowerHash("ARROWS")));
 
             pArrowComp->m_bVisible = false;
 
