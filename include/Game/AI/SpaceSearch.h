@@ -17,8 +17,6 @@ enum eFieldDirection
     NUM_DIRECTIONS = 6,
 };
 
-float CalcIdealShootingPositionScore(const nlVector3&, const nlVector3&, const nlVector2&, float);
-
 class SpaceSearch
 {
 public:

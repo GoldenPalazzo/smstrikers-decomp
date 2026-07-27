@@ -305,51 +305,48 @@ SSearchBestPass::SSearchBestPass(cPlayer* pBallOwner, cPlayer* pPassTarget, bool
 
 /**
  * Offset/Address/Size: 0xA10 | 0x80063360 | size: 0x2DC
- * TODO: 98.74% match - remaining f29/f30/f31 register allocation mismatch.
  */
-float CalcIdealShootingPositionScore(const nlVector3& v3TestPosition, const nlVector3& v3OtherPosition, const nlVector2& v2OffNetPosition, float fMaxDistance)
+static float CalcIdealShootingPositionScore(const nlVector3& v3TestPosition, const nlVector3& v3OtherPosition, const nlVector2& v2OffNetPosition, float fMaxDistance)
 {
     float fMaxDistanceLocal;
-    float fIdealDistance;
+    nlVector2 vIdealDistance;
     float fScore;
-    float fDy;
-    float fDx;
-    float fCandidateX;
-    float fCandidateY;
+    nlVector2 vDelta;
+    nlVector2 vCandidate;
 
     fMaxDistanceLocal = fMaxDistance;
-    fDy = v2OffNetPosition.f.y - v3TestPosition.f.y;
-    fDx = v2OffNetPosition.f.x - v3TestPosition.f.x;
+    vDelta.f.x = v2OffNetPosition.f.x - v3TestPosition.f.x;
+    vDelta.f.y = v2OffNetPosition.f.y - v3TestPosition.f.y;
     fScore = 0.0f;
 
-    fIdealDistance = g_pGame->m_pFuzzyTweaks->vIdealDistanceForShooting.f.x;
+    vIdealDistance.f.x = g_pGame->m_pFuzzyTweaks->vIdealDistanceForShooting.f.x;
 
     {
-        float fDistSq = fDy * fDy;
-        fDistSq += fDx * fDx;
+        float fDistSq = vDelta.f.y * vDelta.f.y;
+        fDistSq += vDelta.f.x * vDelta.f.x;
 
-        if (fDistSq <= fIdealDistance * fIdealDistance)
+        if (fDistSq <= vIdealDistance.f.x * vIdealDistance.f.x)
         {
             float fInvDist = nlRecipSqrt(fDistSq, true);
-            float fNegIdealDistance = -fIdealDistance;
-            fCandidateX = v2OffNetPosition.f.x + fNegIdealDistance * (fInvDist * fDx);
-            fCandidateY = v2OffNetPosition.f.y + fNegIdealDistance * (fInvDist * fDy);
+            float fNegIdealDistance = -vIdealDistance.f.x;
+            vCandidate.f.x = v2OffNetPosition.f.x + fNegIdealDistance * (fInvDist * vDelta.f.x);
+            vCandidate.f.y = v2OffNetPosition.f.y + fNegIdealDistance * (fInvDist * vDelta.f.y);
         }
         else
         {
             float fDist = nlSqrt(fDistSq, true);
-            float fScale = (fDist - fIdealDistance) / fDist;
-            fCandidateX = v3TestPosition.f.x + fScale * fDx;
-            fCandidateY = v3TestPosition.f.y + fScale * fDy;
+            float fScale = (fDist - vIdealDistance.f.x) / fDist;
+            vCandidate.f.x = v3TestPosition.f.x + fScale * vDelta.f.x;
+            vCandidate.f.y = v3TestPosition.f.y + fScale * vDelta.f.y;
         }
     }
 
     {
-        float fDeltaY = fCandidateY - v3TestPosition.f.y;
-        float fDeltaX = fCandidateX - v3TestPosition.f.x;
-        float fIdealRange = g_pGame->m_pFuzzyTweaks->vIdealDistanceForShooting.f.y;
+        float fDeltaY = vCandidate.f.y - v3TestPosition.f.y;
+        float fDeltaX = vCandidate.f.x - v3TestPosition.f.x;
+        vIdealDistance.f.y = g_pGame->m_pFuzzyTweaks->vIdealDistanceForShooting.f.y;
 
-        if ((fDeltaX * fDeltaX + fDeltaY * fDeltaY) < (fIdealRange * fIdealRange))
+        if ((fDeltaX * fDeltaX + fDeltaY * fDeltaY) < (vIdealDistance.f.y * vIdealDistance.f.y))
         {
             nlVector3 v3OffNetPos = { 0.0f, 0.0f, 0.0f };
             v3OffNetPos.f.x = v2OffNetPosition.f.x;
@@ -360,36 +357,39 @@ float CalcIdealShootingPositionScore(const nlVector3& v3TestPosition, const nlVe
         {
             float fDx2 = v2OffNetPosition.f.x - v3OtherPosition.f.x;
             float fDy2 = v2OffNetPosition.f.y - v3OtherPosition.f.y;
-            float fIdealDistance2 = g_pGame->m_pFuzzyTweaks->vIdealDistanceForShooting.f.x;
-            float fCandidateX2;
+            float fCandidateX2 = g_pGame->m_pFuzzyTweaks->vIdealDistanceForShooting.f.x;
             float fCandidateY2;
             float fDistSq2 = fDy2 * fDy2;
             fDistSq2 += fDx2 * fDx2;
 
-            if (fDistSq2 <= fIdealDistance2 * fIdealDistance2)
+            if (fDistSq2 <= fCandidateX2 * fCandidateX2)
             {
                 float fInvDist2 = nlRecipSqrt(fDistSq2, true);
-                float fNegIdealDistance2 = -fIdealDistance2;
+                float fNegIdealDistance2 = -fCandidateX2;
                 fCandidateX2 = v2OffNetPosition.f.x + fNegIdealDistance2 * (fInvDist2 * fDx2);
                 fCandidateY2 = v2OffNetPosition.f.y + fNegIdealDistance2 * (fInvDist2 * fDy2);
             }
             else
             {
                 float fDist2 = nlSqrt(fDistSq2, true);
-                float fScale2 = (fDist2 - fIdealDistance2) / fDist2;
+                float fScale2 = (fDist2 - fCandidateX2) / fDist2;
                 fCandidateX2 = v3OtherPosition.f.x + fScale2 * fDx2;
                 fCandidateY2 = v3OtherPosition.f.y + fScale2 * fDy2;
             }
 
             {
+                nlVector2 vDelta3;
+                float fDeltaLenSq;
                 float fCandidateLenSq = fCandidateX2 * fCandidateX2 + fCandidateY2 * fCandidateY2;
-                if (fCandidateLenSq > 0.0f)
+                if (fCandidateLenSq > 0.1f)
                 {
-                    float fDy3 = v3TestPosition.f.y - v3OtherPosition.f.y;
-                    float fDx3 = v3TestPosition.f.x - v3OtherPosition.f.x;
-                    float fDeltaLenSq = fDx3 * fDx3 + fDy3 * fDy3;
+                    nlVec2Set(
+                        vDelta3,
+                        v3TestPosition.f.x - v3OtherPosition.f.x,
+                        v3TestPosition.f.y - v3OtherPosition.f.y);
+                    fDeltaLenSq = vDelta3.f.x * vDelta3.f.x + vDelta3.f.y * vDelta3.f.y;
 
-                    if (fDeltaLenSq > 0.0f)
+                    if (fDeltaLenSq > 0.1f)
                     {
                         float fInvDeltaLen;
                         float fInvCandidateLen;
@@ -400,8 +400,8 @@ float CalcIdealShootingPositionScore(const nlVector3& v3TestPosition, const nlVe
                         fInvDeltaLen = nlRecipSqrt(fDeltaLenSq, true);
                         fInvCandidateLen = nlRecipSqrt(fCandidateLenSq, true);
 
-                        fDot = (fInvDeltaLen * fDx3) * (fInvCandidateLen * fCandidateX2)
-                             + (fInvDeltaLen * fDy3) * (fInvCandidateLen * fCandidateY2);
+                        fDot = (fInvDeltaLen * vDelta3.f.x) * (fInvCandidateLen * fCandidateX2)
+                             + (fInvDeltaLen * vDelta3.f.y) * (fInvCandidateLen * fCandidateY2);
                         fScore = fScore * NormalizeVal(fDot, 0.0f, 1.0f);
                     }
                 }
