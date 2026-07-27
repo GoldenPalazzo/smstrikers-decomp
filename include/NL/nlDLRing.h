@@ -273,18 +273,13 @@ public:
         m_Curr = current;
     }
 
-    ~nlDLListIterator() { }
-
     bool hasNext() const { return m_Curr != 0; }
 
     Pointer next()
     {
-        if (!hasNext())
-            return 0;
-
         Pointer ret = m_Curr;
-        if (ret == m_Head)
-            m_Curr = 0;
+        if ((nlDLRingIsEnd(m_Head, m_Curr) != 0) || (m_Curr == NULL))
+            m_Curr = NULL;
         else
             m_Curr = m_Curr->m_next;
         return ret;

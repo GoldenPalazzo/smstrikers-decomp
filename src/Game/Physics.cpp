@@ -178,7 +178,7 @@ bool PhysicsLoader::StartLoad(LoadingManager*)
     }
 
     pThis->ConstructStaticPhysicsPrimitives(
-        BasicStadium::GetCurrentStadium()->m_pCharacterPhysicsData);
+        BasicStadium::GetCurrentStadium()->m_pPhysicsData);
 
     return true;
 }

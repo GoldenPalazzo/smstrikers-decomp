@@ -107,6 +107,15 @@ template <typename T>
 class nlDLListContainer : public DLListContainerBase<T, NewAdapter<DLListEntry<T> > >
 {
 public:
+    nlDLListContainer()
+        : DLListContainerBase<T, NewAdapter<DLListEntry<T> > >()
+    {
+    }
+
+    nlDLListContainer(int initialize)
+        : DLListContainerBase<T, NewAdapter<DLListEntry<T> > >(initialize)
+    {
+    }
 }; // total size: 0x8
 
 template <typename T>

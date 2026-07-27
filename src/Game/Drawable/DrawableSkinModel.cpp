@@ -53,7 +53,7 @@ void DrawableSkinModel::Draw()
         void* pLightData;
         if (g_bSkinModelTextureLighting)
         {
-            pLightData = m_pWorldContext->m_pIntensityData;
+            pLightData = m_pWorldContext->m_pIntensityPerm;
         }
         else
         {

@@ -74,6 +74,10 @@ public:
     void ExtractFrustumPlanes();
     void* GetCustomSpecularData(glModelPacket*, bool);
     void CreateLightUserData();
+    inline void AssignLightBitmasks();
+    inline void CreateWorldObjFromChunk(nlChunk*);
+    inline void CreateLightObjFromChunk(nlChunk*);
+    inline bool LoadPhysicsPrimitives(nlChunk*);
     bool LoadObjectData(const char*);
     void AddToHyperSTSDrawables(unsigned long, DrawableModel*);
     bool LoadGeometry(glModel*, unsigned long, bool, bool, unsigned long*, int*, bool);
@@ -85,15 +89,11 @@ public:
     /* 0x01C */ bool m_Locked;
     /* 0x020 */ struct glModel* m_pModels;
     /* 0x024! */ unsigned long m_uNumModels;
-    /* 0x028! */ DLListContainerBase<WorldAnimController*, NewAdapter<DLListEntry<WorldAnimController*> > > m_animControllerList;
+    /* 0x028! */ nlDLListContainer<WorldAnimController*> m_animControllerList;
     /* 0x030 */ void* m_pLightData;
     /* 0x034 */ void* m_pPlayerNISLightData;
-    /* 0x038 */ union
-    {
-        void* m_pIntensityPerm;
-        void* m_pIntensityData;
-    };
-    /* 0x03C */ void* m_pSpecularData;
+    /* 0x038 */ void* m_pIntensityPerm;
+    /* 0x03C */ void* m_pIntensityData;
     /* 0x040 */ void* m_pSTSIntensity;
     /* 0x044 */ nlAVLTree<unsigned long, DrawableObject*, DefaultKeyCompare<unsigned long> > m_drawableMap;
     /* 0x060! */ nlAVLTree<unsigned long, DrawableObject*, DefaultKeyCompare<unsigned long> > m_hyperSTSDrawableMap; // verified
@@ -105,7 +105,9 @@ public:
     /* 0x128 */ u32 m_LightRampTexB;
     /* 0x12C */ u32 m_PlayerLightRampTex;
     /* 0x130 */ u32 m_GlobalLightRampSTSTex;
-}; // total size: 0x134
+    /* 0x134 */ CharacterPhysicsData* m_pPhysicsData;
+    /* 0x138 */ const LightObject* m_pShadowLight;
+}; // total size: 0x13C
 
 // class nlAVLTree<unsigned long, LightObject*, DefaultKeyCompare<unsigned long>>
 // {

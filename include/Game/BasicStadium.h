@@ -27,11 +27,6 @@ public:
     static void BasicStadiumEventHandler(Event*, void*);
     static BasicStadium* GetCurrentStadium();
 
-    // DWARF names this as a u32, but the field at 0x134 holds the stadium's
-    // character physics data pointer (see World character physics setup).
-    /* 0x134 */ CharacterPhysicsData* m_pCharacterPhysicsData;
-    /* 0x138 */ LightObject* m_pShadowLight;
-
     /* 0x13C */ nlVector3* m_CameraFlashPositions;
     /* 0x140 */ s32 m_NumCameraFlashPositions;
     /* 0x144 */ float m_fSkyboxRotationAng;

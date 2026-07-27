@@ -825,7 +825,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
     void* pLightData;
     if (DrawableCharacter::sSTSLighting != 0)
     {
-        pLightData = world->m_pSpecularData;
+        pLightData = world->m_pIntensityData;
     }
     else if (DrawableCharacter::sCameraRelativeLighting || AlwaysUseCameraRelativeCharacterLighting())
     {
@@ -1069,7 +1069,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
 
     if (sShadowRenderingDisabled__17DrawableCharacter == 0)
     {
-        LightObject* pLight = ((BasicStadium*)WorldManager::s_World)->m_pShadowLight;
+        const LightObject* pLight = ((BasicStadium*)WorldManager::s_World)->m_pShadowLight;
         if (pLight != nullptr)
         {
             static float s_fHeightFudge;

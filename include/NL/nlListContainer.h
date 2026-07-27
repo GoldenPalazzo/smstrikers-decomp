@@ -41,6 +41,13 @@ public:
 
     void DeleteEntry(ListEntry<T>* entry);
 
+    void AddEntry(const T& data)
+    {
+        ListEntry<T>* entry =
+            new (m_Allocator.Allocate()) ListEntry<T>(data);
+        nlListAddStart<ListEntry<T> >(&m_Head, entry, &m_Tail);
+    }
+
     void AddStart(const T& data)
     {
         ListEntry<T> value(data);
@@ -119,6 +126,10 @@ void ListContainerBase<T, Adapter>::DeleteEntry(ListEntry<T>* entry)
 template <typename T>
 class nlListContainer : public ListContainerBase<T, NewAdapter<ListEntry<T> > >
 {
+public:
+    ~nlListContainer()
+    {
+    }
 }; // total size: 0xC
 
 template <typename T>
