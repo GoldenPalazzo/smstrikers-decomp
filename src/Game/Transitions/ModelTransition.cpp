@@ -456,6 +456,54 @@ void ModeledScreenTransition::Render(eGLView)
     }
 }
 
+static inline void ReserveOutline(Vector<nlVector3, DefaultAllocator>& outline, int capacity)
+{
+    if (outline.mCapacity < capacity)
+    {
+        Vector<nlVector3, DefaultAllocator> other(capacity, 0);
+        for (int i = 0; i < outline.mSize; i++)
+        {
+            other.mData[i] = outline.mData[i];
+        }
+        other.mSize = outline.mSize;
+        outline.Swap(other);
+    }
+}
+
+static inline void InsertOutline(
+    Vector<nlVector3, DefaultAllocator>& outline,
+    nlVector3* at,
+    const nlVector3* begin,
+    const nlVector3* end)
+{
+    int size = end - begin;
+    int offset = at - outline.mData;
+    ReserveOutline(outline, outline.mSize + size);
+    at = outline.mData + offset;
+    nlVector3* t = outline.mData + outline.mSize - 1;
+    while (t >= at)
+    {
+        *(t + size) = *t;
+        t--;
+    }
+    while (begin != end)
+    {
+        *at = *begin;
+        begin++;
+        at++;
+    }
+    outline.mSize += size;
+}
+
+static inline void ClearOutline(Vector<nlVector3, DefaultAllocator>& outline)
+{
+    for (int i = 0; i < outline.mSize; i++)
+    {
+        outline.mData[i] = nlVector3();
+    }
+    outline.mSize = 0;
+}
+
 /**
  * Offset/Address/Size: 0x918 | 0x802029DC | size: 0xAD4
  */
@@ -466,37 +514,13 @@ void ModeledScreenTransition::RenderOutline() const
     outline.mData = NULL;
     outline.mSize = 0;
     outline.mCapacity = 0;
+    ReserveOutline(outline, 8);
 
-    if (outline.mCapacity < 8)
+    for (int i = 0; (u32)i < m_nModels; i++)
     {
-        Vector<nlVector3, DefaultAllocator> other(8, 0);
-
-        for (int i = 0; i < outline.mSize; i++)
+        for (int iPacket = 0; (u32)iPacket < m_pModels[i].numPackets; iPacket++)
         {
-            other.mData[i] = outline.mData[i];
-        }
-
-        other.mSize = outline.mSize;
-
-        outline.Swap(other);
-    }
-
-    const nlVector3* begin = &current;
-    const nlVector3* end = begin + 1;
-    int size = end - begin;
-
-    int modelOffset = 0;
-    int modelMapOffset = 0;
-    int* modelMap = m_pModelMap;
-    glModel* models = m_pModels;
-    u32 modelCount = m_nModels;
-
-    for (int i = 0; (u32)i < modelCount; i++)
-    {
-        glModel* model = (glModel*)((u8*)models + modelOffset);
-        for (int iPacket = 0; (u32)iPacket < model->numPackets; iPacket++)
-        {
-            const glModelPacket& packet = model->packets[iPacket];
+            const glModelPacket& packet = m_pModels[i].packets[iPacket];
             DisplayList* pList = dlGetStruct(packet.indexBuffer);
 
             for (int iVertex = 0; iVertex < (int)packet.numVertices; iVertex++)
@@ -505,15 +529,26 @@ void ModeledScreenTransition::RenderOutline() const
                 if (((u16*)&pList->indices)[1] != 0)
                 {
                     u16 ns = ((u16*)&pList->indices)[0];
-                    p = (u16*)((u8*)pList->list + (((ns - 1) * 2 + 1) * iVertex) + 4);
+                    int stride = (ns - 1) * 2 + 1;
+                    int offset = stride * iVertex;
+                    p = (u16*)((u8*)pList->list + offset);
+                    p += 2;
                 }
                 else
                 {
                     u16 ns = ((u16*)&pList->indices)[0];
-                    p = (u16*)((u8*)pList->list + ((ns * 2) * iVertex) + 3);
+                    int stride = ns * 2;
+                    int offset = iVertex * stride;
+                    u8* ptr8 = (u8*)pList->list;
+                    ptr8 += offset;
+                    p = (u16*)ptr8;
+                    ptr8 = (u8*)p;
+                    ptr8 += 3;
+                    p = (u16*)ptr8;
                 }
 
-                int index = *p;
+                u16 vertex = *p;
+                int index = vertex;
                 const glModelStream& stream = packet.streams[0];
 
                 if (stream.stride == 12)
@@ -523,43 +558,14 @@ void ModeledScreenTransition::RenderOutline() const
                 else
                 {
                     const s16* s = (const s16*)((u8*)stream.address + index * stream.stride);
-                    current.f.x = s[0] * 0.0078125f;
-                    current.f.y = s[1] * 0.0078125f;
-                    current.f.z = s[2] * 0.0078125f;
+                    current.f.x = s[0] / 128.0f;
+                    current.f.y = s[1] / 128.0f;
+                    current.f.z = s[2] / 128.0f;
                 }
 
-                nlMultPosVectorMatrix(current, current, m_pPoseAccumulator->GetNodeMatrix(*(int*)((u8*)modelMap + modelMapOffset)));
+                nlMultPosVectorMatrix(current, current, m_pPoseAccumulator->GetNodeMatrix(m_pModelMap[i]));
 
-                int offset = (outline.mData + outline.mSize) - outline.mData;
-                int requiredSize = outline.mSize + size;
-
-                if (outline.mCapacity < requiredSize)
-                {
-                    Vector<nlVector3, DefaultAllocator> other(requiredSize, 0);
-                    for (int i = 0; i < outline.mSize; i++)
-                    {
-                        other.mData[i] = outline.mData[i];
-                    }
-
-                    other.mSize = outline.mSize;
-
-                    outline.Swap(other);
-                }
-
-                nlVector3* at = outline.mData + offset;
-                nlVector3* t = outline.mData + outline.mSize - 1;
-                while (t >= at)
-                {
-                    *(t + size) = *t;
-                    t--;
-                }
-                while (begin != end)
-                {
-                    *at = *begin;
-                    begin++;
-                    at++;
-                }
-                outline.mSize += size;
+                InsertOutline(outline, outline.mData + outline.mSize, &current, &current + 1);
             }
 
             ShuffleIntoOutline(outline);
@@ -602,15 +608,9 @@ void ModeledScreenTransition::RenderOutline() const
                 glViewAttachModel(GLV_Transitions3D, 2, mesh.GetModel());
             }
 
-            for (int k = 0; k < outline.mSize; k++)
-            {
-                outline.mData[k] = nlVector3();
-            }
-            outline.mSize = 0;
+            ClearOutline(outline);
         }
 
-        modelOffset += sizeof(glModel);
-        modelMapOffset += sizeof(int);
     }
 }
 /**
