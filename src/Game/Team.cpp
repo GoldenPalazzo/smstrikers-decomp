@@ -814,59 +814,43 @@ int BestAbleToInterceptBall(const void* a, const void* b)
     return 1;
 }
 
-static inline void AbortAllFielderPlays(cTeam* pTeam)
+inline void cTeam::AbortPlays()
 {
     for (int i = 0; i < 4; i++)
     {
-        pTeam->m_pAIOrderedFielders[i]->AbortPlay();
+        m_pAIOrderedFielders[i]->AbortPlay();
     }
 }
 
-/**
- * Offset/Address/Size: 0x6F0 | 0x80064A9C | size: 0x378
- * TODO: 99.80% match - pBallOwner r29/r28 register swap (scratch context-dependent)
- */
-void cTeam::UpdateTeamAI(float fDeltaT)
+inline bool cTeam::AssignSituation()
 {
-    if (mtTeamStyleTimer.m_uPackedTime == 0)
+    cPlayer* ballOwner = g_pBall->m_pOwner;
+    eSituation lastSituation = mpCurrentSituation;
+
+    if (ballOwner == NULL)
     {
-        meCurrentTeamStyle = TEAM_STYLE_AGGRESSIVE;
-        mtTeamStyleTimer.SetSeconds(1.0f);
-        AbortAllFielderPlays(this);
-    }
-
-    m_pFormationManager->Update(fDeltaT);
-
-    eSituation eLastSituation = mpCurrentSituation;
-    cPlayer* pBallOwner = g_pBall->m_pOwner;
-
-    if (pBallOwner == NULL)
-    {
-        pBallOwner = g_pBall->m_pPassTarget;
-        if ((pBallOwner != NULL) && (pBallOwner->m_eClassType == FIELDER))
+        ballOwner = g_pBall->m_pPassTarget;
+        if ((ballOwner != NULL) && (ballOwner->m_eClassType == FIELDER))
         {
-            if (ReceivingPass((cFielder*)pBallOwner))
-            {
-            }
-            else
+            if (!ReceivingPass((cFielder*)ballOwner))
             {
                 nlPrintf("cTeam::AssignSituation - caught bad pass case, with no proper receiver.\n");
                 g_pBall->ClearPassTarget();
-                pBallOwner = NULL;
+                ballOwner = NULL;
             }
         }
     }
 
-    if (pBallOwner != NULL)
+    if (ballOwner != NULL)
     {
-        if (pBallOwner->m_pTeam == this)
+        if (ballOwner->m_pTeam == this)
         {
             if (mpCurrentSituation != SITUATION_OFFENSE)
             {
                 mpCurrentSituation = SITUATION_OFFENSE;
                 meCurrentTeamStyle = TEAM_STYLE_AGGRESSIVE;
                 mtTeamStyleTimer.SetSeconds(1.0f);
-                AbortAllFielderPlays(this);
+                AbortPlays();
             }
         }
         else if (mpCurrentSituation != SITUATION_DEFENSE)
@@ -874,7 +858,7 @@ void cTeam::UpdateTeamAI(float fDeltaT)
             mpCurrentSituation = SITUATION_DEFENSE;
             meCurrentTeamStyle = TEAM_STYLE_AGGRESSIVE;
             mtTeamStyleTimer.SetSeconds(1.0f);
-            AbortAllFielderPlays(this);
+            AbortPlays();
         }
     }
     else if (mpCurrentSituation != SITUATION_LOOSE)
@@ -882,10 +866,27 @@ void cTeam::UpdateTeamAI(float fDeltaT)
         mpCurrentSituation = SITUATION_LOOSE;
         meCurrentTeamStyle = TEAM_STYLE_AGGRESSIVE;
         mtTeamStyleTimer.SetSeconds(1.0f);
-        AbortAllFielderPlays(this);
+        AbortPlays();
     }
 
-    bool bSituationChanged = (eLastSituation != mpCurrentSituation);
+    return lastSituation != mpCurrentSituation;
+}
+
+/**
+ * Offset/Address/Size: 0x6F0 | 0x80064A9C | size: 0x378
+ */
+void cTeam::UpdateTeamAI(float fDeltaT)
+{
+    if (mtTeamStyleTimer.m_uPackedTime == 0)
+    {
+        meCurrentTeamStyle = TEAM_STYLE_AGGRESSIVE;
+        mtTeamStyleTimer.SetSeconds(1.0f);
+        AbortPlays();
+    }
+
+    m_pFormationManager->Update(fDeltaT);
+
+    bool bSituationChanged = AssignSituation();
 
     if ((mtRoleTimer.m_uPackedTime == 0) || bSituationChanged)
     {

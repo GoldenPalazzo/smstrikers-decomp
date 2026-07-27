@@ -92,6 +92,8 @@ public:
     void ResetCharacters();
     void StopGameplayEffectsAndSounds();
     bool CalculateFormationPosition(nlVector3&, cFielder*, bool, float);
+    void AbortPlays();
+    bool AssignSituation();
     void UpdateTeamAI(float);
     void UpdatePlays(float);
     void CalculateNewBallInterceptTimes();
