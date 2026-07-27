@@ -344,7 +344,6 @@ void ShootToScoreMeter::DrawMeter()
 
 /**
  * Offset/Address/Size: 0x3DC | 0x8016063C | size: 0x5A8
- * TODO: 99.9% match - scaledWhiteBarWidth pre-loop multiply operand ordering remains
  */
 void ShootToScoreMeter::DrawColouredRegion(float startAngle, float endAngle, const nlColour& startColour, const nlColour& endColour, nlMatrix4 meterMatrix, float scale)
 {
@@ -363,12 +362,9 @@ void ShootToScoreMeter::DrawColouredRegion(float startAngle, float endAngle, con
     float radius0;
     float radius1;
 
-    scaledWhiteBarWidth = scale;
-    scaledWhiteBarWidth *= 0.039f;
+    scaledWhiteBarWidth = 0.039f * scale;
     widthAngle = endAngle - startAngle;
     radius = 0.198f * (MeterWidth * scale);
-    radius0 = radius - (scaledWhiteBarWidth * 0.5f);
-    radius1 = radius + (scaledWhiteBarWidth * 0.5f);
 
     float step = 0.125f;
     float sinScale = 10430.378f;
@@ -379,6 +375,8 @@ void ShootToScoreMeter::DrawColouredRegion(float startAngle, float endAngle, con
     {
         frac0 = (float)i * step;
         frac1 = (float)(i + 1) * step;
+        radius0 = radius - scaledWhiteBarWidth / 2.0f;
+        radius1 = radius + scaledWhiteBarWidth / 2.0f;
 
         float angle0 = frac0 * widthAngle + startAngle;
         s32 angle0_i = (s32)(sinScale * (pi * angle0 / deg));
