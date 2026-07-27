@@ -119,7 +119,7 @@ class PlatTexture
 {
 public:
     PlatTexture()
-        : m_unk8(0x50544558)
+        : m_Magic(0x50544558)
         , m_Width(0)
         , m_Height(0)
         , m_Levels(0)
@@ -142,7 +142,7 @@ public:
     void Create(int, int, eGXTextureFormat, int, bool, bool);
     void CreateWithMemory(int, int, eGXTextureFormat, int, const void*);
 
-    /* 0x00 */ int m_unk8;
+    /* 0x00 */ int m_Magic;
     /* 0x04 */ u16 m_Width;
     /* 0x06 */ u16 m_Height;
     /* 0x08 */ u8 m_Levels;
@@ -170,7 +170,7 @@ bool glplatBeginLoadTextureBundle(const char* filename, void (*callback)(void*, 
 bool glxParseTextureBundle(const char*);
 bool glplatLoadTextureBundle(const char* filename);
 PlatTexture* glx_MakeTexture(GXTextureHeader* header, unsigned long handle);
-bool glx_AddTex(unsigned long handle, PlatTexture* platTex);
+bool glx_AddTex(unsigned long handle, PlatTexture* pTex);
 PlatTexture* glx_GetTex(unsigned long, bool, bool);
 PlatTexture* glx_GetGridTexture(int width, int height);
 bool glx_SetGridMode(bool bGrid);
@@ -183,7 +183,7 @@ glxTextureLoadCallback_t glx_SetLoadCallback(glxTextureLoadCallback_t callback);
 class TexDestructor
 {
 public:
-    void CallDestructor(const unsigned long&, PlatTexture** texture);
+    void CallDestructor(const unsigned long&, PlatTexture** tex);
 };
 
 #endif // _GLXTEXTURE_H_

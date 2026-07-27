@@ -94,17 +94,17 @@ void glplatTextureReplace(unsigned long handle, const void* textureData, unsigne
 void glplatTextureAdd(unsigned long handle, const void* textureData, unsigned long size)
 {
     FORCE_DONT_INLINE;
-    unsigned long handle_copy;
-    PlatTexture* platTex = glx_MakeTexture((GXTextureHeader*)textureData, handle);
+    unsigned long handleCopy;
+    PlatTexture* pTex = glx_MakeTexture((GXTextureHeader*)textureData, handle);
     AVLTreeNode* existingNode;
     nlAVLTree<unsigned long, PlatTexture*, DefaultKeyCompare<unsigned long> >* textureTree;
-    handle_copy = handle;
+    handleCopy = handle;
 
-    if ((platTex != NULL) && (handle != -1))
+    if ((pTex != NULL) && (handle != -1))
     {
         textureTree = textures[currentMarkerLevel];
 
-        textureTree->AddAVLNode((AVLTreeNode**)&textureTree->m_Root, &handle_copy, &platTex, &existingNode, textureTree->m_NumElements);
+        textureTree->AddAVLNode((AVLTreeNode**)&textureTree->m_Root, &handleCopy, &pTex, &existingNode, textureTree->m_NumElements);
 
         if (existingNode == NULL)
         {
@@ -220,7 +220,7 @@ PlatTexture* glx_CreatePlatTexture()
     PlatTexture* pTex = (PlatTexture*)glResourceAlloc(sizeof(PlatTexture), GLM_Header);
     if (pTex != NULL)
     {
-        pTex->m_unk8 = 0x50544558;
+        pTex->m_Magic = 0x50544558;
         pTex->m_Width = 0;
         pTex->m_Height = 0;
         pTex->m_Levels = 0;
@@ -326,13 +326,13 @@ u32 glplatTextureGetWidth()
  */
 bool glplatTextureLoad(unsigned long texture)
 {
-    PlatTexture* tex = glx_GetTex(texture, 0, 0);
-    if (tex == NULL)
+    PlatTexture* pTex = glx_GetTex(texture, 0, 0);
+    if (pTex == NULL)
     {
         memset(&texobj, 0, 0x50);
         return false;
     }
-    memcpy(&texobj, tex, 0x50);
+    memcpy(&texobj, pTex, 0x50);
     return true;
 }
 
@@ -384,10 +384,10 @@ bool glxParseTextureBundle(const char* filedata)
         }
         else
         {
-            unsigned long textureHandle = glxTextureLoad_cb(dict[i].hash);
-            if (textureHandle != -1 && glTextureLoad(textureHandle) != 0)
+            unsigned long newHash = glxTextureLoad_cb(dict[i].hash);
+            if (newHash != -1 && glTextureLoad(newHash) != 0)
             {
-                glplatTextureReplace(textureHandle, currentTextureHeader, dict[i].fileSize);
+                glplatTextureReplace(newHash, currentTextureHeader, dict[i].fileSize);
             }
         }
     }
@@ -406,9 +406,6 @@ inline int BundleSortProc(const glTexBundleDict* a, const glTexBundleDict* b)
 
 /**
  * Offset/Address/Size: 0x9F4 | 0x801B7CB0 | size: 0x1D0
- */
-/**
- * Offset/Address/Size: 0xAF4 | 0x801B7CB0 | size: 0x1D0
  */
 bool glplatLoadTextureBundle(const char* filename)
 {
@@ -499,7 +496,7 @@ PlatTexture* glx_MakeTexture(GXTextureHeader* header, unsigned long texhandle)
     pTex = (PlatTexture*)glResourceAlloc(sizeof(PlatTexture), GLM_Header);
     if (pTex != NULL)
     {
-        pTex->m_unk8 = 0x50544558;
+        pTex->m_Magic = 0x50544558;
         pTex->m_Width = 0;
         pTex->m_Height = 0;
         pTex->m_Levels = 0;
@@ -515,37 +512,30 @@ PlatTexture* glx_MakeTexture(GXTextureHeader* header, unsigned long texhandle)
         memset(pTex->m_Bits, 0xFF, 4);
     }
 
-    // Load header values into local vars
     numLevels = header->numLevels;
     format = header->format;
     height = header->height;
     width = header->width;
 
-    // Free linear data if present
     if (pTex->m_LinearData != NULL)
     {
         nlFree(pTex->m_LinearData);
         pTex->m_LinearData = NULL;
     }
 
-    // Set dimensions
     pTex->m_Width = width;
     pTex->m_Height = height;
     pTex->m_Levels = (u8)numLevels;
     pTex->m_MaxLevel = (u8)numLevels;
     pTex->m_Format = format;
 
-    // Allocate swizzled data
     pTex->m_SwizzledData = glResourceAlloc(GCTextureSize(format, width, height, numLevels, -1), GLM_TextureData);
     pTex->m_LinearData = NULL;
 
-    // Copy bits from header
     memcpy(pTex->m_Bits, header->numBits, 4);
 
-    // Set missing texture flag
     pTex->m_bMissingTexture = header->missingTexture ? true : false;
 
-    // Handle palette
     numEntries = header->numEntries;
     if (numEntries != 0)
     {
@@ -554,7 +544,6 @@ PlatTexture* glx_MakeTexture(GXTextureHeader* header, unsigned long texhandle)
         memcpy(pTex->m_PaletteData, (u8*)&header[1] + textureSize, header->numEntries * 2);
     }
 
-    // Copy texture data
     memcpy(pTex->m_SwizzledData, (const u8*)header + 0x20, textureSize);
 
     pTex->Prepare();
@@ -565,18 +554,18 @@ PlatTexture* glx_MakeTexture(GXTextureHeader* header, unsigned long texhandle)
 /**
  * Offset/Address/Size: 0xF00 | 0x801B81BC | size: 0x94
  */
-bool glx_AddTex(unsigned long handle, PlatTexture* platTex)
+bool glx_AddTex(unsigned long handle, PlatTexture* pTex)
 {
     AVLTreeNode* existingNode;
     nlAVLTree<unsigned long, PlatTexture*, DefaultKeyCompare<unsigned long> >* textureTree;
 
-    if ((platTex == NULL) || (handle == -1))
+    if ((pTex == NULL) || (handle == -1))
     {
         return false;
     }
     textureTree = textures[currentMarkerLevel];
 
-    textures[currentMarkerLevel]->AddAVLNode((AVLTreeNode**)&textures[currentMarkerLevel]->m_Root, &handle, &platTex, &existingNode, textures[currentMarkerLevel]->m_NumElements);
+    textures[currentMarkerLevel]->AddAVLNode((AVLTreeNode**)&textures[currentMarkerLevel]->m_Root, &handle, &pTex, &existingNode, textures[currentMarkerLevel]->m_NumElements);
 
     if (existingNode == NULL)
     {
@@ -604,7 +593,6 @@ PlatTexture* glx_GetTex(unsigned long handle, bool bMissingFatal, bool bAllowGri
         }
     }
 
-    // Try to get texture animation
     pAnim = glInventory.GetTextureAnim(handle);
     if (pAnim != NULL)
     {
@@ -628,7 +616,6 @@ PlatTexture* glx_GetTex(unsigned long handle, bool bMissingFatal, bool bAllowGri
         }
     }
 
-    // Texture not found
     if (bMissingFatal)
     {
         tDebugPrintManager::Print(DC_GLPLAT, "texture 0x%08X not found\n", handle);
@@ -726,7 +713,6 @@ static PlatTexture* glx_MakeGridTexture(int w, int h)
     nGridMemory += h * (w << 1) + 0x50;
     tDebugPrintManager::Print(DC_GL, "grid [%d %d] now using %uKB\n", w, h, nGridMemory / 1024);
 
-    // Swizzle and prepare texture
     pTex->Swizzle(true);
     pTex->Prepare();
 
@@ -749,9 +735,9 @@ bool glx_SetGridMode(bool bGrid)
 void glxInitTex()
 {
     currentMarkerLevel = -1;
-    for (int i = 0; i < 16; i++)
+    for (int level = 0; level < 16; level++)
     {
-        textures[i] = new (nlMalloc(0x14, 8, 0)) nlAVLTree<unsigned long, PlatTexture*, DefaultKeyCompare<unsigned long> >();
+        textures[level] = new (nlMalloc(0x14, 8, 0)) nlAVLTree<unsigned long, PlatTexture*, DefaultKeyCompare<unsigned long> >();
     }
     currentMarkerLevel += 1;
 }
@@ -773,19 +759,19 @@ void glx_BackupTexMarkerLevel(int level)
 /**
  * Offset/Address/Size: 0x197C | 0x801B8C38 | size: 0x48
  */
-inline void TexDestructor::CallDestructor(const unsigned long&, PlatTexture** texture)
+inline void TexDestructor::CallDestructor(const unsigned long&, PlatTexture** tex)
 {
-    PlatTexture* texture_ptr;
-    void* linear_data;
+    PlatTexture* pTex;
+    void* linearData;
 
-    texture_ptr = *texture;
-    if (texture_ptr != NULL)
+    pTex = *tex;
+    if (pTex != NULL)
     {
-        linear_data = texture_ptr->m_LinearData;
-        if (linear_data != NULL)
+        linearData = pTex->m_LinearData;
+        if (linearData != NULL)
         {
-            nlFree(linear_data);
-            texture_ptr->m_LinearData = NULL;
+            nlFree(linearData);
+            pTex->m_LinearData = NULL;
         }
     }
 }
