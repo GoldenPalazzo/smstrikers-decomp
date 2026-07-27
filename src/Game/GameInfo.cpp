@@ -3082,14 +3082,7 @@ void GameInfoManager::OnPostCupGameState()
             int tempBuf[16];
             TeamStats* pTemp = (TeamStats*)tempBuf;
 
-            if (mCurrentMode == GM_BOWSER_CUP || mCurrentMode == GM_SUPER_BOWSER_CUP)
-            {
-                numTeams = 8;
-            }
-            else
-            {
-                numTeams = mCurrentCup->GetNumTeams();
-            }
+            numTeams = GetNumPlayingTeams();
 
             for (i = 0; i < numTeams; i++)
             {
