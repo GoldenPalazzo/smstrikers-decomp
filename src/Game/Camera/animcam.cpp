@@ -252,8 +252,6 @@ static bool LoadAnimCameraData(nlChunk* outerChunk, nlChunk* outerEnd, cCameraDa
     return true;
 }
 
-typedef bool (*LoadAnimCameraDataFn)(nlChunk*, nlChunk*, cCameraData*, const char*);
-
 /**
  * Offset/Address/Size: 0xBF8 | 0x801A57EC | size: 0xAC
  */
@@ -273,10 +271,10 @@ bool cAnimCamera::LoadCameraAnimation(nlChunk* begin, nlChunk* end, const char* 
         ((cCameraData*)mem)->fFOV = NULL;
         ((cCameraData*)mem)->fFocalLength = NULL;
     }
-    pData->m_uHashID = nlStringLowerHash((const char*)end);
-    bool result = ((LoadAnimCameraDataFn)LoadAnimCameraData)((nlChunk*)this, begin, pData, cameraName);
+    pData->m_uHashID = nlStringLowerHash(cameraName);
+    bool b = LoadAnimCameraData(begin, end, pData, ownsKeyData);
     nlListAddStart(&m_cameraDataList, pData, (cCameraData**)NULL);
-    return result;
+    return b;
 }
 
 /**

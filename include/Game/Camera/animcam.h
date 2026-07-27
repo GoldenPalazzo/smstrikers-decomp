@@ -43,7 +43,7 @@ public:
     /* 0x18 */ virtual float GetFOV() const;
     /* 0x14 */ virtual const nlMatrix4& GetViewMatrix() const;
 
-    bool LoadCameraAnimation(nlChunk*, nlChunk*, const char*, bool);
+    static bool LoadCameraAnimation(nlChunk*, nlChunk*, const char*, bool);
     static bool LoadCameraAnimation(const char*, const char*, bool);
     static void FreeCameraAnimations();
 

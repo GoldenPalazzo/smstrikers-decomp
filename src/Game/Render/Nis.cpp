@@ -38,8 +38,6 @@ class EmissionController;
 
 /**
  * Offset/Address/Size: 0x1658 | 0x8012CA68 | size: 0x53C
- * TODO: 98.22% match - remaining diffs are an r26/r27 swap between the
- * animation index and SAnim slot pool, plus extra zero setup at LoadCameraAnimation.
  */
 Nis::Nis(NisHeader& header, char* data, int size)
 {
@@ -111,9 +109,9 @@ Nis::Nis(NisHeader& header, char* data, int size)
         if ((chunk->m_ID & 0x80FFFFFF) == 0x80015501)
         {
             BasicString<char, Detail::TempStringAllocator> name = Format(BasicString<char, Detail::TempStringAllocator>("{0}_{1}"), mHeader->name, mNumCameras);
-            cAnimCamera* cam = (cAnimCamera*)((char*)chunk + 8);
+            nlChunk* cameraBegin = (nlChunk*)((char*)chunk + 8);
             nlChunk* cameraEnd = (nlChunk*)((char*)chunk + chunk->m_Size + 8);
-            cam->LoadCameraAnimation(cameraEnd, (nlChunk*)name.c_str(), (const char*)0, false);
+            cAnimCamera::LoadCameraAnimation(cameraBegin, cameraEnd, name.c_str(), false);
             mNumCameras++;
         }
         chunk = (nlChunk*)((char*)chunk + chunk->m_Size + 8);
