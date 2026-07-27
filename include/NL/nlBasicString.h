@@ -54,7 +54,7 @@ public:
         }
 
         Data(const CharT* begin, const CharT* end)
-            : mData(end - begin + 1, 0)
+            : mData((int)(end - begin) + 1, 0)
             , mRefCount(1)
         {
             for (int i = 0; i < mData.mSize - 1; i++)

@@ -26,6 +26,50 @@ public:
         StringType mToken;
 
     private:
+        const value_type* SkipSeperators(const value_type* iter) const
+        {
+            while (iter != mTokenizer->mString.end())
+            {
+                int i = 0;
+                while (i < mTokenizer->mSeperators.size())
+                {
+                    if (*iter == mTokenizer->mSeperators[i])
+                    {
+                        break;
+                    }
+                    i++;
+                }
+                if (i == mTokenizer->mSeperators.size())
+                {
+                    break;
+                }
+                iter++;
+            }
+            return iter;
+        }
+
+        const value_type* FindSeperator(const value_type* iter) const
+        {
+            while (iter != mTokenizer->mString.end())
+            {
+                int i = 0;
+                while (i < mTokenizer->mSeperators.size())
+                {
+                    if (*iter == mTokenizer->mSeperators[i])
+                    {
+                        break;
+                    }
+                    i++;
+                }
+                if (i != mTokenizer->mSeperators.size())
+                {
+                    break;
+                }
+                iter++;
+            }
+            return iter;
+        }
+
         void FindNextToken();
     };
 
@@ -51,49 +95,8 @@ typename Tokenizer<StringType>::iterator Tokenizer<StringType>::end() const
 template <typename StringType>
 void Tokenizer<StringType>::iterator::FindNextToken()
 {
-    const value_type* iter = mIter;
-    const Tokenizer* tokenizer = mTokenizer;
-
-    while (iter != mTokenizer->mString.end())
-    {
-        int i = 0;
-        while (i < mTokenizer->mSeperators.size())
-        {
-            if (*iter == tokenizer->mSeperators[i])
-            {
-                break;
-            }
-            i++;
-        }
-        if (i == mTokenizer->mSeperators.size())
-        {
-            break;
-        }
-        iter++;
-    }
-
-    mIter = iter;
-    iter = mIter;
-
-    while (iter != mTokenizer->mString.end())
-    {
-        int i = 0;
-        while (i < mTokenizer->mSeperators.size())
-        {
-            if (*iter == tokenizer->mSeperators[i])
-            {
-                break;
-            }
-            i++;
-        }
-        if (i != mTokenizer->mSeperators.size())
-        {
-            break;
-        }
-        iter++;
-    }
-
-    mEnd = iter;
+    mIter = SkipSeperators(mIter);
+    mEnd = FindSeperator(mIter);
     mToken = StringType(mIter, mEnd);
 }
 
