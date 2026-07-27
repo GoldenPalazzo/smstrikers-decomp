@@ -428,8 +428,6 @@ s16 GameInfoManager::GetCurrentRoundNumber() const
  * Offset/Address/Size: 0x9300 | 0x8017E9A4 | size: 0x1FC
  */
 /**
- * TODO: 97.17% match - register allocation diffs (r30 vs r3/r0) in simple return paths
- * and comparison operand register swap at 0x1C4-0x1CC. Likely -inline deferred flag issue.
  */
 s16 GameInfoManager::GetNextRoundNumber(short roundParam) const
 {

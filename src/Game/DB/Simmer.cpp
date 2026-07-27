@@ -18,7 +18,6 @@ Simulator::Simulator()
 
 /**
  * Offset/Address/Size: 0x0 | 0x8019087C | size: 0xC18
- * TODO: 99.04% match - this pointer and found-flag registers still differ around the tokenizer loop.
  */
 void Simulator::InitializeStats()
 {

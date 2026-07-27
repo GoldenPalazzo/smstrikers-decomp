@@ -1621,8 +1621,6 @@ void IChooseCaptain::CheckForDisconnectedHumanPlayers()
 
 /**
  * Offset/Address/Size: 0x4E0 | 0x800BDE7C | size: 0x190
- * TODO: 99.95% match - remaining `bl` immediate mismatch on `SetCurrentPhase` call
- * (likely enum/signature mangling drift for `ComponentState::Phase`).
  */
 void IChooseCaptain::FindAliveHumanPlayers()
 {

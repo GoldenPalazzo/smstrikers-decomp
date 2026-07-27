@@ -184,8 +184,6 @@ void Nis::UpdateTriggers(float oldTime, float newTime, float duration)
 
 /**
  * Offset/Address/Size: 0xF80 | 0x8012C390 | size: 0x2F0
- * TODO: 97.37% match - remaining diff is the r30/r31 register swap in the
- * inlined BasicString literal construction.
  */
 void Nis::SelectCamera(cAnimCamera& camera, int cameraIndex)
 {

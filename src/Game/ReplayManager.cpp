@@ -395,7 +395,6 @@ void ReplayManager::EventHandler(Event* event)
 
 /**
  * Offset/Address/Size: 0x0 | 0x80111D70 | size: 0x3C0
- * TODO: 99.92% match - remaining diffs are `i` (SDA offset) on static local labels
  */
 void ReplayManager::RenderSnapshotAt(float deltaTime)
 {

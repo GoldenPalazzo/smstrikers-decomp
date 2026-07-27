@@ -140,7 +140,6 @@ CupTickerManager::~CupTickerManager()
 
 /**
  * Offset/Address/Size: 0x1968 | 0x800F3930 | size: 0x328
- * TODO: 99.93% match - copy-loop index and byte-offset zero initialization still swap r4/r5.
  */
 void CupTickerManager::SetTickerTextInstance(TLTextInstance* tickerText)
 {

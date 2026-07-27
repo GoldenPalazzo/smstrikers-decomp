@@ -177,7 +177,6 @@ public:
 
 /**
  * Offset/Address/Size: 0x8654 | 0x8002F18C | size: 0xB88
- * TODO: 91.5% match - 2 extra extsh after neg in abs computation (MWCC peephole opt)
  */
 void cFielder::asmRunning()
 {
@@ -2616,8 +2615,6 @@ done:
 
 /**
  * Offset/Address/Size: 0x3CA8 | 0x8002A7E0 | size: 0x280
- * TODO: 95.41% match - remaining diffs in turbo-speed branch inversion and
- * r3/r4 register allocation in mirror-swap logic before SetRunTurboAnimState.
  */
 void cFielder::ActionRunningWBTurboTurn(float fDeltaT)
 {

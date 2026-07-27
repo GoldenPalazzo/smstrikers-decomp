@@ -159,6 +159,7 @@ public:
     float CheckForDelflectAwayFromNet();
     bool CheckForLooseBallShotInProgress();
     bool CheckForSTSAttack();
+    inline bool IsLooseBallTowardNet();
     bool IsLooseBallClose(float);
     bool IsWithinPounceRange();
     bool IsOpponentBallCarrierInRange();
@@ -174,6 +175,7 @@ public:
     void CleanGoalieAction();
     void InitActionLooseBallCatch();
     void InitActionLooseBallSetup();
+    inline void ChooseDesperationAnim(float);
     void InitActionMove(bool);
     void InitActionMoveWB();
     void InitActionSaveSetup(bool);

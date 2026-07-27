@@ -2191,7 +2191,6 @@ void Format(StringType& result,
 
 /**
  * Offset/Address/Size: 0x3DC | 0x801816A8 | size: 0x2D0
- * TODO: 99.42% match - string allocation data and copy cursor use r31/r30 instead of r30/r31
  */
 void StatsTracker::WriteCurrentlyPlaying() const
 {

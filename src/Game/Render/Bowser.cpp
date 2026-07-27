@@ -795,9 +795,6 @@ void Bowser::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x3054 | 0x8015BDC8 | size: 0x208
- * TODO: 99.96% match - remaining diff is one branch immediate in the ball
- * damage gate; switch jump table body matches target with case set
- * 0x04/0x0D/0x0E/0x0F/0x13/0x14.
  */
 void Bowser::CollisionCallback(PhysicsObject* pPhysObj, PhysicsObject* pObjA, const nlVector3&)
 {

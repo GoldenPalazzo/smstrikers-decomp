@@ -806,7 +806,6 @@ void CupHubScene::Update(float fDeltaT)
 #pragma dont_inline on
 /**
  * Offset/Address/Size: 0x670C | 0x800F0468 | size: 0x298
- * TODO: 99.97% match - remaining i diff on the MemFun literal-label load pair (@1204/@562).
  */
 void CupHubScene::EndCup()
 {
@@ -2265,7 +2264,6 @@ void CupHubScene::CreateKnockout()
 
 /**
  * Offset/Address/Size: 0x2FF4 | 0x800ECD50 | size: 0x308
- * TODO: 99.15% match - persistent r29/r30 allocation swap around shouldStartSound/index pointers.
  */
 unsigned char CupHubScene::UpdateLeague(float fDeltaT)
 {
@@ -2918,7 +2916,6 @@ unsigned char CupHubScene::UpdateKnockout2(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x1860 | 0x800EB5BC | size: 0x70C
- * TODO: 99.67% match - singleton, slide, and display/node cursor registers differ in progress indicator loops.
  */
 void CupHubScene::UpdateProgressIndicator()
 {
@@ -3361,7 +3358,6 @@ static inline unsigned char IsUserRow(eTeamID teamInRow)
 
 /**
  * Offset/Address/Size: 0x1698 | 0x800EB3F4 | size: 0x1C8
- * TODO: 99.65% match - r30/r31 register allocation swap between presentation pointer and row-name base
  */
 void CupHubScene::ColourUserRow()
 {

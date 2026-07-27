@@ -946,7 +946,6 @@ void ChooseCupSceneV2::DisplayCup()
 
 /**
  * Offset/Address/Size: 0x438 | 0x800DA6BC | size: 0x374
- * TODO: 99.5% match - r30/r31 swap for localization result/string data
  */
 void ChooseCupSceneV2::SetCurrentChamp(eTeamID currentChamp, bool isCPUChamp, TLComponentInstance* cupInProgressComponent)
 {
@@ -998,9 +997,6 @@ static inline void SetupStartNewCupBackCallback(FEPopupMenu* menu)
 
 /**
  * Offset/Address/Size: 0x0 | 0x800DA284 | size: 0x438
- * TODO: 99.05% match - popup callback Bind temporaries still use different
- * stack slots/copy width, and FEPopupMenu call sites still resolve to
- * ref-signature symbols.
  */
 void ChooseCupSceneV2::Proceed()
 {

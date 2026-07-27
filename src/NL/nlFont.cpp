@@ -14,8 +14,6 @@
 
 /**
  * Offset/Address/Size: 0x0 | 0x8021093C | size: 0x144
- * TODO: 98.46% match - instruction scheduling: compiler hoists lwz loads
- * of m_pKernTable/m_KernTableSize before sth writes to stack KernPair struct
  */
 unsigned long nlFont::GetCharWidth(unsigned short FontChar, unsigned short PrevFontChar) const
 {

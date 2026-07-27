@@ -266,7 +266,6 @@ static inline const unsigned short* LookupCupTrophyLoc(unsigned long key)
 
 /**
  * Offset/Address/Size: 0x1F54 | 0x800CB608 | size: 0x7B8
- * TODO: 99.77% match - remaining r30/r31 swap in localized BasicString construction
  */
 void CupTrophyScene::SceneCreated()
 {
@@ -379,7 +378,6 @@ typedef Function0<void>::FunctorImpl<BindExp1_vfmfcp> FunctorImpl_vfmfcp;
 
 /**
  * Offset/Address/Size: 0x1D70 | 0x800CB424 | size: 0x1E4
- * TODO: 99.88% match - only minor instruction/label diffs remain around PopupMap/Create relocation.
  */
 #pragma dont_inline on
 void CupTrophyScene::HandleUnlockedTriggers()
@@ -428,7 +426,6 @@ void CupTrophyScene::HandleUnlockedTriggers()
 
 /**
  * Offset/Address/Size: 0x1970 | 0x800CB024 | size: 0x400
- * TODO: 99.96% match - minor branch-target/literal label diffs remain.
  */
 extern FEInput* g_pFEInput;
 
@@ -681,7 +678,6 @@ void CupTrophyScene::SetLossRecord(Spoil& spoil)
 
 /**
  * Offset/Address/Size: 0x170 | 0x800C9824 | size: 0xFBC
- * TODO: 99.77% match - r22/r23 are swapped in both localized BasicString construction paths
  */
 void CupTrophyScene::SetHistory(Spoil& spoil)
 {

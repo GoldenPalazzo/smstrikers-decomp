@@ -59,7 +59,6 @@ void FireCameraRumbleFilter(float fRumbleX, float fRumbleY)
 
 /**
  * Offset/Address/Size: 0x1768 | 0x801A7DF0 | size: 0x59C
- * TODO: 99.65% match - second formatted camera-name temporary uses r31/r30 instead of r30/r31
  */
 void cCameraManager::Startup()
 {
@@ -565,9 +564,6 @@ void cCameraManager::PushCameraWithTransition(cBaseCamera* pCamera, float fDurat
 
 /**
  * Offset/Address/Size: 0x200 | 0x801A6888 | size: 0x390
- * TODO: 99.02% match - residual is an MWCC scheduler tiebreak in the cross-product
- * loop: target loads the delta .y pair before the .z pair (ours reversed) and emits
- * the -edgeX fneg after both fmuls (ours between them). Data flow + regs already match.
  */
 unsigned char cCameraManager::IsObjectOccludingField(const DrawableObject* drawable)
 {

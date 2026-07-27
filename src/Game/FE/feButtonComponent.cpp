@@ -119,7 +119,6 @@ void ButtonComponent::CentreButtons()
 
 /**
  * Offset/Address/Size: 0x3F8 | 0x8010DFFC | size: 0x8D8
- * TODO: 99.45% match - stack frame 0x3D0 vs target 0x260, MWCC not reusing InlineHasher argument copy slots across FEFinder::Find calls
  */
 void ButtonComponent::SetState(ButtonComponent::ButtonState buttonstate)
 {

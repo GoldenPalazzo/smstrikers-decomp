@@ -1756,7 +1756,6 @@ FuzzyVariant Fuzzy::UsePowerupOffensive(float fConfidence, cDecisionEntity* pDec
 
 /**
  * Offset/Address/Size: 0x0 | 0x8008CA8C | size: 0x560
- * TODO: 99.68% match - extra move in first confidence clamp.
  */
 FuzzyVariant Fuzzy::GetPowerupTargetOffensive(cTeam* TheTeam)
 {

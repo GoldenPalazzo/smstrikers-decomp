@@ -221,8 +221,6 @@ void FakeBallWorld::GetNextBallPosition(nlVector3& v3BallPos)
 
 /**
  * Offset/Address/Size: 0x668 | 0x80137A54 | size: 0xC8
- * TODO: 99.4% match - remaining diffs are static-local symbol numbering
- *       (iter/init labels) and float literal label numbering.
  */
 void FakeBallWorld::ResetBallIterator()
 {
@@ -408,8 +406,6 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
 
 /**
  * Offset/Address/Size: 0x3DC | 0x8013819C | size: 0x3FC
- * TODO: 98.60% match - remaining diffs are early zero-vector copy GPRs
- *       and sdata2 literal labels.
  */
 float FakeBallWorld::GetPredictedHeightLimitTime(float fHeight, float fMinTime, nlVector3& v3ContactPoint, nlVector3& v3ContactVelocity, bool bDownOnly)
 {

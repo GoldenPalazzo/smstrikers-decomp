@@ -95,8 +95,6 @@ static inline void WriteToTestLog(TestTask* self, const char* msg)
 
 /**
  * Offset/Address/Size: 0x424 | 0x8016CD20 | size: 0x2CC
- * TODO: 98.49% match - this-pointer vs string-cursor callee-saved swap
- * (this held in r31 vs target r29; text/filename cursors in r29 vs target r31).
  */
 void TestTask::RunSmokeTest(float)
 {
@@ -113,8 +111,6 @@ void TestTask::RunSmokeTest(float)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8016C8FC | size: 0x424
- * TODO: 99.60% match - the failure string's allocation pointer and scan cursor
- * use r31/r30 instead of r30/r31.
  */
 void TestTask::RunFrameRateTest(float dt)
 {

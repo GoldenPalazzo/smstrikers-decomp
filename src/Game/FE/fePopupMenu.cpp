@@ -116,8 +116,6 @@ void FEPopupMenu::SetOptionTextColourOnCurrent(bool)
 
 /**
  * Offset/Address/Size: 0x164 | 0x80098410 | size: 0x2FC
- * TODO: 99.5% match - stack frame 0x150 vs 0x130: MWCC not reusing InlineHasher(0)
- * argument copy stack locations across sequential Find calls (all diffs are i-only).
  */
 void FEPopupMenu::ResizeHighlight()
 {
@@ -369,8 +367,6 @@ void FEPopupMenu::SetPositions()
 
 /**
  * Offset/Address/Size: 0x2B24 | 0x8009ADD0 | size: 0x400
- * TODO: 98.4% match - 4 missing instructions (b+lwz merge pattern) in
- * decrement/increment wrap-around blocks due to -inline deferred scratch flag
  */
 void FEPopupMenu::Update(float fDeltaT)
 {
@@ -532,8 +528,6 @@ void FEPopupMenu::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x2F24 | 0x8009B1D0 | size: 0x6B8
- * TODO: 99.57% match - remaining register permutation in the option-label
- *       copy-on-write block and literal/label relocation numbering.
  */
 void FEPopupMenu::SceneCreated()
 {

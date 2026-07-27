@@ -667,7 +667,6 @@ void Goalie::StrafeSynchronizedSpeedCallback(unsigned int nParam, cPN_SAnimContr
 
 /**
  * Offset/Address/Size: 0x30E0 | 0x8005161C | size: 0x458
- * TODO: 99.86% match - remaining diffs are local static/literal-pool label IDs.
  */
 void Goalie::ActionMove(float deltaTime)
 {
@@ -1549,7 +1548,6 @@ public:
 
 /**
  * Offset/Address/Size: 0x1C30 | 0x8005016C | size: 0x48C
- * TODO: 99.38% match - remaining goalie-net clamp compare/register mismatch.
  */
 void Goalie::ActionSTS(float fDeltaT)
 {

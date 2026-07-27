@@ -301,7 +301,6 @@ void LessonSelectScene::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x334 | 0x8010B184 | size: 0x4AC
- * TODO: 99.7% match - remaining stack slot offsets around InlineHasher temporaries
  */
 void LessonSelectScene::UpdateRow(int onScreenRow, bool playsound)
 {

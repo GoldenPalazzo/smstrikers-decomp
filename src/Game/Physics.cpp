@@ -287,8 +287,6 @@ void PhysicsLoader::ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhys
 
 /**
  * Offset/Address/Size: 0x14C | 0x80132C5C | size: 0x244
- * TODO: 99.86% match - s_PhysicsMeshes and g_NetPhysicsObjects base
- *       registers are swapped before mesh cleanup.
  */
 void PhysicsLoader::DestroyPhysics()
 {

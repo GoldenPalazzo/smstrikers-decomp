@@ -499,7 +499,6 @@ void cBall::ShootRelease(const nlVector3& v3Velocity, eSpinType SpinType)
 
 /**
  * Offset/Address/Size: 0xD2C | 0x8000A700 | size: 0x3AC
- * TODO: 99.96% match - local constant label relocations remain in scratch diff.
  */
 void cBall::Shoot(const nlVector3& v3Dir, const nlVector3& v3Spin, eSpinType spinType, bool bCanDamage, bool bParam5, bool bParam6)
 {
@@ -1249,8 +1248,6 @@ void cBall::PostPhysicsUpdate(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x2254 | 0x8000BC28 | size: 0x5BC
- * TODO: 99.71% match - r29/r30 register swap in inlined BasicString(const char*)
- *       constructor (str vs data allocation order); plus label-index diffs.
  */
 void cBall::CollideWithWallCallback()
 {
@@ -1548,8 +1545,6 @@ void cBall::CollideWithGroundCallback()
 
 /**
  * Offset/Address/Size: 0x2BD4 | 0x8000C5A8 | size: 0xA18
- * TODO: 99.37% match - remaining mismatch is pCharacter/pOwner register
- *       allocation in the cFielder collision branch.
  */
 void cBall::CollideWithCharacterCallback(cPlayer* pCharacter, const nlVector3& v3PreBallVelocity)
 {

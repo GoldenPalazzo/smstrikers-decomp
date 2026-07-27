@@ -31,7 +31,6 @@ void DrawableBall::EvaluateFrom(DrawableCharacter& character)
 
 /**
  * Offset/Address/Size: 0x80 | 0x8011DDD0 | size: 0x140
- * TODO: 99.19% match on scratch - epilogue scheduling diff (LR restore order)
  */
 void DrawableBall::Blend(const float* alpha, const DrawableBall& a, const DrawableBall& b)
 {

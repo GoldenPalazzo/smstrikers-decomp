@@ -73,7 +73,6 @@ TournSetParamsScene::~TournSetParamsScene()
 
 /**
  * Offset/Address/Size: 0x1CD0 | 0x800E16A4 | size: 0x434
- * TODO: 99.76% match - r29/r30 register swap for this+offset vs memcpy-temp/menuItem.
  */
 void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* compinstance, bool wraps, int startindex)
 {
@@ -538,8 +537,6 @@ void TournSetParamsScene::SetInitialParams(bool isLeagueMode, int numTeams, int 
 
 /**
  * Offset/Address/Size: 0x6B0 | 0x800E0084 | size: 0x4E0
- * TODO: 99.34% match - remaining diffs are r5/r6/r7 register allocation
- * swaps in the disabled-state loops.
  */
 void TournSetParamsScene::ApplyMenuDefaults()
 {
@@ -585,8 +582,6 @@ void TournSetParamsScene::ApplyMenuDefaults()
 
 /**
  * Offset/Address/Size: 0x0 | 0x800DF9D4 | size: 0x6B0
- * TODO: 99.52% match - remaining diffs are r5/r6/r7 register allocation
- * swaps in the disabled-state loops.
  */
 void TournSetParamsScene::InitializeMenu()
 {

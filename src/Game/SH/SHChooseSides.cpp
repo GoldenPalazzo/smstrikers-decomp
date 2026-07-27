@@ -560,8 +560,6 @@ void SHChooseSides2::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x7BC | 0x800C537C | size: 0x540
- * TODO: 98.66% match - extra mr instruction in prologue (lwz r4/mr r29,r4/mr r3,r4
- * instead of lwz r29/mr r3,r29), rlwinm mask (24,31) vs srwi (5,31)
  */
 void SHChooseSides2::UpdateChooseSideComponent(float fDeltaT)
 {

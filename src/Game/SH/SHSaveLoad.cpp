@@ -702,8 +702,6 @@ SaveLoadScene::~SaveLoadScene()
 
 /**
  * Offset/Address/Size: 0xF0C | 0x800B1494 | size: 0x218
- * TODO: 98.5% match - first hasher block remains at sp+0x38 (target sp+0x2C)
- * and function body is still shifted by +0x14 bytes in current codegen
  */
 void SaveLoadScene::SceneCreated()
 {

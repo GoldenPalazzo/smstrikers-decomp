@@ -101,7 +101,6 @@ BraggingRightsOverlay::~BraggingRightsOverlay()
 
 /**
  * Offset/Address/Size: 0x2E3C | 0x800D4E38 | size: 0x52C
- * TODO: 99.97% match on scratch - two bl relocation-only diffs (extern-mangled local calls)
  */
 void BraggingRightsOverlay::SceneCreated()
 {
@@ -509,7 +508,6 @@ void BraggingRightsOverlay::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x15A4 | 0x800D35A0 | size: 0x8FC
- * TODO: 98.66% match - remaining r28/r29/r30 register swaps in BasicString<unsigned short> construction paths
  */
 void BraggingRightsOverlay::ChangeTicker(int tickerRow)
 {

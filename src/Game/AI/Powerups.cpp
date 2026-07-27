@@ -946,7 +946,6 @@ PowerupBase* FindPowerUp(unsigned long hashOfDrawable)
 //  */
 /**
  * Offset/Address/Size: 0x4C00 | 0x8005F4EC | size: 0x2B4
- * TODO: 99.4% match - BasicString data and source string registers remain swapped.
  */
 void PowerupModelPool::Initialize(int type, unsigned long objHashName)
 {
@@ -2893,7 +2892,6 @@ void GreenShell::Destroy(bool bSilent)
 
 /**
  * Offset/Address/Size: 0x1874 | 0x8005C160 | size: 0x138
- * TODO: 99.74% match - remaining instruction-only diffs are powerupModelPool unnamed-namespace symbol aliases
  */
 RedShell::~RedShell()
 {
@@ -3161,8 +3159,6 @@ SpinyShell::~SpinyShell()
 
 /**
  * Offset/Address/Size: 0xD0C | 0x8005B5F8 | size: 0x218
- * TODO: 99.78% match - f4/f1 register allocation diff in 5.0f velocity cap
- *       multiplication; likely MWCC register allocator version quirk.
  */
 void SpinyShell::Update(float dt)
 {

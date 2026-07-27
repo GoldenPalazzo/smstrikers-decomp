@@ -434,7 +434,6 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
 
 /**
  * Offset/Address/Size: 0x1590 | 0x80101600 | size: 0x418
- * TODO: 99.56% match - loc-string/data pointer saved-register swaps remain.
  */
 void GoalOverlay::SetHighlightNumber(int highlightNumber)
 {
@@ -554,7 +553,6 @@ void GoalOverlay::DoMatchEndOverlay()
 
 /**
  * Offset/Address/Size: 0x6E8 | 0x80100758 | size: 0x6BC
- * TODO: 99.54% match - remaining saved-register swaps between object pointer, localization string pointer, and wide string data.
  */
 void GoalOverlay::SetWinnerTitle()
 {
@@ -609,7 +607,6 @@ void GoalOverlay::SetWinnerTitle()
 
 /**
  * Offset/Address/Size: 0x20 | 0x80100090 | size: 0x6C8
- * TODO: 99.47% match - remaining r29/r30 register swap in temporary wide string construction.
  */
 void GoalOverlay::DoCupWinOverlay()
 {

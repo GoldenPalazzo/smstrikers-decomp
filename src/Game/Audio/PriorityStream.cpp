@@ -419,7 +419,6 @@ extern "C"
 
 /**
  * Offset/Address/Size: 0x3DC | 0x800C3820 | size: 0x380
- * TODO: 99.97% match - stack offsets swap between first free loop and second volume loop
  */
 unsigned long PriorityStream::GrabCrowdStream(unsigned long Fadeout)
 {

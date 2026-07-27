@@ -302,8 +302,6 @@ FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
 
 /**
  * Offset/Address/Size: 0xE40C | 0x800785DC | size: 0x5D0
- * TODO: 97.23% match - lfs relocations use duplicate 0.0f/1.0f labels for
- * the first FuzzyVariant(cPlayer*) temp
  */
 FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
 {
@@ -481,8 +479,6 @@ FuzzyVariant Fuzzy::ShouldIStrafeBall(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0xD92C | 0x80077AFC | size: 0x34C
- * TODO: 90.9% match - MWCC store scheduling: mType/mData stores placed after ExtraData.Reset()
- * bctrl instead of before. Same issue in all 3 FuzzyVariant template ctor inlines.
  */
 FuzzyVariant Fuzzy::ShouldIStrafeMark(cFielder* TheFielder)
 {
@@ -3679,7 +3675,6 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0x1620 | 0x8006B7F0 | size: 0x428
- * TODO: 99.64% match - remaining diffs are stack offset mismatches from FuzzyVariant copy ctor inlining
  */
 FuzzyVariant Fuzzy::GetPowerupToUseForWindupDefence(cFielder* TheFielder)
 {

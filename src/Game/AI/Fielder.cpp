@@ -698,8 +698,6 @@ static inline void TestCollisionForInvicibilityInline(cFielder* pFielder, cField
 
 /**
  * Offset/Address/Size: 0xAEBC | 0x800241F8 | size: 0x151C
- * TODO: 99.64% match - remaining diffs are pData/hitter register assignment
- * and the anim-controller reload in the simultaneous-hit compare.
  */
 void cFielder::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
 {
@@ -1367,7 +1365,6 @@ bool cFielder::IsTurboing()
 
 /**
  * Offset/Address/Size: 0xA50C | 0x80023848 | size: 0x3C
- * TODO: 80% match - register allocation (r5 vs r4) and branch scheduling differ
  */
 bool cFielder::IsRunning() const
 {
@@ -1576,8 +1573,6 @@ void cFielder::CleanUpPowerupEffect()
 
 /**
  * Offset/Address/Size: 0x9DFC | 0x80023138 | size: 0x45C
- * TODO: 99.82% match - remaining f0/f1 register coloring diff in Y/Z accuracy
- * updates caused by -inline deferred flag (scratch matches 100% with -inline auto)
  */
 void cFielder::CalcRegularShot(nlVector3& rv3Vel, nlVector3& rv3Target)
 {
@@ -3523,7 +3518,6 @@ void cFielder::GetReceivePassBallContactOffset(nlVector3& v3Offset, unsigned sho
 
 /**
  * Offset/Address/Size: 0x6AEC | 0x8001FE28 | size: 0x130
- * TODO: 99.47% match - immediate-only diffs remain for contact anim table symbols and the angle scale float label
  */
 const LooseBallContactAnimInfo* cFielder::GetReceivePassBallContactAnimInfo(cBall* pBall, const nlVector3& rv3Pos, unsigned short aAngle, bool bLeadPass, bool bVolleyPass)
 {
@@ -4065,8 +4059,6 @@ void cFielder::ClearVolleyPass()
 
 /**
  * Offset/Address/Size: 0x5B34 | 0x8001EE70 | size: 0x26C
- * TODO: 99.32% match - source string and BasicString data registers remain
- * swapped during effectName construction.
  */
 void cFielder::CleanActionShootToScore()
 {
@@ -4614,8 +4606,6 @@ bool cFielder::ShouldILeadPass()
 
 /**
  * Offset/Address/Size: 0x4564 | 0x8001D8A0 | size: 0x330
- * TODO: 99.09% match - MWCC batches struct member loads by ascending offset (x before y),
- * but target loads y first. This causes f29/f30 register swap in second half (~34 diffs).
  */
 bool cFielder::CanISlideAttack(const nlVector3& v3Position, const nlVector3& v3Velocity, float* fTime)
 {
@@ -5071,8 +5061,6 @@ bool cFielder::SetDesire(eFielderDesireState eNewDesire, float fConfidence)
 
 /**
  * Offset/Address/Size: 0x3B44 | 0x8001CE80 | size: 0x218
- * TODO: 99.74% match - remaining r0/r3 register allocation swap in the
- * isStrafing comparison block (lwz/cmpwi/li/clrlwi sequence at +0x10C).
  */
 u8 cFielder::ShouldIStrafe()
 {
@@ -5974,7 +5962,6 @@ inline void ExecutePowerupEffect(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0x1D18 | 0x8001B054 | size: 0x4C0
- * TODO: 99.19% match - remaining cached powerup dispatch reload diffs.
  */
 void cFielder::SetPowerup(ePowerUpType eNewPowerup, int nnumOfPowerups, cFielder* pTarget)
 {
@@ -6590,7 +6577,6 @@ bool cFielder::S2SShootWasPressed()
 
 /**
  * Offset/Address/Size: 0x11AC | 0x8001A4E8 | size: 0x78
- * TODO: 100% match, but I believe the goto in the class-inline is probably movable to another class-inline method.
  */
 void cFielder::StartRunning()
 {

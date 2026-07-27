@@ -1195,9 +1195,6 @@ void TournTeamSetupSceneV2::StartChooseCaptain(int arg)
 
 /**
  * Offset/Address/Size: 0x1CC4 | 0x800E3B68 | size: 0x200
- * TODO: 87.3% match - stack frame size 0xB0 vs target 0x80, all diffs are stack
- * offset (s/i) only. -inline deferred file causes different InlineHasher temporary
- * stack allocation on decomp.me vs original build.
  */
 void TournTeamSetupSceneV2::UpdateCaptainName()
 {

@@ -224,7 +224,6 @@ void OptionsSubMenu::GoBack()
 
 /**
  * Offset/Address/Size: 0x504C | 0x800BA090 | size: 0x434
- * TODO: 99.63% match - r28/r29 register swap for this+menuitem offset and bind/callback temporary stack layout
  */
 void OptionsSubMenu::BuildSubMenuList(int menuitem, TLComponentInstance* compinstance, bool wraps, int startindex)
 {
@@ -1515,8 +1514,6 @@ OptionsGameplayMenuV2::OptionsGameplayMenuV2(FEPresentation* presentation, Butto
 
 /**
  * Offset/Address/Size: 0xAA8 | 0x800B5AEC | size: 0x438
- * TODO: 99.91% match - callback construction temporary stack layout still
- * differs in the menu item callback setup path.
  */
 void OptionsGameplayMenuV2::BuildSkillLevelMenu(TLComponentInstance* compinstance, int startindex, int skilltoskip)
 {

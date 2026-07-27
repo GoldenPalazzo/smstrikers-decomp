@@ -247,7 +247,6 @@ void PhysicsAIBall::PreUpdate()
 
 /**
  * Offset/Address/Size: 0x994 | 0x801343C8 | size: 0x3A4
- * TODO: 99.08% match - remaining diffs are in net-entry helper register allocation.
  */
 void PhysicsAIBall::PostUpdate()
 {
@@ -521,7 +520,6 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalie()
 
 /**
  * Offset/Address/Size: 0x0 | 0x80133C58 | size: 0x310
- * TODO: 99.69% match - velY/normalY register swap in reflection math and velocitySq compare register differ
  */
 void PhysicsAIBall::CheckIfBallWentThroughGoalPost()
 {

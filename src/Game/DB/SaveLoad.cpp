@@ -812,8 +812,6 @@ long SaveCallbacks::DoSave(unsigned long Slot)
 
 /**
  * Offset/Address/Size: 0x24EC | 0x8018BE48 | size: 0x21C
- * TODO: 95.85% match - icon header arithmetic register/order differences
- * remain.
  */
 #pragma push
 #pragma opt_propagation off
@@ -1886,8 +1884,6 @@ long SaveLoad::StartFormat(int slot, void (*callback)(long))
 
 /**
  * Offset/Address/Size: 0x5EC | 0x80189F48 | size: 0x258
- * TODO: 96.27% match - icon header mask arithmetic still differs in
- * temporary registers and instruction count.
  */
 #pragma push
 #pragma opt_propagation off
@@ -2062,8 +2058,6 @@ long SaveLoad::StartMemoryCardIDCheck(int slot, void (*callback)(long))
 
 /**
  * Offset/Address/Size: 0x264 | 0x80189BC0 | size: 0x12C
- * TODO: 92.53% match - inlined icon header still uses different registers and one
- * fewer CLUT mask shift.
  */
 #pragma push
 #pragma opt_propagation off

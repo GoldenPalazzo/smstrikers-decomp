@@ -876,7 +876,6 @@ void TransitionTask::DestroyGameState()
 
 /**
  * Offset/Address/Size: 0x0 | 0x801715D0 | size: 0x4BC
- * TODO: 96.85% match - "---\n" string uses sda21 addressing in scratch vs ha/lo in target (linker section placement)
  */
 void TransitionTask::InitializeFEState()
 {

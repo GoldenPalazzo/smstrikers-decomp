@@ -594,9 +594,6 @@ void DrawableModel::Draw()
 
 /**
  * Offset/Address/Size: 0x10A4 | 0x80120EB0 | size: 0x1C8
- * TODO: 59.34% match - inlined copy-constructor register allocation differs
- *       (target alternates r4/r5 loads and uses r0 for vtable addi destination),
- *       causing a wide instruction-order mismatch across the object field copy.
  */
 DrawableObject* DrawableModel::Clone() const
 {
@@ -783,8 +780,6 @@ void GetAABBDimensions(const glModel* model, AABBDimensions& dimensions, unsigne
 
 /**
  * Offset/Address/Size: 0xCF0 | 0x80120AFC | size: 0x28
- * TODO: 94% match - instruction scheduling: target has li r5,0 before lwz r3,0x9c(r3),
- *       but compiler places lwz first. TU-level scheduling effect, not reproducible in scratch.
  */
 void DrawableModel::GetAABBDimensions(AABBDimensions& dims, bool param) const
 {

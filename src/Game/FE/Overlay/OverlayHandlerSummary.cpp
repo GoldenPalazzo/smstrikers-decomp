@@ -171,8 +171,6 @@ SummaryOverlay::~SummaryOverlay()
 
 /**
  * Offset/Address/Size: 0x1B00 | 0x800FE6A0 | size: 0x1EC
- * TODO: 99.63% match - second Find<TLSlide> zero InlineHasher temporaries
- * still differ in stack slot mapping.
  */
 void SummaryOverlay::SceneCreated()
 {
