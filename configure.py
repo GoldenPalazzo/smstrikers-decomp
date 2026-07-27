@@ -818,7 +818,7 @@ config.libs = [
             Object(Matching, "Game/Transitions/ScriptedTransition.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Transitions/TransLight.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Transitions/TransitionSequence.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Transitions/ModelTransition.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Transitions/ModelTransition.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Camera
             Object(Matching, "Game/CameraLoader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

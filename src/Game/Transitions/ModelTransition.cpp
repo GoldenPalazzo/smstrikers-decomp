@@ -22,48 +22,6 @@
 #include "NL/glx/glxDisplayList.h"
 #include "Game/GL/gluMeshWriter.h"
 
-struct TransitionModelStore
-{
-    glModel* pModels;
-    u32 nModels;
-};
-
-static nlAVLTree<unsigned long, TransitionModelStore, DefaultKeyCompare<unsigned long> > g_ModelInventory;
-
-struct ModelInventoryFindHelper
-{
-    AVLTreeEntry<unsigned long, TransitionModelStore>* m_Root;
-
-    inline bool FindGet(unsigned long key, TransitionModelStore** foundValue) const
-    {
-        AVLTreeEntry<unsigned long, TransitionModelStore>* node = m_Root;
-        while (node != NULL)
-        {
-            int cmpResult;
-            if (key == node->key)
-                cmpResult = 0;
-            else if (key < node->key)
-                cmpResult = -1;
-            else
-                cmpResult = 1;
-            if (cmpResult == 0)
-            {
-                if (foundValue != NULL)
-                    *foundValue = &node->value;
-                return true;
-            }
-            else
-            {
-                if (cmpResult < 0)
-                    node = (AVLTreeEntry<unsigned long, TransitionModelStore>*)node->node.left;
-                else
-                    node = (AVLTreeEntry<unsigned long, TransitionModelStore>*)node->node.right;
-            }
-        }
-        return false;
-    }
-};
-
 static inline void CreateInstance(ModeledScreenTransition* self, TransitionModelStore& modelInfo)
 {
     self->m_nModels = modelInfo.nModels;
@@ -79,6 +37,7 @@ static inline void CreateInstance(ModeledScreenTransition* self, TransitionModel
 }
 
 eGLView ModeledScreenTransition::s_3DView = GLV_Transitions;
+nlAVLTree<unsigned long, TransitionModelStore, DefaultKeyCompare<unsigned long> > ModeledScreenTransition::g_ModelInventory;
 
 // /**
 //  * Offset/Address/Size: 0xA04 | 0x80204CA0 | size: 0x24
@@ -181,7 +140,7 @@ eGLView ModeledScreenTransition::s_3DView = GLV_Transitions;
 /**
  * Offset/Address/Size: 0x1E60 | 0x80203F24 | size: 0x31C
  */
-int GetNumLeafNodesInHierarchy(cSHierarchy& h, int node, int ret)
+static int GetNumLeafNodesInHierarchy(cSHierarchy& h, int node, int ret)
 {
     if (h.GetNumChildren(node) == 0)
     {
@@ -249,7 +208,7 @@ static void ShuffleIntoOutline(Vector<nlVector3, DefaultAllocator>& polygon)
 /**
  * Offset/Address/Size: 0x188C | 0x80203950 | size: 0x340
  */
-inline int UpdateEffectsFromLeafNodes(cPoseAccumulator& pa, EmissionController** ecs, cSHierarchy& skeleton, int leaf, int node)
+static int UpdateEffectsFromLeafNodes(cPoseAccumulator& pa, EmissionController** ecs, cSHierarchy& skeleton, int leaf, int node)
 {
     if (skeleton.GetNumChildren(node) == 0)
     {
@@ -397,39 +356,35 @@ void ModeledScreenTransition::Update(float dt)
     }
 }
 
+static inline u32 glAllocSetMatrix(const nlMatrix4& matrix)
+{
+    u32 handle = glAllocMatrix();
+    if (handle != 0xFFFFFFFF)
+    {
+        glSetMatrix(handle, matrix);
+    }
+    return handle;
+}
+
 /**
  * Offset/Address/Size: 0x13EC | 0x802034B0 | size: 0x134
- * TODO: 99.29% match - remaining r26/r29/r30 register cycle between modelOffset, pNodeMatrix, and matrixHandle.
  */
 void ModeledScreenTransition::Render(eGLView)
 {
-    const nlMatrix4* pNodeMatrix;
-    u32 matrixHandle;
-
     if (m_pLight != NULL && m_pPoseTree != NULL)
     {
         m_pLight->ApplyLight(m_pPoseTree->m_fTime);
     }
 
-    int modelMapIndex = 0;
-    int modelOffset = 0;
-
-    for (u32 modelIndex = 0; modelIndex < m_nModels; modelIndex++)
+    for (u32 i = 0; i < m_nModels; i++)
     {
-        for (u32 packetIndex = 0; packetIndex < m_pModels[modelOffset / 0x10].numPackets; packetIndex++)
+        for (u32 j = 0; j < m_pModels[i].numPackets; j++)
         {
-            pNodeMatrix = &m_pPoseAccumulator->GetNodeMatrix(m_pModelMap[modelMapIndex]);
-            matrixHandle = glAllocMatrix();
-            if (matrixHandle != 0xFFFFFFFF)
-            {
-                glSetMatrix(matrixHandle, *pNodeMatrix);
-            }
-            m_pModels[modelOffset / 0x10].packets[packetIndex].state.matrix = matrixHandle;
+            m_pModels[i].packets[j].state.matrix =
+                glAllocSetMatrix(m_pPoseAccumulator->GetNodeMatrix(m_pModelMap[i]));
         }
 
-        glViewAttachModel(s_3DView, &m_pModels[modelOffset / 0x10]);
-        modelMapIndex++;
-        modelOffset += 0x10;
+        glViewAttachModel(s_3DView, &m_pModels[i]);
     }
 
     if (m_bEnableGrab)
@@ -448,6 +403,8 @@ void ModeledScreenTransition::Render(eGLView)
         RenderOutline();
     }
 }
+
+static inline void ClearOutline(Vector<nlVector3, DefaultAllocator>& outline);
 
 static inline void ReserveOutline(Vector<nlVector3, DefaultAllocator>& outline, int capacity)
 {
@@ -486,15 +443,6 @@ static inline void InsertOutline(
         at++;
     }
     outline.mSize += size;
-}
-
-static inline void ClearOutline(Vector<nlVector3, DefaultAllocator>& outline)
-{
-    for (int i = 0; i < outline.mSize; i++)
-    {
-        outline.mData[i] = nlVector3();
-    }
-    outline.mSize = 0;
 }
 
 /**
@@ -606,6 +554,16 @@ void ModeledScreenTransition::RenderOutline() const
 
     }
 }
+
+static inline void ClearOutline(Vector<nlVector3, DefaultAllocator>& outline)
+{
+    for (int i = 0; i < outline.mSize; i++)
+    {
+        outline.mData[i] = nlVector3();
+    }
+    outline.mSize = 0;
+}
+
 /**
  * Offset/Address/Size: 0x8DC | 0x802029A0 | size: 0x3C
  */
@@ -683,7 +641,7 @@ void ModeledScreenTransition::Cancel()
     m_Effects = NULL;
 }
 
-static unsigned long GetParsedProgram(const char* pToken)
+static inline unsigned long GetParsedProgram(const char* pToken)
 {
     char name[128];
     int i;
@@ -698,12 +656,8 @@ static unsigned long GetParsedProgram(const char* pToken)
     return glGetProgram(name);
 }
 
-cSHierarchy* InitSHierarchyNoArg(cSHierarchy*);
-#pragma alias InitSHierarchyNoArg__FP11cSHierarchy "Initialize__11cSHierarchyFP7nlChunk"
-
 static inline void LoadModelTransition(ModeledScreenTransition* self, char* pToken)
 {
-    AVLTreeNode* existingNode;
     u32 fileSize = 0;
     TransitionModelStore* pModelStore;
     u32 hash;
@@ -711,7 +665,7 @@ static inline void LoadModelTransition(ModeledScreenTransition* self, char* pTok
     char buf[128];
     hash = glHash(pToken);
 
-    if (((ModelInventoryFindHelper*)&g_ModelInventory.m_Root)->FindGet(hash, &pModelStore))
+    if (ModeledScreenTransition::g_ModelInventory.FindGet(hash, &pModelStore))
     {
         CreateInstance(self, *pModelStore);
     }
@@ -726,11 +680,7 @@ static inline void LoadModelTransition(ModeledScreenTransition* self, char* pTok
 
         newStore.pModels = self->m_pModels;
         newStore.nModels = self->m_nModels;
-        g_ModelInventory.AddAVLNode(&((AVLTreeNode*&)g_ModelInventory.m_Root), (void*)&hash, (void*)&newStore, &existingNode, g_ModelInventory.m_NumElements);
-        if (existingNode == NULL)
-        {
-            g_ModelInventory.m_NumElements++;
-        }
+        ModeledScreenTransition::g_ModelInventory.Add(hash, newStore);
     }
 
     nlSNPrintf(buf, 128, "art/transitions/%s.sanim", pToken);
@@ -739,7 +689,7 @@ static inline void LoadModelTransition(ModeledScreenTransition* self, char* pTok
 
     nlSNPrintf(buf, 128, "art/transitions/%s.shier", pToken);
     self->m_pSkelFile = (char*)nlLoadEntireFile(buf, &fileSize, 0x20, AllocateStart);
-    self->m_pSkeleton = InitSHierarchyNoArg((cSHierarchy*)self->m_pSkelFile);
+    self->m_pSkeleton = cSHierarchy::Initialize((nlChunk*)self->m_pSkelFile);
 
     self->m_pModelMap = (int*)nlMalloc(self->m_nModels * 4, 8, false);
     for (u32 i = 0; i < self->m_nModels; i++)

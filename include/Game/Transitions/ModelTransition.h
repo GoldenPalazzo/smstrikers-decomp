@@ -2,6 +2,7 @@
 #define _MODELTRANSITION_H_
 
 #include "NL/nlMath.h"
+#include "NL/nlAVLTree.h"
 #include "Game/Sys/simpleparser.h"
 
 #include "Game/Transitions/TransLight.h"
@@ -13,8 +14,11 @@
 #include "Game/SHierarchy.h"
 #include "Game/SAnim.h"
 
-int UpdateEffectsFromLeafNodes(cPoseAccumulator&, EmissionController**, cSHierarchy&, int, int);
-int GetNumLeafNodesInHierarchy(cSHierarchy&, int, int);
+struct TransitionModelStore
+{
+    glModel* pModels;
+    u32 nModels;
+};
 
 class ModeledScreenTransition : public ScreenTransition
 {
@@ -55,6 +59,7 @@ public:
     /* 0xBD */ nlColour m_OutlineColour;             // offset 0xBD, size 0x4
 
     static eGLView s_3DView;
+    static nlAVLTree<unsigned long, TransitionModelStore, DefaultKeyCompare<unsigned long> > g_ModelInventory;
 }; // total size: 0xC4
 
 // class ScreenTransition
