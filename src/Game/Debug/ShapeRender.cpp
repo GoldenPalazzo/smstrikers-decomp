@@ -528,15 +528,19 @@ static inline void BuildShapeMesh(PrimitiveShape& shape)
     eGLStream stream_decl[4] = { GLStream_Position, GLStream_Colour, GLStream_Normal, GLStream_Diffuse };
     GLMeshWriter mesh;
     nlColour colour;
+    nlVector3* pPosition;
+    nlVector2* pTexcoord;
+    nlVector3* pNormal;
+
     shape.model = NULL;
     colour.c[0] = 0xFF;
     colour.c[1] = 0xFF;
     colour.c[2] = 0xFF;
     colour.c[3] = 0xFF;
 
-    nlVector3* pPosition = shape.position;
-    nlVector2* pTexcoord = shape.texcoord;
-    nlVector3* pNormal = shape.normal;
+    pPosition = shape.position;
+    pNormal = shape.normal;
+    pTexcoord = shape.texcoord;
 
     glSetDefaultState(true);
     glSetCurrentMatrix(glGetIdentityMatrix());
@@ -735,7 +739,6 @@ static inline void CreateBoxGeometry2(PrimitiveShape& prim)
 
 /**
  * Offset/Address/Size: 0x0 | 0x801FB290 | size: 0x7EC
- * TODO: 99.72% match - local static array relocation suffixes differ.
  */
 void ShapeRender::Initialize()
 {
