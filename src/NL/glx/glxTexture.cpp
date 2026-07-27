@@ -587,14 +587,12 @@ bool glx_AddTex(unsigned long handle, PlatTexture* platTex)
 
 /**
  * Offset/Address/Size: 0xF94 | 0x801B8250 | size: 0x194
- * TODO: 99.90% match - grid-call still computes shifted args into r3/r4 in the
- *       opposite order (target wants r4 from height, r3 from width), and the
- *       missing-text debug literal still binds to a different pool label
  */
 PlatTexture* glx_GetTex(unsigned long handle, bool bMissingFatal, bool bAllowGrids)
 {
     PlatTexture** tex;
     GLTextureAnim* pAnim;
+    int index;
 
     // Check if handle is already a PlatTexture pointer (high byte 0x80)
     if (((handle & 0xFF000000) + 0x80000000) == 0)
@@ -613,18 +611,17 @@ PlatTexture* glx_GetTex(unsigned long handle, bool bMissingFatal, bool bAllowGri
         handle = pAnim->GetTexture(-1)->textureHandle;
     }
 
-    for (int index = currentMarkerLevel; index >= 0; index--)
+    for (index = currentMarkerLevel; index >= 0; index--)
     {
-        bool found = textures[index]->FindGet(handle, &tex);
-
-        if (found)
+        if (textures[index]->FindGet(handle, &tex))
         {
             if (bAllowGrids && glx_bGridMode)
             {
-                PlatTexture* gridTex = glx_GetGridTexture((u32)(u16)(*tex)->m_Height >> 2, (u32)(*tex)->m_Width >> 2);
-                if (gridTex != NULL)
+                index = (u32)(u16)(*tex)->m_Height >> 2;
+                PlatTexture* pTex = glx_GetGridTexture((u32)(*tex)->m_Width >> 2, index);
+                if (pTex != NULL)
                 {
-                    return gridTex;
+                    return pTex;
                 }
             }
             return *tex;
