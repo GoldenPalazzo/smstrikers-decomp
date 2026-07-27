@@ -67,7 +67,7 @@ public:
 
     void Deallocate(DLListEntry<T>* entry, T* outData)
     {
-        if (outData)
+        if (outData != NULL)
         {
             *outData = entry->entry;
         }
