@@ -102,11 +102,10 @@ inline cInventory<T>::~cInventory()
 template <typename T>
 inline void cInventory<T>::Clear()
 {
-    ListEntry<T*>* meshEntry = m_lItemList.m_Head;
-    while (meshEntry != NULL)
+    for (nlListIterator<T*> iterator = m_lItemList.Begin();
+         iterator.IsValid(); iterator.Next())
     {
-        meshEntry->entry->Destroy();
-        meshEntry = meshEntry->next;
+        iterator.Current()->Destroy();
     }
 
     m_lItemList.Clear();

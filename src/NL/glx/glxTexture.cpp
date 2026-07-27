@@ -183,10 +183,10 @@ inline bool IsValidTextureDimension(int dimension)
     return validDimensions;
 }
 
+#pragma dont_inline on
 /**
  * Offset/Address/Size: 0x1128 | 0x801B83E4 | size: 0x1C4
  */
-#pragma dont_inline on
 static PlatTexture* glx_GetGridTexture(int width, int height)
 {
     if (!IsValidTextureDimension(width) || !IsValidTextureDimension(height))
@@ -218,10 +218,10 @@ static PlatTexture* glx_GetGridTexture(int width, int height)
 }
 #pragma dont_inline off
 
+#pragma dont_inline on
 /**
  * Offset/Address/Size: 0xF94 | 0x801B8250 | size: 0x194
  */
-#pragma dont_inline on
 PlatTexture* glx_GetTex(unsigned long handle, bool bMissingFatal, bool bAllowGrids)
 {
     PlatTexture** tex;
@@ -402,6 +402,8 @@ bool glplatLoadTextureBundle(const char* filename)
 
     uNumFiles = pHeader->numTextures;
     uSize = uNumFiles * sizeof(glTexBundleDict);
+    // Keep dictionarySize as its own copy: passing uSize directly instead costs
+    // 4 bytes in glplatLoadTextureBundle (464 -> 460) and breaks this Matching TU.
     const unsigned long dictionarySize = uSize;
 
     pDictionary = (glTexBundleDict*)nlMalloc((uBaseOffset = dictionarySize), 0x20, 1);
@@ -447,10 +449,10 @@ bool glplatLoadTextureBundle(const char* filename)
     return true;
 }
 
+#pragma dont_inline on
 /**
  * Offset/Address/Size: 0x93C | 0x801B7BF8 | size: 0xB8
  */
-#pragma dont_inline on
 static bool glxParseTextureBundle(const char* filedata)
 {
     const int numTextures = *(int*)(filedata + 4);
@@ -749,10 +751,10 @@ void PlatTexture::Prepare()
     GXInitTexObjLOD(&m_TexObj, (m_Levels == 1) ? GX_LINEAR : GX_LIN_MIP_LIN, GX_LINEAR, 0.0f, (float)(m_MaxLevel - 1), 0.0f, GX_DISABLE, GX_DISABLE, GX_ANISO_1);
 }
 
+#pragma dont_inline on
 /**
  * Offset/Address/Size: 0x230 | 0x801B74EC | size: 0x98
  */
-#pragma dont_inline on
 void glplatTextureAdd(unsigned long handle, const void* textureData, unsigned long size)
 {
     unsigned long handleCopy;
@@ -775,10 +777,10 @@ void glplatTextureAdd(unsigned long handle, const void* textureData, unsigned lo
 }
 #pragma dont_inline off
 
+#pragma dont_inline on
 /**
  * Offset/Address/Size: 0x0 | 0x801B72BC | size: 0x230
  */
-#pragma dont_inline on
 void glplatTextureReplace(unsigned long handle, const void* textureData, unsigned long size)
 {
     const GXTextureHeader* pHeader = (GXTextureHeader*)textureData;
