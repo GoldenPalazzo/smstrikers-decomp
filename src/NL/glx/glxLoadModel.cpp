@@ -26,8 +26,6 @@
 extern GLInventory glInventory;
 
 static bool glIgnoreDuplicateModels;
-static const char glxModelPath[] = "smstk";
-static const char glxSkinExt[] = ".skinmesh";
 
 static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNumModels, bool bLoadTextures);
 
@@ -45,7 +43,7 @@ glModel* glplatEndLoadModel(void* data, unsigned long size, unsigned long* pNumM
 bool glplatBeginLoadModel(const char* filename, void (*callback)(void*, unsigned long, void*), void* userData)
 {
     char fullname[256];
-    nlStrNCat(fullname, glxModelPath, filename, 256);
+    nlStrNCat(fullname, "art/", filename, 256);
 
     if (userData == NULL)
     {
@@ -78,11 +76,11 @@ glModel* glplatLoadModel(const char* filename, unsigned long* pNumModels)
     bool bSkinned;
 
     glx_FreeMemory0();
-    nlStrNCat(fullname, glxModelPath, filename, 256);
+    nlStrNCat(fullname, "art/", filename, 256);
     nlStrNCpy(lowerName, fullname, 256);
     nlToLower(lowerName);
 
-    bSkinned = (strstr(lowerName, glxSkinExt) == NULL);
+    bSkinned = (strstr(lowerName, "characters") == NULL);
 
     f = nlOpen(fullname);
     if (f == NULL)
@@ -111,6 +109,7 @@ glModel* glplatLoadModel(const char* filename, unsigned long* pNumModels)
 // BMD model chunk type IDs.
 enum BMDChunkType
 {
+    BMD_CHUNK_FILE_INFO = 0x1B001,
     BMD_CHUNK_REF_DATA = 0x1B002,
     BMD_CHUNK_MODELS = 0x1B003,
     BMD_CHUNK_PACKETS = 0x1B004,
@@ -127,22 +126,23 @@ static const int gl_stream_stride[15] = {
     12, 3, 4, 4, 4, 4, 4, 4, 4, 12, 12, 12, 1, 16, 16
 };
 
-// Division by 67 for packet count (matches asm magic 0xBAD0914D sequence).
-static inline u32 Div67(u32 n)
+static inline void* NLVIRTUALALLOC(unsigned long size)
 {
-    u32 hi = (u32)(((u64)n * 0xBAD0914Du) >> 32);
-    return (((n - hi) >> 1) + hi) >> 6;
+    if (nlVirtualLargestBlock() >= size + 0x100)
+    {
+        return nlVirtualAlloc(size, false);
+    }
+
+    OSReport("VIRTUAL MEMORY WARNING ~ NLVIRTUALALLOC had to fall back to MRAM\nLargest block: %d Total free: %d\n",
+        nlVirtualLargestBlock(), nlVirtualTotalFree());
+    return nlMalloc(size, 0x20, false);
 }
 
 /**
  * Offset/Address/Size: 0x1D0 | 0x801BFDF0 | size: 0xA38
- * TODO: 98.2% match - outer chunk stack slots and long-lived loader registers
- * still differ
  */
 static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNumModels, bool bLoadTextures)
 {
-    FORCE_DONT_INLINE;
-
     bool hasBmdHeader = false;
     nlChunk* innerEnd;
     u8* currentOuter;
@@ -150,17 +150,16 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
     nlChunk* outerEnd;
     nlChunk* chunkStart;
     nlChunk* chunkEnd;
-    int numPacketEntries;
-    GLAnimTex animTex;
-    u32 refDataPtr;
-    bool hasSkinData;
-    u8* pStreamData;
     u32 numModels;
-    u8* pIndexData;
+    int numPacketEntries;
     int numStreamEntries;
-    glModelPacket* pPackets;
+    u32 refDataPtr;
     glModel* pModels;
+    glModelPacket* pPackets;
+    u8* pStreamData;
     u8* pDisplayListData;
+    u8* pIndexData;
+    bool hasSkinData;
     nlChunk* chunk;
 
     outerChunkPtr = (nlChunk*)data;
@@ -203,10 +202,7 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                 if (((-alignBits | alignBits) >> 31) != 0)
                 {
                     u32 align = 1u << (alignBits >> 24);
-                    u32 ptr = (u32)chunk + align;
-                    ptr += 7;
-                    ptr &= ~(align - 1);
-                    chunkData = (u8*)ptr;
+                    chunkData = (u8*)nlAlignUp((u32)(chunk + 1), align);
                 }
                 else
                 {
@@ -215,6 +211,8 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
 
                 switch (id)
                 {
+                case BMD_CHUNK_FILE_INFO:
+                    break;
                 case BMD_CHUNK_REF_DATA:
                 {
                     void* p = glResourceAlloc(chunkSize, GLM_Matrix);
@@ -232,7 +230,7 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                     {
                         glModel* pEnt = pModels;
                         glModel* pEntEnd = (glModel*)((u8*)pModels + (numModels << 4));
-                        while (pEnt < pEntEnd)
+                        for (; pEnt < pEntEnd; pEnt++)
                         {
                             if (glIgnoreDuplicateModels)
                             {
@@ -243,7 +241,6 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                                 }
                             }
                             glInventory.AddModel(pEnt->id, pEnt);
-                            pEnt++;
                         }
                     }
                     break;
@@ -278,87 +275,78 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                 }
                 case BMD_CHUNK_TEXTURE_ANIM:
                 {
-                    u32 animId = *(u32*)chunkData;
-                    if (glInventory.GetTextureAnim(animId) == NULL)
+                    unsigned long* p32 = (unsigned long*)chunkData;
+                    unsigned long canonID = *p32++;
+                    if (glInventory.GetTextureAnim(canonID) == NULL)
                     {
-                        u32* pTexData = (u32*)(chunkData + 12);
-                        int numTextures = *(int*)(chunkData + 4);
-                        GLTextureAnim* pAnim;
-                        u32 mode = *(u32*)(chunkData + 8);
-                        f32 tempRate;
-                        memcpy(&tempRate, pTexData, 4);
-                        pTexData++;
-                        pAnim = (GLTextureAnim*)nlMalloc(0x20, 8, false);
-                        pAnim = new (pAnim) GLTextureAnim();
-                        pAnim->m_unk_0x00 = (s32)animId;
-                        pAnim->SetNumTextures(numTextures);
+                        unsigned long num = *p32++;
+                        unsigned long mode = *p32++;
+                        float start;
+                        memcpy(&start, p32, sizeof(float));
+                        p32++;
+                        GLTextureAnim* pAnim =
+                            new (nlMalloc(0x20, 8, false)) GLTextureAnim();
+                        pAnim->m_unk_0x00 = (s32)canonID;
+                        pAnim->SetNumTextures(num);
                         pAnim->m_mode = mode;
-                        pAnim->SetFrame((int)tempRate);
-                        for (u32 t = 0; t < (u32)numTextures; t++)
+                        pAnim->SetFrame((int)start);
+                        unsigned long index;
+                        GLAnimTex animTex;
+                        for (index = 0; index < num; index++)
                         {
-                            animTex.textureHandle = *pTexData++;
-                            f32 timeVal;
-                            memcpy(&timeVal, pTexData, 4);
-                            animTex.time = timeVal;
-                            pTexData++;
-                            pAnim->SetTexture(t, animTex);
+                            unsigned long hashID = *p32++;
+                            animTex.textureHandle = hashID;
+                            float fTime;
+                            memcpy(&fTime, p32, sizeof(float));
+                            p32++;
+                            animTex.time = fTime;
+                            pAnim->SetTexture(index, animTex);
                         }
-                        glInventory.AddTextureAnim(animId, pAnim);
+                        glInventory.AddTextureAnim(canonID, pAnim);
                     }
                     else
                     {
-                        tDebugPrintManager::Print(DC_LOADER, "skipping duplicate texanim 0x%08X\n", animId);
+                        tDebugPrintManager::Print(DC_LOADER, "skipping duplicate texanim 0x%08X\n", canonID);
                     }
                     break;
                 }
                 case BMD_CHUNK_VERTEX_ANIM:
                 {
-                    u32 modelId = *(u32*)chunkData;
-                    u8* pVertData = chunkData + 16;
-                    int numFrames = *(int*)(chunkData + 4);
-                    int numVerts = *(int*)(chunkData + 8);
-                    u32 frameRateU = *(u32*)(chunkData + 12);
-                    GLVertexAnim* pAnim = (GLVertexAnim*)nlMalloc(0x28, 8, false);
-                    pAnim = new (pAnim) GLVertexAnim();
-                    int dataSize = numFrames * 12 * numVerts;
-                    pAnim->m_uHashID = modelId;
+                    unsigned long* p32 = (unsigned long*)chunkData;
+                    unsigned long hashID = *p32++;
+                    unsigned long numFrames = *p32++;
+                    unsigned long numVerts = *p32++;
+                    unsigned long fps = *p32++;
+                    GLVertexAnim* pAnim = new (nlMalloc(0x28, 8, false)) GLVertexAnim();
+                    pAnim->m_uHashID = hashID;
                     pAnim->m_nNumFrames = numFrames;
                     pAnim->m_nNumVertices = numVerts;
-                    pAnim->m_fFrameRate = (f32)frameRateU;
-                    u8* pAnimData = (u8*)glResourceAlloc(dataSize, GLM_VertexData);
-                    memcpy(pAnimData, pVertData, dataSize);
-                    DCFlushRange(pAnimData, dataSize);
-                    pAnim->m_pVertices = (nlVector3*)pAnimData;
-                    pAnim->m_pModel = glInventory.GetModel(modelId);
+                    pAnim->m_fFrameRate = (float)fps;
+                    unsigned long size = numFrames * 12 * numVerts;
+                    nlVector3* pVertices = (nlVector3*)glResourceAlloc(size, GLM_VertexData);
+                    memcpy(pVertices, p32, size);
+                    DCFlushRange(pVertices, size);
+                    pAnim->m_pVertices = pVertices;
+                    pAnim->m_pModel = glInventory.GetModel(hashID);
                     pAnim->Reset();
-                    glInventory.AddVertexAnim(modelId, pAnim);
+                    glInventory.AddVertexAnim(hashID, pAnim);
                     break;
                 }
                 case BMD_CHUNK_MATERIAL_LIST:
                 {
-                    u8* pMatData;
-                    u32 listId = *(u32*)chunkData;
-                    pMatData = chunkData + 8;
-                    int numMats = *(int*)(chunkData + 4);
+                    unsigned long* p32 = (unsigned long*)chunkData;
+                    unsigned long modelID = *p32++;
+                    unsigned long numMats = *p32++;
                     GLMaterialList* pList = new (nlMalloc(0x0C, 8, false)) GLMaterialList();
-                    pList->m_uHashID = listId;
-                    pList->SetMaterials(numMats, (const GLMaterialEntry*)pMatData);
-                    glInventory.AddMaterialList(listId, pList);
+                    pList->m_uHashID = modelID;
+                    pList->SetMaterials(numMats, (const GLMaterialEntry*)p32);
+                    glInventory.AddMaterialList(modelID, pList);
                     break;
                 }
                 case BMD_CHUNK_SKIN:
                 {
                     u32 skinSize = chunkSize + 8;
-                    nlChunk* pSkinChunk;
-                    if (nlVirtualLargestBlock() >= skinSize + 0x100)
-                    {
-                        pSkinChunk = (nlChunk*)nlVirtualAlloc(skinSize, false);
-                    }
-                    else
-                    {
-                        OSReport("VIRTUAL MEMORY WARNING ~ NLVIRTUALALLOC had to fall back to MRAM\nLargest block: %d Total free: %d\n", nlVirtualLargestBlock(), nlVirtualTotalFree());
-                        pSkinChunk = (nlChunk*)nlMalloc(skinSize, 0x20, false);
-                    }
+                    nlChunk* pSkinChunk = (nlChunk*)NLVIRTUALALLOC(skinSize);
                     memcpy(pSkinChunk, chunk, skinSize);
                     glInventory.AddSkinData(pModels->id, pSkinChunk);
                     hasSkinData = true;
@@ -374,16 +362,13 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
             outerChunkPtr = (nlChunk*)(currentOuter + outerChunkPtr->m_Size + 8);
 
             {
-                glModel* pM = pModels;
                 int count = numModels;
-                if ((s32)numModels > 0)
+                glModel* pM = pModels;
+                while (count > 0)
                 {
-                    while (count > 0)
-                    {
-                        pM->packets = (glModelPacket*)((u32)pM->packets + (u32)pPackets);
-                        pM++;
-                        count--;
-                    }
+                    pM->packets = (glModelPacket*)((u32)pM->packets + (u32)pPackets);
+                    pM++;
+                    count--;
                 }
             }
 
@@ -422,16 +407,13 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
             }
 
             {
-                u8* p = pStreamData;
                 int count = numStreamEntries;
-                if ((s32)numStreamEntries > 0)
+                u8* p = pStreamData;
+                while (count > 0)
                 {
-                    while (count > 0)
-                    {
-                        *(u32*)p += (u32)pDisplayListData;
-                        p += 6;
-                        count--;
-                    }
+                    *(u32*)p += (u32)pDisplayListData;
+                    p += 6;
+                    count--;
                 }
             }
 

@@ -50,6 +50,11 @@ block_relocations:
   - source: .rodata:0x80295B84
   - source: .rodata:0x80298BE4
   - source: .rodata:0x80299F30
+  # The BMD skin chunk ID 0x8001B008 happens to equal
+  # UseTeamPowerup + 0xE8. These two instructions form the literal chunk ID,
+  # not a code pointer.
+  - source: .text:0x801BFF78
+  - source: .text:0x801BFF7C
 
 # OS.c OSInit references __ArenaLo / _stack_addr (linker-script symbols) by
 # relocation, exactly like the 100%-matching ac-decomp source. dtk cannot evaluate
