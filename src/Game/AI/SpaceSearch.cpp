@@ -6,22 +6,8 @@
 #include "Game/Debug/ShapeRender.h"
 #include "Game/Field.h"
 
-static nlVector2 g_vRunToNetDistanceConfidence = { 50.0f, 1.5f };      /* const */
-static nlVector2 g_vRunToNetFormationDistConfidence = { 10.0f, 1.5f }; /* const */
-
-/**
- * Offset/Address/Size: 0xB0 | 0x800642BC | size: 0xD8
- */
-SSearchBestPass::~SSearchBestPass()
-{
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x8006420C | size: 0xB0
- */
-SSearchRunToNet::~SSearchRunToNet()
-{
-}
+static const nlVector2 g_vRunToNetDistanceConfidence = { 50.0f, 1.5f };
+static const nlVector2 g_vRunToNetFormationDistConfidence = { 10.0f, 1.5f };
 
 /**
  * Offset/Address/Size: 0x1874 | 0x800641C4 | size: 0x48
@@ -402,7 +388,7 @@ static float CalcIdealShootingPositionScore(const nlVector3& v3TestPosition, con
 
                         fDot = (fInvDeltaLen * vDelta3.f.x) * (fInvCandidateLen * fCandidateX2)
                              + (fInvDeltaLen * vDelta3.f.y) * (fInvCandidateLen * fCandidateY2);
-                        fScore = fScore * NormalizeVal(fDot, 0.0f, 1.0f);
+                        fScore = fScore * NormalizeVal(fDot, 0.0f, 0.5f);
                     }
                 }
             }
@@ -532,20 +518,6 @@ float SSearchBestPass::EvaluatePosition(const nlVector3& position, const nlVecto
 }
 
 /**
- * Offset/Address/Size: 0x538 | 0x80062E88 | size: 0x5C
- */
-SSearchOpenLane::~SSearchOpenLane()
-{
-}
-
-/**
- * Offset/Address/Size: 0x4B0 | 0x80062E00 | size: 0x88
- */
-SSearchIdealShot::~SSearchIdealShot()
-{
-}
-
-/**
  * Offset/Address/Size: 0x380 | 0x80062CD0 | size: 0x130
  */
 SSearchRunToNet::SSearchRunToNet(cPlayer* pPlayer)
@@ -569,7 +541,7 @@ float SSearchRunToNet::EvaluatePosition(const nlVector3& v3TestPosition, const n
 
     float fDx = pBallOwner->m_v3Position.f.x - fNetX;
     float fDy = pBallOwner->m_v3Position.f.y - fNetY;
-    if (fDx * fDx + fDy * fDy < 2500.0f)
+    if (fDx * fDx + fDy * fDy < 100.0f)
     {
         fTotalSum += m_SSearchIdealShot.EvaluatePosition(v3TestPosition, v3CenterPos, eSearchDir, aDirection);
         fTotalWeight += 1.0f;
@@ -580,17 +552,17 @@ float SSearchRunToNet::EvaluatePosition(const nlVector3& v3TestPosition, const n
         float fDyNet = fNetY - v3TestPosition.f.y;
         float fDistToNet = nlSqrt(fDxNet * fDxNet + fDyNet * fDyNet, true);
         float fNormDist = NormalizeVal(fDistToNet, g_vRunToNetDistanceConfidence);
-        fTotalSum += 0.5f * fNormDist;
-        fTotalWeight += 0.5f;
+        fTotalSum += 5.0f * fNormDist;
+        fTotalWeight += 5.0f;
 
         float fOpenPos = OpenPosition(v3TestPosition, pBallOwner->m_pTeam->GetOtherTeam(), NULL, NULL);
-        fTotalSum += 0.3f * fOpenPos;
-        fTotalWeight += 0.3f;
+        fTotalSum += 0.5f * fOpenPos;
+        fTotalWeight += 0.5f;
 
         OpenToPosition(v3TestPosition, v3NetPosition, pBallOwner->m_pTeam->GetOtherTeam(), pBallOwner, NULL, true);
 
         nlVector3 v3FormationPos;
-        pBallOwner->GetFormationPosition(v3FormationPos, 0.5f);
+        pBallOwner->GetFormationPosition(v3FormationPos, -1.0f);
         float fFormDx = v3FormationPos.f.x - v3TestPosition.f.x;
         float fFormDy = v3FormationPos.f.y - v3TestPosition.f.y;
         float fFormDist = nlSqrt(fFormDx * fFormDx + fFormDy * fFormDy, true);
@@ -599,8 +571,8 @@ float SSearchRunToNet::EvaluatePosition(const nlVector3& v3TestPosition, const n
         fTotalWeight += 0.4f;
 
         float fCloseToSideline = CloseToSideline(v3TestPosition, NULL, false);
-        fTotalSum += 0.2f * (1.0f - fCloseToSideline);
-        fTotalWeight += 0.2f;
+        fTotalSum += 0.6f * (1.0f - fCloseToSideline);
+        fTotalWeight += 0.6f;
     }
 
     if (fTotalWeight > 0.0f)

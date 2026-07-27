@@ -46,7 +46,6 @@ class SSearchCutAndBreak : public SpaceSearch
 {
 public:
     SSearchCutAndBreak(cPlayer*);
-    virtual ~SSearchCutAndBreak() { }
     virtual float EvaluatePosition(const nlVector3&, const nlVector3&, eFieldDirection, unsigned short);
 
     /* 0x10 */ cPlayer* m_pPlayer;
@@ -56,7 +55,6 @@ class SSearchOpenLane : public SpaceSearch
 {
 public:
     SSearchOpenLane(cPlayer*, cPlayer*);
-    virtual ~SSearchOpenLane();
     virtual float EvaluatePosition(const nlVector3&, const nlVector3&, eFieldDirection, unsigned short);
 
     /* 0x10 */ cPlayer* m_pBallOwner;
@@ -74,7 +72,6 @@ public:
     {
         m_pGoalie = pBallOwner->m_pTeam->GetOtherTeam()->GetGoalie();
     }
-    virtual ~SSearchIdealShot();
     virtual float EvaluatePosition(const nlVector3&, const nlVector3&, eFieldDirection, unsigned short);
 
     /* 0x10 */ Goalie* m_pGoalie;
@@ -85,7 +82,7 @@ class SSearchRunToNet : public SpaceSearch
 {
 public:
     SSearchRunToNet(cPlayer*);
-    virtual ~SSearchRunToNet();
+    virtual ~SSearchRunToNet() { }
     virtual float EvaluatePosition(const nlVector3&, const nlVector3&, eFieldDirection, unsigned short);
 
     /* 0x10 */ SSearchIdealShot m_SSearchIdealShot;
@@ -95,7 +92,7 @@ class SSearchBestPass : public SpaceSearch
 {
 public:
     SSearchBestPass(cPlayer*, cPlayer*, bool, bool);
-    virtual ~SSearchBestPass();
+    virtual ~SSearchBestPass() { }
     virtual float EvaluatePosition(const nlVector3&, const nlVector3&, eFieldDirection, unsigned short);
 
     /* 0x10 */ SSearchIdealShot m_SSearchIdealShot;
