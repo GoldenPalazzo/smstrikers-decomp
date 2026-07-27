@@ -14,7 +14,6 @@
 #include "Game/SAnim.h"
 
 int UpdateEffectsFromLeafNodes(cPoseAccumulator&, EmissionController**, cSHierarchy&, int, int);
-void ShuffleIntoOutline(Vector<nlVector3, DefaultAllocator>&);
 int GetNumLeafNodesInHierarchy(cSHierarchy&, int, int);
 
 class ModeledScreenTransition : public ScreenTransition

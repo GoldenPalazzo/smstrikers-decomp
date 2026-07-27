@@ -198,10 +198,8 @@ int GetNumLeafNodesInHierarchy(cSHierarchy& h, int node, int ret)
 
 /**
  * Offset/Address/Size: 0x1BCC | 0x80203C90 | size: 0x294
- * TODO: 98.88% match - remaining callee-saved GPR allocation drift in loop-carried
- * index/offset registers (polygon base and outer-loop counters).
  */
-void ShuffleIntoOutline(Vector<nlVector3, DefaultAllocator>& polygon)
+static void ShuffleIntoOutline(Vector<nlVector3, DefaultAllocator>& polygon)
 {
     float min = 9999.0f;
 
@@ -229,25 +227,20 @@ void ShuffleIntoOutline(Vector<nlVector3, DefaultAllocator>& polygon)
         prev -= 1;
         nlVec3Set(dir, polygon.mData[i].f.x - polygon.mData[prev].f.x, polygon.mData[i].f.y - polygon.mData[prev].f.y, polygon.mData[i].f.z - polygon.mData[prev].f.z);
 
-        int next = i;
-        next += 1;
-
-        for (int j = next; j < polygon.mSize; j++)
+        for (int j = i + 1; j < polygon.mSize; j++)
         {
-            float x, y, z;
-            y = polygon.mData[i].f.y - polygon.mData[j].f.y;
-            x = polygon.mData[i].f.x - polygon.mData[j].f.x;
-            z = polygon.mData[i].f.z - polygon.mData[j].f.z;
-
-            float recip = nlRecipSqrt(x * x + y * y + z * z, true);
-            float dot = dir.f.x * (recip * x) + dir.f.y * (recip * y) + dir.f.z * (recip * z);
+            nlVector3 delta;
+            nlVec3Sub(delta, polygon[i], polygon[j]);
+            float recip = nlRecipSqrt(delta.GetLengthSq3D(), true);
+            nlVec3Scale(delta, recip);
+            float dot = nlVec3DotProduct(dir, delta);
 
             if (dot <= max)
             {
                 max = dot;
-                nlVector3 tmp = polygon.mData[next];
-                polygon.mData[next] = polygon.mData[j];
-                polygon.mData[j] = tmp;
+                nlVector3 tmp = polygon[i + 1];
+                polygon[i + 1] = polygon[j];
+                polygon[j] = tmp;
             }
         }
     }
