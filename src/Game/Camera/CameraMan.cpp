@@ -572,25 +572,25 @@ void cCameraManager::PushCameraWithTransition(cBaseCamera* pCamera, float fDurat
 unsigned char cCameraManager::IsObjectOccludingField(const DrawableObject* drawable)
 {
     const nlMatrix4& worldMatrix = drawable->GetWorldMatrix();
-    nlVector3 objectPosition = *(const nlVector3*)&worldMatrix.f.m41;
-    const nlVector3* cameraPosition = &m_cameraPosition;
+    nlVector3 boundingSphereCentre = *(const nlVector3*)&worldMatrix.f.m41;
+    const nlVector3& cameraPosition = m_cameraPosition;
 
     float objectRadius = drawable->m_fBoundingRadius;
     float netDepth = cNet::m_fNetDepth;
-    float goalLineX = cField::GetGoalLineX(1U);
-    goalLineX = goalLineX + netDepth;
-    float sidelineY = cField::GetSidelineY(1U);
+    float goalLineXPlusNetDepth = cField::GetGoalLineX(1U);
+    goalLineXPlusNetDepth = goalLineXPlusNetDepth + netDepth;
+    float sideLineY = cField::GetSidelineY(1U);
 
-    if ((cameraPosition->f.x > -goalLineX)
-        && (cameraPosition->f.x < goalLineX)
-        && (cameraPosition->f.y > -sidelineY)
-        && (cameraPosition->f.y < sidelineY))
+    if ((cameraPosition.f.x > -goalLineXPlusNetDepth)
+        && (cameraPosition.f.x < goalLineXPlusNetDepth)
+        && (cameraPosition.f.y > -sideLineY)
+        && (cameraPosition.f.y < sideLineY))
     {
         bool objectInBounds = false;
-        if ((objectPosition.f.x > -goalLineX)
-            && (objectPosition.f.x < goalLineX)
-            && (objectPosition.f.y > -sidelineY)
-            && (objectPosition.f.y < sidelineY))
+        if ((boundingSphereCentre.f.x > -goalLineXPlusNetDepth)
+            && (boundingSphereCentre.f.x < goalLineXPlusNetDepth)
+            && (boundingSphereCentre.f.y > -sideLineY)
+            && (boundingSphereCentre.f.y < sideLineY))
         {
             objectInBounds = true;
         }
@@ -601,67 +601,56 @@ unsigned char cCameraManager::IsObjectOccludingField(const DrawableObject* drawa
         }
     }
 
-    if ((cameraPosition->f.x < -goalLineX) && (objectPosition.f.x > goalLineX))
+    if ((cameraPosition.f.x < -goalLineXPlusNetDepth) && (boundingSphereCentre.f.x > goalLineXPlusNetDepth))
         return false;
-    if ((cameraPosition->f.x > goalLineX) && (objectPosition.f.x < -goalLineX))
+    if ((cameraPosition.f.x > goalLineXPlusNetDepth) && (boundingSphereCentre.f.x < -goalLineXPlusNetDepth))
         return false;
-    if ((cameraPosition->f.y < -sidelineY) && (objectPosition.f.y > sidelineY))
+    if ((cameraPosition.f.y < -sideLineY) && (boundingSphereCentre.f.y > sideLineY))
         return false;
-    if ((cameraPosition->f.y > sidelineY) && (objectPosition.f.y < -sidelineY))
+    if ((cameraPosition.f.y > sideLineY) && (boundingSphereCentre.f.y < -sideLineY))
         return false;
 
-    if ((objectPosition.f.z - objectRadius) < 0.0f)
+    if ((boundingSphereCentre.f.z - objectRadius) < 0.0f)
     {
-        objectPosition.f.z += objectRadius - objectPosition.f.z;
+        boundingSphereCentre.f.z += objectRadius - boundingSphereCentre.f.z;
     }
 
     nlVector3 fieldCorners[4];
     nlVector3 planeNormals[4];
 
-    fieldCorners[0].f.x = -goalLineX;
-    fieldCorners[0].f.y = -sidelineY;
+    fieldCorners[0].f.x = -goalLineXPlusNetDepth;
+    fieldCorners[0].f.y = -sideLineY;
     fieldCorners[0].f.z = 0.0f;
-    fieldCorners[1].f.x = -goalLineX;
-    fieldCorners[1].f.y = sidelineY;
+    fieldCorners[1].f.x = -goalLineXPlusNetDepth;
+    fieldCorners[1].f.y = sideLineY;
     fieldCorners[1].f.z = 0.0f;
-    fieldCorners[2].f.x = goalLineX;
-    fieldCorners[2].f.y = sidelineY;
+    fieldCorners[2].f.x = goalLineXPlusNetDepth;
+    fieldCorners[2].f.y = sideLineY;
     fieldCorners[2].f.z = 0.0f;
-    fieldCorners[3].f.x = goalLineX;
-    fieldCorners[3].f.y = -sidelineY;
+    fieldCorners[3].f.x = goalLineXPlusNetDepth;
+    fieldCorners[3].f.y = -sideLineY;
     fieldCorners[3].f.z = 0.0f;
 
-    nlVector3* pCorner = &fieldCorners[0];
-    nlVector3* pNormal;
-    nlVector3* pNormals = &planeNormals[0];
-    pNormal = pNormals;
     int i;
     for (i = 0; i < 4; i++)
     {
         int next = (i + 1) % 4;
         nlVector3 edge;
         nlVector3 delta;
-        nlVec3Sub(edge, fieldCorners[next], *pCorner);
-        nlVec3Sub(delta, *pCorner, *cameraPosition);
-        nlVec3Cross(*pNormal, edge, delta);
-
-        float invLength = nlRecipSqrt(
-            pNormal->f.x * pNormal->f.x
-                + pNormal->f.y * pNormal->f.y
-                + pNormal->f.z * pNormal->f.z,
-            true);
-        nlVec3Scale(*pNormal, invLength);
-
-        pCorner++;
-        pNormal++;
+        nlVec3Sub(edge, fieldCorners[next], fieldCorners[i]);
+        nlVec3Sub(delta, fieldCorners[i], cameraPosition);
+        nlVec3Cross(planeNormals[i], edge, delta);
+        float lengthSquared = planeNormals[i].GetLengthSq3D();
+        float invLength = nlRecipSqrt(lengthSquared, true);
+        nlVec3Scale(planeNormals[i], invLength);
     }
 
     nlVector3 objectDelta;
-    nlVec3Sub(objectDelta, objectPosition, *cameraPosition);
+    nlVec3Sub(objectDelta, boundingSphereCentre, cameraPosition);
 
     for (i = 0; i < 4; i++)
     {
-        if (nlVec3DotProduct(pNormals[i], objectDelta) > objectRadius)
+        if (nlVec3DotProduct(planeNormals[i], objectDelta) > objectRadius)
             return false;
     }
     return true;
