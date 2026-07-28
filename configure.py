@@ -1073,7 +1073,7 @@ config.libs = [
                 "Game/FE/feSidekickGridComponent.cpp",
                 extra_cflags=["-inline noauto", "-inline deferred"],
             ),
-            Object(NonMatching, "Game/FE/FEAudio.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "Game/FE/FEAudio.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/FE/fePresentation.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/FE/feMapMenu.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/FE/feResourceManager.cpp", extra_cflags=["-inline auto"]),

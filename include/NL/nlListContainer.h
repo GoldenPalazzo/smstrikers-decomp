@@ -41,6 +41,18 @@ public:
 
     void DeleteEntry(ListEntry<T>* entry);
 
+    ListEntry<T>* Allocate(const T& data)
+    {
+        ListEntry<T> localEntry(data);
+        ListEntry<T>* entry = NULL;
+        m_Allocator.Allocate(entry);
+        if (entry != NULL)
+        {
+            *entry = localEntry;
+        }
+        return entry;
+    }
+
     void AddEntry(const T& data)
     {
         ListEntry<T>* entry =
