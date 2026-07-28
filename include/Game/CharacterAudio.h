@@ -222,6 +222,8 @@ public:
     virtual void Init();
     virtual unsigned long Play(Audio::SoundAttributes&);
 
+    unsigned long Play(Audio::eCharSFX, float, float, float);
+    unsigned long Play3D(Audio::eCharSFX, PosUpdateMethod, float, float);
     void Stop(Audio::eCharSFX, cGameSFX::StopFlag);
     unsigned long PlayRandomCharDialogue(CharDialogueType, PosUpdateMethod, float, float, bool);
     unsigned long PlayRandomCharDialogue(CharDialogueType, Audio::SoundAttributes&, bool, unsigned long*);

@@ -38,20 +38,18 @@ public:
     class StreamFileLookup
     {
     public:
-        struct STREAM_FILE_LIST_LOOKUP
-        {
-            /* 0x00 */ unsigned long key;
-            /* 0x04 */ const char* value;
-            /* 0x08 */ unsigned long length;
-        }; // total size: 0xC
-
         struct STREAM_FILE_LOOKUP
         {
-            /* 0x00 */ unsigned long hash;
-            /* 0x04 */ char* value;
+            /* 0x00 */ unsigned long NameHash;
+            /* 0x04 */ const char* FileName;
 
-            operator unsigned long() const { return hash; }
+            operator unsigned long() const { return NameHash; }
         }; // total size: 0x8
+
+        struct STREAM_FILE_LIST_LOOKUP : public STREAM_FILE_LOOKUP
+        {
+            /* 0x08 */ unsigned long FileNameLen;
+        }; // total size: 0xC
 
         StreamFileLookup(const char* name,
             const Function<bool(const char*, char*, unsigned long)>& fn);
@@ -114,7 +112,7 @@ public:
         SlotPoolBase::BaseFreeBlocks(&m_StreamPool, 0x40);
     }
     /* 0x0C */ virtual void Update(float);
-    /* 0x10 */ virtual StreamTrack& CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP);
+    /* 0x10 */ virtual StreamTrack* CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP);
     /* 0x14 */ virtual void DestroyAllTracks();
     /* 0x18 */ virtual StreamTrack* GetTrack(unsigned long);
     /* 0x1C */ virtual void StopAllTracks(unsigned long);
@@ -214,7 +212,7 @@ class TrackManager : public TrackManagerBase
 public:
     TrackManager(const Function<bool(const char*, char*, unsigned long)>&);
     virtual ~TrackManager() { }
-    virtual StreamTrack& CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP);
+    virtual StreamTrack* CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP);
     virtual void DestroyAllTracks();
     virtual void OnMasterVolumeChange(Audio::MasterVolume::VOLUME_GROUP);
     virtual StreamTrack* GetTrack(unsigned long Name);
@@ -287,19 +285,13 @@ void TrackManager<N>::Update(float dT)
 template <int N>
 void TrackManager<N>::DestroyAllTracks()
 {
-    typedef typename nlSortedSlot<StreamTrack, N>::template EntryLookup<StreamTrack> EL;
-
-    unsigned long i;
-    unsigned long trackOffset;
-    EL* entryLookup;
-    EL* foundSlot;
     StreamTrack* track;
 
     StopAllTracks(0);
 
     while (m_Tracks.m_EntryCount != 0)
     {
-        track = ((EL*)m_Tracks.m_pEntryLookup)->pEntry;
+        track = m_Tracks.m_pEntryLookup->pEntry;
         if (track == NULL)
             continue;
 
@@ -313,47 +305,22 @@ void TrackManager<N>::DestroyAllTracks()
         if (track == NULL)
             continue;
 
-        for (i = 0, trackOffset = i; i < m_Tracks.m_EntryCount; trackOffset += 8, i++)
-        {
-            entryLookup = m_Tracks.m_pEntryLookup;
-            if (((EL*)((char*)entryLookup + trackOffset))->pEntry == track)
-            {
-                foundSlot = (EL*)((char*)entryLookup + i * 8);
-                goto found_slot;
-            }
-        }
-        foundSlot = 0;
-    found_slot:
-
-        m_Tracks.FreeEntry(track);
-
-        struct LookupShifter
-        {
-            static void Shift(TrackManager<N>* self, EL* foundSlot)
-            {
-                unsigned long entryCount = self->m_Tracks.m_EntryCount;
-                long idx = foundSlot - self->m_Tracks.m_pEntryLookup;
-                while ((unsigned long)idx != entryCount)
-                {
-                    long next = idx + 1;
-                    EL* src = &self->m_Tracks.m_pEntryLookup[next];
-                    register unsigned long hash = src->hash;
-                    EL* dst = &self->m_Tracks.m_pEntryLookup[idx];
-                    idx = next;
-                    StreamTrack* pEntry = src->pEntry;
-                    dst->pEntry = pEntry;
-                    dst->hash = hash;
-                }
-            }
-        };
-        LookupShifter::Shift(this, foundSlot);
-
-        m_Tracks.m_EntryCount--;
+        m_Tracks.DeleteEntry(track);
     }
 }
 
-template <>
-void TrackManager<3>::DestroyAllTracks();
+template <int N>
+StreamTrack* TrackManager<N>::CreateTrack(
+    const char* name, Audio::MasterVolume::VOLUME_GROUP volumeGroup)
+{
+    StreamTrack* entry = m_Tracks.AddEntry(nlStringLowerHash(name));
+
+    if (entry != NULL)
+    {
+        new (entry) StreamTrack(*this, volumeGroup);
+    }
+    return entry;
+}
 
 } // namespace AudioStreamTrack
 

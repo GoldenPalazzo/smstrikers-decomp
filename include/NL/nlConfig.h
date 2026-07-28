@@ -58,6 +58,55 @@ public:
         /* 0x08 */ Value value;
     };
 
+    class IteratorBase
+    {
+    public:
+        const char* Tag() const;
+        bool IsValid() const;
+        void Next();
+        IteratorBase(Config&, Type);
+
+    protected:
+        TagValuePair* Current() const { return mCurrentTvp; }
+
+    private:
+        /* 0x0 */ TagValuePair* mCurrentTvp;
+        /* 0x4 */ TagValuePair* mLastTvp;
+        /* 0x8 */ Type mType;
+    };
+
+    template <typename T>
+    class Iterator : public IteratorBase
+    {
+    public:
+        Iterator(Config& config)
+            : IteratorBase(config, GetType())
+        {
+        }
+
+        T Current() const
+        {
+            return IteratorBase::Current()->Get<T>();
+        }
+
+    private:
+        Type GetType()
+        {
+            return GetType(T());
+        }
+
+        Type GetType(
+            const BasicString<char, Detail::TempStringAllocator>& value)
+        {
+            return _STRING;
+        }
+
+        Type GetType(const char* value) { return _STRING; }
+        Type GetType(int value) { return _INT; }
+        Type GetType(unsigned char value) { return _BOOL; }
+        Type GetType(float value) { return _FLOAT; }
+    };
+
     enum AllocateWhere
     {
         ALLOCATE_LOW = 0,
@@ -174,6 +223,38 @@ public:
     // TagValuePair::TagValuePair();
     // Set<BasicString<char, Detail::TempStringAllocator>>(const char*, BasicString<char, Detail::TempStringAllocator>);
 }; // total size: 0xC
+
+inline Config::IteratorBase::IteratorBase(Config& config, Type type)
+    : mCurrentTvp(config.mTvpHash)
+    , mLastTvp(config.mTvpHash + 1024)
+    , mType(type)
+{
+    while ((mCurrentTvp->tag == NULL || mCurrentTvp->type != mType)
+        && mCurrentTvp < mLastTvp)
+    {
+        ++mCurrentTvp;
+    }
+}
+
+inline bool Config::IteratorBase::IsValid() const
+{
+    return mCurrentTvp < mLastTvp;
+}
+
+inline void Config::IteratorBase::Next()
+{
+    ++mCurrentTvp;
+    while ((mCurrentTvp->tag == NULL || mCurrentTvp->type != mType)
+        && mCurrentTvp < mLastTvp)
+    {
+        ++mCurrentTvp;
+    }
+}
+
+inline const char* Config::IteratorBase::Tag() const
+{
+    return mCurrentTvp->tag;
+}
 
 typedef Config::TagValuePair TagValuePair;
 

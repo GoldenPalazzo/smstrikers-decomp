@@ -44,8 +44,8 @@ public:
     ListEntry<T>* Allocate(const T& data)
     {
         ListEntry<T> localEntry(data);
-        ListEntry<T>* entry = NULL;
-        m_Allocator.Allocate(entry);
+        ListEntry<T>* entry;
+        m_Allocator.AllocateForReturn(entry);
         if (entry != NULL)
         {
             *entry = localEntry;

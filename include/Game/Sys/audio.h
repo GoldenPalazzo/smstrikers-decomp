@@ -13,41 +13,6 @@ class TrackManagerBase;
 }
 extern AudioStreamTrack::TrackManagerBase* g_pTrackManager;
 
-enum FadeType
-{
-    FADE_TYPE_NONE = 0,
-    FADE_TYPE_SFX = 1,
-    FADE_TYPE_FILTER = 2,
-    FADE_TYPE_FILTER_ALL = 3,
-    FADE_TYPE_VOLGROUP = 4,
-};
-
-struct FadeAudioData
-{
-    FadeType fadeType; // offset 0x0, size 0x4
-    union
-    {
-        int index;            // offset 0x0, size 0x4
-        SFXEmitter* pEmitter; // offset 0x0, size 0x4
-    } identifier;             // offset 0x4, size 0x4
-    float fadeStepSize;       // offset 0x8, size 0x4
-    float fadeTimeStart;      // offset 0xC, size 0x4
-    float fadeDuration;       // offset 0x10, size 0x4
-    float targetVol;          // offset 0x14, size 0x4
-    union
-    {
-        float floatVal;          // offset 0x0, size 0x4
-        float* floatPtrVal;      // offset 0x0, size 0x4
-    } currentVol;                // offset 0x18, size 0x4
-    bool bShutDownAfterDuration; // offset 0x1C, size 0x1
-    bool isEmitter;              // offset 0x1D, size 0x1
-    bool bTurnFilterOn;          // offset 0x1E, size 0x1
-    bool bFilterOn;              // offset 0x1F, size 0x1
-    float totalEstimatedTime;    // offset 0x20, size 0x4
-    u32 _pad;                    // TODO: it is not yet clear where this padding is -> next needs to be at 0x28
-    FadeAudioData* next;         // offset 0x28, size 0x4
-};
-
 class PhysicsObject;
 class cGameSFX;
 

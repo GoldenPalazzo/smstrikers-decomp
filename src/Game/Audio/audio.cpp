@@ -21,6 +21,43 @@
 // The namespace PlatAudio and class PlatAudio can coexist
 #include "Game/Sys/PlatStream.h"
 
+enum FadeType
+{
+    FADE_TYPE_NONE = 0,
+    FADE_TYPE_SFX = 1,
+    FADE_TYPE_FILTER = 2,
+    FADE_TYPE_FILTER_ALL = 3,
+    FADE_TYPE_VOLGROUP = 4,
+};
+
+struct FadeAudioData
+{
+    FadeType fadeType; // offset 0x0, size 0x4
+    union
+    {
+        int index;            // offset 0x0, size 0x4
+        SFXEmitter* pEmitter; // offset 0x0, size 0x4
+    } identifier;             // offset 0x4, size 0x4
+    float fadeStepSize;       // offset 0x8, size 0x4
+    float fadeTimeStart;      // offset 0xC, size 0x4
+    float fadeDuration;       // offset 0x10, size 0x4
+    float targetVol;          // offset 0x14, size 0x4
+    union
+    {
+        float floatVal;     // offset 0x0, size 0x4
+        float* floatPtrVal; // offset 0x0, size 0x4
+    } currentVol;           // offset 0x18, size 0x4
+    bool bShutDownAfterDuration; // offset 0x1C, size 0x1
+    bool isEmitter;              // offset 0x1D, size 0x1
+    bool bTurnFilterOn;          // offset 0x1E, size 0x1
+    bool bFilterOn;              // offset 0x1F, size 0x1
+    bool bPitchBendOn;           // offset 0x20, size 0x1
+    bool bPitchBendApplied;      // offset 0x21, size 0x1
+    u8 _pad[2];                  // offset 0x22, size 0x2
+    float totalEstimatedTime;    // offset 0x24, size 0x4
+    FadeAudioData* next;         // offset 0x28, size 0x4
+};
+
 FadeAudioData* g_pFadeList;
 
 static bool gbFilterOn = false;
@@ -924,6 +961,10 @@ static void ReadVolGroupSettings()
 namespace Audio
 {
 
+static FadeAudioData* RemoveFadeData(FadeAudioData*);
+static void RemoveFadeData(FadeType, int);
+static bool IsFadeDataInList(FadeType, unsigned long, bool, float);
+
 cWorldSFX gWorldSFX;
 cWorldSFX gPowerupSFX;
 cWorldSFX gStadGenSFX;
@@ -986,6 +1027,83 @@ float MasterVolume::GetVolume(MasterVolume::VOLUME_GROUP group)
     return gfVolumeGroups[group];
 }
 
+static void AddFilterFadeData(float currentVal, float fadeStepSize, float fadeDuration, float targetVal,
+    FadeType fadeType, float fadeTimeStart)
+{
+    TRANSITION_STATE state = (TRANSITION_STATE)0;
+    TransitionTask* pTask = TransitionTask::sm_pGlobalTask;
+    if (pTask != NULL)
+    {
+        state = pTask->m_TransitionState;
+    }
+    if (state == eTS_Destroying)
+    {
+        return;
+    }
+
+    if (IsFadeDataInList(fadeType, 0, false, targetVal))
+    {
+        return;
+    }
+
+    FadeAudioData* pFadeData = (FadeAudioData*)nlMalloc(sizeof(FadeAudioData), 8, false);
+    pFadeData->fadeType = FADE_TYPE_NONE;
+    pFadeData->identifier.index = -1;
+    pFadeData->identifier.index = 0;
+    pFadeData->fadeStepSize = 0.0f;
+    pFadeData->fadeTimeStart = 0.0f;
+    pFadeData->fadeDuration = 0.0f;
+    pFadeData->targetVol = 0.0f;
+    pFadeData->currentVol.floatVal = -1.0f;
+    pFadeData->currentVol.floatPtrVal = NULL;
+    pFadeData->bShutDownAfterDuration = false;
+    pFadeData->isEmitter = false;
+    pFadeData->bTurnFilterOn = false;
+    pFadeData->bFilterOn = false;
+    pFadeData->bPitchBendOn = false;
+    pFadeData->bPitchBendApplied = false;
+    pFadeData->totalEstimatedTime = -1.0f;
+
+    pFadeData->fadeType = fadeType;
+    pFadeData->fadeStepSize = fadeStepSize;
+    pFadeData->fadeTimeStart = fadeTimeStart;
+    pFadeData->fadeDuration = fadeDuration;
+    pFadeData->targetVol = targetVal;
+    pFadeData->currentVol.floatVal = currentVal;
+
+    if (fadeType == FADE_TYPE_FILTER)
+    {
+        if (targetVal == 0.0f)
+        {
+            pFadeData->bTurnFilterOn = false;
+            pFadeData->bShutDownAfterDuration = true;
+        }
+        else
+        {
+            pFadeData->bTurnFilterOn = true;
+            pFadeData->bShutDownAfterDuration = false;
+        }
+    }
+    else if (fadeType == FADE_TYPE_FILTER_ALL)
+    {
+        if (targetVal == g_pGame->m_pGameTweaks->unk224)
+        {
+            pFadeData->bPitchBendOn = false;
+            pFadeData->bShutDownAfterDuration = true;
+        }
+        else
+        {
+            pFadeData->bPitchBendOn = true;
+            pFadeData->bShutDownAfterDuration = false;
+        }
+    }
+
+    pFadeData->next = NULL;
+#pragma inline_depth(0)
+    nlListAddStart<FadeAudioData>(&g_pFadeList, pFadeData, NULL);
+#pragma inline_depth
+}
+
 /**
  * Offset/Address/Size: 0x240 | 0x8013C754 | size: 0x1A0
  */
@@ -999,8 +1117,9 @@ void FadeFilterFromCurrentToZero()
         node = g_pFadeList;
         while (node != NULL)
         {
-            s32 type = *(s32*)node;
-            if (!(type != 2 && type != 3 && !(type == 2 && ((s32*)node)[1] == 0)))
+            FadeType type = node->fadeType;
+            if (!(type != FADE_TYPE_FILTER && type != FADE_TYPE_FILTER_ALL
+                    && !(type == FADE_TYPE_FILTER && node->identifier.index == 0)))
             {
                 nlListRemoveElement<FadeAudioData>(&g_pFadeList, node, NULL);
                 FadeAudioData* next = node->next;
@@ -1022,8 +1141,9 @@ void FadeFilterFromCurrentToZero()
         node = g_pFadeList;
         while (node != NULL)
         {
-            s32 type = *(s32*)node;
-            if (!(type != 2 && type != 3 && !(type == 3 && ((s32*)node)[1] == 0)))
+            FadeType type = node->fadeType;
+            if (!(type != FADE_TYPE_FILTER && type != FADE_TYPE_FILTER_ALL
+                    && !(type == FADE_TYPE_FILTER_ALL && node->identifier.index == 0)))
             {
                 nlListRemoveElement<FadeAudioData>(&g_pFadeList, node, NULL);
                 FadeAudioData* next = node->next;
@@ -1168,10 +1288,18 @@ createFade:
     FadeAudioData* existing = g_pFadeList;
     while (existing != NULL)
     {
-        if (*(s32*)existing == 3 && *(float*)((char*)existing + 0x14) == param2)
+        if (existing->fadeType == FADE_TYPE_FILTER_ALL)
         {
-            goto foundExisting;
+            if (existing->targetVol != param2)
+            {
+                goto nextFade;
+            }
+            if (existing->targetVol == param2)
+            {
+                goto foundExisting;
+            }
         }
+    nextFade:
         existing = existing->next;
     }
     existing = NULL;
@@ -1183,44 +1311,44 @@ foundExisting:
     }
 
     // Allocate new FadeAudioData
-    FadeAudioData* newFade = (FadeAudioData*)nlMalloc(0x2C, 8, false);
+    FadeAudioData* newFade = (FadeAudioData*)nlMalloc(sizeof(FadeAudioData), 8, false);
 
     // Constructor-like initialization (default values with dead stores)
-    *(s32*)((char*)newFade) = 0;
-    *(s32*)((char*)newFade + 0x04) = -1;
-    *(s32*)((char*)newFade + 0x04) = 0;
-    *(float*)((char*)newFade + 0x08) = 0.0f;
-    *(float*)((char*)newFade + 0x0C) = 0.0f;
-    *(float*)((char*)newFade + 0x10) = 0.0f;
-    *(float*)((char*)newFade + 0x14) = 0.0f;
-    *(float*)((char*)newFade + 0x18) = -1.0f;
-    *(s32*)((char*)newFade + 0x18) = 0;
-    *((char*)newFade + 0x1C) = 0;
-    *((char*)newFade + 0x1D) = 0;
-    *((char*)newFade + 0x1E) = 0;
-    *((char*)newFade + 0x1F) = 0;
-    *((char*)newFade + 0x20) = 0;
-    *((char*)newFade + 0x21) = 0;
-    *(float*)((char*)newFade + 0x24) = -1.0f;
+    newFade->fadeType = FADE_TYPE_NONE;
+    newFade->identifier.index = -1;
+    newFade->identifier.index = 0;
+    newFade->fadeStepSize = 0.0f;
+    newFade->fadeTimeStart = 0.0f;
+    newFade->fadeDuration = 0.0f;
+    newFade->targetVol = 0.0f;
+    newFade->currentVol.floatVal = -1.0f;
+    newFade->currentVol.floatPtrVal = NULL;
+    newFade->bShutDownAfterDuration = false;
+    newFade->isEmitter = false;
+    newFade->bTurnFilterOn = false;
+    newFade->bFilterOn = false;
+    newFade->bPitchBendOn = false;
+    newFade->bPitchBendApplied = false;
+    newFade->totalEstimatedTime = -1.0f;
 
     // Set actual fade values
-    *(s32*)((char*)newFade) = 3;                     // type = 3 (pitch bend)
-    *(float*)((char*)newFade + 0x08) = fadePerFrame; // fade rate per frame
-    *(float*)((char*)newFade + 0x0C) = param4;       // delay
-    *(float*)((char*)newFade + 0x10) = param3;       // time
-    *(float*)((char*)newFade + 0x14) = param2;       // target
-    *(float*)((char*)newFade + 0x18) = param1;       // from/current
+    newFade->fadeType = FADE_TYPE_FILTER_ALL;
+    newFade->fadeStepSize = fadePerFrame;
+    newFade->fadeTimeStart = param4;
+    newFade->fadeDuration = param3;
+    newFade->targetVol = param2;
+    newFade->currentVol.floatVal = param1;
 
     // Set direction flags based on target vs game tweaks
     if (param2 == g_pGame->m_pGameTweaks->unk224)
     {
-        *((char*)newFade + 0x20) = 0;
-        *((char*)newFade + 0x1C) = 1;
+        newFade->bPitchBendOn = false;
+        newFade->bShutDownAfterDuration = true;
     }
     else
     {
-        *((char*)newFade + 0x20) = 1;
-        *((char*)newFade + 0x1C) = 0;
+        newFade->bPitchBendOn = true;
+        newFade->bShutDownAfterDuration = false;
     }
 
     newFade->next = NULL;
@@ -1374,13 +1502,13 @@ createFade:
     FadeAudioData* existing = g_pFadeList;
     while (existing != NULL)
     {
-        if (*(s32*)existing == 2)
+        if (existing->fadeType == FADE_TYPE_FILTER)
         {
-            if (*(float*)((char*)existing + 0x14) != fadeToVal)
+            if (existing->targetVol != fadeToVal)
             {
                 goto nextFade;
             }
-            if (*(float*)((char*)existing + 0x14) == fadeToVal)
+            if (existing->targetVol == fadeToVal)
             {
                 goto foundExisting;
             }
@@ -1396,47 +1524,159 @@ foundExisting:
         delete existing;
     }
 
-    FadeAudioData* newFade = (FadeAudioData*)nlMalloc(0x2C, 8, false);
+    FadeAudioData* newFade = (FadeAudioData*)nlMalloc(sizeof(FadeAudioData), 8, false);
 
-    *(s32*)((char*)newFade) = 0;
-    *(s32*)((char*)newFade + 0x04) = -1;
-    *(s32*)((char*)newFade + 0x04) = 0;
-    *(float*)((char*)newFade + 0x08) = 0.0f;
-    *(float*)((char*)newFade + 0x0C) = 0.0f;
-    *(float*)((char*)newFade + 0x10) = 0.0f;
-    *(float*)((char*)newFade + 0x14) = 0.0f;
-    *(float*)((char*)newFade + 0x18) = -1.0f;
-    *(s32*)((char*)newFade + 0x18) = 0;
-    *((char*)newFade + 0x1C) = 0;
-    *((char*)newFade + 0x1D) = 0;
-    *((char*)newFade + 0x1E) = 0;
-    *((char*)newFade + 0x1F) = 0;
-    *((char*)newFade + 0x20) = 0;
-    *((char*)newFade + 0x21) = 0;
-    *(float*)((char*)newFade + 0x24) = -1.0f;
+    newFade->fadeType = FADE_TYPE_NONE;
+    newFade->identifier.index = -1;
+    newFade->identifier.index = 0;
+    newFade->fadeStepSize = 0.0f;
+    newFade->fadeTimeStart = 0.0f;
+    newFade->fadeDuration = 0.0f;
+    newFade->targetVol = 0.0f;
+    newFade->currentVol.floatVal = -1.0f;
+    newFade->currentVol.floatPtrVal = NULL;
+    newFade->bShutDownAfterDuration = false;
+    newFade->isEmitter = false;
+    newFade->bTurnFilterOn = false;
+    newFade->bFilterOn = false;
+    newFade->bPitchBendOn = false;
+    newFade->bPitchBendApplied = false;
+    newFade->totalEstimatedTime = -1.0f;
 
-    *(s32*)((char*)newFade) = 2;
-    *(float*)((char*)newFade + 0x08) = stepSize;
-    *(float*)((char*)newFade + 0x0C) = fadeTimeStart;
-    *(float*)((char*)newFade + 0x10) = fadeDuration;
-    *(float*)((char*)newFade + 0x14) = fadeToVal;
-    *(float*)((char*)newFade + 0x18) = currentVal;
+    newFade->fadeType = FADE_TYPE_FILTER;
+    newFade->fadeStepSize = stepSize;
+    newFade->fadeTimeStart = fadeTimeStart;
+    newFade->fadeDuration = fadeDuration;
+    newFade->targetVol = fadeToVal;
+    newFade->currentVol.floatVal = currentVal;
 
     if (0.0f == fadeToVal)
     {
-        *((char*)newFade + 0x1E) = 0;
-        *((char*)newFade + 0x1C) = 1;
+        newFade->bTurnFilterOn = false;
+        newFade->bShutDownAfterDuration = true;
     }
     else
     {
-        *((char*)newFade + 0x1E) = 1;
-        *((char*)newFade + 0x1C) = 0;
+        newFade->bTurnFilterOn = true;
+        newFade->bShutDownAfterDuration = false;
     }
 
     newFade->next = NULL;
 #pragma inline_depth(0)
     nlListAddStart<FadeAudioData>(&g_pFadeList, newFade, NULL);
 #pragma inline_depth
+}
+
+static void AddSFXVolFadeData(unsigned long identifier, float* currentVol, float fadeStepSize, float fadeDuration,
+    float targetVol, bool bIs3D, float fadeTimeStart)
+{
+    TRANSITION_STATE state = (TRANSITION_STATE)0;
+    TransitionTask* pTask = TransitionTask::sm_pGlobalTask;
+    if (pTask != NULL)
+    {
+        state = pTask->m_TransitionState;
+    }
+    if (state == eTS_Destroying)
+    {
+        return;
+    }
+
+    if (IsFadeDataInList(FADE_TYPE_SFX, identifier, bIs3D, targetVol))
+    {
+        return;
+    }
+
+    FadeAudioData* pFadeData = (FadeAudioData*)nlMalloc(sizeof(FadeAudioData), 8, false);
+    pFadeData->fadeType = FADE_TYPE_NONE;
+    pFadeData->identifier.index = -1;
+    pFadeData->identifier.index = 0;
+    pFadeData->fadeStepSize = 0.0f;
+    pFadeData->fadeTimeStart = 0.0f;
+    pFadeData->fadeDuration = 0.0f;
+    pFadeData->targetVol = 0.0f;
+    pFadeData->currentVol.floatVal = -1.0f;
+    pFadeData->currentVol.floatPtrVal = NULL;
+    pFadeData->bShutDownAfterDuration = false;
+    pFadeData->isEmitter = false;
+    pFadeData->bTurnFilterOn = false;
+    pFadeData->bFilterOn = false;
+    pFadeData->bPitchBendOn = false;
+    pFadeData->bPitchBendApplied = false;
+    pFadeData->totalEstimatedTime = -1.0f;
+
+    pFadeData->fadeType = FADE_TYPE_SFX;
+    pFadeData->identifier.index = identifier;
+    pFadeData->fadeStepSize = fadeStepSize;
+    pFadeData->fadeTimeStart = fadeTimeStart;
+    pFadeData->fadeDuration = fadeDuration;
+    pFadeData->targetVol = targetVol;
+    pFadeData->currentVol.floatPtrVal = currentVol;
+    pFadeData->bShutDownAfterDuration = targetVol == 0.0f;
+    pFadeData->isEmitter = bIs3D;
+    pFadeData->next = NULL;
+#pragma inline_depth(0)
+    nlListAddStart<FadeAudioData>(&g_pFadeList, pFadeData, NULL);
+#pragma inline_depth
+}
+
+static void FadeSFXVolToZero(
+    unsigned long identifier, float* currentVol, float fadeDuration, bool bIs3D, float fadeTimeStart)
+{
+    float volDiff = 0.0f - *currentVol;
+    float stepSize;
+    if (fadeDuration <= 0.0f)
+    {
+        stepSize = volDiff;
+    }
+    else
+    {
+        stepSize = volDiff / fadeDuration;
+    }
+
+    AddSFXVolFadeData(identifier, currentVol, stepSize, fadeDuration, 0.0f, bIs3D, fadeTimeStart);
+}
+
+static void FadeSFXVolume(unsigned long identifier, float* currentVol, float fadeToVol, float fadeDuration, bool bIs3D,
+    float fadeTimeStart)
+{
+    float volDiff = fadeToVol - *currentVol;
+    float stepSize;
+    if (fadeDuration <= 0.0f)
+    {
+        stepSize = volDiff;
+    }
+    else
+    {
+        stepSize = volDiff / fadeDuration;
+    }
+
+    AddSFXVolFadeData(identifier, currentVol, stepSize, fadeDuration, fadeToVol, bIs3D, fadeTimeStart);
+}
+
+static bool IsFadeDataInList(FadeType fadeType, unsigned long identifier, bool bIs3D, float targetVol)
+{
+    FadeAudioData* pFadeData = g_pFadeList;
+    while (pFadeData != NULL)
+    {
+        if (pFadeData->fadeType == fadeType)
+        {
+            if (fadeType == FADE_TYPE_SFX)
+            {
+                if (pFadeData->identifier.index == (int)identifier && pFadeData->isEmitter == bIs3D)
+                {
+                    return true;
+                }
+            }
+            else if ((fadeType == FADE_TYPE_FILTER || fadeType == FADE_TYPE_FILTER_ALL
+                         || fadeType == FADE_TYPE_VOLGROUP)
+                && pFadeData->targetVol == targetVol)
+            {
+                return true;
+            }
+        }
+        pFadeData = pFadeData->next;
+    }
+    return false;
 }
 
 /**
@@ -1446,6 +1686,34 @@ void ClearFadeData()
 {
     nlDeleteList<FadeAudioData>(&g_pFadeList);
     g_pFadeList = NULL;
+}
+
+static FadeAudioData* RemoveFadeData(FadeAudioData* pFadeAudioData)
+{
+    nlListRemoveElement<FadeAudioData>(&g_pFadeList, pFadeAudioData, NULL);
+    FadeAudioData* pNextFadeAudioData = pFadeAudioData->next;
+    delete pFadeAudioData;
+    return pNextFadeAudioData;
+}
+
+static void RemoveFadeData(FadeType fadeType, int streamIndex)
+{
+    FadeAudioData* pFadeData = g_pFadeList;
+    while (pFadeData != NULL)
+    {
+        if (pFadeData->fadeType == FADE_TYPE_FILTER || pFadeData->fadeType == FADE_TYPE_FILTER_ALL
+            || (pFadeData->fadeType == fadeType && pFadeData->identifier.index == streamIndex))
+        {
+            nlListRemoveElement<FadeAudioData>(&g_pFadeList, pFadeData, NULL);
+            FadeAudioData* pNextFadeAudioData = pFadeData->next;
+            delete pFadeData;
+            pFadeData = pNextFadeAudioData;
+        }
+        else
+        {
+            pFadeData = pFadeData->next;
+        }
+    }
 }
 
 /**
@@ -1620,6 +1888,36 @@ void Audio::SetPitchBendOnAllDialogueSFX(unsigned short pitch)
         BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->SetPitchBendOnAllDialogueSFX(pitch);
     }
     gbPitchBent = (pitch != 0x2000);
+}
+
+static void SetFilterFreqOnAllCurrentSFX(unsigned short freq)
+{
+    if (freq > 0x3FFF)
+    {
+        freq = 0x3FFF;
+    }
+
+    gWorldSFX.SetFilterFreqOnAllTrackedSFX(freq);
+    gPowerupSFX.SetFilterFreqOnAllTrackedSFX(freq);
+    gStadGenSFX.SetFilterFreqOnAllTrackedSFX(freq);
+    gCrowdSFX.SetFilterFreqOnAllTrackedSFX(freq);
+
+    if (g_pGame)
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            cTeam* pTeam = g_pTeams[i];
+            for (int j = 0; j < 5; j++)
+            {
+                cPlayer* pPlayer = pTeam->GetPlayer(j);
+                pPlayer->m_pCharacterSFX->SetFilterFreqOnAllTrackedSFX(freq);
+            }
+        }
+
+        BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->SetFilterFreqOnAllTrackedSFX(freq);
+    }
+
+    CrowdMood::SetLPF(freq);
 }
 
 /**
@@ -1837,14 +2135,6 @@ void Update3DSFXEmitters()
     }
 }
 
-static inline FadeAudioData* RemoveFadeData(FadeAudioData* pFadeAudioData)
-{
-    nlListRemoveElement<FadeAudioData>(&g_pFadeList, pFadeAudioData, NULL);
-    FadeAudioData* pNextFadeAudioData = pFadeAudioData->next;
-    delete pFadeAudioData;
-    return pNextFadeAudioData;
-}
-
 /**
  * Offset/Address/Size: 0x159C | 0x8013DAB0 | size: 0xA34
  * TODO: 99.53% match - remaining filter and pitch loop register differences.
@@ -1860,10 +2150,10 @@ void UpdateFades(float fDeltaT)
     pFadeData = g_pFadeList;
     while (pFadeData != NULL)
     {
-        float totalEstimatedTime = *(float*)((char*)pFadeData + 0x24);
+        float totalEstimatedTime = pFadeData->totalEstimatedTime;
         if (-1.0f == totalEstimatedTime)
         {
-            *(float*)((char*)pFadeData + 0x24) = *(float*)((char*)pFadeData + 0x0C) + *(float*)((char*)pFadeData + 0x10);
+            pFadeData->totalEstimatedTime = pFadeData->fadeTimeStart + pFadeData->fadeDuration;
         }
         else
         {
@@ -1872,23 +2162,23 @@ void UpdateFades(float fDeltaT)
                 pFadeData = RemoveFadeData(pFadeData);
                 continue;
             }
-            *(float*)((char*)pFadeData + 0x24) = totalEstimatedTime - fDeltaT;
+            pFadeData->totalEstimatedTime = totalEstimatedTime - fDeltaT;
         }
 
-        switch (*(s32*)pFadeData)
+        switch (pFadeData->fadeType)
         {
-        case 1:
+        case FADE_TYPE_SFX:
         {
-            if (*(u8*)((char*)pFadeData + 0x1D) != 0)
+            if (pFadeData->isEmitter)
             {
-                if (!PlatAudio::IsEmitterActive((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4)))
+                if (!PlatAudio::IsEmitterActive(pFadeData->identifier.pEmitter))
                 {
                     break;
                 }
             }
 
             bool isPlaying;
-            u32 sfxID = *(u32*)((char*)pFadeData + 0x4);
+            u32 sfxID = pFadeData->identifier.index;
             if (::g_bAudioInitialized)
             {
                 isPlaying = PlatAudio::IsSFXPlaying(sfxID);
@@ -1902,119 +2192,119 @@ void UpdateFades(float fDeltaT)
                 break;
             }
 
-            if (*(float*)((char*)pFadeData + 0x0C) > 0.0f)
+            if (pFadeData->fadeTimeStart > 0.0f)
             {
-                *(float*)((char*)pFadeData + 0x0C) -= fDeltaT;
+                pFadeData->fadeTimeStart -= fDeltaT;
             }
 
-            if (*(float*)((char*)pFadeData + 0x0C) <= 0.0f && *(float*)((char*)pFadeData + 0x10) > 0.0f)
+            if (pFadeData->fadeTimeStart <= 0.0f && pFadeData->fadeDuration > 0.0f)
             {
-                *(float*)((char*)pFadeData + 0x10) -= fDeltaT;
-                if (*(float*)((char*)pFadeData + 0x10) < 0.01f)
+                pFadeData->fadeDuration -= fDeltaT;
+                if (pFadeData->fadeDuration < 0.01f)
                 {
-                    *(float*)((char*)pFadeData + 0x10) = 0.0f;
+                    pFadeData->fadeDuration = 0.0f;
                 }
 
-                float deltaVol = fDeltaT * *(float*)((char*)pFadeData + 0x8);
-                float currentVol = *(float*)*(u32*)((char*)pFadeData + 0x18);
+                float deltaVol = fDeltaT * pFadeData->fadeStepSize;
+                float currentVol = *pFadeData->currentVol.floatPtrVal;
                 newVol = currentVol + deltaVol;
 
-                if (*(u8*)((char*)pFadeData + 0x1D) != 0)
+                if (pFadeData->isEmitter)
                 {
-                    if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->posUpdateMethod == PHYSOBJ)
+                    if (pFadeData->identifier.pEmitter->posUpdateMethod == PHYSOBJ)
                     {
                         nlVector3 vel = { 0.0f, 0.0f, 0.0f };
-                        if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pPhysObj->m_bodyID)
+                        if (pFadeData->identifier.pEmitter->pPhysObj->m_bodyID)
                         {
-                            nlVector3& linVel = ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pPhysObj->GetLinearVelocity();
+                            nlVector3& linVel = pFadeData->identifier.pEmitter->pPhysObj->GetLinearVelocity();
 #pragma inline_depth(255)
                             vel = linVel;
 #pragma inline_depth
                         }
                         PlatAudio::Update3DSFXEmitter(
-                            (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4),
-                            ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pPhysObj->GetPosition(),
+                            pFadeData->identifier.pEmitter,
+                            pFadeData->identifier.pEmitter->pPhysObj->GetPosition(),
                             vel,
                             newVol);
                     }
-                    else if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->posUpdateMethod == PTRS_TO_VECTORS)
+                    else if (pFadeData->identifier.pEmitter->posUpdateMethod == PTRS_TO_VECTORS)
                     {
                         PlatAudio::Update3DSFXEmitter(
-                            (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4),
-                            *((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pos.pvPos,
-                            *((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->dir.pvDir,
+                            pFadeData->identifier.pEmitter,
+                            *pFadeData->identifier.pEmitter->pos.pvPos,
+                            *pFadeData->identifier.pEmitter->dir.pvDir,
                             newVol);
                     }
-                    else if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->posUpdateMethod == VECTORS)
+                    else if (pFadeData->identifier.pEmitter->posUpdateMethod == VECTORS)
                     {
                         PlatAudio::Update3DSFXEmitter(
-                            (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4),
-                            ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pos.vPos,
-                            ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->dir.vDir,
+                            pFadeData->identifier.pEmitter,
+                            pFadeData->identifier.pEmitter->pos.vPos,
+                            pFadeData->identifier.pEmitter->dir.vDir,
                             newVol);
                     }
                 }
                 else
                 {
-                    PlatAudio::SetSFXVolume(*(u32*)((char*)pFadeData + 0x4), newVol);
+                    PlatAudio::SetSFXVolume(pFadeData->identifier.index, newVol);
                 }
 
-                *(float*)*(u32*)((char*)pFadeData + 0x18) = newVol;
+                *pFadeData->currentVol.floatPtrVal = newVol;
             }
 
-            if (*(float*)((char*)pFadeData + 0x10) <= 0.0f)
+            if (pFadeData->fadeDuration <= 0.0f)
             {
-                if (*(u8*)((char*)pFadeData + 0x1D) != 0)
+                if (pFadeData->isEmitter)
                 {
-                    if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->posUpdateMethod == PHYSOBJ)
+                    if (pFadeData->identifier.pEmitter->posUpdateMethod == PHYSOBJ)
                     {
                         nlVector3 vel = { 0.0f, 0.0f, 0.0f };
-                        if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pPhysObj->m_bodyID)
+                        if (pFadeData->identifier.pEmitter->pPhysObj->m_bodyID)
                         {
-                            nlVector3& linVel = ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pPhysObj->GetLinearVelocity();
+                            nlVector3& linVel = pFadeData->identifier.pEmitter->pPhysObj->GetLinearVelocity();
 #pragma inline_depth(255)
                             vel = linVel;
 #pragma inline_depth
                         }
-                        float targetVol = *(float*)((char*)pFadeData + 0x14);
-                        const nlVector3& pos = ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pPhysObj->GetPosition();
+                        float targetVol = pFadeData->targetVol;
+                        const nlVector3& pos = pFadeData->identifier.pEmitter->pPhysObj->GetPosition();
                         PlatAudio::Update3DSFXEmitter(
-                            (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4),
+                            pFadeData->identifier.pEmitter,
                             pos,
                             vel,
                             targetVol);
                     }
-                    else if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->posUpdateMethod == PTRS_TO_VECTORS)
+                    else if (pFadeData->identifier.pEmitter->posUpdateMethod == PTRS_TO_VECTORS)
                     {
                         PlatAudio::Update3DSFXEmitter(
-                            (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4),
-                            *((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pos.pvPos,
-                            *((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->dir.pvDir,
-                            *(float*)((char*)pFadeData + 0x14));
+                            pFadeData->identifier.pEmitter,
+                            *pFadeData->identifier.pEmitter->pos.pvPos,
+                            *pFadeData->identifier.pEmitter->dir.pvDir,
+                            pFadeData->targetVol);
                     }
-                    else if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->posUpdateMethod == VECTORS)
+                    else if (pFadeData->identifier.pEmitter->posUpdateMethod == VECTORS)
                     {
                         PlatAudio::Update3DSFXEmitter(
-                            (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4),
-                            ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pos.vPos,
-                            ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->dir.vDir,
-                            *(float*)((char*)pFadeData + 0x14));
+                            pFadeData->identifier.pEmitter,
+                            pFadeData->identifier.pEmitter->pos.vPos,
+                            pFadeData->identifier.pEmitter->dir.vDir,
+                            pFadeData->targetVol);
                     }
                 }
                 else
                 {
-                    PlatAudio::SetSFXVolume(*(u32*)((char*)pFadeData + 0x4), *(float*)((char*)pFadeData + 0x14));
+                    PlatAudio::SetSFXVolume(pFadeData->identifier.index, pFadeData->targetVol);
                 }
 
-                if (*(u8*)((char*)pFadeData + 0x1C) != 0)
+                if (pFadeData->bShutDownAfterDuration)
                 {
-                    if (*(u8*)((char*)pFadeData + 0x1D) != 0)
+                    if (pFadeData->isEmitter)
                     {
-                        PlatAudio::RemoveEmitter((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4));
+                        PlatAudio::RemoveEmitter(pFadeData->identifier.pEmitter);
                     }
                     else
                     {
-                        u32 sfxID = *(u32*)((char*)pFadeData + 0x4);
+                        u32 sfxID = pFadeData->identifier.index;
                         if (::g_bAudioInitialized)
                         {
                             PlatAudio::StopSFX(sfxID);
@@ -2028,16 +2318,16 @@ void UpdateFades(float fDeltaT)
             break;
         }
 
-        case 2:
+        case FADE_TYPE_FILTER:
         {
-            if (*(float*)((char*)pFadeData + 0x0C) > 0.0f)
+            if (pFadeData->fadeTimeStart > 0.0f)
             {
-                *(float*)((char*)pFadeData + 0x0C) -= fDeltaT;
+                pFadeData->fadeTimeStart -= fDeltaT;
             }
 
-            if (*(float*)((char*)pFadeData + 0x0C) <= 0.0f && *(float*)((char*)pFadeData + 0x10) > 0.0f)
+            if (pFadeData->fadeTimeStart <= 0.0f && pFadeData->fadeDuration > 0.0f)
             {
-                if (*(u8*)((char*)pFadeData + 0x1E) != 0 && *(u8*)((char*)pFadeData + 0x1F) == 0)
+                if (pFadeData->bTurnFilterOn && !pFadeData->bFilterOn)
                 {
                     gWorldSFX.ActivateFilterOnAllTrackedSFX(true);
                     gPowerupSFX.ActivateFilterOnAllTrackedSFX(true);
@@ -2063,17 +2353,17 @@ void UpdateFades(float fDeltaT)
 
                     CrowdMood::ActivateLPF(true);
                     gbFilterOn = true;
-                    *(u8*)((char*)pFadeData + 0x1F) = 1;
+                    pFadeData->bFilterOn = true;
                 }
 
-                *(float*)((char*)pFadeData + 0x10) -= fDeltaT;
-                if (*(float*)((char*)pFadeData + 0x10) < 0.01f)
+                pFadeData->fadeDuration -= fDeltaT;
+                if (pFadeData->fadeDuration < 0.01f)
                 {
-                    *(float*)((char*)pFadeData + 0x10) = 0.0f;
+                    pFadeData->fadeDuration = 0.0f;
                 }
 
-                float deltaVal = fDeltaT * *(float*)((char*)pFadeData + 0x8);
-                float newVal = *(float*)((char*)pFadeData + 0x18) + deltaVal;
+                float deltaVal = fDeltaT * pFadeData->fadeStepSize;
+                float newVal = pFadeData->currentVol.floatVal + deltaVal;
                 newVal = (newVal >= 0.0f) ? newVal : 0.0f;
                 newVal = (newVal <= 1.0f) ? newVal : 1.0f;
 
@@ -2115,12 +2405,12 @@ void UpdateFades(float fDeltaT)
                 }
 
                 CrowdMood::SetLPF(targetFreq);
-                *(float*)((char*)pFadeData + 0x18) = newVal;
+                pFadeData->currentVol.floatVal = newVal;
             }
 
-            if (*(float*)((char*)pFadeData + 0x10) <= 0.0f)
+            if (pFadeData->fadeDuration <= 0.0f)
             {
-                float targetFreqFloat = 16383.0f * *(float*)((char*)pFadeData + 0x14);
+                float targetFreqFloat = 16383.0f * pFadeData->targetVol;
                 targetFreqFloat += (targetFreqFloat < 0.0f) ? -0.5f : 0.5f;
 
                 unsigned short targetFreq = (unsigned short)(s32)targetFreqFloat;
@@ -2150,7 +2440,7 @@ void UpdateFades(float fDeltaT)
 
                 CrowdMood::SetLPF(targetFreq);
 
-                if (*(u8*)((char*)pFadeData + 0x1C) != 0)
+                if (pFadeData->bShutDownAfterDuration)
                 {
                     gWorldSFX.ActivateFilterOnAllTrackedSFX(false);
                     gPowerupSFX.ActivateFilterOnAllTrackedSFX(false);
@@ -2173,7 +2463,7 @@ void UpdateFades(float fDeltaT)
 
                     CrowdMood::ActivateLPF(false);
                     gbFilterOn = false;
-                    *(u8*)((char*)pFadeData + 0x1F) = 0;
+                    pFadeData->bFilterOn = false;
                 }
 
                 pFadeData = RemoveFadeData(pFadeData);
@@ -2182,23 +2472,23 @@ void UpdateFades(float fDeltaT)
             break;
         }
 
-        case 3:
+        case FADE_TYPE_FILTER_ALL:
         {
-            if (*(float*)((char*)pFadeData + 0x0C) > 0.0f)
+            if (pFadeData->fadeTimeStart > 0.0f)
             {
-                *(float*)((char*)pFadeData + 0x0C) -= fDeltaT;
+                pFadeData->fadeTimeStart -= fDeltaT;
             }
 
-            if (*(float*)((char*)pFadeData + 0x0C) <= 0.0f && *(float*)((char*)pFadeData + 0x10) > 0.0f)
+            if (pFadeData->fadeTimeStart <= 0.0f && pFadeData->fadeDuration > 0.0f)
             {
-                *(float*)((char*)pFadeData + 0x10) -= fDeltaT;
-                if (*(float*)((char*)pFadeData + 0x10) < 0.01f)
+                pFadeData->fadeDuration -= fDeltaT;
+                if (pFadeData->fadeDuration < 0.01f)
                 {
-                    *(float*)((char*)pFadeData + 0x10) = 0.0f;
+                    pFadeData->fadeDuration = 0.0f;
                 }
 
-                float deltaVal = fDeltaT * *(float*)((char*)pFadeData + 0x8);
-                float newVal = *(float*)((char*)pFadeData + 0x18) + deltaVal;
+                float deltaVal = fDeltaT * pFadeData->fadeStepSize;
+                float newVal = pFadeData->currentVol.floatVal + deltaVal;
                 newVal = (newVal >= 0.0f) ? newVal : 0.0f;
                 newVal = (newVal <= 1.0f) ? newVal : 1.0f;
 
@@ -2236,13 +2526,13 @@ void UpdateFades(float fDeltaT)
                 }
 
                 gbPitchBent = targetFreq != 0x2000;
-                *(u8*)((char*)pFadeData + 0x21) = 1;
-                *(float*)((char*)pFadeData + 0x18) = newVal;
+                pFadeData->bPitchBendApplied = true;
+                pFadeData->currentVol.floatVal = newVal;
             }
 
-            if (*(float*)((char*)pFadeData + 0x10) <= 0.0f)
+            if (pFadeData->fadeDuration <= 0.0f)
             {
-                if (*(u8*)((char*)pFadeData + 0x1C) != 0)
+                if (pFadeData->bShutDownAfterDuration)
                 {
                     if (g_pGame != NULL)
                     {
@@ -2258,7 +2548,7 @@ void UpdateFades(float fDeltaT)
                             0x2000);
                     }
                     gbPitchBent = false;
-                    *(u8*)((char*)pFadeData + 0x21) = 0;
+                    pFadeData->bPitchBendApplied = false;
                     gbPitchBent = false;
                 }
 
@@ -2267,7 +2557,7 @@ void UpdateFades(float fDeltaT)
             }
             break;
         }
-        case 4:
+        case FADE_TYPE_VOLGROUP:
             break;
         }
 
@@ -3801,123 +4091,6 @@ void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(Audio::MasterVolume
 // void AudioStreamTrack::TrackManager<3>::Update(float)
 // {
 // }
-
-/**
- * Offset/Address/Size: 0x970 | 0x80142034 | size: 0x1AC
- */
-template <>
-AudioStreamTrack::StreamTrack& AudioStreamTrack::TrackManager<3>::CreateTrack(
-    const char* name, Audio::MasterVolume::VOLUME_GROUP volumeGroup)
-{
-    unsigned long hash = nlStringLowerHash(name);
-    StreamTrack* entry = m_Tracks.GetNewEntry();
-    if (m_Tracks.m_EntryCount == m_Tracks.m_LookupAllocated)
-    {
-        m_Tracks.ExpandLookup();
-    }
-
-    int lo = -1;
-    int hi = m_Tracks.m_EntryCount;
-    while (hi - lo > 1)
-    {
-        int mid = (lo + hi) >> 1;
-        if (m_Tracks.m_pEntryLookup[mid].hash <= hash)
-        {
-            lo = mid;
-        }
-        else
-        {
-            hi = mid;
-        }
-    }
-
-    unsigned long insertPos = lo + 1;
-    for (unsigned long i = m_Tracks.m_EntryCount; i != insertPos; i--)
-    {
-        m_Tracks.m_pEntryLookup[i] = m_Tracks.m_pEntryLookup[i - 1];
-    }
-    m_Tracks.m_pEntryLookup[insertPos].hash = hash;
-    m_Tracks.m_pEntryLookup[insertPos].pEntry = entry;
-    m_Tracks.m_EntryCount++;
-
-    if (entry != NULL)
-    {
-        new (entry) StreamTrack(*this, volumeGroup);
-    }
-    return *entry;
-}
-
-/**
- * Offset/Address/Size: 0x390 | 0x80141E64 | size: 0x1D0
- * TODO: 99.40% match - search-loop zero init and lookup pEntry load registers differ
- */
-template <>
-void AudioStreamTrack::TrackManager<3>::DestroyAllTracks()
-{
-    typedef nlSortedSlot<AudioStreamTrack::StreamTrack, 3>::EntryLookup<AudioStreamTrack::StreamTrack> EL;
-
-    unsigned long i;
-    unsigned long trackOffset;
-    EL* entryLookup;
-    EL* foundSlot;
-    AudioStreamTrack::StreamTrack* track;
-
-    StopAllTracks(0);
-
-    while (m_Tracks.m_EntryCount != 0)
-    {
-        track = ((EL*)m_Tracks.m_pEntryLookup)->pEntry;
-        if (track == NULL)
-            continue;
-
-        if (track)
-        {
-            track->m_InFakePause = 0;
-            track->Stop(0);
-            track->~StreamTrack();
-        }
-
-        if (track == NULL)
-            continue;
-
-        for (i = 0, trackOffset = i; i < m_Tracks.m_EntryCount; trackOffset += 8, i++)
-        {
-            entryLookup = m_Tracks.m_pEntryLookup;
-            if (((EL*)((char*)entryLookup + trackOffset))->pEntry == track)
-            {
-                foundSlot = (EL*)((char*)entryLookup + i * 8);
-                goto found_slot;
-            }
-        }
-        foundSlot = 0;
-    found_slot:
-
-        m_Tracks.FreeEntry(track);
-
-        struct LookupShifter
-        {
-            static void Shift(AudioStreamTrack::TrackManager<3>* self, EL* foundSlot)
-            {
-                unsigned long entryCount = self->m_Tracks.m_EntryCount;
-                long idx = foundSlot - self->m_Tracks.m_pEntryLookup;
-                while ((unsigned long)idx != entryCount)
-                {
-                    long next = idx + 1;
-                    EL* src = &self->m_Tracks.m_pEntryLookup[next];
-                    register unsigned long hash = src->hash;
-                    EL* dst = &self->m_Tracks.m_pEntryLookup[idx];
-                    idx = next;
-                    AudioStreamTrack::StreamTrack* pEntry = src->pEntry;
-                    dst->pEntry = pEntry;
-                    dst->hash = hash;
-                }
-            }
-        };
-        LookupShifter::Shift(this, foundSlot);
-
-        m_Tracks.m_EntryCount--;
-    }
-}
 
 /**
  * Offset/Address/Size: 0x1F4 | 0x801418B8 | size: 0x204

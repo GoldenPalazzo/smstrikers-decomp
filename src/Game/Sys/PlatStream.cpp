@@ -168,11 +168,7 @@ void PlatAudio::ShutdownStreaming()
     lookupOffset = 0;
     while (streamIndex < g_Streams.m_EntryCount)
     {
-        nlSortedSlot<GCAudioStreaming::AudioStream*, 7>::EntryLookup<GCAudioStreaming::AudioStream*>* removedLookup;
         AudioStream** pStream;
-        nlSortedSlot<GCAudioStreaming::AudioStream*, 7>::EntryLookup<GCAudioStreaming::AudioStream*>* pEntryLookup;
-        unsigned long index;
-        unsigned long count;
 
         stream = *((EL*)((char*)g_Streams.m_pEntryLookup + lookupOffset))->pEntry;
         stream->SafeToPurge();
@@ -182,42 +178,7 @@ void PlatAudio::ShutdownStreaming()
 
         if (pStream != NULL)
         {
-            pEntryLookup = g_Streams.m_pEntryLookup;
-            index = 0;
-            count = g_Streams.m_EntryCount;
-
-            while (index < count)
-            {
-                if (pEntryLookup->pEntry == pStream)
-                {
-                    removedLookup = &g_Streams.m_pEntryLookup[index];
-                    goto found_stream;
-                }
-
-                pEntryLookup++;
-                index++;
-            }
-
-            removedLookup = NULL;
-        found_stream:
-            ((nlSortedSlot<AudioStream*, 7>*)&g_Streams)->FreeEntry(pStream);
-
-            index = (unsigned long)(removedLookup - g_Streams.m_pEntryLookup);
-            count = g_Streams.m_EntryCount;
-            while (index != count)
-            {
-                unsigned long next = index + 1;
-                nlSortedSlot<GCAudioStreaming::AudioStream*, 7>::EntryLookup<GCAudioStreaming::AudioStream*>* base = g_Streams.m_pEntryLookup;
-                nlSortedSlot<GCAudioStreaming::AudioStream*, 7>::EntryLookup<GCAudioStreaming::AudioStream*>* src = &base[next];
-                nlSortedSlot<GCAudioStreaming::AudioStream*, 7>::EntryLookup<GCAudioStreaming::AudioStream*>* dst = &base[index];
-                unsigned long id = src->hash;
-                AudioStream** entry = src->pEntry;
-
-                dst->pEntry = entry;
-                dst->hash = id;
-                index = next;
-            }
-            g_Streams.m_EntryCount--;
+            g_Streams.DeleteEntry(pStream);
         }
 
         lookupOffset += 8;

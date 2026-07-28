@@ -29,6 +29,105 @@ public:
     virtual void ExpandLookup() = 0;
     virtual void FreeLookup() = 0;
 
+    T* AddEntry(const unsigned long& id)
+    {
+        T* newEntry = GetNewEntry();
+        if (m_EntryCount == m_LookupAllocated)
+        {
+            ExpandLookup();
+        }
+
+        long high;
+        long low = -1;
+        long middle;
+        unsigned long count = m_EntryCount;
+        high = count;
+
+        while (high - low > 1)
+        {
+            middle = (high + low) >> 1;
+            if (m_pEntryLookup[middle].hash > id)
+            {
+                high = middle;
+            }
+            else
+            {
+                low = middle;
+            }
+        }
+
+        long insertPos = high = low + 1;
+        while (count != (unsigned long)insertPos)
+        {
+            unsigned long previous = count - 1;
+            EntryLookup<T>* source = &m_pEntryLookup[previous];
+            unsigned long sourceId = source->hash;
+            EntryLookup<T>* destination = &m_pEntryLookup[count];
+            count = previous;
+            T* sourceEntry = source->pEntry;
+            destination->pEntry = sourceEntry;
+            destination->hash = sourceId;
+        }
+
+        m_pEntryLookup[insertPos].hash = id;
+        m_pEntryLookup[insertPos].pEntry = newEntry;
+        m_EntryCount = m_EntryCount + 1;
+        return newEntry;
+    }
+
+    EntryLookup<T>* FindEntry(T* entry)
+    {
+        for (long i = 0; (unsigned long)i < m_EntryCount; i++)
+        {
+            if (m_pEntryLookup[i].pEntry == entry)
+            {
+                return &m_pEntryLookup[i];
+            }
+        }
+        return NULL;
+    }
+
+    void DeleteEntry(T* entry)
+    {
+        EntryLookup<T>* lookup = FindEntry(entry);
+        FreeEntry(entry);
+
+        unsigned long total = m_EntryCount;
+        long index = lookup - m_pEntryLookup;
+        while ((unsigned long)index != total)
+        {
+            long next = index + 1;
+            EntryLookup<T>* source = &m_pEntryLookup[next];
+            unsigned long id = source->hash;
+            EntryLookup<T>* destination = &m_pEntryLookup[index];
+            index = next;
+            T* sourceEntry = source->pEntry;
+            destination->pEntry = sourceEntry;
+            destination->hash = id;
+        }
+        m_EntryCount = m_EntryCount - 1;
+    }
+
+    void DeleteEntry(EntryLookup<T>* lookup)
+    {
+        FreeEntry(lookup->pEntry);
+
+        unsigned long total = m_EntryCount;
+        long index = lookup - m_pEntryLookup;
+        while ((unsigned long)index != total)
+        {
+            long next = index + 1;
+            EntryLookup<T>* source = &m_pEntryLookup[next];
+            unsigned long id = source->hash;
+            EntryLookup<T>* destination = &m_pEntryLookup[index];
+            index = next;
+            T* sourceEntry = source->pEntry;
+            destination->pEntry = sourceEntry;
+            destination->hash = id;
+        }
+        m_EntryCount = m_EntryCount - 1;
+    }
+
     /* 0x04 */ EntryLookup<T>* m_pEntryLookup;
     /* 0x08 */ unsigned long m_EntryCount;
     /* 0x0C */ unsigned long m_LookupAllocated;

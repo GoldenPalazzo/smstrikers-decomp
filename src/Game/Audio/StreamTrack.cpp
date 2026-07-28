@@ -22,87 +22,49 @@ TrackManagerBase::StreamFileLookup::StreamFileLookup(
     typedef STREAM_FILE_LIST_LOOKUP LookupT;
     typedef ListEntry<LookupT> ListEntryT;
 
+    unsigned long TotalFileNameMem = 0;
     nlListSlotPoolHigh<LookupT> LookupList(16, 16);
     Config config(Config::ALLOCATE_HIGH);
     config.LoadFromFile("audio/data/streams/StreamNames.txt");
 
-    unsigned long TotalFileNameMem = 0;
-    TagValuePair* iter = config.mTvpHash;
-    TagValuePair* end = iter + 1024;
-
-    while (iter < end && (iter->tag == NULL || iter->type != _STRING))
+    for (Config::Iterator<const char*> iter(config); iter.IsValid(); iter.Next())
     {
-        ++iter;
-    }
-
-    while (iter < end)
-    {
-        LookupT lookup;
-        ListEntryT localEntry(lookup);
-        ListEntryT* entry = NULL;
-        LookupList.m_Allocator.Allocate(entry);
-        if (entry != NULL)
-        {
-            *entry = localEntry;
-        }
+        ListEntryT* entry = LookupList.Allocate(LookupT());
         nlListAddEnd(&LookupList.m_Head, &LookupList.m_Tail, entry);
 
-        entry->entry.key = nlStringLowerHash(iter->tag);
+        entry->entry.NameHash = nlStringLowerHash(iter.Tag());
+        entry->entry.FileName = iter.Current();
 
-        if (iter->type == _BOOL)
-        {
-            entry->entry.value = LexicalCast<const char*, bool>(iter->value.b);
-        }
-        else if (iter->type == _INT)
-        {
-            entry->entry.value = LexicalCast<const char*, int>(iter->value.i);
-        }
-        else if (iter->type == _FLOAT)
-        {
-            entry->entry.value = LexicalCast<const char*, float>(iter->value.f);
-        }
-        else if (iter->type == _STRING)
-        {
-            entry->entry.value = LexicalCast<const char*, const char*>(iter->value.s);
-        }
-        else
-        {
-            entry->entry.value = NULL;
-        }
+        entry->entry.FileNameLen = nlStrLen(entry->entry.FileName) + 1;
 
-        entry->entry.length = nlStrLen(entry->entry.value) + 1;
-
-        ++iter;
+        TotalFileNameMem += entry->entry.FileNameLen;
         ++m_StreamCount;
-        TotalFileNameMem += entry->entry.length;
-
-        while (iter < end && (iter->tag == NULL || iter->type != _STRING))
-        {
-            ++iter;
-        }
     }
 
     m_pLookup = (STREAM_FILE_LOOKUP*)nlMalloc(
         m_StreamCount * sizeof(STREAM_FILE_LOOKUP), 8, false);
     m_pStrings = (char*)nlMalloc(TotalFileNameMem, 8, false);
 
-    unsigned long lookupOffset = 0;
+    int i = 0;
     char* pLastString = m_pStrings;
-    ListEntryT* entry = LookupList.m_Head;
-    while (entry != NULL)
+    nlListIterator<LookupT> listIter = LookupList.Begin();
+    while (listIter.IsValid())
     {
-        *(unsigned long*)((char*)m_pLookup + lookupOffset) = entry->entry.key;
-        *(char**)((char*)m_pLookup + lookupOffset + sizeof(unsigned long)) = pLastString;
-        memcpy(pLastString, entry->entry.value, entry->entry.length);
+        m_pLookup[i].NameHash = listIter.Current().NameHash;
+        m_pLookup[i].FileName = pLastString;
+        memcpy(pLastString, listIter.Current().FileName, listIter.Current().FileNameLen);
 
-        lookupOffset += sizeof(STREAM_FILE_LOOKUP);
-        pLastString += entry->entry.length;
-        entry = entry->next;
+        i++;
+        pLastString += listIter.Current().FileNameLen;
+        listIter.Next();
     }
 
     nlQSort<STREAM_FILE_LOOKUP>(
         m_pLookup, (int)m_StreamCount,
         &nlDefaultQSortComparer<STREAM_FILE_LOOKUP>);
+
+    LookupList.Clear();
+    SlotPoolBase::BaseFreeBlocks(&LookupList.m_Allocator, sizeof(ListEntryT));
 }
 
 } // namespace AudioStreamTrack
@@ -376,6 +338,8 @@ inline void AudioStreamTrack::TrackManagerBase::FadeManager::CompleteFade(
 
 /**
  * Offset/Address/Size: 0x1D60 | 0x80156AB8 | size: 0x2D8
+ * TODO: 98.51649% match - conversion uses r3 instead of r0 and omits
+ * the stack reload before the late StartVol insert.
  */
 bool AudioStreamTrack::TrackManagerBase::FadeManager::ChangeFade(
     GCAudioStreaming::StereoAudioStream* pStream, unsigned long endVol,
@@ -384,25 +348,20 @@ bool AudioStreamTrack::TrackManagerBase::FadeManager::ChangeFade(
     typedef STREAM_FADE_CTRL FadeCtrl;
     typedef DLListEntry<FadeCtrl> FadeEntry;
 
-    FadeEntry* fadeIter = nlDLRingGetStart(m_Fades.m_Head);
-    FadeEntry* fadeHead = m_Fades.m_Head;
+    nlDLListIterator<FadeCtrl> fadeIter(
+        m_Fades.m_Head,
+        nlDLRingGetStart(m_Fades.m_Head));
     FadeCtrl* fadeCtrl;
 
-    while (fadeIter != NULL)
+    while (fadeIter.hasNext())
     {
-        if (fadeIter->entry.pStream == pStream)
+        FadeEntry* fadeEntry = fadeIter.m_Curr;
+        if (fadeEntry->entry.pStream == pStream)
         {
-            fadeCtrl = &fadeIter->entry;
+            fadeCtrl = &fadeEntry->entry;
             goto fade_found;
         }
-        if (nlDLRingIsEnd(fadeHead, fadeIter) || fadeIter == NULL)
-        {
-            fadeIter = NULL;
-        }
-        else
-        {
-            fadeIter = fadeIter->m_next;
-        }
+        fadeIter.next();
     }
     fadeCtrl = NULL;
 fade_found:
@@ -745,12 +704,12 @@ void AudioStreamTrack::StreamTrack::QueueStream(
     TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP* lookup = nlBSearch<TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP, unsigned long>(
         lookupKey, lookupMgr.m_FileLookup.m_pLookup, lookupMgr.m_FileLookup.m_StreamCount);
 
-    char* percentPos = strchr(lookup->value, '%');
+    const char* percentPos = strchr(lookup->FileName, '%');
     if (percentPos != NULL)
     {
-        prefixLen = (unsigned long)(percentPos - lookup->value);
+        prefixLen = (unsigned long)(percentPos - lookup->FileName);
         char* dest = &FileName[19];
-        nlStrNCpy<char>(dest, lookup->value, prefixLen + 1);
+        nlStrNCpy<char>(dest, lookup->FileName, prefixLen + 1);
         unsigned long remainLen = 0xed - prefixLen;
         dest += prefixLen;
         lookupMgr.m_FileLookup.m_ParamCB(StreamParam, dest, remainLen);
@@ -759,7 +718,7 @@ void AudioStreamTrack::StreamTrack::QueueStream(
     }
     else
     {
-        nlStrNCpy<char>(&FileName[19], lookup->value, 0xed);
+        nlStrNCpy<char>(&FileName[19], lookup->FileName, 0xed);
     }
 
     GCAudioStreaming::StereoAudioStream* stream = entry->entry.pStream;

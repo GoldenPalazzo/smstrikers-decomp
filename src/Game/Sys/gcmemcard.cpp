@@ -165,41 +165,9 @@ void MemCard::MountDoneCB(long channel, long result)
     }
 }
 
-static inline nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* FindCreateFileLookup(MemCard* self, MemCard::MC_FILE* pFile)
-{
-    for (long i = 0; (unsigned long)i < self->m_OpenFiles.m_EntryCount; i++)
-    {
-        if (self->m_OpenFiles.m_pEntryLookup[i].pEntry == pFile)
-        {
-            return &self->m_OpenFiles.m_pEntryLookup[i];
-        }
-    }
-    return NULL;
-}
-
-static inline void ShiftCreateFileLookup(MemCard* self, nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* pFoundEntry)
-{
-    unsigned long total = self->m_OpenFiles.m_EntryCount;
-    long idx = (pFoundEntry - self->m_OpenFiles.m_pEntryLookup);
-
-    while ((unsigned long)idx != total)
-    {
-        long next = idx + 1;
-        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* src = &self->m_OpenFiles.m_pEntryLookup[next];
-        register unsigned long id = src->hash;
-        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* dst = &self->m_OpenFiles.m_pEntryLookup[idx];
-        idx = next;
-        MemCard::MC_FILE* entry = src->pEntry;
-        dst->pEntry = entry;
-        dst->hash = id;
-    }
-
-    self->m_OpenFiles.m_EntryCount = self->m_OpenFiles.m_EntryCount - 1;
-}
-
 /**
  * Offset/Address/Size: 0x540 | 0x801CB080 | size: 0x1A0
- * TODO: 99.90% match - copied pEntry uses r0 instead of target r5.
+ * TODO: 99.90% match - DeleteEntry copies pEntry through r0 instead of target r5.
  */
 void MemCard::CreateFileDoneCB(long channel, long result)
 {
@@ -211,9 +179,7 @@ void MemCard::CreateFileDoneCB(long channel, long result)
         MC_FILE* pFile = card->m_pFileCB;
         if (pFile != NULL)
         {
-            nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* pFoundEntry = FindCreateFileLookup(card, pFile);
-            card->m_OpenFiles.FreeEntry(pFile);
-            ShiftCreateFileLookup(card, pFoundEntry);
+            card->m_OpenFiles.DeleteEntry(pFile);
         }
         card->m_pFileCB = NULL;
     }
@@ -611,51 +577,7 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
     fdst->w5 = c;
 
     unsigned long hash = nlStringHash(FileName);
-    MC_FILE* pNewFile = m_OpenFiles.GetNewEntry();
-
-    if (m_OpenFiles.m_EntryCount == m_OpenFiles.m_LookupAllocated)
-    {
-        m_OpenFiles.ExpandLookup();
-    }
-
-    long middle;
-    long low = -1;
-    long high;
-    unsigned long id;
-    nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* src;
-    MC_FILE* entry;
-    unsigned long count = m_OpenFiles.m_EntryCount;
-    high = count;
-
-    while ((high - low) > 1)
-    {
-        middle = (high + low) >> 1;
-        if (m_OpenFiles.m_pEntryLookup[middle].hash > hash)
-        {
-            high = middle;
-        }
-        else
-        {
-            low = middle;
-        }
-    }
-
-    long insertPos = high = low + 1;
-    while (count != (unsigned long)insertPos)
-    {
-        unsigned long prev = count - 1;
-        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
-        src = lookup + prev;
-        id = src->hash;
-        entry = src->pEntry;
-        lookup[count].pEntry = entry;
-        lookup[count].hash = id;
-        count = prev;
-    }
-
-    m_OpenFiles.m_pEntryLookup[insertPos].hash = hash;
-    m_OpenFiles.m_pEntryLookup[insertPos].pEntry = pNewFile;
-    m_OpenFiles.m_EntryCount = m_OpenFiles.m_EntryCount + 1;
+    MC_FILE* pNewFile = m_OpenFiles.AddEntry(hash);
 
     m_pFileCB = pNewFile;
     m_pFileCB->FileInfo.fileNo = -1;
@@ -699,9 +621,7 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
 
         if (pFound != NULL)
         {
-            m_OpenFiles.FreeEntry(pFound->pEntry);
-
-            ShiftCreateFileLookup(this, pFound);
+            m_OpenFiles.DeleteEntry(pFound);
         }
 
         pFile = NULL;
@@ -728,51 +648,7 @@ long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned 
     }
 
     unsigned long hash = nlStringHash(FileName);
-    MC_FILE* pNewFile = m_OpenFiles.GetNewEntry();
-
-    if (m_OpenFiles.m_EntryCount == m_OpenFiles.m_LookupAllocated)
-    {
-        m_OpenFiles.ExpandLookup();
-    }
-
-    long middle;
-    long low = -1;
-    long high;
-    unsigned long id;
-    nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* src;
-    MC_FILE* entry;
-    unsigned long count = m_OpenFiles.m_EntryCount;
-    high = count;
-
-    while ((high - low) > 1)
-    {
-        middle = (high + low) >> 1;
-        if (m_OpenFiles.m_pEntryLookup[middle].hash > hash)
-        {
-            high = middle;
-        }
-        else
-        {
-            low = middle;
-        }
-    }
-
-    long insertPos = high = low + 1;
-    while (count != (unsigned long)insertPos)
-    {
-        unsigned long prev = count - 1;
-        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
-        src = lookup + prev;
-        id = src->hash;
-        entry = src->pEntry;
-        lookup[count].pEntry = entry;
-        lookup[count].hash = id;
-        count = prev;
-    }
-
-    m_OpenFiles.m_pEntryLookup[insertPos].hash = hash;
-    m_OpenFiles.m_pEntryLookup[insertPos].pEntry = pNewFile;
-    m_OpenFiles.m_EntryCount = m_OpenFiles.m_EntryCount + 1;
+    MC_FILE* pNewFile = m_OpenFiles.AddEntry(hash);
 
     pFile = pNewFile;
     pFile->FileInfo.fileNo = -1;
@@ -795,9 +671,7 @@ long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned 
 
         if (pFound != NULL)
         {
-            m_OpenFiles.FreeEntry(pFound->pEntry);
-
-            ShiftCreateFileLookup(this, pFound);
+            m_OpenFiles.DeleteEntry(pFound);
         }
     }
     else
@@ -902,56 +776,11 @@ s32 MemCard::FormatCard(const MemCardFunctor& Callback)
 }
 
 /**
- * Offset/Address/Size: 0x930 | 0x801CA0A0 | size: 0x1F8
- * TODO: 96.2% match - 24-byte MemCardFunctor copy still has 6 scheduling/reg
- * diffs, nlBSearch call uses EntryLookup mangling variant, and shift loop keeps a
- * 4-instruction register permutation in entry copy.
- */
-static inline nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* FindOpenLookup(MemCard* self, MemCard::MC_FILE* file)
-{
-    long i = 0;
-    long byteOff = i;
-    while ((unsigned long)i < self->m_OpenFiles.m_EntryCount)
-    {
-        if (self->m_OpenFiles.m_pEntryLookup[i].pEntry == file)
-        {
-            return &self->m_OpenFiles.m_pEntryLookup[i];
-        }
-        byteOff += 8;
-        i++;
-    }
-    return NULL;
-}
-
-static inline void ShiftOpenLookup(MemCard* self, nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* foundEntry)
-{
-    unsigned long total = self->m_OpenFiles.m_EntryCount;
-    long idx = (foundEntry - self->m_OpenFiles.m_pEntryLookup);
-
-    while ((unsigned long)idx != total)
-    {
-        long next = idx + 1;
-        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* src = &self->m_OpenFiles.m_pEntryLookup[next];
-        register unsigned long id = src->hash;
-        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* dst = &self->m_OpenFiles.m_pEntryLookup[idx];
-        idx = next;
-        MemCard::MC_FILE* entry = src->pEntry;
-        dst->pEntry = entry;
-        dst->hash = id;
-    }
-
-    self->m_OpenFiles.m_EntryCount = self->m_OpenFiles.m_EntryCount - 1;
-}
-
-/**
  * Offset/Address/Size: 0x3060 | 0x801CA0A0 | size: 0x1F8
- * TODO: 99.92% match - ShiftOpenLookup entry copy loop still loads and stores
- * src->pEntry through r0 instead of target r5.
+ * TODO: 99.92% match - DeleteEntry copies pEntry through r0 instead of target r5.
  */
 long MemCard::DeleteFile(const char* FileName, const MemCardFunctor& Callback)
 {
-    nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* foundEntry;
-
     if (m_State != IS_MOUNTED)
     {
         return -100;
@@ -1017,9 +846,7 @@ long MemCard::DeleteFile(const char* FileName, const MemCardFunctor& Callback)
         file->TotalHeaderSize = 0;
         if (CARDClose(&file->FileInfo) == 0 && file != NULL)
         {
-            foundEntry = FindOpenLookup(this, file);
-            m_OpenFiles.FreeEntry(file);
-            ShiftOpenLookup(this, foundEntry);
+            m_OpenFiles.DeleteEntry(file);
         }
     }
 
@@ -1170,52 +997,15 @@ long MemCard::InternalWriteFile(MC_FILE* pFile, void* Buffer, unsigned long Leng
 
 /**
  * Offset/Address/Size: 0x620 | 0x801C9D90 | size: 0x120
- * TODO: 99.86% match - copy loop still loads and stores pEntry through r0
- * instead of target r5.
+ * TODO: 99.86% match - DeleteEntry copies pEntry through r0 instead of target r5.
  */
-static inline nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* FindOpenFileLookup(nlStaticSortedSlot<MemCard::MC_FILE, 16>& openFiles, MemCard::MC_FILE* pFile)
-{
-    for (long i = 0; (unsigned long)i < openFiles.m_EntryCount; i++)
-    {
-        if (openFiles.m_pEntryLookup[i].pEntry == pFile)
-        {
-            return &openFiles.m_pEntryLookup[i];
-        }
-    }
-
-    return NULL;
-}
-
-static inline void ShiftCloseFileEntries(nlStaticSortedSlot<MemCard::MC_FILE, 16>& openFiles, nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* pLookup)
-{
-    s32 next;
-    unsigned long total = openFiles.m_EntryCount;
-    long idx = (pLookup - openFiles.m_pEntryLookup);
-
-    while ((unsigned long)idx != total)
-    {
-        next = idx + 1;
-        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* src = &openFiles.m_pEntryLookup[next];
-        unsigned long id = src->hash;
-        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* dst = &openFiles.m_pEntryLookup[idx];
-        idx = next;
-        MemCard::MC_FILE* entry = src->pEntry;
-        dst->pEntry = entry;
-        dst->hash = id;
-    }
-
-    openFiles.m_EntryCount = openFiles.m_EntryCount - 1;
-}
-
 s32 MemCard::CloseFile(MC_FILE* pFile)
 {
     pFile->TotalHeaderSize = 0;
     s32 result = CARDClose(&pFile->FileInfo);
     if (result == 0 && pFile != NULL)
     {
-        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* pLookup = FindOpenFileLookup(m_OpenFiles, pFile);
-        m_OpenFiles.FreeEntry(pFile);
-        ShiftCloseFileEntries(m_OpenFiles, pLookup);
+        m_OpenFiles.DeleteEntry(pFile);
     }
 
     return result;

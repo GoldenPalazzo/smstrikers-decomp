@@ -361,13 +361,28 @@ void Audio::cCharacterSFX::Init()
     cGameSFX::Init();
 }
 
-// Forces the 0.0f float constant to be allocated into .sdata2 ahead of the
-// -1.0f constant owned by Init(), matching the target pool order
-// (100.0f, 0.0f, -1.0f). With -inline deferred this stub emits before Init(),
-// so its 0.0f literal is numbered first. Unreferenced -> dead-stripped at link.
-void CharacterAudio_stub(float* p)
+unsigned long cCharacterSFX::Play(eCharSFX sfxType, float fVolume, float fPan, float fAttenuate)
 {
-    *p = 0.0f;
+    SoundAttributes attrs;
+    attrs.Init();
+    attrs.mu_Type = sfxType;
+    attrs.mf_Volume = fVolume;
+    attrs.mf_Panning = fPan;
+    attrs.mf_Attenuate = fAttenuate;
+    return Play(attrs);
+}
+
+unsigned long cCharacterSFX::Play3D(eCharSFX sfxType, PosUpdateMethod posUpdateMethod, float fMaxVolume, float fAttenuate)
+{
+    SoundAttributes attrs;
+    attrs.Init();
+    attrs.mu_Type = sfxType;
+    attrs.mb_Is3D = true;
+    attrs.mf_Volume = fMaxVolume;
+    attrs.mf_Attenuate = fAttenuate;
+    attrs.mf_Panning = 0.0f;
+    attrs.posUpdateMethod = posUpdateMethod;
+    return Play(attrs);
 }
 
 /**
