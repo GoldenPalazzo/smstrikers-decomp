@@ -1439,7 +1439,6 @@ void cPN_SingleAxisBlender::Replay<SaveFrame>(SaveFrame& frame)
 
 /**
  * Offset/Address/Size: 0x4920 | 0x8011D7E0 | size: 0xD8
- * TODO: 98.61% match - stream cursor/result registers differ in compressed time byte read.
  */
 template <>
 void cPN_SAnimController::Replay<LoadFrame>(LoadFrame& frame)
@@ -1447,11 +1446,12 @@ void cPN_SAnimController::Replay<LoadFrame>(LoadFrame& frame)
     FORCE_DONT_INLINE;
     Replayable<0>(frame, (cPoseNode&)*this);
 
+    unsigned int value = 0;
     const char* cursor = frame.mStream.mStorage;
-    unsigned int value = (unsigned int)(unsigned char)cursor[1] << 8;
-    value = (value & 0xFF00) | (unsigned int)(unsigned char)cursor[0];
-    frame.mStream.mStorage = cursor + 2;
-    m_fTime = (float)value / 32768.0f;
+    unsigned char lo = (unsigned char)*cursor++;
+    value = (unsigned int)lo | ((unsigned int)(unsigned char)*cursor++ << 8);
+    frame.mStream.mStorage = cursor;
+    m_fTime = (float)value / (float)(1 << 15);
 
     unsigned int animPtr = 0;
     memcpy(&animPtr, frame.mStream.mStorage, sizeof(unsigned int));

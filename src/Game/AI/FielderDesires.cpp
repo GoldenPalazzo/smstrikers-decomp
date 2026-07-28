@@ -2389,7 +2389,6 @@ void cFielder::InitDesireReceivePassFromRun(const LooseBallContactAnimInfo* pAni
 
 /**
  * Offset/Address/Size: 0x130C | 0x80032090 | size: 0xADC
- * TODO: 99.93% match - scratch diff only reports local constant label relocations for 0.98f and 0.0f
  */
 void cFielder::DesireReceivePassFromRun(float fDeltaT)
 {
@@ -2552,7 +2551,7 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
                 m_pCurrentAnimController->m_fPlaybackSpeedScale = fAnimTimeInSecs / fTimeToIntercept;
             }
         }
-        break;
+        return;
     }
 
     case 1:
@@ -2594,17 +2593,24 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
                         return;
                     }
 
-                    if (GetGlobalPad() != NULL && GetGlobalPad()->IsPressed(PAD_SHOOT, true))
+                    if (GetGlobalPad() == NULL)
                     {
-                        if (!ShouldStartCrossBlend(0x1A))
-                        {
-                            return;
-                        }
-
-                        DoResetShotMeter(0.0f);
-                        SetDesireDuration(0.0f, true);
                         return;
                     }
+
+                    if (!GetGlobalPad()->IsPressed(PAD_SHOOT, true))
+                    {
+                        return;
+                    }
+
+                    if (!ShouldStartCrossBlend(0x1A))
+                    {
+                        return;
+                    }
+
+                    DoResetShotMeter(0.0f);
+                    SetDesireDuration(0.0f, true);
+                    return;
                 }
                 else if (ShouldStartCrossBlend(0x1A))
                 {
@@ -2621,7 +2627,6 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
                         InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
                         InitActionShot(m_DesireReceivePassSharedVars.iAttemptOneTouchShot == 2);
                     }
-                    return;
                 }
             }
             else
@@ -2654,16 +2659,15 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
                 m_DesireReceivePassSharedVars.bFailedToInitOneTouchShot = true;
             }
         }
+        if (ShouldStartCrossBlend(0x1A))
+        {
+            SetDesireDuration(0.0f, true);
+        }
         break;
     }
 
     default:
-        break;
-    }
-
-    if (ShouldStartCrossBlend(0x1A))
-    {
-        SetDesireDuration(0.0f, true);
+        return;
     }
 }
 

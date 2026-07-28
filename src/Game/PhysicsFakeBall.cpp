@@ -269,8 +269,8 @@ FakePhysicsBall::~FakePhysicsBall()
 
 /**
  * Offset/Address/Size: 0x7B0 | 0x80137B9C | size: 0x600
- * TODO: 98.92% match - output refs use r24/r25 instead of target r23/r24;
- *       cache traversal GPR allocation differs.
+ * TODO: 98.9974% match - output refs use r24/r25 instead of target r23/r24;
+ *       cache traversal and cache-entry GPR allocation differ.
  */
 float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Position, nlVector3& v3Velocity)
 {
@@ -355,9 +355,9 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
     DLListEntry<BallCacheInfo*>* pLastEntry = nlDLRingGetEnd(*ppHead);
     BallCacheInfo* pCurCache = pLastEntry->entry;
 
-    fMaxTime = 6.0f + fSimulationTime;
-
     float fDistanceCurSq = nlGetLengthSquared3D(pCurCache->mv3Position.f.x - pBall->m_v3Position.f.x, pCurCache->mv3Position.f.y - pBall->m_v3Position.f.y, pCurCache->mv3Position.f.z - pBall->m_v3Position.f.z);
+
+    fMaxTime = 6.0f + fSimulationTime;
 
     while (mfLastCacheTime < fMaxTime)
     {

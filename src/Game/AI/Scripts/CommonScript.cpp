@@ -620,6 +620,20 @@ static inline float max_float(float a, float b)
     return b;
 }
 
+static inline float min_float(float a, float b)
+{
+    if (a <= b)
+    {
+        return a;
+    }
+    return b;
+}
+
+static inline float nlMinFour(float a, float b, float c, float d)
+{
+    return min_float(a, min_float(b, min_float(c, d)));
+}
+
 static inline float nlMaxThree(float a, float b, float c)
 {
     return max_float(a, max_float(b, c));
@@ -3296,6 +3310,8 @@ FuzzyVariant Fuzzy::GetBestWindupShotAction(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0x1A48 | 0x8006BC18 | size: 0x126C
+ * TODO: 99.372350% match - 47 argument mismatches, 4 replacements, and
+ * 2 insertions; current size is 0x1274.
  */
 FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
 {
@@ -3307,60 +3323,21 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
     ((Variant*)&FuzzyVariant((cPlayer*)TheFielder))->GetHash();
     FuzzyVariant((cPlayer*)TheFielder);
 
-    float fTrueConfidence = OnScreen((cPlayer*)TheFielder);
-
-    cTeam* pTeam = (TheFielder != NULL) ? TheFielder->m_pTeam : NULL;
-    float fNotUserControlled = 1.0f - UserControlledT(pTeam);
-
-    cPlayer* pOtherGoalie;
-    if (TheFielder != NULL)
-    {
-        cTeam* pOtherTeam;
-        if (TheFielder != NULL)
-        {
-            pOtherTeam = TheFielder->m_pTeam->GetOtherTeam();
-        }
-        else
-        {
-            pOtherTeam = NULL;
-        }
-        pOtherGoalie = pOtherTeam->GetGoalie();
-    }
-    else
-    {
-        pOtherGoalie = NULL;
-    }
-
-    float fNotOtherGoaliePickup = Fuzzy::GoalieAndGonnaPickupBall(pOtherGoalie).mData.f;
-    fNotOtherGoaliePickup = 1.0f - fNotOtherGoaliePickup;
-
-    cPlayer* pGoalie;
-    if (TheFielder != NULL)
-    {
-        cTeam* pTeamForGoalie;
-        if (TheFielder != NULL)
-        {
-            pTeamForGoalie = TheFielder->m_pTeam;
-        }
-        else
-        {
-            pTeamForGoalie = NULL;
-        }
-        pGoalie = pTeamForGoalie->GetGoalie();
-    }
-    else
-    {
-        pGoalie = NULL;
-    }
-
-    float fNotGoaliePickup = Fuzzy::GoalieAndGonnaPickupBall(pGoalie).mData.f;
-    fNotGoaliePickup = 1.0f - fNotGoaliePickup;
-
-    fNotUserControlled = (fNotUserControlled <= fTrueConfidence) ? fNotUserControlled : fTrueConfidence;
-    fNotOtherGoaliePickup = (fNotOtherGoaliePickup <= fNotUserControlled) ? fNotOtherGoaliePickup : fNotUserControlled;
-    fNotGoaliePickup = (fNotGoaliePickup <= fNotOtherGoaliePickup) ? fNotGoaliePickup : fNotOtherGoaliePickup;
-
-    fTrueConfidence = fNotGoaliePickup;
+    float fTrueConfidence = nlMinFour(
+        1.0f
+            - Fuzzy::GoalieAndGonnaPickupBall(
+                TheFielder != NULL
+                    ? ((TheFielder != NULL) ? TheFielder->m_pTeam : NULL)->GetGoalie()
+                    : NULL)
+                .mData.f,
+        1.0f
+            - Fuzzy::GoalieAndGonnaPickupBall(
+                TheFielder != NULL
+                    ? ((TheFielder != NULL) ? TheFielder->m_pTeam->GetOtherTeam() : NULL)->GetGoalie()
+                    : NULL)
+                .mData.f,
+        1.0f - UserControlledT((TheFielder != NULL) ? TheFielder->m_pTeam : NULL),
+        OnScreen((cPlayer*)TheFielder));
 
     float fFalseConfidence = 1.0f - fTrueConfidence;
     float fMinConfidence = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;

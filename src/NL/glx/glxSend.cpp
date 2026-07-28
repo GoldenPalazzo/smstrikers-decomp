@@ -139,6 +139,8 @@ static void glx_SwitchRaster(const glModelPacket*);
  */
 /**
  * Offset/Address/Size: 0x1058 | 0x801BAB58 | size: 0x964
+ * TODO: 99.57% match - 7 outer-loop, 27 inlined directional-light, and
+ * 4 env-diffuse gloss-coordinate register rows remain.
  */
 struct GLSkinUserData
 {
@@ -1810,8 +1812,10 @@ static inline void glud_DirectionalLight(void* pData)
                 break;
             }
 
+            GLDirectionalLightUserData* pCurrentLight = pLight++;
             lightMask |= gxLights[index];
-            glx_LoadDirectionalLight(pLight++, (GXLightID)gxLights[index++]);
+            GXLightID lightID = (GXLightID)gxLights[index++];
+            glx_LoadDirectionalLight(pCurrentLight, lightID);
         }
 
         if (g_bAllowLighting != 0)

@@ -187,13 +187,13 @@ void LoadMemoryCardIconData()
     char* pDescDst = (char*)gIconDataCache.mIconDataInfo.pHeaderData + 0x20;
     nlStrNCpy(pDescDst, GetMemCardDescription(), 0x20);
 
-    pFile1 = nlOpen("@2009\0\0\0\0");
+    pFile1 = nlOpen("art/fe/MC_Banner.tpl");
     nlFileSize(pFile1, &bannerSize);
     gIconDataCache.mBannerBuffer = nlMalloc(bannerSize, 0x20, true);
     nlRead(pFile1, gIconDataCache.mBannerBuffer, bannerSize);
     nlClose(pFile1);
 
-    nlFile* pFile2 = nlOpen("@2010\0\0\0\0");
+    nlFile* pFile2 = nlOpen("art/fe/MC_icon.tpl");
     nlFileSize(pFile2, &iconSize);
     gIconDataCache.mIconBuffer = nlMalloc(iconSize, 0x20, true);
     nlRead(pFile2, gIconDataCache.mIconBuffer, iconSize);

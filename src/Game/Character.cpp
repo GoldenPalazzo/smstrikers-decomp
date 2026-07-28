@@ -1410,15 +1410,17 @@ cCharacter::cCharacter(eCharacterClass cc, const int* nModelID, cSHierarchy* pHi
     m_v3ScreenPosition.f.z = 0.0f;
 }
 
-/**
- * Offset/Address/Size: 0x26A0 | 0x800105EC | size: 0x1A58
- */
-
 inline eVariantType VariantTypeOf(const nlVector3&)
 {
     return FT_VECTOR;
 }
 
+/**
+ * Offset/Address/Size: 0x26A0 | 0x800105EC | size: 0x1A58
+ * TODO: 99.94069% match - `cmplw r0,r4` is emitted as `cmplw r4,r0` at
+ * 0x8001101C, and 16 r15/r16 allocation rows remain in the shell-event block
+ * from 0x800111B4 through 0x800112AC.
+ */
 void AIEventHandler(Event* pEvent, void*)
 {
     struct CollisionBallGroundDataFields
@@ -1455,20 +1457,6 @@ void AIEventHandler(Event* pEvent, void*)
         void* vtbl;
         cFielder* pFielder;
         cBall* pBall;
-    };
-
-    struct BowserView
-    {
-        char _pad0[0xEC];
-        cFielder* mpTarget;
-        char _pad1[0x11C - 0xEC - 4];
-        Audio::cCharacterSFX* m_pCharacterSFX;
-    };
-
-    struct ChainChompView
-    {
-        char _pad0[0x8C];
-        cFielder* mpTarget;
     };
 
     switch (pEvent->m_uEventID)
@@ -1649,12 +1637,13 @@ void AIEventHandler(Event* pEvent, void*)
                     BasicString<char, Detail::TempStringAllocator> effectName(
                         GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)pPrevOwner->m_pTeam->m_nSide)));
                     effectName.AppendInPlace("_shoot_to_score_catch");
-                    pGroup = fxGetGroup(effectName.c_str());
+                    fxGetGroup(effectName.c_str());
                 }
             }
         }
 
-        EmissionManager::Create(pGroup, 0)->SetPosition(pEventData->v3CollisionPosition);
+        EmissionController* pControl = EmissionManager::Create(pGroup, 0);
+        pControl->SetPosition(pEventData->v3CollisionPosition);
         g_pBall->CollideWithWallCallback();
         break;
     }
@@ -1886,7 +1875,7 @@ void AIEventHandler(Event* pEvent, void*)
             pEventData->pFielder->CollideWithChainCallback(pEventData->pChain);
         }
 
-        if (pEventData->pFielder == ((ChainChompView*)pEventData->pChain)->mpTarget)
+        if (pEventData->pFielder == pEventData->pChain->mpTarget)
         {
             pEventData->pChain->FindTarget(pEventData->pFielder->m_pTeam);
         }
@@ -1928,12 +1917,12 @@ void AIEventHandler(Event* pEvent, void*)
 
         pEventData->pFielder->CollideWithBowserCallback(pEventData->pBowser);
 
-        if (((BowserView*)pEventData->pBowser)->mpTarget == pEventData->pFielder)
+        if (pEventData->pBowser->mpTarget == pEventData->pFielder)
         {
             pEventData->pBowser->FindTarget();
         }
 
-        ((BowserView*)pEventData->pBowser)->m_pCharacterSFX->PlayRandomCharDialogue((CharDialogueType)2, (PosUpdateMethod)2, 100.0f, -1.0f, true);
+        pEventData->pBowser->m_pCharacterSFX->PlayRandomCharDialogue((CharDialogueType)2, (PosUpdateMethod)2, 100.0f, -1.0f, true);
 
         break;
     }
@@ -2270,55 +2259,57 @@ void AIEventHandler(Event* pEvent, void*)
 
         for (s32 i = 0; i < 2; i++)
         {
-            if (g_pTeams[i] == 0)
-                continue;
-            cTeam* pTeam = g_pTeams[i];
-
-            for (s32 j = 0; j < 4; j++)
+            if (g_pTeams[i] != 0)
             {
-                cFielder* pFielder = pTeam->GetFielder(j);
+                cTeam* pTeam = g_pTeams[i];
 
-                if (pFielder->IsInvincible())
-                    continue;
-                if (!pFielder->CanBeBlownUp())
-                    continue;
-                if (pEventData->pThrower == pFielder)
-                    continue;
-
-                nlMatrix4& nodeMatrix = pFielder->m_pPoseAccumulator->GetNodeMatrix(pFielder->m_nBip01JointIndex_0xA4);
-
-                float dy = pEventData->v3ExplosionLocation.f.y - nodeMatrix.m[3][1];
-                float dz = pEventData->v3ExplosionLocation.f.z - nodeMatrix.m[3][2];
-                float dx = pEventData->v3ExplosionLocation.f.x - nodeMatrix.m[3][0];
-                float dist = nlSqrt(dx * dx + dy * dy + dz * dz, true);
-
-                if (!(dist < pEventData->fExplosionRadius))
-                    continue;
-
-                bool bWasFallenDown = pFielder->IsFallenDown(0.0f);
-                bool bIsWeaponSuccessful;
-
-                if (pEventData->bIsFreezeBomb)
+                for (s32 j = 0; j < 4; j++)
                 {
-                    bIsWeaponSuccessful = pFielder->CollideWithFreezeCallback();
-                }
-                else
-                {
-                    bIsWeaponSuccessful = true;
-                    pFielder->SetBombImpactTime(pEventData->v3ExplosionLocation, pEventData->fExplosionRadius / g_pGame->m_pGameTweaks->fPowerupExplosionRadius);
-                }
+                    cFielder* pFielder = pTeam->GetFielder(j);
 
-                if (pEventData->pThrower == 0)
-                    continue;
-                if (bWasFallenDown)
-                    continue;
-                if (!bIsWeaponSuccessful)
-                    continue;
+                    if (pFielder->IsInvincible())
+                        continue;
+                    if (!pFielder->CanBeBlownUp())
+                        continue;
+                    if (pEventData->pThrower == pFielder)
+                        continue;
 
-                Event* pStatsEvent = g_pEventManager->CreateValidEvent(0x55, 0x20);
-                CollisionPowerupStatsData* pStatsData = new (&pStatsEvent->m_data) CollisionPowerupStatsData();
-                pStatsData->pThrower = pEventData->pThrower;
-                pStatsData->nThrowerPadID = pEventData->nThrowerPadID;
+                    nlMatrix4& nodeMatrix = pFielder->m_pPoseAccumulator->GetNodeMatrix(pFielder->m_nBip01JointIndex_0xA4);
+
+                    float dist = nlSqrt(nlGetLengthSquared3D(
+                                            pEventData->v3ExplosionLocation.f.x - nodeMatrix.m[3][0],
+                                            pEventData->v3ExplosionLocation.f.y - nodeMatrix.m[3][1],
+                                            pEventData->v3ExplosionLocation.f.z - nodeMatrix.m[3][2]),
+                        true);
+
+                    if (!(dist < pEventData->fExplosionRadius))
+                        continue;
+
+                    bool bWasFallenDown = pFielder->IsFallenDown(0.0f);
+                    bool bIsWeaponSuccessful;
+
+                    if (pEventData->bIsFreezeBomb)
+                    {
+                        bIsWeaponSuccessful = pFielder->CollideWithFreezeCallback();
+                    }
+                    else
+                    {
+                        bIsWeaponSuccessful = true;
+                        pFielder->SetBombImpactTime(pEventData->v3ExplosionLocation, pEventData->fExplosionRadius / g_pGame->m_pGameTweaks->fPowerupExplosionRadius);
+                    }
+
+                    if (pEventData->pThrower == 0)
+                        continue;
+                    if (bWasFallenDown)
+                        continue;
+                    if (!bIsWeaponSuccessful)
+                        continue;
+
+                    Event* pStatsEvent = g_pEventManager->CreateValidEvent(0x55, 0x20);
+                    CollisionPowerupStatsData* pStatsData = new (&pStatsEvent->m_data) CollisionPowerupStatsData();
+                    pStatsData->pThrower = pEventData->pThrower;
+                    pStatsData->nThrowerPadID = pEventData->nThrowerPadID;
+                }
             }
 
             g_pGame->BlowUpPowerups(pEventData->v3ExplosionLocation, pEventData->fExplosionRadius);
@@ -2360,11 +2351,12 @@ void AIEventHandler(Event* pEvent, void*)
             break;
 
         cTeam* pTeam = pReceiver->m_pTeam;
-        u32 zero = 0;
-        pTeam->mtMarkTimer.m_uPackedTime = zero;
-        pTeam->mtRoleTimer.m_uPackedTime = zero;
-        pTeam->GetOtherTeam()->mtMarkTimer.m_uPackedTime = zero;
-        pTeam->GetOtherTeam()->mtRoleTimer.m_uPackedTime = zero;
+        pTeam->mtMarkTimer.m_uPackedTime = 0;
+        pTeam->mtRoleTimer.m_uPackedTime = 0;
+        cTeam* pOtherTeam = pTeam->GetOtherTeam();
+        pOtherTeam->mtMarkTimer.m_uPackedTime = 0;
+        pOtherTeam = pTeam->GetOtherTeam();
+        pOtherTeam->mtRoleTimer.m_uPackedTime = 0;
         break;
     }
 
@@ -2511,9 +2503,9 @@ void AIEventHandler(Event* pEvent, void*)
 
         for (s32 i = 0; i < 2; i++)
         {
+            cTeam* pTeam = g_pTeams[i];
             if (g_pTeams[i] == 0)
                 continue;
-            cTeam* pTeam = g_pTeams[i];
 
             for (s32 j = 0; j < 4; j++)
             {

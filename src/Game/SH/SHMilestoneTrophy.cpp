@@ -103,25 +103,6 @@ typedef BasicString<char, Detail::TempStringAllocator> CharBasicString;
 // {
 // }
 
-struct TLTextInstance;
-struct TLImageInstance;
-
-struct TLTextLocView
-{
-    unsigned char mPad0[0x80];
-    unsigned long mLocStrId;
-    unsigned char mPad1[0x0C];
-    unsigned long mOverloadFlags;
-};
-
-struct TLInstanceView
-{
-    unsigned char mPad0[0x0C];
-    void* m_component;
-    unsigned char mPad1[0x6E];
-    bool m_bVisible;
-};
-
 extern unsigned long GetLOCTrophyName(eTrophyType);
 extern nlLocalization* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
@@ -154,7 +135,7 @@ static const nlColour TROPHY_BLACK_MILESTONE = { 0x00, 0x00, 0x00, 0xFF };
 #define LOOKUP_LOC(_hash, _out)                                                                                             \
     do                                                                                                                      \
     {                                                                                                                       \
-        locKey = (_hash);                                                                                                   \
+        unsigned long locKey = (_hash);                                                                                     \
         nlLocalization* _loc = g_pLocalization;                                                                             \
         if (_loc->m_LookupTable == 0)                                                                                       \
         {                                                                                                                   \
@@ -202,18 +183,10 @@ MilestoneTrophyScene::~MilestoneTrophyScene()
 
 /**
  * Offset/Address/Size: 0x3CC | 0x800CDECC | size: 0x1584
+ * TODO: 99.58097% match - 369 argument mismatches and two inserts remain.
  */
 void MilestoneTrophyScene::SceneCreated()
 {
-    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLImageInstance* (*FindImageByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLImageInstance* (*FindImageByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLComponentInstance* (*FindCompSlideByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompSlideByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLComponentInstance* (*FindCompPresByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompPresByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
 
@@ -222,95 +195,21 @@ void MilestoneTrophyScene::SceneCreated()
     int bronzeStat = 0;
     int silverStat = 0;
     int goldStat = 0;
-    unsigned long locKey;
+    TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash(MILESTONE_TROPHY_TEXT_NAME)));
 
-    TLTextInstance* pText;
-    {
-        union
-        {
-            FindTextByValue byValue;
-            FindTextByRef byRef;
-        } findText;
+    pText->m_LocStrId = GetLOCTrophyName(mTrophy);
+    pText->m_OverloadFlags |= 0x8;
 
-        volatile InlineHasher hLayerA, hLayerB;
-        volatile InlineHasher hNameB, hNameA;
-        volatile InlineHasher h7, h6;
-        volatile InlineHasher h5, h4, h3, h2, h1, h0;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash(MILESTONE_TROPHY_TEXT_NAME);
-        hNameA.m_Hash = hash;
-        hNameB.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hLayerA.m_Hash = hash;
-        hLayerB.m_Hash = hash;
-
-        findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-        pText = findText.byRef(
-            presentation->m_currentSlide,
-            (InlineHasher&)hLayerA,
-            (InlineHasher&)hNameA,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-    }
-
-    ((TLTextLocView*)pText)->mLocStrId = GetLOCTrophyName(mTrophy);
-    ((TLTextLocView*)pText)->mOverloadFlags |= 0x8;
-
-    TLImageInstance* pTrophyImage;
-    {
-        union
-        {
-            FindImageByValue byValue;
-            FindImageByRef byRef;
-        } findImage;
-
-        volatile InlineHasher hLayerA, hLayerB;
-        volatile InlineHasher hNameB, hNameA;
-        volatile InlineHasher h7, h6;
-        volatile InlineHasher h5, h4, h3, h2, h1, h0;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash(MILESTONE_TROPHY_IMAGE_NAME);
-        hNameA.m_Hash = hash;
-        hNameB.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hLayerA.m_Hash = hash;
-        hLayerB.m_Hash = hash;
-
-        findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
-        pTrophyImage = findImage.byRef(
-            presentation->m_currentSlide,
-            (InlineHasher&)hLayerA,
-            (InlineHasher&)hNameA,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-    }
+    TLImageInstance* pTrophyImage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash(MILESTONE_TROPHY_IMAGE_NAME)));
 
     mAsyncTrophy->mImageInstance = pTrophyImage;
-    ((TLInstanceView*)pTrophyImage)->m_bVisible = true;
+    pTrophyImage->m_bVisible = true;
 
     const unsigned short* locString;
     LOOKUP_LOC(0x3C479468, locString);
@@ -328,10 +227,10 @@ void MilestoneTrophyScene::SceneCreated()
         silverStat = 50;
         goldStat = 100;
 
-        LOOKUP_LOC(0x8A5D9314, locString);
+        LOOKUP_LOC(0x8A5C9314, locString);
         stat = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
 
-        LOOKUP_LOC(0x759DD858, locString);
+        LOOKUP_LOC(0x759CD858, locString);
         unlockable = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
         break;
 
@@ -344,7 +243,7 @@ void MilestoneTrophyScene::SceneCreated()
         LOOKUP_LOC(0x49772A70, locString);
         stat = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
 
-        LOOKUP_LOC(0xE3FB84B4, locString);
+        LOOKUP_LOC(0xE3FA84B4, locString);
         unlockable = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
         break;
 
@@ -392,87 +291,19 @@ void MilestoneTrophyScene::SceneCreated()
 
     memcpy(mTotalBuffer, formatted.c_str(), 0x100);
 
-    {
-        union
-        {
-            FindTextByValue byValue;
-            FindTextByRef byRef;
-        } findText;
-
-        volatile InlineHasher hLayerA, hLayerB;
-        volatile InlineHasher hNameB, hNameA;
-        volatile InlineHasher h7, h6;
-        volatile InlineHasher h5, h4, h3, h2, h1, h0;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash(MILESTONE_TOTAL_TEXT_NAME);
-        hNameA.m_Hash = hash;
-        hNameB.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hLayerA.m_Hash = hash;
-        hLayerB.m_Hash = hash;
-
-        findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-        TLTextInstance* pTotal = findText.byRef(
-            presentation->m_currentSlide,
-            (InlineHasher&)hLayerA,
-            (InlineHasher&)hNameA,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-        pTotal->SetString(mTotalBuffer);
-    }
+    TLTextInstance* pTotal = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash(MILESTONE_TOTAL_TEXT_NAME)));
+    pTotal->SetString(mTotalBuffer);
 
     if (mIsNew == true)
     {
-        union
-        {
-            FindCompSlideByValue byValue;
-            FindCompSlideByRef byRef;
-        } findComp;
-
-        volatile InlineHasher hLayerA, hLayerB;
-        volatile InlineHasher hNameB, hNameA;
-        volatile InlineHasher h7, h6;
-        volatile InlineHasher h5, h4, h3, h2, h1, h0;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("ARROWS");
-        hNameA.m_Hash = hash;
-        hNameB.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hLayerA.m_Hash = hash;
-        hLayerB.m_Hash = hash;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-        TLComponentInstance* arrows = findComp.byRef(
+        TLComponentInstance* pComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
-            (InlineHasher&)hLayerA,
-            (InlineHasher&)hNameA,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-        arrows->m_bVisible = false;
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("ARROWS")));
+        pComp->m_bVisible = false;
     }
 
     eMilestoneColour levelReached = nlSingleton<GameInfoManager>::s_pInstance->GetMilestoneLevel(mTrophy);
@@ -490,7 +321,7 @@ void MilestoneTrophyScene::SceneCreated()
     {
         fileName = fileName.Append("_bronze");
         mAsyncTrophy->QueueLoad(fileName.c_str(), mDoBlockLoad);
-        nlColour colour = ((FELibObject*)((TLInstanceView*)pTrophyImage)->m_component)->GetColour();
+        nlColour colour = ((FELibObject*)pTrophyImage->m_component)->GetColour();
         pTrophyImage->SetAssetColour(colour);
 
         statNeeded = silverStat;
@@ -501,7 +332,7 @@ void MilestoneTrophyScene::SceneCreated()
     {
         fileName = fileName.Append("_silver");
         mAsyncTrophy->QueueLoad(fileName.c_str(), mDoBlockLoad);
-        nlColour colour = ((FELibObject*)((TLInstanceView*)pTrophyImage)->m_component)->GetColour();
+        nlColour colour = ((FELibObject*)pTrophyImage->m_component)->GetColour();
         pTrophyImage->SetAssetColour(colour);
 
         statNeeded = goldStat;
@@ -511,7 +342,7 @@ void MilestoneTrophyScene::SceneCreated()
     else
     {
         mAsyncTrophy->QueueLoad(fileName.c_str(), mDoBlockLoad);
-        nlColour colour = ((FELibObject*)((TLInstanceView*)pTrophyImage)->m_component)->GetColour();
+        nlColour colour = ((FELibObject*)pTrophyImage->m_component)->GetColour();
         pTrophyImage->SetAssetColour(colour);
     }
     mDoBlockLoad = false;
@@ -530,46 +361,11 @@ void MilestoneTrophyScene::SceneCreated()
 
         memcpy(mStatBuffer, formatted.c_str(), 0x100);
 
-        {
-            union
-            {
-                FindTextByValue byValue;
-                FindTextByRef byRef;
-            } findText;
-
-            volatile InlineHasher hLayerA, hLayerB;
-            volatile InlineHasher hNameB, hNameA;
-            volatile InlineHasher h7, h6;
-            volatile InlineHasher h5, h4, h3, h2, h1, h0;
-
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-            h6.m_Hash = 0;
-            h7.m_Hash = 0;
-
-            unsigned long hash = nlStringLowerHash(MILESTONE_STAT_TEXT_NAME);
-            hNameA.m_Hash = hash;
-            hNameB.m_Hash = hash;
-
-            hash = nlStringLowerHash("Layer");
-            hLayerA.m_Hash = hash;
-            hLayerB.m_Hash = hash;
-
-            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            TLTextInstance* pStat = findText.byRef(
-                presentation->m_currentSlide,
-                (InlineHasher&)hLayerA,
-                (InlineHasher&)hNameA,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-            pStat->SetString(mStatBuffer);
-        }
+        pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            presentation->m_currentSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash(MILESTONE_STAT_TEXT_NAME)));
+        pText->SetString(mStatBuffer);
 
         LOOKUP_LOC(0xF8710578, locString);
         description = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
@@ -590,46 +386,11 @@ void MilestoneTrophyScene::SceneCreated()
 
         memcpy(mStatBuffer, formatted.c_str(), 0x100);
 
-        {
-            union
-            {
-                FindTextByValue byValue;
-                FindTextByRef byRef;
-            } findText;
-
-            volatile InlineHasher hLayerA, hLayerB;
-            volatile InlineHasher hNameB, hNameA;
-            volatile InlineHasher h7, h6;
-            volatile InlineHasher h5, h4, h3, h2, h1, h0;
-
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-            h6.m_Hash = 0;
-            h7.m_Hash = 0;
-
-            unsigned long hash = nlStringLowerHash(MILESTONE_STAT_TEXT_NAME);
-            hNameA.m_Hash = hash;
-            hNameB.m_Hash = hash;
-
-            hash = nlStringLowerHash("Layer");
-            hLayerA.m_Hash = hash;
-            hLayerB.m_Hash = hash;
-
-            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            TLTextInstance* pStat = findText.byRef(
-                presentation->m_currentSlide,
-                (InlineHasher&)hLayerA,
-                (InlineHasher&)hNameA,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-            pStat->SetString(mStatBuffer);
-        }
+        pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            presentation->m_currentSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash(MILESTONE_STAT_TEXT_NAME)));
+        pText->SetString(mStatBuffer);
 
         CharBasicString bronzeString = LexicalCast<CharBasicString, int>(bronzeStat);
         CharBasicString silverString = LexicalCast<CharBasicString, int>(silverStat);
@@ -650,133 +411,32 @@ void MilestoneTrophyScene::SceneCreated()
 
     memcpy(mDescriptionBuffer, formatted.c_str(), 0x100);
 
-    {
-        union
-        {
-            FindTextByValue byValue;
-            FindTextByRef byRef;
-        } findText;
-
-        volatile InlineHasher hLayerA, hLayerB;
-        volatile InlineHasher hNameB, hNameA;
-        volatile InlineHasher h7, h6;
-        volatile InlineHasher h5, h4, h3, h2, h1, h0;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash(MILESTONE_DESCRIPTION_TEXT_NAME);
-        hNameA.m_Hash = hash;
-        hNameB.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hLayerA.m_Hash = hash;
-        hLayerB.m_Hash = hash;
-
-        findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-        TLTextInstance* pDescription = findText.byRef(
-            presentation->m_currentSlide,
-            (InlineHasher&)hLayerA,
-            (InlineHasher&)hNameA,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-        pDescription->SetString(mDescriptionBuffer);
-    }
+    pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash(MILESTONE_DESCRIPTION_TEXT_NAME)));
+    pText->SetString(mDescriptionBuffer);
 
     if (!mButtons.mAlreadyCentred)
     {
-        union
-        {
-            FindCompPresByValue byValue;
-            FindCompPresByRef byRef;
-        } findComp;
-
-        volatile InlineHasher hInB, hInA;
-        volatile InlineHasher hLayerB, hLayerA;
-        volatile InlineHasher hButtonsB, hButtonsA;
-        volatile InlineHasher h5, h4, h3, h2, h1, h0;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("buttons");
-        hButtonsA.m_Hash = hash;
-        hButtonsB.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hLayerA.m_Hash = hash;
-        hLayerB.m_Hash = hash;
-
-        hash = nlStringLowerHash("IN");
-        hInA.m_Hash = hash;
-        hInB.m_Hash = hash;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>;
-        mButtons.mButtonInstance = findComp.byRef(
+        TLComponentInstance* buttons = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
             presentation,
-            (InlineHasher&)hInA,
-            (InlineHasher&)hLayerA,
-            (InlineHasher&)hButtonsA,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash("IN")),
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("buttons")));
+        mButtons.mButtonInstance = buttons;
 
         mButtons.SetState(mButtonState);
     }
 
     if (!mButtons2.mAlreadyCentred)
     {
-        union
-        {
-            FindCompPresByValue byValue;
-            FindCompPresByRef byRef;
-        } findComp;
-
-        volatile InlineHasher hInB, hInA;
-        volatile InlineHasher hLayerB, hLayerA;
-        volatile InlineHasher hButtonsB, hButtonsA;
-        volatile InlineHasher h5, h4, h3, h2, h1, h0;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("buttons");
-        hButtonsA.m_Hash = hash;
-        hButtonsB.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hLayerA.m_Hash = hash;
-        hLayerB.m_Hash = hash;
-
-        hash = nlStringLowerHash("change");
-        hInA.m_Hash = hash;
-        hInB.m_Hash = hash;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>;
-        mButtons2.mButtonInstance = findComp.byRef(
+        TLComponentInstance* buttons = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
             presentation,
-            (InlineHasher&)hInA,
-            (InlineHasher&)hLayerA,
-            (InlineHasher&)hButtonsA,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash("change")),
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("buttons")));
+        mButtons2.mButtonInstance = buttons;
 
         mButtons2.SetState(mButtonState);
     }

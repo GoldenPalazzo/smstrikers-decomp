@@ -614,7 +614,7 @@ static void CastPoint(nlVector3& p, const nlVector3& vLight)
 
 /**
  * Offset/Address/Size: 0x0 | 0x80123034 | size: 0x750
- * TODO: 93.34% match - register allocation and scheduling still differ in corner setup
+ * TODO: 94.01% match - register allocation and scheduling still differ in corner setup
  *       and directional/point cast paths.
  */
 void RenderProjectedShadow(const ProjectedShadowParams& params)
@@ -665,9 +665,7 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
         vDir.f.y = dy;
         vDir.f.z = dz;
         nlVec3Scale(vDir, invLen);
-        float crossX = (vDir.f.y * vUp.f.z) - (vDir.f.z * vUp.f.y);
-        float crossY = (-vDir.f.x * vUp.f.z) + (vDir.f.z * vUp.f.x);
-        float crossZ = (vDir.f.x * vUp.f.y) - (vDir.f.y * vUp.f.x);
+        nlVec3Cross(vDir, vDir, vUp);
 
         float negHalfW = -0.5f * width;
         float halfW = 0.5f * width;
@@ -676,25 +674,14 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
         vTemp.as_u32[1] = params.vPosition.as_u32[1];
         vTemp.as_u32[2] = params.vPosition.as_u32[2];
 
-        float halfCrossX = halfW * crossX;
-        float halfCrossY = halfW * crossY;
-        float halfCrossZ = halfW * crossZ;
-        float negCrossX = negHalfW * crossX;
-        float negCrossY = negHalfW * crossY;
-        float negCrossZ = negHalfW * crossZ;
+        nlVec3ScaleAdd(p[0], halfW, vDir, vTemp);
+        nlVec3ScaleAdd(p[1], negHalfW, vDir, vTemp);
 
-        p[0].f.x = vTemp.f.x + halfCrossX;
-        p[0].f.y = vTemp.f.y + halfCrossY;
-        p[0].f.z = vTemp.f.z + halfCrossZ;
-        p[1].f.x = vTemp.f.x + negCrossX;
-        p[1].f.y = vTemp.f.y + negCrossY;
-        p[1].f.z = vTemp.f.z + negCrossZ;
-        p[2].f.x = vTemp.f.x + negCrossX;
-        p[2].f.y = vTemp.f.y + negCrossY;
-        p[2].f.z = vTemp.f.z + negCrossZ;
-        p[3].f.x = vTemp.f.x + halfCrossX;
-        p[3].f.y = vTemp.f.y + halfCrossY;
-        p[3].f.z = vTemp.f.z + halfCrossZ;
+        float halfH = 0.5f * height;
+        vTemp.f.z += halfH;
+
+        nlVec3ScaleAdd(p[2], negHalfW, vDir, vTemp);
+        nlVec3ScaleAdd(p[3], halfW, vDir, vTemp);
 
         float negHeightX = (-0.5f * height) * vUp.f.x;
         float heightX = (0.5f * height) * vUp.f.x;
