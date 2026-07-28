@@ -1300,7 +1300,7 @@ void GCAudioStreaming::AudioBufferMgr::DeleteBuffers()
  */
 void GCAudioStreaming::AudioBufferMgr::FreeBuffer(GCAudioStreaming::AudioStreamBuffer* pBuffer)
 {
-    int buff = pBuffer - m_Buffers;
+    unsigned long buff = pBuffer - m_Buffers;
 
     m_Buffers[buff].m_pStream = 0;
     m_Buffers[buff].m_UpdateOffset = 0;

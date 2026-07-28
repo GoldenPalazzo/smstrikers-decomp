@@ -982,7 +982,6 @@ void AudioStreamTrack::StreamTrack::StopQStream(QUEUED_STREAM* pQueuedStream)
 
 /**
  * Offset/Address/Size: 0x5B0 | 0x80155308 | size: 0x2D8
- * TODO: 99.64% match - delete-list manager/entry registers differ
  */
 void AudioStreamTrack::StreamTrack::StopStream(GCAudioStreaming::StereoAudioStream* pStream, bool TrackOwns)
 {
@@ -1050,7 +1049,10 @@ void AudioStreamTrack::StreamTrack::StopStream(GCAudioStreaming::StereoAudioStre
 
     typedef TrackManagerBase::FadeManager::STREAM_FADE_CTRL FadeCtrl;
     typedef DLListEntry<FadeCtrl> FadeEntry;
+    typedef DLListEntry<GCAudioStreaming::StereoAudioStream*> StreamEntry;
 
+    TrackManagerBase* delMgr;
+    StreamEntry* entry;
     TrackManagerBase& mgr = m_TrackMgr;
     FadeEntry* fadeEntry;
     FadeEntry* fadeHead;
@@ -1090,17 +1092,16 @@ fade_found:
 
     if (TrackOwns)
     {
-        typedef DLListEntry<GCAudioStreaming::StereoAudioStream*> StreamEntry;
-        TrackManagerBase& delMgr = m_TrackMgr;
-        StreamEntry* entry = NULL;
-        delMgr.m_StreamDeleteList.m_Allocator.Allocate(entry);
+        delMgr = &m_TrackMgr;
+        entry = NULL;
+        delMgr->m_StreamDeleteList.m_Allocator.Allocate(entry);
         if (entry != NULL)
         {
             entry->m_next = NULL;
             entry->m_prev = NULL;
             entry->entry = pStream;
         }
-        nlDLRingAddEnd(&delMgr.m_StreamDeleteList.m_Head, entry);
+        nlDLRingAddEnd(&delMgr->m_StreamDeleteList.m_Head, entry);
     }
 }
 
