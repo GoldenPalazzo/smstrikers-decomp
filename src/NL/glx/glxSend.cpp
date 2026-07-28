@@ -1928,8 +1928,6 @@ static inline void glud_ShadowVolume(void* pData)
 static inline void glud_EnvDiffuse(bool bOn)
 {
     Mtx texs, text, invMat, envMat;
-    register GXTevStageID stage;
-    register GXTexCoordID coord;
 
     if (bOn)
     {
@@ -1941,10 +1939,10 @@ static inline void glud_EnvDiffuse(bool bOn)
         PSMTXInvXpose(gx_modelview, invMat);
         GXLoadTexMtxImm(invMat, 0x39, GX_MTX3x4);
 
-        coord = (GXTexCoordID)glx_GlossMapCoord;
-        stage = (GXTevStageID)glx_GlossMapStage;
-        GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_NRM, 0x39, GX_TRUE, 0x5B);
-        GXSetTevOrder(stage, coord, (GXTexMapID)coord, GX_COLOR0A0);
+        u32 value = glx_GlossMapCoord;
+        GXTevStageID stage = (GXTevStageID)glx_GlossMapStage;
+        GXSetTexCoordGen2((GXTexCoordID)value, GX_TG_MTX3x4, GX_TG_NRM, 0x39, GX_TRUE, 0x5B);
+        GXSetTevOrder(stage, (GXTexCoordID)value, (GXTexMapID)value, GX_COLOR0A0);
 
         if (glx_texconfig & 0x20)
         {
