@@ -83,11 +83,11 @@ public:
 }; // total size: 0x1C
 
 template <typename T, typename Adapter>
-T* DLListContainerBase<T, Adapter>::AllocateAtEnd(unsigned long* outEntry)
+inline T* DLListContainerBase<T, Adapter>::AllocateAtEnd(unsigned long* outEntry)
 {
     DLListEntry<T>* result;
     {
-        T data;
+        const T& data = T();
         DLListEntry<T> localEntry(data);
         result = m_Allocator.Allocate();
         result = new (result) DLListEntry<T>(localEntry);

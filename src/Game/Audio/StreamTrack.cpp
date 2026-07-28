@@ -314,7 +314,7 @@ void AudioStreamTrack::TrackManagerBase::Update(float)
 extern "C" void sndStreamMixParameterEx(unsigned long stid, unsigned char vol, unsigned char pan,
     unsigned char span, unsigned char auxa, unsigned char auxb);
 
-inline void AudioStreamTrack::TrackManagerBase::FadeManager::CompleteFade(
+void AudioStreamTrack::TrackManagerBase::FadeManager::CompleteFade(
     STREAM_FADE_CTRL* fadeCtrl)
 {
     typedef DLListEntry<STREAM_FADE_CTRL> FadeEntry;
@@ -338,8 +338,6 @@ inline void AudioStreamTrack::TrackManagerBase::FadeManager::CompleteFade(
 
 /**
  * Offset/Address/Size: 0x1D60 | 0x80156AB8 | size: 0x2D8
- * TODO: 98.51649% match - conversion uses r3 instead of r0 and omits
- * the stack reload before the late StartVol insert.
  */
 bool AudioStreamTrack::TrackManagerBase::FadeManager::ChangeFade(
     GCAudioStreaming::StereoAudioStream* pStream, unsigned long endVol,
@@ -376,15 +374,16 @@ fade_found:
     unsigned long startVol = fadeCtrl->StartVol;
     unsigned long curEndVol = fadeCtrl->EndVol;
     int diff = (int)curEndVol - (int)startVol;
-    int curVol = (int)(fadeCtrl->Interp * (float)diff + (float)startVol);
+    float curVol =
+        fadeCtrl->Interp * (float)diff + (float)startVol;
 
-    if (endVol == (unsigned long)(unsigned char)curVol)
+    if (endVol == (unsigned char)curVol)
     {
         CompleteFade(fadeCtrl);
     }
     else
     {
-        fadeCtrl->StartVol = curVol;
+        fadeCtrl->StartVol = (int)curVol;
         fadeCtrl->Interp = 0.0f;
         fadeCtrl->EndVol = endVol;
         fadeCtrl->FadeLength = fadeLength;
@@ -407,7 +406,6 @@ static inline float ClampFadeInterp(float x)
 
 /**
  * Offset/Address/Size: 0x1970 | 0x801566C8 | size: 0x3F0
- * TODO: 99.92% match - second buffer-volume clampedVol register differs
  */
 void AudioStreamTrack::TrackManagerBase::FadeManager::UpdateFade(STREAM_FADE_CTRL* pFade)
 {
@@ -434,43 +432,10 @@ void AudioStreamTrack::TrackManagerBase::FadeManager::UpdateFade(STREAM_FADE_CTR
         float masterVol = Audio::MasterVolume::GetVolume(
             (Audio::MasterVolume::VOLUME_GROUP)pFade->VolumeGroup);
 
-        int clampedVol = 0x7F;
         unsigned long endVol = pFade->EndVol;
-        GCAudioStreaming::StereoAudioStream* pStream = pFade->pStream;
 
-        int vol = (int)((float)endVol * masterVol);
-        if ((u32)(u8)vol <= 0x7Fu)
-        {
-            clampedVol = vol;
-        }
-
-        if (pStream->m_State >= 2)
-        {
-            unsigned long zero = 0;
-            GCAudioStreaming::AudioStreamBuffer* buf;
-            volatile unsigned long i = (unsigned long)(buf = NULL);
-            if (pStream->m_BufferCount > zero)
-            {
-                buf = pStream->m_Buffers[0];
-            }
-            while (buf != NULL)
-            {
-                buf->m_Volume = (u8)clampedVol;
-                sndStreamMixParameterEx(buf->m_StreamId, buf->m_Volume, buf->m_Pan, buf->m_SurroundPan, 0, 0);
-                unsigned long idx = i + 1;
-                i = idx;
-                if (idx < pStream->m_BufferCount)
-                {
-                    buf = pStream->m_Buffers[idx];
-                }
-                else
-                {
-                    buf = NULL;
-                }
-            }
-        }
-
-        pStream->m_Volume = (u8)clampedVol;
+        pFade->pStream->SetVolume(
+            (int)((float)endVol * masterVol));
 
         CompleteFade(pFade);
     }
@@ -486,41 +451,8 @@ void AudioStreamTrack::TrackManagerBase::FadeManager::UpdateFade(STREAM_FADE_CTR
 
         float masterVol = Audio::MasterVolume::GetVolume(vg);
 
-        GCAudioStreaming::StereoAudioStream* pStream = pFade->pStream;
-        int clampedVol = 0x7F;
-        int vol = (int)((float)(u8)interpVolInt * masterVol);
-        if ((u32)(u8)vol <= 0x7Fu)
-        {
-            clampedVol = vol;
-        }
-
-        if (pStream->m_State >= 2)
-        {
-            unsigned long zero = 0;
-            GCAudioStreaming::AudioStreamBuffer* buf;
-            volatile unsigned long i = (unsigned long)(buf = NULL);
-            if (pStream->m_BufferCount > zero)
-            {
-                buf = pStream->m_Buffers[0];
-            }
-            while (buf != NULL)
-            {
-                buf->m_Volume = (u8)clampedVol;
-                sndStreamMixParameterEx(buf->m_StreamId, buf->m_Volume, buf->m_Pan, buf->m_SurroundPan, 0, 0);
-                unsigned long idx = i + 1;
-                i = idx;
-                if (idx < pStream->m_BufferCount)
-                {
-                    buf = pStream->m_Buffers[idx];
-                }
-                else
-                {
-                    buf = NULL;
-                }
-            }
-        }
-
-        pStream->m_Volume = (u8)clampedVol;
+        pFade->pStream->SetVolume(
+            (int)((float)(u8)interpVolInt * masterVol));
     }
 }
 
@@ -1412,7 +1344,7 @@ void AudioStreamTrack::StreamTrack::Resume()
 
 /**
  * Offset/Address/Size: 0x0 | 0x80154D58 | size: 0x1B8
- * TODO: 99.0% match - argument values are assigned to different saved registers
+ * TODO: 99.41% match - the StartVolume conversion uses r7 instead of r5
  */
 void AudioStreamTrack::StreamTrack::AttachStream(
     GCAudioStreaming::StereoAudioStream* pStream,
@@ -1432,32 +1364,15 @@ void AudioStreamTrack::StreamTrack::AttachStream(
         return;
     }
 
-    const QUEUED_STREAM& qs = QUEUED_STREAM();
-    DLListEntry<QUEUED_STREAM> localEntry(qs);
-    DLListEntry<QUEUED_STREAM>* entry = m_QueuedStreams.m_Allocator.m_pFree;
-    if (entry == NULL)
-    {
-        entry = NULL;
-    }
-    else
-    {
-        m_QueuedStreams.m_Allocator.m_pFree = entry->m_next;
-    }
-    if (entry != NULL)
-    {
-        entry->m_next = NULL;
-        entry->m_prev = NULL;
-        entry->entry = localEntry.entry;
-    }
-    nlDLRingAddEnd(&m_QueuedStreams.m_Head, entry);
+    QUEUED_STREAM* queuedStream = m_QueuedStreams.AllocateAtEnd(NULL);
 
-    entry->entry.StreamId = StreamId;
-    entry->entry.pStream = pStream;
-    entry->entry.FadeIn = FadeIn;
-    entry->entry.StartVolume = (u8)pStream->m_Volume;
-    entry->entry.Loop = Looping;
-    entry->entry.VolGroup = VolGroup;
-    entry->entry.TrackOwnsStream = TrackOwnsStream;
+    queuedStream->StreamId = StreamId;
+    queuedStream->pStream = pStream;
+    queuedStream->FadeIn = FadeIn;
+    queuedStream->StartVolume = (u8)pStream->m_Volume;
+    queuedStream->Loop = Looping;
+    queuedStream->VolGroup = VolGroup;
+    queuedStream->TrackOwnsStream = TrackOwnsStream;
 
     m_State = TS_Playing;
 }

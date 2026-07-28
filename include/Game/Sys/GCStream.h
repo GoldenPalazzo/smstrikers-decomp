@@ -305,6 +305,40 @@ public:
         Purge();
     }
 
+    void SetVolume(unsigned long volume)
+    {
+        int clampedVol =
+            ((u32)(u8)volume <= 0x7Fu) ? volume : 0x7F;
+
+        if (m_State >= 2)
+        {
+            unsigned long zero = 0;
+            AudioStreamBuffer* buf;
+            volatile unsigned long i = (unsigned long)(buf = NULL);
+            if (m_BufferCount > zero)
+            {
+                buf = m_Buffers[0];
+            }
+            while (buf != NULL)
+            {
+                buf->m_Volume = (u8)clampedVol;
+                sndStreamMixParameterEx(buf->m_StreamId, buf->m_Volume, buf->m_Pan, buf->m_SurroundPan, 0, 0);
+                unsigned long idx = i + 1;
+                i = idx;
+                if (idx < m_BufferCount)
+                {
+                    buf = m_Buffers[idx];
+                }
+                else
+                {
+                    buf = NULL;
+                }
+            }
+        }
+
+        m_Volume = (u8)clampedVol;
+    }
+
     static void _HdrReadCB(nlFile*, void*, unsigned int, unsigned long);
     static void _WarmReadCB(nlFile*, void*, unsigned int, unsigned long);
     static void _UpdateReadCB(nlFile*, void*, unsigned int, unsigned long);
