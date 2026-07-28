@@ -211,7 +211,7 @@ void FEAudio::PlayRandomVoiceToggleSFX()
         {
             if (newSound >= Audio::CHARSFX_BOWSER_ENTER && newSound <= Audio::CHARSFX_BOWSER_HOWL_03)
             {
-                BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->PlaySFX(newSound, NONE, 0.0f, false);
+                BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->PlaySFX(newSound, NONE, -1.0f, false);
             }
             else
             {
@@ -225,7 +225,7 @@ void FEAudio::PlayRandomVoiceToggleSFX()
     }
     else
     {
-        const char* szEvent = "fe_toggle_voice";
+        const char* szEvent = "sfx_accept_mario";
 
         if (AudioLoader::IsInited())
         {
@@ -254,7 +254,7 @@ void FEAudio::PlayRandomVoiceToggleSFX()
 
                 if (nlStrICmp<char>(event->szSFXType, "") != 0)
                 {
-                    Audio::PlayWorldSFXbyStr(event->szSFXType, 1.0f, 0.0f, false, true, NULL, NULL, NULL);
+                    Audio::PlayWorldSFXbyStr(event->szSFXType, 100.0f, -1.0f, false, true, NULL, NULL, NULL);
                 }
             }
         }
