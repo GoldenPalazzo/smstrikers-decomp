@@ -2673,7 +2673,6 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0xEE4 | 0x80031C68 | size: 0x428
- * TODO: 99.38% match - Open/OpenToPosition f30/f31 and breakaway f29/f30 register rotation in turbo tail
  */
 bool cFielder::InitDesireRunToNet()
 {
@@ -2719,31 +2718,29 @@ bool cFielder::InitDesireRunToNet()
     m_DesireCommonVars.v3DesiredPosition = v3DesiredVelDirection;
     m_DesireCommonVars.turboRequest = TR_FAR_DISTANCE;
 
-    float fReactionRandom;
+    float fReaction[2];
 
     if (fDot >= 0.8f)
     {
         nlVector3 v3ToPosition;
         nlVec3ScaleAdd(v3ToPosition, 8.0f, v3DesiredVelDirection, m_v3Position);
 
-        float fOpen;
-        float fOpenToPosition;
-        float fBreakaway;
+        float fConfidence[3];
         float bTurboChance;
         bTurboChance = (float)g_vDesireCommonData[m_eFielderDesireState].m_RandomChanceGen.genrand(
             SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->Off_TurboChance);
 
-        fOpenToPosition = OpenToPosition(m_v3Position, v3ToPosition, m_pTeam->GetOtherTeam(), this, NULL, false);
-        fOpen = Open(g_pScriptCurrentFielder);
-        fBreakaway = OnBreakaway(g_pScriptCurrentFielder);
+        fConfidence[0] = OpenToPosition(m_v3Position, v3ToPosition, m_pTeam->GetOtherTeam(), this, NULL, false);
+        fConfidence[1] = Open(g_pScriptCurrentFielder);
+        fConfidence[2] = OnBreakaway(g_pScriptCurrentFielder);
         float fInvincible = Invincible(g_pScriptCurrentFielder);
 
-        fOpen = (fOpenToPosition <= fOpen) ? fOpen : fOpenToPosition;
-        fBreakaway = (fBreakaway >= fOpen) ? fBreakaway : fOpen;
+        fConfidence[1] = (fConfidence[1] >= fConfidence[0]) ? fConfidence[1] : fConfidence[0];
+        fConfidence[2] = (fConfidence[2] >= fConfidence[1]) ? fConfidence[2] : fConfidence[1];
 
-        if (fInvincible >= fBreakaway)
+        if (fInvincible >= fConfidence[2])
         {
-            fBreakaway = fInvincible;
+            fConfidence[2] = fInvincible;
         }
 
         float fFarToGoalie = FarToTheirGoalie(g_pScriptCurrentFielder);
@@ -2751,7 +2748,7 @@ bool cFielder::InitDesireRunToNet()
         u8 bForceTurbo = 0;
         if (bTurboChance)
         {
-            fFarToGoalie = (fFarToGoalie <= fBreakaway) ? fFarToGoalie : fBreakaway;
+            fFarToGoalie = (fFarToGoalie <= fConfidence[2]) ? fFarToGoalie : fConfidence[2];
 
             if (fFarToGoalie >= 0.7f)
             {
@@ -2763,9 +2760,9 @@ bool cFielder::InitDesireRunToNet()
     }
 
     SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
-    fReactionRandom = 0.7f * (0.3f * (1.0f - pSkillTweaks->Off_Reaction));
-    float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - (0.5f * fReactionRandom);
-    m_DesireCommonVars.fMisc = 0.7f + fReactionOffset;
+    fReaction[0] = 0.7f * (0.3f * (1.0f - pSkillTweaks->Off_Reaction));
+    fReaction[1] = nlRandomf(fReaction[0], &nlDefaultSeed) - (0.5f * fReaction[0]);
+    m_DesireCommonVars.fMisc = 0.7f + fReaction[1];
 
     m_pAvoidance->SetThingsToAvoid(0x1F);
     return 1;
