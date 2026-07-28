@@ -87,9 +87,9 @@ public:
 
     /* 0x4, */ Vector<ExplosionFragment> mExplosionFragments; // offset 0x4, size 0xC
     /* 0x10 */ int mNumActiveFragments;                       // offset 0x10, size 0x4
-    /* 0x14 */ unsigned short mMinExplosionAngle;             // offset 0x14, size 0x2
-    /* 0x16 */ unsigned short mMaxExplosionAngle;             // offset 0x16, size 0x2
-    /* 0x18 */ bool mbAngleRangeInitialized;                  // offset 0x18, size 0x1
+    /* 0x14 */ mutable unsigned short mMinExplosionAngle;     // offset 0x14, size 0x2
+    /* 0x16 */ mutable unsigned short mMaxExplosionAngle;     // offset 0x16, size 0x2
+    /* 0x18 */ mutable bool mbAngleRangeInitialized;          // offset 0x18, size 0x1
     /* 0x1C */ int mNumFragmentModels;                        // offset 0x1C, size 0x4
     /* 0x20 */ bool mbIsMainModelVisible;                     // offset 0x20, size 0x1
     /* 0x24 */ float mfExplodeTime;                           // offset 0x24, size 0x4

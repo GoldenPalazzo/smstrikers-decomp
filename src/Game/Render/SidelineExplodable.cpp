@@ -692,7 +692,6 @@ void SidelineExplodable::Explode()
 
 /**
  * Offset/Address/Size: 0xC08 | 0x80167F68 | size: 0x27C
- * TODO: 98.84% match - remaining diffs are late-function register allocation/order in the two final nlAddPolarToCartesian setups.
  */
 void SidelineExplodable::FindExplosionAngleRange(unsigned short& min, unsigned short& max) const
 {
@@ -706,19 +705,19 @@ void SidelineExplodable::FindExplosionAngleRange(unsigned short& min, unsigned s
         nlPolar polar = { 0, explosionRadius };
         polar.a = angleToCentreOfField;
 
-        nlVector3 particleDestination = *(nlVector3*)&GetWorldMatrix().f.m41;
+        nlVector3 particleDestination = GetWorldMatrix().GetTranslation();
         nlAddPolarToCartesian(particleDestination, polar);
 
         polar.a = angleToCentreOfField;
         bool foundMax = false;
         while (!foundMax)
         {
-            particleDestination = *(nlVector3*)&GetWorldMatrix().f.m41;
+            particleDestination = GetWorldMatrix().GetTranslation();
             nlAddPolarToCartesian(particleDestination, polar);
             if (!cField::IsOnField(particleDestination))
             {
                 foundMax = true;
-                ((SidelineExplodable*)this)->mMaxExplosionAngle = polar.a - 0x38E;
+                mMaxExplosionAngle = polar.a - 0x38E;
             }
             else
             {
@@ -730,12 +729,12 @@ void SidelineExplodable::FindExplosionAngleRange(unsigned short& min, unsigned s
         bool foundMin = false;
         while (!foundMin)
         {
-            particleDestination = *(nlVector3*)&GetWorldMatrix().f.m41;
+            particleDestination = GetWorldMatrix().GetTranslation();
             nlAddPolarToCartesian(particleDestination, polar);
             if (!cField::IsOnField(particleDestination))
             {
                 foundMin = true;
-                ((SidelineExplodable*)this)->mMinExplosionAngle = polar.a + 0x38E;
+                mMinExplosionAngle = polar.a + 0x38E;
             }
             else
             {
@@ -743,22 +742,19 @@ void SidelineExplodable::FindExplosionAngleRange(unsigned short& min, unsigned s
             }
         }
 
-        particleDestination = *(nlVector3*)&GetWorldMatrix().f.m41;
+        particleDestination = GetWorldMatrix().GetTranslation();
         polar.a = mMinExplosionAngle;
         nlAddPolarToCartesian(particleDestination, polar);
 
-        particleDestination = *(nlVector3*)&GetWorldMatrix().f.m41;
+        particleDestination = GetWorldMatrix().GetTranslation();
         polar.a = mMaxExplosionAngle;
         nlAddPolarToCartesian(particleDestination, polar);
 
-        ((SidelineExplodable*)this)->mbAngleRangeInitialized = true;
+        mbAngleRangeInitialized = true;
     }
 
-    const volatile SidelineExplodable* self = (const volatile SidelineExplodable*)this;
-    volatile unsigned short& minOut = (volatile unsigned short&)min;
-    volatile unsigned short& maxOut = (volatile unsigned short&)max;
-    minOut = self->mMinExplosionAngle;
-    maxOut = self->mMaxExplosionAngle;
+    min = mMinExplosionAngle;
+    max = mMaxExplosionAngle;
 }
 
 /**
