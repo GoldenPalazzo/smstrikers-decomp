@@ -493,7 +493,22 @@ void NisPlayer::LoadTriggers(Nis& nis)
                 name.erase(name.begin(), name.begin() + i);
 
                 BasicString<char, Detail::TempStringAllocator> all("all");
-                name.insert(name.begin(), all);
+                // TODO: Restore the BasicString insert adapter once it preserves retail weak emission order.
+                char* insertAt = name.begin();
+                BasicString<char, Detail::TempStringAllocator>::Data* sourceData = all.mData;
+                const char* insertBegin;
+                if (sourceData)
+                {
+                    insertBegin = sourceData->mData.mData;
+                }
+                else
+                {
+                    insertBegin = 0;
+                }
+                name.insert(
+                    insertAt,
+                    insertBegin,
+                    sourceData ? sourceData->mData.mData + sourceData->mData.mSize - 1 : 0);
                 break;
             }
         }

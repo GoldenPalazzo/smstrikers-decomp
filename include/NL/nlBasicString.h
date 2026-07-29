@@ -363,7 +363,7 @@ inline void BasicString<CharT, Allocator>::erase(const CharT* begin, const CharT
 }
 
 template <typename CharT, typename Allocator>
-void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const CharT* end)
+inline void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const CharT* end)
 {
     CharT* oldData = this->begin();
     int offset = at - oldData;
@@ -422,7 +422,7 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(cons
 }
 
 template <typename CharT, typename Allocator>
-BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(const CharT* str)
+inline BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(const CharT* str)
 {
     const CharT* rhsEnd = str;
     while (*rhsEnd != 0)
