@@ -624,14 +624,7 @@ void AudioStreamTrack::StreamTrack::ProcessNewHeadStream()
 {
     if (m_QueuedStreams.m_Head == NULL)
     {
-        if (m_State != TS_Idle)
-        {
-            m_State = TS_Idle;
-            if (m_IdleCallback)
-            {
-                m_IdleCallback();
-            }
-        }
+        SetIdleState();
         return;
     }
 
@@ -742,6 +735,18 @@ void AudioStreamTrack::StreamTrack::ProcessNewHeadStream()
     }
 
     m_State = TS_Playing;
+}
+
+void AudioStreamTrack::StreamTrack::SetIdleState()
+{
+    if (m_State != TS_Idle)
+    {
+        m_State = TS_Idle;
+        if (m_IdleCallback)
+        {
+            m_IdleCallback();
+        }
+    }
 }
 
 /**
@@ -884,14 +889,7 @@ void AudioStreamTrack::StreamTrack::StopQStream(QUEUED_STREAM* pQueuedStream)
 
     if (m_QueuedStreams.m_Head == NULL)
     {
-        if (m_State != TS_Idle)
-        {
-            m_State = TS_Idle;
-            if (m_IdleCallback)
-            {
-                m_IdleCallback();
-            }
-        }
+        SetIdleState();
     }
 }
 

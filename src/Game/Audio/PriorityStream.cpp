@@ -9,16 +9,7 @@
 unsigned char PriorityStream::PLAY_RECORD::s_BowserAttackNext = true;
 unsigned char PriorityStream::PLAY_RECORD::s_SuddenDeathNext = true;
 
-/**
- * Offset/Address/Size: 0xEA8 | 0x8015895C | size: 0x10
- */
-void PriorityStream::Reset()
-{
-    PLAY_RECORD::s_BowserAttackNext = true;
-    PLAY_RECORD::s_SuddenDeathNext = true;
-}
-
-inline unsigned long PriorityStream::GetNextStreamId(unsigned long SimpleStreamId)
+unsigned long PriorityStream::PLAY_RECORD::GetNextStreamId(unsigned long SimpleStreamId)
 {
     char StreamName[64];
     char* Format;
@@ -47,6 +38,87 @@ inline unsigned long PriorityStream::GetNextStreamId(unsigned long SimpleStreamI
     return nlStringLowerHash(StreamName);
 }
 
+void PriorityStream::PLAY_RECORD::Set(
+    unsigned long StreamId,
+    float Volume,
+    bool Looping,
+    unsigned long FadeIn,
+    unsigned long ExistingFadeOut,
+    const char* StreamParam,
+    Audio::MasterVolume::VOLUME_GROUP VolGroup,
+    bool Queue,
+    bool Active)
+{
+    m_StreamId = StreamId;
+    m_OrigStreamId = StreamId;
+    m_Volume = Volume;
+    m_Looping = Looping;
+    m_FadeIn = FadeIn;
+    m_ExistingFadeOut = ExistingFadeOut;
+    m_VolGroup = VolGroup;
+    m_Queue = Queue;
+    m_Active = Active;
+
+    if (StreamParam)
+    {
+        nlStrNCpy<char>(m_StreamParam, StreamParam, 32);
+    }
+    else
+    {
+        m_StreamParam[0] = '\0';
+    }
+}
+
+void PriorityStream::PLAY_RECORD::Play(bool CheckActive, bool GetNextId)
+{
+    if (!m_StreamId)
+    {
+        return;
+    }
+
+    if (CheckActive && !m_Active)
+    {
+        return;
+    }
+
+    if (GetNextId)
+    {
+        m_StreamId = GetNextStreamId(m_OrigStreamId);
+    }
+
+    if (m_Queue)
+    {
+        m_Queue = 0;
+        m_Track.QueueStream(
+            m_StreamId,
+            m_Volume,
+            (m_Looping & 1),
+            m_FadeIn,
+            m_StreamParam[0] ? m_StreamParam : (const char*)0,
+            (Audio::MasterVolume::VOLUME_GROUP)m_VolGroup);
+    }
+    else
+    {
+        m_Track.PlayStream(
+            m_StreamId,
+            m_Volume,
+            (m_Looping & 1),
+            m_FadeIn,
+            m_ExistingFadeOut,
+            m_StreamParam[0] ? m_StreamParam : (const char*)0,
+            (Audio::MasterVolume::VOLUME_GROUP)m_VolGroup);
+    }
+}
+
+/**
+ * Offset/Address/Size: 0xEA8 | 0x8015895C | size: 0x10
+ */
+void PriorityStream::Reset()
+{
+    PLAY_RECORD::s_BowserAttackNext = true;
+    PLAY_RECORD::s_SuddenDeathNext = true;
+}
+
 /**
  * Offset/Address/Size: 0xA34 | 0x801584E8 | size: 0x474
  * TODO: 99.21% match - selected PLAY_RECORD base uses r9 instead of r5,
@@ -71,124 +143,60 @@ void PriorityStream::PlayStream(unsigned long StreamId, float Volume, bool Loopi
         }
     }
 
-    unsigned long active = GrabCrowdStream(ExistingFadeOut);
-    unsigned long queue = 1;
-    unsigned long volGroup = 0;
+    bool active = GrabCrowdStream(ExistingFadeOut);
+    bool queue = true;
+    Audio::MasterVolume::VOLUME_GROUP volGroup = Audio::MasterVolume::VG_Special;
 
     switch (StreamId)
     {
     case 0xE38B5407:
-        volGroup = 3;
+        volGroup = Audio::MasterVolume::VG_Voice;
         break;
     case 0x436E3953:
-        volGroup = 1;
+        volGroup = Audio::MasterVolume::VG_Music;
         break;
     case 0x09451A58:
-        volGroup = 1;
+        volGroup = Audio::MasterVolume::VG_Music;
         queue = 0;
         break;
     case 0xA207B1AE:
-        volGroup = 1;
+        volGroup = Audio::MasterVolume::VG_Music;
         queue = 0;
         break;
     case 0x57CB5A12:
-        volGroup = 1;
+        volGroup = Audio::MasterVolume::VG_Music;
         break;
     }
 
-    unsigned long* pSlot;
+    PLAY_RECORD* pRecord;
     if (StreamId == 0xE38B5407)
     {
-        pSlot = &m_PStream.m_OrigStreamId;
+        pRecord = &m_CapChant;
     }
     else
     {
-        pSlot = &m_HasCrowdStream;
+        pRecord = &m_PStream;
     }
 
-    if ((StreamId == 0xA207B1AE) && m_PStream.m_OrigStreamId)
+    if ((StreamId == 0xA207B1AE) && m_CapChant.m_StreamId)
     {
-        *pSlot = 0;
+        pRecord->m_StreamId = 0;
     }
     else
     {
-        *pSlot = StreamId;
-        ((PLAY_RECORD*)(pSlot + 1))->m_StreamId = StreamId;
-        ((PLAY_RECORD*)(pSlot + 1))->m_Volume = Volume;
-        ((PLAY_RECORD*)(pSlot + 1))->m_Looping = Looping;
-        ((PLAY_RECORD*)(pSlot + 1))->m_FadeIn = FadeIn;
-        ((PLAY_RECORD*)(pSlot + 1))->m_ExistingFadeOut = ExistingFadeOut;
-        ((PLAY_RECORD*)(pSlot + 1))->m_VolGroup = (Audio::MasterVolume::VOLUME_GROUP)volGroup;
-        ((PLAY_RECORD*)(pSlot + 1))->m_Queue = active;
-        ((PLAY_RECORD*)(pSlot + 1))->m_Active = queue;
-
-        if (StreamParam)
-        {
-            nlStrNCpy<char>(((PLAY_RECORD*)(pSlot + 1))->m_StreamParam, StreamParam, 32);
-        }
-        else
-        {
-            ((PLAY_RECORD*)(pSlot + 1))->m_StreamParam[0] = '\0';
-        }
+        pRecord->Set(
+            StreamId,
+            Volume,
+            Looping,
+            FadeIn,
+            ExistingFadeOut,
+            StreamParam,
+            volGroup,
+            active,
+            queue);
     }
 
-    if (m_PStream.m_OrigStreamId)
-    {
-        if (m_PStream.m_OrigStreamId)
-        {
-            if (m_CapChant.m_Queue)
-            {
-                m_CapChant.m_Queue = 0;
-                m_CapChant.m_Track.QueueStream(
-                    m_PStream.m_OrigStreamId,
-                    m_CapChant.m_Volume,
-                    (m_CapChant.m_Looping & 1),
-                    m_CapChant.m_FadeIn,
-                    m_CapChant.m_StreamParam[0] ? m_CapChant.m_StreamParam : (const char*)0,
-                    (Audio::MasterVolume::VOLUME_GROUP)m_CapChant.m_VolGroup);
-            }
-            else
-            {
-                m_CapChant.m_Track.PlayStream(
-                    m_PStream.m_OrigStreamId,
-                    m_CapChant.m_Volume,
-                    (m_CapChant.m_Looping & 1),
-                    m_CapChant.m_FadeIn,
-                    m_CapChant.m_ExistingFadeOut,
-                    m_CapChant.m_StreamParam[0] ? m_CapChant.m_StreamParam : (const char*)0,
-                    (Audio::MasterVolume::VOLUME_GROUP)m_CapChant.m_VolGroup);
-            }
-        }
-    }
-    else if (m_HasCrowdStream)
-    {
-        m_HasCrowdStream = GetNextStreamId(m_PStream.m_StreamId);
-
-        if (m_PStream.m_Queue)
-        {
-            m_PStream.m_Queue = 0;
-            m_PStream.m_Track.QueueStream(
-                m_HasCrowdStream,
-                m_PStream.m_Volume,
-                (m_PStream.m_Looping & 1),
-                m_PStream.m_FadeIn,
-                m_PStream.m_StreamParam[0] ? m_PStream.m_StreamParam : (const char*)0,
-                (Audio::MasterVolume::VOLUME_GROUP)m_PStream.m_VolGroup);
-        }
-        else
-        {
-            m_PStream.m_Track.PlayStream(
-                m_HasCrowdStream,
-                m_PStream.m_Volume,
-                (m_PStream.m_Looping & 1),
-                m_PStream.m_FadeIn,
-                m_PStream.m_ExistingFadeOut,
-                m_PStream.m_StreamParam[0] ? m_PStream.m_StreamParam : (const char*)0,
-                (Audio::MasterVolume::VOLUME_GROUP)m_PStream.m_VolGroup);
-        }
-    }
-
-    m_InPause = false;
+    FakeResume(false);
 }
 
 /**
@@ -197,77 +205,18 @@ void PriorityStream::PlayStream(unsigned long StreamId, float Volume, bool Loopi
  */
 void PriorityStream::Stop(unsigned long StreamId, unsigned long Fadeout)
 {
-    if ((StreamId == 0xE38B5407) && m_PStream.m_OrigStreamId)
+    if ((StreamId == 0xE38B5407) && m_CapChant.m_StreamId)
     {
         m_Track.Stop(Fadeout);
-        m_PStream.m_OrigStreamId = 0;
+        m_CapChant.m_StreamId = 0;
 
-        if (m_PStream.m_OrigStreamId)
-        {
-            if (m_PStream.m_OrigStreamId && m_CapChant.m_Active)
-            {
-                if (m_CapChant.m_Queue)
-                {
-                    m_CapChant.m_Queue = 0;
-                    m_CapChant.m_Track.QueueStream(
-                        m_PStream.m_OrigStreamId,
-                        m_CapChant.m_Volume,
-                        (m_CapChant.m_Looping & 1),
-                        m_CapChant.m_FadeIn,
-                        m_CapChant.m_StreamParam[0] ? m_CapChant.m_StreamParam : (const char*)0,
-                        (Audio::MasterVolume::VOLUME_GROUP)m_CapChant.m_VolGroup);
-                }
-                else
-                {
-                    m_CapChant.m_Track.PlayStream(
-                        m_PStream.m_OrigStreamId,
-                        m_CapChant.m_Volume,
-                        (m_CapChant.m_Looping & 1),
-                        m_CapChant.m_FadeIn,
-                        m_CapChant.m_ExistingFadeOut,
-                        m_CapChant.m_StreamParam[0] ? m_CapChant.m_StreamParam : (const char*)0,
-                        (Audio::MasterVolume::VOLUME_GROUP)m_CapChant.m_VolGroup);
-                }
-            }
-        }
-        else if (m_HasCrowdStream)
-        {
-            if (m_PStream.m_Active)
-            {
-                m_HasCrowdStream = GetNextStreamId(m_PStream.m_StreamId);
-
-                if (m_PStream.m_Queue)
-                {
-                    m_PStream.m_Queue = 0;
-                    m_PStream.m_Track.QueueStream(
-                        m_HasCrowdStream,
-                        m_PStream.m_Volume,
-                        (m_PStream.m_Looping & 1),
-                        m_PStream.m_FadeIn,
-                        m_PStream.m_StreamParam[0] ? m_PStream.m_StreamParam : (const char*)0,
-                        (Audio::MasterVolume::VOLUME_GROUP)m_PStream.m_VolGroup);
-                }
-                else
-                {
-                    m_PStream.m_Track.PlayStream(
-                        m_HasCrowdStream,
-                        m_PStream.m_Volume,
-                        (m_PStream.m_Looping & 1),
-                        m_PStream.m_FadeIn,
-                        m_PStream.m_ExistingFadeOut,
-                        m_PStream.m_StreamParam[0] ? m_PStream.m_StreamParam : (const char*)0,
-                        (Audio::MasterVolume::VOLUME_GROUP)m_PStream.m_VolGroup);
-                }
-            }
-        }
-
-        m_InPause = false;
+        FakeResume(true);
     }
-    else if ((m_PStream.m_StreamId == StreamId)
-             || ((StreamId == 0x436E3953) && ((m_PStream.m_StreamId == 0x09451A58) || (m_PStream.m_StreamId == 0xA207B1AE))))
+    else if ((m_PStream.m_OrigStreamId == StreamId)
+             || ((StreamId == 0x436E3953) && ((m_PStream.m_OrigStreamId == 0x09451A58) || (m_PStream.m_OrigStreamId == 0xA207B1AE))))
     {
         m_Track.Stop(Fadeout);
-        m_HasCrowdStream = 0;
+        m_PStream.m_StreamId = 0;
     }
 }
 
@@ -291,70 +240,13 @@ void PriorityStream::FakePause(unsigned long Fadeout)
  */
 void PriorityStream::FakeResume(bool checkActive)
 {
-    if (m_PStream.m_OrigStreamId)
+    if (m_CapChant.m_StreamId)
     {
-        if (m_PStream.m_OrigStreamId)
-        {
-            if (checkActive && !m_CapChant.m_Active)
-            {
-                // skip
-            }
-            else if (m_CapChant.m_Queue)
-            {
-                m_CapChant.m_Queue = 0;
-                m_CapChant.m_Track.QueueStream(
-                    m_PStream.m_OrigStreamId,
-                    m_CapChant.m_Volume,
-                    (m_CapChant.m_Looping & 1),
-                    m_CapChant.m_FadeIn,
-                    m_CapChant.m_StreamParam[0] ? m_CapChant.m_StreamParam : (const char*)0,
-                    (Audio::MasterVolume::VOLUME_GROUP)m_CapChant.m_VolGroup);
-            }
-            else
-            {
-                m_CapChant.m_Track.PlayStream(
-                    m_PStream.m_OrigStreamId,
-                    m_CapChant.m_Volume,
-                    (m_CapChant.m_Looping & 1),
-                    m_CapChant.m_FadeIn,
-                    m_CapChant.m_ExistingFadeOut,
-                    m_CapChant.m_StreamParam[0] ? m_CapChant.m_StreamParam : (const char*)0,
-                    (Audio::MasterVolume::VOLUME_GROUP)m_CapChant.m_VolGroup);
-            }
-        }
+        m_CapChant.Play(checkActive, false);
     }
-    else if (m_HasCrowdStream)
+    else
     {
-        if (checkActive && !m_PStream.m_Active)
-        {
-            // skip
-        }
-        else
-        {
-            m_HasCrowdStream = GetNextStreamId(m_PStream.m_StreamId);
-            if (m_PStream.m_Queue)
-            {
-                m_PStream.m_Queue = 0;
-                m_PStream.m_Track.QueueStream(
-                    m_HasCrowdStream,
-                    m_PStream.m_Volume,
-                    (m_PStream.m_Looping & 1),
-                    m_PStream.m_FadeIn,
-                    m_PStream.m_StreamParam[0] ? m_PStream.m_StreamParam : (const char*)0,
-                    (Audio::MasterVolume::VOLUME_GROUP)m_PStream.m_VolGroup);
-            }
-            else
-            {
-                m_PStream.m_Track.PlayStream(
-                    m_HasCrowdStream,
-                    m_PStream.m_Volume,
-                    (m_PStream.m_Looping & 1),
-                    m_PStream.m_FadeIn,
-                    m_PStream.m_ExistingFadeOut,
-                    m_PStream.m_StreamParam[0] ? m_PStream.m_StreamParam : (const char*)0,
-                    (Audio::MasterVolume::VOLUME_GROUP)m_PStream.m_VolGroup);
-            }
-        }
+        m_PStream.Play(checkActive, true);
     }
 
     m_InPause = false;
@@ -372,35 +264,20 @@ void PriorityStream::TrackIdleCB()
         return;
     }
 
-    if (m_PStream.m_OrigStreamId)
+    if (m_CapChant.m_StreamId)
     {
-        m_PStream.m_OrigStreamId = 0;
+        m_CapChant.m_StreamId = 0;
 
-        if (m_HasCrowdStream)
+        if (m_PStream.m_StreamId)
         {
-            if (m_HasCrowdStream && m_PStream.m_Active)
-            {
-                m_HasCrowdStream = GetNextStreamId(m_PStream.m_StreamId);
-
-                if (m_PStream.m_Queue)
-                {
-                    m_PStream.m_Queue = 0;
-                    m_PStream.m_Track.QueueStream(
-                        m_HasCrowdStream, m_PStream.m_Volume, (m_PStream.m_Looping & 1), m_PStream.m_FadeIn, m_PStream.m_StreamParam[0] ? m_PStream.m_StreamParam : (const char*)0, (Audio::MasterVolume::VOLUME_GROUP)m_PStream.m_VolGroup);
-                }
-                else
-                {
-                    m_PStream.m_Track.PlayStream(
-                        m_HasCrowdStream, m_PStream.m_Volume, (m_PStream.m_Looping & 1), m_PStream.m_FadeIn, m_PStream.m_ExistingFadeOut, m_PStream.m_StreamParam[0] ? m_PStream.m_StreamParam : (const char*)0, (Audio::MasterVolume::VOLUME_GROUP)m_PStream.m_VolGroup);
-                }
-            }
+            m_PStream.Play(true, true);
             return;
         }
     }
 
-    if (m_HasCrowdStream)
+    if (m_PStream.m_StreamId)
     {
-        m_HasCrowdStream = 0;
+        m_PStream.m_StreamId = 0;
     }
     CrowdMood::UnlockStream();
 }
@@ -420,10 +297,10 @@ extern "C"
 /**
  * Offset/Address/Size: 0x3DC | 0x800C3820 | size: 0x380
  */
-unsigned long PriorityStream::GrabCrowdStream(unsigned long Fadeout)
+bool PriorityStream::GrabCrowdStream(unsigned long Fadeout)
 {
     GCAudioStreaming::StereoAudioStream* pStream;
-    unsigned long result = 0;
+    bool result = false;
     unsigned long zero = 0;
     volatile unsigned long iPlayStop;
     volatile unsigned long iWarmStop;

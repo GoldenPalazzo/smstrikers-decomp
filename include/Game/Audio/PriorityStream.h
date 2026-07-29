@@ -11,21 +11,26 @@ public:
     {
     public:
         PLAY_RECORD(AudioStreamTrack::StreamTrack& t)
-            : m_Track(t)
+            : m_StreamId(0)
+            , m_Track(t)
         {
         }
 
+        unsigned long GetNextStreamId(unsigned long);
+        void Play(bool, bool);
+        void Set(unsigned long, float, bool, unsigned long, unsigned long, const char*, Audio::MasterVolume::VOLUME_GROUP, bool, bool);
+
         /* 0x00 */ unsigned long m_StreamId;
-        /* 0x04 */ float m_Volume;
-        /* 0x08 */ unsigned long m_FadeIn : 15;
-        /* 0x08 */ unsigned long m_ExistingFadeOut : 14;
-        /* 0x08 */ unsigned long m_Looping : 1;
-        /* 0x08 */ unsigned long m_Queue : 1;
-        /* 0x08 */ unsigned long m_Active : 1;
-        /* 0x0C */ char m_StreamParam[32];
-        /* 0x2C */ AudioStreamTrack::StreamTrack& m_Track;
-        /* 0x30 */ Audio::MasterVolume::VOLUME_GROUP m_VolGroup;
-        /* 0x34 */ unsigned long m_OrigStreamId;
+        /* 0x04 */ unsigned long m_OrigStreamId;
+        /* 0x08 */ float m_Volume;
+        /* 0x0C */ unsigned long m_FadeIn : 15;
+        /* 0x0C */ unsigned long m_ExistingFadeOut : 14;
+        /* 0x0F */ unsigned char m_Looping : 1;
+        /* 0x0F */ unsigned char m_Queue : 1;
+        /* 0x0F */ unsigned char m_Active : 1;
+        /* 0x10 */ char m_StreamParam[32];
+        /* 0x30 */ AudioStreamTrack::StreamTrack& m_Track;
+        /* 0x34 */ Audio::MasterVolume::VOLUME_GROUP m_VolGroup;
 
         static unsigned char s_BowserAttackNext;
         static unsigned char s_SuddenDeathNext;
@@ -38,31 +43,13 @@ public:
     void FakePause(unsigned long);
     void FakeResume(bool);
     void TrackIdleCB();
-    unsigned long GrabCrowdStream(unsigned long);
-    static unsigned long GetNextStreamId(unsigned long SimpleStreamId);
+    bool GrabCrowdStream(unsigned long);
 
-    /* 0x00 */ bool m_InPause : 8;
-    /* 0x01 */ bool m_BowserAttackNext;
-    /* 0x02 */ bool m_SuddenDeathNext;
+    /* 0x00 */ unsigned char m_InPause : 8;
     /* 0x04 */ AudioStreamTrack::StreamTrack& m_Track;
-    /* 0x08 */ unsigned long m_HasCrowdStream;
-    /* 0x0C */ PLAY_RECORD m_PStream;
-    /* 0x44 */ PLAY_RECORD m_CapChant;
-}; // total size: 0x7C
-
-static inline AudioStreamTrack::StreamTrack& InitPriorityRecord(PriorityStream* stream)
-{
-    AudioStreamTrack::StreamTrack& track = stream->m_Track;
-    stream->m_HasCrowdStream = 0;
-    return track;
-}
-
-static inline AudioStreamTrack::StreamTrack& InitCapChantRecord(PriorityStream* stream)
-{
-    AudioStreamTrack::StreamTrack& track = stream->m_Track;
-    stream->m_PStream.m_OrigStreamId = 0;
-    return track;
-}
+    /* 0x08 */ PLAY_RECORD m_PStream;
+    /* 0x40 */ PLAY_RECORD m_CapChant;
+}; // total size: 0x78
 
 static inline void PriorityStreamSetIdleCallback(AudioStreamTrack::StreamTrack* track, const Function0<void>& f0)
 {
@@ -72,8 +59,8 @@ static inline void PriorityStreamSetIdleCallback(AudioStreamTrack::StreamTrack* 
 inline PriorityStream::PriorityStream(AudioStreamTrack::StreamTrack& track)
     : m_InPause(false)
     , m_Track(track)
-    , m_PStream(InitPriorityRecord(this))
-    , m_CapChant(InitCapChantRecord(this))
+    , m_PStream(m_Track)
+    , m_CapChant(m_Track)
 {
     Function0<void> f0(Bind<void>(MemFun<PriorityStream, void>(&PriorityStream::TrackIdleCB), this));
     AudioStreamTrack::StreamTrack& trackRef = m_Track;

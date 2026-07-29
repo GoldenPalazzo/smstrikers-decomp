@@ -49,13 +49,19 @@ class AudioStreamBuffer
 {
 public:
     AudioStreamBuffer();
-    void Reset()
+    void SetVolume(unsigned long volume);
+    void SetLPF(unsigned char on);
+    void SetLPF(unsigned short frequency);
+    void Reset(AudioStream* pStream = NULL)
     {
-        m_pStream = NULL;
+        m_pStream = pStream;
         m_UpdateOffset = 0;
         m_Volume = 0x7F;
         m_Pan = 0x40;
     }
+    void Update(unsigned long, unsigned long);
+    unsigned long UpdateHandler(void*, unsigned long, void*, unsigned long);
+    void DoUpdate(unsigned long, unsigned long);
     static unsigned long _UpdateHandler(void*, unsigned long, void*, unsigned long, unsigned long);
 
     /* 0x00 */ unsigned char* m_MRAMBuffer;   // offset 0x0, size 0x4
@@ -81,6 +87,7 @@ class AudioBufferMgr
 {
 public:
     AudioBufferMgr();
+    void* GetADPCMHdr();
     void SetBufferState(unsigned long index, BUFFER_ALLOC_STATE state)
     {
         m_BuffersFree =
@@ -91,7 +98,7 @@ public:
     void CreateBuffers(unsigned long);
     void DeleteBuffers();
     void FreeBuffer(GCAudioStreaming::AudioStreamBuffer*);
-    static AudioStreamBuffer* GetFreeBuffer(GCAudioStreaming::AudioStream*);
+    AudioStreamBuffer* GetFreeBuffer(GCAudioStreaming::AudioStream*);
 
     static const unsigned long MAX_BUFFERS = 8;
 
@@ -474,7 +481,7 @@ public:
     class READ_CB_INFO
     {
     public:
-        /* 0x0 */ READ_CB_INFO* m_next;
+        /* 0x0 */ AudioStream* pStream;
         /* 0x4 */ class AudioStreamBuffer* pBuffer;
 
         static nlArrayAllocator<READ_CB_INFO> s_AllocPool;
@@ -534,6 +541,7 @@ class StereoAudioStream : public AudioStream
 {
 public:
     StereoAudioStream(AudioBufferMgr& mgr);
+    void ReadHeader(unsigned long buffer);
     void Open(const char* filename)
     {
         m_StreamLength = 0;

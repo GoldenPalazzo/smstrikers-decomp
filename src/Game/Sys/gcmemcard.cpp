@@ -103,6 +103,34 @@ static inline void DoCardRemovedCleanup(long channel)
     }
 }
 
+inline void MemCard::SetStatusDone(long Result)
+{
+    if (Result == 0)
+    {
+        m_State = IS_MOUNTED;
+        long Result = InternalWriteFile(m_pFileCB, m_pDataCB, m_pFileCB->TotalHeaderSize, 0, m_CB[8], false);
+        if (Result != 0)
+        {
+            m_State = IS_MOUNTED;
+            m_CardState = CS_MOUNTED;
+        }
+    }
+
+    if (Result != 0)
+    {
+        MemCardFunctor::MCInternalFunctorBase* pFunctor = (MemCardFunctor::MCInternalFunctorBase*)&m_CB[8];
+        unsigned long slot = m_Slot;
+        if (*(long*)pFunctor != 0)
+        {
+            pFunctor->Call(slot, Result);
+        }
+        else
+        {
+            nlPrintf("Trying to call unset MC functor");
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0x824 | 0x801CB364 | size: 0xE0
  */
@@ -287,69 +315,6 @@ void MemCard::ReadFileDoneCB(long channel, long result)
 }
 
 /**
- * Offset/Address/Size: 0x1F0 | 0x801CAD30 | size: 0x138
- * TODO: 99.62% match - result/file register allocation still swapped
- * (target r29/r30 vs current r30/r29), and remaining rodata label mismatch on
- * the two nlPrintf format strings.
- */
-void MemCard::SetStatusDoneCB(long channel, long result)
-{
-    MemCard* card = g_MemCards[channel];
-    MC_FILE* file;
-    unsigned long remainder;
-    s32 err = 0;
-
-    if (result == 0)
-    {
-        card->m_State = IS_MOUNTED;
-        file = card->m_pFileCB;
-        void* data = card->m_pDataCB;
-        unsigned long headerSize = file->TotalHeaderSize;
-
-        if (card->m_State != IS_MOUNTED)
-        {
-            err = -100;
-        }
-        else
-        {
-            unsigned long sectorSize = card->m_CardInfo.SectorSize;
-            remainder = headerSize % sectorSize;
-            if (remainder != 0)
-            {
-                nlPrintf("MC: Header size (%d) not aligned to sector (%d), rounding to %d\n", headerSize, sectorSize, headerSize + sectorSize - remainder);
-                headerSize += card->m_CardInfo.SectorSize - remainder;
-            }
-            card->m_State = IS_WRITING;
-            card->m_CardState = CS_WRITING;
-            err = CARDWriteAsync(&file->FileInfo, data, headerSize, 0, WriteFileDoneCB);
-            if (err != 0)
-            {
-                card->m_State = IS_MOUNTED;
-                card->m_CardState = CS_MOUNTED;
-            }
-        }
-        if (err != 0)
-        {
-            card->m_State = IS_MOUNTED;
-            card->m_CardState = CS_MOUNTED;
-        }
-    }
-    if (result != 0)
-    {
-        MemCardFunctor::MCInternalFunctorBase* pFunctor = (MemCardFunctor::MCInternalFunctorBase*)&card->m_CB[8];
-        unsigned long slot = card->m_Slot;
-        if (*(long*)pFunctor != 0)
-        {
-            pFunctor->Call(slot, result);
-        }
-        else
-        {
-            nlPrintf("Trying to call unset MC functor");
-        }
-    }
-}
-
-/**
  * Offset/Address/Size: 0x12C | 0x801CAC6C | size: 0xC4
  */
 void MemCard::CardCheckBrokenDoneCB(long channel, long result)
@@ -514,6 +479,16 @@ s32 MemCard::BeginCardAccess(const MemCardFunctor& Callback)
 }
 
 /**
+ * Offset/Address/Size: 0x10 | 0x801C9780 | size: 0x14
+ */
+unsigned long MemCard::AlignBytesToSectorSize(unsigned long bytes)
+{
+    unsigned long sectorSize = m_CardInfo.SectorSize;
+    unsigned long mask = sectorSize - 1;
+    return (bytes + mask) & ~mask;
+}
+
+/**
  * Offset/Address/Size: 0xF28 | 0x801CA698 | size: 0x3B4
  * TODO: 99.18% match - shift-up loop pEntry copy uses r0 instead of target r5.
  */
@@ -634,7 +609,8 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
 
 /**
  * Offset/Address/Size: 0xBE8 | 0x801CA358 | size: 0x340
- * TODO: 99.06% match - both lookup pEntry copies use r0 instead of target r5.
+ * TODO: 99.78% match - both lookup pEntry copies use r0 instead of target r5;
+ * icon count/stride and the two header accumulators retain allocation differences.
  */
 extern "C" void* memset(void*, int, unsigned long);
 
@@ -686,24 +662,30 @@ long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned 
 
         while (pFile->IconCfg.IconCount < 8)
         {
-            unsigned long i = pFile->IconCfg.IconCount;
-            unsigned long speed = CARDGetIconSpeed(&stat, i);
-            pFile->IconCfg.IconSpeeds[i] = speed;
-            if (speed == 0)
+            unsigned long IconSpeed =
+                CARDGetIconSpeed(&stat, pFile->IconCfg.IconCount);
+            pFile->IconCfg.IconSpeeds[pFile->IconCfg.IconCount] = IconSpeed;
+            if (IconSpeed == 0)
             {
                 break;
             }
             pFile->IconCfg.IconCount = pFile->IconCfg.IconCount + 1;
         }
 
-        ICON_CONFIG* config = &pFile->IconCfg;
-        unsigned long paletteSize = 0x200;
-        s8 iconFormat = config->IconFormat;
-        unsigned long headerSize = ((config->BannerFormat == 1) ? paletteSize : 0);
-        headerSize = headerSize + (config->BannerFormat * 0xC00);
-        headerSize = headerSize + (config->IconCount * (iconFormat << 10));
-        headerSize = headerSize + ((iconFormat == 1) ? paletteSize : 0);
-        config->HeaderSize = headerSize + 0x40;
+        s8 iconFmt;
+        MC_FILE* file = pFile;
+        iconFmt = file->IconCfg.IconFormat;
+        u8 iconCount = file->IconCfg.IconCount;
+        int bannerFmt = file->IconCfg.BannerFormat;
+
+        u32 headerSize = 0;
+        headerSize += ((bannerFmt == 1) ? 0x200 : 0);
+        headerSize += bannerFmt * 0xC00;
+        u32 iconClut = ((iconFmt == 1) ? 0x200 : 0);
+        headerSize = ((iconFmt << 10) * iconCount) + headerSize;
+        headerSize = iconClut + headerSize;
+        headerSize += 0x40;
+        file->IconCfg.HeaderSize = headerSize;
 
         unsigned long sectorMask = m_CardInfo.SectorSize - 1;
         pFile->TotalHeaderSize = (pFile->IconCfg.HeaderSize + sectorMask) & ~sectorMask;
@@ -930,52 +912,22 @@ long MemCard::InternalReadFile(MC_FILE* pFile, void* Buffer, unsigned long Lengt
  */
 long MemCard::InternalWriteFile(MC_FILE* pFile, void* Buffer, unsigned long Length, unsigned long StartAt, const MemCardFunctor& Callback, bool ResetTransfer)
 {
+    unsigned long LengthMisalign;
+    long Result;
+
     if (m_State != IS_MOUNTED)
     {
         return -100;
     }
 
-    unsigned long sectorSize = m_CardInfo.SectorSize;
-    unsigned long LengthMisalign = Length % sectorSize;
+    LengthMisalign = Length % m_CardInfo.SectorSize;
     if (LengthMisalign != 0)
     {
-        nlPrintf("MemCard::InternalWriteFile - offset %d not sector aligned (%d), changed to %d\n", Length, sectorSize, Length + sectorSize - LengthMisalign);
+        nlPrintf("MemCard::WriteFile - Length %d not a multiple of card sector size %d, increasing length to %d\n", Length, m_CardInfo.SectorSize, Length + m_CardInfo.SectorSize - LengthMisalign);
         Length += m_CardInfo.SectorSize - LengthMisalign;
     }
 
-    struct FunctorWords
-    {
-        unsigned long w0;
-        unsigned long w1;
-        unsigned long w2;
-        unsigned long w3;
-        unsigned long w4;
-        unsigned long w5;
-    };
-
-    volatile FunctorWords* dst = (volatile FunctorWords*)&m_CB[8];
-    const volatile FunctorWords* src = (const volatile FunctorWords*)&Callback;
-    unsigned long b;
-    unsigned long a;
-    unsigned long e;
-    unsigned long d;
-    unsigned long c;
-
-    a = src->w0;
-    b = src->w1;
-    dst->w1 = b;
-    dst->w0 = a;
-
-    d = src->w2;
-    e = src->w3;
-    dst->w2 = d;
-    dst->w3 = e;
-
-    b = src->w4;
-    a = src->w5;
-    dst->w4 = b;
-    dst->w5 = a;
-
+    m_CB[8] = Callback;
     m_State = IS_WRITING;
     m_CardState = CS_WRITING;
 
@@ -985,7 +937,7 @@ long MemCard::InternalWriteFile(MC_FILE* pFile, void* Buffer, unsigned long Leng
         m_TargetTransferSize = Length + 0x2000;
     }
 
-    long Result = CARDWriteAsync((CARDFileInfo*)pFile, Buffer, (s32)Length, (s32)StartAt, WriteFileDoneCB);
+    Result = CARDWriteAsync((CARDFileInfo*)pFile, Buffer, (s32)Length, (s32)StartAt, WriteFileDoneCB);
     if (Result != 0)
     {
         m_State = IS_MOUNTED;
@@ -1155,16 +1107,6 @@ void MemCard::ICON_CONFIG::GetValidDataInfo(MemCard::ICON_DATA_INFO& DataInfo) c
     }
 
     DataInfo.IconCLUTOffset = DataInfo.IconOffset[IconCount - 1] + ((s32)IconFormat << 10);
-}
-
-/**
- * Offset/Address/Size: 0x10 | 0x801C9780 | size: 0x14
- */
-unsigned long MemCard::AlignBytesToSectorSize(unsigned long bytes)
-{
-    unsigned long sectorSize = m_CardInfo.SectorSize;
-    unsigned long mask = sectorSize - 1;
-    return (bytes + mask) & ~mask;
 }
 
 /**

@@ -5,6 +5,9 @@
 #include <dolphin/card.h>
 #include "NL/nlSortedSlot.h"
 
+class MemCard;
+extern MemCard** g_MemCards;
+
 enum INTERNAL_STATE
 {
     IS_IDLE = 0,
@@ -141,7 +144,10 @@ public:
     static void FormatDoneCB(long channel, long result);
     static void DeleteFileDoneCB(long channel, long result);
     static void ReadFileDoneCB(long channel, long result);
-    static void SetStatusDoneCB(long channel, long result);
+    static void SetStatusDoneCB(long channel, long result)
+    {
+        g_MemCards[channel]->SetStatusDone(result);
+    }
     static void CardCheckBrokenDoneCB(long channel, long result);
     static void CardCheckDoneCB(long channel, long result);
     static void WriteFileDoneCB(long channel, long result);
@@ -158,6 +164,10 @@ public:
     long WriteFileIconData(MemCard::MC_FILE*, void*, const MemCardFunctor&);
     unsigned long AlignBytesToSectorSize(unsigned long);
 
+private:
+    inline void SetStatusDone(long);
+
+public:
     s64 GetSerialID() const;
 
     /* 0x000  */ INTERNAL_STATE m_State;
@@ -178,8 +188,6 @@ public:
 
     static bool s_InitDone;
 }; // total size: 0xA620
-
-extern MemCard** g_MemCards;
 
 // class nlBSearch < nlSortedSlot < MemCard
 // {
