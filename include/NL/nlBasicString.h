@@ -314,7 +314,21 @@ inline void BasicString<CharT, Allocator>::Data::reserve(int capacity)
             newVec.mData[i] = mData.mData[i];
         }
         newVec.mSize = mData.mSize;
-        mData.Swap(newVec);
+
+        int value;
+        CharT* data;
+
+        value = mData.mSize;
+        mData.mSize = newVec.mSize;
+        newVec.mSize = value;
+
+        value = mData.mCapacity;
+        mData.mCapacity = newVec.mCapacity;
+        newVec.mCapacity = value;
+
+        data = mData.mData;
+        mData.mData = newVec.mData;
+        newVec.mData = data;
     }
 }
 
