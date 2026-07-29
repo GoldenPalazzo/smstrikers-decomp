@@ -208,11 +208,41 @@ void cBall::WarpTo(const nlVector3& toPos)
     m_v3PrevPosition = toPos;
 }
 
+static void CalcBallRotationFromVelocity(nlQuaternion& qOrientationDelta, const nlVector3& v3Velocity, float fDeltaT)
+{
+    qOrientationDelta.f.z = 0.0f;
+    qOrientationDelta.f.y = 0.0f;
+    qOrientationDelta.f.x = 0.0f;
+    qOrientationDelta.f.w = 1.0f;
+
+    float fVel = nlSqrt(v3Velocity.GetLengthSq3D(), true);
+    if (fVel > 0.0001f)
+    {
+        nlVector3 v3Up;
+        nlVector3 v3NormalizedVelocity = v3Velocity;
+        nlVector3 v3RotationAxis;
+
+        nlVec3Set(v3Up, 0.0f, 0.0f, 1.0f);
+
+        v3NormalizedVelocity.f.x /= fVel;
+        v3NormalizedVelocity.f.y /= fVel;
+        v3NormalizedVelocity.f.z /= fVel;
+
+        float fAxisX;
+        float fAxisY;
+        float fAxisZ;
+
+        fAxisX = v3Up.f.y * v3NormalizedVelocity.f.z - v3Up.f.z * v3NormalizedVelocity.f.y;
+        fAxisY = -v3Up.f.x * v3NormalizedVelocity.f.z + v3Up.f.z * v3NormalizedVelocity.f.x;
+        fAxisZ = v3Up.f.x * v3NormalizedVelocity.f.y - v3Up.f.y * v3NormalizedVelocity.f.x;
+        nlVec3Set(v3RotationAxis, fAxisX, fAxisY, fAxisZ);
+
+        nlMakeQuat(qOrientationDelta, v3RotationAxis, fDeltaT * (fVel / 0.18f));
+    }
+}
+
 /**
  * Offset/Address/Size: 0x42C | 0x80009E00 | size: 0x30C
- * TODO: 99.23% match - FPR register allocation
- *       (f8/f5/f6 vs f5/f6/f8 for normalized direction + zero constant)
- *       in both velocity cross-product blocks.
  */
 void cBall::UpdateOrientation(float fDeltaT)
 {
@@ -250,33 +280,7 @@ void cBall::UpdateOrientation(float fDeltaT)
         }
         else
         {
-            qOrientationDelta.f.z = 0.0f;
-            qOrientationDelta.f.y = 0.0f;
-            qOrientationDelta.f.x = 0.0f;
-            qOrientationDelta.f.w = 1.0f;
-
-            float fVel = nlSqrt(m_v3Velocity.f.x * m_v3Velocity.f.x + m_v3Velocity.f.y * m_v3Velocity.f.y + m_v3Velocity.f.z * m_v3Velocity.f.z, true);
-            if (fVel > 0.0001f)
-            {
-                nlVector3 v3Axis;
-                nlVector3 v3Direction = m_v3Velocity;
-                float fZero = 0.0f;
-                float fOne = 1.0f;
-
-                float fDirX = v3Direction.f.x / fVel;
-                float fDirY = v3Direction.f.y / fVel;
-                float fDirZ = v3Direction.f.z / fVel;
-
-                v3Direction.f.x = fDirX;
-                v3Direction.f.y = fDirY;
-                v3Direction.f.z = fDirZ;
-
-                v3Axis.f.x = fZero * v3Direction.f.z - fOne * v3Direction.f.y;
-                v3Axis.f.y = -fZero * v3Direction.f.z + fOne * v3Direction.f.x;
-                v3Axis.f.z = fZero * v3Direction.f.y - fZero * v3Direction.f.x;
-
-                nlMakeQuat(qOrientationDelta, v3Axis, fDeltaT * (fVel / 0.18f));
-            }
+            CalcBallRotationFromVelocity(qOrientationDelta, m_v3Velocity, fDeltaT);
         }
     }
     else
@@ -290,33 +294,7 @@ void cBall::UpdateOrientation(float fDeltaT)
             return;
         case BRM_MATCH_VELOCITY:
         {
-            qOrientationDelta.f.z = 0.0f;
-            qOrientationDelta.f.y = 0.0f;
-            qOrientationDelta.f.x = 0.0f;
-            qOrientationDelta.f.w = 1.0f;
-
-            float fVel = nlSqrt(m_v3Velocity.f.x * m_v3Velocity.f.x + m_v3Velocity.f.y * m_v3Velocity.f.y + m_v3Velocity.f.z * m_v3Velocity.f.z, true);
-            if (fVel > 0.0001f)
-            {
-                nlVector3 v3Axis;
-                nlVector3 v3Direction = m_v3Velocity;
-                float fZero = 0.0f;
-                float fOne = 1.0f;
-
-                float fDirX = v3Direction.f.x / fVel;
-                float fDirY = v3Direction.f.y / fVel;
-                float fDirZ = v3Direction.f.z / fVel;
-
-                v3Direction.f.x = fDirX;
-                v3Direction.f.y = fDirY;
-                v3Direction.f.z = fDirZ;
-
-                v3Axis.f.x = fZero * v3Direction.f.z - fOne * v3Direction.f.y;
-                v3Axis.f.y = -fZero * v3Direction.f.z + fOne * v3Direction.f.x;
-                v3Axis.f.z = fZero * v3Direction.f.y - fZero * v3Direction.f.x;
-
-                nlMakeQuat(qOrientationDelta, v3Axis, fDeltaT * (fVel / 0.18f));
-            }
+            CalcBallRotationFromVelocity(qOrientationDelta, m_v3Velocity, fDeltaT);
             break;
         }
         }
