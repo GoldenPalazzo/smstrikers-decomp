@@ -103,6 +103,12 @@ public:
         void AddFade(GCAudioStreaming::StereoAudioStream*, unsigned long, unsigned long,
             Audio::MasterVolume::VOLUME_GROUP, unsigned long, const Function<FnVoidVoid>&);
 
+        STREAM_FADE_CTRL* FindFade(GCAudioStreaming::StereoAudioStream*);
+        bool IsFading(
+            GCAudioStreaming::StereoAudioStream*,
+            unsigned long* = NULL);
+        void RemoveFade(GCAudioStreaming::StereoAudioStream*);
+
         /* 0x00 */ FadeList m_Fades;
         /* 0x1C */ float m_dT;
     }; // total size: 0x20
@@ -123,6 +129,64 @@ public:
     /* 0x38 */ SlotPool<GCAudioStreaming::StereoAudioStream> m_StreamPool;
     /* 0x50 */ nlDLListSlotPool<GCAudioStreaming::StereoAudioStream*> m_StreamDeleteList;
 }; // total size: 0x6C
+
+inline TrackManagerBase::FadeManager::STREAM_FADE_CTRL*
+TrackManagerBase::FadeManager::FindFade(
+    GCAudioStreaming::StereoAudioStream* stream)
+{
+    typedef DLListEntry<STREAM_FADE_CTRL> FadeEntry;
+
+    FadeEntry* current = nlDLRingGetStart(m_Fades.m_Head);
+    nlDLListIterator<STREAM_FADE_CTRL> iter;
+    iter.m_Head = m_Fades.m_Head;
+    iter.m_Curr = current;
+    while (iter.hasNext())
+    {
+        FadeEntry* entry = iter.m_Curr;
+        if (entry->entry.pStream == stream)
+        {
+            return &entry->entry;
+        }
+        iter.next();
+    }
+    return NULL;
+}
+
+inline bool TrackManagerBase::FadeManager::IsFading(
+    GCAudioStreaming::StereoAudioStream* stream,
+    unsigned long* endVolume)
+{
+    STREAM_FADE_CTRL* fadeCtrl = FindFade(stream);
+    bool result;
+    if (fadeCtrl != NULL)
+    {
+        if (endVolume != NULL)
+        {
+            *endVolume = fadeCtrl->EndVol;
+        }
+        result = true;
+    }
+    else
+    {
+        result = false;
+    }
+    return result;
+}
+
+inline void TrackManagerBase::FadeManager::RemoveFade(
+    GCAudioStreaming::StereoAudioStream* stream)
+{
+    typedef DLListEntry<STREAM_FADE_CTRL> FadeEntry;
+
+    STREAM_FADE_CTRL* fadeCtrl = FindFade(stream);
+    if (fadeCtrl != NULL)
+    {
+        FadeEntry* entry = (FadeEntry*)((char*)fadeCtrl - 8);
+        nlDLRingIsEnd(m_Fades.m_Head, entry);
+        nlDLRingRemove(&m_Fades.m_Head, entry);
+        m_Fades.DeleteEntry(entry);
+    }
+}
 
 inline void TrackManagerBase::FadeManager::Update(float dT)
 {

@@ -344,25 +344,8 @@ bool AudioStreamTrack::TrackManagerBase::FadeManager::ChangeFade(
     unsigned long fadeLength, const Function<FnVoidVoid>& callback)
 {
     typedef STREAM_FADE_CTRL FadeCtrl;
-    typedef DLListEntry<FadeCtrl> FadeEntry;
 
-    nlDLListIterator<FadeCtrl> fadeIter(
-        m_Fades.m_Head,
-        nlDLRingGetStart(m_Fades.m_Head));
-    FadeCtrl* fadeCtrl;
-
-    while (fadeIter.hasNext())
-    {
-        FadeEntry* fadeEntry = fadeIter.m_Curr;
-        if (fadeEntry->entry.pStream == pStream)
-        {
-            fadeCtrl = &fadeEntry->entry;
-            goto fade_found;
-        }
-        fadeIter.next();
-    }
-    fadeCtrl = NULL;
-fade_found:
+    FadeCtrl* fadeCtrl = FindFade(pStream);
 
     if (fadeCtrl == NULL)
     {
@@ -1125,13 +1108,10 @@ void AudioStreamTrack::StreamTrack::FadeOutDoneStartNext(AudioStreamTrack::Strea
 
 /**
  * Offset/Address/Size: 0x1E8 | 0x80154F40 | size: 0x374
- * TODO: 99.48% match - second fade search manager/stream/head registers and first buffer pointer register differ
+ * TODO: 99.73% match - the first stopped-buffer pointer uses r25 instead of r26
  */
 void AudioStreamTrack::StreamTrack::Pause(unsigned long Fadeout, bool bPause)
 {
-    typedef TrackManagerBase::FadeManager::STREAM_FADE_CTRL FadeCtrl;
-    typedef DLListEntry<FadeCtrl> FadeEntry;
-
     m_InFakePause = 1;
 
     struct Iter
@@ -1162,95 +1142,14 @@ void AudioStreamTrack::StreamTrack::Pause(unsigned long Fadeout, bool bPause)
         return;
     }
 
-    TrackManagerBase& mgr = m_TrackMgr;
-    GCAudioStreaming::StereoAudioStream* pStream = qs->pStream;
-
-    FadeEntry* fadeHead;
-    FadeEntry* fadeIter = nlDLRingGetStart(mgr.m_FadeMgr.m_Fades.m_Head);
-    fadeHead = mgr.m_FadeMgr.m_Fades.m_Head;
-
-    FadeCtrl* fadeCtrl;
-    while (fadeIter != NULL)
-    {
-        if (fadeIter->entry.pStream == pStream)
-        {
-            fadeCtrl = &fadeIter->entry;
-            goto fade_found;
-        }
-        if (nlDLRingIsEnd(fadeHead, fadeIter) || fadeIter == NULL)
-        {
-            fadeIter = NULL;
-        }
-        else
-        {
-            fadeIter = fadeIter->m_next;
-        }
-    }
-    fadeCtrl = NULL;
-fade_found:
     unsigned long endVol;
-    bool hasEndVol;
-    if (fadeCtrl != NULL)
-    {
-        if (&endVol != NULL)
-        {
-            endVol = fadeCtrl->EndVol;
-        }
-        hasEndVol = true;
-    }
-    else
-    {
-        hasEndVol = false;
-    }
-
-    if (hasEndVol && endVol == 0)
+    if (m_TrackMgr.m_FadeMgr.IsFading(qs->pStream, &endVol) && endVol == 0)
     {
         StopHead(Fadeout);
         return;
     }
 
-    TrackManagerBase& pMgr = m_TrackMgr;
-    GCAudioStreaming::StereoAudioStream* pStream2;
-    FadeEntry* fadeIter2;
-    FadeEntry* fadeHead2;
-    FadeCtrl* fadeCtrl2;
-    pStream2 = qs->pStream;
-
-    fadeIter2 = nlDLRingGetStart(pMgr.m_FadeMgr.m_Fades.m_Head);
-    fadeHead2 = pMgr.m_FadeMgr.m_Fades.m_Head;
-
-    while (fadeIter2 != NULL)
-    {
-        if (fadeIter2->entry.pStream == pStream2)
-        {
-            fadeCtrl2 = &fadeIter2->entry;
-            goto fade2_found;
-        }
-        if (nlDLRingIsEnd(fadeHead2, fadeIter2) || fadeIter2 == NULL)
-        {
-            fadeIter2 = NULL;
-        }
-        else
-        {
-            fadeIter2 = fadeIter2->m_next;
-        }
-    }
-    fadeCtrl2 = NULL;
-fade2_found:
-
-    if (fadeCtrl2 != NULL)
-    {
-        FadeEntry* fadeEntry2 = (FadeEntry*)((char*)fadeCtrl2 - 8);
-        nlDLRingIsEnd(pMgr.m_FadeMgr.m_Fades.m_Head, fadeEntry2);
-        nlDLRingRemove(&pMgr.m_FadeMgr.m_Fades.m_Head, fadeEntry2);
-
-        if (fadeEntry2 != NULL)
-        {
-            fadeEntry2->entry.~FadeCtrl();
-        }
-
-        pMgr.m_FadeMgr.m_Fades.m_Allocator.Free(fadeEntry2);
-    }
+    m_TrackMgr.m_FadeMgr.RemoveFade(qs->pStream);
 
     if (bPause)
     {

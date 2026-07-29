@@ -149,7 +149,7 @@ public:
 }; // total size: 0x1C
 
 template <typename T, typename Adapter>
-void DLListContainerBase<T, Adapter>::DeleteEntry(DLListEntry<T>* entry)
+inline void DLListContainerBase<T, Adapter>::DeleteEntry(DLListEntry<T>* entry)
 {
     if (entry)
     {
