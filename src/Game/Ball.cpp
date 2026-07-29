@@ -1133,7 +1133,6 @@ static inline float clampAbove(float minVal, float x)
 
 /**
  * Offset/Address/Size: 0x1E54 | 0x8000B828 | size: 0x400
- * TODO: 98.5% match - prevPosition.y/z use f31/f30 instead of f22/f23, cascading through interpolation registers
  */
 void cBall::PostPhysicsUpdate(float fDeltaT)
 {
@@ -1143,99 +1142,89 @@ void cBall::PostPhysicsUpdate(float fDeltaT)
 
     if (m_unk_0xA6 && mpDamageTarget != NULL)
     {
-        float targetDist;
-        float targetDeltaZ, targetDeltaY, targetDeltaX;
-        float currentDeltaX, currentDeltaY, currentDeltaZ;
+        nlVector3 v3HitSpot;
+        nlVector3 v3CurPos;
+        nlVector3 targetDelta;
+        nlVector3 currentDelta;
+        nlVector3 v3PrevPos;
+        float fPercent;
+        nlVector3 v3BallVel;
+        float fPrevZVel;
 
-        nlVector3 targetPosition = mpDamageTarget->GetJointPosition(mpDamageTarget->m_pPoseAccumulator->m_BaseSHierarchy->m_nPelvisNodeIndex);
-        targetPosition.f.z = clampAbove(0.3f, targetPosition.f.z + 0.05f);
+        v3HitSpot = mpDamageTarget->GetJointPosition(mpDamageTarget->m_pPoseAccumulator->m_BaseSHierarchy->m_nPelvisNodeIndex);
+        v3HitSpot.f.z = clampAbove(0.3f, v3HitSpot.f.z + 0.05f);
 
-        nlVector3 position = m_v3Position;
-        nlVector3 prevPosition = m_v3PrevPosition;
+        v3CurPos = m_v3Position;
+        v3PrevPos = m_v3PrevPosition;
 
-        if (position.f.z < 0.3f)
+        if (v3CurPos.f.z < 0.3f)
         {
-            position.f.z = 0.3f;
+            v3CurPos.f.z = 0.3f;
         }
 
-        if (prevPosition.f.z < 0.3f)
+        if (v3PrevPos.f.z < 0.3f)
         {
-            prevPosition.f.z = 0.3f;
+            v3PrevPos.f.z = 0.3f;
         }
 
-        targetDeltaX = targetPosition.f.x - prevPosition.f.x;
-        targetDeltaY = targetPosition.f.y - prevPosition.f.y;
-        targetDeltaZ = targetPosition.f.z - prevPosition.f.z;
+        nlVec3Set(targetDelta,
+            v3HitSpot.f.x - v3PrevPos.f.x,
+            v3HitSpot.f.y - v3PrevPos.f.y,
+            v3HitSpot.f.z - v3PrevPos.f.z);
+        nlVec3Set(currentDelta,
+            v3CurPos.f.x - v3PrevPos.f.x,
+            v3CurPos.f.y - v3PrevPos.f.y,
+            v3CurPos.f.z - v3PrevPos.f.z);
 
-        currentDeltaX = position.f.x - prevPosition.f.x;
-        currentDeltaY = position.f.y - prevPosition.f.y;
-        currentDeltaZ = position.f.z - prevPosition.f.z;
+        float targetDist = nlSqrt(targetDelta.GetLengthSq3D(), true);
+        float currentDist = nlSqrt(currentDelta.GetLengthSq3D(), true);
 
-        targetDist = nlSqrt(targetDeltaX * targetDeltaX + targetDeltaY * targetDeltaY + targetDeltaZ * targetDeltaZ, true);
-        float currentDist = nlSqrt(currentDeltaX * currentDeltaX + currentDeltaY * currentDeltaY + currentDeltaZ * currentDeltaZ, true);
-
-        float targetWeight = 0.5f;
+        fPercent = 0.5f;
         if (targetDist < currentDist)
         {
-            float scale = targetDist / targetDist;
-            currentDeltaX = scale * currentDeltaX;
-            currentDeltaY = scale * currentDeltaY;
-            currentDeltaZ = scale * currentDeltaZ;
+            nlVec3Scale(currentDelta, targetDist / targetDist);
         }
         else
         {
-            float scale = currentDist / targetDist;
-            targetDeltaX = scale * targetDeltaX;
-            targetDeltaY = scale * targetDeltaY;
-            targetDeltaZ = scale * targetDeltaZ;
+            nlVec3Scale(targetDelta, currentDist / targetDist);
         }
 
         if (targetDist < 5.0f)
         {
-            float falloff = 1.0f - targetDist / 5.0f;
-            targetWeight += 0.5f * falloff;
+            fPercent += 0.5f * (1.0f - targetDist / 5.0f);
         }
 
-        currentDeltaX = (1.0f - targetWeight) * currentDeltaX + targetWeight * targetDeltaX;
-        currentDeltaY = (1.0f - targetWeight) * currentDeltaY + targetWeight * targetDeltaY;
-        currentDeltaZ = (1.0f - targetWeight) * currentDeltaZ + targetWeight * targetDeltaZ;
+        nlVecLerp(currentDelta, currentDelta, targetDelta, fPercent);
+        nlVec3Add(v3CurPos, v3PrevPos, currentDelta);
 
-        nlVec3Set(position, prevPosition.f.x + currentDeltaX, prevPosition.f.y + currentDeltaY, prevPosition.f.z + currentDeltaZ);
-
-        m_v3Position = position;
-        m_pPhysicsBall->SetPosition(position, PhysicsObject::WORLD_COORDINATES);
+        m_v3Position = v3CurPos;
+        m_pPhysicsBall->SetPosition(v3CurPos, PhysicsObject::WORLD_COORDINATES);
         m_pPhysicsBall->SetRotation(m3Ident);
 
         FakeBallWorld::InvalidateBallCache();
         m_bBallPathChangeCount = m_bBallPathChangeCount + 1;
 
-        float distanceSq = currentDeltaX * currentDeltaX + currentDeltaY * currentDeltaY + currentDeltaZ * currentDeltaZ;
-        float projectedScale = (m_v3Velocity.f.x * currentDeltaX + m_v3Velocity.f.y * currentDeltaY + m_v3Velocity.f.z * currentDeltaZ) / distanceSq;
+        fPrevZVel = m_v3Velocity.f.z;
+        const nlVector3& ballVelocity = m_v3Velocity;
+        float distanceSq = currentDelta.GetLengthSq3D();
+        float projectedScale = nlVec3DotProduct(ballVelocity, currentDelta) / distanceSq;
+        nlVec3Scale(v3BallVel, currentDelta, projectedScale);
+        v3BallVel.f.z = fPrevZVel;
 
-        nlVector3 velocity;
-        nlVec3Set(velocity, projectedScale * currentDeltaX, projectedScale * currentDeltaY, projectedScale * currentDeltaZ);
-        // velocity.f.x = projectedScale * currentDeltaX;
-        // velocity.f.y = projectedScale * currentDeltaY;
-        // velocity.f.z = projectedScale * currentDeltaZ;
-
-        float zVelocity = m_v3Velocity.f.z;
-        velocity.f.z = zVelocity;
-
-        float speedSq = velocity.GetLengthSq3D();
+        float speedSq = v3BallVel.GetLengthSq3D();
         if (speedSq < 400.0f)
         {
             float speed = nlSqrt(speedSq, true);
-            float scale = 20.0f / speed;
-            nlVec3Set(velocity, scale * velocity.f.x, scale * velocity.f.y, scale * velocity.f.z);
+            nlVec3Scale(v3BallVel, 20.0f / speed);
         }
 
-        if (position.f.z < 0.4f && velocity.f.z < 0.0f)
+        if (v3CurPos.f.z < 0.4f && v3BallVel.f.z < 0.0f)
         {
-            velocity.f.z = 0.0f;
+            v3BallVel.f.z = 0.0f;
         }
 
-        m_v3Velocity = velocity;
-        m_pPhysicsBall->SetLinearVelocity(velocity);
+        m_v3Velocity = v3BallVel;
+        m_pPhysicsBall->SetLinearVelocity(v3BallVel);
     }
 
     UpdateOrientation(fDeltaT);

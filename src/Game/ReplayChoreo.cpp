@@ -422,7 +422,6 @@ BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScrip
 
 /**
  * Offset/Address/Size: 0x428 | 0x80127A94 | size: 0x270
- * TODO: 99.36% match - remaining diffs are reel counter initialization and temporary string cleanup.
  */
 void ReplayChoreo::StartAutoReplay(ReplayType rt)
 {
@@ -440,25 +439,12 @@ void ReplayChoreo::StartAutoReplay(ReplayType rt)
 
     if (rt == REPLAY_TYPE_HIGHLIGHT)
     {
-        mReplayManager = ReplayManager::Instance();
-        int i;
-        int validReels = 0;
-        i = validReels;
-        mReplay = mReplayManager->mReplay;
-
-        while (i < 3)
-        {
-            if (mReplay->IsReelValid(i + 1))
-            {
-                validReels++;
-            }
-            i++;
-        }
+        int reelIdx = NumHighlights();
 
         mNumHighlights = mNumHighlights - 1;
         if (mNumHighlights < 0)
         {
-            mNumHighlights = validReels - 1;
+            mNumHighlights = reelIdx - 1;
         }
 
         do
