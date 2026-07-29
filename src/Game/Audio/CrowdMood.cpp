@@ -99,45 +99,7 @@ static void WarmRandomStream(const RANDOM_STREAMS& RandomStreams, T* pStream)
     unsigned long randomIndex = nlRandom(RandomStreams.Count, &nlDefaultSeed);
     const char* filename = RandomStreams.Files[randomIndex];
 
-    GCAudioStreaming::AudioStreamBuffer* buf;
-    unsigned long zero = (unsigned long)(buf = NULL);
-    unsigned long compareZero = 0;
-    pStream->m_StreamLength = zero;
-
-    unsigned long iVal;
-    unsigned long* i = &iVal;
-    *i = zero;
-
-    pStream->m_OldLength = zero;
-    pStream->m_StreamPos = zero;
-
-    if (pStream->m_BufferCount > compareZero)
-    {
-        buf = pStream->m_Buffers[0];
-    }
-
-    while (buf != NULL)
-    {
-        pStream->m_Buffers[*i] = NULL;
-        (*i)++;
-        if (*i < pStream->m_BufferCount)
-        {
-            buf = pStream->m_Buffers[*i];
-        }
-        else
-        {
-            buf = NULL;
-        }
-    }
-
-    pStream->m_LastPlayable = 0;
-    pStream->m_Flags = 0;
-    pStream->m_Volume = 64;
-    pStream->m_LPFOn = 0;
-    pStream->m_LPFFreq = 0x3FFF;
-
-    pStream->m_pFile = nlOpen(filename);
-    pStream->m_State = GCAudioStreaming::SS_Initd;
+    pStream->Open(filename);
     pStream->Warm(true);
 }
 

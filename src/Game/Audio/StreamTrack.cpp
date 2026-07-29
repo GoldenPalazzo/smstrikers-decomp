@@ -553,64 +553,35 @@ inline GCAudioStreaming::StereoAudioStream::StereoAudioStream(
 
 /**
  * Offset/Address/Size: 0x10BC | 0x80155E14 | size: 0x418
- * TODO: 99.50% match - saved-register coloring remains around arguments and stream pointer
  */
 void AudioStreamTrack::StreamTrack::QueueStream(
     unsigned long StreamId, float Volume, bool Looping,
     unsigned long FadeIn, const char* StreamParam,
     Audio::MasterVolume::VOLUME_GROUP OverrideVolGroup)
 {
-    Audio::MasterVolume::VOLUME_GROUP overrideVolGroup = (Audio::MasterVolume::VOLUME_GROUP)((unsigned long)OverrideVolGroup + 0);
     char FileName[256];
-    GCAudioStreaming::StereoAudioStream* pStream;
 
     if (GetConfigBool(Config::Global(), "no_stream", false) == true)
     {
         return;
     }
 
-    const QUEUED_STREAM& qs = QUEUED_STREAM();
-    DLListEntry<QUEUED_STREAM> localEntry(qs);
-    DLListEntry<QUEUED_STREAM>* entry = m_QueuedStreams.m_Allocator.m_pFree;
-    if (entry == NULL)
-    {
-        entry = NULL;
-    }
-    else
-    {
-        m_QueuedStreams.m_Allocator.m_pFree = entry->m_next;
-    }
-    if (entry != NULL)
-    {
-        entry->m_next = NULL;
-        entry->m_prev = NULL;
-        entry->entry = localEntry.entry;
-    }
-    nlDLRingAddEnd(&m_QueuedStreams.m_Head, entry);
+    QUEUED_STREAM* queuedStream = m_QueuedStreams.AllocateAtEnd(NULL);
+    queuedStream->StreamId = StreamId;
 
-    entry->entry.StreamId = StreamId;
-
-    pStream = NULL;
     TrackManagerBase& mgr = m_TrackMgr;
-    mgr.m_StreamPool.Allocate(pStream);
+    GCAudioStreaming::StereoAudioStream* pStream =
+        mgr.m_StreamPool.Allocate();
     new (pStream) GCAudioStreaming::StereoAudioStream(g_BufferMgr);
 
-    entry->entry.pStream = pStream;
-    entry->entry.FadeIn = FadeIn;
-    entry->entry.StartVolume = (int)(127.0f * Volume);
+    queuedStream->pStream = pStream;
+    queuedStream->FadeIn = FadeIn;
+    queuedStream->StartVolume = (int)(127.0f * Volume);
 
-    Audio::MasterVolume::VOLUME_GROUP volGroup;
-    if (overrideVolGroup == 0)
-    {
-        volGroup = m_VolumeGroup;
-    }
-    else
-    {
-        volGroup = overrideVolGroup;
-    }
-    entry->entry.VolGroup = volGroup;
-    entry->entry.Loop = Looping;
-    entry->entry.TrackOwnsStream = m_TrackOwnsStreams;
+    queuedStream->VolGroup =
+        OverrideVolGroup == 0 ? m_VolumeGroup : OverrideVolGroup;
+    queuedStream->Loop = Looping;
+    queuedStream->TrackOwnsStream = m_TrackOwnsStreams;
 
     nlStrNCpy<char>(FileName, "audio/data/streams/", 0x100);
     unsigned long lookupKey = StreamId;
@@ -636,46 +607,7 @@ void AudioStreamTrack::StreamTrack::QueueStream(
         nlStrNCpy<char>(&FileName[19], lookup->FileName, 0xed);
     }
 
-    GCAudioStreaming::StereoAudioStream* stream = entry->entry.pStream;
-    GCAudioStreaming::AudioStreamBuffer* buf;
-    unsigned long zero = (unsigned long)(buf = NULL);
-    unsigned long compareZero = 0;
-    stream->m_StreamLength = zero;
-
-    unsigned long iVal;
-    unsigned long* i = &iVal;
-    *i = zero;
-
-    stream->m_OldLength = zero;
-    stream->m_StreamPos = zero;
-
-    if (stream->m_BufferCount > compareZero)
-    {
-        buf = stream->m_Buffers[0];
-    }
-
-    while (buf != NULL)
-    {
-        stream->m_Buffers[*i] = NULL;
-        (*i)++;
-        if (*i < stream->m_BufferCount)
-        {
-            buf = stream->m_Buffers[*i];
-        }
-        else
-        {
-            buf = NULL;
-        }
-    }
-
-    stream->m_LastPlayable = 0;
-    stream->m_Flags = 0;
-    stream->m_Volume = 64;
-    stream->m_LPFOn = 0;
-    stream->m_LPFFreq = 0x3FFF;
-    nlFile* file = nlOpen(FileName);
-    stream->m_pFile = file;
-    stream->m_State = GCAudioStreaming::SS_Initd;
+    queuedStream->pStream->Open(FileName);
     if (m_State == TS_Idle)
     {
         ProcessNewHeadStream();

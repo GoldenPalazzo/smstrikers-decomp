@@ -212,8 +212,8 @@ public:
         /* 0x8 */ unsigned long FadeIn : 16;
         /* 0x8 */ unsigned long StartVolume : 10;
         /* 0x8 */ unsigned long VolGroup : 3;
-        /* 0xB */ unsigned long Loop : 1;
-        /* 0xB */ unsigned long TrackOwnsStream : 1;
+        /* 0xB */ unsigned char Loop : 1;
+        /* 0xB */ unsigned char TrackOwnsStream : 1;
     }; // total size: 0xC
 
     StreamTrack(TrackManagerBase& mgr, Audio::MasterVolume::VOLUME_GROUP volumeGroup);
@@ -236,8 +236,10 @@ public:
     void Resume();
     void AttachStream(GCAudioStreaming::StereoAudioStream*, Audio::MasterVolume::VOLUME_GROUP, unsigned long, unsigned long, bool, bool);
 
+    static const unsigned long MAX_QUEUED_STREAMS = 4;
+
     /* 0x00 */ TrackManagerBase& m_TrackMgr;
-    /* 0x04 */ DLListContainerBase<QUEUED_STREAM, nlStaticArrayAllocator<DLListEntry<QUEUED_STREAM>, 4> > m_QueuedStreams;
+    /* 0x04 */ DLListContainerBase<QUEUED_STREAM, nlStaticArrayAllocator<DLListEntry<QUEUED_STREAM>, MAX_QUEUED_STREAMS> > m_QueuedStreams;
     /* 0x5C */ unsigned long m_LPFFreq;
     /* 0x60 */ unsigned char m_LPFOn : 1;
     /* 0x60 */ unsigned char m_InFakePause : 1;

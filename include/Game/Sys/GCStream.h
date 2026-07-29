@@ -3,6 +3,7 @@
 
 #include "NL/nlArrayAllocator.h"
 #include "NL/nlFile.h"
+#include "NL/nlFileGC.h"
 #include "musyx/musyx.h"
 #include "dolphin/os.h"
 
@@ -92,9 +93,11 @@ public:
     void FreeBuffer(GCAudioStreaming::AudioStreamBuffer*);
     static AudioStreamBuffer* GetFreeBuffer(GCAudioStreaming::AudioStream*);
 
+    static const unsigned long MAX_BUFFERS = 8;
+
     /* 0x000 */ unsigned long m_PoolSize;         // offset 0x0, size 0x4
     /* 0x004 */ unsigned char* m_MRAMBuffer;      // offset 0x4, size 0x4
-    /* 0x008 */ AudioStreamBuffer m_Buffers[8];   // offset 0x8, size 0x100
+    /* 0x008 */ AudioStreamBuffer m_Buffers[MAX_BUFFERS]; // offset 0x8, size 0x100
     /* 0x108 */ unsigned char m_ADPCMHdrMem[128]; // offset 0x108, size 0x80
     /* 0x188 */ unsigned long m_BuffersFree;      // offset 0x188, size 0x4
     /* 0x18C */ unsigned long m_BufferCount;      // offset 0x18C, size 0x4
@@ -122,6 +125,33 @@ enum STREAM_FLAG
 class AudioStream
 {
 public:
+    AudioStreamBuffer* GetBuffer(unsigned long index)
+    {
+        AudioStreamBuffer* buffer;
+        if (index < m_BufferCount)
+        {
+            buffer = m_Buffers[index];
+        }
+        else
+        {
+            buffer = NULL;
+        }
+        return buffer;
+    }
+    void ResetBuffers()
+    {
+        AudioStreamBuffer* buf;
+        AudioStreamBuffer* BufferIndex = NULL;
+
+        buf = GetBuffer(0);
+
+        while (buf != NULL)
+        {
+            m_Buffers[(unsigned long)BufferIndex] = NULL;
+            ((unsigned long&)BufferIndex)++;
+            buf = GetBuffer((unsigned long)BufferIndex);
+        }
+    }
     AudioStream(AudioBufferMgr& mgr, unsigned long bufCount);
     virtual ~AudioStream() { };
     virtual void Warm(bool) = 0;
@@ -450,11 +480,13 @@ public:
         static nlArrayAllocator<READ_CB_INFO> s_AllocPool;
     };
 
+    static const unsigned long MAX_BUFFERS = 2;
+
     /* 0x04 */ unsigned char m_FlagAtDelete;
     /* 0x08 */ STREAM_STATE m_State;
     /* 0x0C */ unsigned long m_StreamLength;
     /* 0x10 */ unsigned long m_StreamPos;
-    /* 0x14 */ AudioStreamBuffer* m_Buffers[2];
+    /* 0x14 */ AudioStreamBuffer* m_Buffers[MAX_BUFFERS];
     /* 0x1C */ unsigned long m_LastPlayable;
     /* 0x20 */ unsigned long m_Volume;
     /* 0x24 */ unsigned char m_LPFOn;
@@ -469,6 +501,22 @@ class MonoAudioStream : public AudioStream
 {
 public:
     MonoAudioStream(AudioBufferMgr& mgr);
+    void Open(const char* filename)
+    {
+        m_StreamLength = 0;
+        m_OldLength = 0;
+        m_StreamPos = 0;
+
+        ResetBuffers();
+
+        m_LastPlayable = 0;
+        m_Flags = 0;
+        m_Volume = 64;
+        m_LPFOn = 0;
+        m_LPFFreq = 0x3FFF;
+        m_pFile = nlOpen(filename);
+        m_State = SS_Initd;
+    }
     virtual ~MonoAudioStream();
     static void _AsyncCancelCB(nlFile*, void*, unsigned int, unsigned long, void (*)(nlFile*, void*, unsigned int, unsigned long));
     virtual void CancelPendingReads();
@@ -486,6 +534,22 @@ class StereoAudioStream : public AudioStream
 {
 public:
     StereoAudioStream(AudioBufferMgr& mgr);
+    void Open(const char* filename)
+    {
+        m_StreamLength = 0;
+        m_OldLength = 0;
+        m_StreamPos = 0;
+
+        ResetBuffers();
+
+        m_LastPlayable = 0;
+        m_Flags = 0;
+        m_Volume = 64;
+        m_LPFOn = 0;
+        m_LPFFreq = 0x3FFF;
+        m_pFile = nlOpen(filename);
+        m_State = SS_Initd;
+    }
     virtual ~StereoAudioStream()
     {
         FORCE_DONT_INLINE;
