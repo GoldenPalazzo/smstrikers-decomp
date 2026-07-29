@@ -36,7 +36,23 @@ cBall* g_pBall = NULL;
 static float gfPerfectPassSFXVol;
 static bool gbCanFadeOutPerfectPassSFX = true;
 
-nlMatrix3 m3Ident = { 1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f };
+static const nlVector3 v3Zero = { 0.f, 0.f, 0.f };
+static const char szRegBallBlurTexture[] = "global/shotstreak";
+static const char szChipBallBlurTexture[] = "global/blueshotstreak";
+static const char szPerfectBallBlurTexture[] = "global/greenshotstreak";
+static const char szPerfectPassBallBlurTexture[] = "global/perfectpassstreak";
+static const char szShootToScoreBallBlurTexture[] = "global/shoottoscorestreak";
+static const char szDaisyShootToScoreBallBlurTexture[] = "global/daisyshoottoscorestreak";
+static const char szDonkeyKongShootToScoreBallBlurTexture[] = "global/dkshoottoscorestreak";
+static const char szLuigiShootToScoreBallBlurTexture[] = "global/luigishoottoscorestreak";
+static const char szMarioShootToScoreBallBlurTexture[] = "global/marioshoottoscorestreak";
+static const char szPeachShootToScoreBallBlurTexture[] = "global/peachshoottoscorestreak";
+static const char szWaluigiShootToScoreBallBlurTexture[] = "global/washoottoscorestreak";
+static const char szWarioShootToScoreBallBlurTexture[] = "global/warioshoottoscorestreak";
+static const char szYoshiShootToScoreBallBlurTexture[] = "global/yoshishoottoscorestreak";
+static const char szMysteryShootToScoreBallBlurTexture[] = "global/mysshoottoscorestreak";
+
+static nlMatrix3 m3Ident = { 1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f };
 // nlMatrix4 m4Ident = { 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f };
 
 /**
@@ -626,11 +642,11 @@ void cBall::SetVisible(bool visible)
 
 /**
  * Offset/Address/Size: 0x1104 | 0x8000AAD8 | size: 0x1D4
- * TODO: 99.49% match - spin branch still uses different float registers for spin and velocity temporaries.
  */
 void cBall::SetVelocity(const nlVector3& velocity, eSpinType spin, const nlVector3* pAngularVelocity)
 {
     nlVector3 v3AngVel;
+    float fSpinRand;
 
     m_v3Velocity = velocity;
     m_pPhysicsBall->SetLinearVelocity(velocity);
@@ -643,17 +659,20 @@ void cBall::SetVelocity(const nlVector3& velocity, eSpinType spin, const nlVecto
     }
     else if ((spin == SPINTYPE_FORWARD) || (spin == SPINTYPE_BACK))
     {
-        float fSpinRand = CalcSpinRand(spin);
+        fSpinRand = 0.5f + nlRandomf(2.0f, &nlDefaultSeed);
+        if (spin == SPINTYPE_BACK)
+        {
+            fSpinRand *= -1.0f;
+        }
 
         nlVector3 v3Up = { 0.0f, 0.0f, 0.0f };
         v3Up.f.z = fSpinRand;
 
-        float velY = velocity.f.y;
-        float velX = velocity.f.x;
-
-        v3AngVel.f.x = (v3Up.f.y * velocity.f.z) - (v3Up.f.z * velY);
-        v3AngVel.f.y = (-v3Up.f.x * velocity.f.z) + (v3Up.f.z * velX);
-        v3AngVel.f.z = (velY * v3Up.f.x) - (v3Up.f.y * velX);
+        nlVector3 v3Cross;
+        nlVec3CrossProductAlt(v3Cross, v3Up, velocity);
+        v3AngVel.f.x = v3Cross.f.z;
+        v3AngVel.f.y = v3Cross.f.y;
+        v3AngVel.f.z = v3Cross.f.x;
     }
     else if (spin == SPINTYPE_ROLLING)
     {
@@ -931,7 +950,7 @@ void cBall::InitiateBallBlur(eBallShotEffectType effectType, cPlayer* pPlayer)
     case BALL_EFFECT_S2S_SUPER_SHOT:
     {
         char textureName[32] = "";
-        nlStrNCpy(textureName, "global/shoottoscorestreak", 0x20);
+        nlStrNCpy(textureName, szShootToScoreBallBlurTexture, 0x20);
         m_pBlurHandler = BlurManager::GetNewHandler(textureName, g_pGame->m_pGameTweaks->unk288, g_pGame->m_pGameTweaks->unk28C, true);
         break;
     }
@@ -946,34 +965,34 @@ void cBall::InitiateBallBlur(eBallShotEffectType effectType, cPlayer* pPlayer)
                 switch (nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)pPlayer->m_pTeam->m_nSide))
                 {
                 case TEAM_DAISY:
-                    nlStrNCpy(textureName, "global/daisyshoottoscorestreak", 0x20);
+                    nlStrNCpy(textureName, szDaisyShootToScoreBallBlurTexture, 0x20);
                     break;
                 case TEAM_DONKEYKONG:
-                    nlStrNCpy(textureName, "global/dkshoottoscorestreak", 0x20);
+                    nlStrNCpy(textureName, szDonkeyKongShootToScoreBallBlurTexture, 0x20);
                     break;
                 case TEAM_LUIGI:
-                    nlStrNCpy(textureName, "global/luigishoottoscorestreak", 0x20);
+                    nlStrNCpy(textureName, szLuigiShootToScoreBallBlurTexture, 0x20);
                     break;
                 case TEAM_MARIO:
-                    nlStrNCpy(textureName, "global/marioshoottoscorestreak", 0x20);
+                    nlStrNCpy(textureName, szMarioShootToScoreBallBlurTexture, 0x20);
                     break;
                 case TEAM_PEACH:
-                    nlStrNCpy(textureName, "global/peachshoottoscorestreak", 0x20);
+                    nlStrNCpy(textureName, szPeachShootToScoreBallBlurTexture, 0x20);
                     break;
                 case TEAM_WALUIGI:
-                    nlStrNCpy(textureName, "global/washoottoscorestreak", 0x20);
+                    nlStrNCpy(textureName, szWaluigiShootToScoreBallBlurTexture, 0x20);
                     break;
                 case TEAM_WARIO:
-                    nlStrNCpy(textureName, "global/warioshoottoscorestreak", 0x20);
+                    nlStrNCpy(textureName, szWarioShootToScoreBallBlurTexture, 0x20);
                     break;
                 case TEAM_YOSHI:
-                    nlStrNCpy(textureName, "global/yoshishoottoscorestreak", 0x20);
+                    nlStrNCpy(textureName, szYoshiShootToScoreBallBlurTexture, 0x20);
                     break;
                 case TEAM_MYSTERY:
-                    nlStrNCpy(textureName, "global/mysshoottoscorestreak", 0x20);
+                    nlStrNCpy(textureName, szMysteryShootToScoreBallBlurTexture, 0x20);
                     break;
                 default:
-                    nlStrNCpy(textureName, "global/shoottoscorestreak", 0x20);
+                    nlStrNCpy(textureName, szShootToScoreBallBlurTexture, 0x20);
                     break;
                 }
 
@@ -982,23 +1001,23 @@ void cBall::InitiateBallBlur(eBallShotEffectType effectType, cPlayer* pPlayer)
             }
         }
 
-        m_pBlurHandler = BlurManager::GetNewHandler("global/shoottoscorestreak", g_pGame->m_pGameTweaks->unk288, g_pGame->m_pGameTweaks->unk28C, true);
+        m_pBlurHandler = BlurManager::GetNewHandler(szShootToScoreBallBlurTexture, g_pGame->m_pGameTweaks->unk288, g_pGame->m_pGameTweaks->unk28C, true);
         break;
 
     case BALL_EFFECT_PERFECT_SHOT:
-        m_pBlurHandler = BlurManager::GetNewHandler("global/greenshotstreak", 0.15f, 0x1E, true);
+        m_pBlurHandler = BlurManager::GetNewHandler(szPerfectBallBlurTexture, 0.15f, 0x1E, true);
         break;
 
     case BALL_EFFECT_PERFECT_PASS:
-        m_pBlurHandler = BlurManager::GetNewHandler("global/perfectpassstreak", 0.15f, 0x1E, true);
+        m_pBlurHandler = BlurManager::GetNewHandler(szPerfectPassBallBlurTexture, 0.15f, 0x1E, true);
         break;
 
     case BALL_EFFECT_CHIP_SHOT:
-        m_pBlurHandler = BlurManager::GetNewHandler("global/blueshotstreak", 0.15f, 0x1E, true);
+        m_pBlurHandler = BlurManager::GetNewHandler(szChipBallBlurTexture, 0.15f, 0x1E, true);
         break;
 
     default:
-        m_pBlurHandler = BlurManager::GetNewHandler("global/shotstreak", 0.15f, 0x1E, false);
+        m_pBlurHandler = BlurManager::GetNewHandler(szRegBallBlurTexture, 0.15f, 0x1E, false);
         break;
     }
 }
@@ -1906,9 +1925,6 @@ cBall::~cBall()
     delete m_pBallPosCollider;
 }
 
-static nlVector3 v3Zero = { 0.f, 0.f, 0.f };
-static nlQuaternion qIdentity = { 0.f, 0.f, 0.f, 1.f };
-
 /**
  * Offset/Address/Size: 0x3908 | 0x8000D2DC | size: 0x260
  */
@@ -1920,10 +1936,6 @@ cBall::cBall()
     , m_tPassTargetTimer(0.f)
     , m_tBuzzerBeaterTimer(0.f)
 {
-    u32 t0, t2;
-    register u32 t1;
-    nlVector3* pz;
-
     m_pBlurHandler = NULL;
     m_pOwner = NULL;
     m_pPrevOwner = NULL;
@@ -1963,24 +1975,16 @@ cBall::cBall()
 
     m_pPhysicsBall->SetPosition(m_v3Position, PhysicsObject::WORLD_COORDINATES);
 
-    pz = &v3Zero;
-
     m_qOrientation.f.z = 0.f;
-    t1 = pz->as_u32[1];
     m_qOrientation.f.y = 0.f;
-    t0 = pz->as_u32[0];
     m_qOrientation.f.x = 0.f;
-    t2 = pz->as_u32[2];
     m_qOrientation.f.w = 1.f;
 
     m_v3ShotOrigin = m_v3Position;
-
-    m_v3Velocity.as_u32[0] = t0;
-    m_v3Velocity.as_u32[1] = t1;
-    m_v3Velocity.as_u32[2] = t2;
+    m_v3Velocity = v3Zero;
 
     m_pPhysicsBall->SetLinearVelocity(m_v3Velocity);
-    m_pPhysicsBall->SetAngularVelocity(*pz);
+    m_pPhysicsBall->SetAngularVelocity(v3Zero);
 
     m_fTotalPassTime = 0.f;
     m_tBuzzerBeaterTimer.SetSeconds(0.f);
