@@ -151,13 +151,6 @@ inline void nlVec3Set(nlVector3& v0, float _x, float _y, float _z)
     v0.f.z = _z;
 }
 
-inline void nlVec3SetRotatedXY(nlVector3& result, const nlVector3& source, float cosAngle, float sinAngle)
-{
-    result.f.x = source.f.x * cosAngle - source.f.y * sinAngle;
-    result.f.y = source.f.y * cosAngle + source.f.x * sinAngle;
-    result.f.z = source.f.z;
-}
-
 inline void nlVec3Sub(nlVector3& result, const nlVector3& a, const nlVector3& b)
 {
     nlVec3Set(result, a.f.x - b.f.x, a.f.y - b.f.y, a.f.z - b.f.z);

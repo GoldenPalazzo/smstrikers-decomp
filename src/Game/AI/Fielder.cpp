@@ -3499,24 +3499,6 @@ LooseBallContactAnimInfo* cFielder::GetOneTimerBallContactAnimInfo(unsigned shor
 }
 
 /**
- * Offset/Address/Size: 0x6A00 | 0x8001FD3C | size: 0xEC
- */
-void cFielder::GetReceivePassBallContactOffset(nlVector3& v3Offset, unsigned short aFacingDirection, const LooseBallContactAnimInfo* pBestBallContactAnimInfo)
-{
-    nlVector3 v3ContactOffsetLocal;
-    const cSAnim* guessContactAnim = m_pAnimInventory->GetAnim(pBestBallContactAnimInfo->nAnimID);
-
-    GetJointPositionFuture(&v3ContactOffsetLocal, pBestBallContactAnimInfo->nAnimID, m_nBallJointIndex, pBestBallContactAnimInfo->fAnimContactFrame / (float)guessContactAnim->m_nNumKeys, false, true, false);
-
-    float cos, sin;
-    nlSinCos(&sin, &cos, aFacingDirection);
-
-    v3Offset.f.x = v3ContactOffsetLocal.f.x * cos - v3ContactOffsetLocal.f.y * sin;
-    v3Offset.f.y = v3ContactOffsetLocal.f.y * cos + v3ContactOffsetLocal.f.x * sin;
-    v3Offset.f.z = v3ContactOffsetLocal.f.z;
-}
-
-/**
  * Offset/Address/Size: 0x6AEC | 0x8001FE28 | size: 0x130
  */
 const LooseBallContactAnimInfo* cFielder::GetReceivePassBallContactAnimInfo(cBall* pBall, const nlVector3& rv3Pos, unsigned short aAngle, bool bLeadPass, bool bVolleyPass)
@@ -3569,6 +3551,25 @@ const LooseBallContactAnimInfo* cFielder::GetReceivePassBallContactAnimInfo(cBal
     }
     return pBestBallContactAnimInfo;
 }
+
+/**
+ * Offset/Address/Size: 0x6A00 | 0x8001FD3C | size: 0xEC
+ */
+void cFielder::GetReceivePassBallContactOffset(nlVector3& v3Offset, unsigned short aFacingDirection, const LooseBallContactAnimInfo* pBestBallContactAnimInfo)
+{
+    nlVector3 v3ContactOffsetLocal;
+    const cSAnim* guessContactAnim = m_pAnimInventory->GetAnim(pBestBallContactAnimInfo->nAnimID);
+
+    GetJointPositionFuture(&v3ContactOffsetLocal, pBestBallContactAnimInfo->nAnimID, m_nBallJointIndex, pBestBallContactAnimInfo->fAnimContactFrame / (float)guessContactAnim->m_nNumKeys, false, true, false);
+
+    float cos, sin;
+    nlSinCos(&sin, &cos, aFacingDirection);
+
+    v3Offset.f.x = v3ContactOffsetLocal.f.x * cos - v3ContactOffsetLocal.f.y * sin;
+    v3Offset.f.y = v3ContactOffsetLocal.f.y * cos + v3ContactOffsetLocal.f.x * sin;
+    v3Offset.f.z = v3ContactOffsetLocal.f.z;
+}
+
 /**
  * Offset/Address/Size: 0x68F0 | 0x8001FC2C | size: 0x110
  */

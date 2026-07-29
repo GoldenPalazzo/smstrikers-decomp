@@ -1858,8 +1858,6 @@ void cFielder::ActionLateOneTimerFromVolley(float)
 
 /**
  * Offset/Address/Size: 0x5DF0 | 0x8002C928 | size: 0x36C
- *
- * TODO: 99.86% match - register diffs in rotated contact-offset x/y components.
  */
 void cFielder::DoCommonInitActionLooseBall(const nlVector3& rv3OneTimerTarget)
 {
@@ -1924,7 +1922,11 @@ void cFielder::DoCommonInitActionLooseBall(const nlVector3& rv3OneTimerTarget)
 
     nlSinCos(&fSin, &fCos, m_aActualFacingDirection);
 
-    nlVec3SetRotatedXY(v3ContactOffsetWorld, v3ContactOffsetLocal, fCos, fSin);
+    const float fRotationCos = fCos;
+    const float fContactOffsetX = v3ContactOffsetLocal.f.x;
+    v3ContactOffsetWorld.f.x = (fContactOffsetX * fRotationCos) - (v3ContactOffsetLocal.f.y * fSin);
+    v3ContactOffsetWorld.f.y = (v3ContactOffsetLocal.f.y * fRotationCos) + (fContactOffsetX * fSin);
+    v3ContactOffsetWorld.f.z = v3ContactOffsetLocal.f.z;
     nlVector3* pContactOffsetWorld = &v3ContactOffsetWorld;
 
     mActionOneTimerVars.fOneTimerAnimTime = pBestBallContactAnimInfo->fAnimContactFrame / (float)pBestContactAnim->m_nNumKeys;
