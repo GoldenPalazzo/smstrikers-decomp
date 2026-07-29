@@ -354,6 +354,7 @@ public:
     void asmRunning();
     void asmRunningWB(float);
     void EndAction();
+    bool InitAction(eFielderActionState eAction, FuzzyVariant& vOpt1, FuzzyVariant& vOpt2);
     void InitActionDeke(ePadActions);
     void ActionDeke(float);
     void InitActionElectrocution(const nlVector3&, const nlVector3&);
@@ -387,7 +388,9 @@ public:
     void ActionRunning(float);
     void InitActionRunningWB(bool);
     void ActionRunningWB(float);
+    inline void InitActionRunningWBTurbo();
     void ActionRunningWBTurbo(float);
+    inline void InitActionRunningWBTurboTurn();
     void ActionRunningWBTurboTurn(float);
     void InitActionShot(bool);
     void ActionShot(float);
@@ -592,5 +595,6 @@ public:
     unsigned long mThoughtHashInitCutAndBreak; // offset 0x3E8, size 0x4
 
 }; // total size: 0x3EC
+
 
 #endif // _FIELDER_H_

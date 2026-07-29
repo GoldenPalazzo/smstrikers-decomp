@@ -39,20 +39,6 @@
 #include "NL/plat/plataudio.h"
 #include "types.h"
 
-static u16 g_IdleTurnCompletionDelta;
-
-namespace
-{
-struct FielderActionsGlobalsInit
-{
-    FielderActionsGlobalsInit()
-    {
-        g_IdleTurnCompletionDelta = 0xB6;
-    }
-};
-FielderActionsGlobalsInit s_fielderActionsGlobalsInit;
-} // namespace
-
 static f32 CANT_COLLIDE = *(f32*)__float_max;
 
 extern unsigned int nlDefaultSeed;
@@ -79,10 +65,6 @@ HitReactInfo g_HitReactInfo[4] = {
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 
-static nlVector3 captainStsTargetPos = { 0.0f, 0.0f, 0.0f };
-static bool setCaptainStscaptainStsTargetPos;
-
-static cRumbleFilter rumbleFilter;
 static float sfMatrixCamDuration = 4.25f;
 static float sfMatrixCamZoomTime = 3.35f;
 static float sfMatrixCamInitialDistanceFromTarget = 2.0f;
@@ -115,6 +97,10 @@ static float sfMatrixCamPauseAfterSpin;
 static float sfOtherMatrixCamZoomTime;
 static float sfHyperStrikeMaxRumbleIntensity;
 static bool sbDoShatteredGlassTransition;
+
+static u16 g_IdleTurnCompletionDelta = DegreesToAngle(1.0f);
+
+static cRumbleFilter rumbleFilter;
 
 extern cCharacter* g_pCurrentlyUpdatingCharacter;
 extern float g_fFixedUpdateTick;
@@ -1094,34 +1080,23 @@ nlVector3 GetClosestWallPoint(const nlVector3& pos)
     nlVector3 topSideline = pos;
     topSideline.f.y = cField::GetSidelineY(1U);
 
-    nlVector3 rightGoalLine = pos;
-    rightGoalLine.f.x = cField::GetGoalLineX(1.0f);
-
     nlVector3 leftGoalLine = pos;
     leftGoalLine.f.x = cField::GetGoalLineX(-1.0f);
+
+    nlVector3 rightGoalLine = pos;
+    rightGoalLine.f.x = cField::GetGoalLineX(1.0f);
 
     nlVector3 bottomSideline = pos;
     bottomSideline.f.y = -topSideline.f.y;
 
     f32 distTop = fabsf(pos.f.y - topSideline.f.y);
     f32 distBottom = fabsf(pos.f.y - bottomSideline.f.y);
-    f32 distRight = fabsf(pos.f.x - rightGoalLine.f.x);
     f32 distLeft = fabsf(pos.f.x - leftGoalLine.f.x);
+    f32 distRight = fabsf(pos.f.x - rightGoalLine.f.x);
 
     if (distTop < distBottom)
     {
-        if (distRight < distLeft)
-        {
-            if (distTop < distRight)
-            {
-                return topSideline;
-            }
-            else
-            {
-                return rightGoalLine;
-            }
-        }
-        else
+        if (distLeft < distRight)
         {
             if (distTop < distLeft)
             {
@@ -1132,21 +1107,21 @@ nlVector3 GetClosestWallPoint(const nlVector3& pos)
                 return leftGoalLine;
             }
         }
-    }
-    else
-    {
-        if (distRight < distLeft)
+        else
         {
-            if (distBottom < distRight)
+            if (distTop < distRight)
             {
-                return bottomSideline;
+                return topSideline;
             }
             else
             {
                 return rightGoalLine;
             }
         }
-        else
+    }
+    else
+    {
+        if (distLeft < distRight)
         {
             if (distBottom < distLeft)
             {
@@ -1155,6 +1130,17 @@ nlVector3 GetClosestWallPoint(const nlVector3& pos)
             else
             {
                 return leftGoalLine;
+            }
+        }
+        else
+        {
+            if (distBottom < distRight)
+            {
+                return bottomSideline;
+            }
+            else
+            {
+                return rightGoalLine;
             }
         }
     }
@@ -1775,7 +1761,7 @@ void cFielder::ActionIdleTurn(float)
 
         if (ctrl->m_ePlayMode == PM_HOLD)
         {
-            if (ctrl->m_fTime == 0.0f)
+            if (ctrl->m_fTime == 1.0f)
             {
                 shouldSetAction = true;
             }
@@ -2464,6 +2450,58 @@ void cFielder::ActionRunningWB(float dt)
     }
 }
 
+inline void cFielder::InitActionRunningWBTurbo()
+{
+    SetAction(ACTION_RUNNING_WB_TURBO);
+    InitMovementRunningNoTurn(((FielderTweaks*)m_pTweaks)->fRunningWBTurboAccel, ((FielderTweaks*)m_pTweaks)->fRunningWBTurboDecel);
+
+    bool bForceMirrorSwap;
+    cPN_SAnimController* pController = m_pCurrentAnimController;
+    if (!pController->m_bMirror)
+    {
+        bForceMirrorSwap = false;
+        if (m_eAnimID == 0x1A)
+        {
+            if (pController->m_fTime > 0.25f && pController->m_fTime < 0.75)
+            {
+                bForceMirrorSwap = true;
+            }
+        }
+        mActionRunningWBTurboVars.bForcedMirrorSwap = bForceMirrorSwap;
+    }
+    else
+    {
+        bForceMirrorSwap = false;
+        if (m_eAnimID == 0x1A)
+        {
+            if (pController->m_fTime < 0.25f || pController->m_fTime > 0.75)
+            {
+                bForceMirrorSwap = true;
+            }
+        }
+        mActionRunningWBTurboVars.bForcedMirrorSwap = bForceMirrorSwap;
+    }
+
+    SetRunTurboAnimState(0x1D, mActionRunningWBTurboVars.bForcedMirrorSwap);
+}
+
+inline void cFielder::InitActionRunningWBTurboTurn()
+{
+    SetAction(ACTION_RUNNING_WB_TURBO_TURN);
+
+    static int RunningWBTurboTurnAnim[4] = { 0x22, 0x21, 0x22, 0x20 };
+
+    m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboTurnSpeed;
+    int facingDiff = m_aDesiredFacingDirection - m_aActualFacingDirection;
+    SetAnimState(RunningWBTurboTurnAnim[((facingDiff + 0x2000) >> 14) & 3], true, 0.2f, false, false);
+
+    InitMovementFromAnim(
+        CalcAnimTurnAdjust(m_aActualFacingDirection, m_aDesiredFacingDirection, m_eAnimID),
+        v3Zero,
+        1.0f,
+        false);
+}
+
 /**
  * Offset/Address/Size: 0x3F28 | 0x8002AA60 | size: 0x3AC
  */
@@ -2496,7 +2534,7 @@ void cFielder::ActionRunningWBTurbo(float fDeltaT)
     }
 
 afterSpeed:
-    if (m_fDesiredSpeed > ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed + 0.1f)
+    if (m_fDesiredSpeed > ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed + 0.15f)
     {
         switch (m_eAnimID)
         {
@@ -2513,7 +2551,7 @@ afterSpeed:
         }
     }
 
-    if (m_pCurrentAnimController->m_fTime > 0.5f || m_pCurrentAnimController->m_fTime < -0.5f)
+    if (m_pCurrentAnimController->m_fTime > 0.975f || m_pCurrentAnimController->m_fTime < 0.075f)
     {
         if (m_pBall != NULL)
         {
@@ -2545,7 +2583,7 @@ afterSpeed:
                 goto done;
             }
 
-            if (m_pCurrentAnimController->m_fTime > 0.5f)
+            if (m_pCurrentAnimController->m_fTime > 0.975f)
             {
                 int absDelta = nFacingDelta;
                 if (nFacingDelta < 0)
@@ -2553,19 +2591,7 @@ afterSpeed:
 
                 if ((u16)absDelta > 0x2000)
                 {
-                    SetAction(ACTION_RUNNING_WB_TURBO_TURN);
-
-                    static int RunningWBTurboTurnAnim[4] = { 0x22, 0x21, 0x22, 0x20 };
-
-                    m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboTurnSpeed;
-                    int facingDiff = m_aDesiredFacingDirection - m_aActualFacingDirection;
-                    SetAnimState(RunningWBTurboTurnAnim[((facingDiff + 0x2000) >> 14) & 3], true, 0.2f, false, false);
-
-                    InitMovementFromAnim(
-                        CalcAnimTurnAdjust(m_aActualFacingDirection, m_aDesiredFacingDirection, m_eAnimID),
-                        v3Zero,
-                        1.0f,
-                        false);
+                    InitActionRunningWBTurboTurn();
                 }
                 else
                 {
@@ -2871,7 +2897,7 @@ void cFielder::ActionShot(float)
 /**
  * Offset/Address/Size: 0x3180 | 0x80029CB8 | size: 0x538
  */
-static float FindSTSDistanceAffectedPercentage(cFielder* pFielder, float fMinAmount, float fMaxAmount);
+inline static float FindSTSDistanceAffectedPercentage(cFielder* pFielder, float fMinAmount, float fMaxAmount);
 
 void cFielder::InitActionShootToScore()
 {
@@ -2976,10 +3002,6 @@ void cFielder::InitActionShootToScore()
 
     switch (m_eCharacterClass)
     {
-    case DAISY:
-    case PEACH:
-        mActionShootToScoreVars.fCaptainYellowWidth *= 1.5f;
-        break;
     case DONKEYKONG:
     case WARIO:
     case MYSTERY:
@@ -2988,6 +3010,10 @@ void cFielder::InitActionShootToScore()
     case WALUIGI:
     case YOSHI:
         mActionShootToScoreVars.fCaptainYellowWidth *= 1.25f;
+        break;
+    case DAISY:
+    case PEACH:
+        mActionShootToScoreVars.fCaptainYellowWidth *= 1.5f;
         break;
     default:
         break;
@@ -3013,6 +3039,9 @@ void MatrixCamFinishedCallback(MatrixEffectCam*)
     FixedUpdateTask::mTimeScale = timeScale;
     ParticleUpdateTask::SetTimeScale(timeScale);
 }
+
+static nlVector3 captainStsTargetPos = { 0.0f, 0.0f, 0.0f };
+static bool setCaptainStscaptainStsTargetPos;
 
 /**
  * Offset/Address/Size: 0x2D08 | 0x80029840 | size: 0x450
@@ -3113,7 +3142,7 @@ void HyperStrikeEffectUpdate(EmissionController& controller)
     controller.SetDirection(viewVector);
 }
 
-static void FreezeEveryoneButCaptain(cFielder* pCaptain)
+inline static void FreezeEveryoneButCaptain(cFielder* pCaptain)
 {
     for (int i = 0; i < 2; i++)
     {
@@ -3140,7 +3169,7 @@ static void FreezeEveryoneButCaptain(cFielder* pCaptain)
     }
 }
 
-static void UnFreezeEveryoneButCaptain(cFielder* pCaptain)
+inline static void UnFreezeEveryoneButCaptain(cFielder* pCaptain)
 {
     for (int i = 0; i < 2; i++)
     {
@@ -3157,7 +3186,7 @@ static void UnFreezeEveryoneButCaptain(cFielder* pCaptain)
     }
 }
 
-static float FindSTSDistanceAffectedPercentage(cFielder* pFielder, float fMinAmount, float fMaxAmount)
+inline static float FindSTSDistanceAffectedPercentage(cFielder* pFielder, float fMinAmount, float fMaxAmount)
 {
     const nlVector3& v3OffNet = pFielder->GetAIOffNetLocation(NULL);
     float dy = pFielder->m_v3Position.f.y - v3OffNet.f.y;
@@ -3433,8 +3462,6 @@ void cFielder::ActionShootToScore(float)
     }
 
     unsigned int nTotalFrames2 = m_pCurrentAnimController->m_pSAnim->m_nNumKeys;
-    static signed char init2;
-    static float sfTimeSinceLastRumbleFilter;
     float fTotalTime2 = (float)nTotalFrames2;
     float hyperStrikeAnimCamBeginTime;
     float lightOffTime = 94.0f / fTotalTime2;
@@ -3442,11 +3469,7 @@ void cFielder::ActionShootToScore(float)
     float shaolinTime = 67.0f / (float)nTotalFrames2;
     hyperStrikeAnimCamBeginTime = sfHyperStrikeAnimCamBeginFrame / (float)nTotalFrames2;
 
-    if (!init2)
-    {
-        sfTimeSinceLastRumbleFilter = 0.0f;
-        init2 = 1;
-    }
+    static float sfTimeSinceLastRumbleFilter = 0.0f;
 
     if (mActionShootToScoreVars.isCaptainSts)
     {
@@ -4374,9 +4397,90 @@ void cFielder::ActionReceivePass(float)
 void cFielder::InitActionWait()
 {
     SetAction(ACTION_WAIT);
-    SetAnimState(0, true, 0.0f, false, false);
+    SetAnimState(0, true, 0.2f, false, false);
     InitMovementNone(0.0f, 0.0f);
     m_aDesiredFacingDirection = m_aActualFacingDirection;
+}
+
+bool cFielder::InitAction(eFielderActionState eAction, FuzzyVariant& vOpt1, FuzzyVariant& vOpt2)
+{
+    switch (eAction)
+    {
+    case ACTION_DEKE:
+        break;
+    case ACTION_ELECTROCUTION:
+        break;
+    case ACTION_HIT:
+        break;
+    case ACTION_HIT_REACT:
+        break;
+    case ACTION_IDLE_TURN:
+        InitActionIdleTurn((unsigned short)vOpt1.mData.u);
+        break;
+    case ACTION_LATE_ONETIMER_FROM_VOLLEY:
+        InitActionLateOneTimerFromVolley();
+        break;
+    case ACTION_LOOSE_BALL_PASS:
+        InitActionLooseBallPass((cFielder*)vOpt1.mData.pPlayer, vOpt2.mData.b);
+        break;
+    case ACTION_LOOSE_BALL_SHOT:
+        InitActionLooseBallShot(vOpt1.mData.b);
+        break;
+    case ACTION_ONETIMER:
+        break;
+    case ACTION_ONETOUCH_PASS_FROM_VOLLEY:
+        InitActionOneTouchPassFromVolley(vOpt1.mData.pPlayer);
+        break;
+    case ACTION_PASS:
+        break;
+    case ACTION_POST_WHISTLE:
+        InitActionPostWhistle();
+        break;
+    case ACTION_RECEIVE_PASS:
+        InitActionReceivePass(vOpt1.mData.i, vOpt2.mData.vector, 0.0f);
+        break;
+    case ACTION_RUNNING:
+        InitActionRunning();
+        break;
+    case ACTION_RUNNING_WB:
+        InitActionRunningWB(vOpt1.mData.b);
+        break;
+    case ACTION_RUNNING_WB_TURBO:
+        InitActionRunningWBTurbo();
+        break;
+    case ACTION_RUNNING_WB_TURBO_TURN:
+        InitActionRunningWBTurboTurn();
+        break;
+    case ACTION_SHOT:
+        break;
+    case ACTION_SHOOT_TO_SCORE:
+        break;
+    case ACTION_SLIDE_ATTACK:
+        break;
+    case ACTION_SLIDE_ATTACK_REACT:
+        break;
+    case ACTION_BOMB_REACT:
+        break;
+    case ACTION_SHELL_REACT:
+        InitActionShellReact(vOpt1.mData.vector, vOpt2.mData.vector);
+        break;
+    case ACTION_BANANA_REACT:
+        InitActionBananaReact(vOpt1.mData.vector);
+        break;
+    case ACTION_STS_HIT_REACT:
+        break;
+    case ACTION_SQUISH_REACT:
+        break;
+    case ACTION_SLIDE_FAIL_REACT:
+        break;
+    case ACTION_WAIT:
+        InitMovementNone(0.0f, 0.0f);
+        break;
+    default:
+        break;
+    }
+
+    return true;
 }
 
 /**
