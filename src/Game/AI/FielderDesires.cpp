@@ -1231,6 +1231,7 @@ void cFielder::DesireMark(float fDeltaT)
     float fTimeDelay;
     nlVector3 v3NetPosition;
     nlVector3 vAccumulated_v3;
+    float fTotalWeight_v3;
     float fMarkingNetPassBalance;
     float fMarkingDistance;
     float fMarkFormationBalance;
@@ -1281,13 +1282,14 @@ void cFielder::DesireMark(float fDeltaT)
         v3NetPosition = m_pTeam->m_pNet->m_baseLocation;
 
         nlVector3 v3MarkPosition;
-        nlVec3Set(v3MarkPosition, m_pMark->m_v3Position.f.x + (0.1f * m_pMark->m_v3Velocity.f.x), m_pMark->m_v3Position.f.y + (0.1f * m_pMark->m_v3Velocity.f.y), 0.0f);
+        nlVec3ScaleAdd(v3MarkPosition, 0.1f, m_pMark->m_v3Velocity, m_pMark->m_v3Position);
+        v3MarkPosition.f.z = 0.0f;
 
         nlVector3 v3Dir;
         nlVec3Set(v3Dir, v3NetPosition.f.x - v3MarkPosition.f.x, v3NetPosition.f.y - v3MarkPosition.f.y, v3NetPosition.f.z - v3MarkPosition.f.z);
         nlVec3Scale(v3Dir, nlRecipSqrt(nlVec3LengthSquared(v3Dir), true));
 
-        float fTotalWeight_v3 = 0.0f;
+        fTotalWeight_v3 = 0.0f;
 
         vAccumulated_v3 = v3Zero;
 
@@ -1330,7 +1332,7 @@ void cFielder::DesireMark(float fDeltaT)
             if (pSBC != NULL && pSBC != m_pMark)
             {
                 nlVector3 v3SBCPosition;
-                nlVec3Set(v3SBCPosition, pSBC->m_v3Position.f.x + (0.1f * pSBC->m_v3Velocity.f.x), pSBC->m_v3Position.f.y + (0.1f * pSBC->m_v3Velocity.f.y), pSBC->m_v3Position.f.z + (0.1f * pSBC->m_v3Velocity.f.z));
+                nlVec3ScaleAdd(v3SBCPosition, 0.1f, pSBC->m_v3Velocity, pSBC->m_v3Position);
 
                 nlVector3 v3SBCDir;
                 nlVec3Set(v3SBCDir, v3SBCPosition.f.x - v3MarkPosition.f.x, v3SBCPosition.f.y - v3MarkPosition.f.y, v3SBCPosition.f.z - v3MarkPosition.f.z);
