@@ -48,6 +48,13 @@ class AudioStreamBuffer
 {
 public:
     AudioStreamBuffer();
+    void Reset()
+    {
+        m_pStream = NULL;
+        m_UpdateOffset = 0;
+        m_Volume = 0x7F;
+        m_Pan = 0x40;
+    }
     static unsigned long _UpdateHandler(void*, unsigned long, void*, unsigned long, unsigned long);
 
     /* 0x00 */ unsigned char* m_MRAMBuffer;   // offset 0x0, size 0x4
@@ -63,10 +70,22 @@ public:
     /* 0x1C */ unsigned short m_LPFFreq;      // offset 0x1C, size 0x2
 }; // total size: 0x20
 
+enum BUFFER_ALLOC_STATE
+{
+    BAS_Busy = 0,
+    BAS_Free = 1,
+};
+
 class AudioBufferMgr
 {
 public:
     AudioBufferMgr();
+    void SetBufferState(unsigned long index, BUFFER_ALLOC_STATE state)
+    {
+        m_BuffersFree =
+            (m_BuffersFree & ~(1 << index))
+            | (state << index);
+    }
     void Init(unsigned long);
     void CreateBuffers(unsigned long);
     void DeleteBuffers();

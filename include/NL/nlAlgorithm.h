@@ -8,8 +8,8 @@ static unsigned long nlCountBits(unsigned long bits)
     unsigned long count = 0;
     while (bits != 0)
     {
-        count += bits & 1;
-        bits >>= 1;
+        bits &= bits - 1;
+        count++;
     }
     return count;
 }

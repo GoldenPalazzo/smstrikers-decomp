@@ -1,4 +1,5 @@
 #include "Game/Sys/GCStream.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlFileGC.h"
 #include "NL/nlMemory.h"
 
@@ -212,70 +213,74 @@ void GCAudioStreaming::AudioStream::Stop()
     m_Flags &= ~(1 << SF_Play);
     if (m_State == SS_Playing)
     {
-        AudioStreamBuffer* next;
-        volatile unsigned long BufferIndex = (unsigned long)(next = 0);
-        if (m_BufferCount > (unsigned long)next)
-            next = m_Buffers[0];
-        AudioStreamBuffer* pBuffer = next;
-        while (pBuffer)
+        AudioStreamBuffer* pBuffer;
+        AudioStreamBuffer* init;
+        unsigned long Zero = 0;
+        volatile unsigned long BufferIndex = (unsigned long)(init = NULL);
+        if (m_BufferCount > Zero)
+        {
+            init = m_Buffers[0];
+        }
+        pBuffer = init;
+        while (pBuffer != NULL)
         {
             pBuffer->m_Volume = 0;
-            sndStreamMixParameterEx(pBuffer->m_StreamId, pBuffer->m_Volume, pBuffer->m_Pan, pBuffer->m_SurroundPan, 0, 0);
+            sndStreamMixParameterEx(
+                pBuffer->m_StreamId,
+                pBuffer->m_Volume,
+                pBuffer->m_Pan,
+                pBuffer->m_SurroundPan,
+                0,
+                0);
             sndStreamDeactivate(pBuffer->m_StreamId);
             m_State = SS_Warm;
-            unsigned long idx = BufferIndex + 1;
-            BufferIndex = idx;
-            if (idx < m_BufferCount)
-                next = m_Buffers[idx];
+
+            unsigned long index = BufferIndex + 1;
+            BufferIndex = index;
+            AudioStreamBuffer* pNext;
+            if (index < m_BufferCount)
+            {
+                pNext = m_Buffers[index];
+            }
             else
-                next = 0;
-            pBuffer = next;
+            {
+                pNext = NULL;
+            }
+            pBuffer = pNext;
         }
         m_StreamPos = 0;
         m_State = SS_Warm;
     }
+
     CancelPendingReads();
+
     if (m_Flags & (1 << SF_CoolOnStop))
     {
         m_Flags &= ~(1 << SF_CoolOnStop);
         if (m_State > SS_Initd)
         {
             AudioStreamBuffer* pBuffer;
-            volatile unsigned long BufferIndex = (unsigned long)(pBuffer = 0);
-            m_Flags = (m_Flags & ~(1 << SF_SeriousStop)) | (1 << SF_SeriousStop);
+            volatile unsigned long BufferIndex = (unsigned long)(pBuffer = NULL);
+            m_Flags =
+                (m_Flags & ~(1 << SF_SeriousStop))
+                | (1 << SF_SeriousStop);
             if (m_BufferCount > (unsigned long)pBuffer)
-                pBuffer = m_Buffers[0];
-            while (pBuffer)
             {
-                AudioBufferMgr& mgr = m_BuffMgr;
-                int buff = pBuffer - mgr.m_Buffers;
-                AudioStreamBuffer* pFree = &mgr.m_Buffers[buff];
-                int mask = 1 << buff;
-                pFree->m_pStream = 0;
-                pFree->m_UpdateOffset = 0;
-                pFree->m_Volume = 0x7F;
-                pFree->m_Pan = 0x40;
+                pBuffer = m_Buffers[0];
+            }
+            while (pBuffer != NULL)
+            {
+                m_BuffMgr.FreeBuffer(pBuffer);
 
-                unsigned long cleared = mgr.m_BuffersFree & ~mask;
-                mgr.m_BuffersFree = cleared | mask;
-
-                unsigned long free = mgr.m_BuffersFree;
-                buff = 0;
-                while (free)
+                unsigned long index = BufferIndex;
+                AudioStreamBuffer* zero = pBuffer = NULL;
+                m_Buffers[index] = zero;
+                index++;
+                BufferIndex = index;
+                if (index < m_BufferCount)
                 {
-                    free &= (free - 1);
-                    buff++;
+                    pBuffer = m_Buffers[index];
                 }
-
-                ___blank("After buffer free there are %d availible\n", buff);
-
-                unsigned long idx = BufferIndex;
-                AudioStreamBuffer* zero = pBuffer = 0;
-                m_Buffers[idx] = zero;
-                idx++;
-                BufferIndex = idx;
-                if (idx < m_BufferCount)
-                    pBuffer = m_Buffers[idx];
             }
             m_State = SS_Initd;
         }
@@ -1302,22 +1307,9 @@ void GCAudioStreaming::AudioBufferMgr::FreeBuffer(GCAudioStreaming::AudioStreamB
 {
     unsigned long buff = pBuffer - m_Buffers;
 
-    m_Buffers[buff].m_pStream = 0;
-    m_Buffers[buff].m_UpdateOffset = 0;
-    m_Buffers[buff].m_Volume = 0x7F;
-    m_Buffers[buff].m_Pan = 0x40;
+    m_Buffers[buff].Reset();
 
-    int mask = 1 << buff;
-    unsigned long cleared = m_BuffersFree & ~mask;
-    m_BuffersFree = cleared | mask;
+    SetBufferState(buff, BAS_Free);
 
-    unsigned long free = m_BuffersFree;
-    buff = 0;
-    while (free)
-    {
-        free &= (free - 1);
-        buff++;
-    }
-
-    ___blank("After buffer free there are %d availible\n", buff);
+    ___blank("After buffer free there are %d availible\n", nlCountBits(m_BuffersFree));
 }
