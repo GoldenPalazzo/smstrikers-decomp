@@ -1038,6 +1038,10 @@ void AudioStreamTrack::StreamTrack::FadeOutDoneStartNext(AudioStreamTrack::Strea
     ProcessNewHeadStream();
 }
 
+void AudioStreamTrack::StreamTrack::UpdateLPF()
+{
+}
+
 /**
  * Offset/Address/Size: 0x1E8 | 0x80154F40 | size: 0x374
  */
