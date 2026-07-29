@@ -29,6 +29,7 @@
 #include "Game/Audio/WorldAudio.h"
 #include "Game/AI/AiUtil.h"
 #include "Game/FE/feHelpFuncs.h"
+
 extern float g_BallAirResistance;
 
 static f32 CANT_COLLIDE = *(f32*)__float_max;
@@ -195,6 +196,16 @@ void cBall::SetPassTarget(cPlayer* passTargetPlayer, const nlVector3& pos, bool)
     m_v3PassIntercept = pos;
 }
 
+inline void cBall::SetAngularVelocity(const nlVector3& v3Velocity)
+{
+    m_pPhysicsBall->SetAngularVelocity(v3Velocity);
+    m_pPhysicsBall->SetUseAngularVelocity(true);
+    m_pPhysicsBall->SetRotation(m3Ident);
+    FakeBallWorld::InvalidateBallCache();
+    m_bBallPathChangeCount = m_bBallPathChangeCount + 1;
+    m_v3ShotOrigin = m_v3Position;
+}
+
 /**
  * Offset/Address/Size: 0x39C | 0x80009D70 | size: 0x90
  */
@@ -208,7 +219,7 @@ void cBall::WarpTo(const nlVector3& toPos)
     m_v3PrevPosition = toPos;
 }
 
-static void CalcBallRotationFromVelocity(nlQuaternion& qOrientationDelta, const nlVector3& v3Velocity, float fDeltaT)
+static inline void CalcBallRotationFromVelocity(nlQuaternion& qOrientationDelta, const nlVector3& v3Velocity, float fDeltaT)
 {
     qOrientationDelta.f.z = 0.0f;
     qOrientationDelta.f.y = 0.0f;
@@ -478,12 +489,7 @@ void cBall::ShootRelease(const nlVector3& v3Velocity, eSpinType SpinType)
         v3AngVel = *(const nlVector3*)NULL;
     }
 
-    m_pPhysicsBall->SetAngularVelocity(v3AngVel);
-    m_pPhysicsBall->SetUseAngularVelocity(true);
-    m_pPhysicsBall->SetRotation(m3Ident);
-    FakeBallWorld::InvalidateBallCache();
-    m_bBallPathChangeCount = m_bBallPathChangeCount + 1;
-    m_v3ShotOrigin = m_v3Position;
+    SetAngularVelocity(v3AngVel);
     m_tNoPickupTimer.SetSeconds(0.1f);
     m_pPhysicsBall->m_bUseMagnusEffect = false;
     m_unk_0xA6 = false;
@@ -539,13 +545,7 @@ void cBall::Shoot(const nlVector3& v3Dir, const nlVector3& v3Spin, eSpinType spi
         v3AngVel = v3Spin;
     }
 
-    m_pPhysicsBall->SetAngularVelocity(v3AngVel);
-    m_pPhysicsBall->SetUseAngularVelocity(true);
-    m_pPhysicsBall->SetRotation(m3Ident);
-    FakeBallWorld::InvalidateBallCache();
-
-    m_bBallPathChangeCount = m_bBallPathChangeCount + 1;
-    m_v3ShotOrigin = m_v3Position;
+    SetAngularVelocity(v3AngVel);
     m_tNoPickupTimer.SetSeconds(0.1f);
     m_tBuzzerBeaterTimer.SetSeconds(0.0f);
     m_tShotTimer.SetSeconds(1.5f);
@@ -662,12 +662,7 @@ void cBall::SetVelocity(const nlVector3& velocity, eSpinType spin, const nlVecto
         v3AngVel = *pAngularVelocity;
     }
 
-    m_pPhysicsBall->SetAngularVelocity(v3AngVel);
-    m_pPhysicsBall->SetUseAngularVelocity(true);
-    m_pPhysicsBall->SetRotation(m3Ident);
-    FakeBallWorld::InvalidateBallCache();
-    m_bBallPathChangeCount = m_bBallPathChangeCount + 1;
-    m_v3ShotOrigin = m_v3Position;
+    SetAngularVelocity(v3AngVel);
 }
 
 /**

@@ -36,6 +36,7 @@ public:
     void ClearPassTarget();
     void SetPassTargetTimer(float);
     void SetPassTarget(cPlayer*, const nlVector3&, bool);
+    void SetAngularVelocity(const nlVector3&);
     void WarpTo(const nlVector3&);
     void UpdateOrientation(float);
     void Update(float);

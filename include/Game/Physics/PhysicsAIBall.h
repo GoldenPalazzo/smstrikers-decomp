@@ -10,7 +10,6 @@ class PhysicsAIBall : public PhysicsBall
 {
 public:
     PhysicsAIBall(float);
-    virtual ~PhysicsAIBall() { };
 
     /* 0x0C */ virtual int GetObjectType() const
     {
