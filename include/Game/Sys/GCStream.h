@@ -180,7 +180,86 @@ public:
 
         m_State = SS_Playing;
     }
+    void Cool()
+    {
+        if (m_Flags & (1 << SF_CoolOnStop))
+        {
+            m_Flags &= ~(1 << SF_CoolOnStop);
+            if (m_State > SS_Initd)
+            {
+                volatile unsigned long coolIndex;
+                AudioStreamBuffer* buffer;
+                coolIndex = (unsigned long)(buffer = NULL);
+                m_Flags =
+                    (m_Flags & ~(1 << SF_SeriousStop))
+                    | (1 << SF_SeriousStop);
+                if (m_BufferCount > (unsigned long)buffer)
+                {
+                    buffer = m_Buffers[0];
+                }
+                while (buffer != NULL)
+                {
+                    m_BuffMgr.FreeBuffer(buffer);
+
+                    unsigned long index = coolIndex;
+                    m_Buffers[index] = NULL;
+                    index++;
+                    coolIndex = index;
+                    if (index < m_BufferCount)
+                    {
+                        buffer = m_Buffers[index];
+                    }
+                    else
+                    {
+                        buffer = NULL;
+                    }
+                }
+                m_State = SS_Initd;
+            }
+        }
+    }
     void Stop();
+    void StopPlaying()
+    {
+        volatile unsigned long bufferIndex;
+
+        m_Flags &= ~(1 << SF_Play);
+        if (m_State == SS_Playing)
+        {
+            AudioStreamBuffer* pBuffer;
+            bufferIndex = (unsigned long)(pBuffer = NULL);
+            if (m_BufferCount > (unsigned long)pBuffer)
+            {
+                pBuffer = m_Buffers[0];
+            }
+            while (pBuffer != NULL)
+            {
+                pBuffer->m_Volume = 0;
+                sndStreamMixParameterEx(
+                    pBuffer->m_StreamId,
+                    pBuffer->m_Volume,
+                    pBuffer->m_Pan,
+                    pBuffer->m_SurroundPan,
+                    0,
+                    0);
+                sndStreamDeactivate(pBuffer->m_StreamId);
+                m_State = SS_Warm;
+
+                unsigned long index = bufferIndex + 1;
+                bufferIndex = index;
+                if (index < m_BufferCount)
+                {
+                    pBuffer = m_Buffers[index];
+                }
+                else
+                {
+                    pBuffer = NULL;
+                }
+            }
+            m_StreamPos = 0;
+            m_State = SS_Warm;
+        }
+    }
     void Destructor()
     {
         FORCE_DONT_INLINE;

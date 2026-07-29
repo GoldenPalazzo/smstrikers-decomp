@@ -1108,7 +1108,6 @@ void AudioStreamTrack::StreamTrack::FadeOutDoneStartNext(AudioStreamTrack::Strea
 
 /**
  * Offset/Address/Size: 0x1E8 | 0x80154F40 | size: 0x374
- * TODO: 99.73% match - the first stopped-buffer pointer uses r25 instead of r26
  */
 void AudioStreamTrack::StreamTrack::Pause(unsigned long Fadeout, bool bPause)
 {
@@ -1158,79 +1157,11 @@ void AudioStreamTrack::StreamTrack::Pause(unsigned long Fadeout, bool bPause)
 
     GCAudioStreaming::StereoAudioStream* stream = qs->pStream;
 
-    stream->m_Flags = stream->m_Flags & ~1;
-
-    if (stream->m_State == GCAudioStreaming::SS_Playing)
-    {
-        unsigned long zero = 0;
-        GCAudioStreaming::AudioStreamBuffer* buf;
-        volatile unsigned long bufCounter = (unsigned long)(buf = NULL);
-        if (stream->m_BufferCount > zero)
-        {
-            buf = stream->m_Buffers[0];
-        }
-
-        while (buf != NULL)
-        {
-            buf->m_Volume = 0;
-            sndStreamMixParameterEx(buf->m_StreamId, buf->m_Volume, buf->m_Pan, buf->m_SurroundPan, 0, 0);
-            sndStreamDeactivate(buf->m_StreamId);
-            stream->m_State = GCAudioStreaming::SS_Warm;
-            unsigned long ci = bufCounter + 1;
-            bufCounter = ci;
-            if (ci < stream->m_BufferCount)
-            {
-                buf = stream->m_Buffers[ci];
-            }
-            else
-            {
-                buf = NULL;
-            }
-        }
-
-        stream->m_StreamPos = zero;
-        stream->m_State = GCAudioStreaming::SS_Warm;
-    }
+    stream->StopPlaying();
 
     stream->CancelPendingReads();
 
-    unsigned long flags = stream->m_Flags;
-    if (flags & 4)
-    {
-        stream->m_Flags = flags & ~4;
-
-        if (stream->m_State > GCAudioStreaming::SS_Initd)
-        {
-            unsigned long fl = stream->m_Flags;
-            unsigned long zero2 = 0;
-            GCAudioStreaming::AudioStreamBuffer* buf2;
-            volatile unsigned long bufCounter2 = (unsigned long)(buf2 = NULL);
-            stream->m_Flags = (fl & ~0x10) | 0x10;
-            if (stream->m_BufferCount > zero2)
-            {
-                buf2 = stream->m_Buffers[0];
-            }
-
-            while (buf2 != NULL)
-            {
-                stream->m_BuffMgr.FreeBuffer(buf2);
-                unsigned long idx = bufCounter2;
-                stream->m_Buffers[idx] = NULL;
-                idx = idx + 1;
-                bufCounter2 = idx;
-                if (idx < stream->m_BufferCount)
-                {
-                    buf2 = stream->m_Buffers[idx];
-                }
-                else
-                {
-                    buf2 = NULL;
-                }
-            }
-
-            stream->m_State = GCAudioStreaming::SS_Initd;
-        }
-    }
+    stream->Cool();
 }
 
 /**
