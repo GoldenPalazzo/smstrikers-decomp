@@ -3171,11 +3171,6 @@ static float FindSTSDistanceAffectedPercentage(cFielder* pFielder, float fMinAmo
 /**
  * Offset/Address/Size: 0x17D0 | 0x80028308 | size: 0x147C
  */
-/**
- * Offset/Address/Size: 0x16D0 | 0x80028308 | size: 0x1480
- * TODO: 99.88% match - remaining f0/f1 swap in the green-region clamp
- * and camera/effect string register allocation
- */
 void cFielder::ActionShootToScore(float)
 {
     if (setCaptainStscaptainStsTargetPos)
@@ -3622,9 +3617,10 @@ void cFielder::ActionShootToScore(float)
             {
                 if (m_pCurrentAnimController->TestTrigger(matrixCamStartTime))
                 {
+                    nlVector3* pBallPos;
                     cBaseCamera* pCurrentCam = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
                     const nlVector3& cameraPos = pCurrentCam->GetCameraPosition();
-                    nlVector3* pBallPos = &g_pBall->m_v3Position;
+                    pBallPos = &g_pBall->m_v3Position;
 
                     PhotoFlash::Flash();
 
@@ -3647,14 +3643,11 @@ void cFielder::ActionShootToScore(float)
                     pMatrixCam2->mfZoomTime = sfMatrixCamZoomTime;
 
                     float fSpinAngle = 360.0f * sfMatrixCamNumRevolutions;
-                    cAnimCamera* pStsCamera = mActionShootToScoreVars.captainStsCamera;
                     float fSpinRate = fSpinAngle / sfMatrixCamDuration;
 
-                    bool bIsMirrored = false;
-                    if (pStsCamera->m_Mirror.f.x < 0.0f || pStsCamera->m_Mirror.f.y < 0.0f || pStsCamera->m_Mirror.f.z < 0.0f)
-                    {
-                        bIsMirrored = true;
-                    }
+                    bool bIsMirrored = mActionShootToScoreVars.captainStsCamera->m_Mirror.f.x < 0.0f
+                        || mActionShootToScoreVars.captainStsCamera->m_Mirror.f.y < 0.0f
+                        || mActionShootToScoreVars.captainStsCamera->m_Mirror.f.z < 0.0f;
                     pMatrixCam2->mfSpinRate = fSpinRate * (bIsMirrored ? -1.0f : 1.0f);
 
                     pMatrixCam2->mfDesiredDistanceFromTarget = sfMatrixCamFinalDistanceFromTarget;

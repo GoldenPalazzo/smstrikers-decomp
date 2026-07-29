@@ -9,33 +9,16 @@
 #include "Game/Goalie.h"
 #include "Game/ReplayManager.h"
 #include "NL/nlConfig.h"
+#include "NL/nlDebug.h"
 #include "NL/nlFileGC.h"
 #include "NL/nlFormatFwd.h"
+#include "NL/nlMemory.h"
 #include "NL/nlTask.h"
 #include "NL/nlString.h"
 #include "string.h"
 
-struct TempStringData
-{
-    char* data;
-    int size;
-    int capacity;
-    int refCount;
-};
-
-extern void* nlMalloc(unsigned long, unsigned int, bool);
-extern void nlFree(void*);
-extern void nlReadAsync(nlFile*, void*, unsigned int, void (*)(nlFile*, void*, unsigned int, unsigned long), unsigned long);
-extern void nlAsyncLoadFileToVirtualMemory(nlFile*, int, void*, void (*)(nlFile*, void*, unsigned int, unsigned long), unsigned long);
-extern void* nlLoadEntireFileToVirtualMemory(const char*, int*, unsigned int, void*, eAllocType);
-extern void nlBreak();
 extern unsigned long cupTrophyHash;
 extern "C" int sscanf(const char*, const char*, ...);
-
-namespace Detail
-{
-class TempStringAllocator;
-} // namespace Detail
 
 namespace
 {
