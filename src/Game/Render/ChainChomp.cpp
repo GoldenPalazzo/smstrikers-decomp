@@ -149,27 +149,7 @@ void ChainChomp::Update(float fDeltaT)
             PowerupBase::PlayPowerupSound(POWER_UP_CHAIN_CHOMP, PowerupBase::PWRUP_SOUND_BOUNCE_GROUND, mpPhysObj, 100.0f);
             Audio::gStadGenSFX.Play((Audio::eWorldSFX)0xCE, 100.0f, -1.0f, true, 100.0f);
 
-            EffectsGroup* pGroup = fxGetGroup("chainchomp_trail");
-            EffectsSpec* pSpec = pGroup->m_specs;
-            int numSpecs = pGroup->m_numSpecs;
-            if (pSpec != NULL && numSpecs > 0)
-            {
-                int i;
-                for (i = numSpecs; i > 0; i--)
-                {
-                    EffectsTemplate* pTemplate = pSpec->m_pTemplate;
-                    if (pTemplate != NULL)
-                    {
-                        pTemplate->m_fFountainLife = 12.0f;
-                    }
-                    pSpec++;
-                }
-            }
-
-            pControl = EmissionManager::Create(pGroup, 0);
-            pControl->m_uUserData = (u32)this;
-
-            pControl->SetUpdateCallback(Function<EmissionController&>(UpdateChainEmitter));
+            EmitTrail();
 
             FireCameraRumbleFilter(0.0f, 0.2f);
         }
@@ -237,32 +217,7 @@ void ChainChomp::Update(float fDeltaT)
 
         if (mtStateTimer.Countdown(fDeltaT, 0.0f))
         {
-            float fTargetX;
-            float fTargetY;
-
-            meChainChompState = CHAIN_STATE_LEAVE;
-
-            if ((0.5f * g_pBall->m_v3Velocity.f.x + g_pBall->m_v3Position.f.x) < 0.0f)
-            {
-                fTargetX = 40.0f;
-            }
-            else
-            {
-                fTargetX = -40.0f;
-            }
-
-            float fPosY = mv3Position.f.y;
-            if (fPosY < 0.0f)
-            {
-                fTargetY = -8.0f;
-            }
-            else
-            {
-                fTargetY = 8.0f;
-            }
-
-            maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(fTargetY - fPosY, fTargetX - mv3Position.f.x));
-            mfDesiredSpeed = g_pGame->m_pGameTweaks->fChainChompSpeed;
+            Leave();
         }
         break;
 
@@ -410,7 +365,33 @@ void UpdateChainEmitter(EmissionController& controller)
     }
 }
 
-static inline float ChainChompTargetScore(ChainChomp* pChomp, cFielder* pCandidate)
+void ChainChomp::EmitTrail()
+{
+    EffectsTemplate* pTemplate;
+    EffectsGroup* pGroup = fxGetGroup("chainchomp_trail");
+    EffectsSpec* pSpec = pGroup->m_specs;
+    int numSpecs = pGroup->m_numSpecs;
+    if (pSpec != NULL && numSpecs > 0)
+    {
+        int i;
+        for (i = numSpecs; i > 0; i--)
+        {
+            pTemplate = pSpec->m_pTemplate;
+            if (pTemplate != NULL)
+            {
+                pTemplate->m_fFountainLife = 12.0f;
+            }
+            pSpec++;
+        }
+    }
+
+    EmissionController* pControl = EmissionManager::Create(pGroup, 0);
+    pControl->m_uUserData = (u32)this;
+
+    pControl->SetUpdateCallback(Function<EmissionController&>(UpdateChainEmitter));
+}
+
+static inline void ChainChompTargetScore(ChainChomp* pChomp, cFielder* pCandidate, float& rTempScore)
 {
     float dy;
     float dx;
@@ -423,15 +404,15 @@ static inline float ChainChompTargetScore(ChainChomp* pChomp, cFielder* pCandida
     u16 absDelta = (u16)((angleDiff < 0) ? -angleDiff : angleDiff);
     float fDistWeight = 1.0f;
     float fAngleWeighting = g_pGame->m_pGameTweaks->fAngleWeighting;
-    fDistWeight -= fAngleWeighting;
 
-    return fDist * fDistWeight + (float)absDelta * fAngleWeighting;
+    rTempScore = fDist * (fDistWeight - fAngleWeighting) + (float)absDelta * fAngleWeighting;
 }
 
 /**
  * Offset/Address/Size: 0x608 | 0x8015E30C | size: 0x2E0
- * TODO: 99.95% match - remaining f1/f3 register mismatch in inverse score weight.
  */
+#pragma opt_propagation off
+
 void ChainChomp::FindTarget(cTeam* pTeam)
 {
     float fTempScore;
@@ -470,7 +451,7 @@ void ChainChomp::FindTarget(cTeam* pTeam)
 
             if (!pCandidate->IsFallenDown(0.0f) && pCandidate != mpTarget)
             {
-                fTempScore = ChainChompTargetScore(this, pCandidate);
+                ChainChompTargetScore(this, pCandidate, fTempScore);
             }
 
             if (fTempScore < fBestScore)
@@ -483,40 +464,15 @@ void ChainChomp::FindTarget(cTeam* pTeam)
 
     if (pBestCandidate == NULL)
     {
-        float fTargetX;
-        float fTargetY;
-        float fY;
-
         mtStateTimer.SetSeconds(0.0f);
-        meChainChompState = CHAIN_STATE_LEAVE;
-
-        if ((0.5f * g_pBall->m_v3Velocity.f.x + g_pBall->m_v3Position.f.x) < 0.0f)
-        {
-            fTargetX = 40.0f;
-        }
-        else
-        {
-            fTargetX = -40.0f;
-        }
-
-        fY = mv3Position.f.y;
-
-        if (fY < 0.0f)
-        {
-            fTargetY = -8.0f;
-        }
-        else
-        {
-            fTargetY = 8.0f;
-        }
-
-        maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(fTargetY - fY, fTargetX - mv3Position.f.x));
-        mfDesiredSpeed = g_pGame->m_pGameTweaks->fChainChompSpeed;
+        Leave();
         pBestCandidate = pTeam->GetStriker();
     }
 
     mpTarget = pBestCandidate;
 }
+
+#pragma opt_propagation reset
 
 /**
  * Offset/Address/Size: 0x4B4 | 0x8015E1B8 | size: 0x154
@@ -606,6 +562,39 @@ static bool AvoidSidelines(ChainChomp* pChomp)
         return true;
     }
     return false;
+}
+
+void ChainChomp::Leave()
+{
+    float fY;
+    float fTargetX;
+    float fTargetY;
+
+    meChainChompState = CHAIN_STATE_LEAVE;
+
+    if ((0.5f * g_pBall->m_v3Velocity.f.x + g_pBall->m_v3Position.f.x) < 0.0f)
+    {
+        fTargetX = 40.0f;
+    }
+    else
+    {
+        fTargetX = -40.0f;
+    }
+
+    fY = mv3Position.f.y;
+
+    if (fY < 0.0f)
+    {
+        fTargetY = -8.0f;
+    }
+    else
+    {
+        fTargetY = 8.0f;
+    }
+
+    float fAngle = nlATan2f(fTargetY - fY, fTargetX - mv3Position.f.x);
+    maDesiredFacingDirection = (u16)(s32)(10430.378f * fAngle);
+    mfDesiredSpeed = g_pGame->m_pGameTweaks->fChainChompSpeed;
 }
 
 /**

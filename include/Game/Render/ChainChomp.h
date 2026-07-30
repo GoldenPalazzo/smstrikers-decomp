@@ -36,6 +36,8 @@ public:
     bool IsHidden() const;
     virtual void Move(float);
     virtual void DrawShadow(const cPoseAccumulator&, const nlMatrix4&);
+    void Leave();
+    void EmitTrail();
 
     /* 0x80 */ cSAnim* mpIdleAnim;
     /* 0x84 */ cSAnim* mpRecoverAnim;
