@@ -29,83 +29,6 @@ static bool glIgnoreDuplicateModels;
 
 static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNumModels, bool bLoadTextures);
 
-/**
- * Offset/Address/Size: 0x0 | 0x801BFC20 | size: 0x24
- */
-glModel* glplatEndLoadModel(void* data, unsigned long size, unsigned long* pNumModels)
-{
-    return glxLoadModelFromMemory((char*)data, size, pNumModels, false);
-}
-
-/**
- * Offset/Address/Size: 0x24 | 0x801BFC44 | size: 0xA8
- */
-bool glplatBeginLoadModel(const char* filename, void (*callback)(void*, unsigned long, void*), void* userData)
-{
-    char fullname[256];
-    nlStrNCat(fullname, "art/", filename, 256);
-
-    if (userData == NULL)
-    {
-        if (!nlLoadEntireFileAsync(fullname, callback, userData, 32, AllocateEnd))
-        {
-            return false;
-        }
-    }
-    else
-    {
-        if (!nlLoadEntireFileAsync(fullname, callback, userData, 32, (eAllocType)23))
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-/**
- * Offset/Address/Size: 0xCC | 0x801BFCEC | size: 0x104
- */
-glModel* glplatLoadModel(const char* filename, unsigned long* pNumModels)
-{
-    unsigned int alignSize;
-    unsigned int fileSize;
-    char fullname[256];
-    char lowerName[256];
-    glModel* retval;
-    nlFile* f;
-    bool bSkinned;
-
-    glx_FreeMemory0();
-    nlStrNCat(fullname, "art/", filename, 256);
-    nlStrNCpy(lowerName, fullname, 256);
-    nlToLower(lowerName);
-
-    bSkinned = (strstr(lowerName, "characters") == NULL);
-
-    f = nlOpen(fullname);
-    if (f == NULL)
-    {
-        retval = NULL;
-    }
-    else
-    {
-        fileSize = nlFileSize(f, &alignSize);
-        nlClose(f);
-        if (fileSize == 0)
-        {
-            retval = NULL;
-        }
-        else
-        {
-            char* data = (char*)nlLoadEntireFileToVirtualMemory(fullname, (int*)&fileSize, 0x80000, NULL, AllocateEnd);
-            retval = glxLoadModelFromMemory(data, fileSize, pNumModels, bSkinned);
-        }
-    }
-
-    glx_FreeMemory1(filename);
-    return retval;
-}
-
 // BMD model chunk type IDs.
 enum BMDChunkType
 {
@@ -136,6 +59,131 @@ static inline void* NLVIRTUALALLOC(unsigned long size)
     OSReport("VIRTUAL MEMORY WARNING ~ NLVIRTUALALLOC had to fall back to MRAM\nLargest block: %d Total free: %d\n",
         nlVirtualLargestBlock(), nlVirtualTotalFree());
     return nlMalloc(size, 0x20, false);
+}
+
+// Skin mesh chunk type IDs (lower 24 bits of m_ID); switch index = (type - 0x1B009).
+enum SkinChunkType
+{
+    SKIN_CHUNK_0x1B009 = 0x1B009,
+    SKIN_CHUNK_BONE_MATRICES = 0x1B00A,
+    SKIN_CHUNK_BONE_MAP_LIST = 0x1B00B,
+    SKIN_CHUNK_MORPH = 0x1B00C,
+    SKIN_CHUNK_SOFTWARE_VERTICES = 0x1B00D,
+    SKIN_CHUNK_SKIN_PAIRS = 0x1B00E,
+    SKIN_CHUNK_0x1B00F = 0x1B00F,
+    SKIN_CHUNK_STITCHING = 0x1B010,
+};
+
+/**
+ * Offset/Address/Size: 0xF08 | 0x801C0B28 | size: 0x8
+ */
+void glSetIgnoreDuplicateModels(bool ignore)
+{
+    glIgnoreDuplicateModels = ignore;
+}
+
+/**
+ * Offset/Address/Size: 0xC08 | 0x801C0828 | size: 0x2A0
+ */
+GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
+{
+    ShaderSkinMesh* mesh = new (nlMalloc(sizeof(ShaderSkinMesh), 8, false)) ShaderSkinMesh();
+
+    mesh->pModel = models;
+
+    u32 align;
+    u32 i;
+    u32 count;
+    nlChunk* chunkEnd = (nlChunk*)((u8*)outerChunk + outerChunk->m_Size + 8);
+    u32 chunkSize;
+    u8* data;
+
+    for (nlChunk* chunk = (nlChunk*)((u8*)outerChunk + 8); chunk != chunkEnd; chunk = (nlChunk*)((u8*)chunk + chunk->m_Size + 8))
+    {
+        u32 id = chunk->m_ID;
+        chunkSize = chunk->m_Size;
+        u32 alignBits = id & 0x7F000000;
+        u32 chunkType = id & ~0x7F000000u;
+
+        u8* result;
+        if (((-alignBits | alignBits) >> 31) != 0)
+        {
+            align = 1 << (alignBits >> 24);
+            u32 ptr = (u32)chunk;
+            ptr += align;
+            ptr += 7;
+            result = (u8*)(ptr & ~(align - 1));
+        }
+        else
+        {
+            result = (u8*)chunk + 8;
+        }
+        data = result;
+
+        switch (chunkType)
+        {
+        case 0x1B009:
+            break;
+        case 0x1B00A:
+        {
+            count = chunkSize / 0x44;
+            for (i = 0; i < count; i++)
+            {
+                u32 boneID = *(u32*)data;
+                nlMatrix4 src;
+                nlMatrix4 inv;
+                memcpy(&src, data + 4, 0x40);
+                data += 0x44;
+                nlInvertMatrix(inv, src);
+                mesh->SetBoneMatrix(boneID, &inv);
+            }
+            break;
+        }
+        case 0x1B00B:
+        {
+            BoneMapList* node = new (nlMalloc(sizeof(BoneMapList), 8, false)) BoneMapList;
+
+            count = chunkSize >> 3;
+            node->m_next = NULL;
+            for (i = 0; i < count; i++)
+            {
+                unsigned long key = *(u32*)(data + 0);
+                unsigned long value = *(u32*)(data + 4);
+                data += 8;
+                node->boneMap.Add(key, value);
+            }
+            nlRingAddEnd<BoneMapList>(&mesh->boneMaps, node);
+            break;
+        }
+        case 0x1B00D:
+            mesh->SetSoftwareVertices((int)(chunkSize >> 4), (const SkinVertex*)data);
+            break;
+        case 0x1B00E:
+            mesh->AppendSkinPairList((int)(chunkSize >> 2), (const SkinPair*)data);
+            break;
+        case 0x1B00C:
+        {
+            u32 numMorphs = *(u32*)(data + 0);
+            mesh->numMorphs = (int)numMorphs;
+            mesh->numBaseVerts = *(u32*)(data + 4);
+            data += 8;
+            mesh->SetMorphIDs((const u32*)data);
+            data += numMorphs * 4;
+            mesh->SetMorphNumDeltas((const u32*)data);
+            data += numMorphs * 4;
+            mesh->SetMorphDeltas(*(int*)data, (const MorphDelta*)(data + 4));
+            break;
+        }
+        case 0x1B00F:
+            break;
+        case 0x1B010:
+            mesh->AppendStitchingInfo(*(int*)(data + 4), *(int*)(data + 0), (int)chunkSize - 8, data + 8);
+            break;
+        }
+    }
+
+    mesh->StitchModel();
+    return mesh;
 }
 
 /**
@@ -481,127 +529,80 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
     nlFree(data);
     return pModels;
 }
-// Skin mesh chunk type IDs (lower 24 bits of m_ID); switch index = (type - 0x1B009).
-enum SkinChunkType
-{
-    SKIN_CHUNK_0x1B009 = 0x1B009,
-    SKIN_CHUNK_BONE_MATRICES = 0x1B00A,
-    SKIN_CHUNK_BONE_MAP_LIST = 0x1B00B,
-    SKIN_CHUNK_MORPH = 0x1B00C,
-    SKIN_CHUNK_SOFTWARE_VERTICES = 0x1B00D,
-    SKIN_CHUNK_SKIN_PAIRS = 0x1B00E,
-    SKIN_CHUNK_0x1B00F = 0x1B00F,
-    SKIN_CHUNK_STITCHING = 0x1B010,
-};
 
 /**
- * Offset/Address/Size: 0xC08 | 0x801C0828 | size: 0x2A0
+ * Offset/Address/Size: 0xCC | 0x801BFCEC | size: 0x104
  */
-GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
+glModel* glplatLoadModel(const char* filename, unsigned long* pNumModels)
 {
-    ShaderSkinMesh* mesh = new (nlMalloc(sizeof(ShaderSkinMesh), 8, false)) ShaderSkinMesh();
+    unsigned int alignSize;
+    unsigned int fileSize;
+    char fullname[256];
+    char lowerName[256];
+    glModel* retval;
+    nlFile* f;
+    bool bSkinned;
 
-    mesh->pModel = models;
+    glx_FreeMemory0();
+    nlStrNCat(fullname, "art/", filename, 256);
+    nlStrNCpy(lowerName, fullname, 256);
+    nlToLower(lowerName);
 
-    u32 align;
-    u32 i;
-    u32 count;
-    nlChunk* chunkEnd = (nlChunk*)((u8*)outerChunk + outerChunk->m_Size + 8);
-    u32 chunkSize;
-    u8* data;
+    bSkinned = (strstr(lowerName, "characters") == NULL);
 
-    for (nlChunk* chunk = (nlChunk*)((u8*)outerChunk + 8); chunk != chunkEnd; chunk = (nlChunk*)((u8*)chunk + chunk->m_Size + 8))
+    f = nlOpen(fullname);
+    if (f == NULL)
     {
-        u32 id = chunk->m_ID;
-        chunkSize = chunk->m_Size;
-        u32 alignBits = id & 0x7F000000;
-        u32 chunkType = id & ~0x7F000000u;
-
-        u8* result;
-        if (((-alignBits | alignBits) >> 31) != 0)
+        retval = NULL;
+    }
+    else
+    {
+        fileSize = nlFileSize(f, &alignSize);
+        nlClose(f);
+        if (fileSize == 0)
         {
-            align = 1 << (alignBits >> 24);
-            u32 ptr = (u32)chunk;
-            ptr += align;
-            ptr += 7;
-            result = (u8*)(ptr & ~(align - 1));
+            retval = NULL;
         }
         else
         {
-            result = (u8*)chunk + 8;
-        }
-        data = result;
-
-        switch (chunkType)
-        {
-        case 0x1B009:
-            break;
-        case 0x1B00A:
-        {
-            count = chunkSize / 0x44;
-            for (i = 0; i < count; i++)
-            {
-                u32 boneID = *(u32*)data;
-                nlMatrix4 src;
-                nlMatrix4 inv;
-                memcpy(&src, data + 4, 0x40);
-                data += 0x44;
-                nlInvertMatrix(inv, src);
-                mesh->SetBoneMatrix(boneID, &inv);
-            }
-            break;
-        }
-        case 0x1B00B:
-        {
-            BoneMapList* node = new (nlMalloc(sizeof(BoneMapList), 8, false)) BoneMapList;
-
-            count = chunkSize >> 3;
-            node->m_next = NULL;
-            for (i = 0; i < count; i++)
-            {
-                unsigned long key = *(u32*)(data + 0);
-                unsigned long value = *(u32*)(data + 4);
-                data += 8;
-                node->boneMap.Add(key, value);
-            }
-            nlRingAddEnd<BoneMapList>(&mesh->boneMaps, node);
-            break;
-        }
-        case 0x1B00D:
-            mesh->SetSoftwareVertices((int)(chunkSize >> 4), (const SkinVertex*)data);
-            break;
-        case 0x1B00E:
-            mesh->AppendSkinPairList((int)(chunkSize >> 2), (const SkinPair*)data);
-            break;
-        case 0x1B00C:
-        {
-            u32 numMorphs = *(u32*)(data + 0);
-            mesh->numMorphs = (int)numMorphs;
-            mesh->numBaseVerts = *(u32*)(data + 4);
-            data += 8;
-            mesh->SetMorphIDs((const u32*)data);
-            data += numMorphs * 4;
-            mesh->SetMorphNumDeltas((const u32*)data);
-            data += numMorphs * 4;
-            mesh->SetMorphDeltas(*(int*)data, (const MorphDelta*)(data + 4));
-            break;
-        }
-        case 0x1B00F:
-            break;
-        case 0x1B010:
-            mesh->AppendStitchingInfo(*(int*)(data + 4), *(int*)(data + 0), (int)chunkSize - 8, data + 8);
-            break;
+            char* data = (char*)nlLoadEntireFileToVirtualMemory(fullname, (int*)&fileSize, 0x80000, NULL, AllocateEnd);
+            retval = glxLoadModelFromMemory(data, fileSize, pNumModels, bSkinned);
         }
     }
 
-    mesh->StitchModel();
-    return mesh;
+    glx_FreeMemory1(filename);
+    return retval;
 }
 
 /**
- * Offset/Address/Size: 0xF08 | 0x801C0B28 | size: 0x8
+ * Offset/Address/Size: 0x24 | 0x801BFC44 | size: 0xA8
  */
-void glSetIgnoreDuplicateModels(bool ignore)
+bool glplatBeginLoadModel(const char* filename, void (*callback)(void*, unsigned long, void*), void* userData)
 {
-    glIgnoreDuplicateModels = ignore;
+    char fullname[256];
+    nlStrNCat(fullname, "art/", filename, 256);
+
+    if (userData == NULL)
+    {
+        if (!nlLoadEntireFileAsync(fullname, callback, userData, 32, AllocateEnd))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        if (!nlLoadEntireFileAsync(fullname, callback, userData, 32, (eAllocType)23))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x801BFC20 | size: 0x24
+ */
+glModel* glplatEndLoadModel(void* data, unsigned long size, unsigned long* pNumModels)
+{
+    return glxLoadModelFromMemory((char*)data, size, pNumModels, false);
 }
