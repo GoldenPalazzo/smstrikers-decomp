@@ -25,21 +25,6 @@ struct StaticModelExplodableHelperTreeWalkData
     unsigned int mCount;
 };
 
-struct StaticModelExplodableWorldHelperMapView
-{
-    char _pad0[0x74];
-    AVLTreeEntry<unsigned long, HelperObject*>* mRoot;
-    DefaultKeyCompare<unsigned long>* mCompare;
-    unsigned int mNumElements;
-};
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80165D2C | size: 0x138
-//  */
-// void 0x8028D320..0x8028D324 | size: 0x4
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x5AC | 0x80165A70 | size: 0x2BC
  */
@@ -54,8 +39,8 @@ void StaticModelExplodable::CreateExplodablesFromHelperObjects()
 
     if (pWalkData != NULL)
     {
-        pNode = ((StaticModelExplodableWorldHelperMapView*)pWorld)->mRoot;
-        pWalkData->mStack = (AVLTreeEntry<unsigned long, HelperObject*>**)nlMalloc((((StaticModelExplodableWorldHelperMapView*)pWorld)->mNumElements + 1) * 4, 8, false);
+        pNode = pWorld->m_helperMap.m_Root;
+        pWalkData->mStack = (AVLTreeEntry<unsigned long, HelperObject*>**)nlMalloc((pWorld->m_helperMap.m_NumElements + 1) * 4, 8, false);
         pWalkData->mCount = 0;
 
         if (pNode != NULL)
@@ -185,7 +170,6 @@ void StaticModelExplodable::CleanUp()
 
 /**
  * Offset/Address/Size: 0xC4 | 0x80165588 | size: 0x43C
- * TODO: 98.8% match - BasicString data and source string registers remain swapped.
  */
 StaticModelExplodable::StaticModelExplodable(StaticModelExplodableCategory category, const nlMatrix4& worldMatrix)
 {
