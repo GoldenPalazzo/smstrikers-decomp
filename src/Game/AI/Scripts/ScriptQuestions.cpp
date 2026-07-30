@@ -1705,7 +1705,8 @@ static inline float InBetween(const nlVector3& v3InBetweenPos, const nlVector3& 
 
 /**
  * Offset/Address/Size: 0x36FC | 0x80082184 | size: 0x3D0
- * TODO: 99.77% match - fWeight and fInterceptScore saved float registers differ
+ * TODO: Recover the original inline genealogy; the fWeight self-assignments
+ * below preserve the retail register allocation.
  */
 float OnBreakaway(cFielder* pFielder)
 {
@@ -1716,23 +1717,24 @@ float OnBreakaway(cFielder* pFielder)
     float fScore = 0.0f;
     int i;
     cFielder* pOpponent;
-    float fWeight;
+    float fWeight = 1.0f;
     for (i = 0; i < 4; i++)
     {
-        fWeight = 1.0f;
         pOpponent = pFielder->m_pTeam->GetOtherTeam()->GetFielder(i);
-        float fInterceptScore;
         float fUpfieldScore;
         if (pFielder == NULL)
         {
+            fWeight = fWeight;
             fUpfieldScore = 0.0f;
         }
         else if (pOpponent == NULL)
         {
+            fWeight = fWeight;
             fUpfieldScore = 0.0f;
         }
         else
         {
+            fWeight = fWeight;
             nlVector3 v3OppPos;
             nlVector3 v3MyPos = pFielder->m_v3Position;
             v3OppPos = pOpponent->m_v3Position;
@@ -1741,6 +1743,7 @@ float OnBreakaway(cFielder* pFielder)
             float upfieldDist = v3MyPos.f.x - v3OppPos.f.x;
             fUpfieldScore = NormalizeVal(upfieldDist * sign, 0.0f, g_pGame->m_pFuzzyTweaks->fUpfieldMaxDistance);
         }
+        float fInterceptScore;
         if (pOpponent == NULL)
         {
             fInterceptScore = 0.0f;
@@ -1798,15 +1801,7 @@ float OnBreakaway(cFielder* pFielder)
             float dist = nlSqrt(dx * dx + dy * dy, true);
             fProximityScore = NormalizeVal(dist, *pRange);
         }
-        float maxScore;
-        if (fProximityScore >= fInterceptScore)
-        {
-            maxScore = fProximityScore;
-        }
-        else
-        {
-            maxScore = fInterceptScore;
-        }
+        float maxScore = (fProximityScore >= fInterceptScore) ? fProximityScore : fInterceptScore;
         fScore += fWeight * (fWeight - maxScore) + fUpfieldScore * maxScore;
         fScore -= fInterceptScore;
     }
