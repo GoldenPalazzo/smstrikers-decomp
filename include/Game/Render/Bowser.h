@@ -74,11 +74,14 @@ public:
     void ActionHide();
     void ActionReset();
     void ActionLeave();
+    void SetBowserAnimState(eBowserAnim, ePlayMode, float);
+    void ClearBowserFeatherAnimState(bool);
     void Move(float);
     eBowserMoveResult GravityMove(float);
     void ActionIdle();
     static void SetTiltParameters(float);
     bool CheckForAbort();
+    bool IsTilted() const;
     static void UpdateFireEmitter(EmissionController& controller);
     static void UpdateBowserLandEmitter(EmissionController& controller);
     void EmitFire();

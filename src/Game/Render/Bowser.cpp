@@ -24,12 +24,13 @@
 
 #include "math.h"
 
+#pragma inline_max_total_size(5000)
+
 /* Owned by src/Game/SoundProps/bowsergensoundproperties.cpp. */
 extern SoundPropAccessor* gpBOWSERSoundPropAccessor;
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 static const nlVector3 gv3BowserHomePosition = { 0.0f, 100.0f, -10.0f };
-static const nlVector3 v3BowserLeaveVelocity = { 25.0f, 0.0f, 25.0f };
 
 float Bowser::mfYAxisTilt = 0.0f;
 
@@ -146,6 +147,7 @@ Bowser::~Bowser()
 extern "C" cPN_Blender* __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(cPN_Blender*, cPoseNode*, cPoseNode*, float);
 extern "C" cPN_SAnimController* __ct__19cPN_SAnimControllerFP6cSAnimPC12AnimRetarget9ePlayModePFUiP19cPN_SAnimController_vUib(cPN_SAnimController*, cSAnim*, const AnimRetarget*, ePlayMode, void (*)(unsigned int, cPN_SAnimController*), unsigned int, bool);
 
+#pragma opt_propagation off
 /**
  * Offset/Address/Size: 0x325C | 0x8015BFD0 | size: 0x1294
  */
@@ -268,7 +270,7 @@ void Bowser::Update(float fDeltaT)
                 EmissionController* pControl = EmissionManager::Create(pGroup, 0);
                 pControl->SetPosition(mv3Position);
                 pControl->SetPoseAccumulator(*mpPoseAccumulator);
-                pControl->SetUpdateCallback(Function<EmissionController&>(UpdateBowserLandEmitter));
+                pControl->SetUpdateCallback(UpdateBowserLandEmitter);
             }
 
             if (mbFirstTime)
@@ -465,11 +467,7 @@ void Bowser::Update(float fDeltaT)
                 }
                 else if (mAttackType == BOWSER_ATTACK_CRAZY && nlRandom(100, &nlDefaultSeed) < 70)
                 {
-                    if (mpFeatherBlender->GetChild(1) != NULL)
-                    {
-                        mpFeatherBlender->BeginBlendOut(0.1f);
-                    }
-                    mpFeatherController = NULL;
+                    ClearBowserFeatherAnimState(true);
                     ActionJump();
                 }
                 else
@@ -489,11 +487,7 @@ void Bowser::Update(float fDeltaT)
                     }
                     else
                     {
-                        if (mpFeatherBlender->GetChild(1) != NULL)
-                        {
-                            mpFeatherBlender->BeginBlendOut(0.1f);
-                        }
-                        mpFeatherController = NULL;
+                        ClearBowserFeatherAnimState(true);
                         ActionRoll();
                     }
                 }
@@ -622,6 +616,7 @@ void Bowser::Update(float fDeltaT)
     }
 }
 
+#pragma opt_propagation reset
 /**
  * Offset/Address/Size: 0x3054 | 0x8015BDC8 | size: 0x208
  */
@@ -768,27 +763,7 @@ void Bowser::ActionInit()
             if (mAttackType != BOWSER_ATTACK_STOMP || mStompStage == 2)
             {
                 savedAttackType = mAttackType;
-                mfYAxisTilt = 0.0f;
-                cCameraManager::SetWorldUpVectorTilt(0.0f, 0.0f);
-                if (g_pBall != NULL)
-                {
-                    PhysicsAIBall* pPhys = g_pBall->m_pPhysicsBall;
-                    if (pPhys != NULL)
-                    {
-                        if ((float)fabs(0.0) > 0.01f)
-                        {
-                            float yAxisTilt = -0.0f;
-                            nlVector3 tiltForce = { 0.0f, 0.0f, 0.0f };
-                            tiltForce.f.x = yAxisTilt * g_pGame->m_pGameTweaks->unk338;
-                            pPhys->m_v3TiltForce = tiltForce;
-                            g_pBall->m_pPhysicsBall->m_bUseTiltForce = true;
-                        }
-                        else
-                        {
-                            pPhys->m_bUseTiltForce = false;
-                        }
-                    }
-                }
+                SetTiltParameters(0.0f);
                 mAttackType = BOWSER_ATTACK_ROLL;
                 if (g_pGame->m_pGameTweaks->unk310 < 0.0f)
                     g_pGame->ResetBowser();
@@ -1583,50 +1558,7 @@ void Bowser::ActionLeave()
     meBowserState = BOWSER_STATE_LEAVE;
     mAnimID = BOWSER_ANIM_JUMP;
 
-    cPN_SAnimController* controller = NULL;
-
-    if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&cPN_SAnimController::m_SAnimControllerSlotPool, sizeof(cPN_SAnimController));
-    }
-
-    if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
-    {
-        controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
-    }
-
-    controller = new (controller) cPN_SAnimController(mpAnim[BOWSER_ANIM_JUMP], (const AnimRetarget*)0, PM_HOLD, (void (*)(unsigned int, cPN_SAnimController*))0, (unsigned int)0, (bool)0);
-
-    cPN_Blender* blender;
-
-    if (mpFeatherBlender->GetChild(0) != NULL)
-    {
-        blender = NULL;
-
-        if (cPN_Blender::m_BlenderSlotPool.m_FreeList == NULL)
-        {
-            SlotPoolBase::BaseAddNewBlock(&cPN_Blender::m_BlenderSlotPool, sizeof(cPN_Blender));
-        }
-
-        if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
-        {
-            blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-            cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->next;
-        }
-
-        if (blender != NULL)
-        {
-            blender = __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(blender, *mpFeatherBlender->GetChildPtr(0), controller, 0.2f);
-        }
-    }
-    else
-    {
-        blender = (cPN_Blender*)controller;
-    }
-
-    mpFeatherBlender->SetChild(0, blender);
-    mpAnimController = controller;
+    SetBowserAnimState(BOWSER_ANIM_JUMP, PM_HOLD, 0.2f);
 
     cBaseCamera* camera = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
     nlVector3 v3CameraTarget = camera->GetTargetPosition();
@@ -1646,12 +1578,7 @@ void Bowser::ActionLeave()
 
     mtStateTimer.SetSeconds(2.0f);
 
-    if (mpFeatherBlender->GetChild(1) != NULL)
-    {
-        mpFeatherBlender->BeginBlendOut(0.1f);
-    }
-
-    mpFeatherController = NULL;
+    ClearBowserFeatherAnimState(true);
 }
 
 /**
@@ -1706,14 +1633,14 @@ void Bowser::Move(float fDeltaT)
     SetPosition(newPos);
 }
 
-inline eBowserMoveResult Bowser::GravityMove(float fDeltaT)
+eBowserMoveResult Bowser::GravityMove(float fDeltaT)
 {
     float fHalfGrav = 0.5f * g_pGame->m_pGameTweaks->unk330;
     nlVector3 v3Vel = mv3Velocity;
     nlVector3 v3Pos = mv3Position;
     eBowserMoveResult result = BOWSER_MOVE_RESULT_NORMAL;
 
-    if (fabsf(v3Vel.f.z) < 1.0f && v3Pos.f.z < 0.05f)
+    if ((float)fabs(v3Vel.f.z) < 1.0f && v3Pos.f.z < 0.05f)
     {
         v3Pos.f.z = 0.0f;
         v3Vel.f.z = 0.0f;
@@ -1862,58 +1789,7 @@ bool Bowser::CheckForAbort()
 
     if (!isGameplayOrOvertime)
     {
-        if (pBowser->meBowserState != BOWSER_STATE_LEAVE)
-        {
-            if (nlSingleton<GameInfoManager>::s_pInstance->IsBowserAttackEnabled())
-                g_pEventManager->CreateValidEvent(0x3b, 0x14);
-            pBowser->meBowserState = BOWSER_STATE_LEAVE;
-            pBowser->mAnimID = BOWSER_ANIM_JUMP;
-            cPN_SAnimController* controller = NULL;
-            if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList == NULL)
-                SlotPoolBase::BaseAddNewBlock(&cPN_SAnimController::m_SAnimControllerSlotPool, sizeof(cPN_SAnimController));
-            if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
-            {
-                controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-                cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
-            }
-            controller = new (controller) cPN_SAnimController(pBowser->mpAnim[BOWSER_ANIM_JUMP], (const AnimRetarget*)0, PM_HOLD, (void (*)(unsigned int, cPN_SAnimController*))0, (unsigned int)0, (bool)0);
-            cPN_Blender* blender;
-            if (pBowser->mpFeatherBlender->GetChild(0) != NULL)
-            {
-                blender = NULL;
-                if (cPN_Blender::m_BlenderSlotPool.m_FreeList == NULL)
-                    SlotPoolBase::BaseAddNewBlock(&cPN_Blender::m_BlenderSlotPool, sizeof(cPN_Blender));
-                if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
-                {
-                    blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-                    cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->next;
-                }
-                if (blender != NULL)
-                    blender = __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(blender, *pBowser->mpFeatherBlender->GetChildPtr(0), controller, 0.2f);
-            }
-            else
-            {
-                blender = (cPN_Blender*)controller;
-            }
-            pBowser->mpFeatherBlender->SetChild(0, blender);
-            pBowser->mpAnimController = controller;
-            cBaseCamera* camera = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
-            nlVector3 v3Velocity;
-            nlVector3 v3CameraTarget = camera->GetTargetPosition();
-            v3Velocity = v3BowserLeaveVelocity;
-            unsigned short aDesired = 0;
-            if (v3CameraTarget.f.x > pBowser->mv3Position.f.x)
-            {
-                v3Velocity.f.x *= -1.0f;
-                aDesired = 0x8000;
-            }
-            pBowser->maDesiredFacingDirection = aDesired;
-            pBowser->mv3Velocity = v3Velocity;
-            pBowser->mtStateTimer.SetSeconds(2.0f);
-            if (pBowser->mpFeatherBlender->GetChild(1) != NULL)
-                pBowser->mpFeatherBlender->BeginBlendOut(0.1f);
-            pBowser->mpFeatherController = NULL;
-        }
+        pBowser->ActionLeave();
         return true;
     }
     if (gameState == GS_END_GAME)
@@ -1958,51 +1834,7 @@ bool Bowser::CheckForAbort()
     float fRemainingTime = fDuration - g_pGame->GetGameTime();
     if (fRemainingTime < 15.0f && pBowser->mAttackType != BOWSER_ATTACK_STOMP)
     {
-        if (pBowser->meBowserState != BOWSER_STATE_LEAVE)
-        {
-            if (nlSingleton<GameInfoManager>::s_pInstance->IsBowserAttackEnabled())
-                g_pEventManager->CreateValidEvent(0x3b, 0x14);
-            pBowser->meBowserState = BOWSER_STATE_LEAVE;
-            pBowser->mAnimID = BOWSER_ANIM_JUMP;
-            cPN_SAnimController* controller = AllocateSAnimController();
-            controller = new (controller) cPN_SAnimController(pBowser->mpAnim[BOWSER_ANIM_JUMP], (const AnimRetarget*)0, PM_HOLD, (void (*)(unsigned int, cPN_SAnimController*))0, (unsigned int)0, (bool)0);
-            cPN_Blender* blender;
-            if (pBowser->mpFeatherBlender->GetChild(0) != NULL)
-            {
-                blender = NULL;
-                if (cPN_Blender::m_BlenderSlotPool.m_FreeList == NULL)
-                    SlotPoolBase::BaseAddNewBlock(&cPN_Blender::m_BlenderSlotPool, sizeof(cPN_Blender));
-                if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
-                {
-                    blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-                    cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->next;
-                }
-                if (blender != NULL)
-                    blender = __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(blender, *pBowser->mpFeatherBlender->GetChildPtr(0), controller, 0.2f);
-            }
-            else
-            {
-                blender = (cPN_Blender*)controller;
-            }
-            pBowser->mpFeatherBlender->SetChild(0, blender);
-            pBowser->mpAnimController = controller;
-            cBaseCamera* camera = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
-            nlVector3 v3Velocity;
-            nlVector3 v3CameraTarget = camera->GetTargetPosition();
-            v3Velocity = v3BowserLeaveVelocity;
-            unsigned short aDesired = 0;
-            if (v3CameraTarget.f.x > pBowser->mv3Position.f.x)
-            {
-                v3Velocity.f.x *= -1.0f;
-                aDesired = 0x8000;
-            }
-            pBowser->maDesiredFacingDirection = aDesired;
-            pBowser->mv3Velocity = v3Velocity;
-            pBowser->mtStateTimer.SetSeconds(2.0f);
-            if (pBowser->mpFeatherBlender->GetChild(1) != NULL)
-                pBowser->mpFeatherBlender->BeginBlendOut(0.1f);
-            pBowser->mpFeatherController = NULL;
-        }
+        pBowser->ActionLeave();
         return true;
     }
     return false;
@@ -2051,7 +1883,7 @@ void Bowser::UpdateBowserLandEmitter(EmissionController& controller)
     }
 }
 
-inline void Bowser::EmitFire()
+void Bowser::EmitFire()
 {
     EffectsGroup* pGroup = fxGetGroup("bowser_fire");
     EmissionController* pControl = EmissionManager::Create(pGroup, 0);
@@ -2060,7 +1892,7 @@ inline void Bowser::EmitFire()
     g_pEventManager->CreateValidEvent(0x64, 0x14);
 }
 
-inline void Bowser::KillFire()
+void Bowser::KillFire()
 {
     const EffectsGroup* pGroup = fxGetGroup("bowser_fire");
     EmissionManager::Destroy((unsigned long)this, pGroup);
@@ -2139,6 +1971,46 @@ void Bowser::PlaySFX(Audio::eCharSFX type, PosUpdateMethod posUpdateMethod, floa
     m_pCharacterSFX->Play(attrs);
 }
 
+void Bowser::SetBowserAnimState(eBowserAnim anim, ePlayMode playMode, float fBlendTime)
+{
+    cPN_SAnimController* controller = new (AllocateSAnimController()) cPN_SAnimController(mpAnim[anim], (const AnimRetarget*)0, playMode, (void (*)(unsigned int, cPN_SAnimController*))0, (unsigned int)0, (bool)0);
+
+    cPoseNode* pNewPoseTree;
+
+    if (mpFeatherBlender->GetChild(0) != NULL)
+    {
+        pNewPoseTree = new (AllocateBlender()) cPN_Blender(*mpFeatherBlender->GetChildPtr(0), controller, fBlendTime);
+    }
+    else
+    {
+        pNewPoseTree = controller;
+    }
+
+    mpFeatherBlender->SetChild(0, pNewPoseTree);
+    mpAnimController = controller;
+}
+
+void Bowser::ClearBowserFeatherAnimState(bool bBlendOut)
+{
+    if (bBlendOut)
+    {
+        if (mpFeatherBlender->GetChild(1) != NULL)
+        {
+            mpFeatherBlender->BeginBlendOut(0.1f);
+        }
+    }
+    else
+    {
+        if (mpFeatherBlender->GetChild(1) != NULL)
+        {
+            delete mpFeatherBlender->GetChild(1);
+            mpFeatherBlender->SetChild(1, NULL);
+        }
+    }
+
+    mpFeatherController = NULL;
+}
+
 /**
  * Offset/Address/Size: 0x9C | 0x80158E10 | size: 0x1F4
  */
@@ -2194,7 +2066,7 @@ void Bowser::CheckFootSteps()
     FireCameraRumbleFilter(0.0f, 0.05f);
 }
 
-inline bool Bowser::CheckTargetBounds(nlVector3& v3Target)
+bool Bowser::CheckTargetBounds(nlVector3& v3Target)
 {
     bool bClipped = false;
 
