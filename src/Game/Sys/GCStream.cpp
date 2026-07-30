@@ -561,15 +561,14 @@ void GCAudioStreaming::MonoAudioStream::Warm(bool CoolOnStop)
 
 /**
  * Offset/Address/Size: 0xDCC | 0x801C857C | size: 0x598
- * TODO: 99.71% match - r20/r23 register choice for the pMRAMBuffer+MRAMOffsetA sum,
- *       plus loop-counter/MRAMOffset r27/r28 swap in the wrap path.
  */
 unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAMOffsetA, unsigned long LengthA, unsigned long MRAMOffsetB, unsigned long LengthB, GCAudioStreaming::AudioStreamBuffer* pRequestingBuffer)
 {
     unsigned long OffsetChunk;
     unsigned long ReadASize;
     unsigned long ReadBSize;
-    register unsigned char* pMRAMBuffer = m_Buffers[0]->m_MRAMBuffer;
+    unsigned long AlignOff;
+    unsigned char* pMRAMBuffer = m_Buffers[0]->m_MRAMBuffer;
     if (m_Flags & (1 << SF_EndAtUpdate))
     {
         if (MRAMOffsetA <= m_LastPlayable && MRAMOffsetA + LengthA >= m_LastPlayable)
@@ -580,7 +579,7 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
         ___blank("Read of zereos %d %d and %d %d\n", MRAMOffsetA, LengthA, MRAMOffsetB, LengthB);
         memset(pMRAMBuffer + MRAMOffsetA, 0, LengthA);
         bool enabled = OSDisableInterrupts();
-        register READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.Allocate();
+        READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.Allocate();
         OSRestoreInterrupts(enabled);
         if (pCBInfo)
         {
@@ -588,39 +587,7 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
             pCBInfo->pStream = this;
             pCBInfo->pBuffer = pB;
         }
-        AudioStream* pStream = pCBInfo->pStream;
-        bool serious;
-        if (pStream->m_Flags & (1 << SF_SeriousStop))
-        {
-            switch (pStream->m_State)
-            {
-            case SS_New:
-            case SS_Initd:
-                break;
-            case SS_Warming:
-                pStream->m_State = SS_Warm;
-                break;
-            case SS_Warm:
-            case SS_Playing:
-                break;
-            }
-            serious = true;
-        }
-        else
-        {
-            serious = false;
-        }
-        if (serious)
-        {
-            READ_CB_INFO::s_AllocPool.DeleteEntry(pCBInfo);
-        }
-        else
-        {
-            AudioStreamBuffer* pBuf = pCBInfo->pBuffer;
-            unsigned long endA = (unsigned long)(pMRAMBuffer + MRAMOffsetA + LengthA);
-            sndStreamARAMUpdate(pBuf->m_StreamId, (((endA - LengthA - (unsigned long)pBuf->m_MRAMBuffer) >> 3) * 0xe), (LengthA >> 3) * 0xe, 0, 0);
-            READ_CB_INFO::s_AllocPool.DeleteEntry(pCBInfo);
-        }
+        _UpdateReadCB(m_pFile, pMRAMBuffer + MRAMOffsetA + LengthA, LengthA, (unsigned long)pCBInfo);
         if (LengthB != 0)
         {
             memset(pMRAMBuffer + MRAMOffsetB, 0, LengthB);
@@ -633,39 +600,7 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
                 pCBInfo2->pStream = this;
                 pCBInfo2->pBuffer = pB;
             }
-            AudioStream* pStream2 = pCBInfo2->pStream;
-            bool serious2;
-            if (pStream2->m_Flags & (1 << SF_SeriousStop))
-            {
-                switch (pStream2->m_State)
-                {
-                case SS_New:
-                case SS_Initd:
-                    break;
-                case SS_Warming:
-                    pStream2->m_State = SS_Warm;
-                    break;
-                case SS_Warm:
-                case SS_Playing:
-                    break;
-                }
-                serious2 = true;
-            }
-            else
-            {
-                serious2 = false;
-            }
-            if (serious2)
-            {
-                READ_CB_INFO::s_AllocPool.DeleteEntry(pCBInfo2);
-            }
-            else
-            {
-                AudioStreamBuffer* pBuf2 = pCBInfo2->pBuffer;
-                unsigned long endB = (unsigned long)(pMRAMBuffer + MRAMOffsetB + LengthB);
-                sndStreamARAMUpdate(pBuf2->m_StreamId, (((endB - LengthB - (unsigned long)pBuf2->m_MRAMBuffer) >> 3) * 0xe), (LengthB >> 3) * 0xe, 0, 0);
-                READ_CB_INFO::s_AllocPool.DeleteEntry(pCBInfo2);
-            }
+            _UpdateReadCB(m_pFile, pMRAMBuffer + MRAMOffsetB + LengthB, LengthB, (unsigned long)pCBInfo2);
         }
         return LengthA + LengthB;
     }
@@ -688,7 +623,7 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
         {
             ___blank("Stream wrap\n");
             ReadASize = ReadLen - (m_StreamPos = m_StreamPos - m_StreamLength);
-            unsigned long AlignOff = 32 - (ReadASize & 31);
+            AlignOff = 32 - (ReadASize & 31);
             AlignOff = (AlignOff == 32) ? 0 : AlignOff;
             ReadASize += AlignOff;
             ReadBSize = m_StreamPos - AlignOff;
@@ -706,46 +641,13 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
                     pCBInfo3->pStream = this;
                     pCBInfo3->pBuffer = pB;
                 }
-                AudioStream* pStream3 = pCBInfo3->pStream;
-                bool serious3;
-                if (pStream3->m_Flags & (1 << SF_SeriousStop))
-                {
-                    switch (pStream3->m_State)
-                    {
-                    case SS_New:
-                    case SS_Initd:
-                        break;
-                    case SS_Warming:
-                        pStream3->m_State = SS_Warm;
-                        break;
-                    case SS_Warm:
-                    case SS_Playing:
-                        break;
-                    }
-                    serious3 = true;
-                }
-                else
-                {
-                    serious3 = false;
-                }
-                if (serious3)
-                {
-                    READ_CB_INFO::s_AllocPool.DeleteEntry(pCBInfo3);
-                }
-                else
-                {
-                    AudioStreamBuffer* pBuf3 = pCBInfo3->pBuffer;
-                    unsigned long endEOS = (unsigned long)(pMRAMBuffer + MRAMOffset + ReadASize + ReadBSize);
-                    sndStreamARAMUpdate(pBuf3->m_StreamId, (((endEOS - ReadBSize - (unsigned long)pBuf3->m_MRAMBuffer) >> 3) * 0xe), (ReadBSize >> 3) * 0xe, 0, 0);
-                    READ_CB_INFO::s_AllocPool.DeleteEntry(pCBInfo3);
-                }
+                _UpdateReadCB(m_pFile, pMRAMBuffer + MRAMOffset + ReadASize + ReadBSize, ReadBSize, (unsigned long)pCBInfo3);
                 m_LastPlayable = eosOff;
                 ReadBSize = 0;
                 m_Flags = (m_Flags & ~(1 << SF_EndAtUpdate)) | (1 << SF_EndAtUpdate);
             }
         }
-        unsigned long filePos = nlGetFilePosition(m_pFile);
-        ___blank("Reading into %d %d from %d\n", MRAMOffset, ReadASize, filePos);
+        ___blank("Reading into %d %d from %d\n", MRAMOffset, ReadASize, nlGetFilePosition(m_pFile));
         bool e5 = OSDisableInterrupts();
         READ_CB_INFO* pCBInfo4 = READ_CB_INFO::s_AllocPool.Allocate();
         OSRestoreInterrupts(e5);
