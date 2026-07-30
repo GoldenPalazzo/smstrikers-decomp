@@ -6,7 +6,7 @@
 
 extern "C" char* fgets(char*, int, FILE*);
 
-static const char* SIM_FILE = "";
+static const char* SIM_FILE = "SimmerStats.ini";
 
 /**
  * Offset/Address/Size: 0xC18 | 0x80191494 | size: 0x4

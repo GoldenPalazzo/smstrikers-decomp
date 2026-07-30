@@ -1314,7 +1314,7 @@ config.libs = [
             Object(NonMatching, "Game/DB/SaveLoad.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/DB/UserOptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/DB/StatsTracker.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/DB/Simmer.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/DB/Simmer.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/DB/CustomTournament.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Debug

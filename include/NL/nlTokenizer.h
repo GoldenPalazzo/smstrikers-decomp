@@ -12,8 +12,20 @@ public:
     class iterator
     {
     public:
-        iterator(const Tokenizer& tokenizer, const value_type* iter);
-        iterator& operator++();
+        iterator(const Tokenizer& tokenizer, const value_type* iter)
+            : mTokenizer(&tokenizer)
+            , mIter(iter)
+            , mEnd(0)
+        {
+            FindNextToken();
+        }
+
+        iterator& operator++()
+        {
+            mIter = mEnd;
+            FindNextToken();
+            return *this;
+        }
 
         bool operator!=(const iterator& other) const
         {
@@ -48,6 +60,12 @@ public:
             return iter;
         }
 
+        void FindNextToken()
+        {
+            mIter = SkipSeperators(mIter);
+            mEnd = FindSeperator(mIter);
+            mToken = StringType(mIter, mEnd);
+        }
         const value_type* FindSeperator(const value_type* iter) const
         {
             while (iter != mTokenizer->mString.end())
@@ -70,7 +88,6 @@ public:
             return iter;
         }
 
-        void FindNextToken();
     };
 
     Tokenizer(const StringType& string, const StringType& seperators)
@@ -79,50 +96,11 @@ public:
     {
     }
 
-    iterator begin() const;
-    iterator end() const;
+    iterator begin() const { return iterator(*this, mString.begin()); }
+    iterator end() const { return iterator(*this, mString.end()); }
 
     StringType mString;
     StringType mSeperators;
 };
-
-template <typename StringType>
-typename Tokenizer<StringType>::iterator Tokenizer<StringType>::end() const
-{
-    return iterator(*this, mString.end());
-}
-
-template <typename StringType>
-void Tokenizer<StringType>::iterator::FindNextToken()
-{
-    mIter = SkipSeperators(mIter);
-    mEnd = FindSeperator(mIter);
-    mToken = StringType(mIter, mEnd);
-}
-
-template <typename StringType>
-Tokenizer<StringType>::iterator::iterator(
-    const Tokenizer& tokenizer,
-    const value_type* iter)
-    : mTokenizer(&tokenizer)
-    , mIter(iter)
-    , mEnd(0)
-{
-    FindNextToken();
-}
-
-template <typename StringType>
-typename Tokenizer<StringType>::iterator& Tokenizer<StringType>::iterator::operator++()
-{
-    mIter = mEnd;
-    FindNextToken();
-    return *this;
-}
-
-template <typename StringType>
-typename Tokenizer<StringType>::iterator Tokenizer<StringType>::begin() const
-{
-    return iterator(*this, mString.begin());
-}
 
 #endif // _NLTOKENIZER_H_
