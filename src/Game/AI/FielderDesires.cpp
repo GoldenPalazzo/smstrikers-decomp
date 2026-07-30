@@ -758,12 +758,20 @@ inline void cFielder::DesireRunToNet(float fDeltaT)
             SetDesireDuration(0.0f, true);
         }
     }
+    float fMax;
     float fStuck = StuckOnSidelines(g_pScriptCurrentFielder);
     float fAttacked = Attacked(g_pScriptCurrentFielder);
     float fPressured = Pressured(g_pScriptCurrentFielder);
 
-    fAttacked = (fAttacked >= fStuck) ? fAttacked : fStuck;
-    fPressured = (fPressured >= fAttacked) ? fPressured : fAttacked;
+    if (fAttacked >= fStuck)
+    {
+        fMax = fAttacked;
+    }
+    else
+    {
+        fMax = fStuck;
+    }
+    fPressured = (fPressured >= fMax) ? fPressured : fMax;
 
     if (m_pBall == NULL || fPressured >= m_DesireCommonVars.fMisc)
     {
@@ -878,7 +886,7 @@ void cFielder::UpdateDesireState(float fDeltaT)
             }
         }
 
-        SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_DesireCommonVars.v3DesiredPosition, TR_FAR_DISTANCE, 0.8f, 0.8f);
+        SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_DesireCommonVars.v3DesiredPosition, TR_FAR_DISTANCE, 0.85f, 0.85f);
         ShouldIStrafe();
         ShouldIWave();
         break;
