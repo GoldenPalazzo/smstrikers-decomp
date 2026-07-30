@@ -4154,6 +4154,13 @@ float InDefensiveZoneOfPlayer(cBall* pBall, cPlayer* pPlayer)
     return NormalizeVal(aiLoc.f.x, g_pGame->m_pFuzzyTweaks->vDefensiveConfidenceDistances);
 }
 
+static float InNeutralZoneOfPlayer(cBall* pBall, cPlayer* pPlayer)
+{
+    return 1.0f - max_float(
+                      InOffensiveZoneOfPlayer(pBall, pPlayer),
+                      InDefensiveZoneOfPlayer(pBall, pPlayer));
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x8007EA88 | size: 0x6C
  */
