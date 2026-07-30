@@ -7,17 +7,7 @@
 class CommonDesireData
 {
 public:
-    CommonDesireData(eFielderDesireState eType, float fXMin, float fXMax)
-    {
-        m_DesireType = eType;
-        m_ConfidenceExtrema.f.x = fXMin;
-        m_ConfidenceExtrema.f.y = fXMax;
-    }
-
-    /**
-     * Offset/Address/Size: 0xA84 | 0x80037F0C | size: 0xCC
-     */
-    CommonDesireData(const CommonDesireData& other);
+    CommonDesireData(eFielderDesireState);
 
     /**
      * Offset/Address/Size: 0x0 | 0x80037FD8 | size: 0x3C

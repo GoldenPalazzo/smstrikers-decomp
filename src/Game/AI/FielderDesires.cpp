@@ -45,35 +45,35 @@ public:
 };
 
 CommonDesireData g_vDesireCommonData[NUM_FIELDERDESIRES] = {
-    CommonDesireData(FIELDERDESIRE_NEED_DESIRE, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_CUT_AND_BREAK, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_DEKE, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_GET_IN_POSITION, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_GET_OPEN, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_HIT, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_INTERCEPT_BALL, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_MARK, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_PROTECT_BALL, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_RUN_TO_NET, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_RUN_UPFIELD, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_RUN_DOWNFIELD, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_RUN_TO_LOCATION, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_PASS, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_SHOOT, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_SLIDE_ATTACK, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_SUPPORT_BALL_DEFENSIVE, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_SUPPORT_BALL_OFFENSIVE, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_USE_POWERUP, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_WINDUP_PASS, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_WINDUP_SHOT, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_WAIT_FOR_THOUGHT_CAP, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_USER_CONTROLLED, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_FINISH_ACTION, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_ONETIMER, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_POST_WHISTLE, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_RECEIVE_PASS_FROM_IDLE, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_RECEIVE_PASS_FROM_RUN, 1.0f, 0.0f),
-    CommonDesireData(FIELDERDESIRE_WAIT, 1.0f, 0.0f),
+    CommonDesireData(FIELDERDESIRE_NEED_DESIRE),
+    CommonDesireData(FIELDERDESIRE_CUT_AND_BREAK),
+    CommonDesireData(FIELDERDESIRE_DEKE),
+    CommonDesireData(FIELDERDESIRE_GET_IN_POSITION),
+    CommonDesireData(FIELDERDESIRE_GET_OPEN),
+    CommonDesireData(FIELDERDESIRE_HIT),
+    CommonDesireData(FIELDERDESIRE_INTERCEPT_BALL),
+    CommonDesireData(FIELDERDESIRE_MARK),
+    CommonDesireData(FIELDERDESIRE_PROTECT_BALL),
+    CommonDesireData(FIELDERDESIRE_RUN_TO_NET),
+    CommonDesireData(FIELDERDESIRE_RUN_UPFIELD),
+    CommonDesireData(FIELDERDESIRE_RUN_DOWNFIELD),
+    CommonDesireData(FIELDERDESIRE_RUN_TO_LOCATION),
+    CommonDesireData(FIELDERDESIRE_PASS),
+    CommonDesireData(FIELDERDESIRE_SHOOT),
+    CommonDesireData(FIELDERDESIRE_SLIDE_ATTACK),
+    CommonDesireData(FIELDERDESIRE_SUPPORT_BALL_DEFENSIVE),
+    CommonDesireData(FIELDERDESIRE_SUPPORT_BALL_OFFENSIVE),
+    CommonDesireData(FIELDERDESIRE_USE_POWERUP),
+    CommonDesireData(FIELDERDESIRE_WINDUP_PASS),
+    CommonDesireData(FIELDERDESIRE_WINDUP_SHOT),
+    CommonDesireData(FIELDERDESIRE_WAIT_FOR_THOUGHT_CAP),
+    CommonDesireData(FIELDERDESIRE_USER_CONTROLLED),
+    CommonDesireData(FIELDERDESIRE_FINISH_ACTION),
+    CommonDesireData(FIELDERDESIRE_ONETIMER),
+    CommonDesireData(FIELDERDESIRE_POST_WHISTLE),
+    CommonDesireData(FIELDERDESIRE_RECEIVE_PASS_FROM_IDLE),
+    CommonDesireData(FIELDERDESIRE_RECEIVE_PASS_FROM_RUN),
+    CommonDesireData(FIELDERDESIRE_WAIT),
 };
 
 static const nlVector3 v3Zero = {
@@ -147,6 +147,13 @@ static inline const nlVector3& GetBallVelocity(cBall* pBall)
     return pBall->m_v3Velocity;
 }
 
+CommonDesireData::CommonDesireData(eFielderDesireState desireType)
+{
+    m_DesireType = desireType;
+    m_ConfidenceExtrema.f.x = 1.0f;
+    m_ConfidenceExtrema.f.y = 0.0f;
+}
+
 /**
  * Offset/Address/Size: 0x668C | 0x80037410 | size: 0x3C
  */
@@ -185,17 +192,6 @@ float CommonDesireData::NormalizeConfidence(float fConfidence)
 CommonDesireData& GetCommonDesireData(eFielderDesireState desireType)
 {
     return g_vDesireCommonData[desireType];
-}
-
-/**
- * Offset/Address/Size: 0xA84 | 0x80037F0C | size: 0xCC
- */
-CommonDesireData::CommonDesireData(const CommonDesireData& other)
-    : m_DesireType(other.m_DesireType)
-    , m_ConfidenceExtrema(other.m_ConfidenceExtrema)
-    , m_RandomGenerator(other.m_RandomGenerator)
-    , m_RandomChanceGen(other.m_RandomChanceGen)
-{
 }
 
 #pragma dont_inline on
@@ -319,27 +315,7 @@ bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, fl
     {
         if (g_pGame->IsThoughtAllowed(mThoughtHashInitCutAndBreak))
         {
-            bool bResult;
-            if (m_pBall != NULL)
-            {
-                if (m_sQueuedDesireParams.eDesireType == FIELDERDESIRE_CUT_AND_BREAK)
-                {
-                    m_sQueuedDesireParams.fDuration = 0.0f;
-                    m_sQueuedDesireParams.eDesireType = FIELDERDESIRE_NEED_DESIRE;
-                    m_sQueuedDesireParams.opt1 = fvNotSet;
-                    m_sQueuedDesireParams.opt2 = fvNotSet;
-                }
-                bResult = false;
-            }
-            else
-            {
-                SetSpaceSearch(new (nlMalloc(0x14, 8, false)) SSearchCutAndBreak(this));
-                m_pSpaceSearch->m_bDebugOn = false;
-                m_pSpaceSearch->FindBestPosition(m_DesireCommonVars.v3DesiredPosition, m_v3Position, DIR_NONE, NULL, 4.0f, 0x8000);
-                m_pAvoidance->SetThingsToAvoid(0x1F);
-                bResult = true;
-            }
-            bDesireInitSuccess = bResult;
+            bDesireInitSuccess = InitDesireCutAndBreak();
         }
         else
         {
@@ -364,46 +340,10 @@ bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, fl
     {
         if (g_pGame->IsThoughtAllowed(mThoughtHashInitWindupPass))
         {
-            bool bHighPass;
             cPlayer* pTarget = (cPlayer*)opt1.mData.pPlayer;
             if (pTarget != NULL)
             {
-                bHighPass = opt2.mData.b;
-                bool bResult;
-                if (m_pBall == NULL)
-                {
-                    if (m_sQueuedDesireParams.eDesireType == FIELDERDESIRE_WINDUP_PASS)
-                    {
-                        m_sQueuedDesireParams.fDuration = 0.0f;
-                        m_sQueuedDesireParams.eDesireType = FIELDERDESIRE_NEED_DESIRE;
-                        m_sQueuedDesireParams.opt1 = fvNotSet;
-                        m_sQueuedDesireParams.opt2 = fvNotSet;
-                    }
-                    bResult = false;
-                }
-                else
-                {
-                    mActionPassingVars.pPassTarget = pTarget;
-                    mActionPassingVars.bVolleyPass = bHighPass;
-                    SetDesireDuration(3.2f, true);
-                    if (bHighPass)
-                    {
-                        m_DesireCommonVars.tMiscTimer.m_uPackedTime = 0;
-                    }
-                    else
-                    {
-                        m_DesireCommonVars.tMiscTimer.SetSeconds(3.0f);
-                    }
-                    SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
-                    float fReactionTimeRange = 0.85f * (0.3f * (1.0f - pSkillTweaks->Off_Reaction));
-                    m_DesireCommonVars.fMisc = 0.85f + (nlRandomf(fReactionTimeRange, &nlDefaultSeed) - (0.5f * fReactionTimeRange));
-                    SetSpaceSearch(new (nlMalloc(0x28, 8, false)) SSearchOpenLane(this, pTarget));
-                    m_pSpaceSearch->m_bDebugOn = false;
-                    m_pSpaceSearch->FindBestPosition(m_DesireCommonVars.v3DesiredPosition, m_v3Position, DIR_UPFIELD, &pTarget->m_v3Position, 4.5f, 0x8000);
-                    m_pAvoidance->SetThingsToAvoid(0x1F);
-                    bResult = true;
-                }
-                bDesireInitSuccess = bResult;
+                bDesireInitSuccess = InitDesireWindupPass(pTarget, opt2.mData.b);
             }
             else
             {
@@ -418,136 +358,59 @@ bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, fl
         break;
     }
     case FIELDERDESIRE_DEKE:
-        m_pAvoidance->SetThingsToAvoid(0);
+        InitDesireDeke();
         break;
     case FIELDERDESIRE_GET_IN_POSITION:
-        m_pAvoidance->SetThingsToAvoid(0x1F);
+        InitDesireGetInPosition();
         break;
     case FIELDERDESIRE_INTERCEPT_BALL:
-    {
-        m_eDesireSubState = 0;
-        m_DesireCommonVars.tMiscTimer.m_uPackedTime = 0;
-        if (g_pBall->m_pPassTarget != NULL)
-        {
-            float fMultiplier = 0.5f + (nlRandomf(0.15f, &nlDefaultSeed) - 0.075f);
-            float fPassTargetSeconds = g_pBall->m_tPassTargetTimer.GetSeconds();
-            m_DesireCommonVars.tMiscTimer.SetSeconds(fPassTargetSeconds * fMultiplier);
-        }
-        m_pAvoidance->SetThingsToAvoid(0x1F);
+        InitDesireInterceptBall();
         break;
-    }
     case FIELDERDESIRE_MARK:
-        m_pAvoidance->SetThingsToAvoid(0x1F);
-        m_DesireCommonVars.tMiscTimer.m_uPackedTime = 0;
+        InitDesireMark();
         break;
     case FIELDERDESIRE_POST_WHISTLE:
-    {
-        if (m_pBall != NULL)
-        {
-            ReleaseBall();
-            g_pBall->ShootRelease(m_v3Velocity, SPINTYPE_NONE);
-        }
-        const float& fDelayToFinishAction = g_fPostWhistleDelayToFinishAction;
-        m_DesireCommonVars.tMiscTimer.SetSeconds(fDelayToFinishAction);
-        m_pAvoidance->SetThingsToAvoid(0x1F);
+        InitDesirePostWhistle();
         break;
-    }
     case FIELDERDESIRE_PROTECT_BALL:
-        m_pAvoidance->SetThingsToAvoid(0x1F);
+        InitDesireProtectBall();
         break;
     case FIELDERDESIRE_RUN_UPFIELD:
-        m_pAvoidance->SetThingsToAvoid(0x1F);
+        InitDesireRunUpField();
         break;
     case FIELDERDESIRE_RUN_DOWNFIELD:
-        m_pAvoidance->SetThingsToAvoid(0x1F);
+        InitDesireRunDownField();
         break;
     case FIELDERDESIRE_RUN_TO_LOCATION:
-    {
-        bool bTurbo = opt2.mData.b;
-        if (m_pBall != NULL)
-        {
-            ReleaseBall();
-        }
-        m_DesireCommonVars.v3DesiredPosition = opt1.mData.vector;
-        m_DesireCommonVars.turboRequest = bTurbo ? TR_FORCED_ON : TR_FAR_DISTANCE;
-        m_pAvoidance->SetThingsToAvoid(0x1F);
+        InitDesireRunToLocation(opt1.mData.vector, opt2.mData.b);
         break;
-    }
     case FIELDERDESIRE_SHOOT:
-    {
-        bool bChipShot = opt2.mData.b;
-        bool bShootToScore = opt1.mData.b;
-        if (m_pBall != NULL)
-        {
-            if (bShootToScore)
-            {
-                SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
-                bool bDidHit = GenerateFilteredRandom() < pSkillTweaks->Shoot_CaptainS2SFirstButtonChance;
-                if (bDidHit)
-                {
-                    m_DesireCommonVars.fMisc = g_pGame->m_pGameTweaks->unk294;
-                }
-                else
-                {
-                    float fRandomError = (float)(0.6f * GenerateFilteredRandom() - 0.30000001192092896);
-                    m_DesireCommonVars.fMisc = fRandomError + g_pGame->m_pGameTweaks->unk294;
-                }
-                SetDesireDuration(100000000.0f, true);
-                mActionShotVars.bIsShootToScore = true;
-            }
-            else
-            {
-                mActionShotVars.bIsChipShot = bChipShot;
-                mActionShotVars.bIsShootToScore = false;
-            }
-            m_pAvoidance->SetThingsToAvoid(0);
-        }
+        InitDesireShoot(opt1.mData.b, opt2.mData.b);
         break;
-    }
     case FIELDERDESIRE_SUPPORT_BALL_OFFENSIVE:
-        m_pAvoidance->SetThingsToAvoid(0x1F);
+        InitDesireSupportBallOffensive();
         break;
     case FIELDERDESIRE_SUPPORT_BALL_DEFENSIVE:
-        m_pAvoidance->SetThingsToAvoid(0x1F);
+        InitDesireSupportBallDefensive();
         break;
     case FIELDERDESIRE_WAIT:
-        m_fDesiredSpeed = 0.0f;
+        InitDesireWait();
         break;
     case FIELDERDESIRE_USER_CONTROLLED:
-        StartRunning();
-        m_pAvoidance->SetThingsToAvoid(8);
+        InitDesireUserControlled();
         break;
     case FIELDERDESIRE_WINDUP_SHOT:
-    {
-        if (m_pBall != NULL)
-        {
-            if (!IsBallAwayFromCarrier())
-            {
-                DoResetShotMeter(0.0f);
-                m_DesireWindupForShotVars.bIsBallAwayFromCarrier = false;
-                SetDesireDuration(m_pShotMeter->GetTotalDuration(), false);
-            }
-            else
-            {
-                SetDesireDuration(999999.9f, true);
-                m_DesireWindupForShotVars.bIsBallAwayFromCarrier = true;
-            }
-            m_pAvoidance->SetThingsToAvoid(0);
-        }
+        InitDesireWindupShot();
         break;
-    }
     case FIELDERDESIRE_FINISH_ACTION:
-        m_pAvoidance->SetThingsToAvoid(0);
+        InitDesireFallThrough();
         break;
     case FIELDERDESIRE_PASS:
     {
         cPlayer* pTarget = (cPlayer*)opt1.mData.pPlayer;
         if (pTarget != NULL)
         {
-            mActionPassingVars.pPassTarget = pTarget;
-            mActionPassingVars.bVolleyPass = opt2.mData.b;
-            m_fDesiredSpeed = (m_fActualSpeed <= ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed) ? m_fActualSpeed : ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
-            m_pAvoidance->SetThingsToAvoid(0);
+            InitDesirePass(pTarget, opt2.mData.b);
         }
         else
         {
@@ -561,9 +424,7 @@ bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, fl
         cFielder* pTarget = (cFielder*)opt1.mData.pPlayer;
         if (pTarget != NULL && pTarget->m_eClassType == FIELDER)
         {
-            m_DesireSlideAttackVars.m_pSlideAttackTarget = pTarget;
-            m_eDesireSubState = 0;
-            m_pAvoidance->SetThingsToAvoid(0x1F);
+            InitDesireSlideAttack(pTarget);
         }
         else
         {
@@ -577,12 +438,7 @@ bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, fl
         cFielder* pTarget = (cFielder*)opt1.mData.pPlayer;
         if (pTarget != NULL && pTarget->m_eClassType == FIELDER)
         {
-            if (pTarget == NULL)
-            {
-                pTarget = DoFindBestHitTarget();
-            }
-            InitActionHit(pTarget);
-            m_pAvoidance->SetThingsToAvoid(0);
+            InitDesireHit((cFielder*)opt1.mData.pPlayer);
         }
         else
         {
@@ -593,15 +449,10 @@ bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, fl
     }
     case FIELDERDESIRE_USE_POWERUP:
     {
-        ePowerUpType powerupType;
         cFielder* pTarget = (cFielder*)opt2.mData.pPlayer;
         if (pTarget == NULL || pTarget->m_eClassType == FIELDER)
         {
-            powerupType = (ePowerUpType)opt1.mData.i;
-            if (powerupType == m_pTeam->GetCurrentPowerUp().eType && !IsPlayingPowerupAnim())
-            {
-                UseTeamPowerup(pTarget);
-            }
+            InitDesireUsePowerup((ePowerUpType)opt1.mData.i, pTarget);
         }
         else
         {
@@ -634,269 +485,32 @@ bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, fl
 /**
  * Offset/Address/Size: 0x4700 | 0x80035484 | size: 0xDDC
  */
-inline void cFielder::DesireWindupPass(float fDeltaT)
-{
-    if (m_pBall == NULL || Incapacitated(mActionPassingVars.pPassTarget))
-    {
-        SetDesireDuration(0.0f, true);
-        return;
-    }
-    SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_DesireCommonVars.v3DesiredPosition, TR_FORCED_OFF, 1.0f, 1.0f);
-    bool bSwitchToPassDesire = false;
-    if (m_DesireCommonVars.tMiscTimer.m_uPackedTime != 0)
-    {
-        float fInDanger = Fuzzy::InDangerDelayed(g_pScriptCurrentFielder).mData.f;
-        float fNotFarToTheirGoalie = FLESS(FarToTheirGoalie(g_pScriptCurrentFielder), 0.3f);
-        float fDistanceToDesiredPos = GetDistanceToDesiredPos();
-        float fClosingSpeedToDesiredPos = GetClosingSpeed2D(m_DesireCommonVars.v3DesiredPosition, v3Zero, m_v3Position, m_v3Velocity);
-        if (fClosingSpeedToDesiredPos < 0.0f || fDistanceToDesiredPos <= 1.0f
-            || ((fInDanger = (fInDanger >= fNotFarToTheirGoalie) ? fInDanger : fNotFarToTheirGoalie) >= m_DesireCommonVars.fMisc))
-        {
-            bSwitchToPassDesire = true;
-        }
-    }
-    else
-    {
-        bSwitchToPassDesire = true;
-    }
-    if (bSwitchToPassDesire && !IsBallAwayFromCarrier())
-    {
-        SetDesireDuration(0.0f, true);
-        InitDesire(FIELDERDESIRE_PASS, m_fDesireConfidence, -1.0f, FuzzyVariant(mActionPassingVars.pPassTarget), FuzzyVariant(mActionPassingVars.bVolleyPass));
-    }
-}
-
-inline void cFielder::DesireDeke()
-{
-    bool bInitDekeAction = (m_eActionState != ACTION_DEKE);
-    if (m_pBall != NULL && IsBallAwayFromCarrier())
-    {
-        bInitDekeAction = false;
-    }
-
-    if (bInitDekeAction)
-    {
-        InitActionDeke(PAD_DEKE);
-    }
-
-    if (IsActionDone())
-    {
-        SetDesireDuration(0.0f, true);
-    }
-}
-
-inline void cFielder::DesireShoot()
-{
-    if (m_pBall != NULL)
-    {
-        if (m_eActionState == ACTION_SHOOT_TO_SCORE)
-        {
-            if (mActionShootToScoreVars.bShootWasPressed)
-            {
-                SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
-                float fChance = pSkillTweaks->Shoot_CaptainS2SSecondButtonChance - ShootToScoreMeter::instance.mfRumbleAmount;
-                bool bDidHit = GenerateFilteredRandom() < fChance;
-                if (bDidHit)
-                {
-                    m_DesireCommonVars.fMisc = -g_pGame->m_pGameTweaks->unk298;
-                }
-                else
-                {
-                    float fRandomError = (float)(0.6f * GenerateFilteredRandom() - 0.30000001192092896);
-                    m_DesireCommonVars.fMisc = -(fRandomError + g_pGame->m_pGameTweaks->unk298);
-                }
-                mActionShootToScoreVars.bShootWasPressed = false;
-            }
-        }
-        else if (!IsBallAwayFromCarrier())
-        {
-            if (mActionShotVars.bIsShootToScore)
-            {
-                mActionShotVars.bIsShootToScore = false;
-                InitActionShootToScore();
-            }
-            else
-            {
-                if (ShouldIClearBall())
-                {
-                    m_pShotMeter->m_fTime = 0.1f + (float)nlRandom((unsigned int)(g_pGame->m_pGameTweaks->unk2D0 - 0.2f), &nlDefaultSeed);
-                }
-                m_pShotMeter->ShotReleased(this);
-                InitActionShot(mActionShotVars.bIsChipShot);
-            }
-        }
-    }
-    else if (IsActionDone())
-    {
-        SetDesireDuration(0.0f, true);
-    }
-}
-
-inline void cFielder::DesireRunToNet(float fDeltaT)
-{
-    float fNearGoalie = NearToTheirGoalie(g_pScriptCurrentFielder);
-    float fCloseToSideline;
-    float fFacingSideline;
-    if (fNearGoalie > 0.0f
-        || (fCloseToSideline = CloseToSideline(g_pScriptCurrentFielder),
-            fFacingSideline = FacingSideline(g_pScriptCurrentFielder),
-            fFacingSideline = (fFacingSideline <= fCloseToSideline) ? fFacingSideline : fCloseToSideline,
-            fFacingSideline > 0.3f))
-    {
-        m_DesireCommonVars.turboRequest = TR_FORCED_OFF;
-    }
-
-    nlVector3 v3DesiredPosition;
-    nlVec3ScaleAdd(v3DesiredPosition, 4.0f, m_DesireCommonVars.v3DesiredPosition, m_v3Position);
-
-    SetDesiredSpeedAndDirectionToPosition(fDeltaT, v3DesiredPosition, m_DesireCommonVars.turboRequest, 0.9f, 0.9f);
-
-    if (GetDistanceToDesiredPos() <= 1.5f || NearToTheirGoalie(g_pScriptCurrentFielder) >= 0.5f)
-    {
-        if ((m_DesireCommonVars.tAge.GetSeconds() > 0.5f) != false)
-        {
-            SetDesireDuration(0.0f, true);
-        }
-    }
-    float fMax;
-    float fStuck = StuckOnSidelines(g_pScriptCurrentFielder);
-    float fAttacked = Attacked(g_pScriptCurrentFielder);
-    float fPressured = Pressured(g_pScriptCurrentFielder);
-
-    if (fAttacked >= fStuck)
-    {
-        fMax = fAttacked;
-    }
-    else
-    {
-        fMax = fStuck;
-    }
-    fPressured = (fPressured >= fMax) ? fPressured : fMax;
-
-    if (m_pBall == NULL || fPressured >= m_DesireCommonVars.fMisc)
-    {
-        SetDesireDuration(0.0f, true);
-    }
-}
-
-inline void cFielder::DesirePostWhistle(float fDeltaT)
-{
-    if (g_pGame->IsGameplayOrOvertime())
-    {
-        SetDesireDuration(0.0f, true);
-        return;
-    }
-    if (m_DesireCommonVars.tMiscTimer.m_uPackedTime == 0 || m_eActionState == ACTION_NEED_ACTION)
-    {
-        InitActionPostWhistle();
-    }
-    SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_v3Position, TR_FAR_DISTANCE, 1.0f, 1.0f);
-    ShouldIStrafe();
-}
-
 void cFielder::UpdateDesireState(float fDeltaT)
 {
     switch (m_eFielderDesireState)
     {
     case FIELDERDESIRE_CUT_AND_BREAK:
-    {
-        SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_DesireCommonVars.v3DesiredPosition, TR_FAR_DISTANCE, 0.5f, 0.5f);
-        if (GetDistanceToDesiredPos() < 0.5f || m_pTeam->m_pBallInterceptOrderedFielders[0] == this)
-        {
-            if ((m_DesireCommonVars.tAge.GetSeconds() > 0.5f) != false)
-            {
-                SetDesireDuration(0.0f, true);
-            }
-        }
-        else if (m_pBall != NULL)
-        {
-            SetDesireDuration(0.0f, true);
-        }
+        DesireCutAndBreak(fDeltaT);
         break;
-    }
 
     case FIELDERDESIRE_DEKE:
-        DesireDeke();
+        DesireDeke(fDeltaT);
         break;
 
     case FIELDERDESIRE_FINISH_ACTION:
-    {
-        if (GetGlobalPad() != NULL)
-        {
-            if (GetGlobalPad()->JustPressed(PAD_USE, true))
-            {
-                if (m_eActionState != ACTION_ELECTROCUTION && m_eActionState != ACTION_SQUISH_REACT && m_eActionState != ACTION_STS_HIT_REACT
-                    && !IsPlayingPowerupAnim())
-                {
-                    UseTeamPowerup(NULL);
-                }
-            }
-            else if (GetGlobalPad()->JustPressed(PAD_TOGGLE_POWERUP, true))
-            {
-                m_pTeam->TogglePowerup(false);
-            }
-        }
-
-        if (IsActionDone() || IsRunning())
-        {
-            SetDesireDuration(0.0f, true);
-        }
+        DesireFallThrough(fDeltaT);
         break;
-    }
 
     case FIELDERDESIRE_GET_IN_POSITION:
-    {
-        nlVector3 v3FormationPosition;
-        m_DesireCommonVars.bInPosition = GetFormationPosition(v3FormationPosition, -1.0f);
-        if (m_DesireCommonVars.bInPosition)
-        {
-            v3FormationPosition = m_v3Position;
-        }
-
-        SetDesiredSpeedAndDirectionToPosition(fDeltaT, v3FormationPosition, TR_FAR_DISTANCE, 1.0f, 1.0f);
-        ShouldIStrafe();
-
-        if (g_pBall->m_pOwner != m_DesireCommonVars.pBallOwner || m_pTeam->m_pBallInterceptOrderedFielders[0] == this)
-        {
-            if ((m_DesireCommonVars.tAge.GetSeconds() > 0.5f) != false)
-            {
-                SetDesireDuration(0.0f, true);
-            }
-        }
-
-        ShouldIWave();
+        DesireGetInPosition(fDeltaT);
         break;
-    }
 
     case FIELDERDESIRE_GET_OPEN:
-    {
-        cPlayer* pSBC = Fuzzy::GetStrategicBallCarrier(m_pTeam).mData.pPlayer;
-
-        if (m_pBall != NULL)
-        {
-            SetDesireDuration(0.0f, true);
-            break;
-        }
-
-        if (pSBC == NULL || pSBC != m_DesireCommonVars.pSBC || m_pTeam->m_pBallInterceptOrderedFielders[0] == this)
-        {
-            if ((m_DesireCommonVars.tAge.GetSeconds() > 0.5f) != false)
-            {
-                SetDesireDuration(0.0f, true);
-            }
-        }
-
-        SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_DesireCommonVars.v3DesiredPosition, TR_FAR_DISTANCE, 0.85f, 0.85f);
-        ShouldIStrafe();
-        ShouldIWave();
+        DesireGetOpen(fDeltaT);
         break;
-    }
 
     case FIELDERDESIRE_HIT:
-        if (IsActionDone())
-        {
-            SetDesireDuration(0.0f, true);
-        }
+        DesireHit(fDeltaT);
         break;
 
     case FIELDERDESIRE_INTERCEPT_BALL:
@@ -912,12 +526,7 @@ void cFielder::UpdateDesireState(float fDeltaT)
         break;
 
     case FIELDERDESIRE_PROTECT_BALL:
-        if (this != g_pBall->m_pOwner && (m_DesireCommonVars.tAge.GetSeconds() > 0.5f) != false)
-        {
-            SetDesireDuration(0.0f, true);
-        }
-        SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_v3Position, TR_FAR_DISTANCE, 1.0f, 1.0f);
-        ShouldIStrafe();
+        DesireProtectBall(fDeltaT);
         break;
 
     case FIELDERDESIRE_RUN_TO_NET:
@@ -933,33 +542,15 @@ void cFielder::UpdateDesireState(float fDeltaT)
         break;
 
     case FIELDERDESIRE_RUN_TO_LOCATION:
-        SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_DesireCommonVars.v3DesiredPosition, m_DesireCommonVars.turboRequest, 0.7f, 0.7f);
-        if (GetDistanceToDesiredPos() < 1.0f)
-        {
-            SetDesireDuration(0.0f, true);
-            if ((g_pGame->m_eGameState == GS_POST_GOAL || g_pGame->m_eGameState == GS_END_GAME) && this == g_pCharacters[0])
-            {
-                g_pEventManager->CreateValidEvent(8, 20);
-            }
-        }
+        DesireRunToLocation(fDeltaT);
         break;
 
     case FIELDERDESIRE_PASS:
-        if (m_pBall != NULL)
-        {
-            if (!IsBallAwayFromCarrier())
-            {
-                InitActionPass(mActionPassingVars.pPassTarget, mActionPassingVars.bVolleyPass, false);
-            }
-        }
-        else if (IsActionDone())
-        {
-            SetDesireDuration(0.0f, true);
-        }
+        DesirePass(fDeltaT);
         break;
 
     case FIELDERDESIRE_SHOOT:
-        DesireShoot();
+        DesireShoot(fDeltaT);
         break;
 
     case FIELDERDESIRE_POST_WHISTLE:
@@ -988,7 +579,7 @@ void cFielder::UpdateDesireState(float fDeltaT)
         DesireUserControlled(fDeltaT);
         break;
     case FIELDERDESIRE_WAIT:
-        SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_v3Position, TR_FAR_DISTANCE, 1.0f, 1.0f);
+        DesireWait(fDeltaT);
         break;
     case FIELDERDESIRE_WINDUP_PASS:
         DesireWindupPass(fDeltaT);
@@ -1039,17 +630,15 @@ void cFielder::CleanUpDesire(eFielderDesireState eNewDesireState)
         break;
 
     case FIELDERDESIRE_ONETIMER:
-        SetNoPickUpTime(0.0f);
+        CleanDesireOneTimer();
         break;
 
     case FIELDERDESIRE_RECEIVE_PASS_FROM_IDLE:
-        SetNoPickUpTime(0.0f);
-        SetSpaceSearch(nullptr);
+        CleanDesireReceivePassFromIdle();
         break;
 
     case FIELDERDESIRE_RECEIVE_PASS_FROM_RUN:
-        SetNoPickUpTime(0.0f);
-        SetSpaceSearch(nullptr);
+        CleanDesireReceivePassFromRun();
         break;
 
     case FIELDERDESIRE_CUT_AND_BREAK:
@@ -1079,6 +668,36 @@ void cFielder::CleanUpDesire(eFielderDesireState eNewDesireState)
  * Offset/Address/Size: 0x4204 | 0x80034F88 | size: 0x3C4
  */
 static const float g_fLooseBallActionRethinkTime = 0.3f;
+
+void cFielder::CleanDesireOneTimer()
+{
+    SetNoPickUpTime(0.0f);
+}
+
+void cFielder::CleanDesireReceivePassFromIdle()
+{
+    SetNoPickUpTime(0.0f);
+    SetSpaceSearch(nullptr);
+}
+
+void cFielder::CleanDesireReceivePassFromRun()
+{
+    SetNoPickUpTime(0.0f);
+    SetSpaceSearch(nullptr);
+}
+
+void cFielder::InitDesireInterceptBall()
+{
+    m_eDesireSubState = 0;
+    m_DesireCommonVars.tMiscTimer.m_uPackedTime = 0;
+    if (g_pBall->m_pPassTarget != NULL)
+    {
+        float fMultiplier = 0.5f + (nlRandomf(0.15f, &nlDefaultSeed) - 0.075f);
+        float fPassTargetSeconds = g_pBall->m_tPassTargetTimer.GetSeconds();
+        m_DesireCommonVars.tMiscTimer.SetSeconds(fPassTargetSeconds * fMultiplier);
+    }
+    m_pAvoidance->SetThingsToAvoid(0x1F);
+}
 
 void cFielder::DesireInterceptBall(float fDeltaT)
 {
@@ -1116,7 +735,7 @@ void cFielder::DesireInterceptBall(float fDeltaT)
                 float fVolley = ReceivingVolleyPass(pPassTarget);
                 if (fVolley || High(g_pBall) >= 0.5f)
                 {
-                    ((cFielder*)pPassTarget)->CalcPointOnPerimeter(v3DesirePosition, m_v3Position, 2.0f);
+                    ((cFielder*)pPassTarget)->CalcPointOnPerimeter(v3DesirePosition, m_v3Position, 0.25f);
                 }
                 else
                 {
@@ -1145,7 +764,7 @@ void cFielder::DesireInterceptBall(float fDeltaT)
             else
             {
                 float fRawTime = m_pTeam->mfBallInterceptTimes[m_ID];
-                float fInterceptTime = (0.5f <= fRawTime) ? 0.5f : fRawTime;
+                float fInterceptTime = (3.0f <= fRawTime) ? 3.0f : fRawTime;
 
                 float fz = g_pBall->m_v3Position.f.z + fInterceptTime * g_pBall->m_v3Velocity.f.z;
                 float fy = g_pBall->m_v3Position.f.y + fInterceptTime * g_pBall->m_v3Velocity.f.y;
@@ -1228,6 +847,36 @@ void cFielder::DesireInterceptBall(float fDeltaT)
         break;
     }
     }
+}
+
+void cFielder::DesireFallThrough(float)
+{
+    if (GetGlobalPad() != NULL)
+    {
+        if (GetGlobalPad()->JustPressed(PAD_USE, true))
+        {
+            if (m_eActionState != ACTION_ELECTROCUTION && m_eActionState != ACTION_SQUISH_REACT && m_eActionState != ACTION_STS_HIT_REACT
+                && !IsPlayingPowerupAnim())
+            {
+                UseTeamPowerup(NULL);
+            }
+        }
+        else if (GetGlobalPad()->JustPressed(PAD_TOGGLE_POWERUP, true))
+        {
+            m_pTeam->TogglePowerup(false);
+        }
+    }
+
+    if (IsActionDone() || IsRunning())
+    {
+        SetDesireDuration(0.0f, true);
+    }
+}
+
+void cFielder::InitDesireMark()
+{
+    m_pAvoidance->SetThingsToAvoid(0x1F);
+    m_DesireCommonVars.tMiscTimer.m_uPackedTime = 0;
 }
 
 /**
@@ -1432,6 +1081,21 @@ static inline float SupportClampUpper(float x, float max)
         return max;
 }
 
+void cFielder::InitDesireProtectBall()
+{
+    m_pAvoidance->SetThingsToAvoid(0x1F);
+}
+
+void cFielder::DesireProtectBall(float fDeltaT)
+{
+    if (this != g_pBall->m_pOwner && (m_DesireCommonVars.tAge.GetSeconds() > 0.5f) != false)
+    {
+        SetDesireDuration(0.0f, true);
+    }
+    SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_v3Position, TR_FAR_DISTANCE, 1.0f, 1.0f);
+    ShouldIStrafe();
+}
+
 /**
  * Offset/Address/Size: 0x35E4 | 0x80034368 | size: 0x408
  */
@@ -1559,6 +1223,39 @@ void cFielder::DesireSupportBall(float fDeltaT, bool bDefensive)
     ShouldIStrafe();
 }
 
+void cFielder::InitDesireFallThrough()
+{
+    m_pAvoidance->SetThingsToAvoid(0);
+}
+
+void cFielder::InitDesireGetInPosition()
+{
+    m_pAvoidance->SetThingsToAvoid(0x1F);
+}
+
+void cFielder::DesireGetInPosition(float fDeltaT)
+{
+    nlVector3 v3FormationPosition;
+    m_DesireCommonVars.bInPosition = GetFormationPosition(v3FormationPosition, -1.0f);
+    if (m_DesireCommonVars.bInPosition)
+    {
+        v3FormationPosition = m_v3Position;
+    }
+
+    SetDesiredSpeedAndDirectionToPosition(fDeltaT, v3FormationPosition, TR_FAR_DISTANCE, 1.0f, 1.0f);
+    ShouldIStrafe();
+
+    if (g_pBall->m_pOwner != m_DesireCommonVars.pBallOwner || m_pTeam->m_pBallInterceptOrderedFielders[0] == this)
+    {
+        if ((m_DesireCommonVars.tAge.GetSeconds() > 0.5f) != false)
+        {
+            SetDesireDuration(0.0f, true);
+        }
+    }
+
+    ShouldIWave();
+}
+
 #pragma dont_inline on
 /**
  * Offset/Address/Size: 0x33A0 | 0x80034124 | size: 0x244
@@ -1602,15 +1299,116 @@ bool cFielder::InitDesireGetOpen()
     m_pSpaceSearch->m_bDebugOn = false;
     m_pSpaceSearch->FindBestPosition(v3BestPosition, v3FormationPosition, DIR_TOWARD_TARGET, &v3TargetPosition, 4.0f, 0x8000);
 
-    m_DesireCommonVars.v3DesiredPosition.f.x = 0.95f * v3FormationPosition.f.x + (1.0f - 0.95f) * v3BestPosition.f.x;
-    m_DesireCommonVars.v3DesiredPosition.f.y = 0.95f * v3FormationPosition.f.y + (1.0f - 0.95f) * v3BestPosition.f.y;
-    m_DesireCommonVars.v3DesiredPosition.f.z = 0.95f * v3FormationPosition.f.z + (1.0f - 0.95f) * v3BestPosition.f.z;
+    m_DesireCommonVars.v3DesiredPosition.f.x = (1.0f - 0.95f) * v3FormationPosition.f.x + 0.95f * v3BestPosition.f.x;
+    m_DesireCommonVars.v3DesiredPosition.f.y = (1.0f - 0.95f) * v3FormationPosition.f.y + 0.95f * v3BestPosition.f.y;
+    m_DesireCommonVars.v3DesiredPosition.f.z = (1.0f - 0.95f) * v3FormationPosition.f.z + 0.95f * v3BestPosition.f.z;
 
     m_pAvoidance->SetThingsToAvoid(0x1F);
 
     return true;
 }
 #pragma dont_inline off
+
+void cFielder::DesireGetOpen(float fDeltaT)
+{
+    cPlayer* pSBC = Fuzzy::GetStrategicBallCarrier(m_pTeam).mData.pPlayer;
+
+    if (m_pBall != NULL)
+    {
+        SetDesireDuration(0.0f, true);
+        return;
+    }
+
+    if (pSBC == NULL || pSBC != m_DesireCommonVars.pSBC || m_pTeam->m_pBallInterceptOrderedFielders[0] == this)
+    {
+        if ((m_DesireCommonVars.tAge.GetSeconds() > 0.5f) != false)
+        {
+            SetDesireDuration(0.0f, true);
+        }
+    }
+
+    SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_DesireCommonVars.v3DesiredPosition, TR_FAR_DISTANCE, 0.85f, 0.85f);
+    ShouldIStrafe();
+    ShouldIWave();
+}
+
+void cFielder::InitDesirePostWhistle()
+{
+    if (m_pBall != NULL)
+    {
+        ReleaseBall();
+        g_pBall->ShootRelease(m_v3Velocity, SPINTYPE_NONE);
+    }
+    const float& fDelayToFinishAction = g_fPostWhistleDelayToFinishAction;
+    m_DesireCommonVars.tMiscTimer.SetSeconds(fDelayToFinishAction);
+    m_pAvoidance->SetThingsToAvoid(0x1F);
+}
+
+void cFielder::DesirePostWhistle(float fDeltaT)
+{
+    if (g_pGame->IsGameplayOrOvertime())
+    {
+        SetDesireDuration(0.0f, true);
+        return;
+    }
+    if (m_DesireCommonVars.tMiscTimer.m_uPackedTime == 0 || m_eActionState == ACTION_NEED_ACTION)
+    {
+        InitActionPostWhistle();
+    }
+    SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_v3Position, TR_FAR_DISTANCE, 1.0f, 1.0f);
+    ShouldIStrafe();
+}
+
+bool cFielder::InitDesireOneTimerFromIdle(bool bVolleyPass, bool bIsChipShot)
+{
+    float fBallContactTime;
+    const LooseBallContactAnimInfo* pBestBallContactAnimInfo = GetOneTimerBallContactAnimInfo(
+        m_aActualFacingDirection,
+        m_v3Position,
+        m_pTeam->GetOtherNet()->m_baseLocation,
+        false,
+        bVolleyPass);
+
+    m_DesireOneTimerVars.nOneTimerAnim = pBestBallContactAnimInfo->nAnimID;
+    const cSAnim* contactAnim = m_pAnimInventory->GetAnim(pBestBallContactAnimInfo->nAnimID);
+    m_DesireOneTimerVars.fOneTimerAnimTime = pBestBallContactAnimInfo->fAnimContactFrame / (float)contactAnim->m_nNumKeys;
+
+    if (!DoLooseBallContactFromIdle(
+            m_DesireOneTimerVars.v3DesiredPosition,
+            m_DesireOneTimerVars.fDesiredTime,
+            m_DesireOneTimerVars.v3BallPosition,
+            fBallContactTime,
+            m_aActualFacingDirection,
+            pBestBallContactAnimInfo))
+    {
+        return false;
+    }
+
+    m_DesireOneTimerVars.aDesiredFacingDirection = m_aActualFacingDirection;
+    m_DesireOneTimerVars.bIsChipShot = bIsChipShot;
+    m_DesireOneTimerVars.bVolleyPassReceive = bVolleyPass;
+
+    if (m_DesireOneTimerVars.fDesiredTime < 0.0f)
+    {
+        const cSAnim* pOneTimerAnim = m_pAnimInventory->GetAnim(m_DesireOneTimerVars.nOneTimerAnim);
+        float fAnimTimeInSecs = m_DesireOneTimerVars.fOneTimerAnimTime * ((float)pOneTimerAnim->m_nNumKeys / 30.0f);
+        float fPlaybackScale = fAnimTimeInSecs / (fAnimTimeInSecs + m_DesireOneTimerVars.fDesiredTime);
+
+        if (fPlaybackScale > 1.5f)
+        {
+            return false;
+        }
+    }
+
+    SetDesire(FIELDERDESIRE_ONETIMER, 0.5f);
+    SetDesireDuration(3.0f, false);
+    InitActionWait();
+    m_eDesireSubState = 0;
+    SetNoPickUpTime(3.0f);
+    g_pBall->SetPassTargetTimer(fBallContactTime);
+    m_pAvoidance->SetThingsToAvoid(0);
+    return true;
+}
 
 /**
  * Offset/Address/Size: 0x30B4 | 0x80033E38 | size: 0x2EC
@@ -1702,7 +1500,7 @@ bool cFielder::InitDesireOneTimerFromRun(unsigned short aFutureFacingDirection, 
         float fAnimTimeInSecs = m_DesireOneTimerVars.fOneTimerAnimTime * ((float)pOneTimerAnim->m_nNumKeys / 30.0f);
         float fPlaybackScale = fAnimTimeInSecs / (fAnimTimeInSecs + m_DesireOneTimerVars.fDesiredTime);
 
-        if (fPlaybackScale > 0.85f)
+        if (fPlaybackScale > 1.5f)
         {
             return false;
         }
@@ -1848,67 +1646,16 @@ void cFielder::InitDesireReceivePassFromIdle(const LooseBallContactAnimInfo* pAn
 
     if (result)
     {
-        SetDesire(FIELDERDESIRE_RECEIVE_PASS_FROM_IDLE, 1.0f);
-        SetDesireDuration(0.0f, false);
+        SetDesire(FIELDERDESIRE_RECEIVE_PASS_FROM_IDLE, 0.5f);
+        SetDesireDuration(3.0f, false);
         InitActionIdleTurn(aAngle);
         m_eDesireSubState = 0;
-        SetNoPickUpTime(0.0f);
+        SetNoPickUpTime(3.0f);
         g_pBall->SetPassTargetTimer(fDesiredTime);
         g_pBall->SetPassTarget(this, m_DesireReceivePassSharedVars.v3BallPosition, bVolley);
         m_DesireCommonVars.fMisc = fDesiredTime;
         m_pAvoidance->SetThingsToAvoid(0);
     }
-}
-
-static inline bool InitDesireOneTimerFromIdle(cFielder* pFielder, bool bVolleyPass, bool bIsChipShot)
-{
-    float fBallContactTime;
-    const LooseBallContactAnimInfo* pBestBallContactAnimInfo = pFielder->GetOneTimerBallContactAnimInfo(
-        pFielder->m_aActualFacingDirection,
-        pFielder->m_v3Position,
-        pFielder->m_pTeam->GetOtherNet()->m_baseLocation,
-        false,
-        bVolleyPass);
-
-    pFielder->m_DesireOneTimerVars.nOneTimerAnim = pBestBallContactAnimInfo->nAnimID;
-    const cSAnim* contactAnim = pFielder->m_pAnimInventory->GetAnim(pBestBallContactAnimInfo->nAnimID);
-    pFielder->m_DesireOneTimerVars.fOneTimerAnimTime = pBestBallContactAnimInfo->fAnimContactFrame / (float)contactAnim->m_nNumKeys;
-
-    if (!pFielder->DoLooseBallContactFromIdle(
-            pFielder->m_DesireOneTimerVars.v3DesiredPosition,
-            pFielder->m_DesireOneTimerVars.fDesiredTime,
-            pFielder->m_DesireOneTimerVars.v3BallPosition,
-            fBallContactTime,
-            pFielder->m_aActualFacingDirection,
-            pBestBallContactAnimInfo))
-    {
-        return false;
-    }
-
-    pFielder->m_DesireOneTimerVars.aDesiredFacingDirection = pFielder->m_aActualFacingDirection;
-    pFielder->m_DesireOneTimerVars.bIsChipShot = bIsChipShot;
-    pFielder->m_DesireOneTimerVars.bVolleyPassReceive = bVolleyPass;
-
-    if (pFielder->m_DesireOneTimerVars.fDesiredTime < 0.0f)
-    {
-        const cSAnim* pOneTimerAnim = pFielder->m_pAnimInventory->GetAnim(pFielder->m_DesireOneTimerVars.nOneTimerAnim);
-        float fAnimTimeInSecs = pFielder->m_DesireOneTimerVars.fOneTimerAnimTime * ((float)pOneTimerAnim->m_nNumKeys / 30.0f);
-        float fPlaybackScale = fAnimTimeInSecs / (fAnimTimeInSecs + pFielder->m_DesireOneTimerVars.fDesiredTime);
-
-        if (fPlaybackScale > 1.5f)
-        {
-            return false;
-        }
-    }
-
-    pFielder->SetDesire(FIELDERDESIRE_ONETIMER, 0.5f);
-    pFielder->SetDesireDuration(3.0f, false);
-    pFielder->InitActionWait();
-    pFielder->m_eDesireSubState = 0;
-    pFielder->SetNoPickUpTime(3.0f);
-    g_pBall->SetPassTargetTimer(fBallContactTime);
-    pFielder->m_pAvoidance->SetThingsToAvoid(0);
-    return true;
 }
 
 /**
@@ -2023,7 +1770,7 @@ void cFielder::DesireReceivePassFromIdle(float fDeltaT)
         {
             bool bIsChipShot = m_DesireReceivePassSharedVars.iAttemptOneTouchShot == 2;
 
-            if (InitDesireOneTimerFromIdle(this, m_DesireReceivePassSharedVars.bVolleyPassReceive, bIsChipShot))
+            if (InitDesireOneTimerFromIdle(m_DesireReceivePassSharedVars.bVolleyPassReceive, bIsChipShot))
             {
                 return;
             }
@@ -2673,6 +2420,176 @@ bool cFielder::InitDesireRunToNet()
     return 1;
 }
 
+void cFielder::DesireRunToNet(float fDeltaT)
+{
+    float fNearGoalie = NearToTheirGoalie(g_pScriptCurrentFielder);
+    float fCloseToSideline;
+    float fFacingSideline;
+    if (fNearGoalie > 0.0f
+        || (fCloseToSideline = CloseToSideline(g_pScriptCurrentFielder),
+            fFacingSideline = FacingSideline(g_pScriptCurrentFielder),
+            fFacingSideline = (fFacingSideline <= fCloseToSideline) ? fFacingSideline : fCloseToSideline,
+            fFacingSideline > 0.3f))
+    {
+        m_DesireCommonVars.turboRequest = TR_FORCED_OFF;
+    }
+
+    nlVector3 v3DesiredPosition;
+    nlVec3ScaleAdd(v3DesiredPosition, 4.0f, m_DesireCommonVars.v3DesiredPosition, m_v3Position);
+
+    SetDesiredSpeedAndDirectionToPosition(fDeltaT, v3DesiredPosition, m_DesireCommonVars.turboRequest, 0.9f, 0.9f);
+
+    if (GetDistanceToDesiredPos() <= 1.5f || NearToTheirGoalie(g_pScriptCurrentFielder) >= 0.5f)
+    {
+        if ((m_DesireCommonVars.tAge.GetSeconds() > 0.5f) != false)
+        {
+            SetDesireDuration(0.0f, true);
+        }
+    }
+    float fMax;
+    float fStuck = StuckOnSidelines(g_pScriptCurrentFielder);
+    float fAttacked = Attacked(g_pScriptCurrentFielder);
+    float fPressured = Pressured(g_pScriptCurrentFielder);
+
+    if (fAttacked >= fStuck)
+    {
+        fMax = fAttacked;
+    }
+    else
+    {
+        fMax = fStuck;
+    }
+    fPressured = (fPressured >= fMax) ? fPressured : fMax;
+
+    if (m_pBall == NULL || fPressured >= m_DesireCommonVars.fMisc)
+    {
+        SetDesireDuration(0.0f, true);
+    }
+}
+
+void cFielder::InitDesirePass(cPlayer* pTarget, bool bHighPass)
+{
+    mActionPassingVars.pPassTarget = pTarget;
+    mActionPassingVars.bVolleyPass = bHighPass;
+    m_fDesiredSpeed = (m_fActualSpeed <= ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed) ? m_fActualSpeed : ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
+    m_pAvoidance->SetThingsToAvoid(0);
+}
+
+void cFielder::DesirePass(float)
+{
+    if (m_pBall != NULL)
+    {
+        if (!IsBallAwayFromCarrier())
+        {
+            InitActionPass(mActionPassingVars.pPassTarget, mActionPassingVars.bVolleyPass, false);
+        }
+    }
+    else if (IsActionDone())
+    {
+        SetDesireDuration(0.0f, true);
+    }
+}
+
+void cFielder::InitDesireShoot(bool bShootToScore, bool bChipShot)
+{
+    if (m_pBall != NULL)
+    {
+        if (bShootToScore)
+        {
+            SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+            bool bDidHit = GenerateFilteredRandom() < pSkillTweaks->Shoot_CaptainS2SFirstButtonChance;
+            if (bDidHit)
+            {
+                m_DesireCommonVars.fMisc = g_pGame->m_pGameTweaks->unk294;
+            }
+            else
+            {
+                float fRandomError = (float)(0.6f * GenerateFilteredRandom() - 0.30000001192092896);
+                m_DesireCommonVars.fMisc = fRandomError + g_pGame->m_pGameTweaks->unk294;
+            }
+            SetDesireDuration(100000000.0f, true);
+            mActionShotVars.bIsShootToScore = true;
+        }
+        else
+        {
+            mActionShotVars.bIsChipShot = bChipShot;
+            mActionShotVars.bIsShootToScore = false;
+        }
+        m_pAvoidance->SetThingsToAvoid(0);
+    }
+}
+
+void cFielder::DesireShoot(float)
+{
+    if (m_pBall != NULL)
+    {
+        if (m_eActionState == ACTION_SHOOT_TO_SCORE)
+        {
+            if (mActionShootToScoreVars.bShootWasPressed)
+            {
+                SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+                float fChance = pSkillTweaks->Shoot_CaptainS2SSecondButtonChance - ShootToScoreMeter::instance.mfRumbleAmount;
+                bool bDidHit = GenerateFilteredRandom() < fChance;
+                if (bDidHit)
+                {
+                    m_DesireCommonVars.fMisc = -g_pGame->m_pGameTweaks->unk298;
+                }
+                else
+                {
+                    float fRandomError = (float)(0.6f * GenerateFilteredRandom() - 0.30000001192092896);
+                    m_DesireCommonVars.fMisc = -(fRandomError + g_pGame->m_pGameTweaks->unk298);
+                }
+                mActionShootToScoreVars.bShootWasPressed = false;
+            }
+        }
+        else if (!IsBallAwayFromCarrier())
+        {
+            if (mActionShotVars.bIsShootToScore)
+            {
+                mActionShotVars.bIsShootToScore = false;
+                InitActionShootToScore();
+            }
+            else
+            {
+                if (ShouldIClearBall())
+                {
+                    m_pShotMeter->m_fTime = 0.1f + (float)nlRandom((unsigned int)(g_pGame->m_pGameTweaks->unk2D0 - 0.2f), &nlDefaultSeed);
+                }
+                m_pShotMeter->ShotReleased(this);
+                InitActionShot(mActionShotVars.bIsChipShot);
+            }
+        }
+    }
+    else if (IsActionDone())
+    {
+        SetDesireDuration(0.0f, true);
+    }
+}
+
+void cFielder::InitDesireDeke()
+{
+    m_pAvoidance->SetThingsToAvoid(0);
+}
+
+void cFielder::DesireDeke(float)
+{
+    bool bInitDekeAction = (m_eActionState != ACTION_DEKE);
+    if (m_pBall != NULL && IsBallAwayFromCarrier())
+    {
+        bInitDekeAction = false;
+    }
+
+    if (bInitDekeAction)
+    {
+        InitActionDeke(PAD_DEKE);
+    }
+
+    if (IsActionDone())
+    {
+        SetDesireDuration(0.0f, true);
+    }
+}
+
 static const nlVector2 g_vUpFieldRange = {
     0.5f,
     3.5f,
@@ -2683,7 +2600,48 @@ static const nlVector2 g_vUpFieldMaxDistance = {
     1.0f,
 };
 
-inline void cFielder::DesireRunDownField(float fDeltaT)
+void cFielder::InitDesireRunUpField()
+{
+    m_pAvoidance->SetThingsToAvoid(0x1F);
+}
+
+void cFielder::DesireRunUpField(float fDeltaT)
+{
+    nlVector3 v3DesiredPosition;
+    if (GetFormationPosition(v3DesiredPosition, -1.0f) && m_DesireCommonVars.bInPosition && g_pBall->GetOwnerGoalie() == NULL)
+    {
+        v3DesiredPosition = m_v3Position;
+    }
+    else
+    {
+        float fUpFieldDistance = InterpolateRangeClamped(g_vUpFieldMaxDistance.f.x, g_vUpFieldMaxDistance.f.y, g_vUpFieldRange.f.x, g_vUpFieldRange.f.y, m_v3AIPosition.f.x);
+        float fSign = AIsgn(m_pTeam->GetOtherNet()->m_baseLocation.f.x);
+        v3DesiredPosition.f.x = v3DesiredPosition.f.x + (fUpFieldDistance * fSign);
+        float dx = v3DesiredPosition.f.x - m_v3Position.f.x;
+        float dy = v3DesiredPosition.f.y - m_v3Position.f.y;
+        m_DesireCommonVars.bInPosition = ((dx * dx + dy * dy) <= 1.0f);
+    }
+    SetDesiredSpeedAndDirectionToPosition(fDeltaT, v3DesiredPosition, TR_FAR_DISTANCE, 0.8f, 0.8f);
+    if (GetDistanceToDesiredPos() < 1.5f)
+    {
+        ShouldIStrafe();
+    }
+    ShouldIWave();
+    if (m_pBall != NULL || m_pTeam->m_pBallInterceptOrderedFielders[0] == this)
+    {
+        if ((m_DesireCommonVars.tAge.GetSeconds() > 0.5f) != false)
+        {
+            SetDesireDuration(0.0f, true);
+        }
+    }
+}
+
+void cFielder::InitDesireRunDownField()
+{
+    m_pAvoidance->SetThingsToAvoid(0x1F);
+}
+
+void cFielder::DesireRunDownField(float fDeltaT)
 {
     nlVector3 v3DesiredPosition;
     if (GetFormationPosition(v3DesiredPosition, -1.0f) && m_DesireCommonVars.bInPosition && g_pBall->GetOwnerGoalie() == NULL)
@@ -2717,35 +2675,35 @@ inline void cFielder::DesireRunDownField(float fDeltaT)
     }
 }
 
-inline void cFielder::DesireRunUpField(float fDeltaT)
+void cFielder::InitDesireRunToLocation(const nlVector3& v3DesiredLocation, bool bTurbo)
 {
-    nlVector3 v3DesiredPosition;
-    if (GetFormationPosition(v3DesiredPosition, -1.0f) && m_DesireCommonVars.bInPosition && g_pBall->GetOwnerGoalie() == NULL)
+    if (m_pBall != NULL)
     {
-        v3DesiredPosition = m_v3Position;
+        ReleaseBall();
     }
-    else
+    m_DesireCommonVars.v3DesiredPosition = v3DesiredLocation;
+    m_DesireCommonVars.turboRequest = bTurbo ? TR_FORCED_ON : TR_FAR_DISTANCE;
+    m_pAvoidance->SetThingsToAvoid(0x1F);
+}
+
+void cFielder::DesireRunToLocation(float fDeltaT)
+{
+    SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_DesireCommonVars.v3DesiredPosition, m_DesireCommonVars.turboRequest, 0.7f, 0.7f);
+    if (GetDistanceToDesiredPos() < 1.0f)
     {
-        float fUpFieldDistance = InterpolateRangeClamped(g_vUpFieldMaxDistance.f.x, g_vUpFieldMaxDistance.f.y, g_vUpFieldRange.f.x, g_vUpFieldRange.f.y, m_v3AIPosition.f.x);
-        float fSign = AIsgn(m_pTeam->GetOtherNet()->m_baseLocation.f.x);
-        v3DesiredPosition.f.x = v3DesiredPosition.f.x + (fUpFieldDistance * fSign);
-        float dx = v3DesiredPosition.f.x - m_v3Position.f.x;
-        float dy = v3DesiredPosition.f.y - m_v3Position.f.y;
-        m_DesireCommonVars.bInPosition = ((dx * dx + dy * dy) <= 1.0f);
-    }
-    SetDesiredSpeedAndDirectionToPosition(fDeltaT, v3DesiredPosition, TR_FAR_DISTANCE, 0.8f, 0.8f);
-    if (GetDistanceToDesiredPos() < 1.5f)
-    {
-        ShouldIStrafe();
-    }
-    ShouldIWave();
-    if (m_pBall != NULL || m_pTeam->m_pBallInterceptOrderedFielders[0] == this)
-    {
-        if ((m_DesireCommonVars.tAge.GetSeconds() > 0.5f) != false)
+        SetDesireDuration(0.0f, true);
+        if ((g_pGame->m_eGameState == GS_POST_GOAL || g_pGame->m_eGameState == GS_END_GAME) && this == g_pCharacters[0])
         {
-            SetDesireDuration(0.0f, true);
+            g_pEventManager->CreateValidEvent(8, 20);
         }
     }
+}
+
+void cFielder::InitDesireSlideAttack(cFielder* pTarget)
+{
+    m_DesireSlideAttackVars.m_pSlideAttackTarget = pTarget;
+    m_eDesireSubState = 0;
+    m_pAvoidance->SetThingsToAvoid(0x1F);
 }
 
 /**
@@ -2830,6 +2788,22 @@ void cFielder::DesireSlideAttack(float fDeltaT)
         break;
     }
     }
+}
+
+void cFielder::InitDesireSupportBallDefensive()
+{
+    m_pAvoidance->SetThingsToAvoid(0x1F);
+}
+
+void cFielder::InitDesireSupportBallOffensive()
+{
+    m_pAvoidance->SetThingsToAvoid(0x1F);
+}
+
+void cFielder::InitDesireUserControlled()
+{
+    StartRunning();
+    m_pAvoidance->SetThingsToAvoid(8);
 }
 
 /**
@@ -2992,6 +2966,42 @@ void cFielder::DesireUserControlled(float fDeltaT)
     }
 }
 
+void cFielder::InitDesireWait()
+{
+    m_fDesiredSpeed = 0.0f;
+}
+
+void cFielder::DesireWait(float fDeltaT)
+{
+    SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_v3Position, TR_FAR_DISTANCE, 1.0f, 1.0f);
+}
+
+void cFielder::InitDesireHit(cFielder* pTarget)
+{
+    if (pTarget == NULL)
+    {
+        pTarget = DoFindBestHitTarget();
+    }
+    InitActionHit(pTarget);
+    m_pAvoidance->SetThingsToAvoid(0);
+}
+
+void cFielder::DesireHit(float)
+{
+    if (IsActionDone())
+    {
+        SetDesireDuration(0.0f, true);
+    }
+}
+
+void cFielder::InitDesireUsePowerup(ePowerUpType ePowerup, cFielder* pTarget)
+{
+    if (ePowerup == m_pTeam->GetCurrentPowerUp().eType && !IsPlayingPowerupAnim())
+    {
+        UseTeamPowerup(pTarget);
+    }
+}
+
 /**
  * Offset/Address/Size: 0x41C | 0x800311A0 | size: 0x378
  */
@@ -3008,12 +3018,98 @@ void cFielder::DesireUsePowerup(float)
     switch (m_ePrevFielderDesireState)
     {
     case FIELDERDESIRE_INTERCEPT_BALL:
-        InitDesire(FIELDERDESIRE_INTERCEPT_BALL, 1.0f, 0.5f, fvNotSet, fvNotSet);
+        InitDesire(FIELDERDESIRE_INTERCEPT_BALL, 0.5f, -1.0f, fvNotSet, fvNotSet);
         break;
 
     default:
-        InitDesire(FIELDERDESIRE_MARK, 1.0f, 0.5f, fvNotSet, fvNotSet);
+        InitDesire(FIELDERDESIRE_MARK, 0.5f, -1.0f, fvNotSet, fvNotSet);
         break;
+    }
+}
+
+bool cFielder::InitDesireWindupPass(cPlayer* pTarget, bool bHighPass)
+{
+    if (m_pBall == NULL)
+    {
+        if (m_sQueuedDesireParams.eDesireType == FIELDERDESIRE_WINDUP_PASS)
+        {
+            m_sQueuedDesireParams.fDuration = 0.0f;
+            m_sQueuedDesireParams.eDesireType = FIELDERDESIRE_NEED_DESIRE;
+            m_sQueuedDesireParams.opt1 = fvNotSet;
+            m_sQueuedDesireParams.opt2 = fvNotSet;
+        }
+        return false;
+    }
+
+    mActionPassingVars.pPassTarget = pTarget;
+    mActionPassingVars.bVolleyPass = bHighPass;
+    SetDesireDuration(3.2f, true);
+    if (bHighPass)
+    {
+        m_DesireCommonVars.tMiscTimer.m_uPackedTime = 0;
+    }
+    else
+    {
+        m_DesireCommonVars.tMiscTimer.SetSeconds(3.0f);
+    }
+    SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+    float fReactionTimeRange = 0.85f * (0.3f * (1.0f - pSkillTweaks->Off_Reaction));
+    m_DesireCommonVars.fMisc = 0.85f + (nlRandomf(fReactionTimeRange, &nlDefaultSeed) - (0.5f * fReactionTimeRange));
+    SetSpaceSearch(new (nlMalloc(0x28, 8, false)) SSearchOpenLane(this, pTarget));
+    m_pSpaceSearch->m_bDebugOn = false;
+    m_pSpaceSearch->FindBestPosition(m_DesireCommonVars.v3DesiredPosition, m_v3Position, DIR_UPFIELD, &pTarget->m_v3Position, 4.5f, 0x8000);
+    m_pAvoidance->SetThingsToAvoid(0x1F);
+    return true;
+}
+
+void cFielder::DesireWindupPass(float fDeltaT)
+{
+    if (m_pBall == NULL || Incapacitated(mActionPassingVars.pPassTarget))
+    {
+        SetDesireDuration(0.0f, true);
+        return;
+    }
+    SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_DesireCommonVars.v3DesiredPosition, TR_FORCED_OFF, 1.0f, 1.0f);
+    bool bSwitchToPassDesire = false;
+    if (m_DesireCommonVars.tMiscTimer.m_uPackedTime != 0)
+    {
+        float fInDanger = Fuzzy::InDangerDelayed(g_pScriptCurrentFielder).mData.f;
+        float fNotFarToTheirGoalie = FLESS(FarToTheirGoalie(g_pScriptCurrentFielder), 0.3f);
+        float fDistanceToDesiredPos = GetDistanceToDesiredPos();
+        float fClosingSpeedToDesiredPos = GetClosingSpeed2D(m_DesireCommonVars.v3DesiredPosition, v3Zero, m_v3Position, m_v3Velocity);
+        if (fClosingSpeedToDesiredPos < 0.0f || fDistanceToDesiredPos <= 1.0f
+            || ((fInDanger = (fInDanger >= fNotFarToTheirGoalie) ? fInDanger : fNotFarToTheirGoalie) >= m_DesireCommonVars.fMisc))
+        {
+            bSwitchToPassDesire = true;
+        }
+    }
+    else
+    {
+        bSwitchToPassDesire = true;
+    }
+    if (bSwitchToPassDesire && !IsBallAwayFromCarrier())
+    {
+        SetDesireDuration(0.0f, true);
+        InitDesire(FIELDERDESIRE_PASS, m_fDesireConfidence, -1.0f, FuzzyVariant(mActionPassingVars.pPassTarget), FuzzyVariant(mActionPassingVars.bVolleyPass));
+    }
+}
+
+void cFielder::InitDesireWindupShot()
+{
+    if (m_pBall != NULL)
+    {
+        if (!IsBallAwayFromCarrier())
+        {
+            DoResetShotMeter(0.0f);
+            m_DesireWindupForShotVars.bIsBallAwayFromCarrier = false;
+            SetDesireDuration(m_pShotMeter->GetTotalDuration(), false);
+        }
+        else
+        {
+            SetDesireDuration(999999.9f, true);
+            m_DesireWindupForShotVars.bIsBallAwayFromCarrier = true;
+        }
+        m_pAvoidance->SetThingsToAvoid(0);
     }
 }
 
@@ -3122,5 +3218,42 @@ void cFielder::DesireWindupShot(float)
     {
         SetDesireDuration(0.0f, true);
         InitDesire(FIELDERDESIRE_SHOOT, m_fDesireConfidence, -1.0f, FuzzyVariant(bShootToScore), fvNotSet);
+    }
+}
+
+bool cFielder::InitDesireCutAndBreak()
+{
+    if (m_pBall != NULL)
+    {
+        if (m_sQueuedDesireParams.eDesireType == FIELDERDESIRE_CUT_AND_BREAK)
+        {
+            m_sQueuedDesireParams.fDuration = 0.0f;
+            m_sQueuedDesireParams.eDesireType = FIELDERDESIRE_NEED_DESIRE;
+            m_sQueuedDesireParams.opt1 = fvNotSet;
+            m_sQueuedDesireParams.opt2 = fvNotSet;
+        }
+        return false;
+    }
+
+    SetSpaceSearch(new (nlMalloc(0x14, 8, false)) SSearchCutAndBreak(this));
+    m_pSpaceSearch->m_bDebugOn = false;
+    m_pSpaceSearch->FindBestPosition(m_DesireCommonVars.v3DesiredPosition, m_v3Position, DIR_NONE, NULL, 4.0f, 0x8000);
+    m_pAvoidance->SetThingsToAvoid(0x1F);
+    return true;
+}
+
+void cFielder::DesireCutAndBreak(float fDeltaT)
+{
+    SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_DesireCommonVars.v3DesiredPosition, TR_FAR_DISTANCE, 0.5f, 0.5f);
+    if (GetDistanceToDesiredPos() < 0.5f || m_pTeam->m_pBallInterceptOrderedFielders[0] == this)
+    {
+        if ((m_DesireCommonVars.tAge.GetSeconds() > 0.5f) != false)
+        {
+            SetDesireDuration(0.0f, true);
+        }
+    }
+    else if (m_pBall != NULL)
+    {
+        SetDesireDuration(0.0f, true);
     }
 }
