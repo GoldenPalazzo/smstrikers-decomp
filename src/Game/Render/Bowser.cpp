@@ -147,7 +147,6 @@ Bowser::~Bowser()
 extern "C" cPN_Blender* __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(cPN_Blender*, cPoseNode*, cPoseNode*, float);
 extern "C" cPN_SAnimController* __ct__19cPN_SAnimControllerFP6cSAnimPC12AnimRetarget9ePlayModePFUiP19cPN_SAnimController_vUib(cPN_SAnimController*, cSAnim*, const AnimRetarget*, ePlayMode, void (*)(unsigned int, cPN_SAnimController*), unsigned int, bool);
 
-#pragma opt_propagation off
 /**
  * Offset/Address/Size: 0x325C | 0x8015BFD0 | size: 0x1294
  */
@@ -386,15 +385,13 @@ void Bowser::Update(float fDeltaT)
             {
                 if (!mbDoTilt || fabsf(mfYAxisTilt) >= g_pGame->m_pGameTweaks->unk32C)
                 {
-                    EmissionManager::Destroy((unsigned long)this, fxGetGroup("bowser_fire"));
-                    g_pEventManager->CreateValidEvent(0x65, 0x14);
+                    KillFire();
                     ActionLeave();
                 }
             }
             else if (mtStateTimer.Countdown(fDeltaT, 0.0f))
             {
-                EmissionManager::Destroy((unsigned long)this, fxGetGroup("bowser_fire"));
-                g_pEventManager->CreateValidEvent(0x65, 0x14);
+                KillFire();
                 if (mtActiveTimer.m_uPackedTime == 0)
                 {
                     ActionLeave();
@@ -616,7 +613,6 @@ void Bowser::Update(float fDeltaT)
     }
 }
 
-#pragma opt_propagation reset
 /**
  * Offset/Address/Size: 0x3054 | 0x8015BDC8 | size: 0x208
  */
