@@ -11,8 +11,6 @@
 #include "Game/Effects/EmissionController.h"
 #include "Game/Character.h"
 
-void AnimSoundCallback(unsigned int);
-
 enum eBowserState
 {
     BOWSER_STATE_HIDDEN = 0,
@@ -75,6 +73,7 @@ public:
     void ActionReset();
     void ActionLeave();
     void SetBowserAnimState(eBowserAnim, ePlayMode, float);
+    void SetBowserFeatherAnimState(eBowserAnim, float);
     void ClearBowserFeatherAnimState(bool);
     void Move(float);
     eBowserMoveResult GravityMove(float);

@@ -37,7 +37,7 @@ float Bowser::mfYAxisTilt = 0.0f;
 /**
  * Offset/Address/Size: 0x4BBC | 0x8015D930 | size: 0x2C
  */
-void AnimSoundCallback(unsigned int eventID)
+static void AnimSoundCallback(unsigned int eventID)
 {
     g_pEventManager->CreateValidEvent(eventID, 0x14);
 }
@@ -143,9 +143,6 @@ Bowser::~Bowser()
     delete mpHeadTrack;
     delete m_pCharacterSFX;
 }
-
-extern "C" cPN_Blender* __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(cPN_Blender*, cPoseNode*, cPoseNode*, float);
-extern "C" cPN_SAnimController* __ct__19cPN_SAnimControllerFP6cSAnimPC12AnimRetarget9ePlayModePFUiP19cPN_SAnimController_vUib(cPN_SAnimController*, cSAnim*, const AnimRetarget*, ePlayMode, void (*)(unsigned int, cPN_SAnimController*), unsigned int, bool);
 
 /**
  * Offset/Address/Size: 0x325C | 0x8015BFD0 | size: 0x1294
@@ -868,63 +865,7 @@ void Bowser::ActionThrow()
     if (mAnimID != BOWSER_ANIM_WALK)
     {
         mAnimID = BOWSER_ANIM_WALK;
-
-        cPN_SAnimController* controller = NULL;
-
-        if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList == NULL)
-        {
-            SlotPoolBase::BaseAddNewBlock(&cPN_SAnimController::m_SAnimControllerSlotPool, sizeof(cPN_SAnimController));
-        }
-
-        if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
-        {
-            controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-            cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
-        }
-
-        controller = new (controller) cPN_SAnimController(
-            mpAnim[BOWSER_ANIM_WALK],
-            (const AnimRetarget*)0,
-            PM_CYCLIC,
-            (void (*)(unsigned int, cPN_SAnimController*))0,
-            (unsigned int)0,
-            (bool)0);
-
-        cPN_Blender* blender;
-
-        if (mpFeatherBlender->GetChild(0) != NULL)
-        {
-            blender = NULL;
-
-            if (cPN_Blender::m_BlenderSlotPool.m_FreeList == NULL)
-            {
-                SlotPoolBase::BaseAddNewBlock(&cPN_Blender::m_BlenderSlotPool, sizeof(cPN_Blender));
-            }
-
-            if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
-            {
-                blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-                cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->next;
-            }
-
-            // fake match - using the constructor directly is currently not matching because of a mr missing..
-            if (blender != NULL)
-            {
-                blender = __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(blender, *mpFeatherBlender->GetChildPtr(0), controller, 0.15f);
-            }
-            // new (blender) cPN_Blender(*mpFeatherBlender->GetChildPtr(0), controller, 0.15f);
-            // if (blender != NULL)
-            // {
-            //     blender = new cPN_Blender(*mpFeatherBlender->GetChildPtr(0), controller, 0.15f);
-            // }
-        }
-        else
-        {
-            blender = (cPN_Blender*)controller;
-        }
-
-        mpFeatherBlender->SetChild(0, blender);
-        mpAnimController = controller;
+        SetBowserAnimState(BOWSER_ANIM_WALK, PM_CYCLIC, 0.15f);
     }
 
     meBowserState = BOWSER_STATE_THROW;
@@ -935,37 +876,15 @@ void Bowser::ActionThrow()
         mpFeatherBlender->SetChild(1, NULL);
     }
 
-    cPN_SAnimController* controller;
-    mpFeatherController = (controller = NULL);
-
-    if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&cPN_SAnimController::m_SAnimControllerSlotPool, sizeof(cPN_SAnimController));
-    }
-
-    if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
-    {
-        controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
-    }
-
-    // fake match - using the constructor directly is currently not matching because of a mr missing..
-    if (controller != NULL)
-    {
-        controller = __ct__19cPN_SAnimControllerFP6cSAnimPC12AnimRetarget9ePlayModePFUiP19cPN_SAnimController_vUib(controller,
-            mpAnim[BOWSER_ANIM_THROW],
-            nullptr,
-            PM_HOLD,
-            nullptr,
-            0,
-            false);
-    }
-    // new (blender) cPN_Blender(*mpFeatherBlender->GetChildPtr(0), controller, 0.2f);
-    // if (controller != NULL)
-    // {
-    //     controller = new cPN_SAnimController(mpAnim[BOWSER_ANIM_THROW], nullptr, PM_HOLD, nullptr, 0, false);
-    // }
-
+    mpFeatherController = NULL;
+    cPN_SAnimController* controller = AllocateSAnimController();
+    controller = new (&*controller) cPN_SAnimController(
+        mpAnim[BOWSER_ANIM_THROW],
+        (const AnimRetarget*)0,
+        PM_HOLD,
+        (void (*)(unsigned int, cPN_SAnimController*))0,
+        (unsigned int)0,
+        (bool)0);
     mpFeatherController = controller;
 
     mpFeatherBlender->ClearNodeWeights();
@@ -985,8 +904,6 @@ void Bowser::ActionThrow()
 
 /**
  * Offset/Address/Size: 0x26DC | 0x8015B450 | size: 0x1C8
- * TODO: remaining diff is in cPN_Blender placement-new lowering
- * (extra null-check/register move vs target direct ctor call shape).
  */
 void Bowser::ActionRoll()
 {
@@ -996,59 +913,8 @@ void Bowser::ActionRoll()
 
     meBowserState = BOWSER_STATE_ROLL;
 
-    cPN_SAnimController* controller = NULL;
     mAnimID = BOWSER_ANIM_ROLL;
-
-    if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&cPN_SAnimController::m_SAnimControllerSlotPool, sizeof(cPN_SAnimController));
-    }
-
-    if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
-    {
-        controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
-    }
-
-    controller = new (controller) cPN_SAnimController(
-        mpAnim[BOWSER_ANIM_ROLL],
-        (const AnimRetarget*)0,
-        PM_HOLD,
-        (void (*)(unsigned int, cPN_SAnimController*))0,
-        (unsigned int)0,
-        (bool)0);
-
-    cPN_Blender* blender;
-
-    if (mpFeatherBlender->GetChild(0) != NULL)
-    {
-        blender = NULL;
-
-        if (cPN_Blender::m_BlenderSlotPool.m_FreeList == NULL)
-        {
-            SlotPoolBase::BaseAddNewBlock(&cPN_Blender::m_BlenderSlotPool, sizeof(cPN_Blender));
-        }
-
-        if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
-        {
-            blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-            cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->next;
-        }
-
-        // fake match - using the constructor directly is currently not matching because of a mr missing..
-        if (blender != NULL)
-        {
-            blender = __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(blender, *mpFeatherBlender->GetChildPtr(0), controller, 0.2f);
-        }
-        // new (blender) cPN_Blender(*mpFeatherBlender->GetChildPtr(0), controller, 0.2f);
-    }
-    else
-    {
-        blender = (cPN_Blender*)controller;
-    }
-
-    mpFeatherBlender->SetChild(0, blender);
-    mpAnimController = controller;
+    SetBowserAnimState(BOWSER_ANIM_ROLL, PM_HOLD, 0.2f);
 
     if (g_pBall->GetOwnerFielder() != NULL && !g_pBall->GetOwnerFielder()->IsInvincible())
     {
@@ -1123,61 +989,8 @@ void Bowser::ActionDescend(float fBlendTime)
 {
     FORCE_DONT_INLINE;
 
-    cPN_SAnimController* controller = NULL;
-
     mAnimID = 1;
-
-    if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&cPN_SAnimController::m_SAnimControllerSlotPool, sizeof(cPN_SAnimController));
-    }
-
-    if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
-    {
-        controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
-    }
-
-    controller = new (controller) cPN_SAnimController(mpAnim[1], (const AnimRetarget*)0, PM_HOLD, (void (*)(unsigned int, cPN_SAnimController*))0, (unsigned int)0, (bool)0);
-
-    cPN_Blender* blender;
-
-    if (mpFeatherBlender->GetChild(0) != NULL)
-    {
-        if (fBlendTime > 0.0f)
-        {
-            blender = NULL;
-
-            if (cPN_Blender::m_BlenderSlotPool.m_FreeList == NULL)
-            {
-                SlotPoolBase::BaseAddNewBlock(&cPN_Blender::m_BlenderSlotPool, sizeof(cPN_Blender));
-            }
-
-            if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
-            {
-                blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-                cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->next;
-            }
-
-            if (blender != NULL)
-            {
-                // this is a fake match - using the constructor directly is currently not matching because of a mr missing..
-                blender = __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(blender, *mpFeatherBlender->GetChildPtr(0), controller, fBlendTime);
-            }
-        }
-        else
-        {
-            delete mpFeatherBlender->GetChild(0);
-            blender = (cPN_Blender*)controller;
-        }
-    }
-    else
-    {
-        blender = (cPN_Blender*)controller;
-    }
-
-    mpFeatherBlender->SetChild(0, blender);
-    mpAnimController = controller;
+    SetBowserAnimState((eBowserAnim)1, PM_HOLD, fBlendTime);
     meBowserState = BOWSER_STATE_FALL;
 }
 
@@ -1197,30 +1010,8 @@ void Bowser::ActionFall()
     mtActiveTimer.SetSeconds(timerSeconds);
     mAnimID = BOWSER_ANIM_LAND;
 
-    cPN_SAnimController* controller = NULL;
-
-    if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&cPN_SAnimController::m_SAnimControllerSlotPool, sizeof(cPN_SAnimController));
-    }
-
-    if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
-    {
-        controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
-    }
-
-    if (controller != NULL)
-    {
-        controller = __ct__19cPN_SAnimControllerFP6cSAnimPC12AnimRetarget9ePlayModePFUiP19cPN_SAnimController_vUib(
-            controller,
-            mpAnim[BOWSER_ANIM_LAND],
-            (const AnimRetarget*)0,
-            PM_HOLD,
-            (void (*)(unsigned int, cPN_SAnimController*))0,
-            (unsigned int)0,
-            (bool)0);
-    }
+    cPN_SAnimController* controller = new (AllocateSAnimController()) cPN_SAnimController(
+        mpAnim[BOWSER_ANIM_LAND], (const AnimRetarget*)0, PM_HOLD, (void (*)(unsigned int, cPN_SAnimController*))0, (unsigned int)0, (bool)0);
 
     if (mpFeatherBlender->GetChild(0) != NULL)
     {
@@ -1287,60 +1078,7 @@ void Bowser::ActionJump()
     meBowserState = BOWSER_STATE_JUMP;
     mAnimID = BOWSER_ANIM_JUMP;
 
-    cPN_SAnimController* controller = NULL;
-
-    if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&cPN_SAnimController::m_SAnimControllerSlotPool, sizeof(cPN_SAnimController));
-    }
-
-    if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
-    {
-        controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
-    }
-
-    if (controller != NULL)
-    {
-        controller = __ct__19cPN_SAnimControllerFP6cSAnimPC12AnimRetarget9ePlayModePFUiP19cPN_SAnimController_vUib(
-            controller,
-            mpAnim[BOWSER_ANIM_JUMP],
-            (const AnimRetarget*)0,
-            PM_HOLD,
-            (void (*)(unsigned int, cPN_SAnimController*))0,
-            (unsigned int)0,
-            (bool)0);
-    }
-
-    cPN_Blender* blender;
-
-    if (mpFeatherBlender->GetChild(0) != NULL)
-    {
-        blender = NULL;
-
-        if (cPN_Blender::m_BlenderSlotPool.m_FreeList == NULL)
-        {
-            SlotPoolBase::BaseAddNewBlock(&cPN_Blender::m_BlenderSlotPool, sizeof(cPN_Blender));
-        }
-
-        if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
-        {
-            blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-            cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->next;
-        }
-
-        if (blender != NULL)
-        {
-            blender = __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(blender, *mpFeatherBlender->GetChildPtr(0), controller, 0.2f);
-        }
-    }
-    else
-    {
-        blender = (cPN_Blender*)controller;
-    }
-
-    mpFeatherBlender->SetChild(0, blender);
-    mpAnimController = controller;
+    SetBowserAnimState(BOWSER_ANIM_JUMP, PM_HOLD, 0.2f);
 
     nlVector3 v3JumpPos = g_pBall->m_v3Position;
     v3JumpPos.f.x += nlRandomf(3.0f, &nlDefaultSeed) - 1.5f;
@@ -1665,6 +1403,7 @@ eBowserMoveResult Bowser::GravityMove(float fDeltaT)
 /**
  * Offset/Address/Size: 0x1114 | 0x80159E88 | size: 0x270
  */
+#pragma dont_inline on
 void Bowser::ActionIdle()
 {
     if (CheckForAbort())
@@ -1677,57 +1416,7 @@ void Bowser::ActionIdle()
     if (mAnimID != BOWSER_ANIM_WALK)
     {
         mAnimID = BOWSER_ANIM_WALK;
-
-        cPN_SAnimController* controller = NULL;
-
-        if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList == NULL)
-        {
-            SlotPoolBase::BaseAddNewBlock(&cPN_SAnimController::m_SAnimControllerSlotPool, sizeof(cPN_SAnimController));
-        }
-
-        if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
-        {
-            controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-            cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
-        }
-
-        controller = new (controller) cPN_SAnimController(
-            mpAnim[BOWSER_ANIM_WALK],
-            (const AnimRetarget*)0,
-            PM_CYCLIC,
-            (void (*)(unsigned int, cPN_SAnimController*))0,
-            (unsigned int)0,
-            (bool)0);
-
-        cPN_Blender* blender;
-
-        if (mpFeatherBlender->GetChild(0) != NULL)
-        {
-            blender = NULL;
-
-            if (cPN_Blender::m_BlenderSlotPool.m_FreeList == NULL)
-            {
-                SlotPoolBase::BaseAddNewBlock(&cPN_Blender::m_BlenderSlotPool, sizeof(cPN_Blender));
-            }
-
-            if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
-            {
-                blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-                cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->next;
-            }
-
-            if (blender != NULL)
-            {
-                blender = __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(blender, *mpFeatherBlender->GetChildPtr(0), controller, 0.15f);
-            }
-        }
-        else
-        {
-            blender = (cPN_Blender*)controller;
-        }
-
-        mpFeatherBlender->SetChild(0, blender);
-        mpAnimController = controller;
+        SetBowserAnimState(BOWSER_ANIM_WALK, PM_CYCLIC, 0.15f);
     }
 
     nlVector3 pos = mv3Position;
@@ -1747,6 +1436,7 @@ void Bowser::ActionIdle()
 
     g_pEventManager->CreateValidEvent(0x64, 0x14);
 }
+#pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0x1044 | 0x80159DB8 | size: 0xD0
@@ -1975,7 +1665,15 @@ void Bowser::SetBowserAnimState(eBowserAnim anim, ePlayMode playMode, float fBle
 
     if (mpFeatherBlender->GetChild(0) != NULL)
     {
-        pNewPoseTree = new (AllocateBlender()) cPN_Blender(*mpFeatherBlender->GetChildPtr(0), controller, fBlendTime);
+        if (fBlendTime > 0.0f)
+        {
+            pNewPoseTree = new (AllocateBlender()) cPN_Blender(*mpFeatherBlender->GetChildPtr(0), controller, fBlendTime);
+        }
+        else
+        {
+            delete mpFeatherBlender->GetChild(0);
+            pNewPoseTree = controller;
+        }
     }
     else
     {
@@ -1984,6 +1682,22 @@ void Bowser::SetBowserAnimState(eBowserAnim anim, ePlayMode playMode, float fBle
 
     mpFeatherBlender->SetChild(0, pNewPoseTree);
     mpAnimController = controller;
+}
+
+void Bowser::SetBowserFeatherAnimState(eBowserAnim anim, float fBlendTime)
+{
+    if (mpFeatherBlender->GetChild(1) != NULL)
+    {
+        delete mpFeatherBlender->GetChild(1);
+        mpFeatherBlender->SetChild(1, NULL);
+    }
+
+    mpFeatherController = new (AllocateSAnimController()) cPN_SAnimController(
+        mpAnim[anim], (const AnimRetarget*)0, PM_HOLD, (void (*)(unsigned int, cPN_SAnimController*))0, (unsigned int)0, (bool)0);
+    mpFeatherBlender->ClearNodeWeights();
+    mpFeatherBlender->SetNodeWeight(0xE, 1.0f, 0.2f);
+    mpFeatherBlender->SetChild(1, mpFeatherController);
+    mpFeatherBlender->BeginBlendIn(fBlendTime);
 }
 
 void Bowser::ClearBowserFeatherAnimState(bool bBlendOut)
