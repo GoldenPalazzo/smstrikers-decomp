@@ -102,7 +102,10 @@ public:
     float GetRadius() const;
     static int AwardPowerup(cTeam*);
     static void CollisionCallback(PhysicsObject*, PhysicsObject*, const nlVector3&, void*);
+    void DecrementTimers(float);
+    void SpeedManagement();
     void UpdateTransform();
+    static unsigned long GetSoundType(ePowerUpType, PowerupBase::PowerupSound);
     static unsigned long PlayPowerupSound(ePowerUpType, PowerupBase::PowerupSound, PhysicsObject*, float);
     static unsigned long PlayPowerupSound(ePowerUpType, PowerupBase::PowerupSound, const nlVector3&, float);
     static void StopPowerupInEffectSound(SFXEmitter*);
@@ -136,7 +139,25 @@ class Bobomb : public PowerupBase
 public:
     Bobomb(cFielder*, int, float, ePowerupSize, bool);
     virtual ~Bobomb();
-    static void operator delete(void* ptr);
+    static void* operator new(unsigned long)
+    {
+        Bobomb* result = NULL;
+        if (m_BobombSlotPool.m_FreeList == NULL)
+        {
+            SlotPoolBase::BaseAddNewBlock(&m_BobombSlotPool, sizeof(Bobomb));
+        }
+        if (m_BobombSlotPool.m_FreeList != NULL)
+        {
+            result = (Bobomb*)m_BobombSlotPool.m_FreeList;
+            m_BobombSlotPool.m_FreeList = m_BobombSlotPool.m_FreeList->next;
+        }
+        return result;
+    }
+    static void operator delete(void* ptr)
+    {
+        ((SlotPoolEntry*)ptr)->next = m_BobombSlotPool.m_FreeList;
+        m_BobombSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+    }
     virtual void Update(float);
     virtual void ThrowAt(cFielder*, Bowser*);
     void Destroy(bool);
@@ -152,7 +173,11 @@ class FreezeShell : public PowerupBase
 public:
     FreezeShell(cFielder*, int, float, ePowerupSize, bool);
     virtual ~FreezeShell();
-    static void operator delete(void* ptr);
+    static void operator delete(void* ptr)
+    {
+        ((SlotPoolEntry*)ptr)->next = m_FreezeShellSlotPool.m_FreeList;
+        m_FreezeShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+    }
     virtual void Update(float);
     void Destroy(bool);
 
@@ -164,7 +189,11 @@ class SpinyShell : public PowerupBase
 public:
     SpinyShell(cFielder*, int, float, ePowerupSize, bool);
     virtual ~SpinyShell();
-    static void operator delete(void* ptr);
+    static void operator delete(void* ptr)
+    {
+        ((SlotPoolEntry*)ptr)->next = m_SpinyShellSlotPool.m_FreeList;
+        m_SpinyShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+    }
     virtual void Update(float);
     void Destroy(bool);
 
@@ -176,7 +205,11 @@ class Banana : public PowerupBase
 public:
     Banana(cFielder*, int, float, ePowerupSize, bool);
     virtual ~Banana();
-    static void operator delete(void* ptr);
+    static void operator delete(void* ptr)
+    {
+        ((SlotPoolEntry*)ptr)->next = m_BananaSlotPool.m_FreeList;
+        m_BananaSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+    }
     virtual void Update(float);
     void Destroy(bool);
 
@@ -188,7 +221,11 @@ class RedShell : public PowerupBase
 public:
     RedShell(cFielder*, int, float, ePowerupSize, bool);
     virtual ~RedShell();
-    static void operator delete(void* ptr);
+    static void operator delete(void* ptr)
+    {
+        ((SlotPoolEntry*)ptr)->next = m_RedShellSlotPool.m_FreeList;
+        m_RedShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+    }
     virtual void Update(float);
     void Destroy(bool);
     void SeekTarget();
@@ -201,7 +238,11 @@ class GreenShell : public PowerupBase
 public:
     GreenShell(cFielder*, int, float, ePowerupSize, bool);
     virtual ~GreenShell();
-    static void operator delete(void* ptr);
+    static void operator delete(void* ptr)
+    {
+        ((SlotPoolEntry*)ptr)->next = m_GreenShellSlotPool.m_FreeList;
+        m_GreenShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+    }
     virtual void Update(float);
     void Destroy(bool);
 

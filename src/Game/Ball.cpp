@@ -56,6 +56,10 @@ static const char szMysteryShootToScoreBallBlurTexture[] = "global/mysshoottosco
 static nlMatrix3 m3Ident = { 1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f };
 // nlMatrix4 m4Ident = { 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f };
 
+// This is the first linked TU that instantiates EventData and PhysicsSphere.
+// MWCC emits their inline virtuals and vtables as weak COMDATs here; equivalent
+// copies in later TUs (including Powerups.cpp) are discarded by the linker.
+
 /**
  * Offset/Address/Size: 0x3908 | 0x8000D2DC | size: 0x260
  */

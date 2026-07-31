@@ -109,46 +109,6 @@ SlotPool<RedShell> RedShell::m_RedShellSlotPool(16, 16);
 SlotPool<Banana> Banana::m_BananaSlotPool(16, 16);
 SlotPool<Bobomb> Bobomb::m_BobombSlotPool(16, 16);
 
-inline Banana::Banana(cFielder* pTarget, int nIndex, float fRadius, ePowerupSize eSize, bool bExplode)
-    : PowerupBase(pTarget, POWER_UP_BANANA, fRadius, eSize, bExplode, nIndex)
-{
-}
-
-inline Bobomb::Bobomb(cFielder* pTarget, int nIndex, float fRadius, ePowerupSize eSize, bool bExplode)
-    : PowerupBase(pTarget, POWER_UP_BOBOMB, fRadius, eSize, bExplode, nIndex)
-{
-    pMovementEmitter = NULL;
-
-    if (nlRandomf(1.0f, &nlDefaultSeed) < g_pGame->m_pGameTweaks->fBobombMineChance)
-    {
-        mbIsMine = true;
-    }
-    else
-    {
-        mbIsMine = false;
-    }
-}
-
-inline GreenShell::GreenShell(cFielder* pTarget, int nIndex, float fRadius, ePowerupSize eSize, bool bExplode)
-    : PowerupBase(pTarget, POWER_UP_GREEN_SHELL, fRadius, eSize, bExplode, nIndex)
-{
-}
-
-inline FreezeShell::FreezeShell(cFielder* pTarget, int nIndex, float fRadius, ePowerupSize eSize, bool bExplode)
-    : PowerupBase(pTarget, POWER_UP_FREEZE_SHELL, fRadius, eSize, bExplode, nIndex)
-{
-}
-
-inline RedShell::RedShell(cFielder* pTarget, int nIndex, float fRadius, ePowerupSize eSize, bool bExplode)
-    : PowerupBase(pTarget, POWER_UP_RED_SHELL, fRadius, eSize, bExplode, nIndex)
-{
-}
-
-inline SpinyShell::SpinyShell(cFielder* pTarget, int nIndex, float fRadius, ePowerupSize eSize, bool bExplode)
-    : PowerupBase(pTarget, POWER_UP_SPINY_SHELL, fRadius, eSize, bExplode, nIndex)
-{
-}
-
 namespace
 {
 const unsigned long uFREEZE_SHELL_MASTER_OBJECT = nlStringLowerHash("gameplay/blueshell");
@@ -159,42 +119,6 @@ const unsigned long uBANANA_MASTER_OBJECT = nlStringLowerHash("gameplay/banana")
 const unsigned long uBOBOMB_MASTER_OBJECT = nlStringLowerHash("gameplay/bobomb");
 const char* uBANANA_STREAK_TEXTURE;
 } // namespace
-
-void FreezeShell::operator delete(void* ptr)
-{
-    ((SlotPoolEntry*)ptr)->next = m_FreezeShellSlotPool.m_FreeList;
-    m_FreezeShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
-}
-
-void GreenShell::operator delete(void* ptr)
-{
-    ((SlotPoolEntry*)ptr)->next = m_GreenShellSlotPool.m_FreeList;
-    m_GreenShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
-}
-
-void Bobomb::operator delete(void* ptr)
-{
-    ((SlotPoolEntry*)ptr)->next = m_BobombSlotPool.m_FreeList;
-    m_BobombSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
-}
-
-void SpinyShell::operator delete(void* ptr)
-{
-    ((SlotPoolEntry*)ptr)->next = m_SpinyShellSlotPool.m_FreeList;
-    m_SpinyShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
-}
-
-void Banana::operator delete(void* ptr)
-{
-    ((SlotPoolEntry*)ptr)->next = m_BananaSlotPool.m_FreeList;
-    m_BananaSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
-}
-
-void RedShell::operator delete(void* ptr)
-{
-    ((SlotPoolEntry*)ptr)->next = m_RedShellSlotPool.m_FreeList;
-    m_RedShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
-}
 
 // /**
 //  * Offset/Address/Size: 0x114 | 0x80060A74 | size: 0xD74
@@ -209,14 +133,6 @@ void RedShell::operator delete(void* ptr)
 // void Format<BasicString<char, Detail::TempStringAllocator>, int>(const BasicString<char, Detail::TempStringAllocator>&, const int&)
 // {
 // }
-
-/**
- * Offset/Address/Size: 0x0 | 0x80060948 | size: 0x8
- */
-DrawableObject* DrawableObject::Clone() const
-{
-    return NULL;
-}
 
 /**
  * Offset/Address/Size: 0x5EBC | 0x800607A8 | size: 0x1A0
@@ -411,11 +327,11 @@ void PowerupThrowPosition(int nThrowOrder, eThrowStyle eStyle, PowerupBase* pNew
     default:
         break;
     }
+
 }
 
 /**
  * Offset/Address/Size: 0x4F00 | 0x8005F7EC | size: 0xA98
- * TODO: 99.03% linked match - first powerup, target, and loop register allocation still differ.
  */
 u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPowerups, Bowser* pBowser)
 {
@@ -428,24 +344,19 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
     float fSpreadChance;
     float fSurroundChance;
     float fHorizChance;
-    PowerupBase* pFirstPowerup;
     PowerupBase* pPowerup;
-    cFielder* pTarget;
     cTeam* pTargetTeam;
     ePowerupSize eSize;
     bool bExplode;
     cFielder* pTargetFielders[4];
-    int a;
     int j;
     u8 bFoundLocation;
-    int i;
     float fBananaRadius;
     float fBobombRadius;
     float fGreenShellRadius;
     float fFreezeShellRadius;
     float fRedShellRadius;
     float fSpinyShellRadius;
-
     eStyle = THROW_ARROW;
     eSize = POWERUPSIZE_SMALL;
     fMediumChance = 0.0f;
@@ -598,7 +509,8 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
             }
         }
     }
-    pFirstPowerup = NULL;
+    PowerupBase* pFirstPowerup = NULL;
+    cFielder* pTarget;
 
     if (pThrower != NULL)
     {
@@ -617,24 +529,23 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
         }
     }
 
-    for (a = 0; a < 4; a++)
+    for (int a = 0; a < 4; a++)
     {
         pTargetFielders[a] = pTargetTeam->GetFielder(a);
     }
 
     for (j = 0; j < nnumOfPowerups; j++)
     {
-        PowerupBase** pRegistry = g_pPowerups;
         bFoundLocation = false;
 
-        for (i = 0; i < 25; i++, pRegistry++)
+        for (int i = 0; i < 25; i++)
         {
             if (bFoundLocation)
             {
                 continue;
             }
 
-            if (*pRegistry != NULL)
+            if (g_pPowerups[i] != NULL)
             {
                 continue;
             }
@@ -681,11 +592,6 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                     Banana::m_BananaSlotPool.m_FreeList = Banana::m_BananaSlotPool.m_FreeList->next;
                 }
 
-                if (pBanana == NULL)
-                {
-                    break;
-                }
-
                 new (pBanana) Banana(pTarget, i, fBananaRadius, eSize, bExplode);
 
                 pPowerup = pBanana;
@@ -706,19 +612,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                     break;
                 }
 
-                Bobomb* pBobomb = NULL;
-                if (Bobomb::m_BobombSlotPool.m_FreeList == NULL)
-                {
-                    SlotPoolBase::BaseAddNewBlock(&Bobomb::m_BobombSlotPool, sizeof(Bobomb));
-                }
-
-                if (Bobomb::m_BobombSlotPool.m_FreeList != NULL)
-                {
-                    pBobomb = (Bobomb*)Bobomb::m_BobombSlotPool.m_FreeList;
-                    Bobomb::m_BobombSlotPool.m_FreeList = Bobomb::m_BobombSlotPool.m_FreeList->next;
-                }
-
-                new (pBobomb) Bobomb(pTarget, i, fBobombRadius, eSize, true);
+                Bobomb* pBobomb = new Bobomb(pTarget, i, fBobombRadius, eSize, true);
 
                 pPowerup = pBobomb;
                 break;
@@ -847,11 +741,11 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                 break;
             }
 
-            pPowerup->ThrowAt(pThrower, pBowser);
+            pPowerup->Init(pThrower, pBowser);
 
             if (pFirstPowerup == NULL)
             {
-                pPowerup->Init(pThrower, pBowser);
+                pPowerup->ThrowAt(pThrower, pBowser);
                 pFirstPowerup = pPowerup;
             }
             else
@@ -877,7 +771,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                 }
             }
 
-            *pRegistry = pPowerup;
+            g_pPowerups[i] = pPowerup;
             bFoundLocation = true;
         }
     }
@@ -950,8 +844,6 @@ void PowerupModelPool::Initialize(int type, unsigned long objHashName)
 
 /**
  * Offset/Address/Size: 0x4B68 | 0x8005F454 | size: 0x98
- * TODO: 96.8% match - lwz r5 / li r4 instruction scheduling swap on first Initialize call only.
- *       Compiler scheduler quirk with stwu (mNum=0 store) interaction.
  */
 void InitializePowerups()
 {
@@ -1179,8 +1071,7 @@ void PowerupBase::Update(float dt)
         m_pBlurHandler->AddViewOrientedPoint(m_v3Position, m_v3Velocity);
     }
 
-    mtActiveTimer.Countdown(dt, 0.0f);
-    mtNoHitTimer.Countdown(dt, 0.0f);
+    DecrementTimers(dt);
 
     UpdateTransform();
 
@@ -1197,7 +1088,6 @@ void PowerupBase::Update(float dt)
 
 /**
  * Offset/Address/Size: 0x3DFC | 0x8005E6E8 | size: 0x608
- * TODO: 99.04% match - remaining chance accumulator register allocation diffs
  */
 int PowerupBase::AwardPowerup(cTeam* pTeam)
 {
@@ -1206,25 +1096,6 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
     int nDifference;
     int nChanceForChainChomp;
     cTeam* pOtherTeam;
-    int j;
-    cFielder* pCaptain;
-    cFielder* pSideKick;
-    int nChanceForStar;
-    ePowerUpType powerUpType;
-    int nChanceForSpinyShell;
-    int nChanceForRedShell;
-    int nChanceForBanana;
-    int nChanceForBoBomb;
-    int nChanceForMushroom;
-    int nChanceForGreenShell;
-    int nChanceForFreezeShell;
-    int nChance;
-    float fMultiplesBonus;
-    int nNumOfPowerups;
-    float fRandom;
-    float fFiveChance;
-    float fThreeChance;
-    GameTweaks* pGameTweaks;
 
     if (g_pGame->mIsPure)
     {
@@ -1281,13 +1152,13 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
     nChanceForChainChomp = g_pGame->m_pGameTweaks->nChanceForChainChomp - nDifference;
 
     pOtherTeam = pTeam->GetOtherTeam();
-    for (j = 0; j < 2; j++)
+    for (int i = 0; i < 2; i++)
     {
-        if (pOtherTeam->GetPowerUpByIndex(j).eType == POWER_UP_CHAIN_CHOMP)
+        if (pOtherTeam->GetPowerUpByIndex(i).eType == POWER_UP_CHAIN_CHOMP)
         {
             nChanceForChainChomp = 0;
         }
-        if (pTeam->GetPowerUpByIndex(j).eType == POWER_UP_CHAIN_CHOMP)
+        if (pTeam->GetPowerUpByIndex(i).eType == POWER_UP_CHAIN_CHOMP)
         {
             nChanceForChainChomp = 0;
         }
@@ -1298,10 +1169,11 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
         nChanceForChainChomp = 0;
     }
 
-    pCaptain = pTeam->GetCaptain();
-    pSideKick = pTeam->GetFielder(1);
+    cFielder* pCaptain = pTeam->GetCaptain();
+    cFielder* pSideKick = pTeam->GetFielder(1);
 
-    nChanceForStar = (nChanceForChainChomp > 0 ? nChanceForChainChomp : 0) + g_pGame->m_pGameTweaks->nChanceForStar - nDifference;
+    int nChanceForStar = ((nChanceForChainChomp) > 0 ? (nChanceForChainChomp) : 0);
+    nChanceForStar = nChanceForStar + g_pGame->m_pGameTweaks->nChanceForStar - nDifference;
 
     if (nDifference >= -1)
     {
@@ -1309,73 +1181,82 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
         nChanceForStar = 0;
     }
 
-    nChanceForSpinyShell = g_pGame->m_pGameTweaks->nChanceForSpinyShell + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForSpinyShell + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForSpinyShell + (nChanceForStar > 0 ? nChanceForStar : 0) - nDifference;
+    ePowerUpType powerUpType;
+    int nChanceForSpinyShell, nChanceForRedShell, nChanceForBanana, nChanceForBoBomb, nChanceForMushroom, nChanceForGreenShell, nChanceForFreezeShell;
 
-    nChanceForRedShell = g_pGame->m_pGameTweaks->nChanceForRedShell + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForRedShell + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForRedShell + (nChanceForSpinyShell > 0 ? nChanceForSpinyShell : 0) - nDifference;
+    pOtherTeam = (cTeam*)pCaptain->m_pTweaks;
+    nChanceForSpinyShell = g_pGame->m_pGameTweaks->nChanceForSpinyShell + ((FielderTweaks*)pOtherTeam)->nChanceForSpinyShell + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForSpinyShell + ((nChanceForStar) > 0 ? (nChanceForStar) : 0) - nDifference;
 
-    nChanceForBanana = g_pGame->m_pGameTweaks->nChanceForBanana + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForBanana + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForBanana + (nChanceForRedShell > 0 ? nChanceForRedShell : 0) + nDifference;
+    nChanceForRedShell = ((nChanceForSpinyShell) > 0 ? (nChanceForSpinyShell) : 0);
+    nChanceForRedShell = nChanceForRedShell + (((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForRedShell + (g_pGame->m_pGameTweaks->nChanceForRedShell + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForRedShell)) - nDifference;
 
-    nChanceForBoBomb = ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForBoBomb + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForBoBomb;
-    nChanceForBoBomb += nChanceForBanana > 0 ? nChanceForBanana : 0;
-    nChanceForBoBomb += g_pGame->m_pGameTweaks->nChanceForBoBomb;
+    nChanceForBanana = ((nChanceForRedShell) > 0 ? (nChanceForRedShell) : 0);
+    nChanceForBanana = nChanceForBanana + (((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForBanana + (g_pGame->m_pGameTweaks->nChanceForBanana + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForBanana)) + nDifference;
 
-    nChanceForMushroom = ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForMushroom + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForMushroom;
-    nChanceForMushroom += nChanceForBoBomb > 0 ? nChanceForBoBomb : 0;
-    nChanceForMushroom += nDifference;
-    nChanceForMushroom += g_pGame->m_pGameTweaks->nChanceForMushroom;
+    nChanceForBoBomb = ((nChanceForBanana) > 0 ? (nChanceForBanana) : 0);
+    nChanceForBoBomb =
+        nChanceForBoBomb
+        + (((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForBoBomb
+            + (g_pGame->m_pGameTweaks->nChanceForBoBomb
+                + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForBoBomb));
 
-    nChanceForGreenShell = g_pGame->m_pGameTweaks->nChanceForGreenShell + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForGreenShell + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForGreenShell + (nChanceForMushroom > 0 ? nChanceForMushroom : 0) + nDifference;
+    nChanceForMushroom =
+        ((nChanceForBoBomb) > 0 ? (nChanceForBoBomb) : 0);
+    nChanceForMushroom = nChanceForMushroom + (((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForMushroom + (g_pGame->m_pGameTweaks->nChanceForMushroom + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForMushroom)) + nDifference;
 
-    nChanceForFreezeShell = g_pGame->m_pGameTweaks->nChanceForFreezeShell + (((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForFreezeShell + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForFreezeShell) + (nChanceForGreenShell > 0 ? nChanceForGreenShell : 0) + nDifference;
+    nChanceForGreenShell = g_pGame->m_pGameTweaks->nChanceForGreenShell + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForGreenShell + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForGreenShell + ((nChanceForMushroom) > 0 ? (nChanceForMushroom) : 0) + nDifference;
 
-    nChance = nlRandom(nChanceForFreezeShell, &nlDefaultSeed);
+    nChanceForFreezeShell = ((nChanceForGreenShell) > 0 ? (nChanceForGreenShell) : 0);
+    nChanceForFreezeShell = nChanceForFreezeShell + (((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForFreezeShell + (g_pGame->m_pGameTweaks->nChanceForFreezeShell + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForFreezeShell)) + nDifference;
+
+    int nChance = nlRandom(nChanceForFreezeShell, &nlDefaultSeed);
 
     switch (nlSingleton<GameInfoManager>::s_pInstance->GetCustomPowerups())
     {
     case CP_FREEZING:
-        nChanceForGreenShell = 0;
-        nChanceForMushroom = 0;
-        nChanceForBoBomb = 0;
-        nChanceForBanana = 0;
-        nChanceForRedShell = 0;
-        nChanceForSpinyShell = 0;
-        nChanceForStar = 0;
-        nChanceForChainChomp = 0;
+        nChanceForChainChomp =
+            nChanceForStar =
+            nChanceForSpinyShell =
+            nChanceForRedShell =
+            nChanceForBanana =
+            nChanceForBoBomb =
+            nChanceForMushroom =
+            nChanceForGreenShell = 0;
         powerUpType = POWER_UP_FREEZE_SHELL;
         break;
     case CP_GIANT:
-        nChanceForBanana = 0;
-        nChanceForMushroom = 0;
-        nChanceForStar = 0;
+        nChanceForStar =
+            nChanceForMushroom =
+            nChanceForBanana = 0;
         powerUpType = POWER_UP_GREEN_SHELL;
         break;
     case CP_SHELLS:
-        nChanceForMushroom = 0;
-        nChanceForBoBomb = 0;
-        nChanceForBanana = 0;
-        nChanceForStar = 0;
-        nChanceForChainChomp = 0;
+        nChanceForChainChomp =
+            nChanceForStar =
+            nChanceForBanana =
+            nChanceForBoBomb =
+            nChanceForMushroom = 0;
         powerUpType = POWER_UP_GREEN_SHELL;
         break;
     case CP_ENCHANCEMENT:
-        nChanceForFreezeShell = 0;
-        nChanceForGreenShell = 0;
-        nChanceForBoBomb = 0;
-        nChanceForBanana = 0;
-        nChanceForRedShell = 0;
-        nChanceForSpinyShell = 0;
-        nChanceForChainChomp = 0;
+        nChanceForChainChomp =
+            nChanceForSpinyShell =
+            nChanceForRedShell =
+            nChanceForBanana =
+            nChanceForBoBomb =
+            nChanceForGreenShell =
+            nChanceForFreezeShell = 0;
         powerUpType = POWER_UP_MUSHROOM;
         break;
     case CP_EXPLOSIVE:
-        nChanceForFreezeShell = 0;
-        nChanceForGreenShell = 0;
-        nChanceForMushroom = 0;
-        nChanceForBanana = 0;
-        nChanceForRedShell = 0;
-        nChanceForSpinyShell = 0;
-        nChanceForStar = 0;
-        nChanceForChainChomp = 0;
+        nChanceForChainChomp =
+            nChanceForStar =
+            nChanceForSpinyShell =
+            nChanceForRedShell =
+            nChanceForBanana =
+            nChanceForMushroom =
+            nChanceForGreenShell =
+            nChanceForFreezeShell = 0;
         powerUpType = POWER_UP_BOBOMB;
         break;
     default:
@@ -1420,6 +1301,11 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
         powerUpType = POWER_UP_FREEZE_SHELL;
     }
 
+    float fMultiplesBonus;
+    int nNumOfPowerups;
+    float fRandom;
+    float fFiveChance;
+
     nNumOfPowerups = 1;
     fMultiplesBonus = ((FielderTweaks*)pCaptain->m_pTweaks)->fChanceForMultiples / 2.0f;
     fRandom = nlRandomf(1.0f, &nlDefaultSeed);
@@ -1428,10 +1314,9 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
     {
     case POWER_UP_GREEN_SHELL:
     case POWER_UP_FREEZE_SHELL:
-        fFiveChance = fMultiplesBonus + g_pGame->m_pGameTweaks->fShellFiveChance;
-        fThreeChance = fFiveChance + g_pGame->m_pGameTweaks->fShellThreeChance;
-        fThreeChance = fMultiplesBonus + fThreeChance;
-        if (fThreeChance > fRandom)
+    {
+        float fFiveChance = fMultiplesBonus + g_pGame->m_pGameTweaks->fShellFiveChance;
+        if (fMultiplesBonus + (fFiveChance + g_pGame->m_pGameTweaks->fShellThreeChance) > fRandom)
         {
             nNumOfPowerups = 3;
         }
@@ -1440,20 +1325,18 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
             nNumOfPowerups = 5;
         }
         break;
+    }
     case POWER_UP_RED_SHELL:
     case POWER_UP_SPINY_SHELL:
-        pGameTweaks = g_pGame->m_pGameTweaks;
-        fThreeChance = ((FielderTweaks*)pCaptain->m_pTweaks)->fChanceForMultiples + (pGameTweaks->fShellFiveChance + pGameTweaks->fShellThreeChance);
-        if (fThreeChance > fRandom)
+        pOtherTeam = (cTeam*)g_pGame->m_pGameTweaks;
+        if (((FielderTweaks*)pCaptain->m_pTweaks)->fChanceForMultiples + (((GameTweaks*)pOtherTeam)->fShellFiveChance + ((GameTweaks*)pOtherTeam)->fShellThreeChance) > fRandom)
         {
             nNumOfPowerups = 3;
         }
         break;
     case POWER_UP_BOBOMB:
         fFiveChance = fMultiplesBonus + g_pGame->m_pGameTweaks->fBobombFiveChance;
-        fThreeChance = fFiveChance + g_pGame->m_pGameTweaks->fBobombThreeChance;
-        fThreeChance = fMultiplesBonus + fThreeChance;
-        if (fThreeChance > fRandom)
+        if (fMultiplesBonus + (fFiveChance + g_pGame->m_pGameTweaks->fBobombThreeChance) > fRandom)
         {
             nNumOfPowerups = 3;
         }
@@ -1464,9 +1347,7 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
         break;
     case POWER_UP_BANANA:
         fFiveChance = fMultiplesBonus + g_pGame->m_pGameTweaks->fBananaFiveChance;
-        fThreeChance = fFiveChance + g_pGame->m_pGameTweaks->fBananaThreeChance;
-        fThreeChance = fMultiplesBonus + fThreeChance;
-        if (fThreeChance > fRandom)
+        if (fMultiplesBonus + (fFiveChance + g_pGame->m_pGameTweaks->fBananaThreeChance) > fRandom)
         {
             nNumOfPowerups = 3;
         }
@@ -1882,6 +1763,21 @@ void PowerupBase::ThrowAt(cFielder* pThrower, Bowser*)
     }
 }
 
+static inline void ApplyPowerupVolume(Audio::SoundAttributes& attributes, unsigned long soundID, float volume)
+{
+    float defaultVolume = Audio::gPowerupSFX.GetSFXVol(soundID);
+    if (volume != 100.0f)
+    {
+        attributes.mf_Volume = volume * defaultVolume;
+    }
+}
+
+void PowerupBase::DecrementTimers(float fDeltaT)
+{
+    mtActiveTimer.Countdown(fDeltaT, 0.0f);
+    mtNoHitTimer.Countdown(fDeltaT, 0.0f);
+}
+
 /**
  * Offset/Address/Size: 0x28DC | 0x8005D1C8 | size: 0xA98
  */
@@ -1920,7 +1816,7 @@ void PowerupBase::Destroy(bool bSilent)
                     PowerupSound pwrSnd;
                     unsigned long sndType;
                     PhysicsObject* pPhysObj = m_pPhysicsObject;
-                    register float fVol = g_pGame->m_pGameTweaks->unk238;
+                    float fVol = g_pGame->m_pGameTweaks->unk238;
                     pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
 
                     if (!Audio::IsInited())
@@ -1980,15 +1876,7 @@ void PowerupBase::Destroy(bool bSilent)
                                 }
                             }
 
-                            register float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
-                            asm {
-                                lfs f0, 100.0f
-                                fcmpu cr0, f0, fVol
-                                beq bobombLargeVolumeDone
-                                fmuls f0, fVol, fDefaultVol
-                                stfs f0, attrs.mf_Volume
-                            }
-                        bobombLargeVolumeDone:
+                            ApplyPowerupVolume(attrs, sndType, fVol);
                             Audio::gPowerupSFX.Play(attrs);
                         }
                     }
@@ -2003,7 +1891,7 @@ void PowerupBase::Destroy(bool bSilent)
 
                     PhysicsObject* pPhysObj = m_pPhysicsObject;
                     unsigned long sndType;
-                    register float fVol = g_pGame->m_pGameTweaks->unk234;
+                    float fVol = g_pGame->m_pGameTweaks->unk234;
                     PowerupSound pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
 
                     if (!Audio::IsInited())
@@ -2063,15 +1951,7 @@ void PowerupBase::Destroy(bool bSilent)
                                 }
                             }
 
-                            register float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
-                            asm {
-                                lfs f0, 100.0f
-                                fcmpu cr0, f0, fVol
-                                beq bobombMediumVolumeDone
-                                fmuls f0, fVol, fDefaultVol
-                                stfs f0, attrs.mf_Volume
-                            }
-                        bobombMediumVolumeDone:
+                            ApplyPowerupVolume(attrs, sndType, fVol);
                             Audio::gPowerupSFX.Play(attrs);
                         }
                     }
@@ -2086,7 +1966,7 @@ void PowerupBase::Destroy(bool bSilent)
 
                     PhysicsObject* pPhysObj = m_pPhysicsObject;
                     unsigned long sndType;
-                    register float fVol = g_pGame->m_pGameTweaks->unk230;
+                    float fVol = g_pGame->m_pGameTweaks->unk230;
                     PowerupSound pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
 
                     if (!Audio::IsInited())
@@ -2146,15 +2026,7 @@ void PowerupBase::Destroy(bool bSilent)
                                 }
                             }
 
-                            register float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
-                            asm {
-                                lfs f0, 100.0f
-                                fcmpu cr0, f0, fVol
-                                beq bobombSmallVolumeDone
-                                fmuls f0, fVol, fDefaultVol
-                                stfs f0, attrs.mf_Volume
-                            }
-                        bobombSmallVolumeDone:
+                            ApplyPowerupVolume(attrs, sndType, fVol);
                             Audio::gPowerupSFX.Play(attrs);
                         }
                     }
@@ -2165,32 +2037,20 @@ void PowerupBase::Destroy(bool bSilent)
                 Audio::gStadGenSFX.Play((Audio::eWorldSFX)0xCE, 100.0f, -1.0f, true, 100.0f);
                 EmissionController* pControl = EmissionManager::Create(pExplosionGroup, 0);
                 pControl->SetPosition(m_pPhysicsObject->GetPosition());
-                register float fRadius = ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
-                register float fPositionZ = m_v3Position.f.z;
-                asm {
-                    lfs f0, 1.0f
-                    fsubs fRadius, fPositionZ, fRadius
-                    fcmpo cr0, fRadius, f0
-                    bge groundExplosionDone
-                }
+                if ((m_v3Position.f.z - ((PhysicsSphere*)m_pPhysicsObject)->GetRadius()) < 1.0f)
                 {
                     EmissionController* pControl = EmissionManager::Create(pGroundGroup, 0);
                     pControl->SetPosition(m_pPhysicsObject->GetPosition());
                 }
-            groundExplosionDone:
                 FireCameraRumbleFilter(0.0f, 0.2f);
             }
 
             Event* pEvent = g_pEventManager->CreateValidEvent(0x2C, 0x34);
-            register CollisionBobombDataLayout* pEventData = (CollisionBobombDataLayout*)new ((u8*)pEvent + 0x10) CollisionBobombData();
+            CollisionBobombDataLayout* pEventData = (CollisionBobombDataLayout*)new ((u8*)pEvent + 0x10) CollisionBobombData();
             pEventData->v3ExplosionLocation = m_v3Position;
-            register GameTweaks* pGameTweaks = g_pGame->m_pGameTweaks;
-            register float fPowerupSize = (float)meSize;
-            asm {
-                lfs f0, 0x154(pGameTweaks)
-                fmadds f0, fPowerupSize, f0, f0
-                stfs f0, 0x10(pEventData)
-            }
+            pEventData->fExplosionRadius =
+                g_pGame->GetGameTweaks()->fPowerupExplosionRadius * (float)meSize
+                + g_pGame->GetGameTweaks()->fPowerupExplosionRadius;
             pEventData->pThrower = m_pThrower;
             pEventData->nThrowerPadID = m_nThrowerPadID;
             pEventData->bIsFreezeBomb = (m_eType == POWER_UP_FREEZE_SHELL);
@@ -2204,7 +2064,7 @@ void PowerupBase::Destroy(bool bSilent)
         {
         case POWERUPSIZE_LARGE:
         {
-            register float fVol = g_pGame->m_pGameTweaks->unk238;
+            float fVol = g_pGame->m_pGameTweaks->unk238;
             ePowerUpType type = m_eType;
             PhysicsObject* pPhysObj = m_pPhysicsObject;
 
@@ -2234,15 +2094,7 @@ void PowerupBase::Destroy(bool bSilent)
                         attrs.UseStationaryPosVector(pPhysObj->GetPosition());
                     }
 
-                    register float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
-                    asm {
-                        lfs f0, 100.0f
-                        fcmpu cr0, f0, fVol
-                        beq largeVolumeDone
-                        fmuls f0, fVol, fDefaultVol
-                        stfs f0, attrs.mf_Volume
-                    }
-                largeVolumeDone:
+                    ApplyPowerupVolume(attrs, sndType, fVol);
 
                     Audio::gPowerupSFX.Play(attrs);
                 }
@@ -2251,7 +2103,7 @@ void PowerupBase::Destroy(bool bSilent)
         }
         case POWERUPSIZE_MEDIUM:
         {
-            register float fVol = g_pGame->m_pGameTweaks->unk234;
+            float fVol = g_pGame->m_pGameTweaks->unk234;
             ePowerUpType type = m_eType;
             PhysicsObject* pPhysObj = m_pPhysicsObject;
 
@@ -2281,15 +2133,7 @@ void PowerupBase::Destroy(bool bSilent)
                         attrs.UseStationaryPosVector(pPhysObj->GetPosition());
                     }
 
-                    register float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
-                    asm {
-                        lfs f0, 100.0f
-                        fcmpu cr0, f0, fVol
-                        beq mediumVolumeDone
-                        fmuls f0, fVol, fDefaultVol
-                        stfs f0, attrs.mf_Volume
-                    }
-                mediumVolumeDone:
+                    ApplyPowerupVolume(attrs, sndType, fVol);
 
                     Audio::gPowerupSFX.Play(attrs);
                 }
@@ -2298,7 +2142,7 @@ void PowerupBase::Destroy(bool bSilent)
         }
         case POWERUPSIZE_SMALL:
         {
-            register float fVol = g_pGame->m_pGameTweaks->unk230;
+            float fVol = g_pGame->m_pGameTweaks->unk230;
             ePowerUpType type = m_eType;
             PhysicsObject* pPhysObj = m_pPhysicsObject;
 
@@ -2328,15 +2172,7 @@ void PowerupBase::Destroy(bool bSilent)
                         attrs.UseStationaryPosVector(pPhysObj->GetPosition());
                     }
 
-                    register float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
-                    asm {
-                        lfs f0, 100.0f
-                        fcmpu cr0, f0, fVol
-                        beq smallVolumeDone
-                        fmuls f0, fVol, fDefaultVol
-                        stfs f0, attrs.mf_Volume
-                    }
-                smallVolumeDone:
+                    ApplyPowerupVolume(attrs, sndType, fVol);
 
                     Audio::gPowerupSFX.Play(attrs);
                 }
@@ -2576,33 +2412,45 @@ found1:
     }
 }
 
-// /**
-//  * Offset/Address/Size: 0x22F0 | 0x8005CBDC | size: 0x70
-//  */
-// PhysicsShell::~PhysicsShell()
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x1E00 | 0x8005C6EC | size: 0x250
- */
-unsigned long PowerupBase::PlayPowerupSound(ePowerUpType type, PowerupBase::PowerupSound powerupSnd, PhysicsObject* pPhysObj, float fVol)
+void PowerupBase::SpeedManagement()
 {
-    Audio::SoundAttributes sndAtr;
+    nlPolar aShell;
+    nlVector2 v2NewVelocity;
+    nlVector3 v3NewVelocity;
+
+    if (mtNoHitTimer.m_uPackedTime == 0)
+    {
+        nlCartesianToPolar(aShell, m_v3Velocity.f.x, m_v3Velocity.f.y);
+        if (aShell.r < 3.0f)
+        {
+            m_bShouldDestroy = true;
+        }
+        else if (aShell.r > 20.0f)
+        {
+            v2NewVelocity = *(const nlVector2*)&m_v3Velocity;
+            f32 velX = v2NewVelocity.f.x;
+            f32 velY = v2NewVelocity.f.y;
+            f32 sqX = velX * velX;
+            f32 sqY = velY * velY;
+            f32 recipLen = nlRecipSqrt(sqX + sqY, true);
+            v2NewVelocity.f.x = recipLen * velX;
+            v2NewVelocity.f.y = recipLen * velY;
+            f32 scaledY = 19.0f * v2NewVelocity.f.y;
+            f32 scaledX = 19.0f * v2NewVelocity.f.x;
+            v2NewVelocity.f.x = scaledX;
+            v2NewVelocity.f.y = scaledY;
+            v3NewVelocity.f.y = v2NewVelocity.f.y;
+            v3NewVelocity.f.x = v2NewVelocity.f.x;
+            v3NewVelocity.f.z = m_v3Velocity.f.z;
+            m_v3Velocity = v3NewVelocity;
+            m_pPhysicsObject->SetLinearVelocity(v3NewVelocity);
+        }
+    }
+}
+
+unsigned long PowerupBase::GetSoundType(ePowerUpType type, PowerupBase::PowerupSound powerupSnd)
+{
     unsigned long sndType;
-    float fDefaultVol;
-
-    if (type >= NUM_POWER_UPS)
-    {
-        return Audio::GetSndIDError();
-    }
-
-    if (!Audio::IsInited())
-    {
-        return Audio::GetSndIDError();
-    }
-
-    sndAtr.Init();
 
     switch (powerupSnd)
     {
@@ -2631,6 +2479,49 @@ unsigned long PowerupBase::PlayPowerupSound(ePowerUpType type, PowerupBase::Powe
         sndType = powerupSounds[type].sndEnd;
         break;
     }
+
+    return sndType;
+}
+
+// /**
+//  * Offset/Address/Size: 0x22F0 | 0x8005CBDC | size: 0x70
+//  */
+// PhysicsShell::~PhysicsShell()
+// {
+// }
+
+/**
+ * Offset/Address/Size: 0x2050 | 0x8005C93C | size: 0x2A0
+ */
+unsigned long PowerupBase::PlayPowerupSound(ePowerUpType type, PowerupBase::PowerupSound powerupSnd, const nlVector3& v3Pos, float fVol)
+{
+    PhysicsShell dummyShell(1.0f);
+    dummyShell.SetPosition(v3Pos, PhysicsObject::WORLD_COORDINATES);
+    return PlayPowerupSound(type, powerupSnd, &dummyShell, fVol);
+}
+
+/**
+ * Offset/Address/Size: 0x1E00 | 0x8005C6EC | size: 0x250
+ */
+unsigned long PowerupBase::PlayPowerupSound(ePowerUpType type, PowerupBase::PowerupSound powerupSnd, PhysicsObject* pPhysObj, float fVol)
+{
+    Audio::SoundAttributes sndAtr;
+    unsigned long sndType;
+    float fDefaultVol;
+
+    if (type >= NUM_POWER_UPS)
+    {
+        return Audio::GetSndIDError();
+    }
+
+    if (!Audio::IsInited())
+    {
+        return Audio::GetSndIDError();
+    }
+
+    sndAtr.Init();
+
+    sndType = GetSoundType(type, powerupSnd);
 
     if (sndType == 0xFFFFFFFF)
     {
@@ -2673,7 +2564,7 @@ unsigned long PowerupBase::PlayPowerupSound(ePowerUpType type, PowerupBase::Powe
 
     fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
 
-    if (fVol != 1.0f)
+    if (100.0f != fVol)
     {
         sndAtr.mf_Volume = fVol * fDefaultVol;
     }
@@ -2689,108 +2580,9 @@ void PowerupBase::StopPowerupInEffectSound(SFXEmitter* pSFXEmitter)
     Audio::gPowerupSFX.StopEmitter(pSFXEmitter, 0);
 }
 
-/**
- * Offset/Address/Size: 0x2050 | 0x8005C93C | size: 0x2A0
- */
-unsigned long PowerupBase::PlayPowerupSound(ePowerUpType type, PowerupBase::PowerupSound powerupSnd, const nlVector3& v3Pos, float fVol)
+GreenShell::GreenShell(cFielder* pTarget, int nIndex, float fRadius, ePowerupSize eSize, bool bExplode)
+    : PowerupBase(pTarget, POWER_UP_GREEN_SHELL, fRadius, eSize, bExplode, nIndex)
 {
-    PhysicsShell dummyShell(1.0f);
-    dummyShell.SetPosition(v3Pos, PhysicsObject::WORLD_COORDINATES);
-
-    if (type >= NUM_POWER_UPS)
-    {
-        type = (ePowerUpType)Audio::GetSndIDError();
-    }
-    else if (!Audio::IsInited())
-    {
-        type = (ePowerUpType)Audio::GetSndIDError();
-    }
-    else
-    {
-        Audio::SoundAttributes sndAtr;
-        sndAtr.Init();
-
-        unsigned long sndType;
-        switch (powerupSnd)
-        {
-        case PWRUP_SOUND_ACQUIRE:
-            sndType = powerupSounds[type].sndAcquire;
-            break;
-        case PWRUP_SOUND_ACTIVATE:
-            sndType = powerupSounds[type].sndActivate;
-            break;
-        case PWRUP_SOUND_IN_EFFECT:
-            sndType = powerupSounds[type].sndInEffect;
-            break;
-        case PWRUP_SOUND_HIT:
-            sndType = powerupSounds[type].sndHit;
-            break;
-        case PWRUP_SOUND_BOUNCE_WALL:
-            sndType = powerupSounds[type].sndBounceWall;
-            break;
-        case PWRUP_SOUND_BOUNCE_GROUND:
-            sndType = powerupSounds[type].sndBounceGround;
-            break;
-        case PWRUP_SOUND_EXPLODE:
-            sndType = powerupSounds[type].sndExplode;
-            break;
-        case PWRUP_SOUND_END:
-            sndType = powerupSounds[type].sndEnd;
-            break;
-        }
-
-        if (sndType == 0xFFFFFFFF)
-        {
-            type = (ePowerUpType)-1;
-        }
-        else
-        {
-            if (powerupSnd == PWRUP_SOUND_ACQUIRE)
-            {
-                sndAtr.SetSoundType(sndType, false);
-            }
-            else
-            {
-                sndAtr.SetSoundType(sndType, true);
-
-                if (type == POWER_UP_BOBOMB)
-                {
-                    if ((powerupSnd == PWRUP_SOUND_IN_EFFECT) || (powerupSnd == PWRUP_SOUND_ACTIVATE))
-                    {
-                        sndAtr.UsePhysObj(&dummyShell);
-                        sndAtr.mf_ReturnEmitterOnPlay = true;
-                    }
-                    else
-                    {
-                        sndAtr.UseStationaryPosVector(dummyShell.GetPosition());
-                    }
-                }
-                else
-                {
-                    if (powerupSnd == PWRUP_SOUND_IN_EFFECT)
-                    {
-                        sndAtr.UsePhysObj(&dummyShell);
-                        sndAtr.mf_ReturnEmitterOnPlay = true;
-                    }
-                    else
-                    {
-                        sndAtr.UseStationaryPosVector(dummyShell.GetPosition());
-                    }
-                }
-            }
-
-            float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
-
-            if (100.0f != fVol)
-            {
-                sndAtr.mf_Volume = fVol * fDefaultVol;
-            }
-
-            type = (ePowerUpType)Audio::gPowerupSFX.Play(sndAtr);
-        }
-    }
-
-    return (unsigned long)type;
 }
 
 /**
@@ -2806,9 +2598,6 @@ GreenShell::~GreenShell()
 void GreenShell::Update(float dt)
 {
     nlPolar polar;
-    nlVector2 vel;
-    nlPolar polar2;
-    nlVector3 cappedVel;
 
     m_v3PrevPosition = m_v3Position;
     m_pPhysicsObject->GetPosition(&m_v3Position);
@@ -2825,8 +2614,7 @@ void GreenShell::Update(float dt)
         m_pBlurHandler->AddViewOrientedPoint(m_v3Position, m_v3Velocity);
     }
 
-    mtActiveTimer.Countdown(dt, 0.0f);
-    mtNoHitTimer.Countdown(dt, 0.0f);
+    DecrementTimers(dt);
 
     UpdateTransform();
 
@@ -2840,34 +2628,7 @@ void GreenShell::Update(float dt)
         }
     }
 
-    if (mtNoHitTimer.m_uPackedTime == 0)
-    {
-        nlCartesianToPolar(polar2, m_v3Velocity.f.x, m_v3Velocity.f.y);
-        if (polar2.r < 3.0f)
-        {
-            m_bShouldDestroy = true;
-        }
-        else if (polar2.r > 20.0f)
-        {
-            vel = *(const nlVector2*)&m_v3Velocity;
-            f32 velX = vel.f.x;
-            f32 velY = vel.f.y;
-            f32 sqX = velX * velX;
-            f32 sqY = velY * velY;
-            f32 recipLen = nlRecipSqrt(sqX + sqY, true);
-            vel.f.x = recipLen * velX;
-            vel.f.y = recipLen * velY;
-            f32 scaledY = 19.0f * vel.f.y;
-            f32 scaledX = 19.0f * vel.f.x;
-            vel.f.x = scaledX;
-            vel.f.y = scaledY;
-            cappedVel.f.y = vel.f.y;
-            cappedVel.f.x = vel.f.x;
-            cappedVel.f.z = m_v3Velocity.f.z;
-            m_v3Velocity = cappedVel;
-            m_pPhysicsObject->SetLinearVelocity(cappedVel);
-        }
-    }
+    SpeedManagement();
 
     if (m_bShouldDestroy)
     {
@@ -2904,6 +2665,11 @@ void GreenShell::Destroy(bool bSilent)
     PowerupBase::Destroy(bSilent);
 }
 
+RedShell::RedShell(cFielder* pTarget, int nIndex, float fRadius, ePowerupSize eSize, bool bExplode)
+    : PowerupBase(pTarget, POWER_UP_RED_SHELL, fRadius, eSize, bExplode, nIndex)
+{
+}
+
 /**
  * Offset/Address/Size: 0x1874 | 0x8005C160 | size: 0x138
  */
@@ -2917,9 +2683,6 @@ RedShell::~RedShell()
 void RedShell::Update(float dt)
 {
     nlPolar polar;
-    nlVector2 vel;
-    nlPolar polar2;
-    nlVector3 cappedVel;
 
     m_v3PrevPosition = m_v3Position;
     m_pPhysicsObject->GetPosition(&m_v3Position);
@@ -2936,8 +2699,7 @@ void RedShell::Update(float dt)
         m_pBlurHandler->AddViewOrientedPoint(m_v3Position, m_v3Velocity);
     }
 
-    mtActiveTimer.Countdown(dt, 0.0f);
-    mtNoHitTimer.Countdown(dt, 0.0f);
+    DecrementTimers(dt);
 
     UpdateTransform();
 
@@ -2951,34 +2713,7 @@ void RedShell::Update(float dt)
         }
     }
 
-    if (mtNoHitTimer.m_uPackedTime == 0)
-    {
-        nlCartesianToPolar(polar2, m_v3Velocity.f.x, m_v3Velocity.f.y);
-        if (polar2.r < 3.0f)
-        {
-            m_bShouldDestroy = true;
-        }
-        else if (polar2.r > 20.0f)
-        {
-            vel = *(const nlVector2*)&m_v3Velocity;
-            f32 velX = vel.f.x;
-            f32 velY = vel.f.y;
-            f32 sqX = velX * velX;
-            f32 sqY = velY * velY;
-            f32 recipLen = nlRecipSqrt(sqX + sqY, true);
-            vel.f.x = recipLen * velX;
-            vel.f.y = recipLen * velY;
-            f32 scaledY = 19.0f * vel.f.y;
-            f32 scaledX = 19.0f * vel.f.x;
-            vel.f.x = scaledX;
-            vel.f.y = scaledY;
-            cappedVel.f.y = vel.f.y;
-            cappedVel.f.x = vel.f.x;
-            cappedVel.f.z = m_v3Velocity.f.z;
-            m_v3Velocity = cappedVel;
-            m_pPhysicsObject->SetLinearVelocity(cappedVel);
-        }
-    }
+    SpeedManagement();
 
     if (mtActiveTimer.m_uPackedTime == 0)
     {
@@ -3080,6 +2815,11 @@ void RedShell::SeekTarget()
     }
 }
 
+Banana::Banana(cFielder* pTarget, int nIndex, float fRadius, ePowerupSize eSize, bool bExplode)
+    : PowerupBase(pTarget, POWER_UP_BANANA, fRadius, eSize, bExplode, nIndex)
+{
+}
+
 /**
  * Offset/Address/Size: 0x1290 | 0x8005BB7C | size: 0x138
  */
@@ -3109,8 +2849,7 @@ void Banana::Update(float dt)
         m_pBlurHandler->AddViewOrientedPoint(m_v3Position, m_v3Velocity);
     }
 
-    mtActiveTimer.Countdown(dt, 0.0f);
-    mtNoHitTimer.Countdown(dt, 0.0f);
+    DecrementTimers(dt);
 
     UpdateTransform();
 
@@ -3164,6 +2903,11 @@ void Banana::Destroy(bool bSilent)
     PowerupBase::Destroy(bSilent);
 }
 
+SpinyShell::SpinyShell(cFielder* pTarget, int nIndex, float fRadius, ePowerupSize eSize, bool bExplode)
+    : PowerupBase(pTarget, POWER_UP_SPINY_SHELL, fRadius, eSize, bExplode, nIndex)
+{
+}
+
 /**
  * Offset/Address/Size: 0xF24 | 0x8005B810 | size: 0x138
  */
@@ -3177,8 +2921,6 @@ SpinyShell::~SpinyShell()
 void SpinyShell::Update(float dt)
 {
     nlPolar polar;
-    nlVector2 vel;
-    nlPolar polar2;
 
     m_v3PrevPosition = m_v3Position;
     m_pPhysicsObject->GetPosition(&m_v3Position);
@@ -3195,8 +2937,7 @@ void SpinyShell::Update(float dt)
         m_pBlurHandler->AddViewOrientedPoint(m_v3Position, m_v3Velocity);
     }
 
-    mtActiveTimer.Countdown(dt, 0.0f);
-    mtNoHitTimer.Countdown(dt, 0.0f);
+    DecrementTimers(dt);
 
     UpdateTransform();
 
@@ -3210,31 +2951,7 @@ void SpinyShell::Update(float dt)
         }
     }
 
-    if (mtNoHitTimer.m_uPackedTime == 0)
-    {
-        nlCartesianToPolar(polar2, m_v3Velocity.f.x, m_v3Velocity.f.y);
-        if (polar2.r < 3.0f)
-        {
-            m_bShouldDestroy = true;
-        }
-        else if (polar2.r > 20.0f)
-        {
-            vel = *(const nlVector2*)&m_v3Velocity;
-            f32 velX = vel.f.x;
-            f32 velY = vel.f.y;
-            f32 sqX = velX * velX;
-            f32 sqY = velY * velY;
-            f32 recipLen = nlRecipSqrt(sqX + sqY, true);
-            nlVec2Set(vel, recipLen * velX, recipLen * velY);
-            nlVec2Set(vel, 19.0f * vel.f.x, 19.0f * vel.f.y);
-            nlVector3 cappedVel;
-            cappedVel.f.y = vel.f.y;
-            cappedVel.f.x = vel.f.x;
-            cappedVel.f.z = m_v3Velocity.f.z;
-            m_v3Velocity = cappedVel;
-            m_pPhysicsObject->SetLinearVelocity(cappedVel);
-        }
-    }
+    SpeedManagement();
 
     if (m_bShouldDestroy)
     {
@@ -3271,6 +2988,11 @@ void SpinyShell::Destroy(bool bSilent)
     PowerupBase::Destroy(bSilent);
 }
 
+FreezeShell::FreezeShell(cFielder* pTarget, int nIndex, float fRadius, ePowerupSize eSize, bool bExplode)
+    : PowerupBase(pTarget, POWER_UP_FREEZE_SHELL, fRadius, eSize, bExplode, nIndex)
+{
+}
+
 /**
  * Offset/Address/Size: 0xB00 | 0x8005B3EC | size: 0x138
  */
@@ -3284,8 +3006,6 @@ FreezeShell::~FreezeShell()
 void FreezeShell::Update(float fDeltaT)
 {
     nlPolar polar;
-    nlVector2 vel;
-    nlPolar polar2;
 
     m_v3PrevPosition = m_v3Position;
     m_pPhysicsObject->GetPosition(&m_v3Position);
@@ -3302,8 +3022,7 @@ void FreezeShell::Update(float fDeltaT)
         m_pBlurHandler->AddViewOrientedPoint(m_v3Position, m_v3Velocity);
     }
 
-    mtActiveTimer.Countdown(fDeltaT, 0.0f);
-    mtNoHitTimer.Countdown(fDeltaT, 0.0f);
+    DecrementTimers(fDeltaT);
 
     UpdateTransform();
 
@@ -3317,32 +3036,7 @@ void FreezeShell::Update(float fDeltaT)
         }
     }
 
-    if (mtNoHitTimer.m_uPackedTime == 0)
-    {
-        nlCartesianToPolar(polar2, m_v3Velocity.f.x, m_v3Velocity.f.y);
-        if (polar2.r < 3.0f)
-        {
-            m_bShouldDestroy = true;
-        }
-        else if (polar2.r > 20.0f)
-        {
-            vel = *(const nlVector2*)&m_v3Velocity;
-            f32 velX = vel.f.x;
-            f32 velY = vel.f.y;
-            f32 sqX = velX * velX;
-            f32 sqY = velY * velY;
-            f32 recipLen = nlRecipSqrt(sqX + sqY, true);
-            vel.f.x = recipLen * velX;
-            vel.f.y = recipLen * velY;
-            nlVec2Set(vel, 19.0f * vel.f.x, 19.0f * vel.f.y);
-            nlVector3 cappedVel;
-            cappedVel.f.y = vel.f.y;
-            cappedVel.f.x = vel.f.x;
-            cappedVel.f.z = m_v3Velocity.f.z;
-            m_v3Velocity = cappedVel;
-            m_pPhysicsObject->SetLinearVelocity(cappedVel);
-        }
-    }
+    SpeedManagement();
 
     if (m_bShouldDestroy)
     {
@@ -3377,6 +3071,22 @@ void FreezeShell::Destroy(bool bSilent)
     }
 
     PowerupBase::Destroy(bSilent);
+}
+
+Bobomb::Bobomb(cFielder* pTarget, int nIndex, float fRadius, ePowerupSize eSize, bool bExplode)
+    : PowerupBase(pTarget, POWER_UP_BOBOMB, fRadius, eSize, bExplode, nIndex)
+{
+    pMovementEmitter = NULL;
+
+    GameTweaks* pGameTweaks = g_pGame->m_pGameTweaks;
+    if (nlRandomf(1.0f, &nlDefaultSeed) < pGameTweaks->fBobombMineChance)
+    {
+        mbIsMine = true;
+    }
+    else
+    {
+        mbIsMine = false;
+    }
 }
 
 /**
@@ -3414,8 +3124,7 @@ void Bobomb::Update(float dt)
         m_pBlurHandler->AddViewOrientedPoint(m_v3Position, m_v3Velocity);
     }
 
-    mtActiveTimer.Countdown(dt, 0.0f);
-    mtNoHitTimer.Countdown(dt, 0.0f);
+    DecrementTimers(dt);
 
     UpdateTransform();
 
@@ -3505,16 +3214,16 @@ void Bobomb::ThrowAt(cFielder*, Bowser*)
         }
     }
 
-    gBobombAnticipationVoiceID = Audio::gCrowdSFX.Play((Audio::eWorldSFX)0x9E, 1.0f, 0.5f, true, 1.0f);
+    gBobombAnticipationVoiceID = Audio::gCrowdSFX.Play((Audio::eWorldSFX)0x9E, 100.0f, -1.0f, true, 100.0f);
 
 skip_anticipation:
     if (m_pTarget->m_pTeam == g_pTeams[1])
     {
-        Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_YEAH_SMALL, 1.0f, 0.5f, 0, 0.0f);
+        Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_YEAH_SMALL, 100.0f, -1.0f, 0, 0.0f);
     }
     else
     {
-        Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_OH_SMALL, 1.0f, 0.5f, 0, 0.0f);
+        Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_OH_SMALL, 100.0f, -1.0f, 0, 0.0f);
     }
 
     int nNumSolutions;
