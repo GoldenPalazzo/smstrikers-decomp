@@ -808,7 +808,7 @@ config.libs = [
             # Game Objects
             Object(NonMatching, "Game/Game.cpp", extra_cflags=["-inline auto", "-inline deferred"]),    
             Object(NonMatching, "Game/GameInfo.cpp", extra_cflags=["-inline auto", "-inline deferred"]),    
-            Object(NonMatching, "Game/GameTweaks.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/GameTweaks.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/CharacterTweaks.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/ScriptTuning.cpp", extra_cflags=["-inline auto", "-inline auto,deferred"]),
 

@@ -493,7 +493,6 @@ void SkillTweaks::Init(eDifficultyID diff, bool blend)
         minmax[0].Init((eDifficultyID)1, 0);
         minmax[1].Init((eDifficultyID)3, 0);
 
-        // float fPercent = (float)(diff - 1) * 0.5f;
         float fPercent = (float)(diff - 1) / 2.f;
 
         SkillTweak* dst = mSkillTweaksList.m_pStart;
@@ -531,5 +530,4 @@ void SkillTweaks::Init(eDifficultyID diff, bool blend)
  */
 void SkillTweaks::HookupTweakeables(int)
 {
-    // EMPTY
 }
