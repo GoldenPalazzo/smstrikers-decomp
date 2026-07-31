@@ -1,3 +1,12 @@
+// LINKABLE NOTE (2026-07-31, notes 0045): our object for this TU weak-emits
+// six functions retail's object does not have (~AudioStream,
+// ~StereoAudioStream, Purge, WarmReadDone, Destructor, and a local
+// nlCountBits at .text offset 0) and misses retail's GLOBAL
+// __vt__Q216GCAudioStreaming15MonoAudioStream - retail defined those bodies
+// in a different TU. Colour-inert for register matching, but a real
+// reconstruction defect for the future /linkable task. Declaration-only
+// shadow headers that reproduce retail's emission set are preserved under
+// tmp/tasks/monowarm-100-20260731-1/candidates/r13*/.
 #include "Game/Sys/GCStream.h"
 #include "NL/nlAlgorithm.h"
 #include "NL/nlFileGC.h"
