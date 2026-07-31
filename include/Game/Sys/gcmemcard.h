@@ -100,7 +100,7 @@ public:
         /* 0x14 */ T* m_pObject;
     };
 
-    /* 0x00 */ unsigned char m_FunctorMem[24];
+    /* 0x00 */ mutable unsigned char m_FunctorMem[24];
 }; // total size: 0x18
 
 class MemCard

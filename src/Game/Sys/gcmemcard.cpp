@@ -908,7 +908,6 @@ long MemCard::InternalReadFile(MC_FILE* pFile, void* Buffer, unsigned long Lengt
 
 /**
  * Offset/Address/Size: 0x740 | 0x801C9EB0 | size: 0x120
- * TODO: 99.72% match - first two MemCardFunctor word stores remain swapped
  */
 long MemCard::InternalWriteFile(MC_FILE* pFile, void* Buffer, unsigned long Length, unsigned long StartAt, const MemCardFunctor& Callback, bool ResetTransfer)
 {
