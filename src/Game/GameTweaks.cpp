@@ -467,12 +467,7 @@ SkillTweaks::SkillTweaks()
  */
 SkillTweaks::~SkillTweaks()
 {
-    SkillTweak** pEnd = &mSkillTweaksList.m_pEnd;
-
-    while (mSkillTweaksList.m_pStart != NULL)
-    {
-        delete nlListRemoveStart<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd);
-    }
+    nlDeleteList(mSkillTweaksList);
 }
 
 /**

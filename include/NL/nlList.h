@@ -163,6 +163,15 @@ void nlDeleteList(T** head)
 }
 
 template <typename T>
+inline void nlDeleteList(nlList<T>& list)
+{
+    while (list.m_pStart != NULL)
+    {
+        delete nlListRemoveStart<T>(&list.m_pStart, &list.m_pEnd);
+    }
+}
+
+template <typename T>
 s32 nlListCountElements(T* head)
 {
     T* node = head;
