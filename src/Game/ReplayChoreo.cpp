@@ -192,12 +192,12 @@ void ReplayChoreo::DoFunctionCall(unsigned int func)
     }
 }
 
-// /**
-//  * Offset/Address/Size: 0x34 | 0x80128764 | size: 0x5C
-//  */
-// ReplayCamera::~ReplayCamera()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x34 | 0x80128764 | size: 0x5C
+ */
+inline ReplayCamera::~ReplayCamera()
+{
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x80128730 | size: 0x34

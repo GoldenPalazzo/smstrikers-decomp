@@ -9,6 +9,52 @@
 #include "Game/Render/depthoffield.h"
 #include "NL/nlFormatFwd.h"
 
+/*
+ * TODO: match-only specialization, approved as a documented exception.
+ *
+ * Retail emits this body at the end of this TU's main .text, immediately before
+ * the ReplayCamera.h getter group; a body defined in a header instead lands in
+ * that header's linkonce group, which the linker then places after the getters.
+ * Defining the specialization here is currently the only known way to reproduce
+ * retail's byte order, but the body is a verbatim copy of the generic template
+ * in NL/nlBasicString.h and eight other TUs instantiate that same overload, so
+ * this duplicates shared code and contradicts retail DWARF, which attributes
+ * the body to nlBasicString.h.
+ *
+ * Replace this with a form that keeps the definition in nlBasicString.h as soon
+ * as one is found. See smstrikers-notes docs/0047.
+ */
+template <>
+BasicString<char, Detail::TempStringAllocator>& BasicString<char, Detail::TempStringAllocator>::AppendInPlace<Detail::TempStringAllocator>(const BasicString<char, Detail::TempStringAllocator>& rhs)
+{
+    (*this)[0];
+
+    char* at;
+    BasicString<char, Detail::TempStringAllocator>::Data* currentData = mData;
+    if (currentData != 0)
+    {
+        at = currentData->mData.mData + currentData->mData.mSize - 1;
+    }
+    else
+    {
+        at = 0;
+    }
+
+    BasicString<char, Detail::TempStringAllocator>::Data* rhsData = rhs.mData;
+    const char* begin;
+    if (rhsData != 0)
+    {
+        begin = rhsData->mData.mData;
+    }
+    else
+    {
+        begin = 0;
+    }
+
+    insert(at, begin, rhsData != 0 ? rhsData->mData.mData + rhsData->mData.mSize - 1 : 0);
+    return *this;
+}
+
 static inline float GetSideDirection(int side)
 {
     return side == 0 ? -1.0f : 1.0f;
@@ -208,7 +254,7 @@ void ReplayCamera::CutTo(ReplayCameraPosition camPos)
     mFov = GetFov(mCamPos);
 }
 
-void ReplayCamera::Dampen(nlVector3& from, const nlVector3& to, float dampFactor)
+inline void ReplayCamera::Dampen(nlVector3& from, const nlVector3& to, float dampFactor)
 {
     from.f.x = (1.0f - dampFactor) * from.f.x + dampFactor * to.f.x;
     from.f.y = (1.0f - dampFactor) * from.f.y + dampFactor * to.f.y;
