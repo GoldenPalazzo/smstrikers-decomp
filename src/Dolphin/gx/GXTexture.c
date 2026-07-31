@@ -181,7 +181,7 @@ void __GetImageTileCount(GXTexFmt fmt, u16 wd, u16 ht, u32* rowTiles, u32* colTi
     } while (0);
 
 void GXInitTexObj(GXTexObj* obj, void* image_ptr, u16 width, u16 height, GXTexFmt format, GXTexWrapMode wrap_s, GXTexWrapMode wrap_t,
-                  GXBool mipmap)
+    GXBool mipmap)
 {
     u32 imageBase;
     u32 maxLOD;
@@ -302,7 +302,7 @@ void GXInitTexObj(GXTexObj* obj, void* image_ptr, u16 width, u16 height, GXTexFm
 }
 
 void GXInitTexObjCI(GXTexObj* obj, void* image_ptr, u16 width, u16 height, GXCITexFmt format, GXTexWrapMode wrap_s, GXTexWrapMode wrap_t,
-                    GXBool mipmap, u32 tlut_name)
+    GXBool mipmap, u32 tlut_name)
 {
     __GXTexObjInt* t = (__GXTexObjInt*)obj;
 
@@ -314,7 +314,7 @@ void GXInitTexObjCI(GXTexObj* obj, void* image_ptr, u16 width, u16 height, GXCIT
 }
 
 void GXInitTexObjLOD(GXTexObj* obj, GXTexFilter min_filt, GXTexFilter mag_filt, f32 min_lod, f32 max_lod, f32 lod_bias, u8 bias_clamp,
-                     u8 do_edge_lod, GXAnisotropy max_aniso)
+    u8 do_edge_lod, GXAnisotropy max_aniso)
 {
     u8 lbias;
     u8 lmin;
@@ -520,7 +520,7 @@ void* GXGetTexObjUserData(const GXTexObj* obj)
 }
 
 void GXGetTexObjAll(const GXTexObj* obj, void** image_ptr, u16* width, u16* height, GXTexFmt* format, GXTexWrapMode* wrap_s,
-                    GXTexWrapMode* wrap_t, u8* mipmap)
+    GXTexWrapMode* wrap_t, u8* mipmap)
 {
     const __GXTexObjInt* t = (const __GXTexObjInt*)obj;
 
@@ -591,7 +591,7 @@ GXBool GXGetTexObjMipMap(const GXTexObj* to)
 }
 
 void GXGetTexObjLODAll(const GXTexObj* tex_obj, GXTexFilter* min_filt, GXTexFilter* mag_filt, f32* min_lod, f32* max_lod, f32* lod_bias,
-                       u8* bias_clamp, u8* do_edge_lod, GXAnisotropy* max_aniso)
+    u8* bias_clamp, u8* do_edge_lod, GXAnisotropy* max_aniso)
 {
     s16 tmp;
     const __GXTexObjInt* t = (const __GXTexObjInt*)tex_obj;
@@ -819,7 +819,7 @@ void GXLoadTlut(GXTlutObj* tlut_obj, u32 tlut_name)
 }
 
 void GXInitTexCacheRegion(GXTexRegion* region, u8 is_32b_mipmap, u32 tmem_even, GXTexCacheSize size_even, u32 tmem_odd,
-                          GXTexCacheSize size_odd)
+    GXTexCacheSize size_odd)
 {
     u32 WidthExp2;
     __GXTexRegionInt* t = (__GXTexRegionInt*)region;
@@ -906,7 +906,7 @@ void GXInitTexPreLoadRegion(GXTexRegion* region, u32 tmem_even, u32 size_even, u
 }
 
 void GXGetTexRegionAll(const GXTexRegion* region, u8* is_cached, u8* is_32b_mipmap, u32* tmem_even, u32* size_even, u32* tmem_odd,
-                       u32* size_odd)
+    u32* size_odd)
 {
     const __GXTexRegionInt* t = (const __GXTexRegionInt*)region;
 

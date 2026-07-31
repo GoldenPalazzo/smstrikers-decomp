@@ -169,7 +169,6 @@ EmissionController::~EmissionController()
     {
         numLingeringSystems--;
     }
-
 }
 
 /**

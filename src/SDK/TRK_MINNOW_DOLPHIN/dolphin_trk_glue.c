@@ -5,7 +5,7 @@
 BOOL _MetroTRK_Has_Framing;
 u8 TRK_Use_BBA;
 
-DBCommTable gDBCommTable = {};
+DBCommTable gDBCommTable = { };
 
 void TRKEXICallBack(s16 param_0, OSContext* ctx)
 {

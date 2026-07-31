@@ -166,76 +166,20 @@ SndGroupData sebringAudioGroups[47] = {
 };
 
 SoundPropAccessor* surfaceSoundPropTables[14][5] = {
-    {
-        gpBIRDOGRASSSoundPropAccessor, gpBIRDOMETALSoundPropAccessor,
-        gpBIRDOCONCRETESoundPropAccessor, gpBIRDORUBBERSoundPropAccessor,
-        gpBIRDOWOODSoundPropAccessor
-    },
-    {
-        gpDAISYGRASSSoundPropAccessor, gpDAISYMETALSoundPropAccessor,
-        gpDAISYCONCRETESoundPropAccessor, gpDAISYRUBBERSoundPropAccessor,
-        gpDAISYWOODSoundPropAccessor
-    },
-    {
-        gpDKGRASSSoundPropAccessor, gpDKMETALSoundPropAccessor,
-        gpDKCONCRETESoundPropAccessor, gpDKRUBBERSoundPropAccessor,
-        gpDKWOODSoundPropAccessor
-    },
-    {
-        gpHAMBROSGRASSSoundPropAccessor, gpHAMBROSMETALSoundPropAccessor,
-        gpHAMBROSCONCRETESoundPropAccessor, gpHAMBROSRUBBERSoundPropAccessor,
-        gpHAMBROSWOODSoundPropAccessor
-    },
-    {
-        gpKOOPAGRASSSoundPropAccessor, gpKOOPAMETALSoundPropAccessor,
-        gpKOOPACONCRETESoundPropAccessor, gpKOOPARUBBERSoundPropAccessor,
-        gpKOOPAWOODSoundPropAccessor
-    },
-    {
-        gpLUIGIGRASSSoundPropAccessor, gpLUIGIMETALSoundPropAccessor,
-        gpLUIGICONCRETESoundPropAccessor, gpLUIGIRUBBERSoundPropAccessor,
-        gpLUIGIWOODSoundPropAccessor
-    },
-    {
-        gpMARIOGRASSSoundPropAccessor, gpMARIOMETALSoundPropAccessor,
-        gpMARIOCONCRETESoundPropAccessor, gpMARIORUBBERSoundPropAccessor,
-        gpMARIOWOODSoundPropAccessor
-    },
-    {
-        gpPEACHGRASSSoundPropAccessor, gpPEACHMETALSoundPropAccessor,
-        gpPEACHCONCRETESoundPropAccessor, gpPEACHRUBBERSoundPropAccessor,
-        gpPEACHWOODSoundPropAccessor
-    },
-    {
-        gpTOADGRASSSoundPropAccessor, gpTOADMETALSoundPropAccessor,
-        gpTOADCONCRETESoundPropAccessor, gpTOADRUBBERSoundPropAccessor,
-        gpTOADWOODSoundPropAccessor
-    },
-    {
-        gpWALUIGIGRASSSoundPropAccessor, gpWALUIGIMETALSoundPropAccessor,
-        gpWALUIGICONCRETESoundPropAccessor, gpWALUIGIRUBBERSoundPropAccessor,
-        gpWALUIGIWOODSoundPropAccessor
-    },
-    {
-        gpWARIOGRASSSoundPropAccessor, gpWARIOMETALSoundPropAccessor,
-        gpWARIOCONCRETESoundPropAccessor, gpWARIORUBBERSoundPropAccessor,
-        gpWARIOWOODSoundPropAccessor
-    },
-    {
-        gpYOSHIGRASSSoundPropAccessor, gpYOSHIMETALSoundPropAccessor,
-        gpYOSHICONCRETESoundPropAccessor, gpYOSHIRUBBERSoundPropAccessor,
-        gpYOSHIWOODSoundPropAccessor
-    },
-    {
-        gpSUPERGRASSSoundPropAccessor, gpSUPERMETALSoundPropAccessor,
-        gpSUPERCONCRETESoundPropAccessor, gpSUPERRUBBERSoundPropAccessor,
-        gpSUPERWOODSoundPropAccessor
-    },
-    {
-        gpBOWSERGRASSSoundPropAccessor, gpBOWSERMETALSoundPropAccessor,
-        gpBOWSERCONCRETESoundPropAccessor, gpBOWSERRUBBERSoundPropAccessor,
-        gpBOWSERWOODSoundPropAccessor
-    },
+    { gpBIRDOGRASSSoundPropAccessor, gpBIRDOMETALSoundPropAccessor, gpBIRDOCONCRETESoundPropAccessor, gpBIRDORUBBERSoundPropAccessor, gpBIRDOWOODSoundPropAccessor },
+    { gpDAISYGRASSSoundPropAccessor, gpDAISYMETALSoundPropAccessor, gpDAISYCONCRETESoundPropAccessor, gpDAISYRUBBERSoundPropAccessor, gpDAISYWOODSoundPropAccessor },
+    { gpDKGRASSSoundPropAccessor, gpDKMETALSoundPropAccessor, gpDKCONCRETESoundPropAccessor, gpDKRUBBERSoundPropAccessor, gpDKWOODSoundPropAccessor },
+    { gpHAMBROSGRASSSoundPropAccessor, gpHAMBROSMETALSoundPropAccessor, gpHAMBROSCONCRETESoundPropAccessor, gpHAMBROSRUBBERSoundPropAccessor, gpHAMBROSWOODSoundPropAccessor },
+    { gpKOOPAGRASSSoundPropAccessor, gpKOOPAMETALSoundPropAccessor, gpKOOPACONCRETESoundPropAccessor, gpKOOPARUBBERSoundPropAccessor, gpKOOPAWOODSoundPropAccessor },
+    { gpLUIGIGRASSSoundPropAccessor, gpLUIGIMETALSoundPropAccessor, gpLUIGICONCRETESoundPropAccessor, gpLUIGIRUBBERSoundPropAccessor, gpLUIGIWOODSoundPropAccessor },
+    { gpMARIOGRASSSoundPropAccessor, gpMARIOMETALSoundPropAccessor, gpMARIOCONCRETESoundPropAccessor, gpMARIORUBBERSoundPropAccessor, gpMARIOWOODSoundPropAccessor },
+    { gpPEACHGRASSSoundPropAccessor, gpPEACHMETALSoundPropAccessor, gpPEACHCONCRETESoundPropAccessor, gpPEACHRUBBERSoundPropAccessor, gpPEACHWOODSoundPropAccessor },
+    { gpTOADGRASSSoundPropAccessor, gpTOADMETALSoundPropAccessor, gpTOADCONCRETESoundPropAccessor, gpTOADRUBBERSoundPropAccessor, gpTOADWOODSoundPropAccessor },
+    { gpWALUIGIGRASSSoundPropAccessor, gpWALUIGIMETALSoundPropAccessor, gpWALUIGICONCRETESoundPropAccessor, gpWALUIGIRUBBERSoundPropAccessor, gpWALUIGIWOODSoundPropAccessor },
+    { gpWARIOGRASSSoundPropAccessor, gpWARIOMETALSoundPropAccessor, gpWARIOCONCRETESoundPropAccessor, gpWARIORUBBERSoundPropAccessor, gpWARIOWOODSoundPropAccessor },
+    { gpYOSHIGRASSSoundPropAccessor, gpYOSHIMETALSoundPropAccessor, gpYOSHICONCRETESoundPropAccessor, gpYOSHIRUBBERSoundPropAccessor, gpYOSHIWOODSoundPropAccessor },
+    { gpSUPERGRASSSoundPropAccessor, gpSUPERMETALSoundPropAccessor, gpSUPERCONCRETESoundPropAccessor, gpSUPERRUBBERSoundPropAccessor, gpSUPERWOODSoundPropAccessor },
+    { gpBOWSERGRASSSoundPropAccessor, gpBOWSERMETALSoundPropAccessor, gpBOWSERCONCRETESoundPropAccessor, gpBOWSERRUBBERSoundPropAccessor, gpBOWSERWOODSoundPropAccessor },
 };
 
 AudioFileData AudioLoader::sebringAudioFileData = {

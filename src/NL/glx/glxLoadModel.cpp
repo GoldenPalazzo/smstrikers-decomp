@@ -57,7 +57,8 @@ static inline void* NLVIRTUALALLOC(unsigned long size)
     }
 
     OSReport("VIRTUAL MEMORY WARNING ~ NLVIRTUALALLOC had to fall back to MRAM\nLargest block: %d Total free: %d\n",
-        nlVirtualLargestBlock(), nlVirtualTotalFree());
+        nlVirtualLargestBlock(),
+        nlVirtualTotalFree());
     return nlMalloc(size, 0x20, false);
 }
 
@@ -332,8 +333,7 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                         float start;
                         memcpy(&start, p32, sizeof(float));
                         p32++;
-                        GLTextureAnim* pAnim =
-                            new (nlMalloc(0x20, 8, false)) GLTextureAnim();
+                        GLTextureAnim* pAnim = new (nlMalloc(0x20, 8, false)) GLTextureAnim();
                         pAnim->m_unk_0x00 = (s32)canonID;
                         pAnim->SetNumTextures(num);
                         pAnim->m_mode = mode;

@@ -1,7 +1,8 @@
 #include "__os.h"
 #include "__card.h"
 
-static void FormatCallback(s32 chan, s32 result) {
+static void FormatCallback(s32 chan, s32 result)
+{
     CARDControl* card;
     CARDCallback callback;
 
@@ -10,17 +11,21 @@ static void FormatCallback(s32 chan, s32 result) {
         goto error;
 
     ++card->formatStep;
-    if (card->formatStep < CARD_NUM_SYSTEM_BLOCK) {
+    if (card->formatStep < CARD_NUM_SYSTEM_BLOCK)
+    {
         result = __CARDEraseSector(chan, (u32)card->sectorSize * card->formatStep, FormatCallback);
         if (result >= 0)
             return;
-    } else if (card->formatStep < 2 * CARD_NUM_SYSTEM_BLOCK) {
+    }
+    else if (card->formatStep < 2 * CARD_NUM_SYSTEM_BLOCK)
+    {
         int step = card->formatStep - CARD_NUM_SYSTEM_BLOCK;
-        result = __CARDWrite(chan, (u32)card->sectorSize * step, CARD_SYSTEM_BLOCK_SIZE,
-                             (u8* )card->workArea + (CARD_SYSTEM_BLOCK_SIZE * step), FormatCallback);
+        result = __CARDWrite(chan, (u32)card->sectorSize * step, CARD_SYSTEM_BLOCK_SIZE, (u8*)card->workArea + (CARD_SYSTEM_BLOCK_SIZE * step), FormatCallback);
         if (result >= 0)
             return;
-    } else {
+    }
+    else
+    {
         card->currentDir = (CARDDir*)((u8*)card->workArea + (1 + 0) * CARD_SYSTEM_BLOCK_SIZE);
         memcpy(card->currentDir, (u8*)card->workArea + (1 + 1) * CARD_SYSTEM_BLOCK_SIZE, CARD_SYSTEM_BLOCK_SIZE);
         card->currentFat = (u16*)((u8*)card->workArea + (3 + 0) * CARD_SYSTEM_BLOCK_SIZE);
@@ -35,7 +40,8 @@ error:
     callback(chan, result);
 }
 
-s32 __CARDFormatRegionAsync(s32 chan, u16 encode, CARDCallback callback) {
+s32 __CARDFormatRegionAsync(s32 chan, u16 encode, CARDCallback callback)
+{
     CARDControl* card;
     CARDID* id;
     CARDDir* dir;
@@ -68,7 +74,8 @@ s32 __CARDFormatRegionAsync(s32 chan, u16 encode, CARDCallback callback) {
     rand = time = OSGetTime();
 
     sramEx = __OSLockSramEx();
-    for (i = 0; i < 12; i++) {
+    for (i = 0; i < 12; i++)
+    {
         rand = (rand * 1103515245 + 12345) >> 16;
         id->serial[i] = (u8)(sramEx->flashID[chan][i] + rand);
         rand = ((rand * 1103515245 + 12345) >> 16) & 0x7FFF;
@@ -82,7 +89,8 @@ s32 __CARDFormatRegionAsync(s32 chan, u16 encode, CARDCallback callback) {
     id->size = card->size;
     __CARDCheckSum(id, sizeof(CARDID) - sizeof(u32), &id->checkSum, &id->checkSumInv);
 
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i < 2; i++)
+    {
         CARDDirCheck* check;
 
         dir = (CARDDir*)((u8*)card->workArea + (1 + i) * CARD_SYSTEM_BLOCK_SIZE);
@@ -92,14 +100,14 @@ s32 __CARDFormatRegionAsync(s32 chan, u16 encode, CARDCallback callback) {
         __CARDCheckSum(dir, CARD_SYSTEM_BLOCK_SIZE - sizeof(u32), &check->checkSum, &check->checkSumInv);
     }
 
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i < 2; i++)
+    {
         fat = (u16*)((u8*)card->workArea + (3 + i) * CARD_SYSTEM_BLOCK_SIZE);
         memset(fat, 0x00, CARD_SYSTEM_BLOCK_SIZE);
         fat[CARD_FAT_CHECKCODE] = (u16)i;
         fat[CARD_FAT_FREEBLOCKS] = (u16)(card->cBlock - CARD_NUM_SYSTEM_BLOCK);
         fat[CARD_FAT_LASTSLOT] = CARD_NUM_SYSTEM_BLOCK - 1;
-        __CARDCheckSum(&fat[CARD_FAT_CHECKCODE], CARD_SYSTEM_BLOCK_SIZE - sizeof(u32), &fat[CARD_FAT_CHECKSUM],
-                       &fat[CARD_FAT_CHECKSUMINV]);
+        __CARDCheckSum(&fat[CARD_FAT_CHECKCODE], CARD_SYSTEM_BLOCK_SIZE - sizeof(u32), &fat[CARD_FAT_CHECKSUM], &fat[CARD_FAT_CHECKSUMINV]);
     }
 
     card->apiCallback = callback ? callback : __CARDDefaultApiCallback;
@@ -112,22 +120,27 @@ s32 __CARDFormatRegionAsync(s32 chan, u16 encode, CARDCallback callback) {
     return result;
 }
 
-s32 __CARDFormatRegion(s32 chan, u16 encode) {
+s32 __CARDFormatRegion(s32 chan, u16 encode)
+{
     s32 result = __CARDFormatRegionAsync(chan, encode, &__CARDSyncCallback);
-    if (result < 0) {
+    if (result < 0)
+    {
         return result;
     }
 
     return __CARDSync(chan);
 }
 
-s32 CARDFormatAsync(s32 chan, CARDCallback callback) {
+s32 CARDFormatAsync(s32 chan, CARDCallback callback)
+{
     return __CARDFormatRegionAsync(chan, __CARDGetFontEncode(), callback);
 }
 
-s32 CARDFormat(s32 chan) {
+s32 CARDFormat(s32 chan)
+{
     s32 result = __CARDFormatRegionAsync(chan, __CARDGetFontEncode(), &__CARDSyncCallback);
-    if (result < 0) {
+    if (result < 0)
+    {
         return result;
     }
 

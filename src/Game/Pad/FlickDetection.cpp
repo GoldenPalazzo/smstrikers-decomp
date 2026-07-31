@@ -8,7 +8,7 @@ namespace
 static char FLICK_NONE __attribute__((section(".sdata2"))) = 0x20;
 
 StaticRing<char> history[4];
-char historyStorage[4][16] = {};
+char historyStorage[4][16] = { };
 
 } // namespace
 

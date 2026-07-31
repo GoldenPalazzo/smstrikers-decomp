@@ -47,7 +47,22 @@ GXBool __GXinBegin;
 #endif
 
 static u16 DefaultTexData[] __attribute__((aligned(32))) = {
-    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF,
+    0xFFFF,
+    0xFFFF,
+    0xFFFF,
+    0xFFFF,
+    0xFFFF,
+    0xFFFF,
+    0xFFFF,
+    0xFFFF,
+    0xFFFF,
+    0xFFFF,
+    0xFFFF,
+    0xFFFF,
+    0xFFFF,
+    0xFFFF,
+    0xFFFF,
 };
 
 static GXVtxAttrFmtList GXDefaultVATList[] = {
@@ -69,10 +84,54 @@ static GXVtxAttrFmtList GXDefaultVATList[] = {
 static f32 GXDefaultProjData[] = { 1.0f, 0.0f, 1.0f, 0.0f, -1.0f, -2.0f, 0.0f };
 
 static u32 GXTexRegionAddrTable[] = {
-    0x00000, 0x10000, 0x20000, 0x30000, 0x40000, 0x50000, 0x60000, 0x70000, 0x08000, 0x18000, 0x28000, 0x38000,
-    0x48000, 0x58000, 0x68000, 0x78000, 0x00000, 0x90000, 0x20000, 0xB0000, 0x40000, 0x98000, 0x60000, 0xB8000,
-    0x80000, 0x10000, 0xA0000, 0x30000, 0x88000, 0x50000, 0xA8000, 0x70000, 0x00000, 0x90000, 0x20000, 0xB0000,
-    0x40000, 0x90000, 0x60000, 0xB0000, 0x80000, 0x10000, 0xA0000, 0x30000, 0x80000, 0x50000, 0xA0000, 0x70000,
+    0x00000,
+    0x10000,
+    0x20000,
+    0x30000,
+    0x40000,
+    0x50000,
+    0x60000,
+    0x70000,
+    0x08000,
+    0x18000,
+    0x28000,
+    0x38000,
+    0x48000,
+    0x58000,
+    0x68000,
+    0x78000,
+    0x00000,
+    0x90000,
+    0x20000,
+    0xB0000,
+    0x40000,
+    0x98000,
+    0x60000,
+    0xB8000,
+    0x80000,
+    0x10000,
+    0xA0000,
+    0x30000,
+    0x88000,
+    0x50000,
+    0xA8000,
+    0x70000,
+    0x00000,
+    0x90000,
+    0x20000,
+    0xB0000,
+    0x40000,
+    0x90000,
+    0x60000,
+    0xB0000,
+    0x80000,
+    0x10000,
+    0xA0000,
+    0x30000,
+    0x80000,
+    0x50000,
+    0xA0000,
+    0x70000,
 };
 
 // prototypes
@@ -372,12 +431,9 @@ GXFifoObj* GXInit(void* base, u32 size)
 
     for (i = 0; i < 8; i++)
     {
-        GXInitTexCacheRegion(&__GXData->TexRegions0[i], GX_FALSE, GXTexRegionAddrTable[i], GX_TEXCACHE_32K, GXTexRegionAddrTable[i + 8],
-                             GX_TEXCACHE_32K);
-        GXInitTexCacheRegion(&__GXData->TexRegions1[i], GX_FALSE, GXTexRegionAddrTable[i + 16], GX_TEXCACHE_32K,
-                             GXTexRegionAddrTable[i + 24], GX_TEXCACHE_32K);
-        GXInitTexCacheRegion(&__GXData->TexRegions2[i], GX_TRUE, GXTexRegionAddrTable[i + 32], GX_TEXCACHE_32K,
-                             GXTexRegionAddrTable[i + 40], GX_TEXCACHE_32K);
+        GXInitTexCacheRegion(&__GXData->TexRegions0[i], GX_FALSE, GXTexRegionAddrTable[i], GX_TEXCACHE_32K, GXTexRegionAddrTable[i + 8], GX_TEXCACHE_32K);
+        GXInitTexCacheRegion(&__GXData->TexRegions1[i], GX_FALSE, GXTexRegionAddrTable[i + 16], GX_TEXCACHE_32K, GXTexRegionAddrTable[i + 24], GX_TEXCACHE_32K);
+        GXInitTexCacheRegion(&__GXData->TexRegions2[i], GX_TRUE, GXTexRegionAddrTable[i + 32], GX_TEXCACHE_32K, GXTexRegionAddrTable[i + 40], GX_TEXCACHE_32K);
     }
 
     for (i = 0; i < 16; i++)

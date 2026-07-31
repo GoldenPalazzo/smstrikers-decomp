@@ -46,7 +46,8 @@
 #ifdef __STDC__
 double sin(double x)
 #else
-double sin(x) double x;
+double sin(x)
+double x;
 #endif
 {
     double y[2], z = 0.0;
@@ -65,9 +66,11 @@ double sin(x) double x;
         return x - x;
 
     /* argument reduction needed */
-    else {
+    else
+    {
         n = __ieee754_rem_pio2(x, y);
-        switch (n & 3) {
+        switch (n & 3)
+        {
         case 0:
             return __kernel_sin(y[0], y[1], 1);
         case 1:

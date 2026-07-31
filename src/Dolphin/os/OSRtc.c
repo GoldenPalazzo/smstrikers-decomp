@@ -14,14 +14,17 @@ static void* LockSram(u32 offset);
 static int UnlockSram(int commit, u32 offset);
 static void __OSReadROMCallback(s32 chan);
 
-static int GetRTC(u32* rtc) {
+static int GetRTC(u32* rtc)
+{
     int err;
     u32 cmd;
 
-    if (EXILock(0, 1, NULL) == 0) {
+    if (EXILock(0, 1, NULL) == 0)
+    {
         return 0;
     }
-    if (EXISelect(0, 1, 3) == 0) {
+    if (EXISelect(0, 1, 3) == 0)
+    {
         EXIUnlock(0);
         return 0;
     }
@@ -37,20 +40,24 @@ static int GetRTC(u32* rtc) {
     return !err;
 }
 
-int __OSGetRTC(u32* rtc) {
+int __OSGetRTC(u32* rtc)
+{
     int err;
     u32 t0;
     u32 t1;
     int i;
 
-    for(i = 0; i < 16; i++) {
+    for (i = 0; i < 16; i++)
+    {
         err = 0;
         err |= !GetRTC(&t0);
         err |= !GetRTC(&t1);
-        if (err) {
+        if (err)
+        {
             break;
         }
-        if (t0 == t1) {
+        if (t0 == t1)
+        {
             rtc[0] = t0;
             return 1;
         }
@@ -58,14 +65,17 @@ int __OSGetRTC(u32* rtc) {
     return 0;
 }
 
-int __OSSetRTC(u32 rtc) {
+int __OSSetRTC(u32 rtc)
+{
     int err;
     u32 cmd;
 
-    if (EXILock(0, 1, NULL) == 0) {
+    if (EXILock(0, 1, NULL) == 0)
+    {
         return 0;
     }
-    if (EXISelect(0, 1, 3) == 0) {
+    if (EXISelect(0, 1, 3) == 0)
+    {
         EXIUnlock(0);
         return 0;
     }
@@ -80,15 +90,18 @@ int __OSSetRTC(u32 rtc) {
     return !err;
 }
 
-static int ReadSram(void* buffer) {
+static int ReadSram(void* buffer)
+{
     int err;
     u32 cmd;
 
     DCInvalidateRange(buffer, SRAM_SIZE);
-    if (!EXILock(0, 1, NULL) ) {
+    if (!EXILock(0, 1, NULL))
+    {
         return 0;
     }
-    if (!EXISelect(0, 1, 3)) {
+    if (!EXISelect(0, 1, 3))
+    {
         EXIUnlock(0);
         return 0;
     }
@@ -103,23 +116,28 @@ static int ReadSram(void* buffer) {
     return !err;
 }
 
-static void WriteSramCallback(s32, OSContext*) {
+static void WriteSramCallback(s32, OSContext*)
+{
     ASSERTLINE(258, !Scb.locked);
     Scb.sync = WriteSram(&Scb.sram[Scb.offset], Scb.offset, SRAM_SIZE - Scb.offset);
-    if (Scb.sync != 0) {
+    if (Scb.sync != 0)
+    {
         Scb.offset = SRAM_SIZE;
     }
     ASSERTLINE(264, Scb.sync);
 }
 
-static int WriteSram(void* buffer, u32 offset, u32 size) {
+static int WriteSram(void* buffer, u32 offset, u32 size)
+{
     int err;
     u32 cmd;
 
-    if (!EXILock(0, 1, WriteSramCallback)) {
+    if (!EXILock(0, 1, WriteSramCallback))
+    {
         return 0;
     }
-    if (!EXISelect(0, 1, 3)) {
+    if (!EXISelect(0, 1, 3))
+    {
         EXIUnlock(0);
         return 0;
     }
@@ -134,7 +152,8 @@ static int WriteSram(void* buffer, u32 offset, u32 size) {
     return !err;
 }
 
-void __OSInitSram(void) {
+void __OSInitSram(void)
+{
     Scb.locked = Scb.enabled = FALSE;
     Scb.sync = ReadSram(&Scb);
     ASSERTLINE(318, Scb.sync);
@@ -143,12 +162,14 @@ void __OSInitSram(void) {
     OSSetGbsMode(OSGetGbsMode());
 }
 
-static void* LockSram(u32 offset) {
+static void* LockSram(u32 offset)
+{
     BOOL enabled;
 
     enabled = OSDisableInterrupts();
     ASSERTLINE(341, !Scb.locked);
-    if (Scb.locked) {
+    if (Scb.locked)
+    {
         OSRestoreInterrupts(enabled);
         return NULL;
     }
@@ -157,44 +178,55 @@ static void* LockSram(u32 offset) {
     return &Scb.sram[offset];
 }
 
-OSSram* __OSLockSram(void) {
+OSSram* __OSLockSram(void)
+{
     return (OSSram*)LockSram(0);
 }
 
-OSSramEx* __OSLockSramEx(void) {
+OSSramEx* __OSLockSramEx(void)
+{
     return (OSSramEx*)LockSram(sizeof(OSSram));
 }
 
-static int UnlockSram(int commit, u32 offset) {
+static int UnlockSram(int commit, u32 offset)
+{
     u16* p;
 
     ASSERTLINE(375, Scb.locked);
-    if (commit != 0) {
-        if (offset == 0) {
-            OSSram* sram  = (OSSram*)Scb.sram;
-            if (2u < (sram->flags & 3)) {
+    if (commit != 0)
+    {
+        if (offset == 0)
+        {
+            OSSram* sram = (OSSram*)Scb.sram;
+            if (2u < (sram->flags & 3))
+            {
                 sram->flags &= ~3;
             }
 
             sram->checkSum = sram->checkSumInv = 0;
-            for(p = (u16*)&sram->counterBias; p < ((u16*)&Scb.sram[0x14]); p++) {
+            for (p = (u16*)&sram->counterBias; p < ((u16*)&Scb.sram[0x14]); p++)
+            {
                 sram->checkSum += *p;
                 sram->checkSumInv += ~(*p);
             }
         }
-        if (offset < Scb.offset) {
+        if (offset < Scb.offset)
+        {
             Scb.offset = offset;
         }
 
-        if (Scb.offset <= 0x14) {
+        if (Scb.offset <= 0x14)
+        {
             OSSramEx* sram = (OSSramEx*)(Scb.sram + sizeof(OSSram));
-            if (((u32)sram->gbs & 0x7c00) == 0x5000 || ((u32)sram->gbs & 0xc0) == 0xc0) {
+            if (((u32)sram->gbs & 0x7c00) == 0x5000 || ((u32)sram->gbs & 0xc0) == 0xc0)
+            {
                 sram->gbs = 0;
             }
         }
 
         Scb.sync = WriteSram(&Scb.sram[Scb.offset], Scb.offset, SRAM_SIZE - Scb.offset);
-        if (Scb.sync != 0) {
+        if (Scb.sync != 0)
+        {
             Scb.offset = SRAM_SIZE;
         }
     }
@@ -203,19 +235,23 @@ static int UnlockSram(int commit, u32 offset) {
     return Scb.sync;
 }
 
-int __OSUnlockSram(int commit) {
+int __OSUnlockSram(int commit)
+{
     UnlockSram(commit, 0);
 }
 
-int __OSUnlockSramEx(int commit) {
+int __OSUnlockSramEx(int commit)
+{
     UnlockSram(commit, sizeof(OSSram));
 }
 
-int __OSSyncSram(void) {
+int __OSSyncSram(void)
+{
     return Scb.sync;
 }
 
-int __OSCheckSram(void) {
+int __OSCheckSram(void)
+{
     u16* p;
     u16 checkSum;
     u16 checkSumInv;
@@ -228,7 +264,8 @@ int __OSCheckSram(void) {
 
     sram = (OSSram*)Scb.sram;
 
-    for (p = (void*)&sram->counterBias; p < (u16*)&Scb.sram[0x14]; p++) {
+    for (p = (void*)&sram->counterBias; p < (u16*)&Scb.sram[0x14]; p++)
+    {
         checkSum += *p;
         checkSumInv += ~(*p);
     }
@@ -236,16 +273,19 @@ int __OSCheckSram(void) {
     return (sram->checkSum == checkSum && sram->checkSumInv == checkSumInv);
 }
 
-int __OSReadROM(void * buffer, s32 length, s32 offset) {
+int __OSReadROM(void* buffer, s32 length, s32 offset)
+{
     int err;
     u32 cmd;
 
     ASSERTLINE(497, length <= 1024);
     DCInvalidateRange(buffer, length);
-    if (EXILock(0, 1, NULL) == 0) {
+    if (EXILock(0, 1, NULL) == 0)
+    {
         return 0;
     }
-    if (EXISelect(0, 1, 3) == 0) {
+    if (EXISelect(0, 1, 3) == 0)
+    {
         EXIUnlock(0);
         return 0;
     }
@@ -260,19 +300,22 @@ int __OSReadROM(void * buffer, s32 length, s32 offset) {
     return !err;
 }
 
-static void __OSReadROMCallback(s32 chan) {
+static void __OSReadROMCallback(s32 chan)
+{
     void (*callback)();
 
     EXIDeselect(chan);
     EXIUnlock(chan);
     callback = Scb.callback;
-    if (callback) {
+    if (callback)
+    {
         Scb.callback = NULL;
         callback();
     }
 }
 
-int __OSReadROMAsync(void* buffer, s32 length, s32 offset, void (*callback)()) {
+int __OSReadROMAsync(void* buffer, s32 length, s32 offset, void (*callback)())
+{
     int err;
     u32 cmd;
 
@@ -280,10 +323,12 @@ int __OSReadROMAsync(void* buffer, s32 length, s32 offset, void (*callback)()) {
     ASSERTLINE(557, callback);
     DCInvalidateRange(buffer, length);
     Scb.callback = callback;
-    if (EXILock(0, 1, NULL) == 0) {
+    if (EXILock(0, 1, NULL) == 0)
+    {
         return 0;
     }
-    if (EXISelect(0, 1, 3) == 0) {
+    if (EXISelect(0, 1, 3) == 0)
+    {
         EXIUnlock(0);
         return 0;
     }
@@ -295,7 +340,8 @@ int __OSReadROMAsync(void* buffer, s32 length, s32 offset, void (*callback)()) {
     return !err;
 }
 
-u32 OSGetSoundMode(void) {
+u32 OSGetSoundMode(void)
+{
     OSSram* sram = __OSLockSram();
     u32 mode = (sram->flags & 4) ? 1 : 0;
 
@@ -303,7 +349,8 @@ u32 OSGetSoundMode(void) {
     return mode;
 }
 
-void OSSetSoundMode(u32 mode) {
+void OSSetSoundMode(u32 mode)
+{
     OSSram* sram;
     int unused;
 
@@ -311,7 +358,8 @@ void OSSetSoundMode(u32 mode) {
     mode *= 4;
     mode &= 4;
     sram = __OSLockSram();
-    if (mode == (sram->flags & 4)) {
+    if (mode == (sram->flags & 4))
+    {
         __OSUnlockSram(0);
         return;
     }
@@ -320,7 +368,8 @@ void OSSetSoundMode(u32 mode) {
     __OSUnlockSram(1);
 }
 
-u32 OSGetProgressiveMode(void) {
+u32 OSGetProgressiveMode(void)
+{
     OSSram* sram;
     u32 on;
 
@@ -330,7 +379,8 @@ u32 OSGetProgressiveMode(void) {
     return on;
 }
 
-void OSSetProgressiveMode(u32 on) {
+void OSSetProgressiveMode(u32 on)
+{
 #ifndef DEBUG
     u32 padding[1];
 #endif
@@ -342,7 +392,8 @@ void OSSetProgressiveMode(u32 on) {
     on &= 0x80;
 
     sram = __OSLockSram();
-    if (on == (sram->flags & 0x80)) {
+    if (on == (sram->flags & 0x80))
+    {
         __OSUnlockSram(FALSE);
         return;
     }
@@ -352,32 +403,37 @@ void OSSetProgressiveMode(u32 on) {
     __OSUnlockSram(TRUE);
 }
 
-u32 OSGetVideoMode(void) {
+u32 OSGetVideoMode(void)
+{
     OSSram* sram = __OSLockSram();
     u32 mode = sram->flags & 3;
 
     __OSUnlockSram(0);
 
-    if (mode > 2) {
+    if (mode > 2)
+    {
         mode = 0;
     }
 
     return mode;
 }
 
-void OSSetVideoMode(u32 mode) {
+void OSSetVideoMode(u32 mode)
+{
     OSSram* sram;
     int unused;
 
     ASSERTLINE(731, OS_VIDEO_MODE_NTSC <= mode && mode <= OS_VIDEO_MODE_MPAL);
 
-    if (mode > 2) {
+    if (mode > 2)
+    {
         mode = 0;
     }
 
     sram = __OSLockSram();
 
-    if (mode == (sram->flags & 3)) {
+    if (mode == (sram->flags & 3))
+    {
         __OSUnlockSram(0);
         return;
     }
@@ -386,7 +442,8 @@ void OSSetVideoMode(u32 mode) {
     __OSUnlockSram(1);
 }
 
-u8 OSGetLanguage(void) {
+u8 OSGetLanguage(void)
+{
     OSSram* sram = __OSLockSram();
     u8 language = sram->language;
 
@@ -394,11 +451,13 @@ u8 OSGetLanguage(void) {
     return language;
 }
 
-void OSSetLanguage(u8 language) {
+void OSSetLanguage(u8 language)
+{
     OSSram* sram = __OSLockSram();
     int unused;
 
-    if (language == sram->language) {
+    if (language == sram->language)
+    {
         __OSUnlockSram(0);
         return;
     }
@@ -406,20 +465,23 @@ void OSSetLanguage(u8 language) {
     __OSUnlockSram(1);
 }
 
-u8 __OSGetBootMode(void) {
+u8 __OSGetBootMode(void)
+{
     OSSram* sram = __OSLockSram();
     u8 ntd = sram->ntd;
     __OSUnlockSram(0);
     return ntd & 0x80;
 }
 
-void __OSSetBootMode(u8 ntd) {
+void __OSSetBootMode(u8 ntd)
+{
     OSSram* sram;
     int unused;
 
     ntd &= 0x80;
     sram = __OSLockSram();
-    if (ntd == (sram->ntd & 0x80U)) {
+    if (ntd == (sram->ntd & 0x80U))
+    {
         __OSUnlockSram(0);
         return;
     }
@@ -428,7 +490,8 @@ void __OSSetBootMode(u8 ntd) {
     __OSUnlockSram(1);
 }
 
-u32 OSGetEuRgb60Mode(void) {
+u32 OSGetEuRgb60Mode(void)
+{
     OSSram* sram;
     u32 on;
 
@@ -438,7 +501,8 @@ u32 OSGetEuRgb60Mode(void) {
     return on;
 }
 
-void OSSetEuRgb60Mode(u32 on) {
+void OSSetEuRgb60Mode(u32 on)
+{
 #ifndef DEBUG
     u32 padding[1];
 #endif
@@ -449,16 +513,20 @@ void OSSetEuRgb60Mode(u32 on) {
     on &= 0x40;
 
     sram = __OSLockSram();
-    if (on == (sram->ntd & 0x40)) {
+    if (on == (sram->ntd & 0x40))
+    {
         __OSUnlockSram(0);
-    } else {
+    }
+    else
+    {
         sram->ntd &= ~0x40;
         sram->ntd |= on;
         __OSUnlockSram(1);
     }
 }
 
-u16 OSGetWirelessID(s32 chan) {
+u16 OSGetWirelessID(s32 chan)
+{
     OSSramEx* sram;
     u16 id;
 
@@ -468,11 +536,13 @@ u16 OSGetWirelessID(s32 chan) {
     return id;
 }
 
-void OSSetWirelessID(s32 chan, u16 id) {
+void OSSetWirelessID(s32 chan, u16 id)
+{
     OSSramEx* sram;
 
     sram = __OSLockSramEx();
-    if (sram->wirelessPadID[chan] != id) {
+    if (sram->wirelessPadID[chan] != id)
+    {
         sram->wirelessPadID[chan] = id;
         __OSUnlockSramEx(TRUE);
         return;
@@ -481,7 +551,8 @@ void OSSetWirelessID(s32 chan, u16 id) {
     __OSUnlockSramEx(FALSE);
 }
 
-u16 OSGetGbsMode(void) {
+u16 OSGetGbsMode(void)
+{
     OSSramEx* sram;
     u16 mode;
 
@@ -491,19 +562,22 @@ u16 OSGetGbsMode(void) {
     return mode;
 }
 
-void OSSetGbsMode(u16 mode) {
+void OSSetGbsMode(u16 mode)
+{
 #ifndef DEBUG
     u32 padding[1];
 #endif
     OSSramEx* sram;
 
-    if (((u32)mode & 0x7c00) == 0x5000 || ((u32)mode & 0xc0) == 0xc0) {
+    if (((u32)mode & 0x7c00) == 0x5000 || ((u32)mode & 0xc0) == 0xc0)
+    {
         mode = 0;
     }
 
     sram = __OSLockSramEx();
 
-    if (mode == sram->gbs) {
+    if (mode == sram->gbs)
+    {
         __OSUnlockSramEx(FALSE);
         return;
     }

@@ -45,7 +45,8 @@
 #ifdef __STDC__
 double tan(double x)
 #else
-double tan(x) double x;
+double tan(x)
+double x;
 #endif
 {
     double y[2], z = 0.0;
@@ -64,7 +65,8 @@ double tan(x) double x;
         return x - x; /* NaN */
 
     /* argument reduction needed */
-    else {
+    else
+    {
         n = __ieee754_rem_pio2(x, y);
         return __kernel_tan(y[0], y[1], 1 - ((n & 1) << 1)); /*   1 -- n even
                                     -1 -- n odd */

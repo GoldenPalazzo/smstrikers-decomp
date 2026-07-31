@@ -1,10 +1,10 @@
 #include "stadmetalsoundproperties.h"
 
 static SoundProperties STADMETALSoundProperties[] = { { "STADSFX_BALL_BOUNCE", "SFXBALL_Bounce_Metal", 0.5f, 0.0f, 0.5f, 1, 0 },
-                                                      { "STADSFX_BALL_ROLL", "SFXBALL_Roll_Metal", 0.5f, 0.0f, 0.5f, 1, 0 },
-                                                      { "PWRUPSFX_BOMB_HIT", "SFXPWRUP_BOMB_Hit_Metal", 1.0f, 0.0f, 0.7f, 1, 0 },
-                                                      { "PWRUPSFX_BOMB_END", "SFXPWRUP_BOMB_End_Metal", 1.0f, 0.0f, 0.7f, 1, 0 },
-                                                      { "PWRUPSFX_CHOMP_BOUNCE", "SFXPWRUP_CHOMP_Bounce_Metal", 0.9f, 0.0f, 0.7f, 1, 0 } };
+    { "STADSFX_BALL_ROLL", "SFXBALL_Roll_Metal", 0.5f, 0.0f, 0.5f, 1, 0 },
+    { "PWRUPSFX_BOMB_HIT", "SFXPWRUP_BOMB_Hit_Metal", 1.0f, 0.0f, 0.7f, 1, 0 },
+    { "PWRUPSFX_BOMB_END", "SFXPWRUP_BOMB_End_Metal", 1.0f, 0.0f, 0.7f, 1, 0 },
+    { "PWRUPSFX_CHOMP_BOUNCE", "SFXPWRUP_CHOMP_Bounce_Metal", 0.9f, 0.0f, 0.7f, 1, 0 } };
 
 STADMETALSoundPropAccessor gSTADMETALSoundPropAccessor;
 SoundPropAccessor* gpSTADMETALSoundPropAccessor = &gSTADMETALSoundPropAccessor;

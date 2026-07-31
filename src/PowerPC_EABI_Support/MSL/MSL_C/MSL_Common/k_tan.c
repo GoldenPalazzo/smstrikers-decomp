@@ -5,7 +5,7 @@
 //      Part of the standard mathematical function library
 //
 //===========================================================================
-//####ECOSGPLCOPYRIGHTBEGIN####
+// ####ECOSGPLCOPYRIGHTBEGIN####
 // -------------------------------------------
 // This file is part of eCos, the Embedded Configurable Operating System.
 // Copyright (C) 1998, 1999, 2000, 2001, 2002 Red Hat, Inc.
@@ -36,9 +36,9 @@
 // Alternative licenses for eCos may be arranged by contacting Red Hat, Inc.
 // at http://sources.redhat.com/ecos/ecos-license/
 // -------------------------------------------
-//####ECOSGPLCOPYRIGHTEND####
+// ####ECOSGPLCOPYRIGHTEND####
 //===========================================================================
-//#####DESCRIPTIONBEGIN####
+// #####DESCRIPTIONBEGIN####
 //
 // Author(s):   jlarmour
 // Contributors:  jlarmour
@@ -47,7 +47,7 @@
 // Description:
 // Usage:
 //
-//####DESCRIPTIONEND####
+// ####DESCRIPTIONEND####
 //
 //===========================================================================
 
@@ -101,9 +101,9 @@
 
 #include "math.h"
 static const double one = 1.00000000000000000000e+00, /* 0x3FF00000, 0x00000000 */
-    pio4                = 7.85398163397448278999e-01, /* 0x3FE921FB, 0x54442D18 */
-    pio4lo              = 3.06161699786838301793e-17, /* 0x3C81A626, 0x33145C07 */
-    T[]                 = {
+    pio4 = 7.85398163397448278999e-01,                /* 0x3FE921FB, 0x54442D18 */
+    pio4lo = 3.06161699786838301793e-17,              /* 0x3C81A626, 0x33145C07 */
+    T[] = {
         3.33333333333334091986e-01,  /* 0x3FD55555, 0x55555563 */
         1.33333333333201242699e-01,  /* 0x3FC11111, 0x1110FE7A */
         5.39682539762260521377e-02,  /* 0x3FABA1BA, 0x1BB341FE */
@@ -121,60 +121,67 @@ static const double one = 1.00000000000000000000e+00, /* 0x3FF00000, 0x00000000 
 
 double __kernel_tan(double x, double y, int iy)
 {
-	double z, r, v, w, s;
-	int ix, hx;
-	hx = __HI(x);         /* high word of x */
-	ix = hx & 0x7fffffff; /* high word of |x| */
-	if (ix < 0x3e300000)  /* x < 2**-28 */
-	{
-		if ((int)x == 0) { /* generate inexact */
-			if (((ix | __LO(x)) | (iy + 1)) == 0) {
-				double ret = fabs(x);
-				return one / ret;
-			} else
-				return (iy == 1) ? x : -one / x;
-		}
-	}
-	if (ix >= 0x3FE59428) { /* |x|>=0.6744 */
-		if (hx < 0) {
-			x = -x;
-			y = -y;
-		}
-		z = pio4 - x;
-		w = pio4lo - y;
-		x = z + w;
-		y = 0.0;
-	}
-	z = x * x;
-	w = z * z;
-	/* Break x^5*(T[1]+x^2*T[2]+...) into
-	 *    x^5(T[1]+x^4*T[3]+...+x^20*T[11]) +
-	 *    x^5(x^2*(T[2]+x^4*T[4]+...+x^22*[T12]))
-	 */
-	r = T[1] + w * (T[3] + w * (T[5] + w * (T[7] + w * (T[9] + w * T[11]))));
-	v = z * (T[2] + w * (T[4] + w * (T[6] + w * (T[8] + w * (T[10] + w * T[12])))));
-	s = z * x;
-	r = y + z * (s * (r + v) + y);
-	r += T[0] * s;
-	w = x + r;
-	if (ix >= 0x3FE59428) {
-		v = (double)iy;
-		return (double)(1 - ((hx >> 30) & 2)) * (v - 2.0 * (x - (w * w / (w + v) - r)));
-	}
-	if (iy == 1)
-		return w;
-	else { /* if allow error up to 2 ulp,
-		      simply return -1.0/(x+r) here */
-		   /*  compute -1.0/(x+r) accurately */
-		double a, t;
-		z       = w;
-		__LO(z) = 0;
-		v       = r - (z - x); /* z+v = r+x */
-		t = a   = -1.0 / w;    /* a = -1.0/w */
-		__LO(t) = 0;
-		s       = 1.0 + t * z;
-		return t + a * (s + t * v);
-	}
+    double z, r, v, w, s;
+    int ix, hx;
+    hx = __HI(x);         /* high word of x */
+    ix = hx & 0x7fffffff; /* high word of |x| */
+    if (ix < 0x3e300000)  /* x < 2**-28 */
+    {
+        if ((int)x == 0)
+        { /* generate inexact */
+            if (((ix | __LO(x)) | (iy + 1)) == 0)
+            {
+                double ret = fabs(x);
+                return one / ret;
+            }
+            else
+                return (iy == 1) ? x : -one / x;
+        }
+    }
+    if (ix >= 0x3FE59428)
+    { /* |x|>=0.6744 */
+        if (hx < 0)
+        {
+            x = -x;
+            y = -y;
+        }
+        z = pio4 - x;
+        w = pio4lo - y;
+        x = z + w;
+        y = 0.0;
+    }
+    z = x * x;
+    w = z * z;
+    /* Break x^5*(T[1]+x^2*T[2]+...) into
+     *    x^5(T[1]+x^4*T[3]+...+x^20*T[11]) +
+     *    x^5(x^2*(T[2]+x^4*T[4]+...+x^22*[T12]))
+     */
+    r = T[1] + w * (T[3] + w * (T[5] + w * (T[7] + w * (T[9] + w * T[11]))));
+    v = z * (T[2] + w * (T[4] + w * (T[6] + w * (T[8] + w * (T[10] + w * T[12])))));
+    s = z * x;
+    r = y + z * (s * (r + v) + y);
+    r += T[0] * s;
+    w = x + r;
+    if (ix >= 0x3FE59428)
+    {
+        v = (double)iy;
+        return (double)(1 - ((hx >> 30) & 2)) * (v - 2.0 * (x - (w * w / (w + v) - r)));
+    }
+    if (iy == 1)
+        return w;
+    else
+    { /* if allow error up to 2 ulp,
+         simply return -1.0/(x+r) here */
+        /*  compute -1.0/(x+r) accurately */
+        double a, t;
+        z = w;
+        __LO(z) = 0;
+        v = r - (z - x);  /* z+v = r+x */
+        t = a = -1.0 / w; /* a = -1.0/w */
+        __LO(t) = 0;
+        s = 1.0 + t * z;
+        return t + a * (s + t * v);
+    }
 }
 
 // EOF k_tan.c

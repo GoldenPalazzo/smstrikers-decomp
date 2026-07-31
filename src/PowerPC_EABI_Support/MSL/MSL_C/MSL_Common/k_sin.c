@@ -57,23 +57,24 @@ static double
 #ifdef __STDC__
 double __kernel_sin(double x, double y, int iy)
 #else
-double __kernel_sin(x, y, iy) double x, y;
+double __kernel_sin(x, y, iy)
+double x, y;
 int iy; /* iy=0 if y is zero */
 #endif
 {
-	double z, r, v;
-	int ix;
-	ix = __HI(x) & 0x7fffffff; /* high word of x */
-	if (ix < 0x3e400000)       /* |x| < 2**-27 */
-	{
-		if ((int)x == 0)
-			return x;
-	} /* generate inexact */
-	z = x * x;
-	v = z * x;
-	r = S2 + z * (S3 + z * (S4 + z * (S5 + z * S6)));
-	if (iy == 0)
-		return x + v * (S1 + z * r);
-	else
-		return x - ((z * (half * y - v * r) - y) - v * S1);
+    double z, r, v;
+    int ix;
+    ix = __HI(x) & 0x7fffffff; /* high word of x */
+    if (ix < 0x3e400000)       /* |x| < 2**-27 */
+    {
+        if ((int)x == 0)
+            return x;
+    } /* generate inexact */
+    z = x * x;
+    v = z * x;
+    r = S2 + z * (S3 + z * (S4 + z * (S5 + z * S6)));
+    if (iy == 0)
+        return x + v * (S1 + z * r);
+    else
+        return x - ((z * (half * y - v * r) - y) - v * S1);
 }

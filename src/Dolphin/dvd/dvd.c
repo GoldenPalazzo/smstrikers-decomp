@@ -786,8 +786,7 @@ static void stateBusy(DVDCommandBlock* block)
             __DIRegs[1] = __DIRegs[1];
             block->currTransferSize
                 = (block->length - block->transferredSize > 0x80000) ? 0x80000 : (block->length - block->transferredSize);
-            DVDLowRead((char*)block->addr + block->transferredSize, block->currTransferSize, block->offset + block->transferredSize,
-                       cbForStateBusy);
+            DVDLowRead((char*)block->addr + block->transferredSize, block->currTransferSize, block->offset + block->transferredSize, cbForStateBusy);
         }
         return;
     case DVD_COMMAND_SEEK:

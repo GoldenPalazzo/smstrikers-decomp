@@ -4156,9 +4156,7 @@ float InDefensiveZoneOfPlayer(cBall* pBall, cPlayer* pPlayer)
 
 static float InNeutralZoneOfPlayer(cBall* pBall, cPlayer* pPlayer)
 {
-    return 1.0f - max_float(
-                      InOffensiveZoneOfPlayer(pBall, pPlayer),
-                      InDefensiveZoneOfPlayer(pBall, pPlayer));
+    return 1.0f - max_float(InOffensiveZoneOfPlayer(pBall, pPlayer), InDefensiveZoneOfPlayer(pBall, pPlayer));
 }
 
 /**

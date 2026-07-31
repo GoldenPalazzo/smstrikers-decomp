@@ -1,22 +1,22 @@
 #include "dkconcretesoundproperties.h"
 
 static SoundProperties DKCONCRETESoundProperties[] = { { "CHARSFX_RUN_01", "SFXCHAR_BIG_Run_Concrete_01", 0.4f, 0.0f, 0.5f, 1, 0 },
-                                                       { "CHARSFX_RUN_02", "SFXCHAR_BIG_Run_Concrete_02", 0.4f, 0.0f, 0.5f, 1, 0 },
-                                                       { "CHARSFX_RUN_03", "SFXCHAR_BIG_Run_Concrete_03", 0.4f, 0.0f, 0.5f, 1, 0 },
-                                                       { "CHARSFX_RUN_04", "SFXCHAR_BIG_Run_Concrete_04", 0.4f, 0.0f, 0.5f, 1, 0 },
-                                                       { "CHARSFX_RUN_05", "SFXCHAR_BIG_Run_Concrete_05", 0.4f, 0.0f, 0.5f, 1, 0 },
-                                                       { "CHARSFX_WALK_01", "SFXCHAR_BIG_Walk_Concrete_01", 0.4f, 0.0f, 0.5f, 1, 0 },
-                                                       { "CHARSFX_WALK_02", "SFXCHAR_BIG_Walk_Concrete_02", 0.4f, 0.0f, 0.5f, 1, 0 },
-                                                       { "CHARSFX_WALK_03", "SFXCHAR_BIG_Walk_Concrete_03", 0.4f, 0.0f, 0.5f, 1, 0 },
-                                                       { "CHARSFX_WALK_04", "SFXCHAR_BIG_Walk_Concrete_04", 0.4f, 0.0f, 0.5f, 1, 0 },
-                                                       { "CHARSFX_WALK_05", "SFXCHAR_BIG_Walk_Concrete_05", 0.4f, 0.0f, 0.5f, 1, 0 },
-                                                       { "CHARSFX_LAND", "SFXCHAR_BIG_Land_Concrete", 0.6f, 0.0f, 0.5f, 1, 0 },
-                                                       { "CHARSFX_SLIDE", "SFXCHAR_GEN_Slide_Concrete", 0.4f, 0.0f, 0.5f, 1, 0 },
-                                                       { "CHARSFX_JUMP", "SFXCHAR_GEN_Jump_Concrete", 0.45f, 0.0f, 0.5f, 1, 0 },
-                                                       { "CHARSFX_TURN", "SFXCHAR_GEN_Turn_Concrete", 0.4f, 0.0f, 0.5f, 1, 0 },
-                                                       { "CHARSFX_DEKE_LEFT", "SFXCHAR_GEN_Deek_Concrete_Left", 0.5f, 0.0f, 0.5f, 1, 0 },
-                                                       { "CHARSFX_DEKE_RIGHT", "SFXCHAR_GEN_Deek_Concrete_Right", 0.5f, 0.0f, 0.5f, 1, 0 },
-                                                       { "CHARSFX_BODYFALL", "SFXCHAR_BIG_Bodyfall_Concrete", 0.6f, 0.0f, 0.5f, 1, 0 } };
+    { "CHARSFX_RUN_02", "SFXCHAR_BIG_Run_Concrete_02", 0.4f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_RUN_03", "SFXCHAR_BIG_Run_Concrete_03", 0.4f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_RUN_04", "SFXCHAR_BIG_Run_Concrete_04", 0.4f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_RUN_05", "SFXCHAR_BIG_Run_Concrete_05", 0.4f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_WALK_01", "SFXCHAR_BIG_Walk_Concrete_01", 0.4f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_WALK_02", "SFXCHAR_BIG_Walk_Concrete_02", 0.4f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_WALK_03", "SFXCHAR_BIG_Walk_Concrete_03", 0.4f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_WALK_04", "SFXCHAR_BIG_Walk_Concrete_04", 0.4f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_WALK_05", "SFXCHAR_BIG_Walk_Concrete_05", 0.4f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_LAND", "SFXCHAR_BIG_Land_Concrete", 0.6f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_SLIDE", "SFXCHAR_GEN_Slide_Concrete", 0.4f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_JUMP", "SFXCHAR_GEN_Jump_Concrete", 0.45f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_TURN", "SFXCHAR_GEN_Turn_Concrete", 0.4f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_DEKE_LEFT", "SFXCHAR_GEN_Deek_Concrete_Left", 0.5f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_DEKE_RIGHT", "SFXCHAR_GEN_Deek_Concrete_Right", 0.5f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_BODYFALL", "SFXCHAR_BIG_Bodyfall_Concrete", 0.6f, 0.0f, 0.5f, 1, 0 } };
 
 DKCONCRETESoundPropAccessor gDKCONCRETESoundPropAccessor;
 SoundPropAccessor* gpDKCONCRETESoundPropAccessor = &gDKCONCRETESoundPropAccessor;

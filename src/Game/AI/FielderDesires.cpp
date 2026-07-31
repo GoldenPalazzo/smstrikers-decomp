@@ -1107,7 +1107,7 @@ void cFielder::DesireSupportBall(float fDeltaT, bool bDefensive)
         return;
     }
 
-    const nlVector2 (*pAILocations)[2] = bDefensive ? g_vSupportBallDefensiveAILocations : g_vSupportBallOffensiveAILocations;
+    const nlVector2(*pAILocations)[2] = bDefensive ? g_vSupportBallDefensiveAILocations : g_vSupportBallOffensiveAILocations;
     int iNumRules = bDefensive ? 6 : 6;
 
     nlVector3 v3BallPosition;

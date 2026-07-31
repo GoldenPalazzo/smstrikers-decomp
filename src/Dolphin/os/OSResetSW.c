@@ -9,18 +9,21 @@ static BOOL LastState;
 static OSTime HoldUp;
 static OSTime HoldDown;
 
-void __OSResetSWInterruptHandler(s16 exception, OSContext* context) {
+void __OSResetSWInterruptHandler(s16 exception, OSContext* context)
+{
     OSResetCallback callback;
 
     HoldDown = __OSGetSystemTime();
-    while (__OSGetSystemTime() - HoldDown < OSMicrosecondsToTicks(100) &&
-           !(__PIRegs[0] & 0x00010000)) {
+    while (__OSGetSystemTime() - HoldDown < OSMicrosecondsToTicks(100) && !(__PIRegs[0] & 0x00010000))
+    {
         ;
     }
-    if (!(__PIRegs[0] & 0x00010000)) {
+    if (!(__PIRegs[0] & 0x00010000))
+    {
         LastState = Down = TRUE;
         __OSMaskInterrupts(OS_INTERRUPTMASK_PI_RSW);
-        if (ResetCallback) {
+        if (ResetCallback)
+        {
             callback = ResetCallback;
             ResetCallback = NULL;
             callback();
@@ -29,7 +32,8 @@ void __OSResetSWInterruptHandler(s16 exception, OSContext* context) {
     __PIRegs[0] = 2;
 }
 
-OSResetCallback OSSetResetCallback(OSResetCallback callback) {
+OSResetCallback OSSetResetCallback(OSResetCallback callback)
+{
     BOOL enabled;
     OSResetCallback prevCallback;
 
@@ -37,17 +41,21 @@ OSResetCallback OSSetResetCallback(OSResetCallback callback) {
     prevCallback = ResetCallback;
     ResetCallback = callback;
 
-    if (callback) {
+    if (callback)
+    {
         __PIRegs[0] = 2;
         __OSUnmaskInterrupts(0x200);
-    } else {
+    }
+    else
+    {
         __OSMaskInterrupts(0x200);
     }
     OSRestoreInterrupts(enabled);
     return prevCallback;
 }
 
-BOOL OSGetResetButtonState(void) {
+BOOL OSGetResetButtonState(void)
+{
     BOOL enabled = OSDisableInterrupts();
     int state;
     u32 reg;
@@ -59,42 +67,60 @@ BOOL OSGetResetButtonState(void) {
     ASSERTLINE(160, HoldDown == 0 || HoldDown < now);
 
     reg = __PIRegs[0];
-    if (!(reg & 0x00010000)) {
-        if (!Down) {
+    if (!(reg & 0x00010000))
+    {
+        if (!Down)
+        {
             Down = TRUE;
             state = HoldUp ? TRUE : FALSE;
             HoldDown = now;
-        } else {
-            state = HoldUp || (OSMicrosecondsToTicks(100) < now - HoldDown)
-                        ? TRUE
-                        : FALSE;
         }
-    } else if (Down) {
+        else
+        {
+            state = HoldUp || (OSMicrosecondsToTicks(100) < now - HoldDown)
+                      ? TRUE
+                      : FALSE;
+        }
+    }
+    else if (Down)
+    {
         Down = FALSE;
         state = LastState;
-        if (state) {
+        if (state)
+        {
             HoldUp = now;
-        } else {
+        }
+        else
+        {
             HoldUp = 0;
         }
-    } else if (HoldUp && (now - HoldUp < OSMillisecondsToTicks(40))) {
+    }
+    else if (HoldUp && (now - HoldUp < OSMillisecondsToTicks(40)))
+    {
         state = TRUE;
-    } else {
+    }
+    else
+    {
         state = FALSE;
         HoldUp = 0;
     }
 
     LastState = state;
 
-    if (__gUnknown800030E3 & 0x1F) {
+    if (__gUnknown800030E3 & 0x1F)
+    {
         OSTime fire = (__gUnknown800030E3 & 0x1F) * 60;
         fire = __OSStartTime + OSSecondsToTicks(fire);
-        if (fire < now) {
+        if (fire < now)
+        {
             now -= fire;
             now = OSTicksToSeconds(now) / 2;
-            if ((now & 1) == 0) {
+            if ((now & 1) == 0)
+            {
                 state = TRUE;
-            } else {
+            }
+            else
+            {
                 state = FALSE;
             }
         }
@@ -104,13 +130,16 @@ BOOL OSGetResetButtonState(void) {
     return state;
 }
 
-int OSGetResetSwitchState(void) {
+int OSGetResetSwitchState(void)
+{
     return OSGetResetButtonState();
 }
 
-void __OSSetResetButtonTimer(u8 min) {
+void __OSSetResetButtonTimer(u8 min)
+{
     BOOL enabled = OSDisableInterrupts();
-    if (min > 0x1F) {
+    if (min > 0x1F)
+    {
         min = 0x1F;
     }
 

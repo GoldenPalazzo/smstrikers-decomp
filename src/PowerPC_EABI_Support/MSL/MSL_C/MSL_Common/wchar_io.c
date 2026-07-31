@@ -1,20 +1,20 @@
 #include "wchar_io.h"
 
-int fwide(FILE* file, int mode) 
+int fwide(FILE* file, int mode)
 {
-    if (file == NULL || file->file_mode.file_kind == __closed_file) 
+    if (file == NULL || file->file_mode.file_kind == __closed_file)
     {
         return 0;
     }
 
-    switch (file->file_mode.file_orientation) 
+    switch (file->file_mode.file_orientation)
     {
     case UNORIENTED:
-        if (mode > 0) 
+        if (mode > 0)
         {
             file->file_mode.file_orientation = WIDE_ORIENTED;
-        } 
-        else if (mode < 0) 
+        }
+        else if (mode < 0)
         {
             file->file_mode.file_orientation = CHAR_ORIENTED;
         }

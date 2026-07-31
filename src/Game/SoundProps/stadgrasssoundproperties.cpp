@@ -1,10 +1,10 @@
 #include "stadgrasssoundproperties.h"
 
 static SoundProperties STADGRASSSoundProperties[] = { { "STADSFX_BALL_BOUNCE", "SFXBALL_Bounce_Grass", 0.5f, 0.0f, 0.5f, 1, 0 },
-                                                      { "STADSFX_BALL_ROLL", "SFXBALL_Roll_Grass", 0.5f, 0.0f, 0.5f, 1, 0 },
-                                                      { "PWRUPSFX_BOMB_HIT", "SFXPWRUP_BOMB_Hit_Grass", 1.0f, 0.0f, 0.7f, 1, 0 },
-                                                      { "PWRUPSFX_BOMB_END", "SFXPWRUP_BOMB_End_Grass", 1.0f, 0.0f, 0.7f, 1, 0 },
-                                                      { "PWRUPSFX_CHOMP_BOUNCE", "SFXPWRUP_CHOMP_Bounce_Grass", 0.9f, 0.0f, 0.7f, 1, 0 } };
+    { "STADSFX_BALL_ROLL", "SFXBALL_Roll_Grass", 0.5f, 0.0f, 0.5f, 1, 0 },
+    { "PWRUPSFX_BOMB_HIT", "SFXPWRUP_BOMB_Hit_Grass", 1.0f, 0.0f, 0.7f, 1, 0 },
+    { "PWRUPSFX_BOMB_END", "SFXPWRUP_BOMB_End_Grass", 1.0f, 0.0f, 0.7f, 1, 0 },
+    { "PWRUPSFX_CHOMP_BOUNCE", "SFXPWRUP_CHOMP_Bounce_Grass", 0.9f, 0.0f, 0.7f, 1, 0 } };
 
 STADGRASSSoundPropAccessor gSTADGRASSSoundPropAccessor;
 SoundPropAccessor* gpSTADGRASSSoundPropAccessor = &gSTADGRASSSoundPropAccessor;

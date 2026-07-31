@@ -1,22 +1,22 @@
 #include "superrubbersoundproperties.h"
 
 static SoundProperties SUPERRUBBERSoundProperties[] = { { "CHARSFX_RUN_01", "SFXCHAR_GEN_Run_Rubber_01", 0.35f, 0.0f, 0.5f, 1, 0 },
-                                                        { "CHARSFX_RUN_02", "SFXCHAR_GEN_Run_Rubber_02", 0.35f, 0.0f, 0.5f, 1, 0 },
-                                                        { "CHARSFX_RUN_03", "SFXCHAR_GEN_Run_Rubber_03", 0.35f, 0.0f, 0.5f, 1, 0 },
-                                                        { "CHARSFX_RUN_04", "SFXCHAR_GEN_Run_Rubber_04", 0.35f, 0.0f, 0.5f, 1, 0 },
-                                                        { "CHARSFX_RUN_05", "SFXCHAR_GEN_Run_Rubber_05", 0.35f, 0.0f, 0.5f, 1, 0 },
-                                                        { "CHARSFX_WALK_01", "SFXCHAR_SUPER_Walk_01", 0.35f, 0.0f, 0.5f, 1, 0 },
-                                                        { "CHARSFX_WALK_02", "SFXCHAR_SUPER_Walk_02", 0.35f, 0.0f, 0.5f, 1, 0 },
-                                                        { "CHARSFX_WALK_03", "SFXCHAR_SUPER_Walk_03", 0.35f, 0.0f, 0.5f, 1, 0 },
-                                                        { "CHARSFX_WALK_04", "SFXCHAR_SUPER_Walk_04", 0.35f, 0.0f, 0.5f, 1, 0 },
-                                                        { "CHARSFX_WALK_05", "SFXCHAR_SUPER_Walk_05", 0.35f, 0.0f, 0.5f, 1, 0 },
-                                                        { "CHARSFX_LAND", "SFXCHAR_SUPER_Land", 0.7f, 0.0f, 0.5f, 1, 0 },
-                                                        { "CHARSFX_SLIDE", "SFXCHAR_GEN_Slide_Rubber", 0.4f, 0.0f, 0.5f, 1, 0 },
-                                                        { "CHARSFX_JUMP", "SFXCHAR_GEN_Jump_Rubber", 0.45f, 0.0f, 0.5f, 1, 0 },
-                                                        { "CHARSFX_TURN", "SFXCHAR_SUPER_Turn", 0.5f, 0.0f, 0.5f, 1, 0 },
-                                                        { "CHARSFX_DEKE_LEFT", "SFXCHAR_SUPER_Deek_Left", 0.5f, 0.0f, 0.5f, 1, 0 },
-                                                        { "CHARSFX_DEKE_RIGHT", "SFXCHAR_SUPER_Deek_Right", 0.5f, 0.0f, 0.5f, 1, 0 },
-                                                        { "CHARSFX_BODYFALL", "SFXCHAR_SUPER_Bodyfall", 0.5f, 0.0f, 0.5f, 1, 0 } };
+    { "CHARSFX_RUN_02", "SFXCHAR_GEN_Run_Rubber_02", 0.35f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_RUN_03", "SFXCHAR_GEN_Run_Rubber_03", 0.35f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_RUN_04", "SFXCHAR_GEN_Run_Rubber_04", 0.35f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_RUN_05", "SFXCHAR_GEN_Run_Rubber_05", 0.35f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_WALK_01", "SFXCHAR_SUPER_Walk_01", 0.35f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_WALK_02", "SFXCHAR_SUPER_Walk_02", 0.35f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_WALK_03", "SFXCHAR_SUPER_Walk_03", 0.35f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_WALK_04", "SFXCHAR_SUPER_Walk_04", 0.35f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_WALK_05", "SFXCHAR_SUPER_Walk_05", 0.35f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_LAND", "SFXCHAR_SUPER_Land", 0.7f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_SLIDE", "SFXCHAR_GEN_Slide_Rubber", 0.4f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_JUMP", "SFXCHAR_GEN_Jump_Rubber", 0.45f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_TURN", "SFXCHAR_SUPER_Turn", 0.5f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_DEKE_LEFT", "SFXCHAR_SUPER_Deek_Left", 0.5f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_DEKE_RIGHT", "SFXCHAR_SUPER_Deek_Right", 0.5f, 0.0f, 0.5f, 1, 0 },
+    { "CHARSFX_BODYFALL", "SFXCHAR_SUPER_Bodyfall", 0.5f, 0.0f, 0.5f, 1, 0 } };
 
 SUPERRUBBERSoundPropAccessor gSUPERRUBBERSoundPropAccessor;
 SoundPropAccessor* gpSUPERRUBBERSoundPropAccessor = &gSUPERRUBBERSoundPropAccessor;

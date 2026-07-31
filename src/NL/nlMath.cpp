@@ -91,12 +91,10 @@ float nlBezier(float* controlPoints, int degree, float t)
 static inline void nlATanLookup(float value, float& result)
 {
     coeffs low = {
-        0.0f, 0.004072621f, 0.0178999677f, 0.0447405465f,
-        0.0844737813f, 0.134708926f, 0.192103297f, 0.253371507f
+        0.0f, 0.004072621f, 0.0178999677f, 0.0447405465f, 0.0844737813f, 0.134708926f, 0.192103297f, 0.253371507f
     };
     coeffs high = {
-        0.997413278f, 0.964989364f, 0.910336077f, 0.839015484f,
-        0.759613633f, 0.679214358f, 0.602631152f, 0.532545328f
+        0.997413278f, 0.964989364f, 0.910336077f, 0.839015484f, 0.759613633f, 0.679214358f, 0.602631152f, 0.532545328f
     };
 
     int index = (int)(8.0f * value);
@@ -146,7 +144,8 @@ float nlATan2f(float y, float x)
     return 4.712389f;
 }
 
-DECL_SECT(".sdata2") static const nlACosConstants nlACosConstantsData = { 2.0f };
+DECL_SECT(".sdata2")
+static const nlACosConstants nlACosConstantsData = { 2.0f };
 
 /**
  * Offset/Address/Size: 0x418 | 0x801D188C | size: 0x48
@@ -158,8 +157,9 @@ float nlTan(unsigned short angle)
 
 namespace
 {
-DECL_SECT(".sdata2") const nlAngleConstants nlAngleConstantsData = { 0.0000958738f };
-}
+DECL_SECT(".sdata2")
+const nlAngleConstants nlAngleConstantsData = { 0.0000958738f };
+} // namespace
 
 static inline f32 nlACosMax(f32 a, f32 b)
 {

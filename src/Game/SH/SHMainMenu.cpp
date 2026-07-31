@@ -238,7 +238,7 @@ void SHMainMenu::SceneCreated()
         presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("TickerText")));
-    
+
     screenInfo = glGetScreenInfo();
     FEScrollText* feST = new (nlMalloc(sizeof(FEScrollText), 8, false)) FEScrollText(scrollText, 0, screenInfo->ScreenWidth + 50);
     m_itemDescriptions = feST;
@@ -258,17 +258,17 @@ void SHMainMenu::SceneCreated()
             MenuCallback openFunc(Bind<void>(MemFun<SHMainMenu, void, TLComponentInstance*>(&SHMainMenu::OpenItem), this, placeholder0));
             item->SetCallback(ON_HIGHLIGHT, openFunc);
         }
-        
+
         {
             MenuCallback closeFunc(Bind<void>(MemFun<SHMainMenu, void, TLComponentInstance*>(&SHMainMenu::CloseItem), this, placeholder0));
             item->SetCallback(ON_UNHIGHLIGHT, closeFunc);
         }
-        
+
         {
             MenuItem<TLComponentInstance>::Callback applyFunc(ApplyFuncTable[i]);
             item->SetCallback(ON_APPLY, applyFunc);
         }
-        
+
         item->SetLockedFlag(false);
         if (i == mLastMenuItem)
         {

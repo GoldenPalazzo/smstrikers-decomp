@@ -1,3 +1,6 @@
 #include "types.h"
 
-WEAKFUNC BOOL Hu_IsStub(void) { return FALSE; }
+WEAKFUNC BOOL Hu_IsStub(void)
+{
+    return FALSE;
+}

@@ -66,9 +66,12 @@ void C_QUATMultiply(const Quaternion* p, const Quaternion* q, Quaternion* pq)
     ASSERTMSGLINE(194, q, "QUATMultiply():  NULL QuaternionPtr 'q' ");
     ASSERTMSGLINE(195, pq, "QUATMultiply():  NULL QuaternionPtr 'pq' ");
 
-    if (p == pq || q == pq) {
+    if (p == pq || q == pq)
+    {
         r = &pqTmp;
-    } else {
+    }
+    else
+    {
         r = pq;
     }
 
@@ -77,12 +80,13 @@ void C_QUATMultiply(const Quaternion* p, const Quaternion* q, Quaternion* pq)
     r->y = (p->w * q->y) + (p->y * q->w) + (p->z * q->x) - (p->x * q->z);
     r->z = (p->w * q->z) + (p->z * q->w) + (p->x * q->y) - (p->y * q->x);
 
-    if (r == &pqTmp) {
+    if (r == &pqTmp)
+    {
         *pq = pqTmp;
     }
 }
 
-void PSQUATMultiply(register const Quaternion *a, register const Quaternion *b, register Quaternion *ab)
+void PSQUATMultiply(register const Quaternion* a, register const Quaternion* b, register Quaternion* ab)
 {
     asm {
         psq_l f0, 0(a), 0, 0
@@ -168,19 +172,22 @@ void C_QUATNormalize(const Quaternion* src, Quaternion* unit)
     ASSERTMSGLINE(408, unit, "QUATNormalize():  NULL QuaternionPtr 'unit' ");
 
     mag = (src->x * src->x) + (src->y * src->y) + (src->z * src->z) + (src->w * src->w);
-    if (mag >= 0.00001f) {
+    if (mag >= 0.00001f)
+    {
         mag = 1.0f / sqrtf(mag);
 
         unit->x = src->x * mag;
         unit->y = src->y * mag;
         unit->z = src->z * mag;
         unit->w = src->w * mag;
-    } else {
+    }
+    else
+    {
         unit->x = unit->y = unit->z = unit->w = 0.0f;
     }
 }
 
-void PSQUATNormalize(const register Quaternion *src, register Quaternion *unit)
+void PSQUATNormalize(const register Quaternion* src, register Quaternion* unit)
 {
     {
         register f32 vv1, vv2, vv3;
@@ -220,7 +227,8 @@ void C_QUATInverse(const Quaternion* src, Quaternion* inv)
     ASSERTMSGLINE(499, inv, "QUATInverse():  NULL QuaternionPtr 'inv' ");
 
     mag = (src->x * src->x) + (src->y * src->y) + (src->z * src->z) + (src->w * src->w);
-    if (mag == 0.0f) {
+    if (mag == 0.0f)
+    {
         mag = 1.0f;
     }
 
@@ -228,7 +236,7 @@ void C_QUATInverse(const Quaternion* src, Quaternion* inv)
     inv->x = -src->x * norminv;
     inv->y = -src->y * norminv;
     inv->z = -src->z * norminv;
-    inv->w =  src->w * norminv;
+    inv->w = src->w * norminv;
 }
 
 void PSQUATInverse(const register Quaternion* src, register Quaternion* inv)
@@ -301,7 +309,8 @@ void C_QUATExp(const Quaternion* q, Quaternion* r)
     theta = sqrtf((q->x * q->x) + (q->y * q->y) + (q->z * q->z));
     scale = 1.0f;
 
-    if (theta > 0.00001f) {
+    if (theta > 0.00001f)
+    {
         scale = sinf(theta) / theta;
     }
 
@@ -322,7 +331,8 @@ void C_QUATLogN(const Quaternion* q, Quaternion* r)
     scale = sqrtf(scale);
     theta = atan2f(scale, q->w);
 
-    if (scale > 0.0f) {
+    if (scale > 0.0f)
+    {
         scale = theta / scale;
     }
 
@@ -341,17 +351,20 @@ void C_QUATMakeClosest(const Quaternion* q, const Quaternion* qto, Quaternion* r
     ASSERTMSGLINE(724, r, "QUATMakeClosest():  NULL QuaternionPtr 'r' ");
 
     dot = (q->x * qto->x) + (q->y * qto->y) + (q->z * qto->z) + (q->w * qto->w);
-    if (dot < 0.0f) {
+    if (dot < 0.0f)
+    {
         r->x = -q->x;
         r->y = -q->y;
         r->z = -q->z;
         r->w = -q->w;
-    } else {
+    }
+    else
+    {
         *r = *q;
     }
 }
 
-void C_QUATRotAxisRad(Quaternion *q, const Vec *axis, f32 rad)
+void C_QUATRotAxisRad(Quaternion* q, const Vec* axis, f32 rad)
 {
     f32 tmp, tmp2, tmp3;
     Vec dst;
@@ -371,14 +384,15 @@ void C_QUATRotAxisRad(Quaternion *q, const Vec *axis, f32 rad)
 }
 
 #pragma fp_contract off
-void C_QUATMtx(Quaternion *r, const Mtx m)
+void C_QUATMtx(Quaternion* r, const Mtx m)
 {
     f32 vv0, vv1;
     s32 i, j, k;
     s32 idx[3] = { 1, 2, 0 };
     f32 vec[3];
     vv0 = m[0][0] + m[1][1] + m[2][2];
-    if (vv0 > 0.0f) {
+    if (vv0 > 0.0f)
+    {
         vv1 = (f32)sqrtf(vv0 + 1.0f);
         r->w = vv1 * 0.5f;
         vv1 = 0.5f / vv1;
@@ -386,7 +400,8 @@ void C_QUATMtx(Quaternion *r, const Mtx m)
         r->y = (m[0][2] - m[2][0]) * vv1;
         r->z = (m[1][0] - m[0][1]) * vv1;
     }
-    else {
+    else
+    {
         i = 0;
         if (m[1][1] > m[0][0])
             i = 1;
@@ -408,7 +423,7 @@ void C_QUATMtx(Quaternion *r, const Mtx m)
 }
 #pragma fp_contract on
 
-void C_QUATLerp(const Quaternion *p, const Quaternion *q, Quaternion *r, f32 t)
+void C_QUATLerp(const Quaternion* p, const Quaternion* q, Quaternion* r, f32 t)
 {
     f32 value;
     f32 pValue;
@@ -430,7 +445,7 @@ void C_QUATLerp(const Quaternion *p, const Quaternion *q, Quaternion *r, f32 t)
 }
 
 #pragma fp_contract off
-void C_QUATSlerp(const Quaternion *p, const Quaternion *q, Quaternion *r, f32 t)
+void C_QUATSlerp(const Quaternion* p, const Quaternion* q, Quaternion* r, f32 t)
 {
     f32 theta, sin_th, cos_th;
     f32 tp, tq;
@@ -438,18 +453,22 @@ void C_QUATSlerp(const Quaternion *p, const Quaternion *q, Quaternion *r, f32 t)
     cos_th = p->x * q->x + p->y * q->y + p->z * q->z + p->w * q->w;
     tq = 1.0f;
 
-    if (cos_th < 0.0f) {
+    if (cos_th < 0.0f)
+    {
         cos_th = -cos_th;
         tq = -tq;
     }
 
-    if (cos_th <= 0.99999f) {
+    if (cos_th <= 0.99999f)
+    {
         theta = acosf(cos_th);
         sin_th = sinf(theta);
 
         tp = sinf((1.0f - t) * theta) / sin_th;
         tq *= sinf(t * theta) / sin_th;
-    } else {
+    }
+    else
+    {
         tp = 1.0f - t;
         tq *= t;
     }

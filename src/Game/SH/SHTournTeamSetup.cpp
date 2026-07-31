@@ -14,7 +14,6 @@ typedef Detail::MemFunImpl<void, void (TournTeamSetupSceneV2::*)(int)> MemFunImp
 typedef BindExp2<void, MemFunImpl_Tourn_t, TournTeamSetupSceneV2*, int> BindExp2_Tourn_t;
 typedef Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Tourn_t> FunctorImpl_Tourn_t;
 
-
 namespace DoubleHighlite
 {
 static const char* SLIDE_IN = "in";

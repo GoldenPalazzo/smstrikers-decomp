@@ -489,7 +489,7 @@ u32 GXReadGP1Metric(void)
 
 #pragma scheduling off
 void GXReadMemMetric(u32* cp_req, u32* tc_req, u32* cpu_rd_req, u32* cpu_wr_req, u32* dsp_req, u32* io_req, u32* vi_req, u32* pe_req,
-                     u32* rf_req, u32* fi_req)
+    u32* rf_req, u32* fi_req)
 {
     *cp_req = __GXReadMEMCounterU32(26, 25);
     *tc_req = __GXReadMEMCounterU32(28, 27);

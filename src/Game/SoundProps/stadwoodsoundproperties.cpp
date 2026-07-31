@@ -1,10 +1,10 @@
 #include "stadwoodsoundproperties.h"
 
 static SoundProperties STADWOODSoundProperties[] = { { "STADSFX_BALL_BOUNCE", "SFXBALL_Bounce_Wood", 0.5f, 0.0f, 0.5f, 1, 0 },
-                                                     { "STADSFX_BALL_ROLL", "SFXBALL_Roll_Wood", 0.5f, 0.0f, 0.5f, 1, 0 },
-                                                     { "PWRUPSFX_BOMB_HIT", "SFXPWRUP_BOMB_Hit_Wood", 1.0f, 0.0f, 0.7f, 1, 0 },
-                                                     { "PWRUPSFX_BOMB_END", "SFXPWRUP_BOMB_End_Wood", 1.0f, 0.0f, 0.7f, 1, 0 },
-                                                     { "PWRUPSFX_CHOMP_BOUNCE", "SFXPWRUP_CHOMP_Bounce_Wood", 0.9f, 0.0f, 0.7f, 1, 0 } };
+    { "STADSFX_BALL_ROLL", "SFXBALL_Roll_Wood", 0.5f, 0.0f, 0.5f, 1, 0 },
+    { "PWRUPSFX_BOMB_HIT", "SFXPWRUP_BOMB_Hit_Wood", 1.0f, 0.0f, 0.7f, 1, 0 },
+    { "PWRUPSFX_BOMB_END", "SFXPWRUP_BOMB_End_Wood", 1.0f, 0.0f, 0.7f, 1, 0 },
+    { "PWRUPSFX_CHOMP_BOUNCE", "SFXPWRUP_CHOMP_Bounce_Wood", 0.9f, 0.0f, 0.7f, 1, 0 } };
 
 STADWOODSoundPropAccessor gSTADWOODSoundPropAccessor;
 SoundPropAccessor* gpSTADWOODSoundPropAccessor = &gSTADWOODSoundPropAccessor;

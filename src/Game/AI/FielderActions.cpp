@@ -3669,8 +3669,8 @@ void cFielder::ActionShootToScore(float)
                     float fSpinRate = fSpinAngle / sfMatrixCamDuration;
 
                     bool bIsMirrored = mActionShootToScoreVars.captainStsCamera->m_Mirror.f.x < 0.0f
-                        || mActionShootToScoreVars.captainStsCamera->m_Mirror.f.y < 0.0f
-                        || mActionShootToScoreVars.captainStsCamera->m_Mirror.f.z < 0.0f;
+                                    || mActionShootToScoreVars.captainStsCamera->m_Mirror.f.y < 0.0f
+                                    || mActionShootToScoreVars.captainStsCamera->m_Mirror.f.z < 0.0f;
                     pMatrixCam2->mfSpinRate = fSpinRate * (bIsMirrored ? -1.0f : 1.0f);
 
                     pMatrixCam2->mfDesiredDistanceFromTarget = sfMatrixCamFinalDistanceFromTarget;

@@ -1,8 +1,8 @@
 #include "dolphin/thp.h"
 
-u32 THPAudioDecode(s16 *audioBuffer, u8 *audioFrame, s32 flag)
+u32 THPAudioDecode(s16* audioBuffer, u8* audioFrame, s32 flag)
 {
-    THPAudioRecordHeader *header;
+    THPAudioRecordHeader* header;
     THPAudioDecodeInfo decInfo;
     u8 *left, *right;
     s16 *decLeftPtr, *decRightPtr;
@@ -17,7 +17,7 @@ u32 THPAudioDecode(s16 *audioBuffer, u8 *audioFrame, s32 flag)
         return 0;
     }
 
-    header = (THPAudioRecordHeader *)audioFrame;
+    header = (THPAudioRecordHeader*)audioFrame;
     left = audioFrame + sizeof(THPAudioRecordHeader);
     right = left + header->offsetNextChannel;
 
@@ -166,7 +166,7 @@ u32 THPAudioDecode(s16 *audioBuffer, u8 *audioFrame, s32 flag)
     return header->sampleSize;
 }
 
-static s32 __THPAudioGetNewSample(THPAudioDecodeInfo *info)
+static s32 __THPAudioGetNewSample(THPAudioDecodeInfo* info)
 {
     s32 sample;
 
@@ -192,7 +192,7 @@ static s32 __THPAudioGetNewSample(THPAudioDecodeInfo *info)
     return sample;
 }
 
-static void __THPAudioInitialize(THPAudioDecodeInfo *info, u8 *ptr)
+static void __THPAudioInitialize(THPAudioDecodeInfo* info, u8* ptr)
 {
     info->encodeData = ptr;
     info->offsetNibbles = 2;

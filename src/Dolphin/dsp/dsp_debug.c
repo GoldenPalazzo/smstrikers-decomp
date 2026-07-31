@@ -1,7 +1,10 @@
 #include "__dsp.h"
 
-void __DSP_debug_printf(const char* fmt, ...) {}
+void __DSP_debug_printf(const char* fmt, ...)
+{
+}
 
-DSPTaskInfo* __DSPGetCurrentTask(void) {
+DSPTaskInfo* __DSPGetCurrentTask(void)
+{
     return __DSP_curr_task;
 }

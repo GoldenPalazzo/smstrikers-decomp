@@ -20,20 +20,20 @@ SECTION_INIT extern void __flush_cache(void* addr, u32 size);
 
 static u8 Debug_BBA;
 
-SECTION_INIT void __check_pad3(void) 
+SECTION_INIT void __check_pad3(void)
 {
-    if ((*(u16*)0x800030E4 & 0xEEF) == 0xEEF) 
+    if ((*(u16*)0x800030E4 & 0xEEF) == 0xEEF)
     {
         OSResetSystem(0, 0, 0);
     }
 }
 
-void __set_debug_bba(void) 
+void __set_debug_bba(void)
 {
     Debug_BBA = 1;
 }
 
-SECTION_INIT u8 __get_debug_bba(void) 
+SECTION_INIT u8 __get_debug_bba(void)
 {
     return Debug_BBA;
 }
@@ -199,7 +199,7 @@ SECTION_INIT asm void __init_registers(void)
 
 inline static void __copy_rom_section(void* dst, const void* src, u32 size)
 {
-    if (size && (dst != src)) 
+    if (size && (dst != src))
     {
         memcpy(dst, src, size);
         __flush_cache(dst, size);
@@ -208,19 +208,19 @@ inline static void __copy_rom_section(void* dst, const void* src, u32 size)
 
 inline static void __init_bss_section(void* dst, u32 size)
 {
-    if (size) 
+    if (size)
     {
         memset(dst, 0, size);
     }
 }
 
-SECTION_INIT void __init_data() 
+SECTION_INIT void __init_data()
 {
     __rom_copy_info* dci;
     __bss_init_info* bii;
 
     dci = _rom_copy_info;
-    while (TRUE) 
+    while (TRUE)
     {
         if (dci->size == 0)
             break;
@@ -229,7 +229,7 @@ SECTION_INIT void __init_data()
     }
 
     bii = _bss_init_info;
-    while (TRUE) 
+    while (TRUE)
     {
         if (bii->size == 0)
             break;

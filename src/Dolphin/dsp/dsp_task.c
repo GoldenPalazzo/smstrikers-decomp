@@ -5,7 +5,7 @@
 
 #include "__dsp.h"
 
-static u32 t0, t1, t2;  // unused
+static u32 t0, t1, t2; // unused
 
 DSPTaskInfo* __DSP_curr_task;
 DSPTaskInfo* __DSP_first_task;
@@ -14,7 +14,8 @@ DSPTaskInfo* __DSP_tmp_task;
 DSPTaskInfo* __DSP_rude_task;
 int __DSP_rude_task_pending;
 
-void __DSPHandler(__OSInterrupt intr, OSContext* context) {
+void __DSPHandler(__OSInterrupt intr, OSContext* context)
+{
     u8 unused[4];
     OSContext exceptionContext;
     u16 tmp;
@@ -27,15 +28,16 @@ void __DSPHandler(__OSInterrupt intr, OSContext* context) {
     OSClearContext(&exceptionContext);
     OSSetCurrentContext(&exceptionContext);
     ASSERTMSGLINE(143, __DSP_curr_task != NULL, "__DSPHandler(): No current task! Someone set us up the bomb!\n");
-    
+
     while (DSPCheckMailFromDSP() == 0)
         ;
 
     mail = DSPReadMailFromDSP();
-    if ((__DSP_curr_task->flags & (1<<(31-0x1E))) && (mail + 0x232F0000) == 2)
+    if ((__DSP_curr_task->flags & (1 << (31 - 0x1E))) && (mail + 0x232F0000) == 2)
         mail = 0xDCD10003;
 
-    switch (mail) {
+    switch (mail)
+    {
     case 0xDCD10000:
         __DSP_curr_task->state = 1;
         if (__DSP_curr_task->init_cb != NULL)
@@ -47,8 +49,10 @@ void __DSPHandler(__OSInterrupt intr, OSContext* context) {
             __DSP_curr_task->res_cb(__DSP_curr_task);
         break;
     case 0xDCD10002:
-        if (__DSP_rude_task_pending) {
-            if (__DSP_curr_task == __DSP_rude_task) {
+        if (__DSP_rude_task_pending)
+        {
+            if (__DSP_curr_task == __DSP_rude_task)
+            {
                 DSPSendMailToDSP(0xCDD10003);
                 while (DSPCheckMailToDSP() != 0)
                     ;
@@ -57,7 +61,9 @@ void __DSPHandler(__OSInterrupt intr, OSContext* context) {
 
                 if (__DSP_curr_task->res_cb != NULL)
                     __DSP_curr_task->res_cb(__DSP_curr_task);
-            } else {
+            }
+            else
+            {
                 DSPSendMailToDSP(0xCDD10001);
                 while (DSPCheckMailToDSP() != 0)
                     ;
@@ -67,15 +73,21 @@ void __DSPHandler(__OSInterrupt intr, OSContext* context) {
                 __DSP_rude_task = NULL;
                 __DSP_rude_task_pending = 0;
             }
-        } else {
-            if (__DSP_curr_task->next == NULL) {
-                if (__DSP_curr_task == __DSP_first_task) {
+        }
+        else
+        {
+            if (__DSP_curr_task->next == NULL)
+            {
+                if (__DSP_curr_task == __DSP_first_task)
+                {
                     DSPSendMailToDSP(0xCDD10003);
                     while (DSPCheckMailToDSP() != 0)
                         ;
                     if (__DSP_curr_task->res_cb != NULL)
                         __DSP_curr_task->res_cb(__DSP_curr_task);
-                } else {
+                }
+                else
+                {
                     DSPSendMailToDSP(0xCDD10001);
                     while (DSPCheckMailToDSP() != 0)
                         ;
@@ -83,7 +95,9 @@ void __DSPHandler(__OSInterrupt intr, OSContext* context) {
                     __DSP_curr_task->state = 2;
                     __DSP_curr_task = __DSP_first_task;
                 }
-            } else {
+            }
+            else
+            {
                 DSPSendMailToDSP(0xCDD10001);
                 while (DSPCheckMailToDSP() != 0)
                     ;
@@ -94,7 +108,8 @@ void __DSPHandler(__OSInterrupt intr, OSContext* context) {
         }
         break;
     case 0xDCD10003:
-        if (__DSP_rude_task_pending) {
+        if (__DSP_rude_task_pending)
+        {
             if (__DSP_curr_task->done_cb != NULL)
                 __DSP_curr_task->done_cb(__DSP_curr_task);
 
@@ -106,9 +121,13 @@ void __DSPHandler(__OSInterrupt intr, OSContext* context) {
             __DSP_curr_task = __DSP_rude_task;
             __DSP_rude_task = NULL;
             __DSP_rude_task_pending = 0;
-        } else {
-            if (__DSP_curr_task->next == NULL) {
-                if (__DSP_curr_task == __DSP_first_task) {
+        }
+        else
+        {
+            if (__DSP_curr_task->next == NULL)
+            {
+                if (__DSP_curr_task == __DSP_first_task)
+                {
                     if (__DSP_curr_task->done_cb != NULL)
                         __DSP_curr_task->done_cb(__DSP_curr_task);
 
@@ -117,7 +136,9 @@ void __DSPHandler(__OSInterrupt intr, OSContext* context) {
                         ;
                     __DSP_curr_task->state = 3;
                     __DSP_remove_task(__DSP_curr_task);
-                } else {
+                }
+                else
+                {
                     if (__DSP_curr_task->done_cb != NULL)
                         __DSP_curr_task->done_cb(__DSP_curr_task);
 
@@ -129,7 +150,9 @@ void __DSPHandler(__OSInterrupt intr, OSContext* context) {
                     __DSP_curr_task = __DSP_first_task;
                     __DSP_remove_task(__DSP_last_task);
                 }
-            } else {
+            }
+            else
+            {
                 if (__DSP_curr_task->done_cb != NULL)
                     __DSP_curr_task->done_cb(__DSP_curr_task);
 
@@ -155,10 +178,12 @@ void __DSPHandler(__OSInterrupt intr, OSContext* context) {
     OSSetCurrentContext(context);
 }
 
-void __DSP_exec_task(DSPTaskInfo* curr, DSPTaskInfo* next) {
+void __DSP_exec_task(DSPTaskInfo* curr, DSPTaskInfo* next)
+{
     ASSERTMSGLINE(552, next != NULL, "__DSP_exec_task(): NULL task. It is to weep.\n");
 
-    if (curr != NULL) {
+    if (curr != NULL)
+    {
         DSPSendMailToDSP((u32)curr->dram_mmem_addr);
         while (DSPCheckMailToDSP() != 0)
             ;
@@ -168,7 +193,9 @@ void __DSP_exec_task(DSPTaskInfo* curr, DSPTaskInfo* next) {
         DSPSendMailToDSP(curr->dram_addr);
         while (DSPCheckMailToDSP() != 0)
             ;
-    } else {
+    }
+    else
+    {
         DSPSendMailToDSP(0);
         while (DSPCheckMailToDSP() != 0)
             ;
@@ -192,7 +219,8 @@ void __DSP_exec_task(DSPTaskInfo* curr, DSPTaskInfo* next) {
     while (DSPCheckMailToDSP() != 0)
         ;
 
-    if (next->state == 0) {
+    if (next->state == 0)
+    {
         DSPSendMailToDSP(next->dsp_init_vector);
         while (DSPCheckMailToDSP() != 0)
             ;
@@ -205,7 +233,9 @@ void __DSP_exec_task(DSPTaskInfo* curr, DSPTaskInfo* next) {
         DSPSendMailToDSP(0);
         while (DSPCheckMailToDSP() != 0)
             ;
-    } else {
+    }
+    else
+    {
         DSPSendMailToDSP(next->dsp_resume_vector);
         while (DSPCheckMailToDSP() != 0)
             ;
@@ -224,7 +254,8 @@ void __DSP_exec_task(DSPTaskInfo* curr, DSPTaskInfo* next) {
     }
 }
 
-void __DSP_boot_task(DSPTaskInfo* task) {
+void __DSP_boot_task(DSPTaskInfo* task)
+{
     volatile u32 mail;
 
     ASSERTMSGLINE(634, task != NULL, "__DSP_boot_task(): NULL task!\n");
@@ -282,10 +313,12 @@ void __DSP_boot_task(DSPTaskInfo* task) {
     __DSP_debug_printf("__DSP_boot_task()  : Start Vector  : 0x%08X\n", task->dsp_init_vector);
 }
 
-void __DSP_insert_task(DSPTaskInfo* task) {
+void __DSP_insert_task(DSPTaskInfo* task)
+{
     DSPTaskInfo* temp;
 
-    if (__DSP_first_task == NULL) {
+    if (__DSP_first_task == NULL)
+    {
         __DSP_curr_task = task;
         __DSP_first_task = __DSP_last_task = task;
         task->next = task->prev = NULL;
@@ -293,8 +326,10 @@ void __DSP_insert_task(DSPTaskInfo* task) {
     }
 
     temp = __DSP_first_task;
-    while (temp != NULL) {
-        if (task->priority < temp->priority) {
+    while (temp != NULL)
+    {
+        if (task->priority < temp->priority)
+        {
             task->prev = temp->prev;
             temp->prev = task;
             task->next = temp;
@@ -307,7 +342,8 @@ void __DSP_insert_task(DSPTaskInfo* task) {
         temp = temp->next;
     }
 
-    if (temp == NULL) {
+    if (temp == NULL)
+    {
         __DSP_last_task->next = task;
         task->next = NULL;
         task->prev = __DSP_last_task;
@@ -315,15 +351,19 @@ void __DSP_insert_task(DSPTaskInfo* task) {
     }
 }
 
-void __DSP_add_task(DSPTaskInfo* task) {
+void __DSP_add_task(DSPTaskInfo* task)
+{
     ASSERTMSGLINE(771, task != NULL, "__DSP_add_task(): Why are you adding a NULL task?\n");
 
-    if (__DSP_last_task == NULL) {
+    if (__DSP_last_task == NULL)
+    {
         __DSP_curr_task = task;
         __DSP_last_task = task;
         __DSP_first_task = task;
         task->next = task->prev = NULL;
-    } else {
+    }
+    else
+    {
         __DSP_last_task->next = task;
         task->next = NULL;
         task->prev = __DSP_last_task;
@@ -334,13 +374,16 @@ void __DSP_add_task(DSPTaskInfo* task) {
     __DSP_debug_printf("__DSP_add_task() : Added task    : 0x%08X\n", (u32)task);
 }
 
-void __DSP_remove_task(DSPTaskInfo* task) {
+void __DSP_remove_task(DSPTaskInfo* task)
+{
     ASSERTMSGLINE(813, task != NULL, "__DSP_remove_task(): NULL task! Why? WHY?!?!\n");
     task->flags = 0;
     task->state = 3;
 
-    if (__DSP_first_task == task) {
-        if (task->next != NULL) {
+    if (__DSP_first_task == task)
+    {
+        if (task->next != NULL)
+        {
             __DSP_first_task = task->next;
             task->next->prev = NULL;
         }
@@ -349,7 +392,8 @@ void __DSP_remove_task(DSPTaskInfo* task) {
         return;
     }
 
-    if (__DSP_last_task == task) {
+    if (__DSP_last_task == task)
+    {
         __DSP_last_task = task->prev;
         task->prev->next = NULL;
         __DSP_curr_task = __DSP_first_task;

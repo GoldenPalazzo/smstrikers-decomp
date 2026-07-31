@@ -1,43 +1,61 @@
 #include "string.h"
 
 /* 80366130-803661FC 360A70 00CC+00 0/0 2/2 0/0 .text            memmove */
-void* memmove(void* dst, const void* src, size_t n) {
+void* memmove(void* dst, const void* src, size_t n)
+{
     unsigned char* csrc;
     unsigned char* cdst;
 
     int reverse = (unsigned int)src < (unsigned int)dst;
 
-    if (n >= 32) {
-        if (((unsigned int)dst ^ (unsigned int)src) & 3) {
-            if (!reverse) {
+    if (n >= 32)
+    {
+        if (((unsigned int)dst ^ (unsigned int)src) & 3)
+        {
+            if (!reverse)
+            {
                 __copy_longs_unaligned(dst, src, n);
-            } else {
+            }
+            else
+            {
                 __copy_longs_rev_unaligned(dst, src, n);
             }
-        } else {
-            if (!reverse) {
+        }
+        else
+        {
+            if (!reverse)
+            {
                 __copy_longs_aligned(dst, src, n);
-            } else {
+            }
+            else
+            {
                 __copy_longs_rev_aligned(dst, src, n);
             }
         }
 
         return dst;
-    } else {
-        if (!reverse) {
+    }
+    else
+    {
+        if (!reverse)
+        {
             csrc = ((unsigned char*)src) - 1;
             cdst = ((unsigned char*)dst) - 1;
             n++;
 
-            while (--n > 0) {
+            while (--n > 0)
+            {
                 *++cdst = *++csrc;
             }
-        } else {
+        }
+        else
+        {
             csrc = (unsigned char*)src + n;
             cdst = (unsigned char*)dst + n;
             n++;
 
-            while (--n > 0) {
+            while (--n > 0)
+            {
                 *--cdst = *--csrc;
             }
         }
@@ -47,7 +65,8 @@ void* memmove(void* dst, const void* src, size_t n) {
 }
 
 /* 80366104-80366130 360A44 002C+00 0/0 1/1 0/0 .text            memchr */
-void* memchr(const void* ptr, int ch, size_t count) {
+void* memchr(const void* ptr, int ch, size_t count)
+{
     const unsigned char* p;
 
     unsigned long v = (ch & 0xff);
@@ -60,7 +79,8 @@ void* memchr(const void* ptr, int ch, size_t count) {
 }
 
 /* 803660D8-80366104 360A18 002C+00 0/0 1/1 0/0 .text            __memrchr */
-void* __memrchr(const void* ptr, int ch, size_t count) {
+void* __memrchr(const void* ptr, int ch, size_t count)
+{
     const unsigned char* p;
 
     unsigned long v = (ch & 0xff);
@@ -73,7 +93,8 @@ void* __memrchr(const void* ptr, int ch, size_t count) {
 }
 
 /* 8036608C-803660D8 3609CC 004C+00 0/0 19/19 5/5 .text            memcmp */
-int memcmp(const void* lhs, const void* rhs, size_t count) {
+int memcmp(const void* lhs, const void* rhs, size_t count)
+{
     const unsigned char* p1;
     const unsigned char* p2;
 

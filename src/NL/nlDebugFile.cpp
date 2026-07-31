@@ -25,9 +25,10 @@ void nlFlushFileDebug(void* fp)
 void nlWriteLineDebug(void* fp, const char* str, bool arg2)
 {
     fputs(str, (FILE*)fp);
-    if (arg2 != 0) {
+    if (arg2 != 0)
+    {
         fflush((FILE*)fp);
-    }    
+    }
 }
 
 /**
@@ -35,11 +36,13 @@ void nlWriteLineDebug(void* fp, const char* str, bool arg2)
  */
 void* nlOpenFileDebug(const char* str, bool arg1, bool arg2)
 {
-    if (arg1 != 0) {
+    if (arg1 != 0)
+    {
         return (void*)fopen(str, "wb");
     }
-    if (arg2 != 0) {
+    if (arg2 != 0)
+    {
         return (void*)fopen(str, "awt");
     }
-    return (void*)fopen(str, "wt");    
+    return (void*)fopen(str, "wt");
 }

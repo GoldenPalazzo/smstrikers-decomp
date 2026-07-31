@@ -9,9 +9,8 @@
     ASSERTMSGLINE(line, (attr) <= GX_VA_TEX7 || (attr) == GX_VA_NBT, "GXSetVtxDesc: Invalid vertex attribute name")
 #define CHECK_ATTRNAME3(line, attr) \
     ASSERTMSGLINE(line, (attr) >= GX_VA_PNMTXIDX && (attr) < GX_VA_MAX_ATTR, "GXSetVtxDesc: Invalid vertex attribute name")
-#define CHECK_ATTRNAME4(line, attr)                                                           \
-    ASSERTMSGLINE(line, ((attr) >= GX_VA_POS && (attr) <= GX_VA_TEX7) || (attr) == GX_VA_NBT, \
-                  "GXSetVtxAttrFmt: Invalid vertex attribute name")
+#define CHECK_ATTRNAME4(line, attr) \
+    ASSERTMSGLINE(line, ((attr) >= GX_VA_POS && (attr) <= GX_VA_TEX7) || (attr) == GX_VA_NBT, "GXSetVtxAttrFmt: Invalid vertex attribute name")
 #define CHECK_ATTRNAME5(line, attr) \
     ASSERTMSGLINE(line, (attr) >= GX_VA_POS && (attr) <= GX_LIGHT_ARRAY, "GXSetArray: Invalid vertex attribute name")
 #define CHECK_ATTRTYPE(line, type) \
@@ -19,9 +18,8 @@
 #define CHECK_VTXFMT(line, vtxfmt) ASSERTMSGLINE(line, (vtxfmt) < GX_MAX_VTXFMT, "GXSetVtxAttrFmt: Format Index is out of range")
 #define CHECK_FRAC(line, frac)     ASSERTMSGLINE(line, (frac) < 32, "GXSetVtxAttrFmt: Frac value is >= 32")
 #define CHECK_LISTPTR(line, list)  ASSERTMSGLINE(line, (list) != NULL, "GXSetVtxAttrFmt: list pointer is NULL")
-#define CHECK_MTXIDX(line, attr, type)                                           \
-    ASSERTMSGLINE(line, (attr) > GX_VA_TEX7MTXIDX || (type) <= GX_VA_TEX0MTXIDX, \
-                  "GXSetVtxDesc: GX_VA_*MTXIDX accepts GX_NONE or GX_DIRECT only")
+#define CHECK_MTXIDX(line, attr, type) \
+    ASSERTMSGLINE(line, (attr) > GX_VA_TEX7MTXIDX || (type) <= GX_VA_TEX0MTXIDX, "GXSetVtxDesc: GX_VA_*MTXIDX accepts GX_NONE or GX_DIRECT only")
 
 static void __GXXfVtxSpecs(void)
 {
@@ -30,7 +28,8 @@ static void __GXXfVtxSpecs(void)
     u32 nTex;
     u32 reg;
 
-    nNrm = __GXData->hasBiNrms ? 2 : __GXData->hasNrms ? 1 : 0;
+    nNrm = __GXData->hasBiNrms ? 2 : __GXData->hasNrms ? 1
+                                                       : 0;
 
 #ifdef DEBUG
     nCols = GET_REG_FIELD(__GXData->vcdLo, 2, 13) ? 1 : 0;

@@ -2,14 +2,15 @@
 #include <dolphin/os/__ppc_eabi_init.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-void __OSPSInit();
-void __OSFPRInit();
-void __OSCacheInit();
+    void __OSPSInit();
+    void __OSFPRInit();
+    void __OSCacheInit();
 
-// clang-format off
+    // clang-format off
 asm void __init_hardware(void)
 {
     nofralloc
@@ -24,9 +25,9 @@ asm void __init_hardware(void)
     mtlr r31
     blr
 }
-// clang-format on
+    // clang-format on
 
-// clang-format off
+    // clang-format off
 asm void __flush_cache(register void *address, register unsigned int size)
 {
     nofralloc
@@ -46,33 +47,34 @@ loop:
     isync
     blr
 }
-// clang-format on
+    // clang-format on
 
-void __init_user()
-{
-    __init_cpp();
-}
-
-typedef void (*voidfunctionptr)(void); // pointer to function returning void
-__declspec(section ".init") extern voidfunctionptr _ctors[];
-__declspec(section ".init") extern voidfunctionptr _dtors[];
-
-void __init_cpp(void)
-{
-    voidfunctionptr *constructor;
-
-    /*
-     *	call static initializers
-     */
-    for (constructor = _ctors; *constructor; constructor++) {
-        (*constructor)();
+    void __init_user()
+    {
+        __init_cpp();
     }
-}
 
-void _ExitProcess(void)
-{
-    PPCHalt();
-}
+    typedef void (*voidfunctionptr)(void); // pointer to function returning void
+    __declspec(section ".init") extern voidfunctionptr _ctors[];
+    __declspec(section ".init") extern voidfunctionptr _dtors[];
+
+    void __init_cpp(void)
+    {
+        voidfunctionptr* constructor;
+
+        /*
+         *	call static initializers
+         */
+        for (constructor = _ctors; *constructor; constructor++)
+        {
+            (*constructor)();
+        }
+    }
+
+    void _ExitProcess(void)
+    {
+        PPCHalt();
+    }
 
 #ifdef __cplusplus
 }

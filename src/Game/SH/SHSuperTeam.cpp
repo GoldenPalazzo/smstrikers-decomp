@@ -52,11 +52,13 @@ void SuperTeamScene::Update(float fDeltaT)
     pres = m_pFEPresentation;
     slide = pres->m_currentSlide;
 
-    if (pres->m_fadeDuration < slide->m_start + slide->m_duration) {
+    if (pres->m_fadeDuration < slide->m_start + slide->m_duration)
+    {
         return;
     }
 
-    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL)) {
+    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
+    {
         CupHubScene* scene = (CupHubScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_STANDINGS, SCREEN_NOTHING, true);
         scene->mDoAutoSave = true;
     }

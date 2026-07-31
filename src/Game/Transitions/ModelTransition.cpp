@@ -380,8 +380,7 @@ void ModeledScreenTransition::Render(eGLView)
     {
         for (u32 j = 0; j < m_pModels[i].numPackets; j++)
         {
-            m_pModels[i].packets[j].state.matrix =
-                glAllocSetMatrix(m_pPoseAccumulator->GetNodeMatrix(m_pModelMap[i]));
+            m_pModels[i].packets[j].state.matrix = glAllocSetMatrix(m_pPoseAccumulator->GetNodeMatrix(m_pModelMap[i]));
         }
 
         glViewAttachModel(s_3DView, &m_pModels[i]);
@@ -551,7 +550,6 @@ void ModeledScreenTransition::RenderOutline() const
 
             ClearOutline(outline);
         }
-
     }
 }
 

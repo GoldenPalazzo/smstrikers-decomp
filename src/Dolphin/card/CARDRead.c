@@ -1,11 +1,12 @@
 #include "__card.h"
 
-#define TRUNC(n, a) (((u32)(n)) & ~((a)-1))
+#define TRUNC(n, a) (((u32)(n)) & ~((a) - 1))
 
 // prototypes
 static void ReadCallback(s32 chan, s32 result);
 
-s32 __CARDSeek(CARDFileInfo* fileInfo, s32 length, s32 offset, CARDControl** pcard) {
+s32 __CARDSeek(CARDFileInfo* fileInfo, s32 length, s32 offset, CARDControl** pcard)
+{
     CARDControl* card;
     CARDDir* dir;
     CARDDir* ent;
@@ -35,7 +36,8 @@ s32 __CARDSeek(CARDFileInfo* fileInfo, s32 length, s32 offset, CARDControl** pca
 
     card->fileInfo = fileInfo;
     fileInfo->length = length;
-    if (offset < fileInfo->offset) {
+    if (offset < fileInfo->offset)
+    {
         fileInfo->offset = 0;
         fileInfo->iBlock = ent->startBlock;
         if (!CARDIsValidBlockNo(card, fileInfo->iBlock))
@@ -43,7 +45,8 @@ s32 __CARDSeek(CARDFileInfo* fileInfo, s32 length, s32 offset, CARDControl** pca
     }
 
     fat = __CARDGetFatBlock(card);
-    while (fileInfo->offset < TRUNC(offset, card->sectorSize)) {
+    while (fileInfo->offset < TRUNC(offset, card->sectorSize))
+    {
         fileInfo->offset += card->sectorSize;
         fileInfo->iBlock = fat[fileInfo->iBlock];
         if (!CARDIsValidBlockNo(card, fileInfo->iBlock))
@@ -56,7 +59,8 @@ s32 __CARDSeek(CARDFileInfo* fileInfo, s32 length, s32 offset, CARDControl** pca
     return CARD_RESULT_READY;
 }
 
-static void ReadCallback(s32 chan, s32 result) {
+static void ReadCallback(s32 chan, s32 result)
+{
     CARDControl* card;
     CARDCallback callback;
     u16* fat;
@@ -68,7 +72,8 @@ static void ReadCallback(s32 chan, s32 result) {
         goto error;
 
     fileInfo = card->fileInfo;
-    if (fileInfo->length < 0) {
+    if (fileInfo->length < 0)
+    {
         result = CARD_RESULT_CANCELED;
         goto error;
     }
@@ -81,7 +86,8 @@ static void ReadCallback(s32 chan, s32 result) {
     fat = __CARDGetFatBlock(card);
     fileInfo->offset += length;
     fileInfo->iBlock = fat[fileInfo->iBlock];
-    if (!CARDIsValidBlockNo(card, fileInfo->iBlock)) {
+    if (!CARDIsValidBlockNo(card, fileInfo->iBlock))
+    {
         result = CARD_RESULT_BROKEN;
         goto error;
     }
@@ -89,9 +95,7 @@ static void ReadCallback(s32 chan, s32 result) {
     ASSERTLINE(199, OFFSET(fileInfo->length, CARD_SEG_SIZE) == 0);
     ASSERTLINE(200, OFFSET(fileInfo->offset, card->sectorSize) == 0);
 
-    result = __CARDRead(chan, card->sectorSize * (u32)fileInfo->iBlock,
-                        (fileInfo->length < card->sectorSize) ? fileInfo->length : card->sectorSize, card->buffer,
-                        ReadCallback);
+    result = __CARDRead(chan, card->sectorSize * (u32)fileInfo->iBlock, (fileInfo->length < card->sectorSize) ? fileInfo->length : card->sectorSize, card->buffer, ReadCallback);
     if (result < 0)
         goto error;
 
@@ -105,7 +109,8 @@ error:
     callback(chan, result);
 }
 
-s32 CARDReadAsync(CARDFileInfo* fileInfo, void* buf, s32 length, s32 offset, CARDCallback callback) {
+s32 CARDReadAsync(CARDFileInfo* fileInfo, void* buf, s32 length, s32 offset, CARDCallback callback)
+{
     CARDControl* card;
     s32 result;
     CARDDir* dir;
@@ -139,16 +144,19 @@ s32 CARDReadAsync(CARDFileInfo* fileInfo, void* buf, s32 length, s32 offset, CAR
     return result;
 }
 
-s32 CARDRead(CARDFileInfo* fileInfo, void* buf, s32 length, s32 offset) {
+s32 CARDRead(CARDFileInfo* fileInfo, void* buf, s32 length, s32 offset)
+{
     s32 result = CARDReadAsync(fileInfo, buf, length, offset, __CARDSyncCallback);
-    if (result < 0) {
+    if (result < 0)
+    {
         return result;
     }
 
     return __CARDSync(fileInfo->chan);
 }
 
-s32 CARDCancel(CARDFileInfo* fileInfo) {
+s32 CARDCancel(CARDFileInfo* fileInfo)
+{
     BOOL enabled;
     s32 result;
     CARDControl* card;
@@ -157,12 +165,13 @@ s32 CARDCancel(CARDFileInfo* fileInfo) {
     ASSERTLINE(339, 0 <= fileInfo->fileNo && fileInfo->fileNo < CARD_MAX_FILE);
 
     enabled = OSDisableInterrupts();
-    
+
     card = &__CARDBlock[fileInfo->chan];
     result = CARD_RESULT_READY;
     if (!card->attached)
         result = CARD_RESULT_NOCARD;
-    else if (card->result == CARD_RESULT_BUSY && card->fileInfo == fileInfo) {
+    else if (card->result == CARD_RESULT_BUSY && card->fileInfo == fileInfo)
+    {
         fileInfo->length = -1;
         result = CARD_RESULT_CANCELED;
     }

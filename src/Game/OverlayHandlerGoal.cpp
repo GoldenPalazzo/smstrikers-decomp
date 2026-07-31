@@ -527,11 +527,11 @@ void GoalOverlay::DoMatchEndOverlay()
         scoreRight = g_pTeams[1]->m_nScore;
 
         eTeamID winnerID = scoreLeft > scoreRight
-            ? nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)
-            : nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
+                             ? nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)
+                             : nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
         eTeamID loserID = scoreLeft < scoreRight
-            ? nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)
-            : nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
+                            ? nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)
+                            : nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
 
         BasicString<unsigned short, Detail::TempStringAllocator> unformatted(LookupLocHash(0x09B4BC7C));
 

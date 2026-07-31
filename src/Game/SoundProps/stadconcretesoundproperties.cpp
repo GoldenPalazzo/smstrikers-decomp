@@ -2,10 +2,10 @@
 
 static SoundProperties STADCONCRETESoundProperties[]
     = { { "STADSFX_BALL_BOUNCE", "SFXBALL_Bounce_Concrete", 0.5f, 0.0f, 0.5f, 1, 0 },
-        { "STADSFX_BALL_ROLL", "SFXBALL_Roll_Concrete", 0.5f, 0.0f, 0.5f, 1, 0 },
-        { "PWRUPSFX_BOMB_HIT", "SFXPWRUP_BOMB_Hit_Concrete", 1.0f, 0.0f, 0.7f, 1, 0 },
-        { "PWRUPSFX_BOMB_END", "SFXPWRUP_BOMB_End_Concrete", 1.0f, 0.0f, 0.7f, 1, 0 },
-        { "PWRUPSFX_CHOMP_BOUNCE", "SFXPWRUP_CHOMP_Bounce_Concrete", 0.9f, 0.0f, 0.7f, 1, 0 } };
+          { "STADSFX_BALL_ROLL", "SFXBALL_Roll_Concrete", 0.5f, 0.0f, 0.5f, 1, 0 },
+          { "PWRUPSFX_BOMB_HIT", "SFXPWRUP_BOMB_Hit_Concrete", 1.0f, 0.0f, 0.7f, 1, 0 },
+          { "PWRUPSFX_BOMB_END", "SFXPWRUP_BOMB_End_Concrete", 1.0f, 0.0f, 0.7f, 1, 0 },
+          { "PWRUPSFX_CHOMP_BOUNCE", "SFXPWRUP_CHOMP_Bounce_Concrete", 0.9f, 0.0f, 0.7f, 1, 0 } };
 
 STADCONCRETESoundPropAccessor gSTADCONCRETESoundPropAccessor;
 SoundPropAccessor* gpSTADCONCRETESoundPropAccessor = &gSTADCONCRETESoundPropAccessor;

@@ -1,12 +1,14 @@
 #include "__card.h"
 
-static void UpdateIconOffsets(CARDDir* ent, CARDStat* stat) {
+static void UpdateIconOffsets(CARDDir* ent, CARDStat* stat)
+{
     u32 offset;
     BOOL iconTlut;
     int i;
 
     offset = ent->iconAddr;
-    if (offset == 0xffffffff) {
+    if (offset == 0xffffffff)
+    {
         stat->bannerFormat = 0;
         stat->iconFormat = 0;
         stat->iconSpeed = 0;
@@ -14,7 +16,8 @@ static void UpdateIconOffsets(CARDDir* ent, CARDStat* stat) {
     }
 
     iconTlut = FALSE;
-    switch (CARDGetBannerFormat(ent)) {
+    switch (CARDGetBannerFormat(ent))
+    {
     case CARD_STAT_BANNER_C8:
         stat->offsetBanner = offset;
         offset += CARD_BANNER_WIDTH * CARD_BANNER_HEIGHT;
@@ -32,8 +35,10 @@ static void UpdateIconOffsets(CARDDir* ent, CARDStat* stat) {
         break;
     }
 
-    for (i = 0; i < CARD_ICON_MAX; ++i) {
-        switch (CARDGetIconFormat(ent, i)) {
+    for (i = 0; i < CARD_ICON_MAX; ++i)
+    {
+        switch (CARDGetIconFormat(ent, i))
+        {
         case CARD_STAT_ICON_C8:
             stat->offsetIcon[i] = offset;
             offset += CARD_ICON_WIDTH * CARD_ICON_HEIGHT;
@@ -49,16 +54,20 @@ static void UpdateIconOffsets(CARDDir* ent, CARDStat* stat) {
         }
     }
 
-    if (iconTlut) {
+    if (iconTlut)
+    {
         stat->offsetIconTlut = offset;
         offset += 2 * 256;
-    } else {
+    }
+    else
+    {
         stat->offsetIconTlut = 0xffffffff;
     }
     stat->offsetData = offset;
 }
 
-s32 CARDGetStatus(s32 chan, s32 fileNo, CARDStat* stat) {
+s32 CARDGetStatus(s32 chan, s32 fileNo, CARDStat* stat)
+{
     CARDControl* card;
     CARDDir* dir;
     CARDDir* ent;
@@ -78,7 +87,8 @@ s32 CARDGetStatus(s32 chan, s32 fileNo, CARDStat* stat) {
     ent = &dir[fileNo];
     result = __CARDIsReadable(card, ent);
 
-    if (result >= 0) {
+    if (result >= 0)
+    {
         memcpy(stat->gameName, ent->gameName, sizeof(stat->gameName));
         memcpy(stat->company, ent->company, sizeof(stat->company));
         stat->length = (u32)ent->length * card->sectorSize;
@@ -97,7 +107,8 @@ s32 CARDGetStatus(s32 chan, s32 fileNo, CARDStat* stat) {
     return __CARDPutControlBlock(card, result);
 }
 
-s32 CARDSetStatusAsync(s32 chan, s32 fileNo, CARDStat* stat, CARDCallback callback) {
+s32 CARDSetStatusAsync(s32 chan, s32 fileNo, CARDStat* stat, CARDCallback callback)
+{
     CARDControl* card;
     CARDDir* dir;
     CARDDir* ent;
@@ -108,10 +119,7 @@ s32 CARDSetStatusAsync(s32 chan, s32 fileNo, CARDStat* stat, CARDCallback callba
     ASSERTMSGLINE(240, stat->iconAddr == 0xffffffff || stat->iconAddr < CARD_READ_SIZE, "CARDSetStatus[Async](): stat->iconAddr must be 0xffffffff or less than CARD_READ_SIZE.");
     ASSERTMSGLINE(243, stat->commentAddr == 0xffffffff || (stat->commentAddr & 0x1FFF) <= 8128, "CARDSetStatus[Async](): comment strings (set by stat->commentAddr) must not cross 8KB byte boundary.");
 
-    if (fileNo < 0 || CARD_MAX_FILE <= fileNo ||
-        (stat->iconAddr != 0xffffffff && CARD_READ_SIZE <= stat->iconAddr) ||
-        (stat->commentAddr != 0xffffffff &&
-         CARD_SYSTEM_BLOCK_SIZE - CARD_COMMENT_SIZE < stat->commentAddr % CARD_SYSTEM_BLOCK_SIZE))
+    if (fileNo < 0 || CARD_MAX_FILE <= fileNo || (stat->iconAddr != 0xffffffff && CARD_READ_SIZE <= stat->iconAddr) || (stat->commentAddr != 0xffffffff && CARD_SYSTEM_BLOCK_SIZE - CARD_COMMENT_SIZE < stat->commentAddr % CARD_SYSTEM_BLOCK_SIZE))
     {
         return CARD_RESULT_FATAL_ERROR;
     }
@@ -133,7 +141,8 @@ s32 CARDSetStatusAsync(s32 chan, s32 fileNo, CARDStat* stat, CARDCallback callba
     ent->commentAddr = stat->commentAddr;
     UpdateIconOffsets(ent, stat);
 
-    if (ent->iconAddr == 0xffffffff) {
+    if (ent->iconAddr == 0xffffffff)
+    {
         CARDSetIconSpeed(ent, 0, CARD_STAT_SPEED_FAST);
     }
 
@@ -144,9 +153,11 @@ s32 CARDSetStatusAsync(s32 chan, s32 fileNo, CARDStat* stat, CARDCallback callba
     return result;
 }
 
-s32 CARDSetStatus(s32 chan, s32 fileNo, CARDStat* stat) {
+s32 CARDSetStatus(s32 chan, s32 fileNo, CARDStat* stat)
+{
     s32 result = CARDSetStatusAsync(chan, fileNo, stat, __CARDSyncCallback);
-    if (result < 0) {
+    if (result < 0)
+    {
         return result;
     }
 

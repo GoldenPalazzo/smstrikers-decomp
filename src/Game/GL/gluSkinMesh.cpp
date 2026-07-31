@@ -69,7 +69,6 @@ void ShaderSkinMesh::StitchModel()
     }
 }
 
-
 /**
  * Offset/Address/Size: 0x0 | 0x801B5B44 | size: 0x4F0
  */

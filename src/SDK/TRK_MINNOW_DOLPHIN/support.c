@@ -171,8 +171,7 @@ DSError TRKRequestSend(TRKBuffer* msgBuf, int* bufferId, u32 p1, u32 p2, int p3)
                 {
                     if ((int)msgCmd != DSMSG_ReplyACK || msgReplyError != DSREPLY_NoError)
                     {
-                        MWTRACE(8, "RequestSend : Bad ack or non ack received msg_command : 0x%02x msg_error 0x%02x\n", msgCmd,
-                                msgReplyError);
+                        MWTRACE(8, "RequestSend : Bad ack or non ack received msg_command : 0x%02x msg_error 0x%02x\n", msgCmd, msgReplyError);
                         badReply = TRUE;
                     }
                 }

@@ -240,8 +240,8 @@ bool TransitionSequence::IsFinished()
 void TransitionSequence::Initialize(SimpleParser* parser)
 {
     ScreenTransition* pTrans[20];
-    float pEarly[20] = {};
-    TransitionSounds sound[20] = {};
+    float pEarly[20] = { };
+    TransitionSounds sound[20] = { };
 
     m_nNumTransitions = 0;
 
