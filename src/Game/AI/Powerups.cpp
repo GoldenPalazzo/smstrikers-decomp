@@ -89,20 +89,16 @@ PowerupModelPool powerupModelPool;
 PowerupRegistry powerupRegistry;
 
 
-const char* uGREEN_SHELL_STREAK_TEXTURE;
-const char* uRED_SHELL_STREAK_TEXTURE;
-const char* uSPINY_SHELL_STREAK_TEXTURE;
-const char* uFREEZE_SHELL_STREAK_TEXTURE;
-const char* uBANANA_STREAK_TEXTURE;
-const char* uBOBOMB_STREAK_TEXTURE;
+const char* uFREEZE_SHELL_STREAK_TEXTURE = "global/blueshellstreak";
+const char* uSPINY_SHELL_STREAK_TEXTURE = "global/redshellstreak";
+const char* uGREEN_SHELL_STREAK_TEXTURE = "global/greenshellstreak";
+const char* uRED_SHELL_STREAK_TEXTURE = "global/redshellstreak";
+const char* uBOBOMB_STREAK_TEXTURE = "global/bobombstreak";
 
 } // namespace
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 static u8 gbAlwaysSurround;
-
-extern void* __vt__9EventData[];
-extern void* __vt__20PowerupUsedEventData[];
 
 // extern Audio::cWorldSFX gPowerupSFX;
 
@@ -161,6 +157,7 @@ const unsigned long uGREEN_SHELL_MASTER_OBJECT = nlStringLowerHash("gameplay/gre
 const unsigned long uRED_SHELL_MASTER_OBJECT = nlStringLowerHash("gameplay/redshell");
 const unsigned long uBANANA_MASTER_OBJECT = nlStringLowerHash("gameplay/banana");
 const unsigned long uBOBOMB_MASTER_OBJECT = nlStringLowerHash("gameplay/bobomb");
+const char* uBANANA_STREAK_TEXTURE;
 } // namespace
 
 void FreezeShell::operator delete(void* ptr)
@@ -212,22 +209,6 @@ void RedShell::operator delete(void* ptr)
 // void Format<BasicString<char, Detail::TempStringAllocator>, int>(const BasicString<char, Detail::TempStringAllocator>&, const int&)
 // {
 // }
-
-/**
- * Offset/Address/Size: 0x8 | 0x80060958 | size: 0x8
- */
-u32 PowerupHitPlayerEventData::GetID()
-{
-    return 0x1b9;
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x80060950 | size: 0x8
- */
-u32 PowerupUsedEventData::GetID()
-{
-    return 0x1af;
-}
 
 /**
  * Offset/Address/Size: 0x0 | 0x80060948 | size: 0x8
@@ -904,13 +885,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
     if (pThrower != NULL)
     {
         Event* pEvent = g_pEventManager->CreateValidEvent(0x1D, 0x24);
-        PowerupUsedEventData* pData = (PowerupUsedEventData*)((u8*)pEvent + 0x10);
-
-        if (pData != NULL)
-        {
-            *(void**)pData = __vt__9EventData;
-            *(void**)pData = __vt__20PowerupUsedEventData;
-        }
+        PowerupUsedEventData* pData = new ((u8*)pEvent + 0x10) PowerupUsedEventData();
 
         pData->Type = eType;
         pData->Thrower = pThrower;
@@ -1712,23 +1687,27 @@ check_event:
 
 /**
  * Offset/Address/Size: 0x3374 | 0x8005DC60 | size: 0x540
- * TODO: 99.76% match - r27/r28/r29 swap in initial sound setup and
- * f27/f30 swap for dx/normDz in fallback velocity
  */
 void PowerupBase::ThrowAt(cFielder* pThrower, Bowser*)
 {
-    unsigned long voiceID = m_uVoiceID;
-    if (voiceID != 0)
+    ePowerUpType type;
+    unsigned long soundID;
+    PhysicsObject* pPhysObj;
+
     {
-        if (voiceID != Audio::GetSndIDError())
+        unsigned long voiceID = m_uVoiceID;
+        if (voiceID != 0)
         {
-            Audio::gPowerupSFX.StopEmitter((SFXEmitter*)m_uVoiceID, 0);
-            m_uVoiceID = 0;
+            if (voiceID != Audio::GetSndIDError())
+            {
+                Audio::gPowerupSFX.StopEmitter((SFXEmitter*)m_uVoiceID, 0);
+                m_uVoiceID = 0;
+            }
         }
     }
 
-    ePowerUpType type = m_eType;
-    PhysicsObject* pPhysObj = m_pPhysicsObject;
+    type = m_eType;
+    pPhysObj = m_pPhysicsObject;
 
     if (type >= NUM_POWER_UPS)
     {
@@ -1742,7 +1721,7 @@ void PowerupBase::ThrowAt(cFielder* pThrower, Bowser*)
     {
         Audio::SoundAttributes attributes;
         attributes.Init();
-        unsigned long soundID = powerupSounds[type].sndActivate;
+        soundID = powerupSounds[type].sndActivate;
         if (soundID != 0xFFFFFFFF)
         {
             attributes.SetSoundType(soundID, true);
@@ -1860,13 +1839,13 @@ void PowerupBase::ThrowAt(cFielder* pThrower, Bowser*)
         }
     }
 
-    float dz = v3TargetPos.f.z - m_v3Position.f.z;
-    float dy = v3TargetPos.f.y - m_v3Position.f.y;
-    float dx = v3TargetPos.f.x - m_v3Position.f.x;
-    float invDist = nlRecipSqrt(dx * dx + dy * dy + dz * dz, true);
-    dz = invDist * dz;
-    dy = invDist * dy;
-    dx = invDist * dx;
+    nlVector3 v3Direction;
+    nlVec3Set(v3Direction,
+        v3TargetPos.f.x - m_v3Position.f.x,
+        v3TargetPos.f.y - m_v3Position.f.y,
+        v3TargetPos.f.z - m_v3Position.f.z);
+    float fInvDistance = nlRecipSqrt(v3Direction.GetLengthSq3D(), true);
+    nlVec3Scale(v3Direction, fInvDistance);
 
     int nNumSolutions;
     float pSolutions[2];
@@ -1896,9 +1875,7 @@ void PowerupBase::ThrowAt(cFielder* pThrower, Bowser*)
     else
     {
         nlVector3 v3Velocity;
-        v3Velocity.f.x = fSpeed * dx;
-        v3Velocity.f.y = fSpeed * dy;
-        v3Velocity.f.z = fSpeed * dz;
+        nlVec3Scale(v3Velocity, v3Direction, fSpeed);
         v3Velocity.f.z = 0.0f;
         m_v3Velocity = v3Velocity;
         m_pPhysicsObject->SetLinearVelocity(v3Velocity);
@@ -1943,7 +1920,7 @@ void PowerupBase::Destroy(bool bSilent)
                     PowerupSound pwrSnd;
                     unsigned long sndType;
                     PhysicsObject* pPhysObj = m_pPhysicsObject;
-                    float fVol = g_pGame->m_pGameTweaks->unk238;
+                    register float fVol = g_pGame->m_pGameTweaks->unk238;
                     pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
 
                     if (!Audio::IsInited())
@@ -2003,11 +1980,15 @@ void PowerupBase::Destroy(bool bSilent)
                                 }
                             }
 
-                            float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
-                            if (fVol != 100.0f)
-                            {
-                                attrs.mf_Volume = fVol * fDefaultVol;
+                            register float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
+                            asm {
+                                lfs f0, 100.0f
+                                fcmpu cr0, f0, fVol
+                                beq bobombLargeVolumeDone
+                                fmuls f0, fVol, fDefaultVol
+                                stfs f0, attrs.mf_Volume
                             }
+                        bobombLargeVolumeDone:
                             Audio::gPowerupSFX.Play(attrs);
                         }
                     }
@@ -2022,7 +2003,7 @@ void PowerupBase::Destroy(bool bSilent)
 
                     PhysicsObject* pPhysObj = m_pPhysicsObject;
                     unsigned long sndType;
-                    float fVol = g_pGame->m_pGameTweaks->unk234;
+                    register float fVol = g_pGame->m_pGameTweaks->unk234;
                     PowerupSound pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
 
                     if (!Audio::IsInited())
@@ -2082,11 +2063,15 @@ void PowerupBase::Destroy(bool bSilent)
                                 }
                             }
 
-                            float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
-                            if (fVol != 100.0f)
-                            {
-                                attrs.mf_Volume = fVol * fDefaultVol;
+                            register float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
+                            asm {
+                                lfs f0, 100.0f
+                                fcmpu cr0, f0, fVol
+                                beq bobombMediumVolumeDone
+                                fmuls f0, fVol, fDefaultVol
+                                stfs f0, attrs.mf_Volume
                             }
+                        bobombMediumVolumeDone:
                             Audio::gPowerupSFX.Play(attrs);
                         }
                     }
@@ -2101,7 +2086,7 @@ void PowerupBase::Destroy(bool bSilent)
 
                     PhysicsObject* pPhysObj = m_pPhysicsObject;
                     unsigned long sndType;
-                    float fVol = g_pGame->m_pGameTweaks->unk230;
+                    register float fVol = g_pGame->m_pGameTweaks->unk230;
                     PowerupSound pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
 
                     if (!Audio::IsInited())
@@ -2161,11 +2146,15 @@ void PowerupBase::Destroy(bool bSilent)
                                 }
                             }
 
-                            float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
-                            if (fVol != 100.0f)
-                            {
-                                attrs.mf_Volume = fVol * fDefaultVol;
+                            register float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
+                            asm {
+                                lfs f0, 100.0f
+                                fcmpu cr0, f0, fVol
+                                beq bobombSmallVolumeDone
+                                fmuls f0, fVol, fDefaultVol
+                                stfs f0, attrs.mf_Volume
                             }
+                        bobombSmallVolumeDone:
                             Audio::gPowerupSFX.Play(attrs);
                         }
                     }
@@ -2176,19 +2165,32 @@ void PowerupBase::Destroy(bool bSilent)
                 Audio::gStadGenSFX.Play((Audio::eWorldSFX)0xCE, 100.0f, -1.0f, true, 100.0f);
                 EmissionController* pControl = EmissionManager::Create(pExplosionGroup, 0);
                 pControl->SetPosition(m_pPhysicsObject->GetPosition());
-                if ((m_v3Position.f.z - ((PhysicsSphere*)m_pPhysicsObject)->GetRadius()) < 1.0f)
+                register float fRadius = ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
+                register float fPositionZ = m_v3Position.f.z;
+                asm {
+                    lfs f0, 1.0f
+                    fsubs fRadius, fPositionZ, fRadius
+                    fcmpo cr0, fRadius, f0
+                    bge groundExplosionDone
+                }
                 {
                     EmissionController* pControl = EmissionManager::Create(pGroundGroup, 0);
                     pControl->SetPosition(m_pPhysicsObject->GetPosition());
                 }
+            groundExplosionDone:
                 FireCameraRumbleFilter(0.0f, 0.2f);
             }
 
             Event* pEvent = g_pEventManager->CreateValidEvent(0x2C, 0x34);
-            CollisionBobombDataLayout* pEventData = (CollisionBobombDataLayout*)new ((u8*)pEvent + 0x10) CollisionBobombData();
+            register CollisionBobombDataLayout* pEventData = (CollisionBobombDataLayout*)new ((u8*)pEvent + 0x10) CollisionBobombData();
             pEventData->v3ExplosionLocation = m_v3Position;
-            pEventData->fExplosionRadius = (g_pGame->m_pGameTweaks->fPowerupExplosionRadius * (float)meSize)
-                                         + g_pGame->m_pGameTweaks->fPowerupExplosionRadius;
+            register GameTweaks* pGameTweaks = g_pGame->m_pGameTweaks;
+            register float fPowerupSize = (float)meSize;
+            asm {
+                lfs f0, 0x154(pGameTweaks)
+                fmadds f0, fPowerupSize, f0, f0
+                stfs f0, 0x10(pEventData)
+            }
             pEventData->pThrower = m_pThrower;
             pEventData->nThrowerPadID = m_nThrowerPadID;
             pEventData->bIsFreezeBomb = (m_eType == POWER_UP_FREEZE_SHELL);
@@ -2202,7 +2204,7 @@ void PowerupBase::Destroy(bool bSilent)
         {
         case POWERUPSIZE_LARGE:
         {
-            float fVol = g_pGame->m_pGameTweaks->unk238;
+            register float fVol = g_pGame->m_pGameTweaks->unk238;
             ePowerUpType type = m_eType;
             PhysicsObject* pPhysObj = m_pPhysicsObject;
 
@@ -2232,11 +2234,15 @@ void PowerupBase::Destroy(bool bSilent)
                         attrs.UseStationaryPosVector(pPhysObj->GetPosition());
                     }
 
-                    float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
-                    if (fVol != 100.0f)
-                    {
-                        attrs.mf_Volume = fVol * fDefaultVol;
+                    register float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
+                    asm {
+                        lfs f0, 100.0f
+                        fcmpu cr0, f0, fVol
+                        beq largeVolumeDone
+                        fmuls f0, fVol, fDefaultVol
+                        stfs f0, attrs.mf_Volume
                     }
+                largeVolumeDone:
 
                     Audio::gPowerupSFX.Play(attrs);
                 }
@@ -2245,7 +2251,7 @@ void PowerupBase::Destroy(bool bSilent)
         }
         case POWERUPSIZE_MEDIUM:
         {
-            float fVol = g_pGame->m_pGameTweaks->unk234;
+            register float fVol = g_pGame->m_pGameTweaks->unk234;
             ePowerUpType type = m_eType;
             PhysicsObject* pPhysObj = m_pPhysicsObject;
 
@@ -2275,11 +2281,15 @@ void PowerupBase::Destroy(bool bSilent)
                         attrs.UseStationaryPosVector(pPhysObj->GetPosition());
                     }
 
-                    float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
-                    if (fVol != 100.0f)
-                    {
-                        attrs.mf_Volume = fVol * fDefaultVol;
+                    register float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
+                    asm {
+                        lfs f0, 100.0f
+                        fcmpu cr0, f0, fVol
+                        beq mediumVolumeDone
+                        fmuls f0, fVol, fDefaultVol
+                        stfs f0, attrs.mf_Volume
                     }
+                mediumVolumeDone:
 
                     Audio::gPowerupSFX.Play(attrs);
                 }
@@ -2288,7 +2298,7 @@ void PowerupBase::Destroy(bool bSilent)
         }
         case POWERUPSIZE_SMALL:
         {
-            float fVol = g_pGame->m_pGameTweaks->unk230;
+            register float fVol = g_pGame->m_pGameTweaks->unk230;
             ePowerUpType type = m_eType;
             PhysicsObject* pPhysObj = m_pPhysicsObject;
 
@@ -2318,11 +2328,15 @@ void PowerupBase::Destroy(bool bSilent)
                         attrs.UseStationaryPosVector(pPhysObj->GetPosition());
                     }
 
-                    float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
-                    if (fVol != 100.0f)
-                    {
-                        attrs.mf_Volume = fVol * fDefaultVol;
+                    register float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
+                    asm {
+                        lfs f0, 100.0f
+                        fcmpu cr0, f0, fVol
+                        beq smallVolumeDone
+                        fmuls f0, fVol, fDefaultVol
+                        stfs f0, attrs.mf_Volume
                     }
+                smallVolumeDone:
 
                     Audio::gPowerupSFX.Play(attrs);
                 }
@@ -2390,7 +2404,7 @@ void PowerupBase::PreThrow(cFielder* pFielder, Bowser* pBowser)
     }
     else
     {
-        nlVector3 localPt = { 0.0f, 0.0f, 0.0f };
+        nlVector3 localPt = { 2.5f, 0.0f, 1.2f };
         GetWorldPoint(pos, localPt, pBowser->mv3Position, pBowser->maFacingDirection);
     }
 
@@ -2873,13 +2887,13 @@ void GreenShell::Destroy(bool bSilent)
         switch (meSize)
         {
         case POWERUPSIZE_LARGE:
-            pEffectsGroup = fxGetGroup("greenshell_explode_big");
+            pEffectsGroup = fxGetGroup("green_shell_explode_big");
             break;
         case POWERUPSIZE_MEDIUM:
-            pEffectsGroup = fxGetGroup("greenshell_explode_med");
+            pEffectsGroup = fxGetGroup("green_shell_explode_med");
             break;
         case POWERUPSIZE_SMALL:
-            pEffectsGroup = fxGetGroup("greenshell_explode");
+            pEffectsGroup = fxGetGroup("green_shell_explode");
             break;
         }
 
@@ -2993,13 +3007,13 @@ void RedShell::Destroy(bool bSilent)
         switch (meSize)
         {
         case POWERUPSIZE_LARGE:
-            pEffectsGroup = fxGetGroup("redshell_explode_big");
+            pEffectsGroup = fxGetGroup("red_shell_explode_big");
             break;
         case POWERUPSIZE_MEDIUM:
-            pEffectsGroup = fxGetGroup("redshell_explode_med");
+            pEffectsGroup = fxGetGroup("red_shell_explode_med");
             break;
         case POWERUPSIZE_SMALL:
-            pEffectsGroup = fxGetGroup("redshell_explode");
+            pEffectsGroup = fxGetGroup("red_shell_explode");
             break;
         }
 

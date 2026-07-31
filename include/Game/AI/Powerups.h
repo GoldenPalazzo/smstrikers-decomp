@@ -95,16 +95,16 @@ public:
     /* 0x08 */ virtual ~PowerupBase();
     /* 0x0C */ virtual void Destroy(bool);
     /* 0x10 */ virtual void PreThrow(cFielder*, Bowser*);
-    /* 0x14 */ virtual void Init(cFielder*, Bowser*);
-    /* 0x18 */ virtual void ThrowAt(cFielder*, Bowser*);
+    /* 0x14 */ virtual void ThrowAt(cFielder*, Bowser*);
+    /* 0x18 */ virtual void Init(cFielder*, Bowser*);
     /* 0x1C */ virtual void Update(float);
 
     float GetRadius() const;
     static int AwardPowerup(cTeam*);
     static void CollisionCallback(PhysicsObject*, PhysicsObject*, const nlVector3&, void*);
     void UpdateTransform();
-    static unsigned long PlayPowerupSound(ePowerUpType, PowerupBase::PowerupSound, const nlVector3&, float);
     static unsigned long PlayPowerupSound(ePowerUpType, PowerupBase::PowerupSound, PhysicsObject*, float);
+    static unsigned long PlayPowerupSound(ePowerUpType, PowerupBase::PowerupSound, const nlVector3&, float);
     static void StopPowerupInEffectSound(SFXEmitter*);
 
     /* 0x04 */ bool m_bShouldDestroy;
@@ -238,7 +238,7 @@ struct PowerupUsedEventData : public EventData
     /* 0x04 */ ePowerUpType Type;
     /* 0x08 */ cPlayer* Thrower;
     /* 0x0C */ cPlayer* Target;
-    u32 GetID();
+    u32 GetID() { return 0x1AF; }
 };
 
 struct PowerupHitPlayerEventData : public EventData
@@ -246,7 +246,7 @@ struct PowerupHitPlayerEventData : public EventData
     /* 0x04 */ ePowerUpType Type;
     /* 0x08 */ cPlayer* Thrower;
     /* 0x0C */ cPlayer* Target;
-    u32 GetID();
+    u32 GetID() { return 0x1B9; }
 };
 
 // class Format < BasicString < char, Detail
