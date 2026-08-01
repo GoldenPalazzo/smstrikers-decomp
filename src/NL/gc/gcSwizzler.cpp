@@ -124,27 +124,27 @@ void GCSwizzle(void* pSwizzledData, const void* pLinearData, unsigned short widt
             for (x = 0; x < width; x += 4)
             {
                 pTempSrc = pSrc;
-                i = 0;
-                for (yy = 0; yy < 2; yy++)
+                unsigned int off;
+                for (yy = 0, off = 0, i = 0; yy < 2; yy++, off += 8, i += 8)
                 {
                     *(unsigned short*)(pDest + ((i + 0) << 1)) = *(const unsigned short*)(pTempSrc + 0);
                     *(unsigned short*)(pDest + ((i + 1) << 1)) = *(const unsigned short*)(pTempSrc + 2);
                     *(unsigned short*)(pDest + ((i + 2) << 1)) = *(const unsigned short*)(pTempSrc + 4);
                     *(unsigned short*)(pDest + ((i + 3) << 1)) = *(const unsigned short*)(pTempSrc + 6);
 
+                    off += 8;
                     pTempSrc += (width << 1);
 
-                    *(unsigned short*)(pDest + ((i + 4) << 1)) = *(const unsigned short*)(pTempSrc + 0);
+                    *(unsigned short*)(pDest + off) = *(const unsigned short*)(pTempSrc + 0);
                     *(unsigned short*)(pDest + ((i + 5) << 1)) = *(const unsigned short*)(pTempSrc + 2);
                     *(unsigned short*)(pDest + ((i + 6) << 1)) = *(const unsigned short*)(pTempSrc + 4);
                     *(unsigned short*)(pDest + ((i + 7) << 1)) = *(const unsigned short*)(pTempSrc + 6);
 
-                    i += 8;
                     pTempSrc += (width << 1);
                 }
 
                 pSrc += 8;
-                pDest += 32;
+                pDest += off;
             }
 
             pSrc += width * 6;
