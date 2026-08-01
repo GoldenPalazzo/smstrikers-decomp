@@ -917,17 +917,13 @@ void CrowdMood::Purge(bool bJustStopSFX)
     GCAudioStreaming::StereoAudioStream* pChant = g_CrowdAudio.pChantStream;
     if (pChant != NULL)
     {
-        pChant->StopPlaying();
-        pChant->CancelPendingReads();
-        pChant->Cool();
+        pChant->Stop();
     }
 
     GCAudioStreaming::MonoAudioStream* pHeckle = g_CrowdAudio.pHeckleStream;
     if (pHeckle != NULL)
     {
-        pHeckle->StopPlaying();
-        pHeckle->CancelPendingReads();
-        pHeckle->Cool();
+        pHeckle->Stop();
     }
 
     if (!bJustStopSFX)

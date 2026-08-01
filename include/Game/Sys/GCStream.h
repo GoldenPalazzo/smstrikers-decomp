@@ -147,6 +147,12 @@ enum STREAM_FLAG
 class AudioStream
 {
 public:
+    void SetFlag(STREAM_FLAG flag, bool value)
+    {
+        m_Flags =
+            (m_Flags & ~(1 << flag))
+            | ((unsigned long)value << flag);
+    }
     AudioStreamBuffer* GetBuffer(unsigned long index)
     {
         AudioStreamBuffer* buffer;
@@ -324,7 +330,7 @@ public:
     {
         if (m_Flags & (1 << SF_CoolOnStop))
         {
-            m_Flags &= ~(1 << SF_CoolOnStop);
+            SetFlag(SF_CoolOnStop, false);
             if (m_State > SS_Initd)
             {
                 AudioStreamBuffer* buffer = NULL;
@@ -554,6 +560,38 @@ public:
     /* 0x30 */ unsigned long m_Flags;
     /* 0x34 */ unsigned long m_BufferCount;
 }; // total size: 0x38
+
+inline void AudioStream::Stop()
+{
+    SetFlag(SF_Play, false);
+    if (m_State == SS_Playing)
+    {
+        AudioStreamBuffer* pBuffer;
+        AudioStreamBuffer* bufferIndex = NULL;
+        pBuffer = GetBuffer((unsigned long)bufferIndex);
+        while (pBuffer != NULL)
+        {
+            pBuffer->m_Volume = 0;
+            sndStreamMixParameterEx(
+                pBuffer->m_StreamId,
+                pBuffer->m_Volume,
+                pBuffer->m_Pan,
+                pBuffer->m_SurroundPan,
+                0,
+                0);
+            sndStreamDeactivate(pBuffer->m_StreamId);
+            m_State = SS_Warm;
+
+            ((unsigned long&)bufferIndex)++;
+            pBuffer = GetBuffer((unsigned long)bufferIndex);
+        }
+        m_StreamPos = 0;
+        m_State = SS_Warm;
+    }
+
+    CancelPendingReads();
+    Cool();
+}
 
 class MonoAudioStream : public AudioStream
 {
