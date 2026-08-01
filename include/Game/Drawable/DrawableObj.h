@@ -31,8 +31,8 @@ public:
     nlMatrix4& GetWorldMatrix() const;
     unsigned long GetHashID() const { return m_uHashID; }
 
-    /* 0x04 */ nlMatrix4 m_worldMatrix;
-    /* 0x44 */ bool m_worldMatrixUpToDate;
+    /* 0x04 */ mutable nlMatrix4 m_worldMatrix;
+    /* 0x44 */ mutable bool m_worldMatrixUpToDate;
     /* 0x48 */ nlQuaternion m_orientation;
     /* 0x58 */ nlVector3 m_translation;
     /* 0x64 */ float m_scale;

@@ -65,16 +65,6 @@ static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p
 
 /**
  * Offset/Address/Size: 0x1DD4 | 0x80121BE0 | size: 0x214
- * TODO: OPEN at 93.53%, 9 diff rows, one prologue-scheduling cluster: retail
- * issues [lfs z][lfs refHeight] at slots 2-3 above the LR store, fdivs next,
- * with the 0.0f pool load sunk into the divide shadow. GC/1.3.2 never lifts
- * pointer loads over prologue stores (proven with the pool constant removed
- * from the block). GC/2.0-2.7 produce this function 100.0 from this exact
- * source; Clone and the GetAABBDimensions wrapper are the two 2.x divergences
- * pinning the TU's mw_version override, so this residual is a compiler-band
- * conflict, not a source defect (see smstrikers-notes 0050). ~40 source forms,
- * all O-levels, six -proc models and every optimizer pragma family measured
- * inert at 1.3.2 - consult the task ledger before retrying spellings.
  */
 static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p, bool bGlow)
 {
@@ -616,8 +606,6 @@ DrawableObject* DrawableModel::Clone() const
 
 /**
  * Offset/Address/Size: 0xD18 | 0x80120B24 | size: 0x38C
- * TODO: 99.27% match - saved-register swap: dimensions r22 vs target r23,
- *       numPackets r23 vs target r22.
  */
 void GetAABBDimensions(const glModel* model, AABBDimensions& dimensions, unsigned long boundingBoxCacheKey)
 {
@@ -978,9 +966,6 @@ static void DrawCoPlanarReference(eGLView view, const glModel& model, const nlMa
 
 /**
  * Offset/Address/Size: 0x2D0 | 0x801200DC | size: 0x460
- * TODO: 82.56% match - extra f29 save/frame growth plus GPR allocation shift
- *       (model/worldMatrix/ignorePacketMatrices are two saved registers low);
- *       matrix copies use interleaved two-word chunks instead of one bulk copy.
  */
 void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float shadowTranslucency, bool ignorePacketMatrices, bool isModelPosed, bool bFieldOnlyShadow, unsigned long boundingBoxCacheKey)
 {

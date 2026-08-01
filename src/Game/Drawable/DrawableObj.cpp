@@ -61,10 +61,10 @@ nlMatrix4& DrawableObject::GetWorldMatrix() const
         nlMatrix4 scale_mtx;
         float s = m_scale;
         nlMakeScaleMatrix(scale_mtx, s, s, s);
-        nlMultMatrices(*(nlMatrix4*)&m_worldMatrix, scale_mtx, rot_mtx);
-        *(bool*)&m_worldMatrixUpToDate = true;
+        nlMultMatrices(m_worldMatrix, scale_mtx, rot_mtx);
+        m_worldMatrixUpToDate = true;
     }
-    return *(nlMatrix4*)&m_worldMatrix;
+    return m_worldMatrix;
 }
 
 /**
