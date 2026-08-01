@@ -50,7 +50,6 @@ public:
         , m_bUnknownA5(other.m_bUnknownA5)
         , pAABBDimensions(other.pAABBDimensions) {
         };
-    /* 0x04 */ virtual ~DrawableModel() { };
     /* 0x08 */ virtual DrawableObject* Clone() const;
     /* 0x0C */ virtual void Draw();
     /* 0x10 */ virtual void DrawPlanarShadow();
@@ -76,7 +75,6 @@ class DrawableShadow : public DrawableObject
 public:
     DrawableShadow() { }
 
-    /* 0x04 */ virtual ~DrawableShadow() { };
     /* 0x0C */ virtual void Draw();
 
     /* 0x9C */ glModel* m_pModel;

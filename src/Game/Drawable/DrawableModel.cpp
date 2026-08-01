@@ -673,12 +673,11 @@ void GetAABBDimensions(const glModel* model, AABBDimensions& dimensions, unsigne
     unsigned int packetIndex = 0;
     glModelPacket* packet;
     int vertexIndex;
-    unsigned int numPackets = model->numPackets;
     packetOffset = 0;
     nlVector3 min;
     nlVector3 max;
 
-    while (packetIndex < numPackets)
+    while (packetIndex < model->numPackets)
     {
         packet = (glModelPacket*)(packets + packetOffset);
         DisplayList* list = dlGetStruct(packet->indexBuffer);
@@ -1035,9 +1034,8 @@ void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float 
     }
 
     pPacket = model->packets;
-    glModelPacket* pPacketEnd = pPacket + model->numPackets;
 
-    while (pPacket < pPacketEnd)
+    while (pPacket < model->packets + model->numPackets)
     {
         if (!ignorePacketMatrices)
         {
