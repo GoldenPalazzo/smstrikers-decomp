@@ -1248,8 +1248,6 @@ unsigned char GameInfoManager::SetupBowserKnockout()
 
 /**
  * Offset/Address/Size: 0x7EF0 | 0x8017D594 | size: 0x2DC
- * TODO: 97.92% match - register allocation differs for this, lineup,
- * sidekick lineup, game pointer, loop counters, and final team value.
  */
 void GameInfoManager::SetupTournamentKnockout(eTeamID* lineup, eSidekickID* sklineup)
 {
@@ -1260,17 +1258,13 @@ void GameInfoManager::SetupTournamentKnockout(eTeamID* lineup, eSidekickID* skli
     mCurrentCup->mGameNumber = 0;
     mLastHumanStadium = STAD_INVALID;
 
-    int numGamesCount = (u16)numGames;
-    int numplayingteams = (u16)mCurrentCup->GetNumTeams();
+    int numplayingteams = mCurrentCup->GetNumTeams();
 
     *mCurrentCup->GetRoundResults(0) = 1;
     *mCurrentCup->GetRoundResults(1) = 1;
     *mCurrentCup->GetRoundResults(2) = 1;
 
-    eSidekickID* pSkLineup = sklineup;
-    eTeamID* pLineup = lineup;
-
-    for (int i = 0; i < numGamesCount; i++)
+    for (int i = 0; i < numGames; i++)
     {
         BasicGameInfo* g = mCurrentCup->GetGameInfo(0, i);
 
@@ -1287,11 +1281,11 @@ void GameInfoManager::SetupTournamentKnockout(eTeamID* lineup, eSidekickID* skli
         g->mStadiumIndex = STAD_MARIO_STADIUM;
 
         {
-            eTeamID away = pLineup[1];
-            eSidekickID homeSK = pSkLineup[0];
-            eSidekickID awaySK = pSkLineup[1];
+            eTeamID away = lineup[i * 2 + 1];
+            eSidekickID homeSK = sklineup[i * 2];
+            eSidekickID awaySK = sklineup[i * 2 + 1];
 
-            g->mTeamIndex[0] = pLineup[0];
+            g->mTeamIndex[0] = lineup[i * 2];
             g->mTeamIndex[1] = away;
             g->mSidekickIndex[0] = homeSK;
             g->mSidekickIndex[1] = awaySK;
@@ -1302,22 +1296,20 @@ void GameInfoManager::SetupTournamentKnockout(eTeamID* lineup, eSidekickID* skli
             g->mStadiumIndex = currentStadium;
 
             u16 humanTeams = mCurrentCup->mHumanTeams;
-            if ((humanTeams & (1 << g->mTeamIndex[0])) || (humanTeams & (1 << g->mTeamIndex[1])))
+            eTeamID home = g->mTeamIndex[0];
+            if ((humanTeams & (1 << home)) || (humanTeams & (1 << g->mTeamIndex[1])))
             {
                 mLastHumanStadium = currentStadium;
             }
         }
-
-        pLineup += 2;
-        pSkLineup += 2;
     }
 
     {
         eTeamID teamID;
         TeamStats* returnedStats;
         TeamStats* teamstats;
-        int k;
         eTeamID* lineupPtr;
+        int k;
         returnedStats = mCurrentCup->GetTeamStats(0);
         lineupPtr = lineup;
         k = 0;
