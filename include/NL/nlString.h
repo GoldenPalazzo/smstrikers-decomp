@@ -66,7 +66,7 @@ template <typename CharT>
 CharT* nlStrNCat(CharT*, const CharT*, const CharT*, unsigned long);
 
 template <typename CharT>
-int nlStrCmp(const CharT*, const CharT*);
+int nlStrCmp(const CharT* a, const CharT* b);
 
 template <typename CharT>
 int nlStrICmp(const CharT*, const CharT*);

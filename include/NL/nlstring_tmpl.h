@@ -2,6 +2,9 @@
 #define _NLSTRING_TMPL_H_
 
 template <typename CharT>
+CharT nlToUpper(CharT);
+
+template <typename CharT>
 unsigned long nlStrLen(const CharT* str)
 {
     unsigned long n = 0;

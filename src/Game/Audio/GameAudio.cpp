@@ -1,37 +1,20 @@
+#include "NL/nlstring_tmpl.h"
 #include "Game/GameAudio.h"
-#include "Game/GameTweaks.h"
+#include "NL/nlWare.h"
+#include "Game/Audio/AudioLoader.h"
+#include "Game/Game.h"
 #include "Game/Physics/PhysicsObject.h"
 #include "Game/Sys/debug.h"
 #include "NL/nlTask.h"
-#include "NL/nlString.h"
 #include "types.h"
-
-class cGame
-{
-public:
-    /* 0x00 */ char _pad0[4];
-    /* 0x04 */ GameTweaks* m_pGameTweaks;
-    /* 0x08 */ char _pad1[0x38];
-    /* 0x40 */ bool mbCaptainShotToScoreOn;
-};
-
-extern cGame* g_pGame;
-
-class AudioLoader
-{
-public:
-    static unsigned long GetWorldSFXTypeFromStr(const char*);
-    static unsigned long GetCharSFXTypeFromStr(const char*);
-    static unsigned long GetSFXIDFromStr(const char*, SoundStrToIDNode**);
-};
 
 SlotPool<SFXPlaySet> SFXPlaySet::m_TrackedSFXSlotPool(0x32, 0x10);
 
 static const nlVector3 kZeroVector = { 0.0f, 0.0f, 0.0f };
 
-bool TrackedSFXPitchFreqTypeCheckCallback(unsigned long sfxID, cGameSFX* pGameSFX);
-bool TrackedSFXFilterFreqTypeCheckCallback(unsigned long sfxID, cGameSFX* pGameSFX);
-bool TrackedSFXPriorityCallback(SFXPlaySet* pSFXPlaySet, unsigned long param, cGameSFX* pGameSFX);
+static bool TrackedSFXPitchFreqTypeCheckCallback(unsigned long sfxID, cGameSFX* pGameSFX);
+static bool TrackedSFXFilterFreqTypeCheckCallback(unsigned long sfxID, cGameSFX* pGameSFX);
+static bool TrackedSFXPriorityCallback(SFXPlaySet* pSFXPlaySet, unsigned long param, cGameSFX* pGameSFX);
 
 inline bool IsVolGrpInRange(unsigned long sfxID, cGameSFX* pGameSFX)
 {
@@ -190,22 +173,6 @@ static inline void ResetTrackedEmitter(SFXEmitter* pSFXEmitter)
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x80153C14 | size: 0x3C
- * TODO: 96.00% match - prologue scheduling mismatch remains.
- * Target orders `lwz r7, 0(r5)` before `stw r0, 0x24(r1)`.
- */
-template <>
-void nlWalkDLRing<DLListEntry<SFXPlaySet*>, DLListContainerBase<SFXPlaySet*, NewAdapter<DLListEntry<SFXPlaySet*> > > >(
-    DLListEntry<SFXPlaySet*>* head,
-    DLListContainerBase<SFXPlaySet*, NewAdapter<DLListEntry<SFXPlaySet*> > >* callback,
-    void (DLListContainerBase<SFXPlaySet*, NewAdapter<DLListEntry<SFXPlaySet*> > >::*callbackFunc)(DLListEntry<SFXPlaySet*>*))
-{
-    FORCE_DONT_INLINE;
-    void (DLListContainerBase<SFXPlaySet*, NewAdapter<DLListEntry<SFXPlaySet*> > >::*func)(DLListEntry<SFXPlaySet*>*) = callbackFunc;
-    nlWalkRing(head, callback, func);
-}
-
-/**
  * Offset/Address/Size: 0x2660 | 0x80153BA4 | size: 0x4C
  */
 cGameSFX::cGameSFX()
@@ -360,8 +327,8 @@ inline float cGameSFX::GetSFXVol(const Audio::SoundAttributes& attributes) const
 
 inline float cGameSFX::GetSFXVolReverb(const Audio::SoundAttributes& attributes) const
 {
-    SoundStrToIDNode* sfxTable = mpSFX;
-    SoundStrToIDNode sfxInfo = sfxTable[attributes.mu_Type];
+    SoundStrToIDNode* sfxEntry = mpSFX + attributes.mu_Type;
+    SoundStrToIDNode sfxInfo = *sfxEntry;
     if (attributes.mf_VolReverb != 100.0f)
     {
         return attributes.mf_VolReverb;
@@ -435,7 +402,7 @@ bool cGameSFX::IsKeepingTrackOf(unsigned long type, SFXPlaySet** pGrabTrackedSFX
 /**
  * Offset/Address/Size: 0x2128 | 0x8015366C | size: 0x30
  */
-bool TrackedSFXPitchFreqTypeCheckCallback(unsigned long sfxID, cGameSFX* pGameSFX)
+static bool TrackedSFXPitchFreqTypeCheckCallback(unsigned long sfxID, cGameSFX* pGameSFX)
 {
     const int volGrp = pGameSFX->mpSFX[sfxID].volGrp;
     return (bool)(volGrp >= 5 && volGrp <= 19);
@@ -444,7 +411,7 @@ bool TrackedSFXPitchFreqTypeCheckCallback(unsigned long sfxID, cGameSFX* pGameSF
 /**
  * Offset/Address/Size: 0x208C | 0x801535D0 | size: 0x9C
  */
-bool TrackedSFXFilterFreqTypeCheckCallback(unsigned long sfxID, cGameSFX* pGameSFX)
+static bool TrackedSFXFilterFreqTypeCheckCallback(unsigned long sfxID, cGameSFX* pGameSFX)
 {
     if (pGameSFX->GetClassType() == WORLD && sfxID == 0xBB)
     {
@@ -740,7 +707,7 @@ epilogue:
 /**
  * Offset/Address/Size: 0x1BD0 | 0x80153114 | size: 0xA8
  */
-bool TrackedSFXPriorityCallback(SFXPlaySet* pSFXPlaySet, unsigned long param, cGameSFX* pGameSFX)
+static bool TrackedSFXPriorityCallback(SFXPlaySet* pSFXPlaySet, unsigned long param, cGameSFX* pGameSFX)
 {
     if (pSFXPlaySet->bIs3D != 0)
     {
@@ -767,9 +734,8 @@ static inline bool CheckForHigherPrioritySFX(cGameSFX* pGameSFX, int priority)
         return false;
     }
 
+    DLListEntry<SFXPlaySet*>* current = nlDLRingGetStart(pGameSFX->mpCurPlaySet.m_Head);
     DLListEntry<SFXPlaySet*>* head = pGameSFX->mpCurPlaySet.m_Head;
-    DLListEntry<SFXPlaySet*>* current = nlDLRingGetStart(head);
-    head = pGameSFX->mpCurPlaySet.m_Head;
     while (current != NULL)
     {
         SFXPlaySet* tracked = current->entry;
@@ -813,9 +779,9 @@ static inline void KillLowerPrioritySFX(cGameSFX* pGameSFX, int priority)
         return;
     }
 
+    DLListEntry<SFXPlaySet*>* start = nlDLRingGetStart(pGameSFX->mpCurPlaySet.m_Head);
+    DLListEntry<SFXPlaySet*>* current = start;
     DLListEntry<SFXPlaySet*>* head = pGameSFX->mpCurPlaySet.m_Head;
-    DLListEntry<SFXPlaySet*>* current = nlDLRingGetStart(head);
-    head = pGameSFX->mpCurPlaySet.m_Head;
     while (current != NULL)
     {
         SFXPlaySet* tracked = current->entry;
@@ -899,7 +865,6 @@ static inline bool FindRepeatTrackedSFX(cGameSFX* self, unsigned long type, SFXP
 
 /**
  * Offset/Address/Size: 0x1104 | 0x80152648 | size: 0xACC
- * TODO: 99.07% match - remaining prologue move order and SoundStrToIDNode copy-loop register/base reuse.
  */
 unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
 {
@@ -912,17 +877,15 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
     float fVolReverb;
     int volGrp;
     EmitterStartInfo info;
-    register cGameSFX* const self = this;
-
     pSFXEmitter = NULL;
     emitterIndex = Audio::GetSndIDError();
 
-    if (!Audio::IsInited() || !self->mbInited)
+    if (!Audio::IsInited() || !this->mbInited)
     {
         return Audio::GetSndIDError();
     }
 
-    unsigned long sfxID = self->mpSFX[attributes.mu_Type].musyxID;
+    unsigned long sfxID = this->mpSFX[attributes.mu_Type].musyxID;
 
     if (!attributes.m_unk_0x7B && g_pGame != NULL && g_pGame->mbCaptainShotToScoreOn && nlTaskManager::m_pInstance->m_CurrState != 1)
     {
@@ -950,7 +913,8 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
 
     if (attributes.mb_NoPhasingFilter)
     {
-        if (FindRepeatTrackedSFX(self, attributes.mu_Type, &pTrackedSFX))
+        cGameSFX* const repeatOwner = this;
+        if (FindRepeatTrackedSFX(repeatOwner, attributes.mu_Type, &pTrackedSFX))
         {
             currTime = Audio::GetAudioTimer();
 
@@ -966,8 +930,8 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
     }
 
     {
-        fVolume = self->GetSFXVol(attributes);
-        fVolReverb = self->GetSFXVolReverb(attributes);
+        fVolume = this->GetSFXVol(attributes);
+        fVolReverb = this->GetSFXVolReverb(attributes);
 
         if (fVolReverb == 0.0f)
         {
@@ -976,7 +940,7 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
 
         fVolume += attributes.mf_VolAdjustment;
 
-        volGrp = self->mpSFX[attributes.mu_Type].volGrp;
+        volGrp = this->mpSFX[attributes.mu_Type].volGrp;
         if (volGrp > -1)
         {
             Audio::SetSFXVolumeGroup(sfxID, volGrp);
@@ -984,28 +948,28 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
 
         if (attributes.mi_GroupPriority >= 0)
         {
-            if (CheckForHigherPrioritySFX(self, attributes.mi_GroupPriority))
+            if (::CheckForHigherPrioritySFX(this, attributes.mi_GroupPriority))
             {
                 return Audio::GetSndIDError();
             }
 
-            KillLowerPrioritySFX(self, attributes.mi_GroupPriority);
+            ::KillLowerPrioritySFX(this, attributes.mi_GroupPriority);
         }
 
-        attributes.mi_SFXPriority = self->mpSFX[attributes.mu_Type].sfxPriority;
+        attributes.mi_SFXPriority = this->mpSFX[attributes.mu_Type].sfxPriority;
     }
 
     if (attributes.mi_SFXPriority > 0 && attributes.mf_DelayTime < 0.0f)
     {
-        if (CheckForHigherPrioritySFX(self, attributes.mi_SFXPriority))
+        if (::CheckForHigherPrioritySFX(this, attributes.mi_SFXPriority))
         {
             return Audio::GetSndIDError();
         }
 
-        KillLowerPrioritySFX(self, attributes.mi_SFXPriority);
+        ::KillLowerPrioritySFX(this, attributes.mi_SFXPriority);
     }
 
-    attributes.mp_OwnerSFX = self;
+    attributes.mp_OwnerSFX = this;
     {
         bool bInRange = (volGrp >= 5 && volGrp <= 19);
         if (bInRange)
@@ -1021,13 +985,13 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
 
     if (attributes.mf_DelayTime != -1.0f)
     {
-        return Audio::AddDelayedSFX(attributes, sfxID, fVolume, fVolReverb, self);
+        return Audio::AddDelayedSFX(attributes, sfxID, fVolume, fVolReverb, this);
     }
 
     if (!attributes.mb_Is3D)
     {
         voiceID = Audio::PlaySFXbyID(attributes, sfxID, fVolume, fVolReverb, volGrp);
-        self->mpSFX[attributes.mu_Type].lastVoiceID = voiceID;
+        this->mpSFX[attributes.mu_Type].lastVoiceID = voiceID;
         return voiceID;
     }
 
@@ -1080,7 +1044,7 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
 
         pSFXEmitter->posUpdateMethod = attributes.posUpdateMethod;
         pSFXEmitter->soundType = attributes.mu_Type;
-        pSFXEmitter->pOwner = self;
+        pSFXEmitter->pOwner = this;
     }
 
     info.pSFXEmitter = NULL;
@@ -1140,7 +1104,7 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
         pSFXEmitter->fTimeStamp = Audio::GetAudioTimer();
     }
 
-    self->mpSFX[attributes.mu_Type].pLastEmitter = pSFXEmitter;
+    this->mpSFX[attributes.mu_Type].pLastEmitter = pSFXEmitter;
 
     if (attributes.mf_ReturnEmitterOnPlay)
     {
@@ -1149,7 +1113,7 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
 
     if (attributes.mb_KeepTrack)
     {
-        self->KeepTrack(pSFXEmitter, attributes, voiceID);
+        this->KeepTrack(pSFXEmitter, attributes, voiceID);
     }
 
     return voiceID;
@@ -1587,6 +1551,16 @@ void cGameSFX::StopPlayingAllTrackedSFX()
     }
 }
 
+SFXPlaySet* cGameSFX::RemoveTrackedSFX(nlDLListIterator<SFXPlaySet*>* pIterator)
+{
+    DLListEntry<SFXPlaySet*>* pEntry = pIterator->m_Curr;
+    SFXPlaySet* pTrackedSFX = pEntry->entry;
+    nlDLRingRemove(&mpCurPlaySet.m_Head, pEntry);
+    mpCurPlaySet.DeleteEntry(pEntry);
+    ResetTrackedPlaySet(pTrackedSFX);
+    return pTrackedSFX;
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x80151544 | size: 0x8D8
  */
@@ -1664,8 +1638,8 @@ void cGameSFX::UpdateAllTrackedSFX(float)
                         if (g_pGame != NULL)
                         {
                             pTrackedSFX->voiceID = Audio::GetEmitterVoiceID(pTrackedSFX->emitter);
-                            UpdateGroupFilterStatusOnSFX(this, pTrackedSFX);
-                            UpdateGroupPitchStatusOnSFX(this, pTrackedSFX);
+                            ::UpdateGroupFilterStatusOnSFX(this, pTrackedSFX);
+                            ::UpdateGroupPitchStatusOnSFX(this, pTrackedSFX);
                         }
                         continue;
                     }
@@ -1673,8 +1647,8 @@ void cGameSFX::UpdateAllTrackedSFX(float)
 
                 if (!Audio::IsEmitterActive(pTrackedSFX->emitter) && pTrackedSFX->timeStamp > -1.0f && currTime > pTrackedSFX->timeStamp + 0.1f)
                 {
-                    UpdateGroupFilterStatusOnSFX(this, pTrackedSFX);
-                    UpdateGroupPitchStatusOnSFX(this, pTrackedSFX);
+                    ::UpdateGroupFilterStatusOnSFX(this, pTrackedSFX);
+                    ::UpdateGroupPitchStatusOnSFX(this, pTrackedSFX);
 
                     ResetTrackedEmitter(pTrackedSFX->emitter);
                     RemoveFromTrackedList(pHeadPtr, head, iter);

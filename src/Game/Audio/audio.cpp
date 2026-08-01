@@ -3880,14 +3880,6 @@ void SoundAttributes::Init()
     m_unk_0x7C = true;
 }
 
-/**
- * Offset/Address/Size: 0x0 | 0x8014122C | size: 0x8
- */
-eClassType cGameSFX::GetClassType() const
-{
-    return meClassType;
-}
-
 // /**
 //  * Offset/Address/Size: 0x0 | 0x80141234 | size: 0x8C
 //  */

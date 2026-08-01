@@ -80,26 +80,43 @@ public:
 
     virtual void Init();
     virtual void DeInit();
-    virtual void SetSFX(SoundPropAccessor*);
-    virtual unsigned long Play(Audio::SoundAttributes&);
-    virtual eClassType GetClassType() const;
-
+    void SetupPlaySet();
     void ShutdownPlaySet();
-    float GetSFXVol(unsigned long) const;
+    virtual void SetSFX(SoundPropAccessor*);
+    void CheckTypeMap(SoundPropAccessor*) const;
+    void ResetSFX();
     inline float GetSFXVol(const Audio::SoundAttributes&) const;
-    float GetSFXVolReverb(unsigned long) const;
+    float GetSFXVol(unsigned long) const;
     inline float GetSFXVolReverb(const Audio::SoundAttributes&) const;
+    float GetSFXVolReverb(unsigned long) const;
+    int GetVolGroup(unsigned long) const;
+    int GetSFXPriority(unsigned long) const;
     bool IsKeepingTrackOf(unsigned long, SFXPlaySet**);
+    bool InitiateCallbackOnAllTrackedSFX(
+        bool (*)(SFXPlaySet*, unsigned long, cGameSFX*),
+        unsigned long,
+        bool (*)(unsigned long, cGameSFX*));
     bool ActivateFilterOnAllTrackedSFX(bool);
     bool SetFilterFreqOnAllTrackedSFX(unsigned short);
     bool SetPitchBendOnAllDialogueSFX(unsigned short);
+    bool CheckForHigherPrioritySFX(int);
+    bool KillLowerPrioritySFX(int);
+    virtual unsigned long Play(Audio::SoundAttributes&);
+    virtual eClassType GetClassType() const { return meClassType; }
     SFXPlaySet* KeepTrack(SFXEmitter*, const Audio::SoundAttributes&, unsigned long);
     void Stop(unsigned long, cGameSFX::StopFlag);
     void StopEmitter(SFXEmitter*, unsigned long);
     bool StopTrackedSFX(SFXPlaySet*);
     bool StopTrackedSFX(nlDLListIterator<SFXPlaySet*>*);
     void StopPlayingAllTrackedSFX();
+    void UpdateGroupFilterStatusOnSFX(SFXPlaySet*);
+    void UpdateGroupPitchStatusOnSFX(SFXPlaySet*);
     void UpdateAllTrackedSFX(float);
+    SFXPlaySet* RemoveTrackedSFX(unsigned long);
+    SFXPlaySet* RemoveTrackedSFX(nlDLListIterator<SFXPlaySet*>*);
+    unsigned long GetSFXID(unsigned long) const;
+    void SetSFXInfo(unsigned long, unsigned long, float, float, int, int);
+    SoundPropAccessor* GetSoundPropAccessor(unsigned long);
 
     /* 0x04 */ bool mbInited;
     /* 0x08 */ unsigned long mNumSFX;
