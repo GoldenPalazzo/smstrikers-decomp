@@ -41,6 +41,43 @@ public:
 
     void DeleteEntry(ListEntry<T>* entry);
 
+    void RemoveEntry(const T& data)
+    {
+        ListEntry<T>* currentEntry = m_Head;
+        if (currentEntry != NULL)
+        {
+            if (currentEntry->Entry() == data)
+            {
+                ListEntry<T>* newHead;
+                if (currentEntry == m_Tail)
+                    m_Tail = newHead = NULL;
+                else
+                    newHead = currentEntry->next;
+                m_Allocator.DeleteEntry(m_Head);
+                m_Head = newHead;
+            }
+            else
+            {
+                ListEntry<T>* previousEntry = currentEntry;
+                nlListIterator<T> iterator(currentEntry->next);
+                while (iterator.IsValid())
+                {
+                    ListEntry<T>* nextEntry = iterator.CurrentEntry();
+                    if (iterator.Current() == data)
+                    {
+                        previousEntry->next = nextEntry->next;
+                        if (nextEntry == m_Tail)
+                            m_Tail = previousEntry;
+                        m_Allocator.DeleteEntry(nextEntry);
+                        break;
+                    }
+                    previousEntry = nextEntry;
+                    iterator.Next();
+                }
+            }
+        }
+    }
+
     ListEntry<T>* Allocate(const T& data)
     {
         ListEntry<T> localEntry(data);
@@ -117,6 +154,11 @@ public:
     void Next()
     {
         m_Curr = m_Curr->next;
+    }
+
+    ListEntry<T>* CurrentEntry() const
+    {
+        return m_Curr;
     }
 
 private:
