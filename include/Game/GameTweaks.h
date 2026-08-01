@@ -100,6 +100,7 @@ class GameTweaks : public TweaksBase
 {
 public:
     GameTweaks(const char*);
+    virtual ~GameTweaks() { }
     void Init();
 
 public:

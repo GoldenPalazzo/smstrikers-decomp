@@ -32,6 +32,8 @@ extern PowerupBase* g_pPowerups[];
 extern cCharacter* g_pCurrentlyUpdatingCharacter;
 extern cTeam* g_pCurrentlyUpdatingTeam;
 
+cGame* g_pGame;
+
 // /**
 //  * Offset/Address/Size: 0xAC | 0x80040190 | size: 0x2C
 //  */
@@ -386,11 +388,7 @@ cGame::cGame()
  */
 cGame::~cGame()
 {
-    nlWalkList(mThoughtsQueue.m_Head,
-        static_cast<ListContainerBase<unsigned long, NewAdapter<ListEntry<unsigned long> > >*>(&mThoughtsQueue),
-        &ListContainerBase<unsigned long, NewAdapter<ListEntry<unsigned long> > >::DeleteEntry);
-    mThoughtsQueue.m_Head = NULL;
-    mThoughtsQueue.m_Tail = NULL;
+    mThoughtsQueue.Clear();
 
     delete m_pPostResetClock;
     delete m_pGameClock;
@@ -445,21 +443,16 @@ float cGame::GetGameTime()
     return m_pGameClock->m_fTimer;
 }
 
-/**
- * Offset/Address/Size: 0x1720 | 0x8003DC94 | size: 0x3EC
- * TODO: 99.16% match - r27/r28/r31 loop register diffs in player,
- * powerup, and team-touch loops.
- */
-static inline void RandomizePlayersForKickOff(cGame* game)
+inline void cGame::RandomizePlayerUpdateOrder()
 {
     int i;
     for (i = 0; i < 5; i++)
     {
-        game->m_pRandomPlayersArray[i] = g_pTeams[0]->GetPlayer(i);
+        m_pRandomPlayersArray[i] = g_pTeams[0]->GetPlayer(i);
     }
     for (i = 0; i < 5; i++)
     {
-        game->m_pRandomPlayersArray[5 + i] = g_pTeams[1]->GetPlayer(i);
+        m_pRandomPlayersArray[5 + i] = g_pTeams[1]->GetPlayer(i);
     }
     static FilteredRandomRange randgen;
     for (i = 0; i < 10; i++)
@@ -467,15 +460,17 @@ static inline void RandomizePlayersForKickOff(cGame* game)
         int j = randgen.genrand(10);
         if (j != i)
         {
-            cPlayer* temp = game->m_pRandomPlayersArray[i];
-            game->m_pRandomPlayersArray[i] = game->m_pRandomPlayersArray[j];
-            game->m_pRandomPlayersArray[j] = temp;
+            cPlayer* temp = m_pRandomPlayersArray[i];
+            m_pRandomPlayersArray[i] = m_pRandomPlayersArray[j];
+            m_pRandomPlayersArray[j] = temp;
         }
     }
 }
 
-static inline void ResetCharactersForKickOff()
+inline void cGame::ResetCharacters()
 {
+    RandomizePlayerUpdateOrder();
+
     int i;
     for (i = 0; i < 2; i++)
     {
@@ -483,13 +478,41 @@ static inline void ResetCharactersForKickOff()
     }
 }
 
+inline void cGame::ResetBall()
+{
+    nlVector3 v3Vel = { 0.0f, 0.0f, 0.0f };
+    nlVector3 v3Pos = { 0.0f, 0.0f, 0.18f };
+
+    if (g_pBall->m_pOwner != NULL)
+    {
+        g_pBall->m_pOwner->ReleaseBall();
+    }
+    g_pBall->WarpTo(v3Pos);
+    g_pBall->SetVelocity(v3Vel, SPINTYPE_NONE, NULL);
+    cBall* pBall = g_pBall;
+    pBall->m_unk_0xA6 = false;
+    pBall->mpDamageTarget = NULL;
+    m_bBallInNet = false;
+    g_pBall->ClearBallEffects();
+    g_pBall->HandleBuzzerBeater(-1.0f);
+}
+
+inline void cGame::ResetGameClock()
+{
+    m_pGameClock->Reset(0.0f, 60000.0f, 1.0f);
+    m_pPostGameDoneClock->Reset(0.0f, 1.4f, 1.0f);
+    m_pPostGameDoneClock->Stop();
+}
+
+/**
+ * Offset/Address/Size: 0x1720 | 0x8003DC94 | size: 0x3EC
+ * TODO: local-static and anonymous constant relocation identities differ.
+ */
 void cGame::ResetForKickOff()
 {
     cFielder* pBallCarrier;
     g_pEventManager->CreateValidEvent(9, 0x14);
-    int i;
-    RandomizePlayersForKickOff(this);
-    ResetCharactersForKickOff();
+    ResetCharacters();
     static const nlVector3 kickOffVelocity = { 0.0f, 0.0f, 0.0f };
     static const nlVector3 kickOffPosition = { 0.0f, 0.0f, 0.18f };
     nlVector3 position;
@@ -508,42 +531,10 @@ void cGame::ResetForKickOff()
     m_bBallInNet = false;
     g_pBall->ClearBallEffects();
     g_pBall->HandleBuzzerBeater(-1.0f);
-    for (i = 0; i < 2; i++)
-    {
-        cTeam* pTeam = g_pTeams[i];
-        if (pTeam != NULL)
-        {
-            pTeam->mfPowerupMeter = 0.0f;
-        }
-    }
-    for (i = 0; i < 25; i++)
-    {
-        if (g_pPowerups[i] != NULL)
-        {
-            g_pPowerups[i]->Destroy(true);
-            g_pPowerups[i] = NULL;
-        }
-    }
-    if (BasicStadium::GetCurrentStadium()->mpNPCManager != NULL)
-    {
-        if (BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp != NULL)
-        {
-            if (mbCaptainShotToScoreOn == false)
-            {
-                BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp->Hide(true);
-            }
-        }
-    }
-    m_pScorer = NULL;
-    m_pAssister = NULL;
-    for (i = 0; i < 2; i++)
-    {
-        m_pTeamTouch[i] = g_pTeams[i]->GetCaptain();
-    }
+    ResetPowerups(false);
+    ResetScorerInfo();
     Bowser::SetTiltParameters(0.0f);
-    nlWalkList(mThoughtsQueue.m_Head, (ListContainerBase<unsigned long, NewAdapter<ListEntry<unsigned long> > >*)&mThoughtsQueue, &ListContainerBase<unsigned long, NewAdapter<ListEntry<unsigned long> > >::DeleteEntry);
-    mThoughtsQueue.m_Head = NULL;
-    mThoughtsQueue.m_Tail = NULL;
+    mThoughtsQueue.Clear();
     BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->ActionHide();
     if (mBowserTimer.m_uPackedTime != 0)
     {
@@ -588,8 +579,6 @@ void cGame::PostResetCallback(unsigned long, unsigned long)
 
 /**
  * Offset/Address/Size: 0x113C | 0x8003D6B0 | size: 0x5A0
- * TODO: 97.76% match - saved-register mismatch still starts at r25 instead of r24,
- * with remaining cascading r-diffs in early loops and vector stack-slot ordering.
  */
 void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
 {
@@ -600,146 +589,24 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
         InitGameState(GS_PRE_GAME);
     }
 
+    m_nLastTeamToScore = 1;
     m_bBallInNet = false;
     mInSuddenDeath = false;
+    ResetCharacters();
 
-    for (i = 0; i < 5; i++)
-    {
-        m_pRandomPlayersArray[i] = g_pTeams[0]->GetPlayer(i);
-    }
-    for (i = 0; i < 5; i++)
-    {
-        m_pRandomPlayersArray[5 + i] = g_pTeams[1]->GetPlayer(i);
-    }
-    m_nLastTeamToScore = 1;
+    ResetBall();
 
-    static FilteredRandomRange randgen;
-    for (i = 0; i < 10; i++)
-    {
-        int j = randgen.genrand(10);
-        if (j != i)
-        {
-            cPlayer* temp = m_pRandomPlayersArray[i];
-            m_pRandomPlayersArray[i] = m_pRandomPlayersArray[j];
-            m_pRandomPlayersArray[j] = temp;
-        }
-    }
-
-    cTeam** pTeams = g_pTeams;
-
-    for (i = 0; i < 2; i++)
-    {
-        g_pTeams[i]->ResetCharacters();
-    }
-
-    nlVector3 position = { 0.0f, 0.0f, 0.18f };
-    nlVector3 velocity = { 0.0f, 0.0f, 0.0f };
-
-    if (g_pBall->m_pOwner != NULL)
-    {
-        g_pBall->m_pOwner->ReleaseBall();
-    }
-    g_pBall->WarpTo(position);
-    g_pBall->SetVelocity(velocity, SPINTYPE_NONE, NULL);
-    cBall* pBall = g_pBall;
-    pBall->m_unk_0xA6 = false;
-    pBall->mpDamageTarget = NULL;
-    m_bBallInNet = false;
-    g_pBall->ClearBallEffects();
-    g_pBall->HandleBuzzerBeater(-1.0f);
-
-    for (i = 0; i < 2; i++)
-    {
-        cTeam* pTeam = g_pTeams[i];
-        if (pTeam != NULL)
-        {
-            pTeam->ClearAllPowerUps();
-            pTeam->ClearCurrentPowerUp();
-            pTeam->mfPowerupMeter = 0.0f;
-        }
-    }
-
-    for (i = 0; i < 25; i++)
-    {
-        if (g_pPowerups[i] != NULL)
-        {
-            g_pPowerups[i]->Destroy(true);
-            g_pPowerups[i] = NULL;
-        }
-    }
-
-    if (BasicStadium::GetCurrentStadium()->mpNPCManager != NULL)
-    {
-        if (BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp != NULL)
-        {
-            if (!mbCaptainShotToScoreOn)
-            {
-                BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp->Hide(true);
-            }
-        }
-    }
+    ResetPowerups(true);
     BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->ActionReset();
 
-    if (GameInfoManager::s_pInstance->IsTiltingFieldOn() || GameInfoManager::s_pInstance->mIsInStrikers101Mode)
-    {
-        mBowserTimer.m_uPackedTime = 0;
-    }
-    else
-    {
-        Config& cfg = Config::Global();
-        if (GetConfigBool(cfg, "bowser_repeat", false))
-        {
-            g_pGame->m_pGameTweaks->unk308 = 1.0f;
-            g_pGame->m_pGameTweaks->unk30C = 4.0f;
-            g_pGame->m_pGameTweaks->unk310 = -1.0f;
-        }
-
-        GameTweaks* pTweaks_ = g_pGame->m_pGameTweaks;
-        if (nlRandomf(1.0f, &nlDefaultSeed) < pTweaks_->unk308)
-        {
-            GameTweaks* pTweaks = g_pGame->m_pGameTweaks;
-            float fMinTime = pTweaks->unk30C;
-            float fMaxTime = pTweaks->unk310;
-
-            if (fMinTime < 0.0f)
-            {
-                fMinTime = 0.0f;
-            }
-            else if (fMinTime > m_fGameDuration)
-            {
-                fMinTime = m_fGameDuration - 10.f;
-            }
-
-            float fThreshold = 0.0f;
-            float fTimeRange = fThreshold;
-
-            if (fMaxTime > fThreshold)
-            {
-                fTimeRange = m_fGameDuration - fMaxTime - fMinTime;
-            }
-
-            if (fTimeRange > fThreshold)
-            {
-                mBowserTimer.SetSeconds(fMinTime + nlRandomf(fTimeRange, &nlDefaultSeed));
-            }
-            else
-            {
-                mBowserTimer.SetSeconds(fMinTime);
-            }
-        }
-        else
-        {
-            mBowserTimer.m_uPackedTime = 0;
-        }
-    }
-
-    m_pGameClock->Reset(0.0f, 60000.0f, 1.0f);
-    m_pPostGameDoneClock->Reset(0.0f, 1.4f, 1.0f);
-    m_pPostGameDoneClock->Stop();
+    ResetBowser();
+    ResetGameClock();
 
     mfCheatTilt = 0.0f;
-    pTeams[0]->m_nScore = 0;
-    pTeams[1]->m_nScore = 0;
+    for (i = 0; i < 2; i++)
+    {
+        g_pTeams[i]->m_nScore = 0;
+    }
 
     for (i = 0; i < 10; i++)
     {
@@ -886,6 +753,24 @@ void cGame::CheckForGoal()
     }
 }
 
+inline void cGame::EnterPostGame()
+{
+    int homeScore;
+    int awayScore;
+
+    SidelineExplodableManager::DestroyAllActiveFragments(false);
+    awayScore = g_pTeams[1]->m_nScore;
+    homeScore = g_pTeams[0]->m_nScore;
+    NisPlayer* pNisPlayer = NisPlayer::Instance();
+    pNisPlayer->mWinnerSide[0] = awayScore > homeScore;
+
+    if (!Presentation::Instance().DuringEndOfGamePresentation())
+    {
+        NisPlayer::Instance()->Reset();
+        Presentation::Instance().Call("GameEndNoSuddenDeath", "");
+    }
+}
+
 /**
  * Offset/Address/Size: 0xDF0 | 0x8003D364 | size: 0x6C
  */
@@ -980,9 +865,9 @@ void cGame::ResetBowser()
         float fMinTime = pTweaks->unk30C;
         float fMaxTime = pTweaks->unk310;
 
-        if (fMinTime < 0.0f)
+        if (fMinTime < 1.0f)
         {
-            fMinTime = 0.0f;
+            fMinTime = 1.0f;
         }
         else if (fMinTime > m_fGameDuration)
         {
@@ -1034,7 +919,7 @@ void cGame::PreUpdate(float deltaTime)
     }
 }
 
-static inline void UpdatePowerUpObjects(float fDeltaT)
+inline void cGame::UpdatePowerUpObjects(float fDeltaT)
 {
     for (int i = 0; i < 25; i++)
     {
@@ -1047,15 +932,11 @@ static inline void UpdatePowerUpObjects(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x5A4 | 0x8003CB18 | size: 0x47C
- * TODO: 99.97% match - time-scale 1.0f literal reference differs,
- *       and home-score temp r28 vs r30.
+ * TODO: anonymous string relocation identity differs.
  */
 void cGame::Update(float deltaTime)
 {
     mThoughtsAllowedThisUpdate = 1;
-
-    int homeScore;
-    int awayScore;
 
     if (m_pGameClock->m_fTimer >= m_fGameDuration)
     {
@@ -1063,12 +944,9 @@ void cGame::Update(float deltaTime)
         {
             if (g_pTeams[0]->m_nScore == g_pTeams[1]->m_nScore)
             {
-                if (m_eGameState == GS_GAMEPLAY)
+                if (GetGameState() == GS_GAMEPLAY)
                 {
-                    if (*(volatile eGameState*)&m_eGameState != GS_OVERTIME)
-                    {
-                        InitGameState(GS_OVERTIME);
-                    }
+                    ChangeGameState(GS_OVERTIME);
 
                     nlSingleton<StatsTracker>::s_pInstance->mIsOvertime = true;
                     mInSuddenDeath = true;
@@ -1078,10 +956,7 @@ void cGame::Update(float deltaTime)
             {
                 if (m_eGameState != GS_END_GAME)
                 {
-                    if (m_eGameState != GS_END_GAME)
-                    {
-                        InitGameState(GS_END_GAME);
-                    }
+                    ChangeGameState(GS_END_GAME);
 
                     nlSingleton<StatsTracker>::s_pInstance->TrackWinner(-1);
                     Audio::FadeFilterFromCurrentToZero();
@@ -1193,18 +1068,18 @@ void cGame::Update(float deltaTime)
     if (m_pPostGameDoneClock->m_clockState == CLOCK_DONE)
     {
         m_pPostGameDoneClock->Reset(0.0f, 1.4f, 1.0f);
-        SidelineExplodableManager::DestroyAllActiveFragments(false);
+        EnterPostGame();
+    }
+}
 
-        awayScore = g_pTeams[1]->m_nScore;
-        homeScore = g_pTeams[0]->m_nScore;
-        NisPlayer* pNisPlayer = NisPlayer::Instance();
-        pNisPlayer->mWinnerSide[0] = awayScore > homeScore;
+inline void cGame::ResetScorerInfo()
+{
+    m_pScorer = NULL;
+    m_pAssister = NULL;
 
-        if (!Presentation::Instance().DuringEndOfGamePresentation())
-        {
-            NisPlayer::Instance()->Reset();
-            Presentation::Instance().Call("GameEndNoSuddenDeath", "");
-        }
+    for (int i = 0; i < 2; i++)
+    {
+        m_pTeamTouch[i] = g_pTeams[i]->GetCaptain();
     }
 }
 
@@ -1335,7 +1210,7 @@ bool cGame::IsThoughtAllowed(unsigned long thought_id)
             {
                 temp = removed->entry;
             }
-            ::operator delete(removed);
+            mThoughtsQueue.DeleteEntry(removed);
             bAllowedToThink = true;
         }
     }

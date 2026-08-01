@@ -130,7 +130,7 @@ inline nlListIterator<T> ListContainerBase<T, Adapter>::Begin()
 }
 
 template <typename T, typename Adapter>
-void ListContainerBase<T, Adapter>::DeleteEntry(ListEntry<T>* entry)
+inline void ListContainerBase<T, Adapter>::DeleteEntry(ListEntry<T>* entry)
 {
     m_Allocator.DeleteEntry(entry);
 }
