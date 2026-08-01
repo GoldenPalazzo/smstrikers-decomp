@@ -22,8 +22,8 @@ public:
 
     /* 0x00 */ nlVector3* mpPosition; // offset 0x0, size 0x4
     /* 0x04 */ int miNetIndex;        // offset 0x4, size 0x4
-    /* 0x08 */ int mNumQuads;         // offset 0x8, size 0x4
-    /* 0x0C */ int mNumVertices;      // offset 0xC, size 0x4
+    /* 0x08 */ mutable int mNumQuads;    // offset 0x8, size 0x4
+    /* 0x0C */ mutable int mNumVertices; // offset 0xC, size 0x4
     /* 0x10 */ int mNumTriIndices;    // offset 0x10, size 0x4
     /* 0x14 */ int mJolt;             // offset 0x14, size 0x4
     /* 0x18 */ int m_unk18;           // offset 0x18, size 0x4

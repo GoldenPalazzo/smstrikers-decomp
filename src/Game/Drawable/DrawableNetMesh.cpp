@@ -1,13 +1,19 @@
 #include "Game/Drawable/DrawableNetMesh.h"
+#include "Game/GL/gluMeshWriter.h"
 #include "Game/Render/ShootToScoreArrow.h"
 #include "Game/Replay.h"
 #include "Game/Field.h"
 #include "Game/Net.h"
 #include "Game/World.h"
+#include "NL/nlString.h"
 #include "NL/gl/gl.h"
 #include "NL/gl/glDraw3.h"
 #include "NL/gl/glMatrix.h"
+#include "NL/gl/glMemory.h"
 #include "NL/gl/glState.h"
+#include "NL/gl/glUserData.h"
+#include "NL/glx/glxDisplayList.h"
+#include "dolphin/os/OSCache.h"
 
 static unsigned long UnlitProgram = glGetProgram("3d unlit");
 static unsigned long LitProgram = glGetProgram("3d pointlit");
@@ -136,94 +142,12 @@ void DrawableNetMesh::RenderInvisiblePlanes() const
     glSetDefaultState(false);
 }
 
-/**
- * Offset/Address/Size: 0x4B8 | 0x80114414 | size: 0x464
- * TODO: 77.01% match - early guard branch polarity and stream-table/vtable
- *       setup ordering still differ from target.
- */
-enum eGLPrimitive
-{
-    GLP_TriList = 0,
-    GLP_TriStrip = 1,
-    GLP_TriFan = 2,
-    GLP_QuadList = 3,
-    GLP_LineList = 4,
-    GLP_LineStrip = 5,
-    GLP_Num = 6,
-};
-
-enum eGLStream
-{
-    GLStream_Position = 0,
-    GLStream_Colour = 2,
-    GLStream_Diffuse = 3,
-};
-
-enum eGLMemory
-{
-    GLM_Header = 0,
-    GLM_Matrix = 1,
-    GLM_IndexData = 2,
-    GLM_VertexData = 3,
-    GLM_TextureData = 4,
-    GLM_Target = 5,
-    GLM_Num = 6,
-};
-
-class GLMeshWriterCore
-{
-public:
-    GLMeshWriterCore();
-    ~GLMeshWriterCore();
-
-    virtual bool Begin(int, eGLPrimitive, int, const eGLStream*, bool);
-    virtual bool End();
-    virtual void Colour(const nlColour&);
-    virtual void ColourPlat(unsigned long);
-    virtual void Normal(const nlVector3&) = 0;
-    virtual void Texcoord(const nlVector2&);
-    virtual void Vertex(const nlVector3&);
-    virtual void Vertex(const nlVector4&);
-
-    glModel* GetModel();
-
-    glModel* pModel;
-    glModelStream stream[15];
-    int currentIndex;
-    int maximumVerts;
-    int elementCount;
-};
-
-class GLMeshWriter : public GLMeshWriterCore
-{
-public:
-    GLMeshWriter()
-        : GLMeshWriterCore()
-    {
-    }
-
-    virtual bool End();
-    virtual void Normal(const nlVector3&);
-    virtual void Texcoord(const nlVector2&);
-    void Texcoord(short, short);
-};
-
-struct DisplayList;
-
-void* glFrameAlloc(unsigned long, eGLMemory);
-DisplayList* dlMakeDisplayList(const glModelPacket*, bool);
-void nlZeroMemory(void*, unsigned long);
-void DCFlushRange(void*, unsigned long);
-
 static const int gl_stream_stride[15] = {
     12, 3, 4, 4, 4, 4, 4, 4, 4, 12, 12, 12, 1, 16, 16
 };
 
 /**
- * Offset/Address/Size: 0x3DC | 0x80114414 | size: 0x464
- * TODO: 93.96% match - vtable setup ordering after GLMeshWriterCore
- * construction, stream stride load sequence, and loop index/register
- * allocation differences remain.
+ * Offset/Address/Size: 0x4B8 | 0x80114414 | size: 0x464
  */
 void DrawableNetMesh::Render() const
 {
@@ -245,6 +169,7 @@ void DrawableNetMesh::Render() const
     GLMeshWriter meshWriter;
     nlVector3* pPosition = mpPosition;
     shortVector2* pTexcoord = spTexcoord[miNetIndex];
+    nlColour* pColour;
 
     glSetDefaultState(true);
     glSetRasterState(GLS_Culling, 0);
@@ -293,35 +218,36 @@ void DrawableNetMesh::Render() const
         }
         if (sbUseDisplayLists)
         {
-            if ((u32)((DrawableNetMesh*)this)->mNumVertices == 0)
+            if ((u32)mNumVertices == 0)
             {
-                ((DrawableNetMesh*)this)->mNumQuads = pPacket->indexBuffer;
-                ((DrawableNetMesh*)this)->mNumVertices = (int)dlMakeDisplayList(pPacket, true);
+                mNumQuads = pPacket->indexBuffer;
+                mNumVertices = (int)dlMakeDisplayList(pPacket, true);
             }
-            pPacket->indexBuffer = (u32)((DrawableNetMesh*)this)->mNumVertices;
+            pPacket->indexBuffer = (u32)mNumVertices;
         }
         DCFlushRange(pPosition, (unsigned long)mJolt * (unsigned long)sizeof(nlVector3));
 
         pStreams[0].id = GLStream_Position;
         pStreams[0].address = (u32)pPosition;
         pStreams[0].stride = (u8)gl_stream_stride[0];
+        pColour = (nlColour*)spColour[miNetIndex];
         pStreams[1].id = GLStream_Colour;
-        pStreams[1].address = (u32)spColour[miNetIndex];
+        pStreams[1].address = (u32)pColour;
         pStreams[1].stride = (u8)gl_stream_stride[2];
         pStreams[2].id = GLStream_Diffuse;
         pStreams[2].address = (u32)pTexcoord;
         pStreams[2].stride = (u8)gl_stream_stride[3];
 
         void* pUserDataHandle = glUserAlloc(GLUD_ConstantColour, 4, false);
-        u8* pColourData = (u8*)glUserGetData(pUserDataHandle);
+        pColour = (nlColour*)glUserGetData(pUserDataHandle);
         WorldDarkening& wd = WorldDarkening::Instance();
         float darkScale = 255.0f;
         float darkBase = 1.0f - wd.mPos;
         u8 dark = (u8)(int)(darkScale * darkBase);
-        pColourData[0] = dark;
-        pColourData[1] = dark;
-        pColourData[2] = dark;
-        pColourData[3] = dark;
+        pColour->c[0] = dark;
+        pColour->c[1] = dark;
+        pColour->c[2] = dark;
+        pColour->c[3] = dark;
         glUserAttach(pUserDataHandle, pPacket, false);
         glViewAttachModel(GLV_UnsortedPerspective, pModel);
     }
