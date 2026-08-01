@@ -11,21 +11,49 @@
 
 extern bool g_e3_Build;
 
-static bool isFreezingUnlocked = false;
-static bool isShellsUnlocked = false;
-static bool isSuperTeamUnlocked = false;
-bool isLegendUnlocked = false;
-static bool isEnhanceUnlocked = false;
-static bool isGiantUnlocked = false;
-static bool isExplosiveUnlocked = false;
-static bool isUnlimitedUnlocked = false;
-static bool isGoalieUnlocked = false;
-static bool isTiltUnlocked = false;
-static bool isAllSTSUnlocked = false;
+template <>
+bool LexicalCast<bool, bool>(const bool& value);
+template <>
+bool LexicalCast<bool, int>(const int& value);
+template <>
+bool LexicalCast<bool, float>(const float& value);
+template <>
+bool LexicalCast<bool, const char*>(const char* const& value);
+template <>
+int LexicalCast<int, bool>(const bool& value);
+template <>
+int LexicalCast<int, int>(const int& value);
+template <>
+int LexicalCast<int, float>(const float& value);
+template <>
+int LexicalCast<int, const char*>(const char* const& value);
+template <>
+BasicString<char, Detail::TempStringAllocator>
+LexicalCast<BasicString<char, Detail::TempStringAllocator>, bool>(const bool& value);
+template <>
+BasicString<char, Detail::TempStringAllocator>
+LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(const int& value);
+template <>
+BasicString<char, Detail::TempStringAllocator>
+LexicalCast<BasicString<char, Detail::TempStringAllocator>, float>(const float& value);
+template <>
+BasicString<char, Detail::TempStringAllocator>
+LexicalCast<BasicString<char, Detail::TempStringAllocator>, const char*>(const char* const& value);
+
 static bool isKongaUnlocked = false;
 static bool isYoshiUnlocked = false;
 static bool isForbiddenUnlocked = false;
 static bool isSuperStadUnlocked = false;
+static bool isSuperTeamUnlocked = false;
+static bool isAllSTSUnlocked = false;
+static bool isTiltUnlocked = false;
+static bool isGoalieUnlocked = false;
+static bool isUnlimitedUnlocked = false;
+static bool isShellsUnlocked = false;
+static bool isEnhanceUnlocked = false;
+static bool isGiantUnlocked = false;
+static bool isExplosiveUnlocked = false;
+static bool isFreezingUnlocked = false;
 
 template <>
 GameInfoManager* nlSingleton<GameInfoManager>::s_pInstance = 0;
@@ -1225,47 +1253,8 @@ unsigned char GameInfoManager::SetupBowserKnockout()
  */
 void GameInfoManager::SetupTournamentKnockout(eTeamID* lineup, eSidekickID* sklineup)
 {
-    int numGames;
     s16 firstRound = mCurrentCup->mRoundNumber;
-
-    if (firstRound == -4)
-    {
-        numGames = 4;
-    }
-    else if (firstRound == -3)
-    {
-        numGames = 2;
-    }
-    else if (firstRound == -2 || firstRound == -1)
-    {
-        numGames = 1;
-    }
-    else if (firstRound == -5 && mDoingKnockout)
-    {
-        numGames = 1;
-    }
-    else
-    {
-        if (mDoingKnockout)
-        {
-            numGames = mPreviousCup->GetNumTeams() >> 1;
-        }
-        else
-        {
-            u16 temp;
-
-            if (mCurrentMode == GM_BOWSER_CUP || mCurrentMode == GM_SUPER_BOWSER_CUP)
-            {
-                temp = 8;
-            }
-            else
-            {
-                temp = mCurrentCup->GetNumTeams();
-            }
-
-            numGames = temp >> 1;
-        }
-    }
+    int numGames = GetNumGamesPerRound(firstRound);
 
     mCurrentCup->mCupStarted = true;
     mCurrentCup->mGameNumber = 0;
