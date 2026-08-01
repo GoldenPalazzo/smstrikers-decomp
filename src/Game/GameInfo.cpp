@@ -561,28 +561,21 @@ u16 GameInfoManager::GetNumGamesPerRound(int round) const
 
     if (round == -4)
     {
-        return 4;
+        returnValue = 4;
     }
-
-    if (round == -3)
+    else if (round == -3)
     {
-        return 2;
+        returnValue = 2;
     }
-
-    if (round == -2 || round == -1)
+    else if (round == -2 || round == -1)
     {
-        return 1;
+        returnValue = 1;
     }
-
-    if (round == -5)
+    else if (round == -5 && mDoingKnockout)
     {
-        if (mDoingKnockout)
-        {
-            return 1;
-        }
+        returnValue = 1;
     }
-
-    if (mDoingKnockout)
+    else if (mDoingKnockout)
     {
         returnValue = mPreviousCup->GetNumTeams() >> 1;
     }
@@ -780,7 +773,9 @@ eStadiumID GameInfoManager::PickStadium(bool isLastRound, eStadiumID excludeStad
  */
 s16 GameInfoManager::GetPlayingSide(unsigned short padnumber) const
 {
-    return mGameInfo[mCurrentMode]->mPadSides[padnumber];
+    eGameModes mode;
+    BasicGameInfo* gameInfo = mGameInfo[mode = mCurrentMode];
+    return gameInfo->mPadSides[padnumber];
 }
 
 /**
@@ -1357,41 +1352,28 @@ void GameInfoManager::SetupTournamentKnockout(eTeamID* lineup, eSidekickID* skli
 
 /**
  * Offset/Address/Size: 0x78D8 | 0x8017CF7C | size: 0x618
- * TODO: 99.27% match - register allocation diffs in cup, gamesPerRound,
- * previous/current round, losingTeam, and non-final loop locals
  */
 unsigned char GameInfoManager::SetupKnockoutRound(short round)
 {
     eSidekickID sidekicks[9];
-    int gamesPerRound;
-    signed short currentRound;
-    signed short previousRound;
     BaseCup* cup = mCurrentCup;
-    int i;
+    int gamesPerRound = GetNumGamesPerRound(round);
+    signed short previousRound;
+    signed short currentRound;
     eTeamID home;
     eTeamID away;
     unsigned char returnValue = 0;
     eStadiumID currentStadium;
-    BasicGameInfo* g;
-    eTeamID index;
-    BasicGameInfo* g2;
-    eTeamID losingTeam;
-    TeamStats* ts;
-    int i2;
-    BasicGameInfo* g3;
-
-    gamesPerRound = GetNumGamesPerRound(round);
-    returnValue = 0;
 
     if (mCurrentMode == GM_BOWSER_CUP || mCurrentMode == GM_SUPER_BOWSER_CUP)
     {
         cup = mPreviousCup;
     }
 
-    for (i = 0; i < (u16)cup->GetNumTeams() / 2; i++)
+    for (int i = 0; i < (u16)cup->GetNumTeams() / 2; i++)
     {
-        g = cup->GetGameInfo(0, i);
-        index = g->mTeamIndex[0];
+        BasicGameInfo* g = cup->GetGameInfo(0, i);
+        eTeamID index = g->mTeamIndex[0];
         sidekicks[index] = g->mSidekickIndex[0];
         index = g->mTeamIndex[1];
         sidekicks[index] = g->mSidekickIndex[1];
@@ -1415,19 +1397,12 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
 
     if (round == -1)
     {
-        g = mCurrentCup->GetGameInfo(currentRound, 0);
+        BasicGameInfo* g = mCurrentCup->GetGameInfo(currentRound, 0);
 
         mUserInfo.mBowserCupFinalRound = *g;
 
         g = mCurrentCup->GetGameInfo(currentRound, 0);
-        if (g->mFinalScore[0] < g->mFinalScore[1])
-        {
-            losingTeam = g->mTeamIndex[0];
-        }
-        else
-        {
-            losingTeam = g->mTeamIndex[1];
-        }
+        eTeamID losingTeam = (g->mFinalScore[0] < g->mFinalScore[1]) ? g->mTeamIndex[0] : g->mTeamIndex[1];
 
         eTeamID winner;
         if (g->mFinalScore[0] > g->mFinalScore[1])
@@ -1463,20 +1438,9 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
         g->mStadiumIndex = PickStadium(true, STAD_INVALID);
         returnValue = 1;
 
-        for (i2 = 0; i2 < GetNumPlayingTeams(); i2++)
+        for (int i = 0; i < GetNumPlayingTeams(); i++)
         {
-            if (mCurrentMode == GM_BOWSER_CUP)
-            {
-                ts = mBowserCupSeries.GetTeamStats((u16)i2);
-            }
-            else if (mCurrentMode == GM_SUPER_BOWSER_CUP)
-            {
-                ts = mSuperBowserCupSeries.GetTeamStats((u16)i2);
-            }
-            else
-            {
-                ts = mCurrentCup->GetTeamStats((u16)i2);
-            }
+            TeamStats* ts = pGetTeamStatsByIndex((u16)i);
 
             if (ts->mTeamIndex == losingTeam)
             {
@@ -1494,34 +1458,15 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
     }
     else
     {
-        previousRound = (s16)previousRound;
-        currentRound = (s16)currentRound;
-        int gameIdx0 = 0;
-        int gameIdx1 = 1;
-
-        for (int i3 = 0; i3 < gamesPerRound; i3++)
+        for (int i = 0; i < gamesPerRound; i++)
         {
-            g = mCurrentCup->GetGameInfo(previousRound, gameIdx0);
-            if (g->mFinalScore[0] > g->mFinalScore[1])
-            {
-                home = g->mTeamIndex[0];
-            }
-            else
-            {
-                home = g->mTeamIndex[1];
-            }
+            BasicGameInfo* g = mCurrentCup->GetGameInfo(previousRound, i * 2);
+            home = (g->mFinalScore[0] > g->mFinalScore[1]) ? g->mTeamIndex[0] : g->mTeamIndex[1];
 
-            g = mCurrentCup->GetGameInfo(previousRound, gameIdx1);
-            if (g->mFinalScore[0] > g->mFinalScore[1])
-            {
-                away = g->mTeamIndex[0];
-            }
-            else
-            {
-                away = g->mTeamIndex[1];
-            }
+            g = mCurrentCup->GetGameInfo(previousRound, i * 2 + 1);
+            away = (g->mFinalScore[0] > g->mFinalScore[1]) ? g->mTeamIndex[0] : g->mTeamIndex[1];
 
-            g = mCurrentCup->GetGameInfo(currentRound, i3);
+            g = mCurrentCup->GetGameInfo(currentRound, i);
             g->mTeamIndex[0] = (eTeamID)3;
             g->mTeamIndex[1] = (eTeamID)2;
             g->mSidekickIndex[0] = (eSidekickID)0;
@@ -1559,9 +1504,6 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
                     returnValue = 1;
                 }
             }
-
-            gameIdx0 += 2;
-            gameIdx1 += 2;
         }
     }
 
@@ -1571,33 +1513,11 @@ lbl_end:
 
 /**
  * Offset/Address/Size: 0x7534 | 0x8017CBD8 | size: 0x3A4
- * TODO: 99.79% match - dnmflags is saved in r29 instead of r27, swapping the
- * extracted 0x2 and 0x8 flag registers.
  */
 unsigned char GameInfoManager::DetermineNextMatchups(int dnmflags)
 {
     int round = mCurrentCup->mRoundNumber;
-
-    if (round != -4)
-    {
-        if (round != -3)
-        {
-            if ((u32)(round + 2) > 1)
-            {
-                if (round != -5 || !mDoingKnockout)
-                {
-                    if (mDoingKnockout)
-                    {
-                        mPreviousCup->GetNumTeams();
-                    }
-                    else if (mCurrentMode != GM_BOWSER_CUP && mCurrentMode != GM_SUPER_BOWSER_CUP)
-                    {
-                        mCurrentCup->GetNumTeams();
-                    }
-                }
-            }
-        }
-    }
+    int numGames = GetNumGamesPerRound(round);
 
     int userPad = mMainUserPadNumber;
 
@@ -1648,12 +1568,7 @@ unsigned char GameInfoManager::DetermineNextMatchups(int dnmflags)
             break;
         }
 
-        mCurrentCup->mGameNumber++;
-
-        if (mCurrentCup->mGameNumber == GetNumGamesPerRound(mCurrentCup->mRoundNumber) && (dnmflags & 0x4))
-        {
-            IncreaseRoundNumber();
-        }
+        IncreaseGameNumber(dnmflags & 0x4);
 
         if (mCurrentCup->mGameNumber == GetNumGamesPerRound(mCurrentCup->mRoundNumber))
         {
@@ -1777,44 +1692,7 @@ void GameInfoManager::IncreaseGameNumber(bool shouldIncreaseRound)
 {
     mCurrentCup->mGameNumber++;
 
-    s16 round = mCurrentCup->mRoundNumber;
-    u16 maxGames;
-
-    if (round == -4)
-    {
-        maxGames = 4;
-    }
-    else if (round == -3)
-    {
-        maxGames = 2;
-    }
-    else if (round == -2 || round == -1)
-    {
-        maxGames = 1;
-    }
-    else if (round == -5 && mDoingKnockout)
-    {
-        maxGames = 1;
-    }
-    else if (mDoingKnockout)
-    {
-        maxGames = mPreviousCup->GetNumTeams() >> 1;
-    }
-    else
-    {
-        u16 temp;
-        if (mCurrentMode == GM_BOWSER_CUP || mCurrentMode == GM_SUPER_BOWSER_CUP)
-        {
-            temp = 8;
-        }
-        else
-        {
-            temp = mCurrentCup->GetNumTeams();
-        }
-        maxGames = temp >> 1;
-    }
-
-    if (mCurrentCup->mGameNumber == maxGames && shouldIncreaseRound)
+    if (mCurrentCup->mGameNumber == GetNumGamesPerRound(mCurrentCup->mRoundNumber) && shouldIncreaseRound)
     {
         IncreaseRoundNumber();
     }
@@ -2380,31 +2258,10 @@ const PowerupSettings& GameInfoManager::GetPowerupOptions() const
 
 /**
  * Offset/Address/Size: 0x5040 | 0x8017A6E4 | size: 0xD98
- * TODO: 99.25% match - fallback string constructors still have r29/r30 swaps,
- *       pad-side loop has r3/r4 swaps, and DifficultyMap writeback stores before the second load.
  */
 void GameInfoManager::OnPreGameState()
 {
-    GameplaySettings* settings;
-    if (mUseCurGameSettings)
-    {
-        settings = &mCurGameGameplayOptions;
-    }
-    else if (mCurrentMode == GM_FRIENDLY || mCurrentMode == GM_DEMO)
-    {
-        settings = &mUserInfo.mGameplayOptions;
-    }
-    else
-    {
-        settings = &mCurrentCup->mCupSettings;
-    }
-
-    mCurGameGameplayOptions.SkillLevel = settings->SkillLevel;
-    mCurGameGameplayOptions.GameTime = settings->GameTime;
-    mCurGameGameplayOptions.PowerUps = settings->PowerUps;
-    mCurGameGameplayOptions.Shoot2Score = settings->Shoot2Score;
-    mCurGameGameplayOptions.BowserAttackEnabled = settings->BowserAttackEnabled;
-    mCurGameGameplayOptions.RumbleEnabled = settings->RumbleEnabled;
+    mCurGameGameplayOptions = GetGameplayOptions();
 
     mUseCurGameSettings = true;
 
@@ -2473,54 +2330,7 @@ void GameInfoManager::OnPreGameState()
         mCurGameGameplayOptions.SkillLevel = GameplaySettings::ROOKIE;
     }
 
-    static eDifficultyID DifficultyMap[5][2] = {
-        { DIFF_HUMAN, DIFF_BRAINDEAD },
-        { DIFF_HUMAN, DIFF_EASY },
-        { DIFF_HUMAN, DIFF_MEDIUM },
-        { DIFF_HUMAN, DIFF_HARD },
-        { DIFF_HUMAN, DIFF_VERYHARD },
-    };
-
-    unsigned char humansOnSide[2] = { 0, 0 };
-
-    for (int i = 0; i < 4; i++)
-    {
-        s16 padSide = mGameInfo[mCurrentMode]->mPadSides[(unsigned short)i];
-        if (padSide == 0)
-        {
-            humansOnSide[0] = 1;
-        }
-        else if (padSide == 1)
-        {
-            humansOnSide[1] = 1;
-        }
-    }
-
-    GameplaySettings::eSkillLevel skillLevel;
-    if (mIsInStrikers101Mode)
-    {
-        skillLevel = GameplaySettings::TRAINING;
-    }
-    else
-    {
-        GameplaySettings* pSettings;
-        if (mUseCurGameSettings)
-        {
-            pSettings = &mCurGameGameplayOptions;
-        }
-        else if (mCurrentMode == GM_FRIENDLY || mCurrentMode == GM_DEMO)
-        {
-            pSettings = &mUserInfo.mGameplayOptions;
-        }
-        else
-        {
-            pSettings = &mCurrentCup->mCupSettings;
-        }
-        skillLevel = pSettings->SkillLevel;
-    }
-
-    mCurrentDifficulty[0] = DifficultyMap[skillLevel][humansOnSide[0] ? 0 : 1];
-    mCurrentDifficulty[1] = DifficultyMap[skillLevel][humansOnSide[1] ? 0 : 1];
+    ApplyDifficultySettings();
 
     if (Config::Global().Exists("stadium"))
     {
@@ -2552,7 +2362,6 @@ void GameInfoManager::OnPostGameState()
 
 /**
  * Offset/Address/Size: 0x4E7C | 0x8017A520 | size: 0x190
- * TODO: 96.35% match - persistent r4/r5 register swap in the unrolled pad-side loop.
  */
 void GameInfoManager::ApplyDifficultySettings()
 {
@@ -2565,21 +2374,20 @@ void GameInfoManager::ApplyDifficultySettings()
     };
     unsigned char humansOnSide[2] = { 0, 0 };
     int i;
-    GameplaySettings::eSkillLevel skillLevel;
 
     for (i = 0; i < 4; i++)
     {
-        s16 padSide = mGameInfo[mCurrentMode]->mPadSides[(unsigned short)i];
-        if (padSide == 0)
+        if (GetPlayingSide(i) == 0)
         {
             humansOnSide[0] = 1;
         }
-        else if (padSide == 1)
+        else if (GetPlayingSide(i) == 1)
         {
             humansOnSide[1] = 1;
         }
     }
 
+    GameplaySettings::eSkillLevel skillLevel;
     if (mIsInStrikers101Mode)
     {
         skillLevel = GameplaySettings::TRAINING;
