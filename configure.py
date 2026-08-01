@@ -1362,7 +1362,7 @@ config.libs = [
             Object(Matching, "NL/plat/plataudio.cpp", extra_cflags=["-inline auto"]),
 
             # Ext/GC
-            Object(NonMatching, "NL/gc/gcSwizzler.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "NL/gc/gcSwizzler.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Ext/Game-Specific?
             Object(Matching, "NL/StatsGatherer.cpp", extra_cflags=["-inline auto", "-inline deferred"]),     

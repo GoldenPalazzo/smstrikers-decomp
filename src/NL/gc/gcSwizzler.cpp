@@ -114,40 +114,31 @@ void GCSwizzle(void* pSwizzledData, const void* pLinearData, unsigned short widt
     }
     else if (stride == (width << 1))
     {
-        unsigned char* pDest = (unsigned char*)pSwizzledData;
-        const unsigned char* pSrc = (const unsigned char*)pLinearData;
-        const unsigned char* pTempSrc;
-        int y, yy, x, i;
+        unsigned short* pDest = (unsigned short*)pSwizzledData;
+        const unsigned short* pSrc = (const unsigned short*)pLinearData;
+        const unsigned short* pTempSrc;
+        int y, yy, x, xx, i;
 
         for (y = 0; y < height; y += 4)
         {
             for (x = 0; x < width; x += 4)
             {
                 pTempSrc = pSrc;
-                unsigned int off;
-                for (yy = 0, off = 0, i = 0; yy < 2; yy++, off += 8, i += 8)
+                for (yy = 0, i = 0; yy < 4; yy++, i += 4)
                 {
-                    *(unsigned short*)(pDest + ((i + 0) << 1)) = *(const unsigned short*)(pTempSrc + 0);
-                    *(unsigned short*)(pDest + ((i + 1) << 1)) = *(const unsigned short*)(pTempSrc + 2);
-                    *(unsigned short*)(pDest + ((i + 2) << 1)) = *(const unsigned short*)(pTempSrc + 4);
-                    *(unsigned short*)(pDest + ((i + 3) << 1)) = *(const unsigned short*)(pTempSrc + 6);
+                    for (xx = 0; xx < 4; xx++)
+                    {
+                        pDest[i + xx] = pTempSrc[xx];
+                    }
 
-                    off += 8;
-                    pTempSrc += (width << 1);
-
-                    *(unsigned short*)(pDest + off) = *(const unsigned short*)(pTempSrc + 0);
-                    *(unsigned short*)(pDest + ((i + 5) << 1)) = *(const unsigned short*)(pTempSrc + 2);
-                    *(unsigned short*)(pDest + ((i + 6) << 1)) = *(const unsigned short*)(pTempSrc + 4);
-                    *(unsigned short*)(pDest + ((i + 7) << 1)) = *(const unsigned short*)(pTempSrc + 6);
-
-                    pTempSrc += (width << 1);
+                    pTempSrc += width;
                 }
 
-                pSrc += 8;
-                pDest += off;
+                pSrc += 4;
+                pDest += 16;
             }
 
-            pSrc += width * 6;
+            pSrc += width * 3;
         }
 
         if (bEndianSwap)
