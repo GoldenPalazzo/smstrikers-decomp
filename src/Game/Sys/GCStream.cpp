@@ -19,7 +19,6 @@ struct SND_ADPCMSTREAM_INFO;
 extern "C"
 {
     void sndStreamMixParameterEx(unsigned long stid, unsigned char vol, unsigned char pan, unsigned char span, unsigned char auxa, unsigned char auxb);
-    void sndStreamLPFParameter(unsigned long stid, unsigned long lpfOn, unsigned long lpfFreq);
     void sndStreamDeactivate(unsigned long stid);
     void sndStreamFree(unsigned long stid);
     void sndStreamARAMUpdate(unsigned long stid, unsigned long off1, unsigned long len1, unsigned long off2, unsigned long len2);
@@ -56,24 +55,6 @@ inline void AudioStreamBuffer::SetVolume(
     m_Volume = (unsigned char)volume;
     sndStreamMixParameterEx(
         m_StreamId, m_Volume, m_Pan, m_SurroundPan, 0, 0);
-}
-
-inline void AudioStreamBuffer::SetLPF(unsigned char on)
-{
-    if (on != m_bLPFOn)
-    {
-        sndStreamLPFParameter(m_StreamId, on, m_LPFFreq);
-        m_bLPFOn = on;
-    }
-}
-
-inline void AudioStreamBuffer::SetLPF(unsigned short frequency)
-{
-    if (m_bLPFOn)
-    {
-        sndStreamLPFParameter(m_StreamId, m_bLPFOn, frequency);
-    }
-    m_LPFFreq = frequency;
 }
 
 } // namespace GCAudioStreaming

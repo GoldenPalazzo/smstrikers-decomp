@@ -11,6 +11,7 @@
 // so this header compiles standalone in every includer.
 void nlServiceFileSystem();
 extern int nlPrintf(const char*, ...);
+extern "C" void sndStreamLPFParameter(unsigned long, bool, unsigned long);
 
 struct sDSPADPCM
 {
@@ -50,8 +51,22 @@ class AudioStreamBuffer
 public:
     AudioStreamBuffer();
     void SetVolume(unsigned long volume);
-    void SetLPF(unsigned char on);
-    void SetLPF(unsigned short frequency);
+    void SetLPF(bool on)
+    {
+        if (on != m_bLPFOn)
+        {
+            sndStreamLPFParameter(m_StreamId, on, m_LPFFreq);
+            m_bLPFOn = on;
+        }
+    }
+    void SetLPF(unsigned short frequency)
+    {
+        if (m_bLPFOn)
+        {
+            sndStreamLPFParameter(m_StreamId, m_bLPFOn, frequency);
+        }
+        m_LPFFreq = frequency;
+    }
     void Reset(AudioStream* pStream = NULL)
     {
         m_pStream = pStream;
@@ -73,7 +88,7 @@ public:
     /* 0x18 */ unsigned char m_Volume;        // offset 0x18, size 0x1
     /* 0x19 */ signed char m_Pan;             // offset 0x19, size 0x1
     /* 0x1A */ unsigned char m_SurroundPan;   // offset 0x1A, size 0x1
-    /* 0x1B */ unsigned char m_bLPFOn;        // offset 0x1B, size 0x1
+    /* 0x1B */ bool m_bLPFOn;                 // offset 0x1B, size 0x1
     /* 0x1C */ unsigned short m_LPFFreq;      // offset 0x1C, size 0x2
 }; // total size: 0x20
 
@@ -144,6 +159,94 @@ public:
             buffer = NULL;
         }
         return buffer;
+    }
+    void SetVolume(unsigned long volume)
+    {
+        int clampedVolume = ((u32)(u8)volume <= 0x7Fu) ? volume : 0x7F;
+
+        if (m_State >= SS_Warming)
+        {
+            AudioStreamBuffer* bufferIndex = NULL;
+            AudioStreamBuffer* buffer = GetBuffer((unsigned long)bufferIndex);
+
+            while (buffer != NULL)
+            {
+                buffer->m_Volume = (u8)clampedVolume;
+                sndStreamMixParameterEx(buffer->m_StreamId, buffer->m_Volume, buffer->m_Pan, buffer->m_SurroundPan, 0, 0);
+                ((unsigned long&)bufferIndex)++;
+                buffer = GetBuffer((unsigned long)bufferIndex);
+            }
+        }
+
+        m_Volume = (u8)clampedVolume;
+    }
+    void SetLPF(bool on)
+    {
+        if (m_State >= SS_Warming)
+        {
+            AudioStreamBuffer* bufferIndex = NULL;
+            AudioStreamBuffer* buffer = GetBuffer((unsigned long)bufferIndex);
+
+            while (buffer != NULL)
+            {
+                buffer->SetLPF(on);
+                ((unsigned long&)bufferIndex)++;
+                buffer = GetBuffer((unsigned long)bufferIndex);
+            }
+        }
+
+        m_LPFOn = on;
+    }
+    void SetLPF(unsigned short frequency)
+    {
+        if (m_State >= SS_Warming)
+        {
+            AudioStreamBuffer* bufferIndex = NULL;
+            AudioStreamBuffer* buffer = GetBuffer((unsigned long)bufferIndex);
+
+            while (buffer != NULL)
+            {
+                buffer->SetLPF(frequency);
+                ((unsigned long&)bufferIndex)++;
+                buffer = GetBuffer((unsigned long)bufferIndex);
+            }
+        }
+
+        m_LPFFreq = frequency;
+    }
+    void SetLoop(bool loop)
+    {
+        m_Flags = (m_Flags & ~(1 << SF_Loop)) | ((unsigned long)loop << SF_Loop);
+    }
+    void Play(bool coolOnStop)
+    {
+        m_Flags = (m_Flags & ~(1 << SF_CoolOnStop)) | ((unsigned long)coolOnStop << SF_CoolOnStop);
+
+        switch (m_State)
+        {
+        case SS_Initd:
+            m_Flags = (m_Flags & ~(1 << SF_Play)) | (1 << SF_Play);
+            Warm(coolOnStop);
+            break;
+        case SS_Warming:
+            m_Flags = (m_Flags & ~(1 << SF_Play)) | (1 << SF_Play);
+            break;
+        case SS_Warm:
+        {
+            AudioStreamBuffer* bufferIndex = NULL;
+            AudioStreamBuffer* buffer = GetBuffer((unsigned long)bufferIndex);
+
+            while (buffer != NULL)
+            {
+                sndStreamActivate(buffer->m_StreamId);
+                ((unsigned long&)bufferIndex)++;
+                buffer = GetBuffer((unsigned long)bufferIndex);
+            }
+
+            m_State = SS_Playing;
+            break;
+        }
+        }
     }
     void ResetBuffers()
     {
@@ -224,33 +327,28 @@ public:
             m_Flags &= ~(1 << SF_CoolOnStop);
             if (m_State > SS_Initd)
             {
-                volatile unsigned long coolIndex;
-                AudioStreamBuffer* buffer;
-                coolIndex = (unsigned long)(buffer = NULL);
+                AudioStreamBuffer* buffer = NULL;
+                AudioStreamBuffer* bufferIndex = NULL;
                 m_Flags =
                     (m_Flags & ~(1 << SF_SeriousStop))
                     | (1 << SF_SeriousStop);
+
                 if (m_BufferCount > (unsigned long)buffer)
                 {
                     buffer = m_Buffers[0];
                 }
+                else
+                {
+                    buffer = NULL;
+                }
                 while (buffer != NULL)
                 {
                     m_BuffMgr.FreeBuffer(buffer);
-
-                    unsigned long index = coolIndex;
-                    m_Buffers[index] = NULL;
-                    index++;
-                    coolIndex = index;
-                    if (index < m_BufferCount)
-                    {
-                        buffer = m_Buffers[index];
-                    }
-                    else
-                    {
-                        buffer = NULL;
-                    }
+                    m_Buffers[(unsigned long)bufferIndex] = NULL;
+                    ((unsigned long&)bufferIndex)++;
+                    buffer = GetBuffer((unsigned long)bufferIndex);
                 }
+
                 m_State = SS_Initd;
             }
         }
@@ -258,17 +356,12 @@ public:
     void Stop();
     void StopPlaying()
     {
-        volatile unsigned long bufferIndex;
-
         m_Flags &= ~(1 << SF_Play);
         if (m_State == SS_Playing)
         {
             AudioStreamBuffer* pBuffer;
-            bufferIndex = (unsigned long)(pBuffer = NULL);
-            if (m_BufferCount > (unsigned long)pBuffer)
-            {
-                pBuffer = m_Buffers[0];
-            }
+            AudioStreamBuffer* bufferIndex = NULL;
+            pBuffer = GetBuffer((unsigned long)bufferIndex);
             while (pBuffer != NULL)
             {
                 pBuffer->m_Volume = 0;
@@ -282,16 +375,8 @@ public:
                 sndStreamDeactivate(pBuffer->m_StreamId);
                 m_State = SS_Warm;
 
-                unsigned long index = bufferIndex + 1;
-                bufferIndex = index;
-                if (index < m_BufferCount)
-                {
-                    pBuffer = m_Buffers[index];
-                }
-                else
-                {
-                    pBuffer = NULL;
-                }
+                ((unsigned long&)bufferIndex)++;
+                pBuffer = GetBuffer((unsigned long)bufferIndex);
             }
             m_StreamPos = 0;
             m_State = SS_Warm;
@@ -440,40 +525,6 @@ public:
         Purge();
     }
 
-    void SetVolume(unsigned long volume)
-    {
-        int clampedVol =
-            ((u32)(u8)volume <= 0x7Fu) ? volume : 0x7F;
-
-        if (m_State >= 2)
-        {
-            unsigned long zero = 0;
-            AudioStreamBuffer* buf;
-            volatile unsigned long i = (unsigned long)(buf = NULL);
-            if (m_BufferCount > zero)
-            {
-                buf = m_Buffers[0];
-            }
-            while (buf != NULL)
-            {
-                buf->m_Volume = (u8)clampedVol;
-                sndStreamMixParameterEx(buf->m_StreamId, buf->m_Volume, buf->m_Pan, buf->m_SurroundPan, 0, 0);
-                unsigned long idx = i + 1;
-                i = idx;
-                if (idx < m_BufferCount)
-                {
-                    buf = m_Buffers[idx];
-                }
-                else
-                {
-                    buf = NULL;
-                }
-            }
-        }
-
-        m_Volume = (u8)clampedVol;
-    }
-
     static void _HdrReadCB(nlFile*, void*, unsigned int, unsigned long);
     static void _WarmReadCB(nlFile*, void*, unsigned int, unsigned long);
     static void _UpdateReadCB(nlFile*, void*, unsigned int, unsigned long);
@@ -496,7 +547,7 @@ public:
     /* 0x14 */ AudioStreamBuffer* m_Buffers[MAX_BUFFERS];
     /* 0x1C */ unsigned long m_LastPlayable;
     /* 0x20 */ unsigned long m_Volume;
-    /* 0x24 */ unsigned char m_LPFOn;
+    /* 0x24 */ bool m_LPFOn;
     /* 0x26 */ unsigned short m_LPFFreq;
     /* 0x28 */ unsigned long m_OldLength;
     /* 0x2C */ AudioBufferMgr& m_BuffMgr;

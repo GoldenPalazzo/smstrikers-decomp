@@ -13,7 +13,6 @@ extern GCAudioStreaming::AudioBufferMgr g_BufferMgr;
 static void ___blank(const char*, ...);
 static void UpdateTiming(float);
 extern "C" void sndStreamMixParameterEx(unsigned long stid, unsigned char vol, unsigned char pan, unsigned char span, unsigned char auxa, unsigned char auxb);
-extern "C" void sndStreamLPFParameter(unsigned long, unsigned long, unsigned long);
 extern "C" void sndStreamDeactivate(unsigned long stid);
 
 class SoundStrToIDNode;
@@ -263,7 +262,7 @@ void ChangeCrowdVolume(float NewVolume)
     }
 }
 
-static void FixValueRange(float& Value, float& Range)
+static inline void FixValueRange(float& Value, float& Range)
 {
     float temp = Range;
     temp = Value - temp;
@@ -271,7 +270,7 @@ static void FixValueRange(float& Value, float& Range)
     Range *= 2.0f;
 }
 
-static void ScaleAndAddVocalDef(CROWD_VOCAL_DEFINITION& Dest, const CROWD_VOCAL_DEFINITION& Src, float Scale)
+static inline void ScaleAndAddVocalDef(CROWD_VOCAL_DEFINITION& Dest, const CROWD_VOCAL_DEFINITION& Src, float Scale)
 {
     Dest.Volume += Src.Volume * Scale;
     Dest.VolumeRange += Src.VolumeRange * Scale;
@@ -386,7 +385,6 @@ static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
 
 /**
  * Offset/Address/Size: 0x2EA0 | 0x801505B4 | size: 0x358
- * TODO: 99.70% match - LPF loop keeps lpfFreq and pBuf in swapped registers.
  */
 static bool PlayVocal(const CROWD_VOCAL_DEFINITION& VocalDef, CROWD_STATE::VOCALIZATION_STATE& VocalState, GCAudioStreaming::AudioStream* pStream)
 {
@@ -416,7 +414,7 @@ static bool PlayVocal(const CROWD_VOCAL_DEFINITION& VocalDef, CROWD_STATE::VOCAL
 
         if (playNow)
         {
-            ___blank("Crowd vocal\n");
+            ___blank("Playing vocal\n");
 
             float randVol = nlRandomf(VocalDef.VolumeRange, &nlDefaultSeed);
             float scalar = 127.0f;
@@ -426,123 +424,10 @@ static bool PlayVocal(const CROWD_VOCAL_DEFINITION& VocalDef, CROWD_STATE::VOCAL
             crowdVol = crowdVol * vocalVol;
             scalar = scalar * crowdVol;
             int tmpVol = (int)scalar;
-            unsigned long streamVol = 0x7F;
-            unsigned long zeroCount = 0;
-
-            if ((unsigned char)tmpVol <= 0x7F)
-            {
-                streamVol = tmpVol;
-            }
-
-            if (pStream->m_State >= GCAudioStreaming::SS_Warming)
-            {
-                GCAudioStreaming::AudioStreamBuffer* buf;
-                volatile unsigned long i = (unsigned long)(buf = NULL);
-
-                if (pStream->m_BufferCount > zeroCount)
-                {
-                    buf = pStream->m_Buffers[0];
-                }
-
-                while (buf != NULL)
-                {
-                    buf->m_Volume = streamVol;
-                    sndStreamMixParameterEx(buf->m_StreamId, buf->m_Volume, buf->m_Pan, buf->m_SurroundPan, 0, 0);
-
-                    unsigned long ci = i + 1;
-                    i = ci;
-                    if (ci < pStream->m_BufferCount)
-                    {
-                        buf = pStream->m_Buffers[ci];
-                    }
-                    else
-                    {
-                        buf = NULL;
-                    }
-                }
-            }
-
-            pStream->m_Volume = (unsigned char)streamVol;
-
-            unsigned short lpfFreq = (unsigned short)g_CrowdState.LPFFreq;
-            if (pStream->m_State >= GCAudioStreaming::SS_Warming)
-            {
-                volatile unsigned long i;
-                GCAudioStreaming::AudioStreamBuffer* pBuf;
-                i = (unsigned long)(pBuf = NULL);
-
-                if (pStream->m_BufferCount > zeroCount)
-                {
-                    pBuf = pStream->m_Buffers[0];
-                }
-
-                while (pBuf != NULL)
-                {
-                    unsigned char lpfOn = pBuf->m_bLPFOn;
-                    if (lpfOn != 0)
-                    {
-                        sndStreamLPFParameter(pBuf->m_StreamId, lpfOn, lpfFreq);
-                    }
-
-                    pBuf->m_LPFFreq = lpfFreq;
-
-                    unsigned long ci = i + 1;
-                    i = ci;
-                    if (ci < pStream->m_BufferCount)
-                    {
-                        pBuf = pStream->m_Buffers[ci];
-                    }
-                    else
-                    {
-                        pBuf = NULL;
-                    }
-                }
-            }
-
-            pStream->m_LPFFreq = lpfFreq;
-
-            pStream->m_Flags &= ~(1 << GCAudioStreaming::SF_Loop);
-            pStream->m_Flags = (pStream->m_Flags & ~(1 << GCAudioStreaming::SF_CoolOnStop)) | (1 << GCAudioStreaming::SF_CoolOnStop);
-
-            switch (pStream->m_State)
-            {
-            case GCAudioStreaming::SS_Initd:
-                pStream->m_Flags = (pStream->m_Flags & ~(1 << GCAudioStreaming::SF_Play)) | (1 << GCAudioStreaming::SF_Play);
-                pStream->Warm(true);
-                break;
-            case GCAudioStreaming::SS_Warming:
-                pStream->m_Flags = (pStream->m_Flags & ~(1 << GCAudioStreaming::SF_Play)) | (1 << GCAudioStreaming::SF_Play);
-                break;
-            case GCAudioStreaming::SS_Warm:
-            {
-                GCAudioStreaming::AudioStreamBuffer* buf;
-                volatile unsigned long i = (unsigned long)(buf = NULL);
-
-                if (pStream->m_BufferCount > zeroCount)
-                {
-                    buf = pStream->m_Buffers[0];
-                }
-
-                while (buf != NULL)
-                {
-                    sndStreamActivate(buf->m_StreamId);
-
-                    unsigned long ci = i + 1;
-                    i = ci;
-                    if (ci < pStream->m_BufferCount)
-                    {
-                        buf = pStream->m_Buffers[ci];
-                    }
-                    else
-                    {
-                        buf = NULL;
-                    }
-                }
-
-                pStream->m_State = GCAudioStreaming::SS_Playing;
-                break;
-            }
-            }
+            pStream->SetVolume(tmpVol);
+            pStream->SetLPF((unsigned short)g_CrowdState.LPFFreq);
+            pStream->SetLoop(false);
+            pStream->Play(true);
 
             VocalState.Ready = false;
             VocalState.SinceLast = -1.0f;
@@ -1020,184 +905,29 @@ void CrowdMood::Init()
 
 /**
  * Offset/Address/Size: 0xF4C | 0x8014E660 | size: 0x3B4
- * TODO: 99.24% match - remaining register allocation differs for bJustStopSFX,
- *       g_CrowdAudio base pointers, and the heckle stream pointer.
  */
 void CrowdMood::Purge(bool bJustStopSFX)
 {
-    volatile unsigned long chantPlayI;
-    volatile unsigned long hecklePlayI;
-    volatile unsigned long chantFreeI;
-    volatile unsigned long heckleFreeI;
-    unsigned long zeroCount = 0;
-
     g_CrowdSFXStopped = true;
 
     Audio::StopSFX(g_CrowdAudio.NeutralVoiceId);
     Audio::StopSFX(g_CrowdAudio.PositiveVoiceId);
     Audio::StopSFX(g_CrowdAudio.NegativeVoiceId);
 
-    GCAudioStreaming::MonoAudioStream* pHeckle;
     GCAudioStreaming::StereoAudioStream* pChant = g_CrowdAudio.pChantStream;
     if (pChant != NULL)
     {
-        pChant->m_Flags &= ~(1 << GCAudioStreaming::SF_Play);
-
-        if (pChant->m_State == GCAudioStreaming::SS_Playing)
-        {
-            GCAudioStreaming::AudioStreamBuffer* buf;
-            chantPlayI = (unsigned long)(buf = NULL);
-
-            if (pChant->m_BufferCount > zeroCount)
-            {
-                buf = pChant->m_Buffers[0];
-            }
-
-            while (buf != NULL)
-            {
-                buf->m_Volume = 0;
-                sndStreamMixParameterEx(buf->m_StreamId, buf->m_Volume, buf->m_Pan, buf->m_SurroundPan, 0, 0);
-                sndStreamDeactivate(buf->m_StreamId);
-                pChant->m_State = GCAudioStreaming::SS_Warm;
-
-                unsigned long ci = chantPlayI + 1;
-                chantPlayI = ci;
-                if (ci < pChant->m_BufferCount)
-                {
-                    buf = pChant->m_Buffers[ci];
-                }
-                else
-                {
-                    buf = NULL;
-                }
-            }
-
-            pChant->m_StreamPos = 0;
-            pChant->m_State = GCAudioStreaming::SS_Warm;
-        }
-
+        pChant->StopPlaying();
         pChant->CancelPendingReads();
-
-        if (pChant->m_Flags & (1 << GCAudioStreaming::SF_CoolOnStop))
-        {
-            pChant->m_Flags &= ~(1 << GCAudioStreaming::SF_CoolOnStop);
-
-            if (pChant->m_State > GCAudioStreaming::SS_Initd)
-            {
-                GCAudioStreaming::AudioStreamBuffer* buf;
-                chantFreeI = (unsigned long)(buf = NULL);
-
-                pChant->m_Flags = (pChant->m_Flags & ~(1 << GCAudioStreaming::SF_SeriousStop)) | (1 << GCAudioStreaming::SF_SeriousStop);
-
-                if (pChant->m_BufferCount > zeroCount)
-                {
-                    buf = pChant->m_Buffers[0];
-                }
-
-                while (buf != NULL)
-                {
-                    pChant->m_BuffMgr.FreeBuffer(buf);
-
-                    unsigned long bi = chantFreeI;
-                    buf = NULL;
-                    pChant->m_Buffers[bi] = NULL;
-                    bi++;
-                    chantFreeI = bi;
-
-                    if (bi < pChant->m_BufferCount)
-                    {
-                        buf = pChant->m_Buffers[bi];
-                    }
-                    else
-                    {
-                        buf = NULL;
-                    }
-                }
-
-                pChant->m_State = GCAudioStreaming::SS_Initd;
-            }
-        }
+        pChant->Cool();
     }
 
-    pHeckle = g_CrowdAudio.pHeckleStream;
+    GCAudioStreaming::MonoAudioStream* pHeckle = g_CrowdAudio.pHeckleStream;
     if (pHeckle != NULL)
     {
-        pHeckle->m_Flags &= ~(1 << GCAudioStreaming::SF_Play);
-
-        if (pHeckle->m_State == GCAudioStreaming::SS_Playing)
-        {
-            GCAudioStreaming::AudioStreamBuffer* buf;
-            hecklePlayI = (unsigned long)(buf = NULL);
-
-            if (pHeckle->m_BufferCount > zeroCount)
-            {
-                buf = pHeckle->m_Buffers[0];
-            }
-
-            while (buf != NULL)
-            {
-                buf->m_Volume = 0;
-                sndStreamMixParameterEx(buf->m_StreamId, buf->m_Volume, buf->m_Pan, buf->m_SurroundPan, 0, 0);
-                sndStreamDeactivate(buf->m_StreamId);
-                pHeckle->m_State = GCAudioStreaming::SS_Warm;
-
-                unsigned long ci = hecklePlayI + 1;
-                hecklePlayI = ci;
-                if (ci < pHeckle->m_BufferCount)
-                {
-                    buf = pHeckle->m_Buffers[ci];
-                }
-                else
-                {
-                    buf = NULL;
-                }
-            }
-
-            pHeckle->m_StreamPos = 0;
-            pHeckle->m_State = GCAudioStreaming::SS_Warm;
-        }
-
+        pHeckle->StopPlaying();
         pHeckle->CancelPendingReads();
-
-        if (pHeckle->m_Flags & (1 << GCAudioStreaming::SF_CoolOnStop))
-        {
-            pHeckle->m_Flags &= ~(1 << GCAudioStreaming::SF_CoolOnStop);
-
-            if (pHeckle->m_State > GCAudioStreaming::SS_Initd)
-            {
-                GCAudioStreaming::AudioStreamBuffer* buf;
-                heckleFreeI = (unsigned long)(buf = NULL);
-
-                pHeckle->m_Flags = (pHeckle->m_Flags & ~(1 << GCAudioStreaming::SF_SeriousStop)) | (1 << GCAudioStreaming::SF_SeriousStop);
-
-                if (pHeckle->m_BufferCount > zeroCount)
-                {
-                    buf = pHeckle->m_Buffers[0];
-                }
-
-                while (buf != NULL)
-                {
-                    pHeckle->m_BuffMgr.FreeBuffer(buf);
-
-                    unsigned long bi = heckleFreeI;
-                    buf = NULL;
-                    pHeckle->m_Buffers[bi] = NULL;
-                    bi++;
-                    heckleFreeI = bi;
-
-                    if (bi < pHeckle->m_BufferCount)
-                    {
-                        buf = pHeckle->m_Buffers[bi];
-                    }
-                    else
-                    {
-                        buf = NULL;
-                    }
-                }
-
-                pHeckle->m_State = GCAudioStreaming::SS_Initd;
-            }
-        }
+        pHeckle->Cool();
     }
 
     if (!bJustStopSFX)
@@ -1206,14 +936,13 @@ void CrowdMood::Purge(bool bJustStopSFX)
         delete g_CrowdAudio.pHeckleStream;
         g_CrowdAudio.pChantStream = NULL;
         g_CrowdAudio.pHeckleStream = NULL;
-        memset(&g_CrowdState, 0, 0x8C);
+        memset(&g_CrowdState, 0, sizeof(CROWD_STATE));
         g_Initd = false;
     }
 }
 
 /**
  * Offset/Address/Size: 0x9F8 | 0x8014E10C | size: 0x554
- * TODO: 99.60% match - mask register allocation; normalized interpolant constant uses a temp register copy.
  */
 void CrowdMood::Update(float dt)
 {
@@ -1260,8 +989,8 @@ void CrowdMood::Update(float dt)
 
     if (g_CrowdState.HasChanged)
     {
-        u8 level = g_CrowdState.DestMoodLevel;
         CROWD_MOOD mask = (CROWD_MOOD)-1;
+        u8 level = g_CrowdState.DestMoodLevel;
         u32 clampedLevel = CM_END;
         if (((u32)level & mask) <= (u32)CM_END)
             clampedLevel = ((u32)level & mask);
@@ -1370,23 +1099,12 @@ void CrowdMood::Update(float dt)
             targetArray = g_CrowdState.DestinationMood;
         }
 
-        f32 normalizedInterp = 1.0f;
-        f32 epsilon2 = 0.0001f;
-        if (fabsf(g_CrowdState.Interpolant - normalizedInterp) <= epsilon2)
-        {
-            normalizedInterp = 1.0f;
-        }
-        else
-        {
-            if (g_CrowdState.Interpolant >= g_CrowdState.InterpolantMidpoint)
-            {
-                normalizedInterp = (g_CrowdState.Interpolant - g_CrowdState.InterpolantMidpoint) / (normalizedInterp - g_CrowdState.InterpolantMidpoint);
-            }
-            else
-            {
-                normalizedInterp = g_CrowdState.Interpolant / g_CrowdState.InterpolantMidpoint;
-            }
-        }
+        f32 normalizedInterp =
+            (fabsf(g_CrowdState.Interpolant - 1.0f) <= 0.0001f)
+                ? 1.0f
+                : ((g_CrowdState.Interpolant >= g_CrowdState.InterpolantMidpoint)
+                      ? (g_CrowdState.Interpolant - g_CrowdState.InterpolantMidpoint) / (1.0f - g_CrowdState.InterpolantMidpoint)
+                      : g_CrowdState.Interpolant / g_CrowdState.InterpolantMidpoint);
 
         g_CrowdState.SinceMoodDest = 0.0f;
         f32 complement = 1.0f - normalizedInterp;
@@ -1515,114 +1233,36 @@ void CrowdMood::SetCrowdVolume(unsigned long Volume, unsigned long FadeTime)
 
 /**
  * Offset/Address/Size: 0x490 | 0x8014DBA4 | size: 0x1CC
- * TODO: 98.00% match - register allocation differs for LPF flag values
- *       and state/audio stream pointers.
  */
-void CrowdMood::ActivateLPF(bool Activate)
+void CrowdMood::ActivateLPF(bool bOn)
 {
-    GCAudioStreaming::StereoAudioStream* pChant;
-    GCAudioStreaming::MonoAudioStream* pHeckle;
-
-    if (Activate == g_CrowdState.LPFOn)
+    if (bOn == g_CrowdState.LPFOn)
     {
         return;
     }
 
-    Audio::ActivateFilterOnSFX(g_CrowdAudio.NeutralVoiceId, Activate);
-    Audio::ActivateFilterOnSFX(g_CrowdAudio.PositiveVoiceId, Activate);
-    Audio::ActivateFilterOnSFX(g_CrowdAudio.NegativeVoiceId, Activate);
+    Audio::ActivateFilterOnSFX(g_CrowdAudio.NeutralVoiceId, bOn);
+    Audio::ActivateFilterOnSFX(g_CrowdAudio.PositiveVoiceId, bOn);
+    Audio::ActivateFilterOnSFX(g_CrowdAudio.NegativeVoiceId, bOn);
 
-    pChant = g_CrowdAudio.pChantStream;
-    if (pChant != NULL && g_CrowdAudio.pHeckleStream != NULL && !g_CrowdState.StreamLocked)
+    GCAudioStreaming::StereoAudioStream* pChant = g_CrowdAudio.pChantStream;
+    if (pChant != NULL
+        && g_CrowdAudio.pHeckleStream != NULL
+        && !g_CrowdState.StreamLocked)
     {
-        if (pChant->m_State >= GCAudioStreaming::SS_Warming)
-        {
-            GCAudioStreaming::AudioStreamBuffer* buf;
-            volatile unsigned long i = (unsigned long)(buf = NULL);
-            unsigned long zero = 0;
-
-            if (pChant->m_BufferCount <= zero)
-            {
-            }
-            else
-            {
-                buf = pChant->m_Buffers[0];
-            }
-
-            unsigned char act = (unsigned char)Activate;
-            while (buf != NULL)
-            {
-                if (act != buf->m_bLPFOn)
-                {
-                    sndStreamLPFParameter(buf->m_StreamId, Activate, buf->m_LPFFreq);
-                    buf->m_bLPFOn = Activate;
-                }
-
-                unsigned long ci = i + 1;
-                i = ci;
-                if (ci < pChant->m_BufferCount)
-                {
-                    buf = pChant->m_Buffers[ci];
-                }
-                else
-                {
-                    buf = NULL;
-                }
-            }
-        }
-
-        pChant->m_LPFOn = Activate;
-
-        pHeckle = g_CrowdAudio.pHeckleStream;
-        if (pHeckle->m_State >= GCAudioStreaming::SS_Warming)
-        {
-            GCAudioStreaming::AudioStreamBuffer* buf;
-            volatile unsigned long i = (unsigned long)(buf = NULL);
-            unsigned long zero = 0;
-
-            if (pHeckle->m_BufferCount <= zero)
-            {
-            }
-            else
-            {
-                buf = pHeckle->m_Buffers[0];
-            }
-
-            while (buf != NULL)
-            {
-                if (Activate != buf->m_bLPFOn)
-                {
-                    sndStreamLPFParameter(buf->m_StreamId, (unsigned char)Activate, buf->m_LPFFreq);
-                    buf->m_bLPFOn = Activate;
-                }
-
-                unsigned long ci = i + 1;
-                i = ci;
-                if (ci < pHeckle->m_BufferCount)
-                {
-                    buf = pHeckle->m_Buffers[ci];
-                }
-                else
-                {
-                    buf = NULL;
-                }
-            }
-        }
-
-        pHeckle->m_LPFOn = Activate;
+        pChant->SetLPF(bOn);
+        GCAudioStreaming::MonoAudioStream* pHeckle = g_CrowdAudio.pHeckleStream;
+        pHeckle->SetLPF(bOn);
     }
 
-    g_CrowdState.LPFOn = Activate;
+    g_CrowdState.LPFOn = bOn;
 }
 
 /**
  * Offset/Address/Size: 0x2D4 | 0x8014D9E8 | size: 0x1BC
- * TODO: 98.42% match - register allocation differs for frequency/state/audio stream pointers across both stream loops.
  */
 void CrowdMood::SetLPF(unsigned short Frequency)
 {
-    unsigned long zero = 0;
-
     if (g_CrowdState.LPFFreq == Frequency)
         return;
 
@@ -1633,78 +1273,8 @@ void CrowdMood::SetLPF(unsigned short Frequency)
     GCAudioStreaming::StereoAudioStream* pChant = g_CrowdAudio.pChantStream;
     if (pChant != NULL && g_CrowdAudio.pHeckleStream != NULL && !g_CrowdState.StreamLocked)
     {
-        if (pChant->m_State >= GCAudioStreaming::SS_Warming)
-        {
-            GCAudioStreaming::AudioStreamBuffer* buf;
-            volatile unsigned long i = (unsigned long)(buf = NULL);
-
-            if (pChant->m_BufferCount <= zero)
-            {
-            }
-            else
-            {
-                buf = pChant->m_Buffers[0];
-            }
-
-            unsigned long maskedFreq = Frequency;
-            while (buf != NULL)
-            {
-                if (buf->m_bLPFOn)
-                {
-                    sndStreamLPFParameter(buf->m_StreamId, buf->m_bLPFOn, maskedFreq);
-                }
-                buf->m_LPFFreq = Frequency;
-
-                unsigned long ci = i + 1;
-                i = ci;
-                if (ci < pChant->m_BufferCount)
-                {
-                    buf = pChant->m_Buffers[ci];
-                }
-                else
-                {
-                    buf = NULL;
-                }
-            }
-        }
-        pChant->m_LPFFreq = Frequency;
-
-        GCAudioStreaming::MonoAudioStream* pHeckle = g_CrowdAudio.pHeckleStream;
-        if (pHeckle->m_State >= GCAudioStreaming::SS_Warming)
-        {
-            GCAudioStreaming::AudioStreamBuffer* buf;
-            volatile unsigned long i = (unsigned long)(buf = NULL);
-
-            if (pHeckle->m_BufferCount <= zero)
-            {
-            }
-            else
-            {
-                buf = pHeckle->m_Buffers[0];
-            }
-
-            unsigned long maskedFreq = Frequency;
-            while (buf != NULL)
-            {
-                if (buf->m_bLPFOn)
-                {
-                    sndStreamLPFParameter(buf->m_StreamId, buf->m_bLPFOn, maskedFreq);
-                }
-                buf->m_LPFFreq = maskedFreq;
-
-                unsigned long ci = i + 1;
-                i = ci;
-                if (ci < pHeckle->m_BufferCount)
-                {
-                    buf = pHeckle->m_Buffers[ci];
-                }
-                else
-                {
-                    buf = NULL;
-                }
-            }
-        }
-        pHeckle->m_LPFFreq = Frequency;
+        pChant->SetLPF(Frequency);
+        g_CrowdAudio.pHeckleStream->SetLPF(Frequency);
     }
 
     g_CrowdState.LPFFreq = Frequency;
