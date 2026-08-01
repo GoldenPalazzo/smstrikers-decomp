@@ -882,7 +882,7 @@ config.libs = [
             Object(Matching, "Game/Audio/AudioLoader.cpp", mw_version="GC/1.3.2", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Audio/AudioScriptEventMgr.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Audio/AudioStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Audio/CrowdMood.cpp", extra_cflags=["-inline auto", "-inline deferred"]),  
+            Object(Matching, "Game/Audio/CrowdMood.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Audio/StreamTrack.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
             Object(NonMatching, "Game/Audio/PriorityStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
 

@@ -45,8 +45,6 @@ void Increment(T& Value)
     Value = (T)(Value + 1);
 }
 
-bool g_DoDecay = true;
-bool g_CrowdSFXStopped = true;
 static const MOOD_DEFINITION g_MoodDefs[5] = { };
 static const CROWD_SETTINGS g_Settings = { };
 
@@ -60,6 +58,9 @@ char* MoodNames[5] = {
     "Frustrated",
     "Neutral",
 };
+
+bool g_DoDecay = true;
+bool g_CrowdSFXStopped = true;
 
 struct RANDOM_STREAMS
 {
@@ -103,64 +104,6 @@ static void WarmRandomStream(const RANDOM_STREAMS& RandomStreams, T* pStream)
 }
 
 static void MoodDefFromBlend(float*, MOOD_DEFINITION&);
-
-/**
- * Offset/Address/Size: 0x134 | 0x801514D0 | size: 0x2C
- */
-void GCAudioStreaming::MonoAudioStream::Purge()
-{
-    m_State = SS_New;
-    nlClose(m_pFile);
-}
-
-/**
- * Offset/Address/Size: 0x108 | 0x801514A4 | size: 0x2C
- */
-void GCAudioStreaming::StereoAudioStream::Purge()
-{
-    m_State = SS_New;
-    nlClose(m_pFile);
-}
-
-/**
- * Offset/Address/Size: 0x98 | 0x80151434 | size: 0x70
- */
-GCAudioStreaming::MonoAudioStream::~MonoAudioStream()
-{
-    Destructor();
-}
-
-/**
- * Offset/Address/Size: 0x4C | 0x801513E8 | size: 0x4C
- */
-bool GCAudioStreaming::StereoAudioStream::SafeToPurge()
-{
-    bool result = false;
-    if (m_State <= SS_Initd)
-    {
-        if (!nlAsyncReadsPending(m_pFile))
-        {
-            result = true;
-        }
-    }
-    return result;
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x8015139C | size: 0x4C
- */
-bool GCAudioStreaming::MonoAudioStream::SafeToPurge()
-{
-    bool result = false;
-    if (m_State <= SS_Initd)
-    {
-        if (!nlAsyncReadsPending(m_pFile))
-        {
-            result = true;
-        }
-    }
-    return result;
-}
 
 /**
  * Offset/Address/Size: 0x3958 | 0x8015106C | size: 0x50
@@ -461,9 +404,9 @@ void PlayMoodDef(MOOD_DEFINITION& MoodDef)
 
             SFXStartInfo info;
             info.uSFXID = (unsigned long)-1;
-            info.fVolume = 0.0f;
-            info.fPan = 0.0f;
-            info.fVolReverb = 0.0f;
+            info.fVolume = 100.0f;
+            info.fPan = 100.0f;
+            info.fVolReverb = 100.0f;
             info.uSurroundPan = 0xFF;
             info.uPitchBend = 0x2000;
             info.uModulation = 0;
@@ -1167,7 +1110,7 @@ void CrowdMood::SetMood(CrowdMood::CROWD_MOOD Mood, unsigned long Amount)
     g_CrowdState.DestMood = Mood;
     g_CrowdState.SinceMoodDest = (f32)Amount;
     g_CrowdState.CurrentMood = Mood;
-    g_CrowdState.Interpolant = 0.0f;
+    g_CrowdState.Interpolant = 1.0f;
     g_CrowdState.SkipBlend = true;
 
     for (CrowdMood::CROWD_MOOD mood = CM_Positive; mood < CM_Neutral; Increment<CrowdMood::CROWD_MOOD>(mood))
@@ -1203,6 +1146,7 @@ void CrowdMood::InitiateFastCrowdTransition()
 void CrowdMood::SetCrowdVolume(unsigned long Volume, unsigned long FadeTime)
 {
     MOOD_DEFINITION MoodDef;
+
     unsigned char crowdOff = GetConfigBool(Config::Global(), "no_crowd", false);
 
     if (crowdOff == 1)
@@ -1215,17 +1159,30 @@ void CrowdMood::SetCrowdVolume(unsigned long Volume, unsigned long FadeTime)
 
     if (FadeTime == 0)
     {
-        ChangeCrowdVolume((float)Volume / 100.0f);
+        ChangeCrowdVolume((float)Volume / 127.0f);
     }
     else
     {
         g_CrowdState.VolumeFade.StartVol = g_CrowdState.CrowdVolume;
-        g_CrowdState.VolumeFade.EndVol = (float)Volume / 100.0f;
+        g_CrowdState.VolumeFade.EndVol = (float)Volume / 127.0f;
         g_CrowdState.VolumeFade.Time = (float)FadeTime / 1000.0f;
         g_CrowdState.VolumeFade.Interp = 0.0f;
     }
 }
 #pragma pop
+
+namespace CrowdMood
+{
+/**
+ * Unreferenced retail helper, dead-stripped at link. Its inverse relationship
+ * with ChangeCrowdVolume, referenced globals, and 0x44 object size all agree
+ * with the MAP and DWARF records.
+ */
+static unsigned long GetCrowdVolume()
+{
+    return (unsigned long)((g_CrowdState.CrowdVolume / g_Settings.CrowdMasterVolume) * 127.0f);
+}
+} // namespace CrowdMood
 
 /**
  * Offset/Address/Size: 0x490 | 0x8014DBA4 | size: 0x1CC
@@ -1417,4 +1374,24 @@ void CrowdMood::RestartLoops()
         PlatAudio::SetSFXVolume(LoadData[i].VoiceId, 0.0f);
     }
     g_CrowdSFXStopped = false;
+}
+
+/**
+ * Unreferenced retail test, dead-stripped at link. The MAP records a 0x208
+ * body here and DWARF records the StopAt and Frame locals plus references to
+ * g_Initd and g_CrowdState. Its real SetMood and AdjustMood calls also restore
+ * the retail literal chronology without synthetic pool declarations.
+ */
+static void CrowdMoodTest()
+{
+    long long Frame = OSGetTime();
+    long long StopAt = Frame + OSSecondsToTicks(5);
+
+    do
+    {
+        UpdateTiming(5.0f);
+        CrowdMood::SetMood((CrowdMood::CROWD_MOOD)g_CrowdState.DestMood, g_CrowdState.DestMoodLevel);
+        CrowdMood::AdjustMood((CrowdMood::CROWD_MOOD)g_CrowdState.DestMood, g_CrowdState.DestMoodLevel);
+        Frame = OSGetTime();
+    } while (Frame < StopAt);
 }

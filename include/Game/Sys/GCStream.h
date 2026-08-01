@@ -613,14 +613,32 @@ public:
         m_pFile = nlOpen(filename);
         m_State = SS_Initd;
     }
-    virtual ~MonoAudioStream();
+    virtual ~MonoAudioStream()
+    {
+        Destructor();
+    }
     static void _AsyncCancelCB(nlFile*, void*, unsigned int, unsigned long, void (*)(nlFile*, void*, unsigned int, unsigned long));
     virtual void CancelPendingReads();
     virtual unsigned long GetUpdateReadLength();
     virtual void Warm(bool);
     virtual unsigned long DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, GCAudioStreaming::AudioStreamBuffer*);
-    virtual bool SafeToPurge();
-    virtual void Purge();
+    virtual bool SafeToPurge()
+    {
+        bool result = false;
+        if (m_State <= SS_Initd)
+        {
+            if (!nlAsyncReadsPending(m_pFile))
+            {
+                result = true;
+            }
+        }
+        return result;
+    }
+    virtual void Purge()
+    {
+        m_State = SS_New;
+        nlClose(m_pFile);
+    }
 
     /* 0x38 */ class nlFile* m_pFile;
     /* 0x3C */ unsigned long m_UpdateLen;
@@ -659,8 +677,23 @@ public:
     virtual void Warm(bool);
     void InterleavedHdrReadCB(nlFile*, void*, unsigned int);
     virtual unsigned long DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, GCAudioStreaming::AudioStreamBuffer*);
-    virtual bool SafeToPurge();
-    virtual void Purge();
+    virtual bool SafeToPurge()
+    {
+        bool result = false;
+        if (m_State <= SS_Initd)
+        {
+            if (!nlAsyncReadsPending(m_pFile))
+            {
+                result = true;
+            }
+        }
+        return result;
+    }
+    virtual void Purge()
+    {
+        m_State = SS_New;
+        nlClose(m_pFile);
+    }
 
     /* 0x38 */ nlFile* m_pFile;
     /* 0x3C */ unsigned long m_Interleave;
