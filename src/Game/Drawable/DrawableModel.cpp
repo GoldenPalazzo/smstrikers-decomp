@@ -17,13 +17,13 @@
 
 const u32 GLTT_BumpLocal_bit = 1 << (int)GLTT_BumpLocal;
 
-static unsigned long UnlitProgram = glGetProgram("3d unlit");
-static unsigned long LitProgram = glGetProgram("3d pointlit");
-static unsigned long LightTexture = glGetTexture("global/lightramp");
-static unsigned long BlackTexture = glGetTexture("global/black");
-static unsigned long WhiteTexture = glGetTexture("global/white");
-static unsigned long UnlitCrowdProgram = glGetProgram("3d crowd");
-static unsigned long LitCrowdProgram = glGetProgram("3d crowd lit");
+static const unsigned long UnlitProgram = glGetProgram("3d unlit");
+static const unsigned long LitProgram = glGetProgram("3d pointlit");
+static const unsigned long LightTexture = glGetTexture("global/lightramp");
+static const unsigned long BlackTexture = glGetTexture("global/black");
+static const unsigned long WhiteTexture = glGetTexture("global/white");
+static const unsigned long UnlitCrowdProgram = glGetProgram("3d crowd");
+static const unsigned long LitCrowdProgram = glGetProgram("3d crowd lit");
 
 static bool g_bShadowVolumes;
 static unsigned char g_bDrawBoundingBoxes;
@@ -65,11 +65,20 @@ static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p
 
 /**
  * Offset/Address/Size: 0x1DD4 | 0x80121BE0 | size: 0x214
- * TODO: 92.29% match - initial prologue save timing and remaining quad setup order
+ * TODO: OPEN at 93.53%, 9 diff rows, one prologue-scheduling cluster: retail
+ * issues [lfs z][lfs refHeight] at slots 2-3 above the LR store, fdivs next,
+ * with the 0.0f pool load sunk into the divide shadow. GC/1.3.2 never lifts
+ * pointer loads over prologue stores (proven with the pool constant removed
+ * from the block). GC/2.0-2.7 produce this function 100.0 from this exact
+ * source; Clone and the GetAABBDimensions wrapper are the two 2.x divergences
+ * pinning the TU's mw_version override, so this residual is a compiler-band
+ * conflict, not a source defect (see smstrikers-notes 0050). ~40 source forms,
+ * all O-levels, six -proc models and every optimizer pragma family measured
+ * inert at 1.3.2 - consult the task ledger before retrying spellings.
  */
 static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p, bool bGlow)
 {
-    f32 frac = (1.0f / p.fReferenceHeight) * vPosition.f.z;
+    f32 frac = vPosition.f.z / p.fReferenceHeight;
     if (frac < 0.0f)
     {
         frac = 0.0f;
@@ -79,7 +88,7 @@ static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p
         frac = 1.0f;
     }
 
-    f32 fY1, fX0, fY0, fX1;
+    f32 fX0, fY0, fX1, fY1;
     f32 half_dim = (1.0f - frac) * p.fRadius0 + frac * p.fRadius1;
     f32 fAlpha = (1.0f - frac) * (f32)p.nAlpha0 + frac * (f32)p.nAlpha1;
     s32 alpha = (s32)fAlpha;
@@ -95,12 +104,12 @@ static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p
     nlColour c = p.colour;
     fY0 = vPosition.f.y - half_dim;
     fX0 = vPosition.f.x - half_dim;
-    fY1 = vPosition.f.y + half_dim;
-    fX1 = vPosition.f.x + half_dim;
 
     glQuad3 quad;
-    quad.m_pos[0].f.z = 1.0f / 64.0f;
     c.c[3] = (u8)alpha;
+
+    fY1 = vPosition.f.y + half_dim;
+    fX1 = vPosition.f.x + half_dim;
 
     quad.m_pos[0].f.x = fX0;
     quad.m_pos[0].f.y = fY0;
@@ -819,128 +828,77 @@ static void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matri
 
 /**
  * Offset/Address/Size: 0x964 | 0x80120770 | size: 0x290
- * TODO: 88.54% match - FPR allocation still differs in AABB corner
- *       initialization and projected matrix coefficient setup.
+ * Matches 100%. The shadow-matrix construction is shared with DrawPlanarShadow
+ * via MakePlanarShadowMatrix; the `register float` scaffolding locals that used
+ * to be interleaved between the corner stores are gone.
  */
+static inline void MakePlanarShadowMatrix(nlMatrix4& shadowMatrix, const nlMatrix4& objectToWorldMatrix)
+{
+    const nlVector3& lightVector = *(const nlVector3*)(*(u32*)((u8*)WorldManager::s_World + 0x138) + 4);
+    float xOverZ = -lightVector.f.x / lightVector.f.z;
+    float yOverZ = -lightVector.f.y / lightVector.f.z;
+
+    shadowMatrix.f.m11 = objectToWorldMatrix.f.m11 + xOverZ * objectToWorldMatrix.f.m13;
+    shadowMatrix.f.m21 = objectToWorldMatrix.f.m21 + xOverZ * objectToWorldMatrix.f.m23;
+    shadowMatrix.f.m31 = objectToWorldMatrix.f.m31 + xOverZ * objectToWorldMatrix.f.m33;
+    shadowMatrix.f.m41 = objectToWorldMatrix.f.m41 + xOverZ * objectToWorldMatrix.f.m43;
+    shadowMatrix.f.m12 = objectToWorldMatrix.f.m12 + yOverZ * objectToWorldMatrix.f.m13;
+    shadowMatrix.f.m22 = objectToWorldMatrix.f.m22 + yOverZ * objectToWorldMatrix.f.m23;
+    shadowMatrix.f.m32 = objectToWorldMatrix.f.m32 + yOverZ * objectToWorldMatrix.f.m33;
+    shadowMatrix.f.m42 = objectToWorldMatrix.f.m42 + yOverZ * objectToWorldMatrix.f.m43;
+    shadowMatrix.f.m13 = 0.0f;
+    shadowMatrix.f.m23 = 0.0f;
+    shadowMatrix.f.m33 = 0.0f;
+    shadowMatrix.f.m43 = 0.0f;
+    shadowMatrix.f.m14 = 0.0f;
+    shadowMatrix.f.m24 = 0.0f;
+    shadowMatrix.f.m34 = 0.0f;
+    shadowMatrix.f.m44 = 1.0f;
+}
+
 static void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matrix, float& x0, float& x1, float& y0, float& y1, unsigned long userData)
 {
-
     AABBDimensions dimensions;
     GetAABBDimensions(model, dimensions, userData);
 
-    register float maxZ = dimensions.mMax.f.z;
-    register float one = 1.0f;
-    register float maxY = dimensions.mMax.f.y;
-    register float minY = dimensions.mMin.f.y;
-    register float minZ = dimensions.mMin.f.z;
+    const nlVector3& max = dimensions.mMax;
+    nlVector4 p[8];
 
-    nlVector4 points[8];
-    nlVector4* point = points;
-    int i = 0;
+    nlVec4Set(p[0], dimensions.mMin.f.x, dimensions.mMin.f.y, dimensions.mMin.f.z, 1.0f);
+    nlVec4Set(p[1], dimensions.mMin.f.x, dimensions.mMin.f.y, max.f.z, 1.0f);
+    nlVec4Set(p[2], dimensions.mMin.f.x, max.f.y, dimensions.mMin.f.z, 1.0f);
+    nlVec4Set(p[3], dimensions.mMin.f.x, max.f.y, max.f.z, 1.0f);
+    nlVec4Set(p[4], max.f.x, dimensions.mMin.f.y, dimensions.mMin.f.z, 1.0f);
+    nlVec4Set(p[5], max.f.x, dimensions.mMin.f.y, max.f.z, 1.0f);
+    nlVec4Set(p[6], max.f.x, max.f.y, dimensions.mMin.f.z, 1.0f);
+    nlVec4Set(p[7], max.f.x, max.f.y, max.f.z, 1.0f);
 
-    points[0].f.x = dimensions.mMin.f.x;
-    points[0].f.y = minY;
-    register float m13 = matrix.f.m13;
-    points[0].f.z = minZ;
-    register float m11 = matrix.f.m11;
-    points[0].f.w = one;
-    register float m23 = matrix.f.m23;
+    nlMatrix4 shadowMatrix;
+    MakePlanarShadowMatrix(shadowMatrix, matrix);
 
-    points[1].f.x = dimensions.mMin.f.x;
-    register float m21 = matrix.f.m21;
-    points[1].f.y = minY;
-    register float m33 = matrix.f.m33;
-    points[1].f.z = maxZ;
-    register float m31 = matrix.f.m31;
-    points[1].f.w = one;
-    register float m43 = matrix.f.m43;
-
-    points[2].f.x = dimensions.mMin.f.x;
-    register float m41 = matrix.f.m41;
-    points[2].f.y = maxY;
-    register float m12 = matrix.f.m12;
-    points[2].f.z = minZ;
-    register float m22 = matrix.f.m22;
-    points[2].f.w = one;
-    register float m32 = matrix.f.m32;
-
-    points[3].f.x = dimensions.mMin.f.x;
-    points[3].f.y = maxY;
-    points[3].f.z = maxZ;
-    points[3].f.w = one;
-
-    points[4].f.x = dimensions.mMax.f.x;
-    points[4].f.y = minY;
-    points[4].f.z = minZ;
-    points[4].f.w = one;
-
-    points[5].f.x = dimensions.mMax.f.x;
-    points[5].f.y = minY;
-    points[5].f.z = maxZ;
-    points[5].f.w = one;
-
-    points[6].f.x = dimensions.mMax.f.x;
-    points[6].f.y = maxY;
-    points[6].f.z = minZ;
-    points[6].f.w = one;
-
-    points[7].f.x = dimensions.mMax.f.x;
-    points[7].f.y = maxY;
-    points[7].f.z = maxZ;
-    points[7].f.w = one;
-
-    u32 lightPtr = *(u32*)((u8*)WorldManager::s_World + 0x138);
-    float lightX = *(float*)(lightPtr + 4);
-    float lightY = *(float*)(lightPtr + 8);
-    float lightZ = *(float*)(lightPtr + 0xC);
-
-    lightX = -lightX;
-    lightY = -lightY;
-
-    float zero = 0.0f;
-    nlMatrix4 projected;
-    projected.f.m13 = zero;
-    float xOverZ = lightX / lightZ;
-    projected.f.m23 = zero;
-    projected.f.m33 = zero;
-    projected.f.m43 = zero;
-    projected.f.m14 = zero;
-    projected.f.m24 = zero;
-    float yOverZ = lightY / lightZ;
-    projected.f.m34 = zero;
-    projected.f.m44 = one;
-
-    projected.f.m11 = m11 + xOverZ * m13;
-    projected.f.m22 = m22 + yOverZ * m23;
-    projected.f.m12 = m12 + yOverZ * m13;
-    projected.f.m42 = matrix.f.m42 + yOverZ * m43;
-    projected.f.m32 = m32 + yOverZ * m33;
-    projected.f.m21 = m21 + xOverZ * m23;
-    projected.f.m31 = m31 + xOverZ * m33;
-    projected.f.m41 = m41 + xOverZ * m43;
-
-    for (; i < 8; i++, point++)
+    int i;
+    for (i = 0; i < 8; i++)
     {
-        nlMultVectorMatrix(*point, *point, projected);
+        nlMultVectorMatrix(p[i], p[i], shadowMatrix);
 
-        if (i == 0 || point->f.x < x0)
+        if (i == 0 || p[i].f.x < x0)
         {
-            x0 = point->f.x;
+            x0 = p[i].f.x;
         }
 
-        if (i == 0 || point->f.x > x1)
+        if (i == 0 || p[i].f.x > x1)
         {
-            x1 = point->f.x;
+            x1 = p[i].f.x;
         }
 
-        if (i == 0 || point->f.y < y0)
+        if (i == 0 || p[i].f.y < y0)
         {
-            y0 = point->f.y;
+            y0 = p[i].f.y;
         }
 
-        if (i == 0 || point->f.y > y1)
+        if (i == 0 || p[i].f.y > y1)
         {
-            y1 = point->f.y;
+            y1 = p[i].f.y;
         }
     }
 }
@@ -1025,90 +983,6 @@ static void DrawCoPlanarReference(eGLView view, const glModel& model, const nlMa
  *       (model/worldMatrix/ignorePacketMatrices are two saved registers low);
  *       matrix copies use interleaved two-word chunks instead of one bulk copy.
  */
-static inline void ComputeShadowMtx(nlMatrix4& dst, const nlMatrix4& src, u32 lightPtr)
-{
-    float lightX = *(float*)(lightPtr + 4);
-    float lightY = *(float*)(lightPtr + 8);
-    float xRatioNeg = -lightX;
-    float lightZ = *(float*)(lightPtr + 0xC);
-    float yRatioNeg = -lightY;
-    float xOverZ = xRatioNeg / lightZ;
-    float yOverZ = yRatioNeg / lightZ;
-    float m13 = src.f.m13;
-    float m11 = src.f.m11;
-    float m23 = src.f.m23;
-    float m21 = src.f.m21;
-    float m33 = src.f.m33;
-    float m31 = src.f.m31;
-    float m43 = src.f.m43;
-    float m41 = src.f.m41;
-    float m12 = src.f.m12;
-    float m22 = src.f.m22;
-    float m32 = src.f.m32;
-    float m42 = src.f.m42;
-    float zero = 0.0f;
-    float one = 1.0f;
-
-    dst.f.m11 = xOverZ * m13 + m11;
-    dst.f.m21 = xOverZ * m23 + m21;
-    dst.f.m31 = xOverZ * m33 + m31;
-    dst.f.m41 = xOverZ * m43 + m41;
-    dst.f.m12 = yOverZ * m13 + m12;
-    dst.f.m22 = yOverZ * m23 + m22;
-    dst.f.m32 = yOverZ * m33 + m32;
-    dst.f.m42 = yOverZ * m43 + m42;
-    dst.f.m13 = zero;
-    dst.f.m23 = zero;
-    dst.f.m33 = zero;
-    dst.f.m43 = zero;
-    dst.f.m14 = zero;
-    dst.f.m24 = zero;
-    dst.f.m34 = zero;
-    dst.f.m44 = one;
-}
-
-static inline void ComputeShadowMtxWorld(nlMatrix4& dst, const nlMatrix4& src, u32 lightPtr)
-{
-    float m13 = src.f.m13;
-    float m11 = src.f.m11;
-    float lightX = *(float*)(lightPtr + 4);
-    float lightY = *(float*)(lightPtr + 8);
-    float xRatioNeg = -lightX;
-    float lightZ = *(float*)(lightPtr + 0xC);
-    float yRatioNeg = -lightY;
-    float xOverZ = xRatioNeg / lightZ;
-    float m23 = src.f.m23;
-    float m21 = src.f.m21;
-    float m33 = src.f.m33;
-    float m31 = src.f.m31;
-    float m43 = src.f.m43;
-    float m41 = src.f.m41;
-    float m12 = src.f.m12;
-    float yOverZ = yRatioNeg / lightZ;
-    float m22 = src.f.m22;
-    float m32 = src.f.m32;
-    float m42 = src.f.m42;
-    float zero = 0.0f;
-    float one = 1.0f;
-
-    dst.f.m11 = xOverZ * m13 + m11;
-    dst.f.m21 = xOverZ * m23 + m21;
-    dst.f.m31 = xOverZ * m33 + m31;
-    dst.f.m41 = xOverZ * m43 + m41;
-    dst.f.m12 = yOverZ * m13 + m12;
-    dst.f.m22 = yOverZ * m23 + m22;
-    dst.f.m32 = yOverZ * m33 + m32;
-    dst.f.m42 = yOverZ * m43 + m42;
-    dst.f.m13 = zero;
-    dst.f.m23 = zero;
-    dst.f.m33 = zero;
-    dst.f.m43 = zero;
-    dst.f.m14 = zero;
-    dst.f.m24 = zero;
-    dst.f.m34 = zero;
-    dst.f.m44 = one;
-}
-
 void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float shadowTranslucency, bool ignorePacketMatrices, bool isModelPosed, bool bFieldOnlyShadow, unsigned long boundingBoxCacheKey)
 {
 
@@ -1162,7 +1036,6 @@ void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float 
 
     pPacket = model->packets;
     glModelPacket* pPacketEnd = pPacket + model->numPackets;
-    unsigned long program = UnlitProgram;
 
     while (pPacket < pPacketEnd)
     {
@@ -1179,11 +1052,11 @@ void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float 
                 nlMultMatrices(transformedPacketMatrix, worldMatrix, packetMatrix);
             }
 
-            ComputeShadowMtx(packetShadowMatrix, transformedPacketMatrix, *(u32*)((u8*)WorldManager::s_World + 0x138));
+            MakePlanarShadowMatrix(packetShadowMatrix, transformedPacketMatrix);
         }
         else
         {
-            ComputeShadowMtxWorld(packetShadowMatrix, worldMatrix, *(u32*)((u8*)WorldManager::s_World + 0x138));
+            MakePlanarShadowMatrix(packetShadowMatrix, worldMatrix);
         }
 
         unsigned long shadowMatrix = glAllocMatrix();
@@ -1194,7 +1067,7 @@ void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float 
 
         pPacket->state.matrix = shadowMatrix;
         pPacket->state.texture[0] = (u32)ResolvedBlackTexture;
-        pPacket->state.program = program;
+        pPacket->state.program = UnlitProgram;
 
         glUserAttach(pTransData, pPacket, false);
         glUserDetach(GLUD_Light, pPacket);
