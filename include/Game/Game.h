@@ -49,6 +49,7 @@ public:
     void CheckForGoal();
     static void EnterPostGame();
     void BlowUpPowerups(const nlVector3&, float);
+    void BlowUpPlayers(cFielder*, float);
     void ResetPowerups(bool);
     void ResetBowser();
     void ResetBowserTimer(float);

@@ -513,24 +513,7 @@ void cGame::ResetForKickOff()
     cFielder* pBallCarrier;
     g_pEventManager->CreateValidEvent(9, 0x14);
     ResetCharacters();
-    static const nlVector3 kickOffVelocity = { 0.0f, 0.0f, 0.0f };
-    static const nlVector3 kickOffPosition = { 0.0f, 0.0f, 0.18f };
-    nlVector3 position;
-    nlVector3 velocity;
-    velocity = kickOffVelocity;
-    position = kickOffPosition;
-    if (g_pBall->m_pOwner != NULL)
-    {
-        g_pBall->m_pOwner->ReleaseBall();
-    }
-    g_pBall->WarpTo(position);
-    g_pBall->SetVelocity(velocity, SPINTYPE_NONE, NULL);
-    cBall* pBall = g_pBall;
-    pBall->m_unk_0xA6 = false;
-    pBall->mpDamageTarget = NULL;
-    m_bBallInNet = false;
-    g_pBall->ClearBallEffects();
-    g_pBall->HandleBuzzerBeater(-1.0f);
+    ResetBall();
     ResetPowerups(false);
     ResetScorerInfo();
     Bowser::SetTiltParameters(0.0f);
@@ -794,6 +777,38 @@ void cGame::BlowUpPowerups(const nlVector3& v3ExplosionPosition, float fExplosio
             if (dx * dx + dy * dy + dz * dz < fExplosionRadius)
             {
                 pPowerup->m_bShouldDestroy = true;
+            }
+        }
+    }
+}
+
+void cGame::BlowUpPlayers(cFielder* pShooter, float fExplosionRadius)
+{
+    for (int j = 0; j < 2; j++)
+    {
+        cTeam* pTeam = g_pTeams[j];
+        for (int i = 0; i < 4; i++)
+        {
+            cFielder* pFielder = pTeam->GetFielder(i);
+            if (!pFielder->IsInvincible() && pFielder->CanBeBlownUp() && pFielder != pShooter)
+            {
+                float fMaxSqDistToShooter = fExplosionRadius;
+                fMaxSqDistToShooter *= fMaxSqDistToShooter;
+                if (nlGetLengthSquared2D(
+                        pFielder->m_v3Position.f.x - pShooter->m_v3Position.f.x,
+                        pFielder->m_v3Position.f.y - pShooter->m_v3Position.f.y)
+                    < fMaxSqDistToShooter)
+                {
+                    if (pFielder->InitActionHitReact(
+                            pShooter,
+                            (unsigned short)(10430.378f * nlATan2f(
+                                                         pFielder->m_v3Position.f.y - pShooter->m_v3Position.f.y,
+                                                         pFielder->m_v3Position.f.x - pShooter->m_v3Position.f.x)),
+                            false))
+                    {
+                        pFielder->PlayAttackReactionSounds(100.0f);
+                    }
+                }
             }
         }
     }
