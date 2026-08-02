@@ -22,7 +22,51 @@ public:
     }
 
     ~ScriptQuestionCache();
-    unsigned char Lookup(unsigned long, FuzzyVariant&, const char*);
+    unsigned char Lookup(unsigned long hash, FuzzyVariant& returnVal, const char* name)
+    {
+        struct MapNodeBase
+        {
+            void* left;
+            void* right;
+            void* parent;
+        };
+
+        struct MapTree
+        {
+            unsigned long x0;
+            MapNodeBase x4;
+        };
+
+        struct MapNode
+        {
+            MapNodeBase base;
+            unsigned long key;
+            FuzzyVariant value;
+        };
+
+        FuzzyVariant* pValue;
+
+        mTotalLookups++;
+
+        if (g_bScriptQuestionCachingUseSTD)
+        {
+            MapNode* stdFound = (MapNode*)mQuestionCacheMapSTD.find(hash).ptr_;
+            if ((MapNodeBase*)stdFound != &((MapTree*)&mQuestionCacheMapSTD)->x4)
+            {
+                mCacheHits++;
+                returnVal = stdFound->value;
+                return 1;
+            }
+        }
+        else if (mQuestionCacheMap.FindGet(hash, &pValue))
+        {
+            mCacheHits++;
+            returnVal = *pValue;
+            return 1;
+        }
+
+        return 0;
+    }
     const FuzzyVariant& AddToCache(unsigned long, const FuzzyVariant&, const char*);
     void Clear();
 
@@ -44,53 +88,6 @@ inline void ScriptQuestionCache::Clear()
     mCacheHits = 0;
     mTotalLookups = 0;
 }
-inline unsigned char ScriptQuestionCache::Lookup(
-    unsigned long hash, FuzzyVariant& returnVal, const char* name)
-{
-    struct MapNodeBase
-    {
-        void* left;
-        void* right;
-        void* parent;
-    };
-
-    struct MapTree
-    {
-        unsigned long x0;
-        MapNodeBase x4;
-    };
-
-    struct MapNode
-    {
-        MapNodeBase base;
-        unsigned long key;
-        FuzzyVariant value;
-    };
-
-    FuzzyVariant* pValue;
-
-    mTotalLookups++;
-
-    if (g_bScriptQuestionCachingUseSTD)
-    {
-        MapNode* stdFound = (MapNode*)mQuestionCacheMapSTD.find(hash).ptr_;
-        if ((MapNodeBase*)stdFound != &((MapTree*)&mQuestionCacheMapSTD)->x4)
-        {
-            mCacheHits++;
-            returnVal = stdFound->value;
-            return 1;
-        }
-    }
-    else if (mQuestionCacheMap.FindGet(hash, &pValue))
-    {
-        mCacheHits++;
-        returnVal = *pValue;
-        return 1;
-    }
-
-    return 0;
-}
-
 inline const FuzzyVariant& ScriptQuestionCache::AddToCache(
     unsigned long key, const FuzzyVariant& variant, const char* name)
 {

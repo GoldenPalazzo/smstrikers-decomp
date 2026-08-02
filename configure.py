@@ -775,7 +775,7 @@ config.libs = [
             Object(NonMatching, "Game/Sys/gcmemcard.cpp", extra_cflags=["-inline auto"]),
 
             # Game Objects
-            Object(NonMatching, "Game/Game.cpp", extra_cflags=["-inline auto", "-inline deferred"]),    
+            Object(Matching, "Game/Game.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/GameInfo.cpp", extra_cflags=["-inline auto", "-inline deferred"]),    
             Object(Matching, "Game/GameTweaks.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/CharacterTweaks.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
