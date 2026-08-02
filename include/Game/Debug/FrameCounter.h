@@ -4,9 +4,6 @@
 #include "NL/nlMath.h"
 #include "NL/nlColour.h"
 
-void DrawBrow(const nlVector3&, const nlVector3&, float, float, float);
-void DrawCircle(nlVector3, float, float, nlColour);
-
 class FrameCounter
 {
 public:

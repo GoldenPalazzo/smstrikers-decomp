@@ -18,6 +18,18 @@ static u32 WhiteTexture = glGetTexture("global/white");
 
 int FrameCounter::NUM_FRAMES_TO_AVERAGE_OVER = 0x1E;
 
+static float sfHappiness = 1.0f;
+static float sfEyeHeight = 0.2f;
+static float sfEyeSeparation = 0.4f;
+static float sfSmileyRadius = 15.0f;
+static float sfSmileRadius = 0.6f;
+static float sfEyeRadius = 0.15f;
+static float sfSmileAngle = 90.0f;
+static int siHappinessLookback = 60;
+static nlColour sMadColour = { 140, 48, 0, 255 };
+static nlColour sMediumColour = { 192, 192, 0, 255 };
+static nlColour sHappyColour = { 0, 192, 0, 255 };
+
 nlListContainer<TimeRegion*> TimeRegion::sTimeRegionList;
 
 /**
@@ -102,10 +114,10 @@ void FrameCounter::FinishTiming()
     unk34 = ((u32)unk34 + 1) % 640;
     m_ContinuousFrameHistoryIndex = (m_ContinuousFrameHistoryIndex + 1) % 200;
 
-    ListEntry<TimeRegion*>* entry = TimeRegion::sTimeRegionList.m_Head;
-    while (entry != NULL)
+    nlListIterator<TimeRegion*> iterator = TimeRegion::sTimeRegionList.Begin();
+    while (iterator.IsValid())
     {
-        TimeRegion* region = entry->entry;
+        TimeRegion* region = iterator.Current();
         if (region->m_pConditionFunc())
         {
             region->m_unk14++;
@@ -116,7 +128,7 @@ void FrameCounter::FinishTiming()
             region->m_fThreshold += totalFrameTime;
         }
 
-        entry = entry->next;
+        iterator.Next();
     }
 
     m_CurrTimer[0] = 0.0f;
@@ -130,25 +142,25 @@ void FrameCounter::FinishTiming()
 void FrameCounter::WriteFrameRateStatsToFile(const char* fileName)
 {
     char buf[128];
-    void* file = nlOpenFileDebug("framerate_stats.txt", false, true);
+    void* file = nlOpenFileDebug("FrameRateStats.txt", false, true);
     nlWriteLineDebug(file, fileName, false);
-    nlWriteLineDebug(file, "========================================", false);
-    nlWriteLineDebug(file, "Region                          AvgTime     Percentage", false);
-    nlWriteLineDebug(file, "------                          -------     ----------", false);
-    nlWriteLineDebug(file, "==========================================", false);
+    nlWriteLineDebug(file, "============================================\n", false);
+    nlWriteLineDebug(file, "First number is percentage of frames that take less than 17ms\n", false);
+    nlWriteLineDebug(file, "Second number is average time per frame\n", false);
+    nlWriteLineDebug(file, "Third number of frames counted\n\n", false);
 
-    ListEntry<TimeRegion*>* entry = TimeRegion::sTimeRegionList.m_Head;
-    while (entry != NULL)
+    nlListIterator<TimeRegion*> iterator = TimeRegion::sTimeRegionList.Begin();
+    while (iterator.IsValid())
     {
-        TimeRegion* region = entry->entry;
+        TimeRegion* region = iterator.Current();
         float ratio = (float)region->m_unk10 / (float)region->m_unk14;
         float avgTime = region->m_fThreshold / (float)region->m_unk14;
         float pct = 100.0f * (1.0f - ratio);
 
-        nlSNPrintf(buf, 128, "  %-30s  %8.2f  %8.2f%%\n", region->m_unk14, region->m_pName, pct, avgTime);
+        nlSNPrintf(buf, 128, "%4.0f%% %4.0f %5d %s\n", pct, avgTime, region->m_unk14, region->m_pName);
         nlWriteLineDebug(file, buf, false);
 
-        entry = entry->next;
+        iterator.Next();
     }
 
     nlCloseFileDebug(file);
@@ -157,7 +169,7 @@ void FrameCounter::WriteFrameRateStatsToFile(const char* fileName)
 /**
  * Offset/Address/Size: 0xC5C | 0x801FD7F8 | size: 0x27C
  */
-void DrawCircle(nlVector3 p0, float fRadius, float fScaleX, nlColour colour)
+static void DrawCircle(nlVector3 p0, float fRadius, float fScaleX, nlColour colour)
 {
     GLMeshWriter mesh;
 
@@ -221,9 +233,6 @@ void DrawCircle(nlVector3 p0, float fRadius, float fScaleX, nlColour colour)
  */
 static void DrawSmile(nlVector3 p0, float fRadius, float fScaleX, nlColour colour, float fLineThickness)
 {
-    extern float sfSmileAngle;
-    extern float sfHappiness;
-
     GLMeshWriter mesh;
     float degrees = sfSmileAngle;
 
@@ -293,12 +302,9 @@ static void DrawSmile(nlVector3 p0, float fRadius, float fScaleX, nlColour colou
 
 /**
  * Offset/Address/Size: 0x588 | 0x801FD124 | size: 0x37C
- * TODO: 99.98% match - small literal pool/sdata21 offset differences remain.
  */
-void DrawBrow(const nlVector3& leftEyeCentre, const nlVector3& rightEyeCentre, float distanceAboveEye, float width, float height)
+static void DrawBrow(const nlVector3& leftEyeCentre, const nlVector3& rightEyeCentre, float distanceAboveEye, float width, float height)
 {
-    extern float sfHappiness;
-
     GLMeshWriter m0;
     const eGLStream streams[2] = { GLStream_Position, GLStream_Colour };
 
@@ -392,35 +398,16 @@ void DrawBrow(const nlVector3& leftEyeCentre, const nlVector3& rightEyeCentre, f
 
 /**
  * Offset/Address/Size: 0x0 | 0x801FCB9C | size: 0x588
- * TODO: 97.03% match - colour lerp scheduling still uses different FPRs in both branches.
  */
 void FrameCounter::DisplayFrameSmiler()
 {
-    extern float sfSmileyRadius;
-    extern float sfSmileRadius;
-    extern float sfEyeRadius;
-    extern float sfEyeSeparation;
-    extern float sfEyeHeight;
-    extern float sfHappiness;
-    extern int siHappinessLookback;
-    extern nlColour sMadColour;
-    extern nlColour sMediumColour;
-    extern nlColour sHappyColour;
-
     float happiness = 0.0f;
     unsigned int i;
     for (i = 0; i < (unsigned int)siHappinessLookback; i++)
     {
-        float frameTime = m_FrameHistory[(u32)(unk34 - (s32)i + 640) % 640];
-        float fps;
-        if (frameTime == 0.0f)
-        {
-            fps = 60.0f;
-        }
-        else
-        {
-            fps = 1000.0f / frameTime;
-        }
+        float fps = m_FrameHistory[(unk34 - i + 640) % 640] == 0.0f
+            ? 60.0f
+            : 1000.0f / m_FrameHistory[(unk34 - i + 640) % 640];
         happiness += (fps - 30.0f) / 30.0f;
     }
     happiness /= (float)siHappinessLookback;
@@ -445,26 +432,20 @@ void FrameCounter::DisplayFrameSmiler()
     if (happiness < 0.5f)
     {
         float alpha = 2.0f * happiness;
-        int c0 = (int)((float)sMediumColour.c[0] * alpha + (float)sMadColour.c[0] * (1.0f - alpha));
-        int c1 = (int)((float)sMediumColour.c[1] * alpha + (float)sMadColour.c[1] * (1.0f - alpha));
-        int c2 = (int)((float)sMediumColour.c[2] * alpha + (float)sMadColour.c[2] * (1.0f - alpha));
-        int c3 = (int)((float)sMediumColour.c[3] * alpha + (float)sMadColour.c[3] * (1.0f - alpha));
-        colour.c[0] = (u8)c0;
-        colour.c[1] = (u8)c1;
-        colour.c[2] = (u8)c2;
-        colour.c[3] = (u8)c3;
+        nlColourSet(colour,
+            (int)((float)sMediumColour.c[0] * alpha + (float)sMadColour.c[0] * (1.0f - 2.0f * happiness)),
+            (int)((float)sMediumColour.c[1] * alpha + (float)sMadColour.c[1] * (1.0f - alpha)),
+            (int)((float)sMediumColour.c[2] * alpha + (float)sMadColour.c[2] * (1.0f - alpha)),
+            (int)((float)sMediumColour.c[3] * alpha + (float)sMadColour.c[3] * (1.0f - alpha)));
     }
     else
     {
         float alpha = 2.0f * (happiness - 0.5f);
-        int c0 = (int)((float)sHappyColour.c[0] * alpha + (float)sMediumColour.c[0] * (1.0f - alpha));
-        int c1 = (int)((float)sHappyColour.c[1] * alpha + (float)sMediumColour.c[1] * (1.0f - alpha));
-        int c2 = (int)((float)sHappyColour.c[2] * alpha + (float)sMediumColour.c[2] * (1.0f - alpha));
-        int c3 = (int)((float)sHappyColour.c[3] * alpha + (float)sMediumColour.c[3] * (1.0f - alpha));
-        colour.c[0] = (u8)c0;
-        colour.c[1] = (u8)c1;
-        colour.c[2] = (u8)c2;
-        colour.c[3] = (u8)c3;
+        nlColourSet(colour,
+            (int)((float)sHappyColour.c[0] * alpha + (float)sMediumColour.c[0] * (1.0f - 2.0f * (happiness - 0.5f))),
+            (int)((float)sHappyColour.c[1] * alpha + (float)sMediumColour.c[1] * (1.0f - alpha)),
+            (int)((float)sHappyColour.c[2] * alpha + (float)sMediumColour.c[2] * (1.0f - alpha)),
+            (int)((float)sHappyColour.c[3] * alpha + (float)sMediumColour.c[3] * (1.0f - alpha)));
     }
 
     nlVector3 leftEyeCentre = { 0, 0, 0 };

@@ -1292,7 +1292,7 @@ config.libs = [
             Object(Matching, "Game/DB/CustomTournament.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Debug
-            Object(NonMatching, "Game/Debug/FrameCounter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Debug/FrameCounter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Debug/ShapeRender.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Debug/TimeRegions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 

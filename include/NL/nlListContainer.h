@@ -53,7 +53,7 @@ public:
                     m_Tail = newHead = NULL;
                 else
                     newHead = currentEntry->next;
-                m_Allocator.DeleteEntry(m_Head);
+                DeleteEntry(m_Head);
                 m_Head = newHead;
             }
             else
@@ -68,7 +68,7 @@ public:
                         previousEntry->next = nextEntry->next;
                         if (nextEntry == m_Tail)
                             m_Tail = previousEntry;
-                        m_Allocator.DeleteEntry(nextEntry);
+                        DeleteEntry(nextEntry);
                         break;
                     }
                     previousEntry = nextEntry;
