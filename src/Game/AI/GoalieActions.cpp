@@ -20,11 +20,7 @@ static f32 CANT_COLLIDE = *(f32*)__float_max;
 extern cTeam* g_pCurrentlyUpdatingTeam;
 extern cBall* g_pBall;
 extern FakeBallWorld* g_pFakeBallWorld;
-f32 Goalie::mfGoalieStepDist;
-f32 mfGoalieStrafeDist;
-f32 mfGoalieRunDist;
-f32 mfGoalieUrgentDist;
-f32 gfRepositionThreshold;
+extern f32 gfRepositionThreshold;
 
 static int gOffplayDejected[5] = { 0x90, 0x91, 0x92, 0x93, 0x94 };
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
@@ -87,7 +83,7 @@ void Goalie::ActionLooseBallCatch(float deltaTime)
             soundAttrs.Init();
             soundAttrs.SetSoundType(0xC0, true);
             soundAttrs.UseStationaryPosVector(m_v3Position);
-            soundAttrs.mf_Volume = 1.0f;
+            soundAttrs.mf_Volume = 0.4f;
             Audio::gStadGenSFX.Play(soundAttrs);
 
             PickupBall(g_pBall);
@@ -100,11 +96,11 @@ void Goalie::ActionLooseBallCatch(float deltaTime)
 
 /**
  * Offset/Address/Size: 0x3E6C | 0x800523A8 | size: 0x6AC
- * TODO: 98.59% match - remaining pickup-time load order and register/stack allocation diffs
  */
 void Goalie::ActionLooseBallDesperate(float fDeltaT)
 {
     cBall* pBall = g_pBall;
+    const nlVector3& v3BallPosition = pBall->m_v3Position;
     int animID = m_eAnimID;
     const LooseBallInfo* pInfo = mpLooseBallInfo;
     nlVector3 v3GuessBallPos;
@@ -112,6 +108,7 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
     nlVector3 v3HeadCopy;
     nlVector3 v3AdjPosElse;
     nlVector3 v3HeadCopyElse;
+    float fAbsX;
     if (pInfo->mnAnimID == animID)
     {
         cPN_SAnimController* pAnim = m_pCurrentAnimController;
@@ -140,16 +137,12 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
         {
             float fRatio = pAnim->m_fTime / fPickupTime;
             float fPickupDuration = fPickupTime * pInfo->mfAnimDuration;
-            float fTimeRemaining = fPickupDuration - pInfo->mfAnimDuration * pAnim->m_fTime;
+            fDeltaT = fPickupDuration - pInfo->mfAnimDuration * pAnim->m_fTime;
             float fGoalLineX = cField::GetGoalLineX(1U);
-            float fTimeScale = 0.25f * fTimeRemaining;
+            float fTimeScale = 0.25f * fDeltaT;
             float fLimit = fGoalLineX - 0.2f;
 
-            nlVec3Set(v3GuessBallPos,
-                fTimeScale * g_pBall->m_v3Velocity.f.x + pBall->m_v3Position.f.x,
-                fTimeScale * g_pBall->m_v3Velocity.f.y + pBall->m_v3Position.f.y,
-                fTimeScale * g_pBall->m_v3Velocity.f.z + pBall->m_v3Position.f.z);
-
+            nlVec3ScaleAdd(v3GuessBallPos, fTimeScale, g_pBall->m_v3Velocity, v3BallPosition);
             if ((float)fabs(v3GuessBallPos.f.x) > fLimit)
             {
                 float fClampedX;
@@ -157,7 +150,7 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
                     fClampedX = fLimit;
                 else
                     fClampedX = -fLimit;
-                if ((float)fabs(*(volatile float*)&pBall->m_v3Position.f.x) < fLimit)
+                if ((float)fabs(v3BallPosition.f.x) < fLimit)
                 {
                     float fBallX = pBall->m_v3Position.f.x;
                     float fBallY = pBall->m_v3Position.f.y;
@@ -173,7 +166,7 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
             const nlVector3& v3HeadPos = GetJointPosition(m_nHeadJointIndex);
             v3HeadCopy = v3HeadPos;
             float fDX2 = 0.0f;
-            float fAbsX = (float)fabs(v3HeadCopy.f.x);
+            fAbsX = nlAbs(v3HeadCopy.f.x);
             float fLimitH = cField::GetGoalLineX(1U) - 0.5f;
             float fNetY = 0.5f * cNet::m_fNetWidth;
             if (fAbsX > fLimitH)
@@ -185,7 +178,7 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
             nlVector3 v3RHandCopy;
             const nlVector3& v3RHandPos = GetJointPosition(m_nRightHandJointIndex);
             v3RHandCopy = v3RHandPos;
-            fAbsX = (float)fabs(v3RHandCopy.f.x);
+            fAbsX = nlAbs(v3RHandCopy.f.x);
             float fLimitR = cField::GetGoalLineX(1U) - 0.4f;
             if (fAbsX > fLimitR)
             {
@@ -198,7 +191,7 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
             }
             const nlVector3& v3LHandPos = GetJointPosition(m_nLeftHandJointIndex);
             v3LHandCopy = v3LHandPos;
-            fAbsX = (float)fabs(v3LHandCopy.f.x);
+            fAbsX = nlAbs(v3LHandCopy.f.x);
             if (fAbsX > fLimitR)
             {
                 if ((float)fabs(v3LHandCopy.f.y) > fNetY)
@@ -243,11 +236,10 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
         DoNavigation(fDeltaT, 0.0f, NAVI_FOLLOW_TARGET);
         const nlVector3& v3HeadPos = GetJointPosition(m_nHeadJointIndex);
         v3HeadCopyElse = v3HeadPos;
-        float fAbsX;
         float fNetY;
         float fDX;
         fDX = 0.0f;
-        fAbsX = (float)fabs(v3HeadCopyElse.f.x);
+        fAbsX = nlAbs(v3HeadCopyElse.f.x);
         float fLimitH = cField::GetGoalLineX(1U) - 0.5f;
         fNetY = 0.5f * cNet::m_fNetWidth;
         if (fAbsX > fLimitH)
@@ -259,7 +251,7 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
         nlVector3 v3RHandCopy;
         const nlVector3& v3RHandPos = GetJointPosition(m_nRightHandJointIndex);
         v3RHandCopy = v3RHandPos;
-        fAbsX = (float)fabs(v3RHandCopy.f.x);
+        fAbsX = nlAbs(v3RHandCopy.f.x);
         float fLimitR = cField::GetGoalLineX(1U) - 0.4f;
         if (fAbsX > fLimitR)
         {
@@ -272,7 +264,7 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
         }
         const nlVector3& v3LHandPos = GetJointPosition(m_nLeftHandJointIndex);
         v3LHandCopy = v3LHandPos;
-        fAbsX = (float)fabs(v3LHandCopy.f.x);
+        fAbsX = nlAbs(v3LHandCopy.f.x);
         if (fAbsX > fLimitR)
         {
             if ((float)fabs(v3LHandCopy.f.y) > fNetY)
@@ -292,10 +284,13 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
         }
         const LooseBallInfo* pInfoE = mpLooseBallInfo;
         cBall* pBallE = g_pBall;
-        float fAbsBallX;
+        float dXc;
+        float dYc;
+        float dXg;
+        float dYg;
         float fGuessX;
-        float fGuessY;
         float fCatchRadSq;
+        float fGuessY;
         float fCatchRadius = 0.6f + pInfoE->mfPickupDistance;
         float fPickupTimeE = pInfoE->mfPickupTime;
         float fAnimDurE = pInfoE->mfAnimDuration;
@@ -303,33 +298,20 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
         fCatchRadSq = fCatchRadius * fCatchRadius;
         fGuessY = fTimeProduct * pBallE->m_v3Velocity.f.y + pBall->m_v3Position.f.y;
         fGuessX = fTimeProduct * pBallE->m_v3Velocity.f.x + pBall->m_v3Position.f.x;
-        if (mfTargetTime < 0.02f)
-            goto doPlayNewAnim;
+        if (mfTargetTime < 0.02f
+            || (float)fabs(pBall->m_v3Position.f.x) > cField::GetGoalLineX(1U) - 1.0f
+            || (dYc = m_v3Position.f.y - pBall->m_v3Position.f.y,
+                   dXc = m_v3Position.f.x - pBall->m_v3Position.f.x,
+                   dXc * dXc + dYc * dYc)
+                < fCatchRadSq
+            || (dYg = m_v3Position.f.y - fGuessY,
+                   dXg = m_v3Position.f.x - fGuessX,
+                   dXg * dXg + dYg * dYg)
+                < fCatchRadSq)
         {
-            fAbsBallX = (float)fabs(pBall->m_v3Position.f.x);
-            float fGoalLine2 = cField::GetGoalLineX(1U) - 1.0f;
-            if (fAbsBallX > fGoalLine2)
-                goto doPlayNewAnim;
+            PlayNewAnim(mpLooseBallInfo->mnAnimID);
+            InitMovementFromAnim(0, v3Zero, 1.0f, false);
         }
-        {
-            float dYc = m_v3Position.f.y - pBall->m_v3Position.f.y;
-            float dXc = m_v3Position.f.x - pBall->m_v3Position.f.x;
-            float distSqC = dYc * dYc + dXc * dXc;
-            if (distSqC < fCatchRadSq)
-                goto doPlayNewAnim;
-        }
-        {
-            float dYg = m_v3Position.f.y - fGuessY;
-            float dXg = m_v3Position.f.x - fGuessX;
-            float distSqG = dYg * dYg;
-            distSqG = dXg * dXg + distSqG;
-            if (distSqG < fCatchRadSq)
-                goto doPlayNewAnim;
-        }
-        return;
-    doPlayNewAnim:
-        PlayNewAnim(mpLooseBallInfo->mnAnimID);
-        InitMovementFromAnim(0, v3Zero, 1.0f, false);
     }
 }
 
@@ -1811,7 +1793,7 @@ void Goalie::ActionDiveRecover(float)
         {
             float result = InterpolateRangeClamped(
                 pTweaks->fGetupSpeedLow,
-                0.0f,
+                1.0f,
                 pTweaks->fGetupEnergyLow,
                 pTweaks->fGetupEnergyHigh,
                 mFatigue.mfEnergyLevel);
@@ -1929,7 +1911,7 @@ void Goalie::ActionPassIntercept(float deltaTime)
         if ((mfWaitTime > 0.25f) && (animID != 8))
         {
             PlayNewAnim(animID);
-            InitMovementFromAnim(0, v3Zero, 1.0f, false);
+            InitMovementFromAnim(0, v3Zero, 0.0f, false);
 
             GoalieTweaks* pTweaks = static_cast<GoalieTweaks*>(m_pTweaks);
             u16 newFacing = SeekDirection(
