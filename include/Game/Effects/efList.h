@@ -45,7 +45,20 @@ public:
 class efList : public efBaseList
 {
 public:
-    // todo: ...
+    inline efNode* Remove()
+    {
+        return (efNode*)efBaseList::Remove();
+    }
+
+    inline efNode* Remove(efNode* node)
+    {
+        return (efNode*)efBaseList::Remove(node);
+    }
+
+    inline efNode* Head() const
+    {
+        return (efNode*)m_headNode;
+    }
 }; // size: 0xC
 
 #endif // _EFLIST_H_

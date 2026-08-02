@@ -174,10 +174,10 @@ inline float nlVec3DotProduct2D(const nlVector3& a, const nlVector3& b)
 
 inline void nlVec3CrossProduct(nlVector3& result, const nlVector3& a, const nlVector3& b)
 {
-    nlVec3Set(result,
-        (a.f.y * b.f.z) - (a.f.z * b.f.y),
-        (a.f.z * b.f.x) - (a.f.x * b.f.z),
-        (a.f.x * b.f.y) - (a.f.y * b.f.x));
+    float x = (a.f.y * b.f.z) - (a.f.z * b.f.y);
+    float y = (-a.f.x * b.f.z) + (a.f.z * b.f.x);
+    float z = (a.f.x * b.f.y) - (a.f.y * b.f.x);
+    nlVec3Set(result, x, y, z);
 }
 
 // this version is used by PhysicsFinitePlane.cpp and seems to be correct!

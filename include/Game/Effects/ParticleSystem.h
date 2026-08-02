@@ -20,9 +20,7 @@ struct ParticleReturn
 class Particle : public efNode
 {
 public:
-    Particle()
-    {
-    }
+    inline Particle();
 
 public:
     /* 0x8, */ f32 timeElapsed;
@@ -72,9 +70,13 @@ public:
     /* 0x6C */ unsigned short m_aFacing;      // offset 0x6C, size 0x2
     /* 0x6E */ bool m_bVisible;               // offset 0x6E, size 0x1
 
-    static int m_nNumViews;
-    static eGLView m_eViews[8];
     static int m_NumInstances;
+    static u8 m_AllowInFront;
+    static glModel* (*m_LightingCallback)(glModel*);
+    static u8 (*m_Callback)(eGLView, unsigned long, efList&, EffectsTemplate*, nlVector3&, nlVector3&, nlMatrix4*);
+    static eGLView m_eViews[8];
+    static int m_nNumViews;
+    static float m_fAspect;
 }; // total size: 0x70
 
 bool fxParticleShutdown();

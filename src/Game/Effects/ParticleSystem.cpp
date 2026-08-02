@@ -11,27 +11,27 @@
 #include "PowerPC_EABI_Support/Runtime/MWCPlusLib.h"
 #include "types.h"
 
-int ParticleSystem::m_nNumViews = 0;
-int ParticleSystem::m_NumInstances = 0;
-eGLView ParticleSystem::m_eViews[8];
-
-struct FreeParticles : public efList
+struct TextureFrame
 {
-    FreeParticles()
-    {
-    }
+    s16 su;
+    s16 suinc;
+    s16 sv;
+    s16 svinc;
 };
 
-FreeParticles freeParticles;
+static efList freeParticles;
+eGLView ParticleSystem::m_eViews[8];
 
-void* textureFrames[36] = { nullptr };
-static Particle* particleMemory;
+static TextureFrame* textureFrames[36] = { nullptr };
 static int MaxNumParticles;
-
-extern float m_fAspect__14ParticleSystem;
-extern volatile u8 m_AllowInFront__14ParticleSystem;
-extern glModel* (*m_LightingCallback__14ParticleSystem)(glModel*);
-extern u8 (*m_Callback__14ParticleSystem)(eGLView, unsigned long, efList&, EffectsTemplate*, nlVector3&, nlVector3&, nlMatrix4*);
+static Particle* particleMemory;
+int ParticleSystem::m_NumInstances = 0;
+int ParticleSystem::m_nNumViews = 0;
+u8 (*ParticleSystem::m_Callback)(eGLView, unsigned long, efList&, EffectsTemplate*, nlVector3&, nlVector3&, nlMatrix4*);
+glModel* (*ParticleSystem::m_LightingCallback)(glModel*);
+static unsigned short hackyFacingAngle;
+float ParticleSystem::m_fAspect = 1.0f;
+u8 ParticleSystem::m_AllowInFront = 1;
 
 /**
  * Offset/Address/Size: 0x26F0 | 0x801F7848 | size: 0x90
@@ -115,73 +115,44 @@ void ParticleSystem::UpdateCoordSys()
 
 /**
  * Offset/Address/Size: 0x2404 | 0x801F755C | size: 0x224
- * TODO: 99.85% match - the two in-place right-vector normalize multiplies emit
- * "rightN * rsqrt" where the target emits "rsqrt * rightN".
  */
 void ParticleSystem::UpdateCoordSys(nlMatrix4& mCoordSys)
 {
-    float rightX, rightY, rightZ;
-    float gravX, gravY, gravZ;
-    float negGravX;
-    float upZ;
-    float upY;
-    float upX;
-
-    float lenSq = m_vForward.f.x * m_vForward.f.x + m_vForward.f.y * m_vForward.f.y + m_vForward.f.z * m_vForward.f.z;
+    float lenSq = nlVec3LengthSquared(m_vForward);
     bool doFast = true;
     float rsqrt = nlRecipSqrt(lenSq, doFast);
 
-    gravY = rsqrt * m_vForward.f.y;
-    gravX = rsqrt * m_vForward.f.x;
-    gravZ = rsqrt * m_vForward.f.z;
-    gravY *= m_Mirror.f.y;
-    gravX *= m_Mirror.f.x;
-    gravZ *= m_Mirror.f.z;
+    nlVector3 grav;
+    nlVec3Scale(grav, m_vForward, rsqrt);
+    grav.f.x *= m_Mirror.f.x;
+    grav.f.y *= m_Mirror.f.y;
+    grav.f.z *= m_Mirror.f.z;
 
-    float refX = 0.0f;
-    float refY = 0.0f;
-    float refZ = 1.0f;
+    nlVector3 ref;
+    nlVec3Set(ref, 0.0f, 0.0f, 1.0f);
 
-    float dot = refX * gravX + refY * gravY + refZ * gravZ;
+    float dot = nlVec3DotProduct(ref, grav);
     if ((float)__fabs(dot) > 0.99f)
     {
-        refX = 0.0f;
-        refY = 1.0f;
-        refZ = 0.0f;
+        nlVec3Set(ref, 0.0f, 1.0f, 0.0f);
     }
 
-    negGravX = -gravX;
+    float negGravX = -grav.f.x;
 
-    rightX = gravY * refZ - gravZ * refY;
-    rightY = negGravX * refZ + gravZ * refX;
-    rightZ = gravX * refY - gravY * refX;
+    nlVector3 right;
+    nlVec3CrossProduct(right, grav, ref);
+    nlVec3Scale(right, nlRecipSqrt(nlVec3LengthSquared(right), doFast));
 
-    lenSq = rightX * rightX + rightY * rightY + rightZ * rightZ;
-    rsqrt = nlRecipSqrt(lenSq, doFast);
-    rightZ *= rsqrt;
-    float rightXN = rsqrt * rightX;
-    rightY *= rsqrt;
+    nlVector3 up;
+    nlVec3CrossProduct(up, right, grav);
+    nlVec3Scale(up, nlRecipSqrt(nlVec3LengthSquared(up), doFast));
 
-    upX = rightY * gravZ - rightZ * gravY;
-    upY = -rightXN * gravZ + rightZ * gravX;
-    upZ = rightXN * gravY - rightY * gravX;
-
-    lenSq = upX * upX + upY * upY + upZ * upZ;
-    rsqrt = nlRecipSqrt(lenSq, doFast);
-
-    mCoordSys.e[0] = rightXN;
-    mCoordSys.e[1] = rightY;
-    mCoordSys.e[2] = rightZ;
-    mCoordSys.e[4] = rsqrt * upX;
-    mCoordSys.e[5] = rsqrt * upY;
-    mCoordSys.e[6] = rsqrt * upZ;
+    mCoordSys.SetRow_(0, right);
+    mCoordSys.SetRow_(1, up);
     mCoordSys.e[8] = negGravX;
-    mCoordSys.e[9] = -gravY;
-    mCoordSys.e[10] = -gravZ;
-    mCoordSys.e[12] = m_vPosition.f.x;
-    mCoordSys.e[13] = m_vPosition.f.y;
-    mCoordSys.e[14] = m_vPosition.f.z;
-    mCoordSys.e[15] = 1.0f;
+    mCoordSys.e[9] = -grav.f.y;
+    mCoordSys.e[10] = -grav.f.z;
+    mCoordSys.SetTranslation(m_vPosition);
     mCoordSys.e[11] = 0.0f;
     mCoordSys.e[7] = 0.0f;
     mCoordSys.e[3] = 0.0f;
@@ -229,7 +200,7 @@ void EmitCircularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTe
 void EmitSphericalPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld)
 {
     float randomZ = RandomizedValue(0.0f, 2.0f);
-    float randomAngleValue = RandomizedValue(65536.0f);
+    float randomAngleValue = RandomizedValue(6.2831855f);
 
     float xyRadius = nlSqrt(1.0f - (randomZ * randomZ), true);
 
@@ -401,7 +372,6 @@ static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, E
         nlMultDirVectorMatrix(vPosition, localPos, mLocalToWorld);
         nlMultDirVectorMatrix(vDirection, localDir, mLocalToWorld);
 
-        extern unsigned short hackyFacingAngle;
         if (hackyFacingAngle != 0)
         {
             nlSinCos(&sin, &cos, hackyFacingAngle);
@@ -419,8 +389,6 @@ static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, E
 
 /**
  * Offset/Address/Size: 0x1900 | 0x801F6A58 | size: 0x390
- * TODO: 97.61% match - remaining diffs are register-allocation only
- * in persistent emitter/loop state.
  */
 #pragma opt_common_subs off
 void ParticleSystem::CreateNewParticles(int numParticles)
@@ -436,9 +404,7 @@ void ParticleSystem::CreateNewParticles(int numParticles)
     EffectsTemplate* pTempl = m_pTemplate;
     if (pTempl->m_bLocalSpace)
     {
-        baseDir.f.x = 0.0f;
-        baseDir.f.y = 0.0f;
-        baseDir.f.z = -1.0f;
+        nlVec3Set(baseDir, 0.0f, 0.0f, -1.0f);
     }
     else
     {
@@ -454,7 +420,6 @@ void ParticleSystem::CreateNewParticles(int numParticles)
         break;
     case Emitter_Spindle:
     {
-        extern unsigned short hackyFacingAngle;
         emit = EmitSpindularPosition;
         hackyFacingAngle = m_aFacing;
         break;
@@ -468,15 +433,7 @@ void ParticleSystem::CreateNewParticles(int numParticles)
     }
     for (i = 0; i < numParticles; i++)
     {
-        Particle* pPart;
-        if (freeParticles.m_headNode == 0)
-        {
-            pPart = 0;
-        }
-        else
-        {
-            pPart = (Particle*)freeParticles.Remove();
-        }
+        Particle* pPart = freeParticles.Head() == 0 ? 0 : (Particle*)freeParticles.Remove();
         if (pPart == 0)
         {
             break;
@@ -510,27 +467,20 @@ void ParticleSystem::CreateNewParticles(int numParticles)
         pPart->size = sizeBegin;
         pPart->dSize = oneOverLife * (sizeEnd - sizeBegin);
         float inheritVelocity = RandomizedValue(m_pTemplate->m_rInheritVelocity.base, m_pTemplate->m_rInheritVelocity.range);
-        float velX = inheritVelocity * m_vVelocity.f.x;
-        float velZ = inheritVelocity * m_vVelocity.f.z;
-        float velY = inheritVelocity * m_vVelocity.f.y;
+        nlVector3 velocity;
+        nlVec3Scale(velocity, m_vVelocity, inheritVelocity);
         float vel = RandomizedValue(m_pTemplate->m_rVelocity.base, m_pTemplate->m_rVelocity.range);
-        float velDirZ = vel * dir.f.z + velZ;
-        float velDirY = vel * dir.f.y + velY;
-        float velDirX = vel * dir.f.x + velX;
-        float speedSquared = (velDirX * velDirX) + (velDirY * velDirY) + (velDirZ * velDirZ);
+        nlVec3ScaleAdd(velocity, vel, dir, velocity);
+        float speedSquared = nlVec3LengthSquared(velocity);
         pPart->velocity = nlSqrt(speedSquared, true);
         if (pPart->velocity == 0.0f)
         {
-            pPart->velDir.f.x = 0.0f;
-            pPart->velDir.f.y = 0.0f;
-            pPart->velDir.f.z = 0.0f;
+            nlVec3Set(pPart->velDir, 0.0f, 0.0f, 0.0f);
         }
         else
         {
             float invSpeed = nlRecipSqrt(speedSquared, true);
-            pPart->velDir.f.x = invSpeed * velDirX;
-            pPart->velDir.f.y = invSpeed * velDirY;
-            pPart->velDir.f.z = invSpeed * velDirZ;
+            nlVec3Scale(pPart->velDir, velocity, invSpeed);
         }
         pPart->acceleration = RandomizedValue(m_pTemplate->m_rAcceleration.base, m_pTemplate->m_rAcceleration.range);
         pPart->frame = 0.0f;
@@ -567,7 +517,7 @@ void ParticleSystem::UpdateParticle(ParticleReturn* pReturn, Particle* pPart, Ef
         nlMultPosVectorMatrix(position, position, *pCoordSys);
     }
 
-    position.f.z = (pPart->mass * ((0.5f * pPart->timeElapsed) * pPart->timeElapsed)) + position.f.z;
+    position.f.z = (pPart->mass * ((-9.81f * pPart->timeElapsed) * pPart->timeElapsed)) + position.f.z;
 
     if (pTemplate->m_uModelID != 0xFFFFFFFF)
     {
@@ -687,7 +637,7 @@ void ParticleSystem::RenderAllParticles(eGLView view)
         glViewGetViewMatrix(view, viewMatrix);
         nlVec3Set(viewRight, viewMatrix.e[0], viewMatrix.e[4], viewMatrix.e[8]);
         nlVec3Set(viewUp, viewMatrix.e[1], viewMatrix.e[5], viewMatrix.e[9]);
-        nlVec3Scale(viewRight, m_fAspect__14ParticleSystem);
+        nlVec3Scale(viewRight, m_fAspect);
     }
     else if (m_pTemplate->m_eBillboard == EfBill_Groundboard)
     {
@@ -716,7 +666,7 @@ void ParticleSystem::RenderAllParticles(eGLView view)
     glSetRasterState(GLS_DepthWrite, 0);
     glSetRasterState(GLS_Culling, cullBackFaces ? 1 : 0);
 
-    if (m_AllowInFront__14ParticleSystem != 0)
+    if (m_AllowInFront != 0)
     {
         if (m_pTemplate->m_bInFront || ((m_pSpec != nullptr) && m_pSpec->m_bInFront))
         {
@@ -888,14 +838,14 @@ void ParticleSystem::RenderAllParticles(eGLView view)
 
             if (m_pTemplate->m_bLit)
             {
-                pModel = m_LightingCallback__14ParticleSystem(pModel);
+                pModel = m_LightingCallback(pModel);
             }
 
             glViewAttachModel(view, m_uLayer + 1, pModel);
             pPart = (Particle*)pPart->m_nextNode;
         }
     }
-    else if (m_Callback__14ParticleSystem == nullptr)
+    else if (m_Callback == nullptr)
     {
         bool bQuads = glHasQuads();
         bool began;
@@ -954,7 +904,7 @@ void ParticleSystem::RenderAllParticles(eGLView view)
     else
     {
         nlMatrix4* pCoord = m_pTemplate->m_bLocalSpace ? &mCoordSys : nullptr;
-        if (!m_Callback__14ParticleSystem(view, m_uLayer, m_Particles, m_pTemplate, viewRight, viewUp, pCoord))
+        if (!m_Callback(view, m_uLayer, m_Particles, m_pTemplate, viewRight, viewUp, pCoord))
         {
             tDebugPrintManager::Print(DC_RENDER, "too many particles for the fast-path\n");
         }
@@ -1064,14 +1014,6 @@ float ParticleSystem::GetRemainingTime() const
     return m_pTemplate->m_fFountainLife - m_fElapsedTime;
 }
 
-struct TextureFrame
-{
-    s16 su;
-    s16 suinc;
-    s16 sv;
-    s16 svinc;
-};
-
 static inline TextureFrame* BuildFrameLookup(int numFrames, float inc)
 {
     TextureFrame* p = (TextureFrame*)nlMalloc(numFrames * sizeof(TextureFrame), 8, false);
@@ -1106,7 +1048,7 @@ static inline TextureFrame* BuildFrameLookup(int numFrames, float inc)
  */
 void BuildFrameTable()
 {
-    textureFrames[0] = nlMalloc(sizeof(TextureFrame), 8, false);
+    textureFrames[0] = (TextureFrame*)nlMalloc(sizeof(TextureFrame), 8, false);
     ((TextureFrame*)textureFrames[0])->su = 0;
     ((TextureFrame*)textureFrames[0])->sv = 0;
     ((TextureFrame*)textureFrames[0])->suinc = 1024;
@@ -1119,19 +1061,14 @@ void BuildFrameTable()
     textureFrames[35] = BuildFrameLookup(36, 1.0f / 6.0f);
 }
 
-// /**
-//  * Offset/Address/Size: 0x178 | 0x801F52D0 | size: 0x10
-//  */
-// Particle::Particle()
-// {
-// }
-
-static void ParticleConstructor(void* ptr, int)
+/**
+ * Offset/Address/Size: 0x178 | 0x801F52D0 | size: 0x10
+ */
+inline Particle::Particle()
 {
-    new (ptr) Particle();
 }
 
-static void AllocateParticles()
+static inline void AllocateParticles()
 {
     int i;
     const int count = MaxNumParticles;
