@@ -70,6 +70,11 @@ public:
         this->m_Delta = delta;
     }
 
+    void FreeBlocks()
+    {
+        BaseFreeBlocks(this, sizeof(T));
+    }
+
     // Allocate an entry from the free list
     void Allocate(T*& out)
     {

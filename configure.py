@@ -1117,7 +1117,7 @@ config.libs = [
             Object(Matching, "Game/SH/SHTournTeamSetup.cpp", extra_cflags=["-inline deferred"]),
 
             # GFX
-            Object(NonMatching, "Game/Drawable/DrawableModel.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Drawable/DrawableModel.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Drawable/DrawableNetMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Drawable/DrawableCharacter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Drawable/DrawableBall.cpp", extra_cflags=["-inline auto", "-msext on"]),

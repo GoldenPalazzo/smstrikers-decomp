@@ -617,19 +617,8 @@ void GetAABBDimensions(const glModel* model, AABBDimensions& dimensions, unsigne
 
     while (node != NULL)
     {
-        int cmpResult;
-        if (boundingBoxCacheKey == node->key)
-        {
-            cmpResult = 0;
-        }
-        else if (boundingBoxCacheKey < node->key)
-        {
-            cmpResult = -1;
-        }
-        else
-        {
-            cmpResult = 1;
-        }
+        DefaultKeyCompare<unsigned long> compare;
+        int cmpResult = compare(node->key, boundingBoxCacheKey);
 
         if (cmpResult == 0)
         {
@@ -1165,5 +1154,5 @@ void RenderBoundingBox(const glModel* model, const nlMatrix4& matrix)
 void CleanBoundingBoxCache()
 {
     boundingBoxCache.Clear();
-    SlotPoolBase::BaseFreeBlocks(&boundingBoxCache.m_Allocator, sizeof(AVLTreeEntry<unsigned long, AABBDimensions>));
+    boundingBoxCache.m_Allocator.FreeBlocks();
 }
