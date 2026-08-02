@@ -110,12 +110,7 @@ public:
 
     void AddEnd(const T& data)
     {
-        ListEntry<T> value(data);
-        ListEntry<T>* entry = m_Allocator.Allocate();
-        if (entry != NULL)
-        {
-            *entry = value;
-        }
+        ListEntry<T>* entry = m_Allocator.New(ListEntry<T>(data));
         nlListAddEnd<ListEntry<T> >(&m_Head, &m_Tail, entry);
     }
 

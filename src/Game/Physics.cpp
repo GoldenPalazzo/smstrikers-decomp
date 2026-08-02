@@ -88,84 +88,56 @@ void ODEFree(void* ptr, unsigned long size)
 
 /**
  * Offset/Address/Size: 0x728 | 0x80133238 | size: 0x2C0
- * TODO: ~99.2% match - only register coloring differs (same opcodes/order).
  */
 bool PhysicsLoader::StartLoad(LoadingManager*)
 {
-    PhysicsLoader* pThis = this;
-    int sidelineOffset;
-    int i;
-    char szTemp[256];
     const char* pBaseName;
 
     dSetAllocHandler(ODEAlloc);
     dSetReallocHandler(ODERealloc);
     dSetFreeHandler(ODEFree);
 
-    g_PhysicsWorld = new (nlMalloc(0x10, 8, false)) PhysicsWorld();
-    g_CollisionSpace = new (nlMalloc(0x10, 8, false)) SimpleCollisionSpace(g_PhysicsWorld);
+    g_PhysicsWorld = new (nlMalloc(sizeof(PhysicsWorld), 8, false)) PhysicsWorld();
+    g_CollisionSpace = new (nlMalloc(sizeof(SimpleCollisionSpace), 8, false)) SimpleCollisionSpace(g_PhysicsWorld);
 
     g_PhysicsWorld->SetCFM(0.00001f);
     g_PhysicsWorld->SetERP(0.2f);
 
-    ListEntry<PhysicsObject*>** pHead;
-    PhysicsGroundPlane* pGroundPlane = new (nlMalloc(0x2C, 8, false)) PhysicsGroundPlane(g_CollisionSpace);
+    g_StaticPhysicsPrimitives.AddEnd(
+        new (nlMalloc(sizeof(PhysicsGroundPlane), 8, false)) PhysicsGroundPlane(g_CollisionSpace));
 
-    ListEntry<PhysicsObject*>* pEntry = (ListEntry<PhysicsObject*>*)nlMalloc(8, 8, false);
-    if (pEntry != NULL)
+    int i;
+    for (i = 0; i < 4; i++)
     {
-        pEntry->next = NULL;
-        pEntry->entry = pGroundPlane;
+        const sSideLinePlane& sideline = cField::GetSideline(i);
+        g_StaticPhysicsPrimitives.AddEnd(
+            new (nlMalloc(sizeof(PhysicsWall), 8, false)) PhysicsWall(
+                g_CollisionSpace,
+                sideline.vNormal.f.x,
+                sideline.vNormal.f.y,
+                sideline.fDistance));
     }
 
-    pHead = &g_StaticPhysicsPrimitives.m_Head;
-    sSideLinePlane* pSideline;
-    PhysicsWall* pWall;
-    ListEntry<PhysicsObject*>** pTail = &g_StaticPhysicsPrimitives.m_Tail;
-    nlListAddEnd(pHead, pTail, pEntry);
-
-    for (i = 0, sidelineOffset = 0; i < 4; i++, sidelineOffset += 0xC)
+    for (i = 0; i < 4; i++)
     {
-        pSideline = (sSideLinePlane*)((unsigned long)cField::mSidelines + sidelineOffset);
-        pWall = new (nlMalloc(0x2C, 8, false)) PhysicsWall(g_CollisionSpace,
-            pSideline->vNormal.f.x,
-            pSideline->vNormal.f.y,
-            pSideline->fDistance);
-
-        void* pMem = nlMalloc(8, 8, false);
-        ListEntry<PhysicsObject*>* pWallEntry = (ListEntry<PhysicsObject*>*)pMem;
-        if (pMem != NULL)
-        {
-            ((ListEntry<PhysicsObject*>*)pMem)->next = NULL;
-            ((ListEntry<PhysicsObject*>*)pMem)->entry = pWall;
-        }
-
-        nlListAddEnd(pHead, pTail, pWallEntry);
-    }
-
-    pSideline = (sSideLinePlane*)corners;
-    int j = 0;
-    sidelineOffset = (unsigned long)cField::mCorners;
-    i = 0;
-    for (; j < 4; j++, pSideline = (sSideLinePlane*)((unsigned long)pSideline + 4), i += 0x10)
-    {
-        pWall = (PhysicsWall*)((unsigned long)sidelineOffset + i);
-        sCornerSegment* pCornerSegment = (sCornerSegment*)pWall;
-        PhysicsRoundedCorner* pCorner = new (nlMalloc(0x2C, 8, false)) PhysicsRoundedCorner(g_CollisionSpace,
-            pCornerSegment->vCenter,
-            pCornerSegment->fRadius,
-            pCornerSegment->vCenter.f.x > 0.0f,
-            pCornerSegment->vCenter.f.y > 0.0f);
-        *(PhysicsRoundedCorner**)pSideline = pCorner;
+        const sCornerSegment& corner = cField::GetCorner(i);
+        PhysicsRoundedCorner* pCorner = new (nlMalloc(0x2C, 8, false)) PhysicsRoundedCorner(
+            g_CollisionSpace,
+            corner.vCenter,
+            corner.fRadius,
+            corner.vCenter.f.x > 0.0f,
+            corner.vCenter.f.y > 0.0f);
+        corners[i] = pCorner;
     }
 
     PhysicsNet::StaticInit(g_CollisionSpace);
 
     if (NetMesh::s_bAnimatedNetMeshEnabled)
     {
-        pBaseName = BasicStadium::GetCurrentStadium()->m_szBaseName;
+        char szTemp[256];
         unsigned long uPositiveNetMeshID;
         unsigned long uNegativeNetMeshID;
+        pBaseName = BasicStadium::GetCurrentStadium()->GetBaseName();
 
         nlStrNCat<char>(szTemp, pBaseName, "/NetMesh", 0x100);
         uPositiveNetMeshID = nlStringLowerHash(szTemp);
@@ -177,9 +149,7 @@ bool PhysicsLoader::StartLoad(LoadingManager*)
         PhysicsNet::spPhysNetNegativeX->mpNetMesh->Initialize(uNegativeNetMeshID);
     }
 
-    pThis->ConstructStaticPhysicsPrimitives(
-        BasicStadium::GetCurrentStadium()->m_pPhysicsData);
-
+    ConstructStaticPhysicsPrimitives(BasicStadium::GetCurrentStadium()->m_pPhysicsData);
     return true;
 }
 

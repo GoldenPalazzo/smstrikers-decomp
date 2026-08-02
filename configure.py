@@ -887,7 +887,7 @@ config.libs = [
             Object(NonMatching, "Game/Audio/PriorityStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
 
             # Physics
-            Object(NonMatching, "Game/Physics.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Physics.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/RayCollider.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/PhysicsAIBall.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Physics/PhysicsBox.cpp", extra_cflags=["-inline auto"]),

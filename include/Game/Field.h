@@ -39,6 +39,18 @@ public:
         return mv3FieldPosition;
     }
 
+    static const sSideLinePlane& GetSideline(int index)
+    {
+        const u8* pBase = (const u8*)mSidelines;
+        return *(const sSideLinePlane*)(pBase + index * sizeof(sSideLinePlane));
+    }
+
+    static const sCornerSegment& GetCorner(int index)
+    {
+        const u8* pBase = (const u8*)mCorners;
+        return *(const sCornerSegment*)(pBase + index * sizeof(sCornerSegment));
+    }
+
     static nlVector3 mv3FieldPosition;
     static sSideLinePlane mSidelines[4];
     static sCornerSegment mCorners[4];

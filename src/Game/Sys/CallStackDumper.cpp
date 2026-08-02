@@ -11,7 +11,7 @@
 #include "NL/nlString.h"
 #include "NL/glx/glxSwap.h"
 
-static u8 CallstackDumpFont[0x24 * 0x5E] = {
+char CallstackDumpFont[0x5E][0x24] = {
     0x00,
     0x00,
     0x00,
@@ -3436,7 +3436,7 @@ static inline void PutChar(int x, int y, int scale, char c, unsigned long color)
     int endx = x + scale;
     int endy = y + 0x12;
     int i;
-    char* charBitMap = (char*)CallstackDumpFont + ((((signed char)c) - 0x20) * 0x24);
+    char* charBitMap = CallstackDumpFont[c - 0x20];
 
     for (i = y; i < endy; i++)
     {
