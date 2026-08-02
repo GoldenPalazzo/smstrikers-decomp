@@ -52,6 +52,16 @@ public:
     class PhysicsBoneVolume
     {
     public:
+        PhysicsBoneVolume(PhysicsObject* object, unsigned int boneIndex, unsigned int transformHandle, nlMatrix4& transform,
+            PhysicsBoneID id)
+            : m_pObject(object)
+            , m_BoneIndex(boneIndex)
+            , m_Transform(transform)
+            , m_TransformHandle(transformHandle)
+            , m_ID(id)
+        {
+        }
+
         /* 0x00 */ PhysicsObject* m_pObject;
         /* 0x04 */ unsigned int m_BoneIndex;
         /* 0x08 */ nlMatrix4 m_Transform;
@@ -63,7 +73,12 @@ public:
     class PhysicsSphereBone : public PhysicsSphere
     {
     public:
-        virtual ~PhysicsSphereBone();
+        PhysicsSphereBone(CollisionSpace* collisionSpace, PhysicsWorld* physicsWorld, float radius)
+            : PhysicsSphere(collisionSpace, physicsWorld, radius)
+            , m_boneVolume(NULL)
+        {
+        }
+
         virtual int GetObjectType() const { return 0xD; };
 
         /* 0x2C */ PhysicsBoneVolume* m_boneVolume;
@@ -72,7 +87,12 @@ public:
     class PhysicsCapsuleBone : public PhysicsCapsule
     {
     public:
-        virtual ~PhysicsCapsuleBone();
+        PhysicsCapsuleBone(CollisionSpace* collisionSpace, PhysicsWorld* physicsWorld, float radius, float height)
+            : PhysicsCapsule(collisionSpace, physicsWorld, radius, height)
+            , m_boneVolume(NULL)
+        {
+        }
+
         virtual int GetObjectType() const { return 0xE; };
 
         /* 0x2C */ PhysicsBoneVolume* m_boneVolume;
@@ -93,6 +113,8 @@ public:
     void ReleaseObject();
     void SetFacingDirection(unsigned short);
     void AddBoneVolumes(PhysicsWorld*, CollisionSpace*, cPoseAccumulator*, const CharacterPhysicsData*, unsigned long, unsigned long);
+    PhysicsBoneVolume* AddBoneVolume(PhysicsObject*, unsigned int, unsigned int, nlMatrix4&, PhysicsBoneID);
+    void GetBonePositions(PhysicsBoneID, nlVector3&, nlVector3&);
     PhysicsBoneID GetBoneIDForSubObject(const PhysicsObject* obj) const;
 
     /* 0x38 */ unsigned char m_IsSupported;                       // offset 0x38, size 0x1

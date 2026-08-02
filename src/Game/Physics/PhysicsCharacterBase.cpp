@@ -1,65 +1,10 @@
+#include "Game/Physics/CharacterPhysicsElement.h"
 #include "Game/Physics/PhysicsCharacterBase.h"
 #include "Game/PoseAccumulator.h"
 
 void dBodySetUpdateMode(dxBody*, int, int);
 dxJoint* dJointCreateCharacter(dxWorld*, dxJointGroup*);
 void dJointSetCharacterNoMotionDirection(dxJoint*, float*);
-
-// /**
-//  * Offset/Address/Size: 0x68 | 0x801FF680 | size: 0x28
-//  */
-// void nlListAddStart<ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*> >(ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>**, ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>*, ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>**)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801FF618 | size: 0x68
-//  */
-// void nlWalkList<ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>, ListContainerBase<PhysicsCharacterBase::PhysicsBoneVolume*, NewAdapter<ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*> > > >(ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>*, ListContainerBase<PhysicsCharacterBase::PhysicsBoneVolume*, NewAdapter<ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*> > >*, void (ListContainerBase<PhysicsCharacterBase::PhysicsBoneVolume*, NewAdapter<ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*> > >::*)(ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>*))
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x0 | 0x801FF5A8 | size: 0x70
- */
-PhysicsCharacterBase::PhysicsCapsuleBone::~PhysicsCapsuleBone()
-{
-}
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801FF584 | size: 0x24
-//  */
-// void ListContainerBase<PhysicsCharacterBase::PhysicsBoneVolume*, NewAdapter<ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*> > >::DeleteEntry(ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x80 | 0x801FF57C | size: 0x8
-//  */
-// void PhysicsCharacterBase::PhysicsSphereBone::GetObjectType() const
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x10 | 0x801FF50C | size: 0x70
- */
-PhysicsCharacterBase::PhysicsSphereBone::~PhysicsSphereBone()
-{
-}
-
-// /**
-//  * Offset/Address/Size: 0x8 | 0x801FF504 | size: 0x8
-//  */
-// void PhysicsCharacterBase::PhysicsCapsuleBone::GetObjectType() const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801FF4FC | size: 0x8
-//  */
-// void PhysicsCharacterBase::GetObjectType() const
-// {
-// }
 
 /**
  * Offset/Address/Size: 0x9D0 | 0x801FF4CC | size: 0x30
@@ -91,14 +36,14 @@ void PhysicsCharacterBase::GetBoneVolumePoints(nlVector3* points, bool includeEn
 
         if (includeEndpoints)
         {
-            f32 radius = 1.0f;
+            f32 radius = 0.333f;
             nlVec3Set(points[0], radius + pos.f.x, radius + pos.f.y, radius + pos.f.z);
             nlVec3Set(points[1], pos.f.x - radius, pos.f.y - radius, pos.f.z - radius);
             points += 2;
         }
         else
         {
-            f32 radius = 1.0f;
+            f32 radius = 0.333f;
             nlVec3Set(points[0], radius + pos.f.x, pos.f.y, pos.f.z);
             nlVec3Set(points[1], pos.f.x - radius, pos.f.y, pos.f.z);
             nlVec3Set(points[2], pos.f.x, radius + pos.f.y, pos.f.z);
@@ -275,58 +220,60 @@ void PhysicsCharacterBase::UpdatePose(cPoseAccumulator* pose, float heightOffset
     }
 }
 
-struct AddBoneVolumesElement
+/**
+ * Not present in the retail image: this TU holds the only definition and no
+ * call site survives, so the linker drops the body. DWARF (debug build CU for
+ * PhysicsCharacterBase.cpp) still records the member, its signature and its
+ * single PhysicsBoneVolume* local.
+ */
+void PhysicsCharacterBase::GetBonePositions(PhysicsBoneID boneID, nlVector3& v3CurPos, nlVector3& v3PrevPos)
 {
-    nlMatrix4 matLocalToParent;
-    s8 szName[32];
-    u32 uHashID;
-    s8 szParentName[32];
-    u32 uParentHashID;
-    u32 uPrimitiveType;
-    f32 fWidth;
-    f32 fLength;
-    f32 fHeight;
-    f32 fRadius;
-    u32 uReserved;
-};
+    for (ListEntry<PhysicsBoneVolume*>* entry = m_BoneVolumes.m_Head; entry != NULL; entry = entry->next)
+    {
+        PhysicsBoneVolume* boneVolume = entry->entry;
+        if (boneVolume->m_ID == boneID)
+        {
+            v3CurPos = boneVolume->m_pObject->GetPosition();
+            v3PrevPos = boneVolume->m_PrevPosition;
+            return;
+        }
+    }
 
-extern void* __vt__Q220PhysicsCharacterBase17PhysicsSphereBone[];
-extern void* __vt__Q220PhysicsCharacterBase18PhysicsCapsuleBone[];
-extern "C" void __ct__13PhysicsSphereFP14CollisionSpaceP12PhysicsWorldf(PhysicsSphere*, CollisionSpace*, PhysicsWorld*, float);
-extern "C" void __ct__14PhysicsCapsuleFP14CollisionSpaceP12PhysicsWorldff(PhysicsCapsule*, CollisionSpace*, PhysicsWorld*, float, float);
+    nlVec3Set(v3CurPos, 0.0f, 0.0f, 0.0f);
+    nlVec3Set(v3PrevPos, 0.0f, 0.0f, 0.0f);
+}
+
+inline PhysicsCharacterBase::PhysicsBoneVolume* PhysicsCharacterBase::AddBoneVolume(
+    PhysicsObject* object, unsigned int boneIndex, unsigned int transformHandle, nlMatrix4& transform, PhysicsBoneID id)
+{
+    return new (nlMalloc(sizeof(PhysicsBoneVolume), 8, false))
+        PhysicsBoneVolume(object, boneIndex, transformHandle, transform, id);
+}
 
 /**
  * Offset/Address/Size: 0x80 | 0x801FEB7C | size: 0x280
- * TODO: 98.00% match - remaining diffs are a preserved-register coloring shift:
- * pose occupies r31 instead of r21, shifting this/physicsWorld/collisionSpace down
- * by one register.
  */
-void PhysicsCharacterBase::AddBoneVolumes(PhysicsWorld* physicsWorld, CollisionSpace* collisionSpace, cPoseAccumulator* pose, const CharacterPhysicsData* physicsData, unsigned long category, unsigned long collideMask)
+void PhysicsCharacterBase::AddBoneVolumes(PhysicsWorld* physicsWorld, CollisionSpace* collisionSpace, cPoseAccumulator* poseAccumulator,
+    const CharacterPhysicsData* pPhysicsData, unsigned long categoryBitmask, unsigned long collisionBitmask)
 {
-    ListEntry<PhysicsBoneVolume*>** pTail = &m_BoneVolumes.m_Tail;
-    u8* elements = *(u8**)((u8*)physicsData + 8);
-    unsigned int i = 0;
-    AddBoneVolumesElement* element;
-    unsigned long count = *(u32*)((u8*)physicsData + 4);
-    unsigned long offset = 0;
-    ListEntry<PhysicsBoneVolume*>** pHead = &m_BoneVolumes.m_Head;
+    unsigned int i;
+    CharacterPhysicsElement* physElement;
+    PhysicsObject* obj;
+    unsigned long parentNodeIndex;
+    int handle;
+    PhysicsBoneID id;
 
-    while (i < count)
+    for (i = 0; i < pPhysicsData->physicsElementCount; i++)
     {
-        element = (AddBoneVolumesElement*)(elements + offset);
-        PhysicsObject* obj = NULL;
+        physElement = &pPhysicsData->pPhysicsElements[i];
+        obj = NULL;
 
-        switch (element->uPrimitiveType)
+        switch (physElement->uPrimitiveType)
         {
         case 1:
         {
-            PhysicsSphereBone* sphere = (PhysicsSphereBone*)nlMalloc(0x30, 8, false);
-            if (sphere != NULL)
-            {
-                __ct__13PhysicsSphereFP14CollisionSpaceP12PhysicsWorldf((PhysicsSphere*)sphere, collisionSpace, physicsWorld, element->fRadius);
-                *(void**)sphere = __vt__Q220PhysicsCharacterBase17PhysicsSphereBone;
-                sphere->m_boneVolume = NULL;
-            }
+            PhysicsSphereBone* sphere = new (nlMalloc(sizeof(PhysicsSphereBone), 8, false))
+                PhysicsSphereBone(collisionSpace, physicsWorld, physElement->fRadius);
             obj = sphere;
             obj->GetObjectType();
             break;
@@ -334,13 +281,8 @@ void PhysicsCharacterBase::AddBoneVolumes(PhysicsWorld* physicsWorld, CollisionS
 
         case 2:
         {
-            PhysicsCapsuleBone* capsule = (PhysicsCapsuleBone*)nlMalloc(0x30, 8, false);
-            if (capsule != NULL)
-            {
-                __ct__14PhysicsCapsuleFP14CollisionSpaceP12PhysicsWorldff((PhysicsCapsule*)capsule, collisionSpace, physicsWorld, element->fRadius, element->fHeight);
-                *(void**)capsule = __vt__Q220PhysicsCharacterBase18PhysicsCapsuleBone;
-                capsule->m_boneVolume = NULL;
-            }
+            PhysicsCapsuleBone* capsule = new (nlMalloc(sizeof(PhysicsCapsuleBone), 8, false))
+                PhysicsCapsuleBone(collisionSpace, physicsWorld, physElement->fRadius, physElement->fHeight);
             obj = capsule;
             break;
         }
@@ -349,34 +291,17 @@ void PhysicsCharacterBase::AddBoneVolumes(PhysicsWorld* physicsWorld, CollisionS
             break;
         }
 
-        obj->SetCategory(category);
-        obj->SetCollide(collideMask);
+        obj->SetCategory(categoryBitmask);
+        obj->SetCollide(collisionBitmask);
 
-        unsigned long boneIndex = pose->m_BaseSHierarchy->GetNodeIndexByID(element->uParentHashID);
-        int transformHandle = AddObject(obj);
-        PhysicsBoneID boneID = ResolvePhysicsBoneIDFromName((const char*)element->szName);
+        parentNodeIndex = poseAccumulator->m_BaseSHierarchy->GetNodeIndexByID(physElement->uParentHashID);
+        handle = AddObject(obj);
+        id = ResolvePhysicsBoneIDFromName((const char*)physElement->szName);
+        PhysicsBoneVolume* boneVolume = AddBoneVolume(obj, parentNodeIndex, handle, physElement->matLocalToParent, id);
 
-        PhysicsBoneVolume* boneVolume = (PhysicsBoneVolume*)nlMalloc(sizeof(PhysicsBoneVolume), 8, false);
-        if (boneVolume != NULL)
-        {
-            boneVolume->m_pObject = obj;
-            boneVolume->m_BoneIndex = boneIndex;
-            boneVolume->m_Transform = element->matLocalToParent;
-            boneVolume->m_TransformHandle = transformHandle;
-            boneVolume->m_ID = boneID;
-        }
+        m_BoneVolumes.AddEntry(boneVolume);
 
-        void* p = nlMalloc(8, 8, false);
-        ListEntry<PhysicsBoneVolume*>* listNode = (ListEntry<PhysicsBoneVolume*>*)p;
-        if (p != NULL)
-        {
-            ((ListEntry<PhysicsBoneVolume*>*)p)->next = NULL;
-            ((ListEntry<PhysicsBoneVolume*>*)p)->entry = boneVolume;
-        }
-
-        nlListAddStart<ListEntry<PhysicsBoneVolume*> >(pHead, listNode, pTail);
-
-        switch (element->uPrimitiveType)
+        switch (physElement->uPrimitiveType)
         {
         case 1:
             ((PhysicsSphereBone*)obj)->m_boneVolume = boneVolume;
@@ -389,9 +314,6 @@ void PhysicsCharacterBase::AddBoneVolumes(PhysicsWorld* physicsWorld, CollisionS
         default:
             break;
         }
-
-        offset += 0xA0;
-        i++;
     }
 }
 
@@ -423,164 +345,3 @@ PhysicsBoneID PhysicsCharacterBase::GetBoneIDForSubObject(const PhysicsObject* o
     }
     return PHYSBONE_SINGLE_CAPSULE;
 }
-
-// // )))))))))))))))))))
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801FEAFC | size: 0x80
-//  */
-// void PhysicsCharacterBase::GetBoneIDForSubObject(const PhysicsObject*) const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x80 | 0x801FEB7C | size: 0x280
-//  */
-// void PhysicsCharacterBase::AddBoneVolumes(PhysicsWorld*, CollisionSpace*, cPoseAccumulator*, const CharacterPhysicsData*, unsigned long,
-//     unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x300 | 0x801FEDFC | size: 0x160
-//  */
-// void PhysicsCharacterBase::UpdatePose(cPoseAccumulator*, float)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x460 | 0x801FEF5C | size: 0x60
-//  */
-// void PhysicsCharacterBase::SetFacingDirection(unsigned short)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x4C0 | 0x801FEFBC | size: 0x24
-//  */
-// void PhysicsCharacterBase::ReleaseObject()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x4E4 | 0x801FEFE0 | size: 0x34
-//  */
-// void PhysicsCharacterBase::ContainObject(PhysicsObject*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x518 | 0x801FF014 | size: 0xC
-//  */
-// void PhysicsCharacterBase::BasePreCollide()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x524 | 0x801FF020 | size: 0x130
-//  */
-// bool PhysicsCharacterBase::BaseSetContactInfo(dContact*, PhysicsObject*, bool)
-// {
-//     return false;
-// }
-
-// /**
-//  * Offset/Address/Size: 0x654 | 0x801FF150 | size: 0x48
-//  */
-// void PhysicsCharacterBase::SetCharacterPosition(const nlVector3&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x69C | 0x801FF198 | size: 0xE8
-//  */
-// PhysicsCharacterBase::~PhysicsCharacterBase()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x784 | 0x801FF280 | size: 0xE0
-//  */
-// PhysicsCharacterBase::PhysicsCharacterBase(CollisionSpace* collisionSpace, PhysicsWorld* physicsWorld, float)
-//     : PhysicsCompositeObject(physicsWorld)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x864 | 0x801FF360 | size: 0x16C
-//  */
-// void PhysicsCharacterBase::GetBoneVolumePoints(nlVector3*, bool)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x9D0 | 0x801FF4CC | size: 0x30
-//  */
-// void PhysicsCharacterBase::GetNumBoneVolumePoints(bool) const
-// {
-// }
-
-// // /**
-// //  * Offset/Address/Size: 0x0 | 0x801FF4FC | size: 0x8
-// //  */
-// // int PhysicsCharacterBase::GetObjectType() const
-// // {
-// //     return 0x08;
-// // }
-
-// /**
-//  * Offset/Address/Size: 0x8 | 0x801FF504 | size: 0x8
-//  */
-// // void PhysicsCharacterBase::PhysicsCapsuleBone::GetObjectType() const
-// // {
-// // }
-
-// /**
-//  * Offset/Address/Size: 0x10 | 0x801FF50C | size: 0x70
-//  */
-// // void PhysicsCharacterBase::PhysicsSphereBone::~PhysicsSphereBone()
-// // {
-// // }
-
-// /**
-//  * Offset/Address/Size: 0x80 | 0x801FF57C | size: 0x8
-//  */
-// // void PhysicsCharacterBase::PhysicsSphereBone::GetObjectType() const
-// // {
-// // }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801FF584 | size: 0x24
-//  */
-// // void ListContainerBase<PhysicsCharacterBase::PhysicsBoneVolume*, NewAdapter<ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>>>::
-// //     DeleteEntry(ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>*)
-// // {
-// // }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801FF5A8 | size: 0x70
-//  */
-// // void PhysicsCharacterBase::PhysicsCapsuleBone::~PhysicsCapsuleBone()
-// // {
-// // }
-
-// // /**
-// //  * Offset/Address/Size: 0x0 | 0x801FF618 | size: 0x68
-// //  */
-// // void nlWalkList<
-// //     ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>,
-// //     ListContainerBase<PhysicsCharacterBase::PhysicsBoneVolume*, NewAdapter<ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>>>>(
-// //     ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>*,
-// //     ListContainerBase<PhysicsCharacterBase::PhysicsBoneVolume*, NewAdapter<ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>>>*,
-// //     void (ListContainerBase<PhysicsCharacterBase::PhysicsBoneVolume*, NewAdapter<ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>>>::*)(
-// //         ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>*))
-// // {
-// // }
-
-// // /**
-// //  * Offset/Address/Size: 0x68 | 0x801FF680 | size: 0x28
-// //  */
-// // void nlListAddStart<ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>>(ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>**,
-// //                                                                          ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>*,
-// //                                                                          ListEntry<PhysicsCharacterBase::PhysicsBoneVolume*>**)
-// // {
-// // }

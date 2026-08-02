@@ -92,8 +92,8 @@ public:
 
     void AddEntry(const T& data)
     {
-        ListEntry<T>* entry =
-            new (m_Allocator.Allocate()) ListEntry<T>(data);
+        ListEntry<T> value(data);
+        ListEntry<T>* entry = m_Allocator.New(value);
         nlListAddStart<ListEntry<T> >(&m_Head, entry, &m_Tail);
     }
 
