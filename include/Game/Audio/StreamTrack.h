@@ -120,6 +120,8 @@ public:
     /* 0x0C */ virtual void Update(float);
     /* 0x10 */ virtual StreamTrack* CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP);
     /* 0x14 */ virtual void DestroyAllTracks();
+    static TrackManagerBase* Get();
+
     /* 0x18 */ virtual StreamTrack* GetTrack(unsigned long);
     /* 0x1C */ virtual void StopAllTracks(unsigned long);
     /* 0x20 */ virtual void OnMasterVolumeChange(Audio::MasterVolume::VOLUME_GROUP);
@@ -386,6 +388,11 @@ StreamTrack* TrackManager<N>::CreateTrack(
         new (entry) StreamTrack(*this, volumeGroup);
     }
     return entry;
+}
+
+inline TrackManagerBase* TrackManagerBase::Get()
+{
+    return g_pTrackManager;
 }
 
 } // namespace AudioStreamTrack

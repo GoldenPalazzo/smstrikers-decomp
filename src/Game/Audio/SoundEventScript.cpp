@@ -37,7 +37,7 @@ static inline void PlayPriorityStreamParam(int stream, float volume, unsigned lo
 static inline void PlayStreamParam(unsigned long TrackName, unsigned long StreamId, float Volume, unsigned long Looping, unsigned long FadeIn, unsigned long ExistingFadeOut, const char* StreamParam)
 {
     Audio::MasterVolume::VOLUME_GROUP volGroup;
-    AudioStreamTrack::StreamTrack* track = g_pTrackManager->GetTrack(TrackName);
+    AudioStreamTrack::StreamTrack* track = AudioStreamTrack::TrackManagerBase::Get()->GetTrack(TrackName);
 
     switch (TrackName)
     {
@@ -51,7 +51,7 @@ static inline void PlayStreamParam(unsigned long TrackName, unsigned long Stream
         break;
     case 0x78ABFED1:
         Audio::MasterVolume::GetVolume(Audio::MasterVolume::VG_SFX);
-        AudioStreamTrack::TrackManagerBase* mgr = g_pTrackManager;
+        AudioStreamTrack::TrackManagerBase* mgr = AudioStreamTrack::TrackManagerBase::Get();
         track = mgr->GetTrack(nlStringLowerHash("Music"));
         volGroup = Audio::MasterVolume::VG_SFX;
         break;
@@ -296,7 +296,6 @@ void SoundEventScript::DoFunctionCall(unsigned int func)
     }
     case 13:
     {
-        unsigned long trackHash;
         unsigned long fadeIn;
         unsigned long fadeOut;
         unsigned long streamId;
@@ -313,15 +312,13 @@ void SoundEventScript::DoFunctionCall(unsigned int func)
         vol = *(float*)m_SP;
         m_SP--;
         streamId = *m_SP;
-        m_SP--;
-        trackHash = *m_SP;
+        unsigned long trackHash = Pop();
 
         PlayStream(trackHash, streamId, vol, loop, fadeIn, fadeOut);
         break;
     }
     case 14:
     {
-        unsigned long trackHash;
         unsigned long streamId;
         const char* name;
         unsigned long fadeIn;
@@ -341,8 +338,7 @@ void SoundEventScript::DoFunctionCall(unsigned int func)
         vol = *(float*)m_SP;
         m_SP--;
         streamId = *m_SP;
-        m_SP--;
-        trackHash = *m_SP;
+        unsigned long trackHash = Pop();
 
         PlayStreamParam(trackHash, streamId, vol, loop, fadeIn, fadeOut, name);
         break;
@@ -392,9 +388,8 @@ void SoundEventScript::DoFunctionCall(unsigned int func)
     {
         m_SP--;
         unsigned long streamId = *m_SP;
-        m_SP--;
-        unsigned long trackHash = *m_SP;
-        g_pTrackManager->GetTrack(trackHash)->Stop(streamId);
+        unsigned long trackHash = Pop();
+        AudioStreamTrack::TrackManagerBase::Get()->GetTrack(trackHash)->Stop(streamId);
         break;
     }
     case 18:

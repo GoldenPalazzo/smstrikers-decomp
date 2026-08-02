@@ -42,6 +42,15 @@ public:
     void Step();
     bool IsFinished() const;
 
+protected:
+    u32 Pop()
+    {
+        m_SP--;
+        return *m_SP;
+    }
+
+public:
+
     /* 0x04 */ u32 m_Return;
     /* 0x08 */ ByteCodeHeader* m_Header;
     /* 0x0C */ u32* m_StackSegment;
