@@ -85,6 +85,7 @@ public:
     static void UpdateBowserLandEmitter(EmissionController& controller);
     void EmitFire();
     void KillFire();
+    cFielder* GetTarget() const { return mpTarget; }
     void FindTarget();
     void SetupBaseSFX();
     void PlaySFX(Audio::eCharSFX type, PosUpdateMethod posUpdateMethod, float fDelay, bool bIs3D);

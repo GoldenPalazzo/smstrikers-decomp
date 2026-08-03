@@ -1917,7 +1917,7 @@ void AIEventHandler(Event* pEvent, void*)
 
         pEventData->pFielder->CollideWithBowserCallback(pEventData->pBowser);
 
-        if (pEventData->pBowser->mpTarget == pEventData->pFielder)
+        if (pEventData->pFielder == pEventData->pBowser->GetTarget())
         {
             pEventData->pBowser->FindTarget();
         }
@@ -2022,8 +2022,7 @@ void AIEventHandler(Event* pEvent, void*)
         if (pEventData->pPlayer == 0)
             break;
 
-        u8 rawExploder = pEventData->bIsExploder;
-        bool bIsWeaponSuccessful = pEventData->pPlayer->CollideWithShellCallback((ePowerupSize)pEventData->eSize, (bool)(rawExploder != 0), pEventData->v3CollisionLocation, pEventData->v3CollisionVelocity);
+        bool bIsWeaponSuccessful = pEventData->pPlayer->CollideWithShellCallback((ePowerupSize)pEventData->eSize, (bool)pEventData->bIsExploder, pEventData->v3CollisionLocation, pEventData->v3CollisionVelocity);
 
         if (bIsWeaponSuccessful)
         {
@@ -2433,7 +2432,7 @@ void AIEventHandler(Event* pEvent, void*)
         if (pEventData->fPenaltyWorth > 0.75f)
             return;
 
-        break;
+        return;
     }
 
     case 0x3E:
@@ -2474,7 +2473,7 @@ void AIEventHandler(Event* pEvent, void*)
         if (pEventData->fAwardWorth > 0.75f)
             return;
 
-        break;
+        return;
     }
 
     case 0x07:

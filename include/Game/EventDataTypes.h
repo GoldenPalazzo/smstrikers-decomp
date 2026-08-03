@@ -152,7 +152,7 @@ public:
     /* 0x04 */ cFielder* pPlayer;
     /* 0x08 */ cFielder* pThrower;
     /* 0x0C */ u8 nThrowerPadID;
-    /* 0x0D */ bool bIsExploder;
+    /* 0x0D */ u8 bIsExploder;
     /* 0x10 */ int eSize;
     /* 0x14 */ nlVector3 v3CollisionLocation;
     /* 0x20 */ nlVector3 v3CollisionVelocity;
