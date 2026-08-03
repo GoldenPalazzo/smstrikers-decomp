@@ -64,8 +64,8 @@ static void GetWallPoint(const nlVector3& impactPosition, float xOffset, float z
     float radius = cField::GetCornerRadius();
     float goalLineX = cField::GetGoalLineX(1U);
     float sideLineY = cField::GetSidelineY(1U);
-    u8 xIsPositive = impactPosition.x > 0.0f;
-    u8 yIsPositive = impactPosition.y > 0.0f;
+    bool xIsPositive = impactPosition.x > 0.0f;
+    bool yIsPositive = impactPosition.y > 0.0f;
 
     nlVector3 impactPositionPositive = { {
         nlAbs(impactPosition.x),
@@ -199,8 +199,7 @@ static inline void DrawPrimitive(const ElectricFenceGeometry& prim, const nlMatr
 
     eGLStream stream_decl[3] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
     GLMeshWriter mesh;
-    nlVector3* pPosition;
-    nlVector2* pTexcoord = (nlVector2*)prim.texcoord;
+    const nlVector2* pTexcoord = prim.texcoord;
 
     glSetDefaultState(true);
     glSetRasterState(GLS_Culling, 0);
@@ -228,15 +227,12 @@ static inline void DrawPrimitive(const ElectricFenceGeometry& prim, const nlMatr
 
     if (mesh.Begin(prim.vertCount, (eGLPrimitive)nPrimType, 3, stream_decl, false))
     {
-        pPosition = (nlVector3*)prim.position;
         int index = 0;
         while (index < prim.vertCount)
         {
             mesh.Colour(c);
-            mesh.Texcoord(*pTexcoord);
-            mesh.Vertex(*pPosition);
-            pTexcoord++;
-            pPosition++;
+            mesh.Texcoord(pTexcoord[index]);
+            mesh.Vertex(prim.position[index]);
             index++;
         }
 
