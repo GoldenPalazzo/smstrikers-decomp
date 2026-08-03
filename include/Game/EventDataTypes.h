@@ -95,6 +95,16 @@ public:
     /* 0x1C */ bool bIsFreezeBomb;
 }; // total size: 0x20
 
+class CollisionExplosionFragmentPlayerData : public EventData
+{
+public:
+    virtual u32 GetID() { return 0xFA; }
+
+    /* 0x04 */ cFielder* pPlayer;
+    /* 0x08 */ nlVector3 v3CollisionLocation;
+    /* 0x14 */ nlVector3 v3CollisionVelocity;
+}; // total size: 0x20
+
 class CollisionPlayerBananaData : public EventData
 {
 public:

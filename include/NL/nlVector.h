@@ -81,15 +81,59 @@ public:
             mData[i] = T();
         }
     }
-    ~Vector()
-    {
-        Allocator::Delete<T>(mData);
-    }
+    ~Vector();
     void Swap(Vector& other);
-    void reserve(int capacity);
-    void resize(int size);
-    void push_back(const T& value);
-    void insert(T* position, const T* first, const T* last);
+    void push_back(const T& value)
+    {
+        insert(mData + mSize, &value, &value + 1);
+    }
+    void insert(T* at, const T* begin, const T* end)
+    {
+        int size = end - begin;
+        int offset = at - mData;
+        reserve(mSize + size);
+        at = mData + offset;
+        T* t = mData + mSize - 1;
+        while (t >= at)
+        {
+            *(t + size) = *t;
+            t--;
+        }
+        while (begin != end)
+        {
+            *at = *begin;
+            begin++;
+            at++;
+        }
+        mSize += size;
+    }
+    void reserve(int capacity)
+    {
+        FORCE_DONT_INLINE;
+        if (mCapacity < capacity)
+        {
+            Vector<T, Allocator> other(capacity, 0);
+            for (int i = 0; i < mSize; i++)
+            {
+                other.mData[i] = mData[i];
+            }
+            other.mSize = mSize;
+            Swap(other);
+        }
+    }
+    void resize(int size)
+    {
+        if (size > mSize)
+        {
+            reserve(size);
+            for (int i = mSize; i < size; i++)
+            {
+                T temp;
+                mData[i] = temp;
+            }
+            mSize = size;
+        }
+    }
     inline void erase(const T* first, const T* last);
     T& operator[](int index)
     {
@@ -102,46 +146,9 @@ public:
 }; // total size: 0xC
 
 template <typename T, typename Allocator>
-void Vector<T, Allocator>::resize(int size)
+inline Vector<T, Allocator>::~Vector()
 {
-    if (size > mSize)
-    {
-        reserve(size);
-        for (int i = mSize; i < size; i++)
-        {
-            T temp;
-            mData[i] = temp;
-        }
-        mSize = size;
-    }
-}
-
-template <typename T, typename Allocator>
-void Vector<T, Allocator>::push_back(const T& value)
-{
-    insert(mData + mSize, &value, &value + 1);
-}
-
-template <typename T, typename Allocator>
-void Vector<T, Allocator>::insert(T* at, const T* begin, const T* end)
-{
-    int size = end - begin;
-    int offset = at - mData;
-    reserve(mSize + size);
-    at = mData + offset;
-    T* t = mData + mSize - 1;
-    while (t >= at)
-    {
-        *(t + size) = *t;
-        t--;
-    }
-    while (begin != end)
-    {
-        *at = *begin;
-        begin++;
-        at++;
-    }
-    mSize += size;
+    Allocator::Delete<T>(mData);
 }
 
 template <typename T, typename Allocator>
@@ -171,22 +178,6 @@ inline void Vector<T, Allocator>::Swap(Vector<T, Allocator>& other)
     T* oldData = mData;
     mData = other.mData;
     other.mData = oldData;
-}
-
-template <typename T, typename Allocator>
-void Vector<T, Allocator>::reserve(int capacity)
-{
-    FORCE_DONT_INLINE;
-    if (mCapacity < capacity)
-    {
-        Vector<T, Allocator> other(capacity, 0);
-        for (int i = 0; i < mSize; i++)
-        {
-            other.mData[i] = mData[i];
-        }
-        other.mSize = mSize;
-        Swap(other);
-    }
 }
 
 #endif // _NLVECTOR_H_

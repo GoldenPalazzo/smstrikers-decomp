@@ -2,10 +2,14 @@
 #define _EVENTMAN_H_
 
 #include "types.h"
-#include "Game/Sys/EventData.h"
 
 class EventHandler;
 class EventManager;
+
+struct EventData
+{
+    virtual u32 GetID() { return -1; }
+};
 
 class Event
 {

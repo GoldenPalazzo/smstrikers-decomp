@@ -6,21 +6,9 @@
 
 #include "Game/Physics/PhysicsBox.h"
 #include "Game/Effects/EmissionController.h"
-// #include "Game/Physics/PhysicsObject.h"
+#include "Game/EventDataTypes.h"
 
 #include "Game/Sys/eventman.h"
-
-class cFielder;
-
-class CollisionExplosionFragmentPlayerData : public EventData
-{
-public:
-    virtual u32 GetID();
-
-    /* 0x04 */ cFielder* pPlayer;
-    /* 0x08 */ nlVector3 v3CollisionLocation;
-    /* 0x14 */ nlVector3 v3CollisionVelocity;
-}; // total size: 0x20
 
 class ExplodableCategoryData
 {
@@ -50,11 +38,28 @@ public:
 class ExplosionFragment
 {
 public:
-    ExplosionFragment();
+    ExplosionFragment()
+    {
+        mpPhysicsObject = NULL;
+        mDrawableFragmentID = 0xFFFF;
+        mbIsActive = false;
+        mbInfiniteLifespan = false;
+        mbIsStationary = false;
+        mStationaryTransform = NULL;
+        mpSmokeEmissionController = NULL;
+    }
+    void SetStationaryTransform(const nlMatrix4& transform)
+    {
+        if (mStationaryTransform == NULL)
+        {
+            mStationaryTransform = (nlMatrix4*)nlMalloc(sizeof(nlMatrix4), 8, false);
+        }
+        *mStationaryTransform = transform;
+    }
+    void GetRotation(nlMatrix4*) const;
+    nlVector3& GetPosition() const;
+    void Deactivate();
     virtual ~ExplosionFragment();
-    virtual void SetStationaryTransform(const nlMatrix4&);
-    virtual void GetRotation(nlMatrix4*) const;
-    virtual nlVector3& GetPosition() const;
 
     /* 0x04 */ PhysicsObject* mpPhysicsObject;
     /* 0x08 */ unsigned short mDrawableFragmentID;
@@ -74,16 +79,18 @@ class SidelineExplodable
 public:
     SidelineExplodable();
     virtual ~SidelineExplodable();
-    virtual ExplodableCategoryData& GetCategoryData() const;
+    virtual ExplodableCategoryData& GetCategoryData() const = 0;
     void Allocate();
+    void DeAllocate();
     void Update(float);
     void Initialize(int);
-    virtual void SetUnexplodedModelVisibility(bool isVisible);
-    virtual const nlMatrix4& GetWorldMatrix() const;
+    virtual void SetUnexplodedModelVisibility(bool isVisible) = 0;
+    virtual const nlMatrix4& GetWorldMatrix() const = 0;
     void Explode();
     void InitializePhysicsObject(PhysicsObject*, const nlMatrix4&, bool);
     void DestroyAllActiveFragments(bool);
     void FindExplosionAngleRange(unsigned short&, unsigned short&) const;
+    EmissionController* GetAssociatedEffect() const { return mpAssociatedEffect; }
 
     /* 0x4, */ Vector<ExplosionFragment> mExplosionFragments; // offset 0x4, size 0xC
     /* 0x10 */ int mNumActiveFragments;                       // offset 0x10, size 0x4
@@ -107,22 +114,12 @@ public:
 void SidelineExplodableTextureLoadCallback(unsigned long);
 void EmissionControllerFinished(EmissionController&, ExplosionFragment*);
 void UpdateEmissionControllerPosition(EmissionController&, ExplosionFragment*);
-// void nlListCountElements<SidelineExplodableNode>(SidelineExplodableNode*);
-// void nlListRemoveElement<SidelineExplodableNode>(SidelineExplodableNode**, SidelineExplodableNode*, SidelineExplodableNode**);
-// void nlListRemoveStart<DrawableFragmentHandleNode>(DrawableFragmentHandleNode**, DrawableFragmentHandleNode**);
-// void nlListAddEnd<DrawableFragmentHandleNode>(DrawableFragmentHandleNode**, DrawableFragmentHandleNode**, DrawableFragmentHandleNode*);
-// void Bind<void, void (*)(EmissionController&, ExplosionFragment*), Placeholder<0>, ExplosionFragment*>(void (*)(EmissionController&, ExplosionFragment*), const Placeholder<0>&, ExplosionFragment* const&);
 
 class SidelineExplosionPhysicsObject : public PhysicsBox
 {
 public:
-    SidelineExplosionPhysicsObject(CollisionSpace* space, PhysicsWorld* world, float side1, float side2, float side3, ExplosionFragment* pExplosionFragment)
-        : PhysicsBox(space, world, side1, side2, side3)
-        , mpExplosionFragment(pExplosionFragment)
-    {
-    }
-    virtual ~SidelineExplosionPhysicsObject();
-    virtual int GetObjectType() const { return 0x1C; };
+    SidelineExplosionPhysicsObject(CollisionSpace*, PhysicsWorld*, float, float, float, ExplosionFragment*);
+    virtual int GetObjectType() const { return 0x1C; }
     virtual bool SetContactInfo(dContact* contact, PhysicsObject* other, bool first);
     virtual ContactType Contact(PhysicsObject* other, dContact* contact, int what, PhysicsObject* otherObject);
     virtual void PostUpdate();
@@ -147,9 +144,15 @@ public:
     static void GetVisibilityOfExplodableModels(bool* visibility, int numExplodables);
     static void SetVisibilityOfUnexplodedModels(bool* visibility, int numExplodables);
     static void TriggerExplosions(const nlVector3&, float);
+    static SidelineExplodable* GetClosestExplodable(const nlVector3&);
     static void DestroyAllActiveFragments(bool renewExplodables);
     static void RemoveSidelineExplodable(SidelineExplodable*);
     static ExplosionFragment* GetFragmentFromHandle(unsigned short);
+    static void RegisterFragment(ExplosionFragment*, unsigned short);
+    static void AddSidelineExplodable(SidelineExplodable*);
+    static unsigned short GetDrawableFragmentFromPool();
+    static void ReturnDrawableFragmentToPool(unsigned short);
+    static void Initialize();
     static void AssociateEffectWithNearbyFloatingCamera(EmissionController*);
     static void UnAssociateEffectWithNearbyFloatingCamera(EmissionController* pEmissionController);
 
@@ -159,46 +162,5 @@ public:
     static nlList<DrawableFragmentHandleNode> sUnusedDrawableFragments;
     static bool sbIsInitialized;
 };
-
-// class PhysicsBox
-// {
-// public:
-//     void GetObjectType() const;
-//     ~PhysicsBox();
-// };
-
-// class Function1<void, EmissionController&>
-// {
-// public:
-//     void FunctorImpl<BindExp2<void, void (*)(EmissionController&, ExplosionFragment*), Placeholder<0>, ExplosionFragment*> >::operator()(EmissionController&);
-//     void FunctorImpl<BindExp2<void, void (*)(EmissionController&, ExplosionFragment*), Placeholder<0>, ExplosionFragment*> >::Clone() const;
-//     void FunctorImpl<BindExp2<void, void (*)(EmissionController&, ExplosionFragment*), Placeholder<0>, ExplosionFragment*> >::~FunctorImpl();
-// };
-
-// class SlotPool<DrawableFragmentHandleNode>
-// {
-// public:
-//     void ~SlotPool();
-// };
-
-// class Vector<ExplosionFragment, DefaultAllocator>
-// {
-// public:
-//     void Vector(int, const char*);
-//     void reserve(int);
-//     void resize(int);
-// };
-
-// class CollisionExplosionFragmentPlayerData
-// {
-// public:
-//     void GetID();
-// };
-
-// class SlotPool<SidelineExplodableNode>
-// {
-// public:
-//     void ~SlotPool();
-// };
 
 #endif // _SIDELINEEXPLODABLE_H_

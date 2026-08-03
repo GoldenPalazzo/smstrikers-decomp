@@ -16,147 +16,48 @@
 
 #include "NL/nlBind.h"
 
-template <>
-void nlListAddEnd<SidelineExplodableNode>(SidelineExplodableNode**, SidelineExplodableNode**, SidelineExplodableNode*);
-
 extern PhysicsWorld* g_PhysicsWorld;
 
 float ExplosionFragment::sfFadeOutTime = 1.0f;
 
-ExplosionFragment** SidelineExplodableManager::sFragmentLookupTable = NULL;
 nlList<SidelineExplodableNode> SidelineExplodableManager::sSidelineExplodableList(NULL, NULL);
 nlList<DrawableFragmentHandleNode> SidelineExplodableManager::sUnusedDrawableFragments(NULL, NULL);
+bool SidelineExplodableManager::sbIsInitialized;
+ExplosionFragment** SidelineExplodableManager::sFragmentLookupTable = NULL;
 SlotPool<SidelineExplodableNode> SidelineExplodableNode::sSidelineExplodableNodeSlotPool(16, 16);
 SlotPool<DrawableFragmentHandleNode> DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool(16, 16);
-bool SidelineExplodableManager::sbIsInitialized;
-
-template <>
-void Vector<ExplosionFragment, DefaultAllocator>::reserve(int capacity)
-{
-    if (mCapacity >= capacity)
-    {
-        return;
-    }
-
-    Vector temp(capacity, (const char*)0);
-    int i = 0;
-    for (; i < mSize; i++)
-    {
-        temp.mData[i] = mData[i];
-    }
-    temp.mSize = mSize;
-    int newSize = temp.mSize;
-    mSize = newSize;
-    temp.mSize = newSize;
-
-    int oldCapacity = mCapacity;
-    mCapacity = temp.mCapacity;
-    temp.mCapacity = oldCapacity;
-
-    ExplosionFragment* oldData = mData;
-    mData = temp.mData;
-    temp.mData = oldData;
-}
-
-/**
- * Offset/Address/Size: 0x214 | 0x80169954 | size: 0x27C
- */
-template <>
-void Vector<ExplosionFragment, DefaultAllocator>::resize(int size)
-{
-    if (size > mSize)
-    {
-        reserve(size);
-        for (int i = mSize; i < size; i++)
-        {
-            ExplosionFragment temp;
-            mData[i] = temp;
-        }
-        mSize = size;
-    }
-}
-
-/**
- * Offset/Address/Size: 0x8 | 0x8016974C | size: 0x38
- */
-ExplosionFragment::ExplosionFragment()
-{
-    mpPhysicsObject = NULL;
-    mDrawableFragmentID = 0xFFFF;
-    mbIsActive = false;
-    mbInfiniteLifespan = false;
-    mbIsStationary = false;
-    mStationaryTransform = NULL;
-    mpSmokeEmissionController = NULL;
-}
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80169744 | size: 0x8
-//  */
-// void SidelineExplosionPhysicsObject::GetObjectType() const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2388 | 0x801696E8 | size: 0x5C
-//  */
-// void Function1<void, EmissionController&>::FunctorImpl<BindExp2<void, void (*)(EmissionController&, ExplosionFragment*), Placeholder<0>, ExplosionFragment*> >::~FunctorImpl()
-// {
-// }
-
-static void DeactivateExplosionFragment(ExplosionFragment* self)
-{
-    if (self->mpPhysicsObject != NULL)
-    {
-        delete self->mpPhysicsObject;
-    }
-
-    DrawableObject* drawable = WorldManager::s_World->FindDrawableObject(self->mFragmentModelHash);
-    drawable->m_uObjectFlags &= ~1;
-    self->mpPhysicsObject = NULL;
-    DrawableFragmentHandleNode* node = NULL;
-    u16 handle = self->mDrawableFragmentID;
-    if (DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool, 8);
-    }
-
-    SlotPoolEntry* entry = DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool.m_FreeList;
-    if (entry != NULL)
-    {
-        node = (DrawableFragmentHandleNode*)entry;
-        DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool.m_FreeList = entry->next;
-    }
-
-    if (node != NULL)
-    {
-        node->mID = 0;
-        node->next = NULL;
-    }
-
-    node->mID = handle;
-    nlListAddEnd<DrawableFragmentHandleNode>(&SidelineExplodableManager::sUnusedDrawableFragments.m_pStart, &SidelineExplodableManager::sUnusedDrawableFragments.m_pEnd, node);
-    SidelineExplodableManager::sFragmentLookupTable[handle] = NULL;
-    self->mDrawableFragmentID = 0xFFFF;
-    self->mbIsActive = false;
-}
 
 /**
  * Offset/Address/Size: 0x2188 | 0x801694E8 | size: 0x200
  */
 ExplosionFragment::~ExplosionFragment()
 {
+    Deactivate();
+}
+
+inline void ExplosionFragment::Deactivate()
+{
     if (mbIsActive)
     {
-        DeactivateExplosionFragment(this);
+        if (mpPhysicsObject != NULL)
+        {
+            delete mpPhysicsObject;
+        }
+
+        DrawableObject* drawable = WorldManager::s_World->FindDrawableObject(mFragmentModelHash);
+        drawable->m_uObjectFlags &= ~1;
+        mpPhysicsObject = NULL;
+        SidelineExplodableManager::ReturnDrawableFragmentToPool(mDrawableFragmentID);
+        mDrawableFragmentID = 0xFFFF;
+        mbIsActive = false;
     }
 
     mFragmentModelHash = 0;
 
-    EmissionController* pSmokeControl = mpSmokeEmissionController;
-    if (pSmokeControl != NULL)
+    if (mpSmokeEmissionController != NULL)
     {
-        pSmokeControl->mUpdateCallback = Function<FnEmissionController>();
+        EmissionController& smokeControl = *mpSmokeEmissionController;
+        smokeControl.mUpdateCallback = Function1<void, EmissionController&>();
     }
 
     if (mStationaryTransform != NULL)
@@ -254,99 +155,17 @@ SidelineExplodable::SidelineExplodable()
     mpAssociatedEffect = NULL;
 }
 
-static inline void ExplosionFragment_Deactivate(ExplosionFragment* frag, SlotPool<DrawableFragmentHandleNode>* pPool, DrawableFragmentHandleNode** pTail)
-{
-    if (frag->mpPhysicsObject != NULL)
-    {
-        delete frag->mpPhysicsObject;
-    }
-
-    DrawableObject* drawable = WorldManager::s_World->FindDrawableObject(frag->mFragmentModelHash);
-    DrawableFragmentHandleNode* node = NULL;
-    drawable->m_uObjectFlags &= ~1;
-    frag->mpPhysicsObject = NULL;
-    u16 handle = frag->mDrawableFragmentID;
-
-    if (pPool->m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool, 8);
-    }
-
-    SlotPoolEntry* entry = pPool->m_FreeList;
-    if (entry != NULL)
-    {
-        node = (DrawableFragmentHandleNode*)entry;
-        pPool->m_FreeList = entry->next;
-    }
-
-    if (node != NULL)
-    {
-        node->mID = 0;
-        node->next = NULL;
-    }
-
-    node->mID = handle;
-    nlListAddEnd<DrawableFragmentHandleNode>(&SidelineExplodableManager::sUnusedDrawableFragments.m_pStart, pTail, node);
-    SidelineExplodableManager::sFragmentLookupTable[handle] = NULL;
-    frag->mDrawableFragmentID = 0xFFFF;
-    frag->mbIsActive = false;
-}
-
 /**
  * Offset/Address/Size: 0x1D74 | 0x801690D4 | size: 0x298
  */
 SidelineExplodable::~SidelineExplodable()
 {
-    SlotPool<DrawableFragmentHandleNode>* pPool = &DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool;
-    ExplosionFragment* fragment;
-    int fragmentOffset;
-    DrawableFragmentHandleNode** pTail = &SidelineExplodableManager::sUnusedDrawableFragments.m_pEnd;
-    int i;
-
-    i = 0;
-    fragmentOffset = 0;
-
-    while (i < mExplosionFragments.mSize)
+    for (int i = 0; i < mExplosionFragments.mSize; i++)
     {
-        fragment = (ExplosionFragment*)((u8*)mExplosionFragments.mData + fragmentOffset);
-        if (fragment->mbIsActive)
-        {
-            ExplosionFragment_Deactivate(fragment, pPool, pTail);
-        }
-
-        fragment->mFragmentModelHash = 0;
-
-        EmissionController* pSmokeControl = fragment->mpSmokeEmissionController;
-        if (pSmokeControl != NULL)
-        {
-            pSmokeControl->mUpdateCallback = Function<FnEmissionController>();
-        }
-
-        if (fragment->mStationaryTransform != NULL)
-        {
-            operator delete(fragment->mStationaryTransform);
-            fragment->mStationaryTransform = NULL;
-        }
-
-        fragmentOffset += 0x20;
-        i++;
+        mExplosionFragments[i].Deactivate();
     }
 
-    SidelineExplodableNode** pListTail = &SidelineExplodableManager::sSidelineExplodableList.m_pEnd;
-    SidelineExplodableNode* current = SidelineExplodableManager::sSidelineExplodableList.m_pStart;
-    SlotPool<SidelineExplodableNode>* pNodePool = &SidelineExplodableNode::sSidelineExplodableNodeSlotPool;
-
-    while (current != NULL)
-    {
-        SidelineExplodableNode* next = current->next;
-        if (current->mpExplodable == this)
-        {
-            nlListRemoveElement<SidelineExplodableNode>(&SidelineExplodableManager::sSidelineExplodableList.m_pStart, current, pListTail);
-            current->mpExplodable = (SidelineExplodable*)pNodePool->m_FreeList;
-            pNodePool->m_FreeList = (SlotPoolEntry*)current;
-        }
-        current = next;
-    }
+    SidelineExplodableManager::RemoveSidelineExplodable(this);
 }
 
 /**
@@ -357,39 +176,21 @@ void SidelineExplodable::Initialize(int numFragmentModels)
     mNumFragmentModels = numFragmentModels;
     Allocate();
 
-    SidelineExplodableNode* node = NULL;
-
-    if (SidelineExplodableNode::sSidelineExplodableNodeSlotPool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&SidelineExplodableNode::sSidelineExplodableNodeSlotPool, 8);
-    }
-
-    SlotPoolEntry* entry = SidelineExplodableNode::sSidelineExplodableNodeSlotPool.m_FreeList;
-    if (entry != NULL)
-    {
-        node = (SidelineExplodableNode*)entry;
-        SidelineExplodableNode::sSidelineExplodableNodeSlotPool.m_FreeList = entry->next;
-    }
-
-    if (node != NULL)
-    {
-        node->mpExplodable = NULL;
-        node->next = NULL;
-    }
-
-    node->mpExplodable = this;
-    node->next = NULL;
-    nlListAddEnd<SidelineExplodableNode>(&SidelineExplodableManager::sSidelineExplodableList.m_pStart,
-        &SidelineExplodableManager::sSidelineExplodableList.m_pEnd,
-        node);
+    SidelineExplodableManager::AddSidelineExplodable(this);
 }
 
 /**
  * Offset/Address/Size: 0x1C9C | 0x80168FFC | size: 0x28
  */
+#pragma dont_inline on
 void SidelineExplodable::Allocate()
 {
     mExplosionFragments.resize(mNumFragmentModels);
+}
+#pragma dont_inline reset
+
+inline void SidelineExplodable::DeAllocate()
+{
 }
 
 /**
@@ -399,41 +200,13 @@ void SidelineExplodable::Update(float fDeltaT)
 {
     if (mNumActiveFragments != 0)
     {
-        SlotPool<DrawableFragmentHandleNode>* pPool = &DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool;
-        int fragmentOffset;
-        DrawableFragmentHandleNode** pTail = &SidelineExplodableManager::sUnusedDrawableFragments.m_pEnd;
-        ExplosionFragment* fragment;
-        int i;
-
-        i = 0;
-        fragmentOffset = 0;
-
-        while (i < mNumFragmentModels)
+        for (int i = 0; i < mNumFragmentModels; i++)
         {
-            fragment = (ExplosionFragment*)((u8*)mExplosionFragments.mData + fragmentOffset);
-
-            if (fragment->mfRemainingLifespan <= 0.0f)
+            if (mExplosionFragments[i].mfRemainingLifespan <= 0.0f)
             {
-                if (fragment->mbIsActive)
+                if (mExplosionFragments[i].mbIsActive)
                 {
-                    if (fragment->mbIsActive)
-                    {
-                        ExplosionFragment_Deactivate(fragment, pPool, pTail);
-                    }
-
-                    fragment->mFragmentModelHash = 0;
-
-                    EmissionController* pSmokeControl = fragment->mpSmokeEmissionController;
-                    if (pSmokeControl != NULL)
-                    {
-                        pSmokeControl->mUpdateCallback = Function<FnEmissionController>();
-                    }
-
-                    if (fragment->mStationaryTransform != NULL)
-                    {
-                        operator delete(fragment->mStationaryTransform);
-                        fragment->mStationaryTransform = NULL;
-                    }
+                    mExplosionFragments[i].Deactivate();
 
                     mNumActiveFragments--;
                     ExplodableCategoryData& categoryData = GetCategoryData();
@@ -443,13 +216,10 @@ void SidelineExplodable::Update(float fDeltaT)
                     }
                 }
             }
-            else if (!fragment->mbInfiniteLifespan)
+            else if (!mExplosionFragments[i].mbInfiniteLifespan)
             {
-                fragment->mfRemainingLifespan -= fDeltaT;
+                mExplosionFragments[i].mfRemainingLifespan -= fDeltaT;
             }
-
-            fragmentOffset += 0x20;
-            i++;
         }
 
         if (mbIsMainModelVisible)
@@ -479,40 +249,13 @@ void SidelineExplodable::DestroyAllActiveFragments(bool renewExplodables)
 {
     if (mNumActiveFragments != 0)
     {
-        SlotPool<DrawableFragmentHandleNode>* pPool = &DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool;
-        int fragmentOffset;
-        DrawableFragmentHandleNode** pTail = &SidelineExplodableManager::sUnusedDrawableFragments.m_pEnd;
-        ExplosionFragment* fragment;
-        int i;
-
-        i = 0;
-        fragmentOffset = 0;
-
-        while (i < mNumFragmentModels)
+        for (int i = 0; i < mNumFragmentModels; i++)
         {
-            fragment = (ExplosionFragment*)((u8*)mExplosionFragments.mData + fragmentOffset);
-            if (fragment->mbIsActive)
+            if (mExplosionFragments[i].mbIsActive)
             {
-                if (renewExplodables || !fragment->mbInfiniteLifespan)
+                if (renewExplodables || !mExplosionFragments[i].mbInfiniteLifespan)
                 {
-                    if (*(volatile bool*)&fragment->mbIsActive)
-                    {
-                        ExplosionFragment_Deactivate(fragment, pPool, pTail);
-                    }
-
-                    fragment->mFragmentModelHash = 0;
-
-                    EmissionController* pSmokeControl = fragment->mpSmokeEmissionController;
-                    if (pSmokeControl != NULL)
-                    {
-                        pSmokeControl->mUpdateCallback = Function<FnEmissionController>();
-                    }
-
-                    if (fragment->mStationaryTransform != NULL)
-                    {
-                        operator delete(fragment->mStationaryTransform);
-                        fragment->mStationaryTransform = NULL;
-                    }
+                    mExplosionFragments[i].Deactivate();
 
                     mNumActiveFragments--;
                     ExplodableCategoryData& categoryData = GetCategoryData();
@@ -523,8 +266,6 @@ void SidelineExplodable::DestroyAllActiveFragments(bool renewExplodables)
                 }
             }
 
-            fragmentOffset += 0x20;
-            i++;
         }
     }
 
@@ -550,21 +291,22 @@ inline void SidelineExplodable::InitializePhysicsObject(PhysicsObject* pPhysicsO
 
     if (!bIsStationary)
     {
-        unsigned short maxAngle = mMaxExplosionAngle;
-        unsigned short minAngle = mMinExplosionAngle;
+        int maxAngle = mMaxExplosionAngle;
+        const unsigned short minAngleValue = mMinExplosionAngle;
+        const int minAngle = minAngleValue;
         float randomAngle = nlRandomf(0.0f, 1.0f, &nlDefaultSeed);
         short angleDelta = maxAngle - minAngle;
 
-        velPolar.a = minAngle + (short)(randomAngle * (float)angleDelta);
+        velPolar.a = minAngle + (short)(int)(randomAngle * (float)angleDelta);
 
         fragmentSpeed = nlRandomf(-0.0f, 0.0f, &nlDefaultSeed) + 40.0f;
         float fragmentHeight = nlRandomf(-0.0f, 0.0f, &nlDefaultSeed) + 13.0f;
         float speedAngle = (3.1415927f * fragmentSpeed) / 180.0f;
-        unsigned short speedAngleU16 = (unsigned short)(int)(10430.378f * speedAngle);
+        maxAngle = (int)(10430.378f * speedAngle);
 
-        velPolar.r = fragmentHeight * nlSin((u16)(speedAngleU16 + 0x4000));
+        velPolar.r = fragmentHeight * nlSin((u16)maxAngle + 0x4000);
         nlPolarToCartesian(vel, velPolar);
-        vel.f.y = fragmentHeight * nlSin(speedAngleU16);
+        vel.f.z = fragmentHeight * nlSin((u16)maxAngle);
 
         float angVelX = nlRandomf(-6.0f, 6.0f, &nlDefaultSeed);
         float angVelY = nlRandomf(-6.0f, 6.0f, &nlDefaultSeed);
@@ -579,7 +321,6 @@ inline void SidelineExplodable::InitializePhysicsObject(PhysicsObject* pPhysicsO
 
 /**
  * Offset/Address/Size: 0xE84 | 0x801681E4 | size: 0x88C
- * TODO: 98.29% match - remaining diffs are event data register and physics/transform temporary register allocation.
  */
 void SidelineExplodable::Explode()
 {
@@ -588,14 +329,10 @@ void SidelineExplodable::Explode()
         return;
     }
 
-    nlMatrix4 frustumMatrix;
-    frustumMatrix.SetIdentity();
-    const nlMatrix4& worldMatrix = GetWorldMatrix();
-    frustumMatrix.f.m41 = worldMatrix.f.m41;
-    frustumMatrix.f.m42 = worldMatrix.f.m42;
-    frustumMatrix.f.m43 = worldMatrix.f.m43;
-    frustumMatrix.f.m44 = 1.0f;
-    if (!WorldManager::s_World->IsSphereInFrustum(frustumMatrix, 1.0f))
+    nlMatrix4 worldMatrix;
+    worldMatrix.SetIdentity();
+    worldMatrix.SetTranslation(GetWorldMatrix().GetTranslation());
+    if (!WorldManager::s_World->IsSphereInFrustum(worldMatrix, 1.0f))
         return;
 
     mbIsMainModelVisible = false;
@@ -605,88 +342,69 @@ void SidelineExplodable::Explode()
         pSmokeControl->SetPosition(*(nlVector3*)&GetWorldMatrix().f.m41);
     }
 
-    Event* pEvent = g_pEventManager->CreateValidEvent(0x66, 0x34);
-    CollisionBobombData* pEventData = new ((CollisionBobombData*)((u8*)pEvent + 0x10)) CollisionBobombData();
+    CollisionBobombData* pEventData = new ((CollisionBobombData*)&g_pEventManager->CreateValidEvent(0x66, 0x34)->m_data) CollisionBobombData();
     pEventData->v3ExplosionLocation = *(nlVector3*)&GetWorldMatrix().f.m41;
 
     int iFragment = 0;
-    DrawableFragmentHandleNode** pUnusedTail = &SidelineExplodableManager::sUnusedDrawableFragments.m_pEnd;
-
     for (; iFragment < mNumFragmentModels; iFragment++)
     {
-        DrawableFragmentHandleNode* pNode = SidelineExplodableManager::sUnusedDrawableFragments.m_pStart;
-        unsigned short handle;
-        if (pNode == NULL)
-        {
-            handle = 0xFFFF;
-        }
-        else
-        {
-            nlListRemoveStart(&SidelineExplodableManager::sUnusedDrawableFragments.m_pStart, pUnusedTail);
-            handle = pNode->mID;
-            *(u32*)pNode = *(u32*)&DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool.m_FreeList;
-            DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool.m_FreeList = (SlotPoolEntry*)pNode;
-        }
+        unsigned short handle = SidelineExplodableManager::GetDrawableFragmentFromPool();
         if ((u16)handle == 0xFFFF)
             continue;
 
-        ExplosionFragment* pFragment = &mExplosionFragments.mData[iFragment];
-        pFragment->mDrawableFragmentID = handle;
-        SidelineExplodableManager::sFragmentLookupTable[(u16)handle] = pFragment;
+        ExplosionFragment& fragment = mExplosionFragments.mData[iFragment];
+        fragment.mDrawableFragmentID = handle;
+        SidelineExplodableManager::RegisterFragment(&fragment, handle);
 
         ExplodableCategoryData& fragmentCategoryData = GetCategoryData();
         unsigned long hash = fragmentCategoryData.mFragmentModelList[iFragment];
-        DrawableObject* pDrawable = WorldManager::s_World->FindDrawableObject(hash);
-        pFragment->mFragmentModelHash = pDrawable->m_uHashID;
+        DrawableObject* drawable = WorldManager::s_World->FindDrawableObject(hash);
+        fragment.mFragmentModelHash = drawable->m_uHashID;
 
         if (iFragment < GetCategoryData().mNumStationaryFragments)
-            pFragment->mbIsStationary = true;
+            fragment.mbIsStationary = true;
 
-        nlMatrix4 transform;
-        AABBDimensions aabb;
-        pDrawable->GetAABBDimensions(aabb, false);
-        pDrawable->m_bRenderPlanarShadow = true;
+        nlMatrix4 fragmentInitialTransform;
+        AABBDimensions dim;
+        drawable->GetAABBDimensions(dim, false);
+        drawable->m_bRenderPlanarShadow = true;
 
-        pFragment->mfRemainingLifespan = nlRandomf(-0.0f, 0.0f, &nlDefaultSeed) + 2.0f;
+        fragment.mfRemainingLifespan = nlRandomf(-0.0f, 0.0f, &nlDefaultSeed) + 2.0f;
 
-        if (!pFragment->mbIsStationary)
+        if (!fragment.mbIsStationary)
         {
-            SidelineExplosionPhysicsObject* pPhysicsObject = (SidelineExplosionPhysicsObject*)nlMalloc(0x30, 8, false);
-            new (pPhysicsObject) SidelineExplosionPhysicsObject(g_CollisionSpace, g_PhysicsWorld, aabb.mDim.f.x, aabb.mDim.f.y, aabb.mDim.f.z, pFragment);
-            pPhysicsObject->SetCategory(0x400);
-            pPhysicsObject->SetCollide(0xFF);
-            pPhysicsObject->SetDensity(5.0f);
+            PhysicsBox* box = (PhysicsBox*)::operator new(0x30, 8, false);
+            box = new (box) SidelineExplosionPhysicsObject(g_CollisionSpace, g_PhysicsWorld, dim.mDim.f.x, dim.mDim.f.y, dim.mDim.f.z, &fragment);
+            box->SetDensity(5.0f);
 
             ExplodableCategoryData& transformCategoryData = GetCategoryData();
-            transform = transformCategoryData.mInitialTransforms[iFragment];
-            nlMultMatrices(transform, transform, GetWorldMatrix());
+            fragmentInitialTransform = transformCategoryData.mInitialTransforms[iFragment];
+            nlMultMatrices(fragmentInitialTransform, fragmentInitialTransform, GetWorldMatrix());
 
-            InitializePhysicsObject(pPhysicsObject, transform, pFragment->mbIsStationary);
-            pFragment->mpPhysicsObject = pPhysicsObject;
+            InitializePhysicsObject(box, fragmentInitialTransform, fragment.mbIsStationary);
+            fragment.mpPhysicsObject = box;
         }
         else
         {
             ExplodableCategoryData& transformCategoryData = GetCategoryData();
-            transform = transformCategoryData.mInitialTransforms[iFragment];
-            nlMultMatrices(transform, transform, GetWorldMatrix());
+            fragmentInitialTransform = transformCategoryData.mInitialTransforms[iFragment];
+            nlMultMatrices(fragmentInitialTransform, fragmentInitialTransform, GetWorldMatrix());
 
-            if (pFragment->mStationaryTransform == NULL)
-                pFragment->mStationaryTransform = (nlMatrix4*)nlMalloc(0x40, 8, false);
-            *pFragment->mStationaryTransform = transform;
-            pFragment->mbInfiniteLifespan = true;
+            fragment.SetStationaryTransform(fragmentInitialTransform);
+            fragment.mbInfiniteLifespan = true;
         }
 
-        pFragment->mbIsActive = true;
+        fragment.mbIsActive = true;
         mNumActiveFragments++;
 
-        EmissionController* pSmokeController = EmissionManager::Create(fxGetGroup("explosion_fragment_smoke"), 0);
-        pSmokeController->SetUpdateCallback(Function1<void, EmissionController&>(
-            Bind<void>(UpdateEmissionControllerPosition, placeholder0, pFragment)));
-        pSmokeController->SetFinishedCallback(Function1<void, EmissionController&>(
-            Bind<void>(EmissionControllerFinished, placeholder0, pFragment)));
+        EmissionController* pSmokeControl = EmissionManager::Create(fxGetGroup("explosion_fragment_smoke"), 0);
+        pSmokeControl->SetUpdateCallback(Function1<void, EmissionController&>(
+            Bind<void>(UpdateEmissionControllerPosition, placeholder0, &fragment)));
+        pSmokeControl->SetFinishedCallback(Function1<void, EmissionController&>(
+            Bind<void>(EmissionControllerFinished, placeholder0, &fragment)));
 
-        pSmokeController->SetPosition(*(nlVector3*)&GetWorldMatrix().f.m41);
-        pFragment->mpSmokeEmissionController = pSmokeController;
+        pSmokeControl->SetPosition(*(nlVector3*)&GetWorldMatrix().f.m41);
+        fragment.mpSmokeEmissionController = pSmokeControl;
     }
 }
 
@@ -814,6 +532,49 @@ bool ExplodableCategoryData::LoadGeometry()
     return true;
 }
 
+inline void SidelineExplodableManager::Initialize()
+{
+    sbIsInitialized = true;
+    sFragmentLookupTable = (ExplosionFragment**)nlMalloc(0x50, 8, false);
+    for (unsigned short i = 0; i < 20; i++)
+    {
+        ReturnDrawableFragmentToPool(i);
+    }
+}
+
+inline void SidelineExplodableManager::ReturnDrawableFragmentToPool(unsigned short handle)
+{
+    DrawableFragmentHandleNode* node = DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool.Allocate();
+
+    if (node != NULL)
+    {
+        node->mID = 0;
+        node->next = NULL;
+    }
+
+    node->mID = handle;
+    nlListAddEnd<DrawableFragmentHandleNode>(&sUnusedDrawableFragments.m_pStart, &sUnusedDrawableFragments.m_pEnd, node);
+    sFragmentLookupTable[handle] = NULL;
+}
+
+inline unsigned short SidelineExplodableManager::GetDrawableFragmentFromPool()
+{
+    DrawableFragmentHandleNode* node = sUnusedDrawableFragments.m_pStart;
+    unsigned short handle;
+    if (node == NULL)
+    {
+        handle = 0xFFFF;
+    }
+    else
+    {
+        nlListRemoveStart(&sUnusedDrawableFragments.m_pStart, &sUnusedDrawableFragments.m_pEnd);
+        handle = node->mID;
+        *(u32*)node = *(u32*)&DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool.m_FreeList;
+        DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool.m_FreeList = (SlotPoolEntry*)node;
+    }
+    return handle;
+}
+
 /**
  * Offset/Address/Size: 0x938 | 0x80167C98 | size: 0xB4
  */
@@ -840,8 +601,8 @@ void SidelineExplodableManager::CleanUp()
         sbIsInitialized = false;
     }
 
-    SlotPoolBase::BaseFreeBlocks(&SidelineExplodableNode::sSidelineExplodableNodeSlotPool, 8);
-    SlotPoolBase::BaseFreeBlocks(&DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool, 8);
+    SidelineExplodableNode::sSidelineExplodableNodeSlotPool.FreeBlocks();
+    DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool.FreeBlocks();
 }
 
 /**
@@ -851,40 +612,7 @@ void SidelineExplodableManager::Update(float fDeltaT)
 {
     if (!sbIsInitialized)
     {
-        sbIsInitialized = true;
-        sFragmentLookupTable = (ExplosionFragment**)nlMalloc(0x50, 8, false);
-
-        SlotPool<DrawableFragmentHandleNode>& pool = DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool;
-        u16 i;
-        DrawableFragmentHandleNode* node;
-        DrawableFragmentHandleNode** tail = &sUnusedDrawableFragments.m_pEnd;
-
-        for (i = 0; i < 20; i++)
-        {
-            node = NULL;
-
-            if (pool.m_FreeList == NULL)
-            {
-                SlotPoolBase::BaseAddNewBlock(&DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool, 8);
-            }
-
-            SlotPoolEntry* entry = pool.m_FreeList;
-            if (entry != NULL)
-            {
-                node = (DrawableFragmentHandleNode*)entry;
-                pool.m_FreeList = entry->next;
-            }
-
-            if (node != NULL)
-            {
-                node->mID = 0;
-                node->next = NULL;
-            }
-
-            node->mID = i;
-            nlListAddEnd<DrawableFragmentHandleNode>(&sUnusedDrawableFragments.m_pStart, tail, node);
-            sFragmentLookupTable[i] = NULL;
-        }
+        Initialize();
     }
 
     SidelineExplodableNode* node = sSidelineExplodableList.m_pStart;
@@ -940,6 +668,29 @@ void SidelineExplodableManager::SetVisibilityOfUnexplodedModels(bool* visibility
     }
 }
 
+inline SidelineExplodable* SidelineExplodableManager::GetClosestExplodable(const nlVector3& pos)
+{
+    SidelineExplodable* closest = NULL;
+    float distance = 0.0f;
+    SidelineExplodableNode* node = sSidelineExplodableList.m_pStart;
+
+    while (node != NULL)
+    {
+        const nlMatrix4& matrix = node->mpExplodable->GetWorldMatrix();
+        nlVector3 delta;
+        nlVec3Sub(delta, matrix.GetTranslation(), pos);
+        float nodeDistance = delta.GetLengthSq3D();
+        if (closest == NULL || nodeDistance < distance)
+        {
+            closest = node->mpExplodable;
+            distance = nodeDistance;
+        }
+        node = node->next;
+    }
+
+    return closest;
+}
+
 /**
  * Offset/Address/Size: 0x650 | 0x801679B0 | size: 0xF4
  */
@@ -982,6 +733,35 @@ void SidelineExplodableManager::DestroyAllActiveFragments(bool renewExplodables)
     }
 }
 
+inline void SidelineExplodableManager::AddSidelineExplodable(SidelineExplodable* pSidelineExplodable)
+{
+    SidelineExplodableNode* node = NULL;
+
+    if (SidelineExplodableNode::sSidelineExplodableNodeSlotPool.m_FreeList == NULL)
+    {
+        SlotPoolBase::BaseAddNewBlock(&SidelineExplodableNode::sSidelineExplodableNodeSlotPool, 8);
+    }
+
+    SlotPoolEntry* entry = SidelineExplodableNode::sSidelineExplodableNodeSlotPool.m_FreeList;
+    if (entry != NULL)
+    {
+        node = (SidelineExplodableNode*)entry;
+        SidelineExplodableNode::sSidelineExplodableNodeSlotPool.m_FreeList = entry->next;
+    }
+
+    if (node != NULL)
+    {
+        node->mpExplodable = NULL;
+        node->next = NULL;
+    }
+
+    node->mpExplodable = pSidelineExplodable;
+    node->next = NULL;
+    nlListAddEnd<SidelineExplodableNode>(&sSidelineExplodableList.m_pStart,
+        &sSidelineExplodableList.m_pEnd,
+        node);
+}
+
 /**
  * Offset/Address/Size: 0x588 | 0x801678E8 | size: 0x78
  */
@@ -1010,16 +790,21 @@ ExplosionFragment* SidelineExplodableManager::GetFragmentFromHandle(unsigned sho
     {
         return 0;
     }
-    // return *(sFragmentLookupTable__25SidelineExplodableManager.unk0 + ((this * 4) & 0x3FFFC));
     return sFragmentLookupTable[handle];
 }
 
-// /**
-//  * Offset/Address/Size: 0x508 | 0x80167868 | size: 0x60
-//  */
-// PhysicsBox::~PhysicsBox()
-// {
-// }
+inline void SidelineExplodableManager::RegisterFragment(ExplosionFragment* fragment, unsigned short handle)
+{
+    sFragmentLookupTable[handle] = fragment;
+}
+
+SidelineExplosionPhysicsObject::SidelineExplosionPhysicsObject(CollisionSpace* space, PhysicsWorld* world, float side1, float side2, float side3, ExplosionFragment* pExplosionFragment)
+    : PhysicsBox(space, world, side1, side2, side3)
+    , mpExplosionFragment(pExplosionFragment)
+{
+    SetCategory(0x400);
+    SetCollide(0xFF);
+}
 
 /**
  * Offset/Address/Size: 0x358 | 0x801676B8 | size: 0x1B0
@@ -1042,17 +827,6 @@ struct PhysicsCharacterProxy
     u8 _pad0[0x8C];
     CharacterVelocityProxy* m_pAICharacter;
 };
-
-extern void* __vt__9EventData[];
-extern void* __vt__36CollisionExplosionFragmentPlayerData[];
-
-/**
- * Offset/Address/Size: 0x3DC | 0x80169F6C | size: 0x8
- */
-u32 CollisionExplosionFragmentPlayerData::GetID()
-{
-    return 0xFA;
-}
 
 ContactType SidelineExplosionPhysicsObject::Contact(PhysicsObject* other, dContact* contact, int what, PhysicsObject* otherObject)
 {
@@ -1092,13 +866,7 @@ ContactType SidelineExplosionPhysicsObject::Contact(PhysicsObject* other, dConta
 
             if (deltaSq > 36.0f)
             {
-                eventData = (CollisionExplosionFragmentPlayerData*)(&g_pEventManager->CreateValidEvent(0x31, 0x34)->m_data);
-
-                if (eventData != NULL)
-                {
-                    *(void**)eventData = __vt__9EventData;
-                    *(void**)eventData = __vt__36CollisionExplosionFragmentPlayerData;
-                }
+                eventData = new (&g_pEventManager->CreateValidEvent(0x31, 0x34)->m_data) CollisionExplosionFragmentPlayerData();
 
                 eventData->pPlayer = (cFielder*)player;
 
@@ -1201,30 +969,14 @@ void SidelineExplosionPhysicsObject::PostUpdate()
 void SidelineExplodableManager::AssociateEffectWithNearbyFloatingCamera(EmissionController* pEmissionController)
 {
     const nlVector3& position = pEmissionController->GetPosition();
-    float bestDist = 1e10f;
-    SidelineExplodableNode* node = sSidelineExplodableList.m_pStart;
-    SidelineExplodable* closest = NULL;
-    const char* floatingCamName = "Cam_\0\0\0\0";
-
-    while (node != NULL)
-    {
-        const nlMatrix4& mat = node->mpExplodable->GetWorldMatrix();
-        nlVector3 diff;
-        nlVec3Sub(diff, mat.GetTranslation(), position);
-        float dist = diff.GetLengthSq3D();
-        if (closest == NULL || dist < bestDist)
-        {
-            closest = node->mpExplodable;
-            bestDist = dist;
-        }
-        node = node->next;
-    }
+    const char* floatingCamName = "environment/Sideline_Objects/standupcamera_base";
+    SidelineExplodable* closest = GetClosestExplodable(position);
 
     const nlMatrix4& closestMat = closest->GetWorldMatrix();
     float cdy = closestMat.m[3][1] - position.f.y;
     float cdx = closestMat.m[3][0] - position.f.x;
     float closestDist = cdx * cdx + cdy * cdy;
-    if (closestDist < 10000.0f)
+    if (closestDist < 1.0f)
     {
         ExplodableCategoryData& catData = closest->GetCategoryData();
         if (nlStrNCmp<char>(catData.mBaseModelName, floatingCamName, 4) == 0)
@@ -1232,11 +984,6 @@ void SidelineExplodableManager::AssociateEffectWithNearbyFloatingCamera(Emission
             closest->mpAssociatedEffect = pEmissionController;
         }
     }
-}
-
-static inline EmissionController* GetAssociatedEffect(SidelineExplodable* explodable)
-{
-    return explodable->mpAssociatedEffect;
 }
 
 /**
@@ -1247,17 +994,10 @@ void SidelineExplodableManager::UnAssociateEffectWithNearbyFloatingCamera(Emissi
     SidelineExplodableNode* node = sSidelineExplodableList.m_pStart;
     while (node != NULL)
     {
-        if (GetAssociatedEffect(node->mpExplodable) == pEmissionController)
+        if (node->mpExplodable->GetAssociatedEffect() == pEmissionController)
         {
             node->mpExplodable->mpAssociatedEffect = 0;
         }
         node = node->next;
     }
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x80167360 | size: 0x70
- */
-SidelineExplosionPhysicsObject::~SidelineExplosionPhysicsObject()
-{
 }

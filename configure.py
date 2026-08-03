@@ -845,7 +845,7 @@ config.libs = [
             Object(Matching, "Game/Render/Jumbotron.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Render/SkinAnimatedMovableNPC.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Render/NPCManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Render/SidelineExplodable.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Render/SidelineExplodable.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Render/ElectricFence.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # related to character (should probably be in Game/Render)
