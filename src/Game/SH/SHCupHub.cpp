@@ -934,8 +934,8 @@ void CupHubScene::CreateLeague()
     extern const char* HUB_LEAGUE_SLIDE_NAME;
     extern char* HUB_ROWS[8];
 
-    GameInfoManager* const gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
-    GameInfoManager::eGameModes mode = gameInfo->mCurrentMode;
+    GameInfoManager* gameInfo;
+    GameInfoManager::eGameModes mode = (gameInfo = nlSingleton<GameInfoManager>::Instance())->mCurrentMode;
     u16 numTeams = gameInfo->GetNumPlayingTeams();
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     TLTextInstance* pTextInstance;
