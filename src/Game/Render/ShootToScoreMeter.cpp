@@ -76,12 +76,14 @@ inline void ShootToScoreMeter::DrawIndicatorBar(float angle, const nlColour& col
     cCameraManager::GetDistanceFromCameraToObject(m_v3MeterPosition);
 
     glQuad3 barQuad;
-    nlMatrix4 barMatrix;
-    float scaledWhiteBarWidth = 0.039f * scale;
     float zDepth;
-    float angleRadians = (3.1415927f * angle) / 180.0f;
-    float scaledWhiteBarHeight = 0.0035f * scale;
+    float angleRadians;
     float scaledMeterWidth = MeterWidth * scale;
+    float scaledWhiteBarWidth = 0.039f * scale;
+    float scaledWhiteBarHeight = 0.0035f * scale;
+    angleRadians = (3.1415927f * angle) / 180.0f;
+
+    nlMatrix4 barMatrix;
     nlMakeRotationMatrixZ(barMatrix, angleRadians);
 
     float radius = 0.198f * scaledMeterWidth;
