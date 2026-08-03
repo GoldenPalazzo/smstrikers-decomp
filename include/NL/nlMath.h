@@ -51,6 +51,8 @@ inline int DegreesToAngle(float degrees)
     return (int)(65536.0f * degrees / 360.0f);
 }
 
+#pragma cpp_extensions on
+
 class nlVector2
 {
 public:
@@ -62,6 +64,11 @@ public:
             float x;
             float y;
         } f;
+        struct
+        {
+            float x;
+            float y;
+        };
     };
 };
 
@@ -78,6 +85,12 @@ public:
             float y;
             float z;
         } f;
+        struct
+        {
+            float x;
+            float y;
+            float z;
+        };
     };
 
     void Set(float _x, float _y, float _z);
@@ -105,6 +118,8 @@ public:
         return f.x * f.x + f.y * f.y + f.z * f.z;
     }
 };
+
+#pragma cpp_extensions reset
 
 inline void nlVec2Set(nlVector2& v0, float _x, float _y)
 {

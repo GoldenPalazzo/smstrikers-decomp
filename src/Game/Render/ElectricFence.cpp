@@ -30,8 +30,6 @@ static int sNumRevolutionsToDisplay = 2;
 static float sfAngleRandomOffset = 10.0f;
 static float sfStartAngle = 180.0f;
 static bool sbUseSparksDuringElectricFenceFlyBy = true;
-static bool sbIsElectricFenceBeingDisplayed;
-static float sfElectricFenceDisplayAngle;
 
 const unsigned long UnlitProgram = glGetProgram("3d unlit");
 const unsigned long LitProgram = glGetProgram("3d pointlit");
@@ -45,6 +43,9 @@ nlList<ElectricFenceData> ElectricFenceData::sActiveElectricFences((ElectricFenc
 SlotPool<ElectricFenceData> ElectricFenceData::sElectricFenceDataPool(16, 16);
 SlotPool<ElectricFenceGeometry> ElectricFenceGeometry::sElectricFenceGeometryPool(4, 4);
 
+static bool sbIsElectricFenceBeingDisplayed;
+static float sfElectricFenceDisplayAngle;
+
 // /**
 //  * Offset/Address/Size: 0x9C | 0x8016C6EC | size: 0x2C
 //  */
@@ -52,89 +53,78 @@ SlotPool<ElectricFenceGeometry> ElectricFenceGeometry::sElectricFenceGeometryPoo
 // {
 // }
 
-static void GetWallPoint(const nlVector3& impactPosition, float xOffset, float zOffset, nlVector3& outPosition);
+#pragma cpp_extensions on
+#pragma msext on
 
 /**
  * Offset/Address/Size: 0x1370 | 0x8016C3A0 | size: 0x2B0
  */
 static void GetWallPoint(const nlVector3& impactPosition, float xOffset, float zOffset, nlVector3& outPosition)
 {
-    /**
-     * TODO: 99.71% match - r29/r31 register allocation swap (impactPosition ptr vs yIsPositive).
-     */
-
-    const nlVector3* const pPoint = &impactPosition;
-
-    float cornerRadius = cField::GetCornerRadius();
+    float radius = cField::GetCornerRadius();
     float goalLineX = cField::GetGoalLineX(1U);
-    float sidelineY = cField::GetSidelineY(1U);
-    u8 xIsPositive = pPoint->f.x > 0.0f;
-    u8 yIsPositive = pPoint->f.y > 0.0f;
+    float sideLineY = cField::GetSidelineY(1U);
+    u8 xIsPositive = impactPosition.x > 0.0f;
+    u8 yIsPositive = impactPosition.y > 0.0f;
 
-    nlVector3 impactPositionPositive = { };
-    double absX = __fabs(pPoint->f.x);
-    double absY = __fabs(((volatile const nlVector3*)pPoint)->f.y);
-    impactPositionPositive.f.x = (float)absX;
-    impactPositionPositive.f.y = (float)absY;
-    impactPositionPositive.f.z = pPoint->f.z;
-
-    float straightLength = goalLineX - cornerRadius;
-    float cornerCircumference = cornerRadius;
-    cornerCircumference *= 1.5707964f;
+    nlVector3 impactPositionPositive = { {
+        nlAbs(impactPosition.x),
+        nlAbs(impactPosition.y),
+        impactPosition.z,
+    } };
 
     float inCoordinate;
-    if (impactPositionPositive.f.x >= straightLength && impactPositionPositive.f.y >= sidelineY - cornerRadius)
+    float cornerCircumference = radius;
+    cornerCircumference *= 1.5707964f;
+
+    if (impactPositionPositive.x >= goalLineX - radius && impactPositionPositive.y >= sideLineY - radius)
     {
-        inCoordinate = nlATan2f(impactPositionPositive.f.y - (sidelineY - cornerRadius), impactPositionPositive.f.x - straightLength);
-        inCoordinate = inCoordinate * cornerRadius;
+        inCoordinate = nlATan2f(impactPositionPositive.y - (sideLineY - radius), impactPositionPositive.x - (goalLineX - radius));
+        inCoordinate = inCoordinate * radius;
     }
-    else if (impactPositionPositive.f.x < straightLength)
+    else if (impactPositionPositive.x < goalLineX - radius)
     {
-        inCoordinate = cornerCircumference + (straightLength - impactPositionPositive.f.x);
+        inCoordinate = cornerCircumference + ((goalLineX - radius) - impactPositionPositive.x);
     }
     else
     {
-        inCoordinate = -((sidelineY - cornerRadius) - impactPositionPositive.f.y);
+        inCoordinate = -((sideLineY - radius) - impactPositionPositive.y);
     }
 
     float increment = sfGridTextureSize / sfNumGridSquares;
-    float alignedDistance = sfAlignmentOffset2 + (increment * (float)floor(inCoordinate / increment));
-    float outCoordinate = alignedDistance + xOffset;
+    inCoordinate = sfAlignmentOffset2 + increment * (float)floor(inCoordinate / increment);
+    float outCoordinate = inCoordinate + xOffset;
 
     if (outCoordinate <= 0.0f)
     {
-        outPosition.f.x = goalLineX;
-        outPosition.f.y = outCoordinate + (sidelineY - cornerRadius);
-        outPosition.f.z = impactPositionPositive.f.z + zOffset;
+        nlVec3Set(outPosition, goalLineX, outCoordinate + (sideLineY - radius), impactPositionPositive.z + zOffset);
     }
     else if (outCoordinate >= cornerCircumference)
     {
-        float linearOffset = outCoordinate - cornerCircumference;
-        outPosition.f.x = straightLength - linearOffset;
-        outPosition.f.y = sidelineY;
-        outPosition.f.z = impactPositionPositive.f.z + zOffset;
+        nlVec3Set(outPosition, (goalLineX - radius) - (outCoordinate - cornerCircumference), sideLineY, impactPositionPositive.z + zOffset);
     }
     else
     {
-        s32 angle = (s32)(10430.378f * (outCoordinate / cornerRadius));
-        float sinAngle = nlSin((u16)angle);
-        float cosAngle = nlSin((u16)((u16)angle + 0x4000));
-
-        outPosition.f.x = straightLength + (cornerRadius * cosAngle);
-        outPosition.f.y = (sidelineY - cornerRadius) + (cornerRadius * sinAngle);
-        outPosition.f.z = impactPositionPositive.f.z + zOffset;
+        inCoordinate = nlSin((u16)(s32)(10430.378f * (outCoordinate / radius)));
+        nlVec3Set(outPosition,
+            (goalLineX - radius) + (radius * nlSin((u16)((u16)(s32)(10430.378f * (outCoordinate / radius)) + 0x4000))),
+            (sideLineY - radius) + (radius * inCoordinate),
+            impactPositionPositive.z + zOffset);
     }
 
     if (xIsPositive == 0)
     {
-        outPosition.f.x = -outPosition.f.x;
+        outPosition.x = -outPosition.x;
     }
 
     if (yIsPositive == 0)
     {
-        outPosition.f.y = -outPosition.f.y;
+        outPosition.y = -outPosition.y;
     }
 }
+
+#pragma msext reset
+#pragma cpp_extensions reset
 
 /**
  * Offset/Address/Size: 0x12CC | 0x8016C2FC | size: 0xA4
@@ -171,6 +161,16 @@ static inline void RenderElectricFenceFlat(const nlVector3& position, const nlVe
 {
     extern const unsigned long GridTexture;
 
+    glSetDefaultState(true);
+    glSetRasterState(GLS_AlphaBlend, 2);
+    glSetRasterState(GLS_Culling, 0);
+    glSetRasterState(GLS_DepthWrite, 0);
+    glSetRasterState(GLS_DepthTest, 1);
+    glSetCurrentRasterState(glHandleizeRasterState());
+    glSetCurrentTexture(GridTexture, GLTT_Diffuse);
+    glSetTextureState(GLTS_DiffuseWrap, 0);
+    glSetCurrentTextureState(glHandleizeTextureState());
+
     nlMatrix4 matrix;
     nlMakeRotationMatrixX(matrix, 1.5707964f);
 
@@ -190,13 +190,14 @@ static inline void RenderElectricFenceFlat(const nlVector3& position, const nlVe
     u8 lightenAmount = (u8)(255.0f * intensity);
     quad.SetColour(lightenAmount, lightenAmount, lightenAmount, 0xFF);
     glAttachQuad3(GLV_ElectricFence, 1, &quad, true);
+    glSetDefaultState(false);
 }
 
 static inline void DrawPrimitive(const ElectricFenceGeometry& prim, const nlMatrix4& objMatrix, int nPrimType, unsigned long textureHandle, float intensity)
 {
     extern const unsigned long UnlitProgram;
 
-    const eGLStream stream_decl[3] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+    eGLStream stream_decl[3] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
     GLMeshWriter mesh;
     nlVector3* pPosition;
     nlVector2* pTexcoord = (nlVector2*)prim.texcoord;
@@ -219,8 +220,8 @@ static inline void DrawPrimitive(const ElectricFenceGeometry& prim, const nlMatr
     glSetCurrentTextureState(glHandleizeTextureState());
     glSetCurrentProgram(UnlitProgram);
 
-    nlColour c = { 0, 0, 0, 0xFF };
     u8 lightenAmount = (u8)(255.0f * intensity);
+    nlColour c = { 0, 0, 0, 0xFF };
     c.c[0] = lightenAmount;
     c.c[1] = lightenAmount;
     c.c[2] = lightenAmount;
@@ -248,11 +249,6 @@ static inline void DrawPrimitive(const ElectricFenceGeometry& prim, const nlMatr
     }
 }
 
-/**
- * Offset/Address/Size: 0x89C | 0x8016B8CC | size: 0x420
- * TODO: 99.05% match - allocation temp and DrawPrimitive geometry/matrix
- *       registers differ.
- */
 static inline ElectricFenceData* FindElectricFenceData(EmissionController* pEmissionController)
 {
     ElectricFenceData* data = ElectricFenceData::sActiveElectricFences.m_pStart;
@@ -267,25 +263,8 @@ static inline ElectricFenceData* FindElectricFenceData(EmissionController* pEmis
     return NULL;
 }
 
-static inline ElectricFenceData* CreateAndAssignElectricFenceData(EmissionController* pController)
-{
-    ElectricFenceData* data = NULL;
-
-    if (ElectricFenceData::sElectricFenceDataPool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&ElectricFenceData::sElectricFenceDataPool, sizeof(ElectricFenceData));
-    }
-
-    if (ElectricFenceData::sElectricFenceDataPool.m_FreeList != NULL)
-    {
-        data = (ElectricFenceData*)ElectricFenceData::sElectricFenceDataPool.m_FreeList;
-        ElectricFenceData::sElectricFenceDataPool.m_FreeList = ElectricFenceData::sElectricFenceDataPool.m_FreeList->next;
-    }
-    data = new ((u8*)data) ElectricFenceData(pController);
-    return data;
-}
-
 static void RenderElectricFence(EmissionController& ec);
+
 /**
  * Offset/Address/Size: 0xEAC | 0x8016BEDC | size: 0x420
  */
@@ -293,11 +272,10 @@ static void RenderElectricFence(EmissionController& ec)
 {
     extern const unsigned long GridTexture;
 
-    EmissionController* pController = &ec;
-    ElectricFenceData* pElectricFenceData = FindElectricFenceData(pController);
+    ElectricFenceData* pElectricFenceData = FindElectricFenceData(&ec);
 
     float intensity = 1.0f;
-    float remainingTime = pController->GetRemainingTime();
+    float remainingTime = ec.GetRemainingTime();
     if (remainingTime < sfFadeOutTime)
     {
         intensity = remainingTime / sfFadeOutTime;
@@ -305,7 +283,7 @@ static void RenderElectricFence(EmissionController& ec)
 
     if (pElectricFenceData == NULL)
     {
-        pElectricFenceData = CreateAndAssignElectricFenceData(pController);
+        pElectricFenceData = new (ElectricFenceData::sElectricFenceDataPool.Allocate()) ElectricFenceData(&ec);
     }
 
     if (pElectricFenceData == NULL)
@@ -315,24 +293,7 @@ static void RenderElectricFence(EmissionController& ec)
 
     if (pElectricFenceData->mbIsFlat)
     {
-        nlVector3 normal;
-        ((unsigned long*)&normal)[0] = ((unsigned long*)&pElectricFenceData->mNormal)[0];
-        ((unsigned long*)&normal)[1] = ((unsigned long*)&pElectricFenceData->mNormal)[1];
-        ((unsigned long*)&normal)[2] = ((unsigned long*)&pElectricFenceData->mNormal)[2];
-
-        glSetDefaultState(true);
-        glSetRasterState(GLS_AlphaBlend, 2);
-        glSetRasterState(GLS_Culling, 0);
-        glSetRasterState(GLS_DepthWrite, 0);
-        glSetRasterState(GLS_DepthTest, 1);
-        glSetCurrentRasterState(glHandleizeRasterState());
-        glSetCurrentTexture(GridTexture, GLTT_Diffuse);
-        glSetTextureState(GLTS_DiffuseWrap, 0);
-        glSetCurrentTextureState(glHandleizeTextureState());
-
-        RenderElectricFenceFlat(pElectricFenceData->mPosition, normal, intensity);
-
-        glSetDefaultState(false);
+        RenderElectricFenceFlat(pElectricFenceData->mPosition, nlVector3(pElectricFenceData->mNormal), intensity);
         return;
     }
 
@@ -401,9 +362,9 @@ void EmitElectricFenceCharacterEffect(const nlVector3& pos, const nlVector3& dir
     if (g_pGame->mbCaptainShotToScoreOn)
         return;
 
-    if (!EmissionManager::IsPlaying(emitterID, fxGetGroup("fx_electric_fence_char")))
+    if (!EmissionManager::IsPlaying(emitterID, fxGetGroup("electric_fence_character")))
     {
-        EmissionController* controller = EmissionManager::Create(fxGetGroup("fx_electric_fence_char"), 0);
+        EmissionController* controller = EmissionManager::Create(fxGetGroup("electric_fence_character"), 0);
         controller->m_uUserData = emitterID;
         controller->SetPosition(pos);
 
@@ -414,8 +375,8 @@ void EmitElectricFenceCharacterEffect(const nlVector3& pos, const nlVector3& dir
 
         new (data) ElectricFenceData(controller);
 
-        controller->SetUpdateCallback(Function<EmissionController&>(RenderElectricFence));
-        controller->SetFinishedCallback(Function<EmissionController&>(ElectricFenceFinished));
+        controller->SetUpdateCallback(RenderElectricFence);
+        controller->SetFinishedCallback(ElectricFenceFinished);
     }
 
     SidelineExplodableManager::TriggerExplosions(pos, g_pGame->m_pGameTweaks->fBobombMediumRadius * g_pGame->m_pGameTweaks->fPowerupExplosionRadius);
