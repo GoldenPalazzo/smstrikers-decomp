@@ -26,12 +26,6 @@ public:
     {
     }
 
-    ListEntry(const volatile T& data)
-        : next(nullptr)
-        , entry(data)
-    {
-    }
-
     const T& Entry() const
     {
         return entry;

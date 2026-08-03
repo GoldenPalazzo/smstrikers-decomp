@@ -35,11 +35,13 @@ public:
         MSG_NUMMESSAGES = 9,
     };
 
+    int MessageLength(FEInGameMessengerManager::eInGameMessages msg) const { return m_messageList[msg].size(); }
+    void ShowMessage(FEInGameMessengerManager::eInGameMessages);
     void Update(float);
     void EnterNewTimeState(FEInGameMessengerManager::eTimeStates);
     ~FEInGameMessengerManager();
 
-    static float TIMESTATE_TIMES[4];
+    static const float TIMESTATE_TIMES[4];
 
     /* 0x00 */ FEIMessenger* m_messenger;
     /* 0x04 */ eTimeStates m_curTimeState;

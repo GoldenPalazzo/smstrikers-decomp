@@ -4,6 +4,8 @@
 #include "Game/Ball.h"
 #include "Game/GameInfo.h"
 
+const float FEInGameMessengerManager::TIMESTATE_TIMES[4] = { 0.0f, 0.3f, 0.6f, 0.85f };
+
 /**
  * Offset/Address/Size: 0x0 | 0x800FF91C | size: 0x140
  */
@@ -67,168 +69,79 @@ void FEInGameMessengerManager::Update(float fDeltaT)
 }
 
 /**
- * Offset/Address/Size: 0x140 | 0x800FFA5C | size: 0x414
- * TODO: 97.77% match - remaining diffs are this/timeState register swap
- * (r30/r31) and ListEntry constructor temporary register ordering.
+ * Erased: fully inlined into EnterNewTimeState.
  */
-#pragma opt_common_subs off
+inline void FEInGameMessengerManager::ShowMessage(FEInGameMessengerManager::eInGameMessages msg)
+{
+    if (MessageLength(msg) != 0)
+    {
+        if (m_messageQueue.m_Head == NULL)
+        {
+            m_waitingToDisplay = true;
+            m_waitedToDisplay = 0.0f;
+        }
+
+        m_messageQueue.AddEnd(msg);
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x140 | 0x800FFA5C | size: 0x414
+ */
 void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTimeStates timeState)
 {
-    ListEntry<eInGameMessages>** pTail;
-    ListEntry<eInGameMessages>** pHead;
-
     switch (timeState)
     {
     case TS_GAME_BEGINNING:
         break;
 
     case TS_GAME_EARLYMID:
-    {
-        pTail = &m_messageQueue.m_Tail;
-        pHead = &m_messageQueue.m_Head;
-
         for (int i = 0; i < m_numWatchGames; i++)
         {
-            eInGameMessages msg = (eInGameMessages)i;
-            int hasMessage = m_messageList[(int)msg].size();
-
-            if (hasMessage != 0)
-            {
-                if (m_messageQueue.m_Head == NULL)
-                {
-                    m_waitingToDisplay = true;
-                    m_waitedToDisplay = 0.0f;
-                }
-
-                volatile eInGameMessages stackMsg[2];
-                stackMsg[1] = msg;
-
-                ListEntry<eInGameMessages>* entry = new (nlMalloc(sizeof(ListEntry<eInGameMessages>), 8, false)) ListEntry<eInGameMessages>(msg);
-                nlListAddEnd<ListEntry<eInGameMessages> >(pHead, pTail, entry);
-            }
+            ShowMessage((eInGameMessages)i);
         }
         break;
-    }
 
     case TS_GAME_MIDLATE:
-    {
-        pTail = &m_messageQueue.m_Tail;
-        pHead = &m_messageQueue.m_Head;
-
         for (int i = 0; i < m_numWatchGames; i++)
         {
-            eInGameMessages msg = (eInGameMessages)(i + 2);
-            int hasMessage = m_messageList[(int)msg].size();
-
-            if (hasMessage != 0)
-            {
-                if (m_messageQueue.m_Head == NULL)
-                {
-                    m_waitingToDisplay = true;
-                    m_waitedToDisplay = 0.0f;
-                }
-
-                volatile eInGameMessages stackMsg[2];
-                stackMsg[0] = msg;
-
-                ListEntry<eInGameMessages>* entry = new (nlMalloc(sizeof(ListEntry<eInGameMessages>), 8, false)) ListEntry<eInGameMessages>(stackMsg[0]);
-                nlListAddEnd<ListEntry<eInGameMessages> >(pHead, pTail, entry);
-            }
+            ShowMessage((eInGameMessages)(i + 2));
         }
         break;
-    }
 
     case TS_GAME_LATE:
     {
         int sequence[4] = { 0, 1, 2, 3 };
-        int* cur = sequence;
-        int* base = sequence;
 
-        for (int i = 0; i < 4; i++, cur++)
+        for (int i = 0; i < 4; i++)
         {
             int swapInd = i + nlRandom(4 - i, &nlDefaultSeed);
-            int temp = *cur;
-            *cur = base[swapInd];
-            base[swapInd] = temp;
+            int temp = sequence[i];
+            sequence[i] = sequence[swapInd];
+            sequence[swapInd] = temp;
         }
-
-        pTail = &m_messageQueue.m_Tail;
-        pHead = &m_messageQueue.m_Head;
 
         int numDisplayed = 0;
         for (int i = 0; i < 4; i++)
         {
-            eInGameMessages msg;
-            int hasMessage;
-
             if (numDisplayed >= 2)
             {
                 break;
             }
 
-            msg = (eInGameMessages)(i + 4);
+            eInGameMessages msg = (eInGameMessages)(i + 4);
 
-            hasMessage = m_messageList[(int)msg].size();
-
-            if (hasMessage != 0)
+            if (MessageLength(msg) != 0)
             {
-                hasMessage = m_messageList[(int)msg].size();
-
-                if (hasMessage != 0)
-                {
-                    if (m_messageQueue.m_Head == NULL)
-                    {
-                        m_waitingToDisplay = true;
-                        m_waitedToDisplay = 0.0f;
-                    }
-
-                    volatile eInGameMessages stackMsg[2];
-                    stackMsg[1] = msg;
-
-                    ListEntry<eInGameMessages>* entry = new (nlMalloc(sizeof(ListEntry<eInGameMessages>), 8, false)) ListEntry<eInGameMessages>(msg);
-                    nlListAddEnd<ListEntry<eInGameMessages> >(pHead, pTail, entry);
-                }
-
-                hasMessage = m_messageList[(int)msg].size();
-
-                if (hasMessage != 0)
-                {
-                    if (m_messageQueue.m_Head == NULL)
-                    {
-                        m_waitingToDisplay = true;
-                        m_waitedToDisplay = 0.0f;
-                    }
-
-                    volatile eInGameMessages stackMsg[2];
-                    stackMsg[1] = msg;
-
-                    ListEntry<eInGameMessages>* entry = new (nlMalloc(sizeof(ListEntry<eInGameMessages>), 8, false)) ListEntry<eInGameMessages>(msg);
-                    nlListAddEnd<ListEntry<eInGameMessages> >(pHead, pTail, entry);
-                }
-
+                ShowMessage(msg);
+                ShowMessage(msg);
                 numDisplayed++;
             }
         }
 
         if (nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode == GameInfoManager::GM_TOURNAMENT)
         {
-            eInGameMessages msg = MSG_CUSTOMTOURNNEXTMATCHUP;
-            int hasMessage = m_messageList[(int)msg].size();
-
-            if (hasMessage != 0)
-            {
-                if (m_messageQueue.m_Head == NULL)
-                {
-                    m_waitingToDisplay = true;
-                    m_waitedToDisplay = 0.0f;
-                }
-
-                volatile eInGameMessages stackMsg[2];
-                stackMsg[0] = msg;
-
-                ListEntry<eInGameMessages>* entry = new (nlMalloc(sizeof(ListEntry<eInGameMessages>), 8, false)) ListEntry<eInGameMessages>(stackMsg[0]);
-                nlListAddEnd<ListEntry<eInGameMessages> >(pHead, pTail, entry);
-            }
+            ShowMessage(MSG_CUSTOMTOURNNEXTMATCHUP);
         }
         break;
     }
@@ -239,7 +152,6 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
 
     m_curTimeState = timeState;
 }
-#pragma opt_common_subs on
 
 /**
  * Offset/Address/Size: 0x554 | 0x800FFE70 | size: 0x104
