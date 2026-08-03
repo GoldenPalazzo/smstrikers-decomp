@@ -199,7 +199,8 @@ static inline void DrawPrimitive(const ElectricFenceGeometry& prim, const nlMatr
 
     eGLStream stream_decl[3] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
     GLMeshWriter mesh;
-    const nlVector2* pTexcoord = prim.texcoord;
+    nlVector3* pPosition = (nlVector3*)prim.position;
+    nlVector2* pTexcoord = (nlVector2*)prim.texcoord;
 
     glSetDefaultState(true);
     glSetRasterState(GLS_Culling, 0);
@@ -232,7 +233,7 @@ static inline void DrawPrimitive(const ElectricFenceGeometry& prim, const nlMatr
         {
             mesh.Colour(c);
             mesh.Texcoord(pTexcoord[index]);
-            mesh.Vertex(prim.position[index]);
+            mesh.Vertex(pPosition[index]);
             index++;
         }
 
