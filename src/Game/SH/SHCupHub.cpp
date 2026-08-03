@@ -3005,6 +3005,8 @@ void CupHubScene::SetRoundColours(eHubColour* coloursArray, int sizeOfArray)
 {
     GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
     int i;
+    eHubColour* pColour;
+    BaseCup* cup;
 
     for (i = 0; i < sizeOfArray; i++)
     {
@@ -3015,17 +3017,16 @@ void CupHubScene::SetRoundColours(eHubColour* coloursArray, int sizeOfArray)
     {
         if (!gameInfo->mDoingKnockout)
         {
-            int currentRound = (s16)gameInfo->GetCurrentRoundNumber();
-            int firstRound = (s16)gameInfo->GetFirstRoundNumber();
-            if (currentRound != firstRound)
+            int lastPlayedRound = gameInfo->GetCurrentRoundNumber();
+            if (lastPlayedRound != gameInfo->GetFirstRoundNumber())
             {
-                int lastPlayedRound = (s16)gameInfo->GetPreviousRoundNumber((s16)currentRound);
-                BaseCup* cup = gameInfo->mCurrentCup;
-                eHubColour* pColour = coloursArray;
+                lastPlayedRound = gameInfo->GetPreviousRoundNumber((s16)lastPlayedRound);
+                cup = gameInfo->mCurrentCup;
                 int green = 1;
                 int red = 0;
                 int yellow = 3;
                 int k;
+                pColour = coloursArray;
 
                 for (k = 0; k <= lastPlayedRound; k++)
                 {
