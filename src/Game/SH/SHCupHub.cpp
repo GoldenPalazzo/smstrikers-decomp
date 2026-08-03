@@ -281,7 +281,7 @@ CupHubScene::CupHubScene(bool doAnimations, bool playAllKnockoutAnimations)
     captainImage = new (captainImage) AsyncImage("art/fe/CupLoadingScreensUI.res", 0);
     mCaptainImage = captainImage;
 
-    lastResult = (gameInfo = nlSingleton<GameInfoManager>::s_pInstance)->GetResultsOfLastUserGame();
+    lastResult = (gameInfo = nlSingleton<GameInfoManager>::Instance())->GetResultsOfLastUserGame();
     mHasHumanTeamPlayed = gameInfo->HasHumanGameBeenPlayed();
 
     i = 0;
