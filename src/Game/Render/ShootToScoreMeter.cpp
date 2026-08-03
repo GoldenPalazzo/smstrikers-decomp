@@ -25,8 +25,6 @@ u32 NumberTextures[4] = {
 ShootToScoreMeter ShootToScoreMeter::instance;
 // static u32 WHITE_COLOR = 0xFFFFFFFF;
 
-extern u8 sbMakeSTSMeterOrthographic;
-
 static nlColour sWhiteBarColour = { 255, 255, 255, 255 };
 static nlColour sHyperColour = { 181, 240, 255, 255 };
 static nlColour sGreenRegionColour = { 5, 150, 5, 255 };
@@ -34,6 +32,7 @@ static nlColour sYellowRegionColour = { 200, 200, 10, 255 };
 static s32 sfNumBarsInTrail = 20;
 static float sfTrailIntensity = 0.6f;
 static float sfTrailLengthScale = 0.25f;
+static u8 sbMakeSTSMeterOrthographic = 1;
 
 static inline void InterpolateColours(const nlColour& colour0, const nlColour& colour1, float alpha, nlColour& result)
 {
@@ -42,6 +41,15 @@ static inline void InterpolateColours(const nlColour& colour0, const nlColour& c
     result.c[1] = (u8)(s32)(oneMinusAlpha * (float)colour0.c[1] + alpha * (float)colour1.c[1]);
     result.c[2] = (u8)(s32)(oneMinusAlpha * (float)colour0.c[2] + alpha * (float)colour1.c[2]);
     result.c[3] = (u8)(s32)(oneMinusAlpha * (float)colour0.c[3] + alpha * (float)colour1.c[3]);
+}
+
+static inline void NDCToScreenCoordinates(const nlVector3& v3NormalizedScreenPos, nlVector3& v3ScreenPos)
+{
+    v3ScreenPos.f.x = 320.0f * v3NormalizedScreenPos.f.x;
+    v3ScreenPos.f.y = 240.0f * v3NormalizedScreenPos.f.y;
+    v3ScreenPos.f.x += 320.0f;
+    v3ScreenPos.f.y += 240.0f;
+    v3ScreenPos.f.z = -0.1f;
 }
 
 static inline float clamp_ge(float x, float limit)
@@ -60,12 +68,12 @@ static inline float clamp_le(float x, float limit)
         return limit;
 }
 
-static inline void DrawIndicatorBar(ShootToScoreMeter* pMeter, float angle, const nlColour& colour, const nlMatrix4& meterMatrix, float scale)
+inline void ShootToScoreMeter::DrawIndicatorBar(float angle, const nlColour& colour, const nlMatrix4& meterMatrix, float scale)
 {
     glSetCurrentTexture(WhiteTexture, GLTT_Diffuse);
     glSetTextureState(GLTS_DiffuseWrap, 0);
     glSetCurrentTextureState(glHandleizeTextureState());
-    cCameraManager::GetDistanceFromCameraToObject(pMeter->m_v3MeterPosition);
+    cCameraManager::GetDistanceFromCameraToObject(m_v3MeterPosition);
 
     glQuad3 barQuad;
     nlMatrix4 barMatrix;
@@ -73,7 +81,7 @@ static inline void DrawIndicatorBar(ShootToScoreMeter* pMeter, float angle, cons
     float zDepth;
     float angleRadians = (3.1415927f * angle) / 180.0f;
     float scaledWhiteBarHeight = 0.0035f * scale;
-    float scaledMeterWidth = ShootToScoreMeter::MeterWidth * scale;
+    float scaledMeterWidth = MeterWidth * scale;
     nlMakeRotationMatrixZ(barMatrix, angleRadians);
 
     float radius = 0.198f * scaledMeterWidth;
@@ -175,14 +183,6 @@ void ShootToScoreMeter::DrawMeter()
     float scale;
     float scaledMeterWidth;
     glQuad3 quad;
-    nlColour green;
-    nlColour yellow;
-    nlColour black = { 0, 0, 0, 255 };
-    nlColour hyper;
-    float diffCurrentPrev;
-    int i;
-    float angle;
-    nlColour fadedColour;
 
     matrix.SetIdentity();
     nlMakeRotationMatrixZ(matrix, 1.5707964f);
@@ -190,33 +190,18 @@ void ShootToScoreMeter::DrawMeter()
     if (sbMakeSTSMeterOrthographic)
     {
         static nlVector3 screenPosition;
-        float projectedY;
-        float projectedX;
 
         matrix.SetIdentity();
         glViewProjectPoint(GLV_Unshadowed, m_v3MeterPosition, screenPosition);
 
-        projectedY = 240.0f * screenPosition.f.y;
-        projectedX = 320.0f * screenPosition.f.x;
-        screenPosition.f.y = projectedY;
-        screenPosition.f.x = projectedX;
-        screenPosition.f.y = screenPosition.f.y + 240.0f;
-        screenPosition.f.x = screenPosition.f.x + 320.0f;
-        screenPosition.f.z = -0.1f;
-        screenPosition.f.y = screenPosition.f.y + -20.0f;
+        NDCToScreenCoordinates(screenPosition, screenPosition);
+        screenPosition.f.y += -20.0f;
 
         scale = 640.0f;
         scaledMeterWidth = MeterWidth * scale;
 
-        projectedX = screenPosition.f.x;
-        projectedX = clamp_ge(projectedX, 92.0f);
-        projectedX = clamp_le(projectedX, 548.0f);
-
-        projectedY = screenPosition.f.y;
-        projectedY = clamp_ge(projectedY, 84.0f);
-        projectedY = clamp_le(projectedY, 396.0f);
-        screenPosition.f.x = projectedX;
-        screenPosition.f.y = projectedY;
+        screenPosition.f.x = clamp_le(clamp_ge(screenPosition.f.x, 92.0f), 548.0f);
+        screenPosition.f.y = clamp_le(clamp_ge(screenPosition.f.y, 84.0f), 396.0f);
 
         matrix.m[3][0] = screenPosition.f.x;
         matrix.m[3][1] = screenPosition.f.y;
@@ -226,12 +211,13 @@ void ShootToScoreMeter::DrawMeter()
     else
     {
         scale = cCameraManager::GetDistanceFromCameraToObject(m_v3MeterPosition);
-        scaledMeterWidth = MeterWidth * scale;
 
         matrix.m[3][0] = m_v3MeterPosition.f.x;
         matrix.m[3][1] = m_v3MeterPosition.f.y;
         matrix.m[3][2] = m_v3MeterPosition.f.z;
         matrix.m[3][3] = 1.0f;
+
+        scaledMeterWidth = MeterWidth * scale;
     }
 
     quad.SetupRotatedRectangle(
@@ -248,17 +234,17 @@ void ShootToScoreMeter::DrawMeter()
     }
     glAttachQuad3(view, 1, &quad, true);
 
-    green = sGreenRegionColour;
-    yellow = sYellowRegionColour;
-    hyper = sHyperColour;
-
+    nlColour green = sGreenRegionColour;
     green.c[3] = (u8)(s32)(255.0f * m_fGreenAndYellonRegionIntensity);
+    nlColour yellow = sYellowRegionColour;
     yellow.c[3] = (u8)(s32)(255.0f * m_fGreenAndYellonRegionIntensity);
+    nlColour black = { 0, 0, 0, 255 };
+    nlColour Hyper = sHyperColour;
 
     if (meHyper == STS_GOT_HYPER)
     {
-        DrawIndicatorBar(this, m_fWhiteBarAngle, black, matrix, scale);
-        DrawIndicatorBar(this, m_fSavedWhiteBarAngle, black, matrix, scale);
+        DrawIndicatorBar(m_fWhiteBarAngle, black, matrix, scale);
+        DrawIndicatorBar(m_fSavedWhiteBarAngle, black, matrix, scale);
     }
     else
     {
@@ -284,7 +270,7 @@ void ShootToScoreMeter::DrawMeter()
             matrix,
             scale);
 
-        DrawIndicatorBar(this, m_fWhiteBarAngle, sWhiteBarColour, matrix, scale);
+        DrawIndicatorBar(m_fWhiteBarAngle, sWhiteBarColour, matrix, scale);
 
         if (mbShowSavedWhiteBar)
         {
@@ -308,11 +294,11 @@ void ShootToScoreMeter::DrawMeter()
                 DrawColouredRegion(
                     m_fSavedGreenBarAngle - (0.5f * m_fSavedGreenRegionWidth),
                     m_fSavedGreenBarAngle + (0.5f * m_fSavedGreenRegionWidth),
-                    hyper,
-                    hyper,
+                    Hyper,
+                    Hyper,
                     matrix,
                     scale);
-                DrawIndicatorBar(this, m_fSavedWhiteBarAngle, black, matrix, scale);
+                DrawIndicatorBar(m_fSavedWhiteBarAngle, black, matrix, scale);
             }
             else
             {
@@ -323,19 +309,18 @@ void ShootToScoreMeter::DrawMeter()
                     green,
                     matrix,
                     scale);
-                DrawIndicatorBar(this, m_fSavedWhiteBarAngle, sWhiteBarColour, matrix, scale);
+                DrawIndicatorBar(m_fSavedWhiteBarAngle, sWhiteBarColour, matrix, scale);
             }
         }
 
-        diffCurrentPrev = m_fWhiteBarPreviousAngle - m_fWhiteBarAngle;
+        float diffCurrentPrev = m_fWhiteBarPreviousAngle - m_fWhiteBarAngle;
 
-        for (i = 0; i < sfNumBarsInTrail; i++)
+        for (int i = 0; i < sfNumBarsInTrail; i++)
         {
-            fadedColour = sWhiteBarColour;
+            nlColour fadedColour = sWhiteBarColour;
             fadedColour.c[3] = (u8)(s32)(255.0f * (sfTrailIntensity * (1.0f - ((float)i / (float)sfNumBarsInTrail))));
 
-            angle = sfTrailLengthScale * ((float)i * diffCurrentPrev) + m_fWhiteBarAngle;
-            DrawIndicatorBar(this, angle, fadedColour, matrix, scale);
+            DrawIndicatorBar(sfTrailLengthScale * ((float)i * diffCurrentPrev) + m_fWhiteBarAngle, fadedColour, matrix, scale);
         }
     }
 

@@ -45,6 +45,7 @@ public:
     void RumbleMeter(float, float, float);
     void DrawMeter();
     void DrawColouredRegion(float, float, const nlColour&, const nlColour&, nlMatrix4, float);
+    void DrawIndicatorBar(float, const nlColour&, const nlMatrix4&, float);
     void UpdateAndRender(float);
     void SetWhiteBarPosition(float);
     void SetSavedWhiteBarPosition(float);
