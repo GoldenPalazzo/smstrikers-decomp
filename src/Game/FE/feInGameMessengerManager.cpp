@@ -14,24 +14,6 @@ FEInGameMessengerManager::~FEInGameMessengerManager()
     Function<FnVoidVoid> cb;
     m_messenger->SetMessageFinishedCB(cb);
 }
-
-/**
- * Erased: fully inlined into EnterNewTimeState.
- */
-inline void FEInGameMessengerManager::ShowMessage(FEInGameMessengerManager::eInGameMessages msg)
-{
-    if (MessageLength(msg) != 0)
-    {
-        if (m_messageQueue.m_Head == NULL)
-        {
-            m_waitingToDisplay = true;
-            m_waitedToDisplay = 0.0f;
-        }
-
-        m_messageQueue.AddEnd(msg);
-    }
-}
-
 /**
  * Offset/Address/Size: 0x140 | 0x800FFA5C | size: 0x414
  */
@@ -99,7 +81,6 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
 
     m_curTimeState = timeState;
 }
-
 /**
  * Offset/Address/Size: 0x0 | 0x800FF91C | size: 0x140
  */
@@ -160,6 +141,25 @@ void FEInGameMessengerManager::Update(float fDeltaT)
     m_messenger->SetDisplayMessage(m_messageList[(int)msg]);
     m_messenger->OpenMessenger();
     m_waitingToDisplay = false;
+}
+/**
+ * Every call is inlined into EnterNewTimeState, so the out-of-line copy is
+ * unreferenced and dead-stripped by mwld; it survives in the DOL only as the
+ * .sdata2 pool block it interns ahead of Update. DWARF puts its codegen slot
+ * here, between the destructor and Update.
+ */
+void FEInGameMessengerManager::ShowMessage(FEInGameMessengerManager::eInGameMessages msg)
+{
+    if (MessageLength(msg) != 0)
+    {
+        if (m_messageQueue.m_Head == NULL)
+        {
+            m_waitingToDisplay = true;
+            m_waitedToDisplay = 0.0f;
+        }
+
+        m_messageQueue.AddEnd(msg);
+    }
 }
 
 // /**
