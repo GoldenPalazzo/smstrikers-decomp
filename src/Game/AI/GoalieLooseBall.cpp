@@ -43,10 +43,6 @@ static bool LooseBallCallback(float fTime, float fDuration, unsigned long uEvent
     return true;
 }
 
-/**
- * Offset/Address/Size: 0x1D8 | 0x80052EE0 | size: 0x524
- * TODO: 95.4% match - kick loop instruction scheduling (6 diffs), lfsu not generated for trap/attack/dive single-entry sections (15 diffs)
- */
 static inline void InitLooseBallAnim(cPlayer* pPlayer, LooseBallInfo* pInfo, int animID, int animType)
 {
     pInfo->mfAnimDuration = 0.0f;
@@ -55,10 +51,13 @@ static inline void InitLooseBallAnim(cPlayer* pPlayer, LooseBallInfo* pInfo, int
     pInfo->mAnimType = (eLooseBallAnimType)animType;
     GetAnimTriggerInfo(pPlayer, animID, LooseBallCallback, pInfo);
     pPlayer->GetJointPositionFuture(&pInfo->mv3PickupPos, animID, pPlayer->m_nBallJointIndex, pInfo->mfPickupTime, true, true, false);
-    pInfo->mfPickupDistance = nlSqrt(pInfo->mv3PickupPos.f.x * pInfo->mv3PickupPos.f.x + pInfo->mv3PickupPos.f.y * pInfo->mv3PickupPos.f.y, true);
+    pInfo->mfPickupDistance = nlSqrt(pInfo->mv3PickupPos.e[0] * pInfo->mv3PickupPos.e[0] + pInfo->mv3PickupPos.e[1] * pInfo->mv3PickupPos.e[1], true);
     pInfo->maPickupAngle = (unsigned short)(s16)(10430.378f * nlATan2f(pInfo->mv3PickupPos.f.y, pInfo->mv3PickupPos.f.x));
 }
 
+/**
+ * Offset/Address/Size: 0x1D8 | 0x80052EE0 | size: 0x524
+ */
 void LooseBallAnims::Init(cPlayer* pPlayer)
 {
     if (mpLooseBallInfo != NULL)
