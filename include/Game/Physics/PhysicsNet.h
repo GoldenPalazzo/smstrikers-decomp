@@ -9,17 +9,7 @@
 #include "Game/Net.h"
 
 #include "Game/Sys/eventman.h"
-
-struct CollisionBallGoalpostData : public EventData
-{
-    static const u32 ID = 0x10e;
-
-    virtual u32 GetID();
-
-    /* 0x4, */ nlVector3 v3CollisionVelocity;
-    /* 0x10 */ nlVector3 v3CollisionPosition;
-    /* 0x1C */ u32 uTeamIndex;
-}; // total size: 0x20
+#include "Game/EventDataTypes.h"
 
 class PhysicsNet
 {

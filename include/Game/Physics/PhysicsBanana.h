@@ -3,6 +3,7 @@
 
 #include "Game/Physics/PhysicsSphere.h"
 #include "Game/Sys/eventman.h"
+#include "Game/EventDataTypes.h"
 #include "Game/AI/Fielder.h"
 
 class PowerupBase;
@@ -14,17 +15,6 @@ struct CollisionPowerupGroundData : public EventData
     /* 0x04 */ nlVector3 position;
     /* 0x10 */ float fVecZComponent;
     /* 0x14 */ ePowerUpType eType;
-};
-
-struct CollisionPowerupWallData : public EventData
-{
-    virtual u32 GetID();
-
-    /* 0x04 */ PowerupBase* pPowerup;
-    /* 0x08 */ ePowerupSize eSize;
-    /* 0x0C */ ePowerUpType eType;
-    /* 0x10 */ nlVector3 position;
-    /* 0x1C */ nlVector3 normal;
 };
 
 class PhysicsBanana : public PhysicsSphere

@@ -4,6 +4,7 @@
 #include "types.h"
 #include "NL/nlMath.h"
 #include "Game/Sys/eventman.h"
+#include "Game/AI/Powerups.h"
 
 // Forward declarations
 class cPlayer;
@@ -16,7 +17,7 @@ class ChainChomp;
 class CharacterDirectionData
 {
 public:
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0x175; }
 
     /* 0x04 */ nlVector3* home;
     /* 0x08 */ nlVector3* away;
@@ -25,7 +26,7 @@ public:
 struct PowerupData : public EventData
 {
     PowerupData() { }
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0x15C; }
 
     /* 0x04 */ cFielder* pFielder;
     /* 0x08 */ float fAwardWorth;
@@ -42,7 +43,7 @@ struct PowerupAcquireEventData : public EventData
 struct PenaltyData : public EventData
 {
     PenaltyData() { }
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0x152; }
 
     /* 0x04 */ cFielder* pFouler;
     /* 0x08 */ cFielder* pFoulee;
@@ -52,7 +53,7 @@ struct PenaltyData : public EventData
 struct ShotAtGoalData : public EventData
 {
     ShotAtGoalData() { }
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0x14A; }
 
     /* 0x04 */ cPlayer* pShooter;
 }; // total size: 0x8
@@ -77,7 +78,7 @@ class ReceiveBallData : public EventData
 {
 public:
     ReceiveBallData() { }
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0x121; }
 
     /* 0x04 */ cPlayer* pReceiver;
     /* 0x08 */ eReceiveBallResult eResult;
@@ -86,7 +87,7 @@ public:
 class CollisionBobombData : public EventData
 {
 public:
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0xED; }
 
     /* 0x04 */ nlVector3 v3ExplosionLocation;
     /* 0x10 */ float fExplosionRadius;
@@ -108,7 +109,7 @@ public:
 class CollisionPlayerBananaData : public EventData
 {
 public:
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0xE2; }
 
     /* 0x04 */ cFielder* pPlayer;
     /* 0x08 */ cFielder* pThrower;
@@ -119,7 +120,7 @@ public:
 class CollisionBallShellData : public EventData
 {
 public:
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0xC1; }
 
     /* 0x04 */ nlVector3 v3CollisionVelocity;
 }; // total size: 0x10
@@ -127,7 +128,7 @@ public:
 class CollisionPlayerFreezeData : public EventData
 {
 public:
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0xD7; }
 
     /* 0x04 */ cFielder* pPlayer;
     /* 0x08 */ cFielder* pThrower;
@@ -138,7 +139,7 @@ public:
 class CollisionPowerupStatsData : public EventData
 {
 public:
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0x104; }
 
     /* 0x04 */ cFielder* pThrower;
     /* 0x08 */ s32 nThrowerPadID;
@@ -147,7 +148,7 @@ public:
 class CollisionPlayerShellData : public EventData
 {
 public:
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0xC9; }
 
     /* 0x04 */ cFielder* pPlayer;
     /* 0x08 */ cFielder* pThrower;
@@ -161,7 +162,7 @@ public:
 class CollisionBowserPlayerData : public EventData
 {
 public:
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0x65; }
 
     /* 0x04 */ cFielder* pFielder;
     /* 0x08 */ Bowser* pBowser;
@@ -170,7 +171,7 @@ public:
 class CollisionChainPlayerData : public EventData
 {
 public:
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0x5C; }
 
     /* 0x04 */ cFielder* pFielder;
     /* 0x08 */ ChainChomp* pChain;
@@ -179,7 +180,7 @@ public:
 class CollisionPlayerShootToScoreBallData : public EventData
 {
 public:
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0xB8; }
 
     /* 0x04 */ cFielder* pFielder;
     /* 0x08 */ cBall* pBall;
@@ -188,7 +189,7 @@ public:
 class CollisionPlayerBallData : public EventData
 {
 public:
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0xA7; }
 
     /* 0x04 */ cPlayer* pPlayer;
     /* 0x08 */ cBall* pBall;
@@ -199,17 +200,39 @@ public:
 class CollisionPlayerWallData : public EventData
 {
 public:
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0x6E; }
 
     /* 0x04 */ cPlayer* pPlayer;
     /* 0x08 */ nlVector3 contactPoint;
     /* 0x14 */ nlVector3 wallNormal;
 }; // total size: 0x20
 
+struct CollisionPowerupWallData : public EventData
+{
+    virtual u32 GetID() { return 0x9B; }
+
+    /* 0x04 */ PowerupBase* pPowerup;
+    /* 0x08 */ ePowerupSize eSize;
+    /* 0x0C */ ePowerUpType eType;
+    /* 0x10 */ nlVector3 position;
+    /* 0x1C */ nlVector3 normal;
+};
+
+struct CollisionBallGoalpostData : public EventData
+{
+    static const u32 ID = 0x10e;
+
+    virtual u32 GetID() { return ID; }
+
+    /* 0x4, */ nlVector3 v3CollisionVelocity;
+    /* 0x10 */ nlVector3 v3CollisionPosition;
+    /* 0x1C */ u32 uTeamIndex;
+}; // total size: 0x20
+
 class CollisionBallWallData : public EventData
 {
 public:
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0x78; }
 
     /* 0x04 */ cBall* pBall;
     /* 0x08 */ u8 bIsPerfect;
@@ -222,7 +245,7 @@ public:
 class CollisionBallGroundData : public EventData
 {
 public:
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0x8F; }
 
     /* 0x04 */ cBall* pBall;
     /* 0x08 */ u8 bIsShot;
@@ -234,7 +257,7 @@ public:
 class CollisionPlayerPlayerData : public EventData
 {
 public:
-    virtual u32 GetID();
+    virtual u32 GetID() { return 0x51; }
 
     /* 0x04 */ cPlayer* player1;
     /* 0x08 */ cPlayer* player2;

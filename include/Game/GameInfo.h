@@ -193,6 +193,10 @@ public:
     int GetNumHumanTeams();
     BaseCup* GetCup(GameInfoManager::eGameModes);
     bool IsUserQualified(GameInfoManager::eGameModes) const;
+    eGameModes GetCurrentMode() const
+    {
+        return mCurrentMode;
+    }
     void SetMode(GameInfoManager::eGameModes);
     unsigned long GetMemoryCardDataSize() const;
     void GetMemoryCardData(void*);

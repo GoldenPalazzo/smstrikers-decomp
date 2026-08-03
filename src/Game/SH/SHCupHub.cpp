@@ -368,7 +368,7 @@ CupHubScene::CupHubScene(bool doAnimations, bool playAllKnockoutAnimations)
     }
     else
     {
-        if (gameInfo->mCurrentMode == GameInfoManager::GM_BOWSER_CUP || gameInfo->mCurrentMode == GameInfoManager::GM_SUPER_BOWSER_CUP)
+        if (gameInfo->GetCurrentMode() == GameInfoManager::GM_BOWSER_CUP || gameInfo->GetCurrentMode() == GameInfoManager::GM_SUPER_BOWSER_CUP)
         {
             if ((round == -3 && mDoAnimations) || (round == -5 && gameInfo->GetResultsOfLastUserGame() == RESULT_USER_DOES_NOT_PLAYOFF_QUALIFY))
             {
@@ -415,7 +415,7 @@ CupHubScene::CupHubScene(bool doAnimations, bool playAllKnockoutAnimations)
 
     if (mAllKnockoutAnimations && !mDoAnimations)
     {
-        if (gameInfo->mCurrentMode == GameInfoManager::GM_BOWSER_CUP || gameInfo->mCurrentMode == GameInfoManager::GM_SUPER_BOWSER_CUP)
+        if (gameInfo->GetCurrentMode() == GameInfoManager::GM_BOWSER_CUP || gameInfo->GetCurrentMode() == GameInfoManager::GM_SUPER_BOWSER_CUP)
         {
             mCurrentKnockoutAnimationRound = -3;
             mHubState = HUB_KNOCKOUT4;
@@ -1183,11 +1183,6 @@ static inline float AddLeagueY(float lhs, float rhs)
 /**
  * Offset/Address/Size: 0x4018 | 0x800EDD74 | size: 0xE1C
  */
-static inline GameInfoManager::eGameModes IdentityBowserMode(GameInfoManager::eGameModes value)
-{
-    return value;
-}
-
 static inline TLTextInstance* IdentityBowserRowText(TLTextInstance* value)
 {
     return value;
@@ -1201,7 +1196,7 @@ void CupHubScene::CreateBowserLeague()
     extern char* TEAM_NAMES[8];
 
     GameInfoManager* const gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
-    GameInfoManager::eGameModes mode = IdentityBowserMode(gameInfo->mCurrentMode);
+    GameInfoManager::eGameModes mode = gameInfo->GetCurrentMode();
     u16 numTeams = gameInfo->GetNumPlayingTeams();
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     gameInfo->GetUserSelectedCupTeam();
@@ -1396,7 +1391,7 @@ void CupHubScene::CreateKnockout()
     extern char* TEAM_NAMES[8];
 
     GameInfoManager* const gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
-    GameInfoManager::eGameModes currentMode = gameInfo->mCurrentMode;
+    GameInfoManager::eGameModes currentMode = gameInfo->GetCurrentMode();
     u16 numTeams;
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     eTeamID loserTeams[4] = {
@@ -2514,7 +2509,7 @@ void CupHubScene::UpdateProgressIndicator()
     TLSlide* highlightSlide = highlight->GetActiveSlide();
     highlightSlide->m_uPlayMode = TLPM_LOOPING;
 
-    if (cursor.gameInfo->mCurrentMode == GameInfoManager::GM_BOWSER_CUP)
+    if (cursor.gameInfo->GetCurrentMode() == GameInfoManager::GM_BOWSER_CUP)
     {
         numRounds = 9;
         if (round == -3)
@@ -2526,7 +2521,7 @@ void CupHubScene::UpdateProgressIndicator()
             currentRound = 15;
         }
     }
-    else if (cursor.gameInfo->mCurrentMode == GameInfoManager::GM_SUPER_BOWSER_CUP)
+    else if (cursor.gameInfo->GetCurrentMode() == GameInfoManager::GM_SUPER_BOWSER_CUP)
     {
         numRounds = 16;
         if (round == -3)
@@ -2721,7 +2716,7 @@ void CupHubScene::UpdateProgressIndicator()
         {
             currentRound = 15;
         }
-        else if (cursor.gameInfo->mCurrentMode == GameInfoManager::GM_BOWSER_CUP)
+        else if (cursor.gameInfo->GetCurrentMode() == GameInfoManager::GM_BOWSER_CUP)
         {
             currentRound = 15;
         }
@@ -3174,7 +3169,7 @@ void CupHubScene::UpdateRoundMessage(bool hideMessage)
     BasicString<unsigned short, Detail::TempStringAllocator> unformatted;
     unsigned short roundWide[32] = { };
 
-    BasicGameInfo* pGame = gameInfo->mGameInfo[gameInfo->mCurrentMode];
+    BasicGameInfo* pGame = gameInfo->mGameInfo[gameInfo->GetCurrentMode()];
 
     if (gameInfo->IsInTournamentMode() && gameInfo->GetNumHumanTeams() > 1)
     {
