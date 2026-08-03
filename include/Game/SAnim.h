@@ -158,6 +158,11 @@ public:
         return m_pCallbackList;
     }
 
+    float GetDuration() const
+    {
+        return (float)m_nNumKeys / 30.0f;
+    }
+
     /* 0x08 */ unsigned int m_nNumKeys;
     /* 0x0C */ unsigned int m_nNumNodes;
     /* 0x10 */ unsigned int m_nNumMorphChannels;

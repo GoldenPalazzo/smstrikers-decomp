@@ -16,6 +16,7 @@
 #include "Game/CharacterTriggers.h"
 #include "Game/Game.h"
 #include "Game/GameTweaks.h"
+#include "Game/MathHelpers.h"
 #include "Game/Team.h"
 #include "Game/AI/FilteredRandom.h"
 #include "Game/FixedUpdateTask.h"
@@ -1942,15 +1943,19 @@ static inline float goalie_clamp_positive(float x)
 
 /**
  * Offset/Address/Size: 0x82F0 | 0x8004ADEC | size: 0x588
- * TODO: 98.28% match - floating-point register allocation mismatch in breakaway and desired-position calculations
+ * TODO: 99.89% match - the final blend has eight f1/f2 register-color mismatches
  */
 void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3& focus, unsigned short& ang, const nlVector3* pThreatPos)
 {
     cNet* pNet = m_pTeam->m_pNet;
     nlVector3 targetPos;
-    float breakaway;
     float goalX;
     nlVector3 desiredVec;
+    float goalieDist;
+    float goalLine;
+    float targetDist;
+    float fNetY;
+    nlVector3 desiredPos;
     float goalY = 0.0f;
 
     goalX = 0.5f * pNet->m_sideSign + pNet->GetGoalLineX();
@@ -1978,77 +1983,20 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
         targetPos = *pThreatPos;
     }
 
-    float goalLineX = cField::GetGoalLineX(1U);
-    float absTargetY = (float)fabs(targetPos.f.y);
-    float fNetY = cField::GetSidelineY(1U);
-    float three = 3.0f;
-    float limit = goalLineX - absTargetY * three / fNetY;
-
-    if (targetPos.f.x > limit)
-    {
-        targetPos.f.x = limit;
-    }
-    else if (targetPos.f.x < -limit)
-    {
-        targetPos.f.x = -limit;
-    }
+    ClampToGoalCone(targetPos, 3.0f);
 
     desiredVec.f.x = targetPos.f.x - goalX;
     desiredVec.f.y = targetPos.f.y - goalY;
     desiredVec.f.z = targetPos.f.z - goalY;
 
-    float goalLine = cField::GetGoalLineX(1U) - 0.5f;
-    float goalieDist = nlSqrt(desiredVec.f.x * desiredVec.f.x + desiredVec.f.y * desiredVec.f.y + desiredVec.f.z * desiredVec.f.z, true);
-    breakaway = 0.0f;
-    float targetDist = goalieDist - 0.5f;
+    goalLine = cField::GetGoalLineX(1U) - 0.5f;
+    goalieDist = nlSqrt(desiredVec.f.x * desiredVec.f.x + desiredVec.f.y * desiredVec.f.y + desiredVec.f.z * desiredVec.f.z, true);
+    targetDist = goalieDist - 0.5f;
+    goalieDist = IsSoloBreakaway();
 
-    cFielder* ownerFielder2;
-    cFielder* ownerFielder = g_pBall->GetOwnerFielder();
-    if (ownerFielder != NULL && !IsOnSameTeam(ownerFielder))
+    if (goalieDist > 0.8f)
     {
-        ownerFielder2 = g_pBall->GetOwnerFielder();
-        bool isShooting;
-        if (ownerFielder2 != NULL && !IsOnSameTeam(ownerFielder2) && ownerFielder2->m_eActionState == ACTION_SHOOT_TO_SCORE)
-        {
-            isShooting = true;
-        }
-        else
-        {
-            isShooting = false;
-        }
-        if (isShooting)
-        {
-            breakaway = 0.0f;
-        }
-        else
-        {
-            breakaway = OnBreakaway(ownerFielder);
-            if (breakaway > 0.8f)
-            {
-                int i;
-                cTeam* opponentTeam = ownerFielder->m_pTeam;
-                for (i = 0; i < 4; i++)
-                {
-                    cFielder* fielder = opponentTeam->GetFielder(i);
-                    if (fielder == ownerFielder)
-                        continue;
-                    cNet* myNet = m_pTeam->m_pNet;
-                    const nlVector3& fielderPos = fielder->m_v3Position;
-                    float absX = (float)fabs(fielderPos.f.x);
-                    if (fielder->m_v3Position.f.x * myNet->m_baseLocation.f.x > 0.0 && absX > 2.0f)
-                    {
-                        float factor = 1.0f - 0.5f * (absX - 2.0f) / 10.0f;
-                        factor = goalie_clamp_positive(factor);
-                        breakaway *= factor;
-                    }
-                }
-            }
-        }
-    }
-
-    if (breakaway > 0.8f)
-    {
-        goalieDist = Interpolate(2.5f, 8.0f, 5.0000005f * (breakaway - 0.8f));
+        goalieDist = Interpolate(2.5f, 8.0f, 5.0000005f * (goalieDist - 0.8f));
         mUrgency = URGENCY_MED;
     }
     else if (targetDist > 23.0f)
@@ -2087,57 +2035,80 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
     goalieDist += 0.5f;
     targetDist += 0.5f;
     float ratio = goalieDist / targetDist;
-    float desiredZ = ratio * desiredVec.f.z + goalY;
-    float desiredY = ratio * desiredVec.f.y + goalY;
-    float desiredX = ratio * desiredVec.f.x + goalX;
+    nlVec3Set(desiredPos,
+        ratio * desiredVec.f.x + goalX,
+        ratio * desiredVec.f.y + goalY,
+        ratio * desiredVec.f.z + goalY);
 
     if ((float)fabs(m_v3Position.f.x) > cField::GetGoalLineX(1U))
     {
-        float halfNetMinusOne = 0.5f * cNet::m_fNetWidth - 1.0f;
-        float negHalfNetMinusOne = -halfNetMinusOne;
-        if (desiredY >= negHalfNetMinusOne)
-        {
-        }
-        else
-        {
-            desiredY = negHalfNetMinusOne;
-        }
-        if (desiredY <= halfNetMinusOne)
-        {
-        }
-        else
-        {
-            desiredY = halfNetMinusOne;
-        }
-        desiredX = goalLine * pNet->m_sideSign;
-        desiredVec.f.x = desiredX - m_v3Position.f.x;
-        desiredVec.f.y = desiredY - m_v3Position.f.y;
-        desiredVec.f.z = desiredZ - m_v3Position.f.z;
+        fNetY = 0.5f * cNet::m_fNetWidth - 1.0f;
+        desiredPos.f.y = desiredPos.f.y >= -fNetY ? desiredPos.f.y : -fNetY;
+        desiredPos.f.y = desiredPos.f.y <= fNetY ? desiredPos.f.y : fNetY;
+        desiredPos.f.x = goalLine * pNet->m_sideSign;
+        desiredVec.f.x = desiredPos.f.x - m_v3Position.f.x;
+        desiredVec.f.y = desiredPos.f.y - m_v3Position.f.y;
+        desiredVec.f.z = desiredPos.f.z - m_v3Position.f.z;
     }
 
-    ang = (unsigned short)(10430.378f * nlATan2f(desiredVec.f.y, desiredVec.f.x));
+    ang = nlVector3ToAngle(desiredVec);
 
-    float negGoalLine = -goalLine;
-    if (desiredX >= negGoalLine)
-    {
-    }
-    else
-    {
-        desiredX = negGoalLine;
-    }
-    if (desiredX <= goalLine)
-    {
-    }
-    else
-    {
-        desiredX = goalLine;
-    }
+    desiredPos.f.x = goalie_clamp_min(desiredPos.f.x, -goalLine);
+    desiredPos.f.x = goalie_clamp_max(desiredPos.f.x, goalLine);
 
-    pos.f.x = 0.8f * desiredX + 0.2f * m_v3Position.f.x;
-    pos.f.y = 0.8f * desiredY + 0.2f * m_v3Position.f.y;
-    pos.f.z = 0.8f * desiredZ + 0.2f * m_v3Position.f.z;
+    float blendedX = 0.2f * m_v3Position.f.x;
+    blendedX += 0.8f * desiredPos.f.x;
+    pos.f.x = blendedX;
+    float blendedY = 0.2f * m_v3Position.f.y;
+    blendedY += 0.8f * desiredPos.f.y;
+    pos.f.y = blendedY;
+    float blendedZ = 0.2f * m_v3Position.f.z;
+    blendedZ += 0.8f * desiredPos.f.z;
+    pos.f.z = blendedZ;
     dir = desiredVec;
     focus = targetPos;
+}
+
+inline float Goalie::IsSoloBreakaway()
+{
+    float fScore = 0.0f;
+    cFielder* pFldr = g_pBall->GetOwnerFielder();
+    int i;
+    cFielder* pBuddy;
+
+    if (pFldr != NULL && !IsOnSameTeam(pFldr))
+    {
+        if (IsOpponentInSTS())
+        {
+            fScore = 0.0f;
+        }
+        else
+        {
+            fScore = OnBreakaway(pFldr);
+            if (fScore > 0.8f)
+            {
+                cTeam* pTeam = pFldr->GetTeam();
+                for (i = 0; i < 4; i++)
+                {
+                    pBuddy = pTeam->GetFielder(i);
+                    if (pBuddy == pFldr)
+                        continue;
+
+                    cNet* pNet = m_pTeam->m_pNet;
+                    const nlVector3& v3BuddyPos = pBuddy->m_v3Position;
+                    float fAbsX = (float)fabs(v3BuddyPos.f.x);
+                    if (pBuddy->m_v3Position.f.x * pNet->m_baseLocation.f.x > 0.0 && fAbsX > 2.0f)
+                    {
+                        float fFactor = 1.0f - 0.5f * (fAbsX - 2.0f) / 10.0f;
+                        fFactor = goalie_clamp_positive(fFactor);
+                        fScore *= fFactor;
+                    }
+                }
+            }
+        }
+    }
+
+    return fScore;
 }
 
 /**
@@ -2622,6 +2593,23 @@ bool Goalie::IsInsideGoalieBox(const nlVector3& rPos, float fXOffset, float fYOf
     return false;
 }
 
+inline bool Goalie::IsInsideNetArea(const nlVector3& v3Target)
+{
+    f32 fMargin = ((GoalieTweaks*)m_pTweaks)->fSaveIgnoreMargin;
+    double fAbsTargetY;
+    f32 fNetWidth;
+
+    if ((float)fabsf(v3Target.f.x) > (cField::GetGoalLineX(1U) - 1.0f)
+        && ((fNetWidth = cNet::m_fNetWidth), (fAbsTargetY = __fabs(v3Target.f.y)),
+            (float)fAbsTargetY < (0.5f * fNetWidth + fMargin))
+        && v3Target.f.z < (fMargin + cNet::m_fNetHeight))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 /**
  * Offset/Address/Size: 0x6FF0 | 0x80049AE4 | size: 0x268
  */
@@ -2650,31 +2638,11 @@ float Goalie::CheckForDelflectAwayFromNet()
             plane.f.w = -netX;
         }
 
-        float saveIgnoreMargin;
-        double absX;
-        float netWidth;
-        double absY;
         float result = FakeBallWorld::GetPredictedPlaneIntersectTime(plane, v3TargetPosition, localVelocity);
 
         if (!(result <= 0.0f))
         {
-            absX = __fabs(v3TargetPosition.f.x);
-            saveIgnoreMargin = ((GoalieTweaks*)m_pTweaks)->fSaveIgnoreMargin;
-
-            bool bInNet;
-            if ((float)absX > (cField::GetGoalLineX(1U) - 1.0f)
-                && ((netWidth = cNet::m_fNetWidth), (absY = __fabs(v3TargetPosition.f.y)),
-                    (float)absY < (0.5f * netWidth + saveIgnoreMargin))
-                && v3TargetPosition.f.z < (saveIgnoreMargin + cNet::m_fNetHeight))
-            {
-                bInNet = true;
-            }
-            else
-            {
-                bInNet = false;
-            }
-
-            if (bInNet)
+            if (IsInsideNetArea(v3TargetPosition))
                 goto shotTarget;
         }
 
@@ -2835,8 +2803,6 @@ static inline float clamp_lower(float x, float lo)
 
 /**
  * Offset/Address/Size: 0x69D8 | 0x800494D4 | size: 0x3A8
- * TODO: 99.44% match - FPR allocation in save-margin/goal-distance checks
- * and final target-time clamp result register.
  */
 bool Goalie::CheckForSTSAttack()
 {
@@ -2857,7 +2823,6 @@ bool Goalie::CheckForSTSAttack()
     if (bCanAttack)
     {
         f32 fAnimScale;
-        f32 fSaveIgnoreMargin;
         f32 ownerDistSq;
         f32 fCloseDistSq;
         f32 fMaxDistSq;
@@ -2866,35 +2831,26 @@ bool Goalie::CheckForSTSAttack()
 
         cFielder* pOppFielder = g_pBall->GetOwnerFielder();
 
-        cPN_SAnimController* pController = pOppFielder->m_pCurrentAnimController;
-        fAnimScale = (f32)pController->m_pSAnim->m_nNumKeys / 30.0f;
-        fCurrentAnimTime = fAnimScale * pController->m_fTime;
+        fAnimScale = pOppFielder->m_pCurrentAnimController->m_pSAnim->GetDuration();
+        fCurrentAnimTime = fAnimScale * pOppFielder->m_pCurrentAnimController->m_fTime;
         f32 fTriggerTime = fAnimScale * GetCurrentAnimTriggerTime(pOppFielder, 0x85181B83, 0);
 
-        f32 fPickupDuration = LooseBallAnims::mAttackSTSInfo.mfPickupTime * LooseBallAnims::mAttackSTSInfo.mfAnimDuration;
+        const LooseBallInfo* pInfo = &LooseBallAnims::mAttackSTSInfo;
+        f32 fPickupDuration = pInfo->mfPickupTime * pInfo->mfAnimDuration;
         if ((fCurrentAnimTime + fPickupDuration) < fTriggerTime)
         {
             do
             {
-                ownerDistSq = pOppFielder->m_v3Position.CalculateDistanceSquared2D(m_v3Position);
+                ownerDistSq = nlGetLengthSquared2D(
+                    pOppFielder->m_v3Position.f.x - m_v3Position.f.x,
+                    pOppFielder->m_v3Position.f.y - m_v3Position.f.y);
 
-                f32 fCloseDist = LooseBallAnims::mAttackSTSInfo.mfPickupDistance + ((GoalieTweaks*)m_pTweaks)->fSTSAttackCloseDistance;
-                f32 fMaxDist = LooseBallAnims::mAttackSTSInfo.mfPickupDistance + ((GoalieTweaks*)m_pTweaks)->fSTSAttackMaxDistance;
+                f32 fCloseDist = pInfo->mfPickupDistance + ((GoalieTweaks*)m_pTweaks)->fSTSAttackCloseDistance;
+                f32 fMaxDist = pInfo->mfPickupDistance + ((GoalieTweaks*)m_pTweaks)->fSTSAttackMaxDistance;
                 fCloseDistSq = fCloseDist * fCloseDist;
                 fMaxDistSq = fMaxDist * fMaxDist;
 
-                fSaveIgnoreMargin = ((GoalieTweaks*)m_pTweaks)->fSaveIgnoreMargin;
-
-                if (((float)fabsf(pOppFielder->m_v3Position.f.x) > (cField::GetGoalLineX(1U) - 1.0f))
-                    && ((float)fabsf(pOppFielder->m_v3Position.f.y) < (cNet::m_fNetWidth / 2.0f + fSaveIgnoreMargin))
-                    && (pOppFielder->m_v3Position.f.z < (fSaveIgnoreMargin + cNet::m_fNetHeight)))
-                {
-                    bInNetZone = true;
-                }
-                else
-                {
-                    bInNetZone = false;
-                }
+                bInNetZone = IsInsideNetArea(pOppFielder->m_v3Position);
 
                 nlVector3 v3GoalPos = m_pTeam->m_pNet->m_baseLocation;
 
@@ -2904,7 +2860,9 @@ bool Goalie::CheckForSTSAttack()
 
                 v3GoalPos.f.y = clampedY;
 
-                f32 distSqFielder = v3GoalPos.CalculateDistanceSquared2D(pOppFielder->m_v3Position);
+                f32 distSqFielder = nlGetLengthSquared2D(
+                    v3GoalPos.f.x - pOppFielder->m_v3Position.f.x,
+                    v3GoalPos.f.y - pOppFielder->m_v3Position.f.y);
                 f32 distSqGoalie = v3GoalPos.CalculateDistanceSquared2D(m_v3Position);
 
                 static FilteredRandomChance randgenSTS;
@@ -2935,20 +2893,10 @@ bool Goalie::CheckForSTSAttack()
 
                 f32 fEndTime = fAnimScale * GetCurrentAnimTriggerTime(pOppFielder, 0x2C8DABFA, 0);
                 f32 fStartTime = fEndTime - fCurrentAnimTime;
-                f32 fPickupDuration2 = LooseBallAnims::mAttackSTSInfo.mfPickupTime * LooseBallAnims::mAttackSTSInfo.mfAnimDuration;
-                f32 fTimeToImpact = fStartTime - fPickupDuration2;
+                f32 fPickupDuration2 = pInfo->mfPickupTime * pInfo->mfAnimDuration;
+                f32 fTimeToImpact = mfWaitTime = fStartTime - fPickupDuration2;
 
-                mfWaitTime = fTimeToImpact;
-                f32 fTargetTime;
-                if (fTimeToImpact <= 0.25f)
-                {
-                    fTargetTime = 0.25f;
-                }
-                else
-                {
-                    fTargetTime = fTimeToImpact;
-                }
-                mfTargetTime = fTargetTime;
+                mfTargetTime = fTimeToImpact >= 0.25f ? fTimeToImpact : 0.25f;
                 mpLooseBallInfo = &LooseBallAnims::mAttackSTSInfo;
                 CleanGoalieAction();
 
@@ -5700,6 +5648,26 @@ bool Goalie::CanInterceptPass()
 /**
  * Offset/Address/Size: 0x1810 | 0x8004430C | size: 0xB8
  */
+unsigned char Goalie::ClampToGoalCone(nlVector3& v3Position, float fDistFromEnd)
+{
+    float fGoalLineX = cField::GetGoalLineX(1U);
+    float fAbsY = (float)fabsf(v3Position.f.y);
+    float fSidelineY = cField::GetSidelineY(1U);
+    float fXLimit = fGoalLineX - ((fAbsY * fDistFromEnd) / fSidelineY);
+
+    if (v3Position.f.x > fXLimit)
+    {
+        v3Position.f.x = fXLimit;
+        return true;
+    }
+    if (v3Position.f.x < -fXLimit)
+    {
+        v3Position.f.x = -fXLimit;
+        return true;
+    }
+    return false;
+}
+
 int Goalie::ChooseRunAnim(short nAngle, const nlVector3& rTargetPos, float fThreshold)
 {
     float fDeltaX = rTargetPos.f.x - m_v3Position.f.x;

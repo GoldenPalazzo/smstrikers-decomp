@@ -156,6 +156,7 @@ public:
     void InitiatePanicGrab(cPlayer*);
     bool IsCloseToPlane(const nlVector3&, const nlVector3&, float);
     bool IsInsideGoalieBox(const nlVector3&, float, float);
+    inline bool IsInsideNetArea(const nlVector3&);
     float CheckForDelflectAwayFromNet();
     bool CheckForLooseBallShotInProgress();
     bool CheckForSTSAttack();
@@ -164,6 +165,7 @@ public:
     bool IsWithinPounceRange();
     bool IsOpponentBallCarrierInRange();
     bool IsOpponentInSTS();
+    inline float IsSoloBreakaway();
     bool IsPassThreat();
     void MakeSaveEvent(bool);
     void UpdateActionState(float);
@@ -192,6 +194,7 @@ public:
     float CalcSaveParameters(float, unsigned int, bool, bool);
     float CalcTimeToPlane();
     bool CanInterceptPass();
+    static unsigned char ClampToGoalCone(nlVector3&, float);
     int ChooseRunAnim(short, const nlVector3&, float);
     void ChooseSwatAnim(int);
     void DoPassRelease();

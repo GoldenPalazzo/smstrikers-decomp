@@ -111,6 +111,7 @@ public:
     cPlayer* DoFindBestPassTarget(bool bAllowLeadPass, bool bIsPerfectPass);
     bool IsCaptain() const;
     bool IsOnSameTeam(cPlayer*);
+    cTeam* GetTeam() const { return m_pTeam; }
     void SetAIPad(cAIPad* pPad);
     void PlayAttackReactionSounds(float);
     void PickupBall(cBall*);

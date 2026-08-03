@@ -3398,7 +3398,26 @@ char CallstackDumpFont[0x5E][0x24] = {
     0x00,
 };
 
-static inline void ProcessBackground()
+static inline void DimBackgroundColor(unsigned long& color, unsigned char b)
+{
+    unsigned long r;
+    unsigned long g;
+    unsigned char a;
+
+    a = color >> 24;
+    r = (color >> 16) & 0xFF;
+    g = (color >> 8) & 0xFF;
+    color = 0;
+    color |= a;
+    color <<= 8;
+    color |= (unsigned char)(r / 3);
+    color <<= 8;
+    color |= (unsigned char)(g / 3);
+    color <<= 8;
+    color |= (unsigned char)((unsigned long)b / 3);
+}
+
+static void ProcessBackground()
 {
     int i;
     int j;
@@ -3408,56 +3427,47 @@ static inline void ProcessBackground()
         for (j = 0; j < 0x280; j++)
         {
             unsigned long color;
-            unsigned long r;
-            unsigned long g;
-            unsigned long b;
-            u8 a;
+            unsigned char b;
 
             GXPeekARGB((unsigned short)j, (unsigned short)i, &color);
             b = color & 0xFF;
-            a = color >> 24;
-            r = (color >> 16) & 0xFF;
-            g = (color >> 8) & 0xFF;
-            color = 0;
-            color |= a;
-            color <<= 8;
-            color |= (u8)(r / 3);
-            color <<= 8;
-            color |= (u8)(g / 3);
-            color <<= 8;
-            color |= (u8)(b / 3);
+            DimBackgroundColor(color, b);
             GXPokeARGB((unsigned short)j, (unsigned short)i, color);
         }
     }
 }
 
-static inline void PutChar(int x, int y, int scale, char c, unsigned long color)
+static inline unsigned char FontBit(char* rowData, int column, int scale)
 {
-    int endx = x + scale;
-    int endy = y + 0x12;
+    if (column < 8)
+    {
+        return ((((signed char)rowData[0]) << column) >> 7) & 1;
+    }
+    return ((((signed char)rowData[1]) << (column + 3 - scale)) >> 7) & 1;
+}
+
+static void PutChar(int x, int y, int scale, char c, unsigned long color)
+{
+    char* charBitMap;
+    int endx;
+    int endy;
     int i;
-    char* charBitMap = CallstackDumpFont[c - 0x20];
+    char* rowData;
+    int j;
+    int column;
+
+    charBitMap = (char*)CallstackDumpFont + (c - 0x20) * 0x24;
+    endx = x + (unsigned short)scale;
+    endy = y + (unsigned short)(scale + 7);
 
     for (i = y; i < endy; i++)
     {
-        int j;
-        char* rowData = charBitMap + (((i - y)) * 2);
+        rowData = charBitMap + (i - y) * 2;
 
         for (j = x; j < endx; j++)
         {
-            int column = (j - x);
-            unsigned char bit;
-
-            if (column < 8)
-            {
-                bit = ((((signed char)rowData[0]) << column) >> 7) & 1;
-            }
-            else
-            {
-                bit = ((((signed char)rowData[1]) << (column - 8)) >> 7) & 1;
-            }
-
-            if (bit)
+            column = j - x;
+            if (FontBit(rowData, column, scale))
             {
                 GXPokeARGB((unsigned short)j, (unsigned short)i, color);
             }
@@ -3465,42 +3475,33 @@ static inline void PutChar(int x, int y, int scale, char c, unsigned long color)
     }
 }
 
-static inline int PutString(int x, int y, int scale, const char* str, unsigned long color)
+static int PutString(int x, int y, int scale, const char* str, unsigned long color)
 {
     int i = 0;
 
     while (str[i] != '\0')
     {
-        PutChar(x, y, scale, str[i], color);
-        x += scale;
+        PutChar(x + i * scale, y, scale, str[i], color);
         i++;
     }
 
-    return x;
+    return y + scale + 8;
 }
 
-static inline int DrawStatLine(int x, int y, const char* str)
+static inline int DrawStatLine(const char* str, int x, int y)
 {
     PutString(x, y, 0x0B, str, 0xFFFFFF88);
-    return y + 0x13;
+    y += 0x13;
+    return y;
 }
 
-/**
- * Offset/Address/Size: 0x2C | 0x801ACE90 | size: 0xB08
- */
-static void ErrorHandler(unsigned short err, OSContext* ctx, unsigned long dsisr, unsigned long dar)
+
+static int DisplayMessage(int y, int scale, const char* str)
 {
-    int callStackY;
-    unsigned long i;
-    unsigned long* p;
     unsigned short* frameBuffer;
-    char buf[60];
-    int y;
-    int x;
     int bufferLoop;
 
     ProcessBackground();
-
     frameBuffer = (unsigned short*)glxGetDisplayedBuffer();
     GXPokeColorUpdate(1);
     GXPokeBlendMode((GXBlendMode)0, (GXBlendFactor)1, (GXBlendFactor)0, (GXLogicOp)0xF);
@@ -3508,59 +3509,89 @@ static void ErrorHandler(unsigned short err, OSContext* ctx, unsigned long dsisr
     bufferLoop = 0;
     while (bufferLoop < 2)
     {
+        PutString(0x0F, y, scale, str, (unsigned long)-1);
+        GXCopyDisp(frameBuffer, 0);
+        GXDrawDone();
+        GXFlush();
+        bufferLoop++;
+    }
+
+    GXPokeColorUpdate(0);
+    VIWaitForRetrace();
+    VIWaitForRetrace();
+    VISetBlack(0);
+    VISetNextFrameBuffer(frameBuffer);
+    VIFlush();
+    VIWaitForRetrace();
+    return y + scale + 8;
+}
+
+/**
+ * Offset/Address/Size: 0x2C | 0x801ACE90 | size: 0xB08
+ */
+static void ErrorHandler(unsigned short error, OSContext* context, unsigned long dsisr, unsigned long dar)
+{
+    unsigned long i, *p;
+    unsigned short* frameBuffer;
+    int bufferLoop;
+    char buf[60];
+    int y, x, callStackY;
+
+    ProcessBackground();
+
+    frameBuffer = (unsigned short*)glxGetDisplayedBuffer();
+    GXPokeColorUpdate(1);
+    GXPokeBlendMode((GXBlendMode)0, (GXBlendFactor)1, (GXBlendFactor)0, (GXLogicOp)0xF);
+
+    for (bufferLoop = 0; bufferLoop < 2; bufferLoop++)
+    {
+        p = context->gpr;
         y = 0x0F;
-        if ((unsigned long)err == 2)
+        if (error == 2)
         {
-            nlSNPrintf(buf, 0x3C, "Instruction at 0x%x (read from SRR0) attempted to", ctx->srr0);
+            nlSNPrintf(buf, 0x3C, "Instruction at 0x%x (read from SRR0) attempted to", context->srr0);
             PutString(0x0F, 0x0F, 0x0B, buf, (unsigned long)-1);
 
             nlSNPrintf(buf, 0x3C, "access invalid address 0x%x (read from DAR)", dar);
-            PutString(0x0F, 0x22, 0x0B, buf, (unsigned long)-1);
-            y = 0x35;
+            y = PutString(0x0F, 0x22, 0x0B, buf, (unsigned long)-1);
         }
 
-        PutString(0x0F, y, 0x0B, "", (unsigned long)-1);
+        callStackY = PutString(0x0F, y, 0x0B, "", (unsigned long)-1);
 
-        callStackY = y + 0x13;
-        PutString(0x0F, callStackY, 0x0B, "Call Stack", (unsigned long)0xFFFF8888);
-
-        p = (unsigned long*)ctx->gpr[1];
-        y = callStackY + 0x13;
-        i = 0;
-        while ((p != 0) && (p != (unsigned long*)0xFFFFFFFF) && (i++ < 0x10))
-        {
+        y = PutString(0x0F, callStackY, 0x0B, "Call Stack", (unsigned long)0xFFFF8888);
+        for (p = (unsigned long*)p[1], i = 0;
+            (p != 0) &&
+            (p != (unsigned long*)0xFFFFFFFF) &&
+            (i++ < 0x10); p = (unsigned long*)p[0]) {
             nlSNPrintf(buf, 0x3C, "%08x", p[1]);
-            PutString(0x0F, y, 0x0B, buf, (unsigned long)0xFFFF8888);
-            p = (unsigned long*)p[0];
-            y += 0x13;
+            y = PutString(0x0F, y, 0x0B, buf, (unsigned long)0xFFFF8888);
         }
+
 
         x = (((int)nlStrLen(buf) + 4) * 0x0B) + 0x0F;
-        PutString(x, callStackY, 0x0B, "General Purpose Registers", 0xFF8888FF);
 
-        p = &ctx->gpr[0];
-        y = callStackY + 0x13;
-        i = 0;
-        while (i < 0x10)
+
+
+        y = PutString(x, callStackY, 0x0B, "General Purpose Registers", 0xFF8888FF), p = &context->gpr[0];
+        for (i = 0; i < 0x10; i++, p++)
         {
-            nlSNPrintf(buf, 0x3C, "r%-2d=%08x r%-2d=%08x", i, p[0], i + 0x10, p[0x10]);
-            PutString(x, y, 0x0B, buf, 0xFF8888FF);
-            i++;
-            y += 0x13;
-            p++;
+            nlSNPrintf(buf, 0x3C,
+                "r%-2d=%08x r%-2d=%08x",
+                i, p[0], i + 0x10, p[0x10]);
+            y = PutString(x, y, 0x0B, buf, 0xFF8888FF);
         }
+
 
         x += ((int)nlStrLen(buf) + 2) * 0x0B;
 
-        nlSNPrintf(buf, 0x3C, "LR=%08x", ctx->lr);
-        callStackY = DrawStatLine(x, callStackY, buf);
 
-        nlSNPrintf(buf, 0x3C, "CR=%08x", ctx->cr);
-        callStackY = DrawStatLine(x, callStackY, buf);
 
-        nlSNPrintf(buf, 0x3C, "SRR1=%08x", ctx->srr1);
-        callStackY = DrawStatLine(x, callStackY, buf);
-
+        nlSNPrintf(buf, 0x3C, "LR=%08x", context->lr);
+        callStackY = DrawStatLine(buf, x, callStackY);
+        nlSNPrintf(buf, 0x3C, "CR=%08x", context->cr);
+        callStackY = DrawStatLine(buf, x, callStackY);
+        nlSNPrintf(buf, 0x3C, "SRR1=%08x", context->srr1);
+        callStackY = DrawStatLine(buf, x, callStackY);
         nlSNPrintf(buf, 0x3C, "DSISR=%08x", dsisr);
         PutString(x, callStackY, 0x0B, buf, 0xFFFFFF88);
 
@@ -3568,7 +3599,6 @@ static void ErrorHandler(unsigned short err, OSContext* ctx, unsigned long dsisr
         GXDrawDone();
         GXFlush();
 
-        bufferLoop++;
     }
 
     GXPokeColorUpdate(0);
