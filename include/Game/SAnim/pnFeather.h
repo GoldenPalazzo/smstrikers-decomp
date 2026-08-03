@@ -71,4 +71,15 @@ inline cPN_Feather* AllocateFeather()
     return feather;
 }
 
+template <typename T>
+void cPN_Feather::Replay(T& frame)
+{
+    Replayable<0>(frame, (cPoseNode&)*this);
+    if (ReplayFrameTraits<T>::IsLoadFrame)
+    {
+        m_fBlendTime = 0.0f;
+        m_pFeatherWeights = NULL;
+    }
+}
+
 #endif // _PNFEATHER_H_

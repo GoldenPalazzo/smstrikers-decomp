@@ -34,4 +34,14 @@ public:
     /* 0x7C */ PhysicsNPC* mpPhysObj;
 }; // total size: 0x80
 
+inline float SkinAnimatedMovableNPC::GetHeadTilt() const
+{
+    return 0.0f;
+}
+
+inline float SkinAnimatedMovableNPC::GetHeadSpin() const
+{
+    return 0.0f;
+}
+
 #endif // _SKINANIMATEDMOVABLENPC_H_

@@ -15,7 +15,13 @@ static float g_fMotionBlurAlphaScale = 0.22f;
 
 static float g_fBallBlur;
 
+namespace
+{
+extern "C"
+{
 extern const unsigned long eOC_NO_LIGHT;
+}
+}
 
 static glModel* BallLightingCB(glModel* pModel, eGLView& view, unsigned long& uLayer);
 static glModel* BallBlurCB(glModel* pModel, eGLView& view, unsigned long& uLayer);
@@ -54,6 +60,82 @@ void DrawableBall::Blend(const float* alpha, const DrawableBall& a, const Drawab
     mPassTargetIndex = b.mPassTargetIndex;
 }
 
+inline void DrawableBall::RenderMotionBlur(DrawableObject& obj) const
+{
+    int i;
+    float t;
+    nlQuaternion q;
+    nlMatrix4 mView;
+    nlMatrix4 mWorld;
+    nlMatrix4 mSaved;
+    unsigned long uSavedFlags;
+
+    glViewGetViewMatrix(GLV_Unshadowed, mView);
+
+    const float blurOffsetScale = 0.0078125f;
+    float blurOffsetX = blurOffsetScale * mView.f.m13;
+    float blurOffsetY = blurOffsetScale * mView.f.m23;
+    float blurOffsetZ = blurOffsetScale * mView.f.m33;
+
+    u8 savedBallShadowDisabled = DrawableModel::sbBallShadowDisabled;
+    DrawableModel::sbBallShadowDisabled = 1;
+
+    mSaved = obj.GetWorldMatrix();
+    glModel* (*savedBlurCB)(glModel*, eGLView&, unsigned long&) = obj.m_CB;
+    obj.m_CB = BallBlurCB;
+
+    uSavedFlags = obj.m_uObjectCreationFlags;
+    obj.m_uObjectCreationFlags = uSavedFlags | eOC_NO_LIGHT;
+
+    for (i = 0; i < g_nMotionBlurDivs; i++)
+    {
+        t = (float)i / (float)g_nMotionBlurDivs;
+        g_fBallBlur = g_fMotionBlurAlphaScale * (1.0f - t) + g_fMotionBlurAlpha0;
+
+        nlQuatNLerp(q, mPrevOrientation, mOrientation, t);
+        obj.m_orientation = q;
+        obj.m_worldMatrixUpToDate = 0;
+
+        mWorld = obj.GetWorldMatrix();
+        mWorld.f.m41 += blurOffsetX;
+        mWorld.f.m42 += blurOffsetY;
+        mWorld.f.m43 += blurOffsetZ;
+        obj.m_worldMatrix = mWorld;
+
+        obj.Draw();
+    }
+
+    DrawableModel::sbBallShadowDisabled = savedBallShadowDisabled;
+    obj.m_worldMatrix = mSaved;
+    obj.m_CB = savedBlurCB;
+    obj.m_uObjectCreationFlags = uSavedFlags;
+}
+
+inline void DrawableBall::RenderLighting(DrawableObject& obj)
+{
+    u8 savedBallShadowDisabled = DrawableModel::sbBallShadowDisabled;
+    DrawableModel::sbBallShadowDisabled = 1;
+
+    glModel* (*savedLightingCB)(glModel*, eGLView&, unsigned long&) = obj.m_CB;
+    obj.m_CB = BallLightingCB;
+
+    unsigned long uSavedFlags = obj.m_uObjectCreationFlags;
+    obj.m_uObjectCreationFlags &= ~0x80;
+    obj.Draw();
+
+    DrawableModel::sbBallShadowDisabled = savedBallShadowDisabled;
+    obj.m_CB = savedLightingCB;
+    obj.m_uObjectCreationFlags = uSavedFlags;
+}
+
+namespace
+{
+extern "C"
+{
+const unsigned long eOC_NO_LIGHT = 0x80;
+}
+}
+
 /**
  * Offset/Address/Size: 0x1C0 | 0x8011DF10 | size: 0x47C
  * TODO: 98.87% match - remaining diffs are integer register allocation (r18 vs r24
@@ -61,15 +143,6 @@ void DrawableBall::Blend(const float* alpha, const DrawableBall& a, const Drawab
  */
 void DrawableBall::Render() const
 {
-    unsigned long savedBlurCreationFlags;
-    int i;
-    DrawableObject* pDrawableBall;
-    glModel* (*savedBlurCB)(glModel*, eGLView&, unsigned long&);
-    u8 savedBallShadowDisabled;
-    unsigned long savedLightingFlags;
-    glModel* (*savedLightingCB)(glModel*, eGLView&, unsigned long&);
-    u8 savedBallShadowDisabled2;
-
     DrawableObject* drawable = g_pBall->m_pDrawableBall;
     if (mVisible)
     {
@@ -84,75 +157,19 @@ void DrawableBall::Render() const
         return;
     }
 
-    pDrawableBall = g_pBall->m_pDrawableBall;
+    DrawableObject* pDrawableBall = g_pBall->m_pDrawableBall;
     pDrawableBall->m_orientation = mOrientation;
     pDrawableBall->m_worldMatrixUpToDate = 0;
     pDrawableBall->m_translation = mPosition;
     pDrawableBall->m_worldMatrixUpToDate = 0;
 
-    unsigned long savedCreationFlags = pDrawableBall->m_uObjectCreationFlags;
+    unsigned long uSavedFlags = pDrawableBall->m_uObjectCreationFlags;
     pDrawableBall->m_uObjectCreationFlags &= ~0x80;
     pDrawableBall->Draw();
-    pDrawableBall->m_uObjectCreationFlags = savedCreationFlags;
+    pDrawableBall->m_uObjectCreationFlags = uSavedFlags;
 
-    nlMatrix4 savedWorldMatrix;
-    nlMatrix4 blurMatrix;
-    nlMatrix4 viewMatrix;
-    glViewGetViewMatrix(GLV_Unshadowed, viewMatrix);
-
-    const float blurOffsetScale = 0.0078125f;
-    float blurOffsetX, blurOffsetY, blurOffsetZ;
-    blurOffsetZ = blurOffsetScale * viewMatrix.f.m33;
-    blurOffsetY = blurOffsetScale * viewMatrix.f.m23;
-    blurOffsetX = blurOffsetScale * viewMatrix.f.m13;
-
-    savedBallShadowDisabled = DrawableModel::sbBallShadowDisabled;
-    DrawableModel::sbBallShadowDisabled = 1;
-
-    savedWorldMatrix = pDrawableBall->GetWorldMatrix();
-    savedBlurCB = pDrawableBall->m_CB;
-    pDrawableBall->m_CB = BallBlurCB;
-
-    savedBlurCreationFlags = pDrawableBall->m_uObjectCreationFlags;
-    pDrawableBall->m_uObjectCreationFlags = savedBlurCreationFlags | eOC_NO_LIGHT;
-
-    for (i = 0; i < g_nMotionBlurDivs; i++)
-    {
-        float alpha = (float)i / (float)g_nMotionBlurDivs;
-        g_fBallBlur = g_fMotionBlurAlphaScale * (1.0f - alpha) + g_fMotionBlurAlpha0;
-
-        nlQuaternion orientation;
-        nlQuatNLerp(orientation, mPrevOrientation, mOrientation, alpha);
-        pDrawableBall->m_orientation = orientation;
-        pDrawableBall->m_worldMatrixUpToDate = 0;
-
-        blurMatrix = pDrawableBall->GetWorldMatrix();
-        blurMatrix.f.m41 += blurOffsetX;
-        blurMatrix.f.m42 += blurOffsetY;
-        blurMatrix.f.m43 += blurOffsetZ;
-        pDrawableBall->m_worldMatrix = blurMatrix;
-
-        pDrawableBall->Draw();
-    }
-
-    DrawableModel::sbBallShadowDisabled = savedBallShadowDisabled;
-    pDrawableBall->m_worldMatrix = savedWorldMatrix;
-    pDrawableBall->m_CB = savedBlurCB;
-    pDrawableBall->m_uObjectCreationFlags = savedBlurCreationFlags;
-
-    savedBallShadowDisabled2 = DrawableModel::sbBallShadowDisabled;
-    DrawableModel::sbBallShadowDisabled = 1;
-
-    savedLightingCB = pDrawableBall->m_CB;
-    pDrawableBall->m_CB = BallLightingCB;
-
-    savedLightingFlags = pDrawableBall->m_uObjectCreationFlags;
-    pDrawableBall->m_uObjectCreationFlags &= ~0x80;
-    pDrawableBall->Draw();
-
-    DrawableModel::sbBallShadowDisabled = savedBallShadowDisabled2;
-    pDrawableBall->m_CB = savedLightingCB;
-    pDrawableBall->m_uObjectCreationFlags = savedLightingFlags;
+    RenderMotionBlur(*pDrawableBall);
+    RenderLighting(*pDrawableBall);
 }
 
 /**

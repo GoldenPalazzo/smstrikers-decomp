@@ -17,6 +17,24 @@ class RenderSnapshot;
 class cPoseNode;
 class LoadFrame;
 
+template <typename T>
+struct ReplayFrameTraits
+{
+    enum
+    {
+        IsLoadFrame = false
+    };
+};
+
+template <>
+struct ReplayFrameTraits<LoadFrame>
+{
+    enum
+    {
+        IsLoadFrame = true
+    };
+};
+
 void nlBreak();
 
 class WriteByteStream
@@ -219,16 +237,14 @@ void Replayable(FrameType& frame, const T& proxy)
 {
     if (N == 0 || frame.mInterval == N)
     {
-        unsigned int value = proxy.Read(frame);
         if (N == 0)
         {
-            proxy.Transfer(frame, value);
+            proxy.Replay(frame);
         }
-        else if (frame.mInterval == N)
+        else
         {
-            proxy.TransferOR(frame, value);
+            proxy.template ReplayInterval<N>(frame);
         }
-        proxy.Apply(frame, value);
     }
 }
 

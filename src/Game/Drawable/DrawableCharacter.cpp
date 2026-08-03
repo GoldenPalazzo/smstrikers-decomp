@@ -4,10 +4,11 @@
 #include "Game/Team.h"
 #include "Game/AI/HeadTrack.h"
 #include "Game/PoseAccumulator.h"
+
+#include "Game/SAnim/pnSingleAxisBlender.h"
 #include "Game/SAnim/pnSAnimController.h"
 #include "Game/SAnim/pnFeather.h"
 #include "Game/SAnim/pnBlender.h"
-#include "Game/SAnim/pnSingleAxisBlender.h"
 template <int N>
 void Replayable(SaveFrame& frame, char typeId, cPoseNode*& poseNode)
 {
@@ -188,6 +189,7 @@ void Replayable<1>(LoadFrame& frame, char typeId, cPoseNode*& poseNode)
         }
     }
 }
+
 #include "Game/Render/RenderShadow.h"
 #include "Game/GameObjectLighting.h"
 #include "Game/WorldManager.h"
@@ -211,7 +213,7 @@ bool DrawableCharacter::sSTSLighting = false;
 unsigned char sShadowRenderingDisabled__17DrawableCharacter;
 
 const u32 GLTT_BumpLocal_bit = 1 << (int)GLTT_BumpLocal;
-static unsigned long GLTT_Detail_bit = 1UL << (int)GLTT_Detail;
+const u32 GLTT_Detail_bit = 1 << (int)GLTT_Detail;
 
 static unsigned long UnlitProgram = glGetProgram("3d unlit");
 static unsigned long LitProgram = glGetProgram("3d pointlit");
@@ -268,69 +270,6 @@ int charSizes[] = {
 
 static float g_fRadiusScale = 1.175f;
 static unsigned char g_bSloppyBounds = 1;
-static u32 debugColourValue = 0xFFFF4050;
-
-template <>
-FloatCompressor<0, 1, 15>::FloatCompressor(float& f)
-    : mF(f)
-{
-    FORCE_DONT_INLINE;
-}
-
-template <>
-FloatCompressor<0, 1, 7>::FloatCompressor(float& f)
-    : mF(f)
-{
-    FORCE_DONT_INLINE;
-}
-
-template <>
-inline void Replayable<1, LoadFrame, FloatCompressor<-128, 128, 8> >(LoadFrame& frame, const FloatCompressor<-128, 128, 8>& proxy)
-{
-    FORCE_DONT_INLINE;
-    if (frame.mInterval == 1)
-    {
-        unsigned int value = 0;
-        if (frame.mInterval == 1)
-        {
-            const char* cursor = frame.mStream.mStorage;
-            unsigned char mid = (unsigned char)cursor[1];
-            unsigned char hi = (unsigned char)cursor[2];
-            unsigned char lo = (unsigned char)cursor[0];
-            cursor += 3;
-            value = (unsigned int)mid << 8;
-            value |= (unsigned int)hi << 16;
-            frame.mStream.mStorage = cursor;
-            value |= (unsigned int)lo;
-        }
-        proxy.mF = (float)value / (float)(1 << 8);
-        proxy.mF += (float)(-128);
-    }
-}
-
-template <>
-inline void Replayable<1, LoadFrame, FloatCompressor<-512, 512, 8> >(LoadFrame& frame, const FloatCompressor<-512, 512, 8>& proxy)
-{
-    FORCE_DONT_INLINE;
-    if (frame.mInterval == 1)
-    {
-        unsigned int value = 0;
-        if (frame.mInterval == 1)
-        {
-            const char* cursor = frame.mStream.mStorage;
-            unsigned char mid = (unsigned char)cursor[1];
-            unsigned char hi = (unsigned char)cursor[2];
-            unsigned char lo = (unsigned char)cursor[0];
-            cursor += 3;
-            value = (unsigned int)mid << 8;
-            value |= (unsigned int)hi << 16;
-            frame.mStream.mStorage = cursor;
-            value |= (unsigned int)lo;
-        }
-        proxy.mF = (float)value / (float)(1 << 8);
-        proxy.mF += (float)(-512);
-    }
-}
 
 /**
  * Offset/Address/Size: 0x2C0 | 0x8011C5EC | size: 0x178
@@ -676,7 +615,7 @@ void DrawableCharacter::Render(cCharacter& character) const
     SendToGl(character);
 }
 
-static const float kBigFloat = 1e38f;
+static const float kBigFloat = 1e30f;
 
 /**
  * Offset/Address/Size: 0x22EC | 0x8011B19C | size: 0x3D8
@@ -911,10 +850,8 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
                     }
                     else
                     {
-                        u32 detailTexture = fxtex->m_uTexture;
-                        u32 detailBit = GLTT_Detail_bit;
-                        pPacket->state.texture[GLTT_Detail] = detailTexture;
-                        pPacket->state.texconfig = detailBit | pPacket->state.texconfig;
+                        pPacket->state.texture[GLTT_Detail] = fxtex->m_uTexture;
+                        pPacket->state.texconfig |= GLTT_Detail_bit;
                         glSetTextureState(pPacket->state.texturestate, (eGLTextureState)0xC, 0xF);
                     }
                 }
@@ -1027,7 +964,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
             }
 
             float sphereRadius = fRadius;
-            u32 debugColour = debugColourValue;
+            nlColour debugColour = { 0xFF, 0xFF, 0x40, 0x50 };
             void* pConstantColour;
             glModelPacket* pSpherePacket;
             unsigned long sphereHash = nlStringHash("debug/sphere");
@@ -1049,8 +986,8 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
             }
 
             pConstantColour = glUserAlloc(GLUD_ConstantColour, 4, false);
-            u32* pDebugColour = (u32*)glUserGetData(pConstantColour);
-            u8 alpha = ((u8*)&debugColour)[3];
+            nlColour* pDebugColour = (nlColour*)glUserGetData(pConstantColour);
+            u8 alpha = debugColour.c[3];
             *pDebugColour = debugColour;
             for (pSpherePacket = pSphereModel->packets; pSpherePacket < pSphereModel->packets + pSphereModel->numPackets; pSpherePacket++)
             {
@@ -1399,206 +1336,4 @@ void DrawableCharacter::RenderAllCharacters()
 cCharacter* DrawableCharacter::OnlyRenderingOneCharacter()
 {
     return spRenderOnlyThisCharacter;
-}
-
-/**
- * Offset/Address/Size: 0x482C | 0x8011D6EC | size: 0x74
- */
-template <>
-void cPN_SingleAxisBlender::Replay<LoadFrame>(LoadFrame& frame)
-{
-    FORCE_DONT_INLINE;
-    Replayable<0>(frame, (cPoseNode&)*this);
-    const char* cursor = frame.mStream.mStorage;
-    float scale = 1.0f / 128.0f;
-    unsigned char value = *cursor++;
-    frame.mStream.mStorage = cursor;
-    m_fSmoothedWeight = (float)value * scale;
-}
-
-/**
- * Offset/Address/Size: 0x48A0 | 0x8011D760 | size: 0x80
- */
-template <>
-void cPN_SingleAxisBlender::Replay<SaveFrame>(SaveFrame& frame)
-{
-    FORCE_DONT_INLINE;
-    Replayable<0>(frame, (cPoseNode&)*this);
-
-    float weight = m_fSmoothedWeight;
-    if (weight > 1.0f)
-        weight = 1.0f;
-    if (weight < 0.0f)
-        weight = 0.0f;
-    weight *= 128.0f;
-
-    char* cursor = frame.mStream.mStorage;
-    *cursor++ = (char)(unsigned int)weight;
-    frame.mStream.mStorage = cursor;
-}
-
-/**
- * Offset/Address/Size: 0x4920 | 0x8011D7E0 | size: 0xD8
- */
-template <>
-void cPN_SAnimController::Replay<LoadFrame>(LoadFrame& frame)
-{
-    FORCE_DONT_INLINE;
-    Replayable<0>(frame, (cPoseNode&)*this);
-
-    unsigned int value = 0;
-    const char* cursor = frame.mStream.mStorage;
-    unsigned char lo = (unsigned char)*cursor++;
-    value = (unsigned int)lo | ((unsigned int)(unsigned char)*cursor++ << 8);
-    frame.mStream.mStorage = cursor;
-    m_fTime = (float)value / (float)(1 << 15);
-
-    unsigned int animPtr = 0;
-    memcpy(&animPtr, frame.mStream.mStorage, sizeof(unsigned int));
-    frame.mStream.mStorage += sizeof(unsigned int);
-    m_bMirror = animPtr & 1;
-    m_pSAnim = (cSAnim*)(animPtr & ~1);
-    memcpy(&m_pAnimRetarget, frame.mStream.mStorage, sizeof(unsigned int));
-    frame.mStream.mStorage += sizeof(unsigned int);
-}
-
-/**
- * Offset/Address/Size: 0x49F8 | 0x8011D8B8 | size: 0xE4
- */
-template <>
-void cPN_SAnimController::Replay<SaveFrame>(SaveFrame& frame)
-{
-    FORCE_DONT_INLINE;
-    Replayable<0>(frame, (cPoseNode&)*this);
-
-    float time = m_fTime;
-    if (time > 1.0f)
-        time = 1.0f;
-    if (time < 0.0f)
-        time = 0.0f;
-    time *= 32768.0f;
-
-    unsigned int value = (unsigned int)time;
-    char* cursor = frame.mStream.mStorage;
-    *cursor++ = (char)value;
-    *cursor++ = (char)((value >> 8) & 0xFF);
-    frame.mStream.mStorage = cursor;
-
-    unsigned int animPtr = 0;
-    animPtr = (unsigned int)m_pSAnim;
-    if (m_bMirror)
-        animPtr |= 1;
-    memcpy(frame.mStream.mStorage, &animPtr, sizeof(unsigned int));
-    frame.mStream.mStorage += sizeof(unsigned int);
-    memcpy(frame.mStream.mStorage, &m_pAnimRetarget, sizeof(unsigned int));
-    frame.mStream.mStorage += sizeof(unsigned int);
-}
-
-/**
- * Offset/Address/Size: 0x4AEC | 0x8011D99C | size: 0x44
- */
-template <>
-void cPN_Feather::Replay<LoadFrame>(LoadFrame& frame)
-{
-    FORCE_DONT_INLINE;
-    Replayable<0>(frame, (cPoseNode&)*this);
-    m_fBlendTime = 0.0f;
-    m_pFeatherWeights = NULL;
-}
-
-/**
- * Offset/Address/Size: 0x4B30 | 0x8011D9E0 | size: 0x2C
- */
-template <>
-void cPN_Feather::Replay<SaveFrame>(SaveFrame& frame)
-{
-    FORCE_DONT_INLINE;
-    Replayable<0>(frame, (cPoseNode&)*this);
-}
-
-/**
- * Offset/Address/Size: 0x4B5C | 0x8011DA0C | size: 0x74
- */
-template <>
-void cPN_Blender::Replay<LoadFrame>(LoadFrame& frame)
-{
-    FORCE_DONT_INLINE;
-    Replayable<0>(frame, (cPoseNode&)*this);
-    const char* cursor = frame.mStream.mStorage;
-    float scale = 1.0f / 128.0f;
-    unsigned char value = *cursor++;
-    frame.mStream.mStorage = cursor;
-    m_fBlendTime = (float)value * scale;
-}
-
-/**
- * Offset/Address/Size: 0x4CC0 | 0x8011DA80 | size: 0x234
- * TODO: 87.8% match - MWCC inlines FloatCompressor<0,1,7> and <0,1,15>
- * constructors despite explicit specialization declarations in Replay.h;
- * target calls __ct__ externally. This cascades into r26 not allocated for
- * type and r29/r31 swap.
- */
-template <>
-void cPN_Blender::Replay<SaveFrame>(SaveFrame& frame)
-{
-    int i;
-    cPoseNode* child;
-    char type;
-
-    memcpy(frame.mStream.mStorage, &m_numChildren, sizeof(int));
-    frame.mStream.mStorage += sizeof(int);
-
-    for (i = 0; i < m_numChildren; i++)
-    {
-        child = m_children[i];
-        bool hasChild = (child != 0);
-        memcpy(frame.mStream.mStorage, &hasChild, 1);
-        frame.mStream.mStorage += 1;
-        if (hasChild)
-        {
-            type = (char)child->GetType();
-            if (type < 0 || type > 4)
-                nlBreak();
-            memcpy(frame.mStream.mStorage, &type, 1);
-            frame.mStream.mStorage += 1;
-            if (type < 0 || type > 3)
-                nlBreak();
-            if (type == 0)
-            {
-                Replayable<0>(frame, (cPoseNode&)*child);
-                Replayable<0>(frame, FloatCompressor<0, 1, 7>(((cPN_Blender*)child)->m_fBlendTime));
-            }
-            else if (type == 1)
-            {
-                Replayable<0>(frame, (cPoseNode&)*child);
-            }
-            else if (type == 2)
-            {
-                Replayable<0>(frame, (cPoseNode&)*child);
-                Replayable<0>(frame, FloatCompressor<0, 1, 15>(((cPN_SAnimController*)child)->m_fTime));
-                unsigned int animPtr = 0;
-                animPtr = (unsigned int)((cPN_SAnimController*)child)->m_pSAnim;
-                if (((cPN_SAnimController*)child)->m_bMirror)
-                    animPtr |= 1;
-                Replayable<0>(frame, animPtr);
-                Replayable<0>(frame, (unsigned int&)((cPN_SAnimController*)child)->m_pAnimRetarget);
-            }
-            else if (type == 3)
-            {
-                Replayable<0>(frame, (cPoseNode&)*child);
-                Replayable<0>(frame, FloatCompressor<0, 1, 7>(((cPN_SingleAxisBlender*)child)->m_fSmoothedWeight));
-            }
-        }
-    }
-
-    float blendTime = m_fBlendTime;
-    if (blendTime > 1.0f)
-        blendTime = 1.0f;
-    if (blendTime < 0.0f)
-        blendTime = 0.0f;
-    blendTime *= 128.0f;
-
-    char* cursor = frame.mStream.mStorage;
-    *cursor++ = (char)(unsigned int)blendTime;
-    frame.mStream.mStorage = cursor;
 }

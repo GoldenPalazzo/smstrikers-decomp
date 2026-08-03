@@ -68,4 +68,11 @@ inline cPN_Blender* CreateAndAssignBlender(const cPoseNode* child0, const cPoseN
     return new ((u8*)blender) cPN_Blender((cPoseNode*)child0, (cPoseNode*)child1, blendDuration);
 }
 
+template <typename T>
+void cPN_Blender::Replay(T& frame)
+{
+    frame.template Replayable<0>((cPoseNode&)*this);
+    Replayable<0>(frame, FloatCompressor<0, 1, 7>(m_fBlendTime));
+}
+
 #endif // _PNBLENDER_H_

@@ -53,4 +53,11 @@ inline cPN_SingleAxisBlender* AllocateSingleAxisBlender()
     return pSAB;
 }
 
+template <typename T>
+void cPN_SingleAxisBlender::Replay(T& frame)
+{
+    Replayable<0>(frame, (cPoseNode&)*this);
+    Replayable<0>(frame, FloatCompressor<0, 1, 7>(m_fSmoothedWeight));
+}
+
 #endif // _PNSINGLEAXISBLENDER_H_

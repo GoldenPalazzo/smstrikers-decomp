@@ -46,4 +46,9 @@ public:
     /* 0x58 */ glModel* mpLastModel;                  // offset 0x58, size 0x4
 }; // total size: 0x5C
 
+inline SkinAnimatedNPC_Type SkinAnimatedNPC::GetSkinAnimatedNPC_Type() const
+{
+    return SkinAnimatedNPC_BASE;
+}
+
 #endif // _SKINANIMATEDNPC_H_
