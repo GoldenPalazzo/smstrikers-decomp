@@ -7,65 +7,12 @@
 const float FEInGameMessengerManager::TIMESTATE_TIMES[4] = { 0.0f, 0.3f, 0.6f, 0.85f };
 
 /**
- * Offset/Address/Size: 0x0 | 0x800FF91C | size: 0x140
+ * Offset/Address/Size: 0x554 | 0x800FFE70 | size: 0x104
  */
-void FEInGameMessengerManager::Update(float fDeltaT)
+FEInGameMessengerManager::~FEInGameMessengerManager()
 {
-    if (m_waitingToDisplay)
-    {
-        m_waitedToDisplay += fDeltaT;
-    }
-
-    float normTime = g_pGame->GetNormalizedGameTime();
-    eTimeStates newState = m_curTimeState;
-
-    while (newState + 1 != TS_NUMTIMESTATES)
-    {
-        if (normTime >= TIMESTATE_TIMES[newState + 1])
-        {
-            newState = (eTimeStates)(newState + 1);
-        }
-        else
-        {
-            break;
-        }
-    }
-
-    if (newState != m_curTimeState)
-    {
-        EnterNewTimeState(newState);
-    }
-
-    if (m_messageQueue.m_Head == NULL)
-    {
-        return;
-    }
-
-    if (m_messenger->IsMessengerOpen())
-    {
-        return;
-    }
-
-    if (!(m_waitedToDisplay > 25.f))
-    {
-        if (g_pBall->GetOwnerGoalie() == NULL)
-        {
-            return;
-        }
-    }
-
-    ListEntry<eInGameMessages>* entry = nlListRemoveStart<ListEntry<eInGameMessages> >(&m_messageQueue.m_Head, &m_messageQueue.m_Tail);
-    eInGameMessages msg;
-    eInGameMessages* pMsg = &msg;
-    if (pMsg != NULL)
-    {
-        msg = entry->entry;
-    }
-    delete entry;
-
-    m_messenger->SetDisplayMessage(m_messageList[(int)msg]);
-    m_messenger->OpenMessenger();
-    m_waitingToDisplay = false;
+    Function<FnVoidVoid> cb;
+    m_messenger->SetMessageFinishedCB(cb);
 }
 
 /**
@@ -154,12 +101,65 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
 }
 
 /**
- * Offset/Address/Size: 0x554 | 0x800FFE70 | size: 0x104
+ * Offset/Address/Size: 0x0 | 0x800FF91C | size: 0x140
  */
-FEInGameMessengerManager::~FEInGameMessengerManager()
+void FEInGameMessengerManager::Update(float fDeltaT)
 {
-    Function<FnVoidVoid> cb;
-    m_messenger->SetMessageFinishedCB(cb);
+    if (m_waitingToDisplay)
+    {
+        m_waitedToDisplay += fDeltaT;
+    }
+
+    float normTime = g_pGame->GetNormalizedGameTime();
+    eTimeStates newState = m_curTimeState;
+
+    while (newState + 1 != TS_NUMTIMESTATES)
+    {
+        if (normTime >= TIMESTATE_TIMES[newState + 1])
+        {
+            newState = (eTimeStates)(newState + 1);
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    if (newState != m_curTimeState)
+    {
+        EnterNewTimeState(newState);
+    }
+
+    if (m_messageQueue.m_Head == NULL)
+    {
+        return;
+    }
+
+    if (m_messenger->IsMessengerOpen())
+    {
+        return;
+    }
+
+    if (!(m_waitedToDisplay > 25.f))
+    {
+        if (g_pBall->GetOwnerGoalie() == NULL)
+        {
+            return;
+        }
+    }
+
+    ListEntry<eInGameMessages>* entry = nlListRemoveStart<ListEntry<eInGameMessages> >(&m_messageQueue.m_Head, &m_messageQueue.m_Tail);
+    eInGameMessages msg;
+    eInGameMessages* pMsg = &msg;
+    if (pMsg != NULL)
+    {
+        msg = entry->entry;
+    }
+    delete entry;
+
+    m_messenger->SetDisplayMessage(m_messageList[(int)msg]);
+    m_messenger->OpenMessenger();
+    m_waitingToDisplay = false;
 }
 
 // /**
