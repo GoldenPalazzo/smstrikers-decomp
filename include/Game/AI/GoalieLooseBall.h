@@ -19,6 +19,8 @@ enum eLooseBallAnimType
 class LooseBallInfo
 {
 public:
+    void InitInstance(cPlayer* pPlayer, int nAnimID, eLooseBallAnimType eAnimType);
+
     /* 0x00 */ nlVector3 mv3PickupPos;
     /* 0x0C */ int mnAnimID;
     /* 0x10 */ eLooseBallAnimType mAnimType;
@@ -31,11 +33,12 @@ public:
 class LooseBallAnims
 {
 public:
-    static void Init(cPlayer*);
+    static void Init(cPlayer* pPlayer);
     static void Destroy();
-    static const LooseBallInfo* FindLooseBallAnim(const nlVector3&, bool);
+    static LooseBallInfo* GetLooseBallAnim(unsigned int uIndex);
+    static const LooseBallInfo* FindLooseBallAnim(const nlVector3& v3LocalBallPosition, bool bFrontOnly);
     static const LooseBallInfo* GetSwatSTSInfo(int nSide);
-    static const LooseBallInfo* GetDesperationInfo(unsigned int);
+    static const LooseBallInfo* GetDesperationInfo(unsigned int type);
 
     static LooseBallInfo* mpLooseBallInfo;
     static unsigned int muNumLooseBallAnims;
