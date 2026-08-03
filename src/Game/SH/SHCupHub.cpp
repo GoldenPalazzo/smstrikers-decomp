@@ -1261,23 +1261,8 @@ void CupHubScene::CreateBowserLeague()
             pSlide,
             InlineHasher(nlStringLowerHash(HUBstandingsRowNames[row]))));
 
-        GameInfoManager* const rowGameInfo = nlSingleton<GameInfoManager>::s_pInstance;
         eTeamID currentTeam = mAllTeamStats[standingsIndices[row]].mTeamIndex;
-        eTeamID rowUserTeam = rowGameInfo->GetUserSelectedCupTeam();
-        bool useHighlightColour;
-
-        if (!(rowGameInfo->mCurrentCup->mHumanTeams & (1 << currentTeam)))
-        {
-            useHighlightColour = false;
-        }
-        else if (rowGameInfo->GetNumHumanTeams() == 1 && rowUserTeam == currentTeam)
-        {
-            useHighlightColour = true;
-        }
-        else
-        {
-            useHighlightColour = false;
-        }
+        unsigned char useHighlightColour = IsUserRow(currentTeam);
 
         if (useHighlightColour)
         {
