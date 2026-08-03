@@ -1390,8 +1390,8 @@ void CupHubScene::CreateKnockout()
     extern const char* HUB_KNOCKOUT8_SLIDE_NAME;
     extern char* TEAM_NAMES[8];
 
-    GameInfoManager* const gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
-    GameInfoManager::eGameModes currentMode = gameInfo->GetCurrentMode();
+    GameInfoManager* gameInfo;
+    GameInfoManager::eGameModes currentMode = (gameInfo = nlSingleton<GameInfoManager>::Instance())->GetCurrentMode();
     u16 numTeams;
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     eTeamID loserTeams[4] = {
@@ -1405,7 +1405,6 @@ void CupHubScene::CreateKnockout()
         eTeamID knockoutTeams[8];
         nlColour currentColour;
     } knockoutLocals;
-    int i;
     int round;
     TLComponentInstance* starComp;
     TLTextInstance* pTextInstance;
@@ -1415,6 +1414,7 @@ void CupHubScene::CreateKnockout()
     nlColour colour;
     TLComponentInstance* pXComponent;
     TLTextInstance* pText;
+    int i;
     BasicGameInfo* pGame;
 
     starComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
@@ -1536,8 +1536,7 @@ void CupHubScene::CreateKnockout()
 
         for (i = 0; i < numTeams; i++)
         {
-            eTeamID currentTeam = knockoutLocals.knockoutTeams[i];
-            bool useHighlightColour = IsUserRow(currentTeam);
+            bool useHighlightColour = IsUserRow(knockoutLocals.knockoutTeams[i]);
 
             if (useHighlightColour)
             {
@@ -1570,9 +1569,7 @@ void CupHubScene::CreateKnockout()
                 pComp->GetActiveSlide(),
                 InlineHasher(nlStringLowerHash("theXfactor")));
 
-            eTeamID loserTeam = loserTeams[i / 2];
-
-            if ((loserTeam == knockoutLocals.knockoutTeams[i]) && mHasHumanTeamPlayed)
+            if ((loserTeams[i / 2] == knockoutLocals.knockoutTeams[i]) && mHasHumanTeamPlayed)
             {
                 pXComponent->m_bVisible = true;
             }
@@ -1613,7 +1610,7 @@ void CupHubScene::CreateKnockout()
                 pComp->GetActiveSlide(),
                 InlineHasher(nlStringLowerHash("theXfactor")));
 
-            if ((loserTeam == knockoutLocals.knockoutTeams[i]) && mHasHumanTeamPlayed)
+            if ((loserTeams[i / 2] == knockoutLocals.knockoutTeams[i]) && mHasHumanTeamPlayed)
             {
                 pXComponent->m_bVisible = true;
             }
