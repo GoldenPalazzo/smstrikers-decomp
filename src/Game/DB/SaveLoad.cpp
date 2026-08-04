@@ -200,8 +200,13 @@ void LoadMemoryCardIconData()
 
 /**
  * Offset/Address/Size: 0x355C | 0x8018CEB8 | size: 0x1C4
- * TODO: 98.67% match - Slot/Result move order, early li r6, and
- * header-size register flow still differ.
+ * TODO: 97.57% match - size and instruction schedule are exact; the residual is
+ * pure register colouring in the header-size block. Retail keeps BannerFormat in
+ * r10 (we get r7) and materialises the shared 0x200 constant after the
+ * IconFormat load, so that load reads through the still-live incoming r6 rather
+ * than r30. The two are one coupled web: every source form that frees r6 early
+ * drops BannerFormat to r7, and every form that keeps r6 live routes all four
+ * IconCfg accesses through it.
  */
 unsigned long LoadCallbacks::LoadIconDataDoneCB(unsigned long Slot, long Result, void* pUserData)
 {
@@ -209,14 +214,15 @@ unsigned long LoadCallbacks::LoadIconDataDoneCB(unsigned long Slot, long Result,
     MemCard::MC_FILE* pFile = (MemCard::MC_FILE*)pUserData;
     int bannerFmt = pFile->IconCfg.BannerFormat;
     s8 iconFmt = pFile->IconCfg.IconFormat;
-    u8 iconCount = pFile->IconCfg.IconCount;
+    int iconPixels = iconFmt << 10;
 
-    u32 headerSize = 0;
+    int headerSize = 0;
     headerSize += ((bannerFmt == 1) ? 0x200 : 0);
     headerSize += bannerFmt * 0xC00;
     u32 iconClut = ((iconFmt == 1) ? 0x200 : 0);
-    headerSize = ((iconFmt << 10) * iconCount) + headerSize;
-    headerSize = iconClut + headerSize;
+    int iconTotal = pFile->IconCfg.IconCount * iconPixels;
+    headerSize = iconTotal + headerSize;
+    headerSize = headerSize + iconClut;
     headerSize += 0x40;
     pFile->IconCfg.HeaderSize = headerSize;
 

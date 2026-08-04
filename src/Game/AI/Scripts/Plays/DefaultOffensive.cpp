@@ -62,9 +62,6 @@ FuzzyVariant Fuzzy::AbortOffensivePlay(cDecisionEntity*)
     return bestValue;
 }
 
-/**
- * Offset/Address/Size: 0x51D8 | 0x80091C64 | size: 0x19C4
- */
 static inline float OffensiveDanger(const FuzzyVariant& value)
 {
     return value.mData.f;
@@ -104,6 +101,9 @@ static inline float NotUserControlled(cTeam* team)
     return value;
 }
 
+/**
+ * Offset/Address/Size: 0x51D8 | 0x80091C64 | size: 0x19C4
+ */
 FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
 {
     float fConfidence = 1.0f;
@@ -817,10 +817,7 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
                         {
                             fBestConfidence = fConfidence;
                             bestValue = FuzzyVariant(WeightedScore3(
-                                fLosing, 0.25f,
-                                InFrontOfTheirNet(g_pScriptCurrentFielder), 0.2f,
-                                max_float(fOpen, max_float(fNotFarToTheirNet,
-                                    OffensiveDanger(GoodToShoot(g_pScriptCurrentFielder)))), 0.55f));
+                                fLosing, 0.25f, InFrontOfTheirNet(g_pScriptCurrentFielder), 0.2f, max_float(fOpen, max_float(fNotFarToTheirNet, OffensiveDanger(GoodToShoot(g_pScriptCurrentFielder)))), 0.55f));
                         }
                     }
 
@@ -836,9 +833,7 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
                         {
                             fBestConfidence = fConfidence;
                             bestValue = FuzzyVariant(WeightedScore2(
-                                InFrontOfTheirNet(g_pScriptCurrentFielder), 0.3f,
-                                max_float(fOpen, max_float(fNotFarToTheirNet,
-                                    OffensiveDanger(GoodToShoot(g_pScriptCurrentFielder)))), 0.7f));
+                                InFrontOfTheirNet(g_pScriptCurrentFielder), 0.3f, max_float(fOpen, max_float(fNotFarToTheirNet, OffensiveDanger(GoodToShoot(g_pScriptCurrentFielder)))), 0.7f));
                         }
                     }
                 }
@@ -1481,17 +1476,17 @@ FuzzyVariant Fuzzy::GetPowerupTargetOffensive(cTeam* TheTeam)
             float fFar = FarTo((cPlayer*)g_pScriptCurrentFielder, (cPlayer*)theOpponent);
             float fLowWeight = 0.2f;
             float fHighWeight = 0.3f;
-            float fTrueConfidence2 = fMarking * fHighWeight + (fDownfield * fHighWeight + ((1.0f - fFar) * fLowWeight + fClosing * fLowWeight));
-            float fFalseConfidence2 = 1.0f - fTrueConfidence2;
-            float fMin2 = (fTrueConfidence2 <= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2;
-            float fMax2 = (fTrueConfidence2 >= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2;
-            float fBranchRatio2 = fMin2 / fMax2;
-            if (fTrueConfidence2 > 0.0f)
+            float fMarkingConfidence = fMarking * fHighWeight + (fDownfield * fHighWeight + ((1.0f - fFar) * fLowWeight + fClosing * fLowWeight));
+            float fNotMarkingConfidence = 1.0f - fMarkingConfidence;
+            float fMarkingMin = (fMarkingConfidence <= fNotMarkingConfidence) ? fMarkingConfidence : fNotMarkingConfidence;
+            float fMarkingMax = (fMarkingConfidence >= fNotMarkingConfidence) ? fMarkingConfidence : fNotMarkingConfidence;
+            float fMarkingBranchRatio = fMarkingMin / fMarkingMax;
+            if (fMarkingConfidence > 0.0f)
             {
                 SaveConfidence PushDOM2(&fConfidence);
-                fConfidence = (fConfidence <= fTrueConfidence2) ? fConfidence : fTrueConfidence2;
-                if (fConfidence < fTrueConfidence2 && fTrueConfidence2 < 0.5f)
-                    fConfidence = fConfidence * fBranchRatio2;
+                fConfidence = (fConfidence <= fMarkingConfidence) ? fConfidence : fMarkingConfidence;
+                if (fConfidence < fMarkingConfidence && fMarkingConfidence < 0.5f)
+                    fConfidence = fConfidence * fMarkingBranchRatio;
                 if (fConfidence > fBestConfidence)
                 {
                     fBestConfidence = fConfidence;
