@@ -496,10 +496,16 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
 
     pFile = m_pFileCB;
 
-    unsigned long headerSize = ((pIconConfig->BannerFormat == 1) ? 0x200 : 0);
-    headerSize = headerSize + (pIconConfig->BannerFormat * 0xC00);
-    headerSize = headerSize + (pIconConfig->IconCount * ((s8)pIconConfig->IconFormat << 10));
-    headerSize = headerSize + (((s8)pIconConfig->IconFormat == 1) ? 0x200 : 0);
+    s8 iconFmt = pIconConfig->IconFormat;
+    int iconPixels = iconFmt << 10;
+    int bannerFmt = pIconConfig->BannerFormat;
+
+    int bannerHeader = 0;
+    bannerHeader += ((bannerFmt == 1) ? 0x200 : 0);
+    bannerHeader += bannerFmt * 0xC00;
+    u32 iconClut = ((iconFmt == 1) ? 0x200 : 0);
+    int headerSize = bannerHeader + (pIconConfig->IconCount * iconPixels);
+    headerSize = headerSize + iconClut;
     pIconConfig->HeaderSize = headerSize + 0x40;
 
     MC_FILE* mcFile = m_pFileCB;
@@ -612,15 +618,15 @@ long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned 
         s8 iconFmt;
         MC_FILE* file = pFile;
         iconFmt = file->IconCfg.IconFormat;
-        u8 iconCount = file->IconCfg.IconCount;
+        int iconPixels = iconFmt << 10;
         int bannerFmt = file->IconCfg.BannerFormat;
 
-        u32 headerSize = 0;
-        headerSize += ((bannerFmt == 1) ? 0x200 : 0);
-        headerSize += bannerFmt * 0xC00;
+        int bannerHeader = 0;
+        bannerHeader += ((bannerFmt == 1) ? 0x200 : 0);
+        bannerHeader += bannerFmt * 0xC00;
         u32 iconClut = ((iconFmt == 1) ? 0x200 : 0);
-        headerSize = ((iconFmt << 10) * iconCount) + headerSize;
-        headerSize = iconClut + headerSize;
+        int headerSize = bannerHeader + (file->IconCfg.IconCount * iconPixels);
+        headerSize = headerSize + iconClut;
         headerSize += 0x40;
         file->IconCfg.HeaderSize = headerSize;
 
