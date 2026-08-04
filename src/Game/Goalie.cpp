@@ -5746,7 +5746,12 @@ static inline float GetGoaliePassDistance(float dx, float dy)
 
 /**
  * Offset/Address/Size: 0xF30 | 0x80043A2C | size: 0x8A4
- * TODO: 99.64% - pass-target angle conversion and shooter-distance FP scheduling remain.
+ * The volatile read of m_v3Position.f.x in the pass-validity test below is
+ * match-only scaffolding that is still load-bearing: it forces the reload retail
+ * performs at +0x2c4, and removing it lets MWCC keep the member in f2 across the
+ * clamp instead, costing 51 rows. The 100%-exact sibling InitActionPass runs the
+ * identical fabs test with no volatile, because there it is the first read of
+ * m_v3Position.f.x and has nothing to CSE with. See smstrikers-notes docs/0070.
  */
 void Goalie::DoPassRelease()
 {
@@ -5795,34 +5800,9 @@ void Goalie::DoPassRelease()
                 float dy = mpPassTarget->m_v3Position.f.y - m_v3Position.f.y;
                 float dx = mpPassTarget->m_v3Position.f.x - m_v3Position.f.x;
                 u16 aTarget = (u16)(s32)(10430.378f * nlATan2f(dy, dx));
+                s16 aDiff = (s16)(aTarget - GetClampedFacing());
 
-                u16 aFacing = m_aActualFacingDirection;
-                if (m_v3Position.f.x < 0.0f)
-                {
-                    aFacing += 0x8000;
-                }
-                if (aFacing < 0x5550)
-                {
-                    aFacing = 0x5550;
-                }
-                else if (aFacing > 0xAAB0)
-                {
-                    aFacing = (u16)-0x5550;
-                }
-
-                if (m_v3Position.f.x < 0.0f)
-                {
-                    aFacing += 0x8000;
-                }
-
-                s16 aDiff = (s16)(aTarget - aFacing);
-                int aAbsDiff = aDiff;
-                if (aDiff < 0)
-                {
-                    aAbsDiff = -aDiff;
-                }
-
-                if ((u16)aAbsDiff > 0x2AA8)
+                if ((u16)abs_s16(aDiff) > 0x2AA8)
                 {
                     goto InvalidPassTarget;
                 }

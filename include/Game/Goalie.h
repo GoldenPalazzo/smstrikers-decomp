@@ -250,6 +250,32 @@ public:
         return (float)fabs(mv3TargetPosition.f.x) > cField::GetGoalLineX(1U);
     }
 
+    /*
+     * Facing direction mirrored onto the near side of the net and clamped to the
+     * goal arc, i.e. the direction pass and save decisions are measured against.
+     */
+    inline u16 GetClampedFacing() const
+    {
+        u16 aFacing = m_aActualFacingDirection;
+        if (m_v3Position.f.x < 0.0f)
+        {
+            aFacing += 0x8000;
+        }
+        if (aFacing < 0x5550)
+        {
+            aFacing = 0x5550;
+        }
+        else if (aFacing > 0xAAB0)
+        {
+            aFacing = (u16)-0x5550;
+        }
+        if (m_v3Position.f.x < 0.0f)
+        {
+            aFacing += 0x8000;
+        }
+        return aFacing;
+    }
+
     /* 0x1D4 */ eGoalieActionState mGoalieActionState;
     /* 0x1D8 */ eGoalieActionState mPrevGoalieActionState;
     /* 0x1DC */ eUrgency mUrgency;
