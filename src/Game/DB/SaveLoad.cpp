@@ -149,7 +149,6 @@ bool SaveLoad::CardBusy()
 
 /**
  * Offset/Address/Size: 0x3720 | 0x8018D07C | size: 0x1BC
- * TODO: 99.68% match - iconFmt/iconCount load registers and product-plus-banner accumulator destination still differ.
  */
 void LoadMemoryCardIconData()
 {
@@ -166,17 +165,16 @@ void LoadMemoryCardIconData()
 
     gIconDataCache.mIconConfig.GetValidDataInfo(gIconDataCache.mIconDataInfo);
 
-    u8 iconCount = gIconDataCache.mIconConfig.IconCount;
-    int bannerFmt = gIconDataCache.mIconConfig.BannerFormat;
     s8 iconFmt = gIconDataCache.mIconConfig.IconFormat;
+    int iconPixels = iconFmt << 10;
+    int bannerFmt = gIconDataCache.mIconConfig.BannerFormat;
 
-    u32 headerSize = 0;
-    headerSize += ((bannerFmt == 1) ? 0x200 : 0);
-    headerSize += bannerFmt * 0xC00;
+    u32 bannerHeader = 0;
+    bannerHeader += ((bannerFmt == 1) ? 0x200 : 0);
+    bannerHeader += bannerFmt * 0xC00;
     u32 iconClut = ((iconFmt == 1) ? 0x200 : 0);
-    headerSize = ((iconFmt << 10) * iconCount) + headerSize;
-    headerSize = iconClut + headerSize;
-    headerSize += 0x40;
+    u32 headerSize = 0x40 + bannerHeader
+        + gIconDataCache.mIconConfig.IconCount * iconPixels + iconClut;
     gIconDataCache.mIconConfig.HeaderSize = headerSize;
 
     gIconDataCache.mIconHdrBuffer = nlMalloc(headerSize, 0x20, false);
