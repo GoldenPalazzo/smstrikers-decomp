@@ -29,6 +29,10 @@ class FEPresentation
 {
 public:
     void Update(float);
+    TLSlide* GetActiveSlide()
+    {
+        return m_currentSlide;
+    }
     void SetActiveSlide(TLSlide*);
     void SetActiveSlide(unsigned long);
     void SetActiveSlide(const char*);

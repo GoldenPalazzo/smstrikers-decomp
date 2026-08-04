@@ -49,7 +49,10 @@ OptionsSubMenu::~OptionsSubMenu()
 
 /**
  * Offset/Address/Size: 0x55A4 | 0x800BA5E8 | size: 0xA30
- * TODO: 99.75% match - first unhighlight component/hash registers and slide-menu newIndex temps differ.
+ * TODO: 99.51% match, size exact, zero structural rows. Two colouring groups remain:
+ * the first ColourAllText expansion ranks its webs in declaration order where retail
+ * ranks the callee's hash first, and the Previous/NextItem index temps sit in r25
+ * where retail uses r31/r29.
  */
 void OptionsSubMenu::Update(float)
 {
@@ -71,14 +74,10 @@ void OptionsSubMenu::Update(float)
 
         if (!locked)
         {
-            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[menuIndex];
-            if (slideMenuList != NULL)
+            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
+            if (slideMenuList != NULL && slideMenuList->GetComponentInstance() != NULL)
             {
-                TLComponentInstance* comp = slideMenuList->GetComponentInstance();
-                if (comp != NULL)
-                {
-                    ColourAllText(*comp, SubMenuUnhighliteColour);
-                }
+                ColourAllText(*slideMenuList->GetComponentInstance(), SubMenuUnhighliteColour);
             }
         }
 
@@ -97,14 +96,10 @@ void OptionsSubMenu::Update(float)
 
         if (!locked)
         {
-            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[menuIndex];
-            if (slideMenuList != NULL)
+            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
+            if (slideMenuList != NULL && slideMenuList->GetComponentInstance() != NULL)
             {
-                TLComponentInstance* comp = slideMenuList->GetComponentInstance();
-                if (comp != NULL)
-                {
-                    ColourAllText(*comp, SubMenuHighliteColour);
-                }
+                ColourAllText(*slideMenuList->GetComponentInstance(), SubMenuHighliteColour);
             }
         }
 
@@ -127,14 +122,10 @@ void OptionsSubMenu::Update(float)
 
         if (!locked)
         {
-            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[menuIndex];
-            if (slideMenuList != NULL)
+            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
+            if (slideMenuList != NULL && slideMenuList->GetComponentInstance() != NULL)
             {
-                TLComponentInstance* comp = slideMenuList->GetComponentInstance();
-                if (comp != NULL)
-                {
-                    ColourAllText(*comp, SubMenuUnhighliteColour);
-                }
+                ColourAllText(*slideMenuList->GetComponentInstance(), SubMenuUnhighliteColour);
             }
         }
 
@@ -153,14 +144,10 @@ void OptionsSubMenu::Update(float)
 
         if (!locked)
         {
-            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[menuIndex];
-            if (slideMenuList != NULL)
+            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
+            if (slideMenuList != NULL && slideMenuList->GetComponentInstance() != NULL)
             {
-                TLComponentInstance* comp = slideMenuList->GetComponentInstance();
-                if (comp != NULL)
-                {
-                    ColourAllText(*comp, SubMenuHighliteColour);
-                }
+                ColourAllText(*slideMenuList->GetComponentInstance(), SubMenuHighliteColour);
             }
         }
 
@@ -169,11 +156,9 @@ void OptionsSubMenu::Update(float)
 
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL))
     {
-        int menuIndex = mMenuItems.GetActiveItemIndex();
-        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[menuIndex];
-        if (slideMenuList != NULL)
+        if (mSlideMenuLists[mMenuItems.GetActiveItemIndex()] != NULL)
         {
-            MenuResult res = slideMenuList->PreviousItem();
+            MenuResult res = mSlideMenuLists[mMenuItems.GetActiveItemIndex()]->PreviousItem();
 
             if (res == RES_OK)
             {
@@ -191,10 +176,9 @@ void OptionsSubMenu::Update(float)
 
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xC, true, NULL))
     {
-        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
-        if (slideMenuList != NULL)
+        if (mSlideMenuLists[mMenuItems.GetActiveItemIndex()] != NULL)
         {
-            MenuResult res = slideMenuList->NextItem();
+            MenuResult res = mSlideMenuLists[mMenuItems.GetActiveItemIndex()]->NextItem();
 
             if (res == RES_OK)
             {
@@ -296,7 +280,7 @@ void OptionsSubMenu::SetButtonState(ButtonComponent::ButtonState buttonState)
     findComponent.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
 
     m_buttons = findComponent.byRef(
-        m_pres->m_currentSlide,
+        m_pres->GetActiveSlide(),
         (InlineHasher&)hB,
         (InlineHasher&)h9,
         (InlineHasher&)h7,
@@ -390,7 +374,7 @@ OptionsCheatsMenu::OptionsCheatsMenu(FEPresentation* pres, ButtonComponent::Butt
         SetAButtonLOC(0x9C81A82F);
     }
 
-    TLSlide* currentSlide = pres->m_currentSlide;
+    TLSlide* currentSlide = pres->GetActiveSlide();
 
     for (i = 0; i < 5; i++)
     {
@@ -591,7 +575,7 @@ void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstan
         nlSNPrintf(slidename, 64, "MENU ITEM%d", menuitem + 1);
 
         TLComponentInstance* pMenuComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-            presentation->m_currentSlide,
+            presentation->GetActiveSlide(),
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(slidename)));
 
@@ -761,7 +745,7 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
             pText->SetAssetColour(lockColour);
 
             pMenuComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-                presentation->m_currentSlide,
+                presentation->GetActiveSlide(),
                 InlineHasher(nlStringLowerHash("Layer")),
                 InlineHasher(nlStringLowerHash("MENU ITEM1")));
 
@@ -810,7 +794,7 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
         SetAButtonLOC(0x9C81A82F);
     }
 
-    TLSlide* currentSlide = presentation->m_currentSlide;
+    TLSlide* currentSlide = presentation->GetActiveSlide();
 
     for (int i = 0; i < 4; i++)
     {
@@ -848,25 +832,25 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
     mMenuItems.SetFlag(3);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        presentation->m_currentSlide,
+        presentation->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("volume1")));
     BuildSubMenuList(0, compinstance, false, mSettings.MusicVolume);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        presentation->m_currentSlide,
+        presentation->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("volume2")));
     BuildSubMenuList(1, compinstance, false, mSettings.SFXVolume);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        presentation->m_currentSlide,
+        presentation->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("volume3")));
     BuildSubMenuList(2, compinstance, false, mSettings.VoiceVolume);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        presentation->m_currentSlide,
+        presentation->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("mode")));
     BuildSubMenuList(3, compinstance, true, mSettings.Mode);
@@ -965,8 +949,8 @@ void OptionsAudioMenuV2::Revert()
 
 /**
  * Offset/Address/Size: 0x20C8 | 0x800B710C | size: 0xA3C
- * TODO: 99.27% match - ischaractervol and highlight-loop temporaries use
- * different registers from target.
+ * TODO: 99.57% match, size exact, zero structural rows. Same two colouring groups as
+ * OptionsSubMenu::Update.
  */
 void OptionsAudioMenuV2::Update(float)
 {
@@ -1078,10 +1062,9 @@ void OptionsAudioMenuV2::Update(float)
     }
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xC, true, NULL))
     {
-        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
-        if (slideMenuList != NULL)
+        if (mSlideMenuLists[mMenuItems.GetActiveItemIndex()] != NULL)
         {
-            MenuResult res = slideMenuList->NextItem();
+            MenuResult res = mSlideMenuLists[mMenuItems.GetActiveItemIndex()]->NextItem();
 
             if (res == RES_OK)
             {
@@ -1135,7 +1118,6 @@ void OptionsAudioMenuV2::Update(float)
 
 /**
  * Offset/Address/Size: 0x19E0 | 0x800B6A24 | size: 0x6E8
- * TODO: 99.85% match - menu item index/current slide register rotation.
  */
 OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::ButtonState btnState, VisualSettings& settings)
     : OptionsSubMenu(pres, btnState)
@@ -1164,8 +1146,7 @@ OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::
         SetAButtonLOC(0x9C81A82F);
     }
 
-    int slideMenuIndex = 0;
-    TLSlide* currentSlide = pres->m_currentSlide;
+    TLSlide* currentSlide = pres->GetActiveSlide();
 
     for (int i = 0; i < 3; i++)
     {
@@ -1190,8 +1171,7 @@ OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::
             menuItem->RunCallback(ON_UNHIGHLIGHT);
         }
 
-        mSlideMenuLists[slideMenuIndex] = NULL;
-        slideMenuIndex++;
+        mSlideMenuLists[i] = NULL;
     }
 
     mMenuItems.SetFlag(3);
@@ -1414,7 +1394,7 @@ OptionsGameplayMenuV2::OptionsGameplayMenuV2(FEPresentation* presentation, Butto
         SetAButtonLOC(0x9C81A82F);
     }
 
-    TLSlide* currentSlide = presentation->m_currentSlide;
+    TLSlide* currentSlide = presentation->GetActiveSlide();
     for (i = 0; i < 6; i++)
     {
         nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
@@ -1783,7 +1763,7 @@ OptionsSaveLoad::OptionsSaveLoad(FEPresentation* presentation, ButtonComponent::
     SetButtonState(buttonstate);
     mButtons.CentreButtons();
 
-    TLSlide* slide = presentation->m_currentSlide;
+    TLSlide* slide = presentation->GetActiveSlide();
     char** menuName;
 
     void (*openItem)(TLComponentInstance*) = DoubleHighlite::OpenItem;
