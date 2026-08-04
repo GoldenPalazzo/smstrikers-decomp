@@ -55,6 +55,11 @@ block_relocations:
   # not a code pointer.
   - source: .text:0x801BFF78
   - source: .text:0x801BFF7C
+  # The world physics chunk ID 0x8001D000 happens to equal
+  # ShouldIStrafe + 0x180. These instructions form the literal chunk ID,
+  # not a code pointer.
+  - source: .text:0x801973DC
+  - source: .text:0x801973E0
 
 # OS.c OSInit references __ArenaLo / _stack_addr (linker-script symbols) by
 # relocation, exactly like the 100%-matching ac-decomp source. dtk cannot evaluate
