@@ -11,27 +11,27 @@
 
 extern void nlFree(void*);
 
-IconDataCache gIconDataCache;
-
+static void (*g_Callback)(long);
 static bool InOperation = false;
 
-LoadCallbacks LoadSystem;
-SaveCallbacks SaveSystem;
-DeleteCallbacks DeleteSystem;
-FormatCallbacks FormatSystem;
-
-static void (*g_Callback)(long);
-FileExistsCallbacks FileExistsSystem;
-MemoryCardIDCallbacks MemoryCardIDSystem;
 struct MemCardIDInfo
 {
     s64 serialID;
     // u32 cardID;
 };
 static MemCardIDInfo mLastKnownMemCardID;
-static const char* MarioSoccerFileName;
-static s64 mRequiredMemoryCardID;
-static unsigned long gIconCRC;
+
+unsigned long gIconCRC;
+s64 mRequiredMemoryCardID;
+static const char* MarioSoccerFileName = "MarioSoccer";
+
+IconDataCache gIconDataCache;
+LoadCallbacks LoadSystem;
+SaveCallbacks SaveSystem;
+DeleteCallbacks DeleteSystem;
+FormatCallbacks FormatSystem;
+FileExistsCallbacks FileExistsSystem;
+MemoryCardIDCallbacks MemoryCardIDSystem;
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x8018D40C | size: 0xA4
@@ -380,6 +380,88 @@ inline unsigned long LoadCallbacks::ReadDoneCB(unsigned long Slot, long Result, 
     }
 
     return result;
+}
+
+/**
+ * Offset/Address/Size: 0xE88 | 0x8018A7E4 | size: 0x24C
+ */
+unsigned long LoadCallbacks::CardMountCB(unsigned long channel, long result, void* data)
+{
+    if (result != 0)
+    {
+        MemCard* card = g_MemCards[channel];
+        card->m_State = IS_IDLE;
+        card->m_CardState = CS_IDLE;
+        CARDUnmount(card->m_Slot);
+        InOperation = false;
+        g_Callback(result);
+        m_MustFreeBuffers = true;
+        return -1;
+    }
+
+    MemCard::MC_FILE* pFile;
+    unsigned long fileLen;
+    result = g_MemCards[channel]->OpenFile(MarioSoccerFileName, pFile, &fileLen);
+
+    if (result != 0)
+    {
+        MemCard* card = g_MemCards[channel];
+        card->m_State = IS_IDLE;
+        card->m_CardState = CS_IDLE;
+        CARDUnmount(card->m_Slot);
+        InOperation = false;
+        g_Callback(result);
+        m_MustFreeBuffers = true;
+        return -1;
+    }
+
+    if (!m_PerformLoad)
+    {
+        if (pFile != NULL)
+        {
+            g_MemCards[channel]->CloseFile(pFile);
+        }
+        MemCard* card = g_MemCards[channel];
+        card->m_State = IS_IDLE;
+        card->m_CardState = CS_IDLE;
+        CARDUnmount(card->m_Slot);
+        InOperation = false;
+        g_Callback(result);
+        m_MustFreeBuffers = true;
+        return 0;
+    }
+
+    memset(m_pReadBuffer, 0, m_AlignedReadBufferDataSize);
+
+    MemCard::MC_FILE* pFileLocal = pFile;
+    typedef unsigned long (LoadCallbacks::*MemberCB)(unsigned long, long, void*);
+    MemberCB cb = &LoadCallbacks::ReadDoneCB;
+    union
+    {
+        MemCardFunctor functor;
+    };
+    void* functorMem = functor.m_FunctorMem;
+    new (functorMem) MemCardFunctor::MCMemberFunctor<LoadCallbacks>(&LoadSystem, cb, pFileLocal);
+
+    result = g_MemCards[channel]->InternalReadFile(pFile, m_pReadBuffer, m_AlignedReadBufferDataSize, pFile->TotalHeaderSize, functor);
+
+    if (result != 0)
+    {
+        if (pFile != NULL)
+        {
+            g_MemCards[channel]->CloseFile(pFile);
+        }
+        MemCard* card = g_MemCards[channel];
+        card->m_State = IS_IDLE;
+        card->m_CardState = CS_IDLE;
+        CARDUnmount(card->m_Slot);
+        InOperation = false;
+        g_Callback(result);
+        m_MustFreeBuffers = true;
+        return -1;
+    }
+
+    return 0;
 }
 
 static inline int BuildDefaultIconHeaderSize(MemCard::ICON_CONFIG& IconCfg)
@@ -1522,11 +1604,81 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
 #pragma pop
 
 /**
+ * Offset/Address/Size: 0xB10 | 0x8018A46C | size: 0xDC
+ */
+inline unsigned long DeleteCallbacks::CardMountCB(unsigned long channel, long result, void* data)
+{
+    if (result != 0)
+    {
+        MemCard* card = g_MemCards[channel];
+        card->m_State = IS_IDLE;
+        card->m_CardState = CS_IDLE;
+        CARDUnmount(card->m_Slot);
+        InOperation = false;
+        g_Callback(result);
+        return -1;
+    }
+
+    typedef unsigned long (DeleteCallbacks::*MemberCB)(unsigned long, long, void*);
+    MemberCB cb = &DeleteCallbacks::DeleteDoneCB;
+
+    union
+    {
+        MemCardFunctor functor;
+    };
+    new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<DeleteCallbacks>(this, cb);
+
+    g_MemCards[channel]->DeleteFile(MarioSoccerFileName, functor);
+    return 0;
+}
+
+/**
+ * Offset/Address/Size: 0x900 | 0x8018A25C | size: 0x154
+ */
+inline unsigned long FormatCallbacks::CardMountCB(unsigned long channel, long result, void* data)
+{
+    if (result != 0 && result != -13 && result != -6)
+    {
+        MemCard* card = g_MemCards[channel];
+        card->m_State = IS_IDLE;
+        card->m_CardState = CS_IDLE;
+        CARDUnmount(card->m_Slot);
+        InOperation = false;
+        g_Callback(result);
+        return -1;
+    }
+
+    s64 serialID = g_MemCards[channel]->GetSerialID();
+    if (mLastKnownMemCardID.serialID != serialID)
+    {
+        MemCard* card = g_MemCards[channel];
+        card->m_State = IS_IDLE;
+        card->m_CardState = CS_IDLE;
+        CARDUnmount(card->m_Slot);
+        InOperation = false;
+        g_Callback(-1001);
+        return -1;
+    }
+
+    typedef unsigned long (FormatCallbacks::*MemberCB)(unsigned long, long, void*);
+    MemberCB cb = &FormatCallbacks::FormatDoneCB;
+
+    union
+    {
+        MemCardFunctor functor;
+    };
+    new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<FormatCallbacks>(this, cb);
+
+    g_MemCards[channel]->FormatCard(functor);
+    return 0;
+}
+
+/**
  * Offset/Address/Size: 0x10D4 | 0x8018AA30 | size: 0x108
  */
 long SaveLoad::StartSave(int slot, void (*callback)(long))
 {
-    nlPrintf("StartSave\n");
+    nlPrintf("Starting memory card save\n");
 
     if (SaveSystem.m_MustFreeMemory)
     {
@@ -1557,88 +1709,6 @@ long SaveLoad::StartSave(int slot, void (*callback)(long))
     }
 
     return result;
-}
-
-/**
- * Offset/Address/Size: 0xE88 | 0x8018A7E4 | size: 0x24C
- */
-unsigned long LoadCallbacks::CardMountCB(unsigned long channel, long result, void* data)
-{
-    if (result != 0)
-    {
-        MemCard* card = g_MemCards[channel];
-        card->m_State = IS_IDLE;
-        card->m_CardState = CS_IDLE;
-        CARDUnmount(card->m_Slot);
-        InOperation = false;
-        g_Callback(result);
-        m_MustFreeBuffers = true;
-        return -1;
-    }
-
-    MemCard::MC_FILE* pFile;
-    unsigned long fileLen;
-    result = g_MemCards[channel]->OpenFile(MarioSoccerFileName, pFile, &fileLen);
-
-    if (result != 0)
-    {
-        MemCard* card = g_MemCards[channel];
-        card->m_State = IS_IDLE;
-        card->m_CardState = CS_IDLE;
-        CARDUnmount(card->m_Slot);
-        InOperation = false;
-        g_Callback(result);
-        m_MustFreeBuffers = true;
-        return -1;
-    }
-
-    if (!m_PerformLoad)
-    {
-        if (pFile != NULL)
-        {
-            g_MemCards[channel]->CloseFile(pFile);
-        }
-        MemCard* card = g_MemCards[channel];
-        card->m_State = IS_IDLE;
-        card->m_CardState = CS_IDLE;
-        CARDUnmount(card->m_Slot);
-        InOperation = false;
-        g_Callback(result);
-        m_MustFreeBuffers = true;
-        return 0;
-    }
-
-    memset(m_pReadBuffer, 0, m_AlignedReadBufferDataSize);
-
-    MemCard::MC_FILE* pFileLocal = pFile;
-    typedef unsigned long (LoadCallbacks::*MemberCB)(unsigned long, long, void*);
-    MemberCB cb = &LoadCallbacks::ReadDoneCB;
-    union
-    {
-        MemCardFunctor functor;
-    };
-    void* functorMem = functor.m_FunctorMem;
-    new (functorMem) MemCardFunctor::MCMemberFunctor<LoadCallbacks>(&LoadSystem, cb, pFileLocal);
-
-    result = g_MemCards[channel]->InternalReadFile(pFile, m_pReadBuffer, m_AlignedReadBufferDataSize, pFile->TotalHeaderSize, functor);
-
-    if (result != 0)
-    {
-        if (pFile != NULL)
-        {
-            g_MemCards[channel]->CloseFile(pFile);
-        }
-        MemCard* card = g_MemCards[channel];
-        card->m_State = IS_IDLE;
-        card->m_CardState = CS_IDLE;
-        CARDUnmount(card->m_Slot);
-        InOperation = false;
-        g_Callback(result);
-        m_MustFreeBuffers = true;
-        return -1;
-    }
-
-    return 0;
 }
 
 static inline void ConstructIconCfg(MemCard::ICON_CONFIG& IconCfg)
@@ -1757,40 +1827,11 @@ bool SaveLoad::DidGameIDChange()
 }
 
 /**
- * Offset/Address/Size: 0xB10 | 0x8018A46C | size: 0xDC
- */
-unsigned long DeleteCallbacks::CardMountCB(unsigned long channel, long result, void* data)
-{
-    if (result != 0)
-    {
-        MemCard* card = g_MemCards[channel];
-        card->m_State = IS_IDLE;
-        card->m_CardState = CS_IDLE;
-        CARDUnmount(card->m_Slot);
-        InOperation = false;
-        g_Callback(result);
-        return -1;
-    }
-
-    typedef unsigned long (DeleteCallbacks::*MemberCB)(unsigned long, long, void*);
-    MemberCB cb = &DeleteCallbacks::DeleteDoneCB;
-
-    union
-    {
-        MemCardFunctor functor;
-    };
-    new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<DeleteCallbacks>(this, cb);
-
-    g_MemCards[channel]->DeleteFile(MarioSoccerFileName, functor);
-    return 0;
-}
-
-/**
  * Offset/Address/Size: 0xA54 | 0x8018A3B0 | size: 0xBC
  */
 long SaveLoad::StartDelete(int slot, void (*callback)(long))
 {
-    nlPrintf("StartDelete\n");
+    nlPrintf("Starting memory card file delete\n");
 
     InOperation = true;
 
@@ -1813,52 +1854,11 @@ long SaveLoad::StartDelete(int slot, void (*callback)(long))
 }
 
 /**
- * Offset/Address/Size: 0x900 | 0x8018A25C | size: 0x154
- */
-unsigned long FormatCallbacks::CardMountCB(unsigned long channel, long result, void* data)
-{
-    if (result != 0 && result != -13 && result != -6)
-    {
-        MemCard* card = g_MemCards[channel];
-        card->m_State = IS_IDLE;
-        card->m_CardState = CS_IDLE;
-        CARDUnmount(card->m_Slot);
-        InOperation = false;
-        g_Callback(result);
-        return -1;
-    }
-
-    s64 serialID = g_MemCards[channel]->GetSerialID();
-    if (mLastKnownMemCardID.serialID != serialID)
-    {
-        MemCard* card = g_MemCards[channel];
-        card->m_State = IS_IDLE;
-        card->m_CardState = CS_IDLE;
-        CARDUnmount(card->m_Slot);
-        InOperation = false;
-        g_Callback(-1001);
-        return -1;
-    }
-
-    typedef unsigned long (FormatCallbacks::*MemberCB)(unsigned long, long, void*);
-    MemberCB cb = &FormatCallbacks::FormatDoneCB;
-
-    union
-    {
-        MemCardFunctor functor;
-    };
-    new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<FormatCallbacks>(this, cb);
-
-    g_MemCards[channel]->FormatCard(functor);
-    return 0;
-}
-
-/**
  * Offset/Address/Size: 0x844 | 0x8018A1A0 | size: 0xBC
  */
 long SaveLoad::StartFormat(int slot, void (*callback)(long))
 {
-    nlPrintf("StartFormat\n");
+    nlPrintf("Starting memory card format\n");
 
     InOperation = true;
 
@@ -1973,7 +1973,7 @@ end:
  */
 long SaveLoad::StartFileExistsCheck(int slot, void (*callback)(long))
 {
-    nlPrintf("StartFileExistsCheck\n");
+    nlPrintf("Starting memory card file exists check!\n");
 
     InOperation = true;
     g_Callback = callback;
@@ -2031,7 +2031,7 @@ unsigned long MemoryCardIDCallbacks::CardMountCB(unsigned long channel, long res
  */
 long SaveLoad::StartMemoryCardIDCheck(int slot, void (*callback)(long))
 {
-    nlPrintf("StartMemoryCardIDCheck\n");
+    nlPrintf("Starting Memory Card ID Check!\n");
 
     InOperation = true;
     g_Callback = callback;

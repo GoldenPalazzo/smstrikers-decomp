@@ -63,7 +63,7 @@ public:
         {
         }
         ~MCInternalFunctorBase();
-        virtual void Call(unsigned long, long);
+        virtual void Call(unsigned long, long) = 0;
         void Destroy();
 
         /* 0x04 */ void* m_pData;
