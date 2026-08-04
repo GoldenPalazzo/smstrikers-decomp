@@ -49,6 +49,7 @@ void FEScrollText::ApplyNewTextInstancePointer(TLTextInstance* controltext, floa
     text->m_OverloadedAttributes.BoxSize = boxSize;
     text->m_OverloadFlags |= 0x4;
 }
+
 static float TEXT_TIME = 4.5f;
 
 /**
@@ -138,6 +139,26 @@ void FEScrollText::SetDisplayMessage(unsigned long hash)
     SetDisplayMessage(BasicString<unsigned short, Detail::TempStringAllocator>(text));
 }
 
+static inline unsigned int MapCharToFontChar(nlFont* font, unsigned int ch)
+{
+    if (ch <= 0x7F)
+        return ch;
+
+    nlFont::GlyphInfo key;
+    key.UnicodeChar = ch;
+    nlFont::GlyphInfo* result;
+    if (font->m_pExtendedGlyphs != NULL && font->m_ExtendedGlyphCount != 0 && (result = nlBSearch<nlFont::GlyphInfo, nlFont::GlyphInfo>(key, font->m_pExtendedGlyphs, font->m_ExtendedGlyphCount)) != NULL)
+    {
+        return (unsigned short)((result - font->m_pExtendedGlyphs) + 0x80);
+    }
+    ch = 0x30;
+    while (((unsigned short)ch > 0x7F ? font->m_pExtendedGlyphs[(unsigned short)ch - 0x80] : font->m_GlyphLookup[(unsigned short)ch - 0x20]).UnicodeChar == 0xFFFF)
+    {
+        ch++;
+    }
+    return ch;
+}
+
 static inline void BuildFontCharStringForScroll(FontCharString& fontcharstring, FEScrollText* self)
 {
     fontcharstring.m_pString = self->m_textBuffer;
@@ -162,24 +183,7 @@ static inline void BuildFontCharStringForScroll(FontCharString& fontcharstring, 
         }
         else
         {
-            if (ch > 0x7F)
-            {
-                nlFont::GlyphInfo key;
-                key.UnicodeChar = ch;
-                nlFont::GlyphInfo* result;
-                if (font->m_pExtendedGlyphs != NULL && font->m_ExtendedGlyphCount != 0 && (result = nlBSearch<nlFont::GlyphInfo, nlFont::GlyphInfo>(key, font->m_pExtendedGlyphs, font->m_ExtendedGlyphCount)) != NULL)
-                {
-                    ch = (unsigned short)((result - font->m_pExtendedGlyphs) + 0x80);
-                }
-                else
-                {
-                    ch = 0x30;
-                    while (((unsigned short)ch > 0x7F ? font->m_pExtendedGlyphs[(unsigned short)ch - 0x80] : font->m_GlyphLookup[(unsigned short)ch - 0x20]).UnicodeChar == 0xFFFF)
-                    {
-                        ch++;
-                    }
-                }
-            }
+            ch = MapCharToFontChar(font, ch);
             *dest++ = ch;
             src++;
         }
@@ -190,11 +194,6 @@ static inline void BuildFontCharStringForScroll(FontCharString& fontcharstring, 
 
 /**
  * Offset/Address/Size: 0x4F0 | 0x800C8EC4 | size: 0x578
- * TODO: 99.64% match - MWCC tie-break wall: the retail build emits an extra
- * branch at the ch > 0x7F test, allocates the glyph key at r1+0x14 ahead of
- * the inlined Update() position temporary, and orders the fmuls operands the
- * other way. Every source form that reproduces the extra branch also rotates
- * the callee-saved assignment (this moves r31 -> r27).
  */
 void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>& theMessage)
 {
@@ -224,8 +223,8 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
 
         if (origCh == nlEscapeSequence::ESCAPE_BEGIN)
         {
-            nlEscapeSequence esc2(charPtr);
-            int skipCount = ((int)esc2.m_pEnd - (int)charPtr) / 2;
+            nlEscapeSequence EscSeq(charPtr);
+            int skipCount = ((int)EscSeq.m_pEnd - (int)charPtr) / 2;
             i += skipCount - 1;
         }
         else
@@ -252,8 +251,7 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
     memcpy(m_textBuffer, finalStr, 0x200);
     m_controlText->SetString(m_textBuffer);
 
-    const feVector3& scale = m_controlText->GetScale();
-    m_messageWidth = (int)(scale.f.x * (float)m_messageWidth);
+    m_messageWidth = (int)(m_controlText->GetScale().f.x * (float)m_messageWidth);
 
     Update(0.0f);
 }

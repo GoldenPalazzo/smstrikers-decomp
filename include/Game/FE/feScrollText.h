@@ -34,10 +34,4 @@ public:
     /* 0x228 */ nlFont* m_textFont;
 }; // total size: 0x22C
 
-// class nlBSearch<nlFont
-// {
-// public:
-//     void GlyphInfo, nlFont::GlyphInfo>(const nlFont::GlyphInfo&, nlFont::GlyphInfo*, int);
-// };
-
 #endif // _FESCROLLTEXT_H_
