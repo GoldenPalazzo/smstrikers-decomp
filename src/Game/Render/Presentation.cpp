@@ -1155,6 +1155,173 @@ inline void Presentation::RaiseEvent(const char* type, const char* param)
     data->Param = param;
 }
 
+inline void Presentation::BeginByPass()
+{
+    mByPassWasSkipped = false;
+    mInsideByPass = true;
+}
+
+inline void Presentation::EndByPass()
+{
+    if (mByPassing)
+    {
+        mByPassWasSkipped = true;
+    }
+    mInsideByPass = false;
+    mByPassing = false;
+}
+
+inline void Presentation::PlayCharacterDirection()
+{
+    mWaitingForCharacterDirectionSince = FixedUpdateTask::mSimulationTime;
+    NisPlayer::Instance()->PlayCharacterDirection();
+}
+
+inline void Presentation::PlayCupOverlay()
+{
+    PlayOverlay("cup", 0.2f, -15.0f);
+    const char* streamName = GetCupStreamName(nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode());
+    AudioLoader::StartFEStream(streamName, false, "Music");
+    AudioStreamTrack::TrackManagerBase* mgr = g_pTrackManager;
+    AudioStreamTrack::StreamTrack* track = mgr->GetTrack(nlStringLowerHash("Music"));
+    Function0<void> f0(CupWinStingerDone);
+    SetIdleCallback(track, f0);
+}
+
+inline void Presentation::PlayNis()
+{
+    if (NisPlayer::Instance()->Play())
+    {
+        if (nlTaskManager::m_pInstance->m_CurrState == 0x100)
+        {
+            return;
+        }
+        if (!IsDuringGamePauseState())
+        {
+            nlTaskManager::SetNextState(0x100);
+        }
+    }
+    else
+    {
+        StopWithUndo();
+    }
+}
+
+inline void Presentation::PlaySfx(const char* sfx)
+{
+    Audio::PlayWorldSFXbyStr(sfx, 100.0f, -1.0f, false, true, NULL, NULL, NULL);
+}
+
+inline void Presentation::PlaySfxWithVol(const char* sfx, float fVol)
+{
+    Audio::PlayWorldSFXbyStr(sfx, fVol, -1.0f, false, true, NULL, NULL, NULL);
+}
+
+inline void Presentation::ResetNisPlayer()
+{
+    NisPlayer::Instance()->Reset();
+}
+
+inline void Presentation::SaveGoalAsHighlight()
+{
+    ReplayChoreo::Instance().SaveHighlight((ReplayChoreo::HighlightQuality)mGoalQuality);
+}
+
+inline void Presentation::SetTrophyVisible(bool visible)
+{
+    if (cupTrophyHash == 0)
+    {
+        return;
+    }
+    DrawableObject* obj = WorldManager::s_World->FindDrawableObject(cupTrophyHash);
+    if (visible)
+    {
+        obj->m_uObjectFlags |= 1;
+    }
+    else
+    {
+        obj->m_uObjectFlags &= ~1;
+    }
+    if (visible)
+    {
+        CrowdMood::AdjustMood(CrowdMood::CM_Positive, 0xa);
+        CrowdMood::EnableCrowdDecay(false);
+    }
+    else
+    {
+        cupTrophyHash = 0;
+        CrowdMood::EnableCrowdDecay(true);
+    }
+}
+
+inline void Presentation::StopAllStreams()
+{
+    Audio::StopStreaming();
+}
+
+inline void Presentation::StopJumbotron()
+{
+    if (Jumbotron::instance.m_State == 4)
+    {
+        Jumbotron::instance.StopPlaying();
+    }
+}
+
+inline void Presentation::UnloadJumbotron()
+{
+    if (Jumbotron::instance.m_State == 4)
+    {
+        Jumbotron::instance.StopPlaying();
+    }
+    Jumbotron::instance.Reset();
+}
+
+inline void Presentation::PlayJumbotron()
+{
+    Jumbotron::instance.WaitForLoad();
+    Jumbotron::instance.BeginPlaying();
+}
+
+inline void Presentation::WaitForAutoReplayCompletion(const char* wipe)
+{
+    if (nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition == NULL)
+    {
+        nlSingleton<ScreenTransitionManager>::s_pInstance->SelectRandomTransition(wipe);
+    }
+    if (!ReplayChoreo::Instance().Done())
+    {
+        StopWithUndo();
+    }
+}
+
+inline void Presentation::WaitForCharacterDirection()
+{
+    if (mWaitingForCharacterDirectionSince > 0.0f)
+    {
+        if (FixedUpdateTask::mSimulationTime - mWaitingForCharacterDirectionSince < 1.0f)
+        {
+            StopWithUndo();
+        }
+    }
+}
+
+inline void Presentation::WaitForNisCompletion(const char* wipe)
+{
+    float cutTime = 0.0f;
+    if (nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition == NULL)
+    {
+        nlSingleton<ScreenTransitionManager>::s_pInstance->SelectRandomTransition(wipe);
+    }
+    if (nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition != NULL)
+    {
+        cutTime = 0.2f + nlSingleton<ScreenTransitionManager>::s_pInstance->GetSelectedTransitionCutTime();
+    }
+    if (NisPlayer::Instance()->TimeLeft() > cutTime)
+    {
+        StopWithUndo();
+    }
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x801267BC | size: 0xAE4
  * TODO: 99.80% match - size is exact and only 27 rows differ, all of them the
@@ -1167,44 +1334,31 @@ void Presentation::DoFunctionCall(unsigned int func)
     switch (func)
     {
     case 0:
-        mByPassWasSkipped = false;
-        mInsideByPass = true;
+        BeginByPass();
         break;
     case 1:
         DisplayElectricFence();
         break;
     case 2:
-        if (mByPassing)
-        {
-            mByPassWasSkipped = true;
-        }
-        mInsideByPass = false;
-        mByPassing = false;
+        EndByPass();
         break;
     case 3:
         StopWithUndo();
         break;
     case 4:
-        m_SP--;
-        mInterruptWipe = (const char*)*m_SP;
+        mInterruptWipe = (const char*)Pop();
         break;
     case 5:
-        m_SP--;
-        Jumbotron::instance.m_AnimationClass = (eJumboType)*m_SP;
+        Jumbotron::instance.m_AnimationClass = (eJumboType)Pop();
         Jumbotron::instance.BeginLoad();
         break;
     case 6:
     {
-        m_SP--;
-        NisWinnerType arg4 = (NisWinnerType)*m_SP;
-        m_SP--;
-        NisUseFilter arg3 = (NisUseFilter)*m_SP;
-        m_SP--;
-        NisUseStadiumOffset arg2 = (NisUseStadiumOffset)*m_SP;
-        m_SP--;
-        NisTarget arg1 = (NisTarget)*m_SP;
-        m_SP--;
-        const char* name = (const char*)*m_SP;
+        NisWinnerType arg4 = (NisWinnerType)Pop();
+        NisUseFilter arg3 = (NisUseFilter)Pop();
+        NisUseStadiumOffset arg2 = (NisUseStadiumOffset)Pop();
+        NisTarget arg1 = (NisTarget)Pop();
+        const char* name = (const char*)Pop();
         if (mByPassing)
         {
             break;
@@ -1230,8 +1384,7 @@ void Presentation::DoFunctionCall(unsigned int func)
         break;
     case 9:
     {
-        m_SP--;
-        ReplayType arg0 = (ReplayType)*m_SP;
+        ReplayType arg0 = (ReplayType)Pop();
         if (mByPassing)
         {
             break;
@@ -1269,8 +1422,7 @@ void Presentation::DoFunctionCall(unsigned int func)
         {
             break;
         }
-        mWaitingForCharacterDirectionSince = FixedUpdateTask::mSimulationTime;
-        NisPlayer::Instance()->PlayCharacterDirection();
+        PlayCharacterDirection();
         break;
     case 11:
     {
@@ -1283,13 +1435,7 @@ void Presentation::DoFunctionCall(unsigned int func)
         {
             break;
         }
-        PlayOverlay("cup", 0.2f, -15.0f);
-        const char* streamName = GetCupStreamName(nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode());
-        AudioLoader::StartFEStream(streamName, false, "Music");
-        AudioStreamTrack::TrackManagerBase* mgr = g_pTrackManager;
-        AudioStreamTrack::StreamTrack* track = mgr->GetTrack(nlStringLowerHash("Music"));
-        Function0<void> f0(CupWinStingerDone);
-        SetIdleCallback(track, f0);
+        PlayCupOverlay();
         break;
     }
     case 12:
@@ -1318,29 +1464,14 @@ void Presentation::DoFunctionCall(unsigned int func)
         break;
     }
     case 13:
-        Jumbotron::instance.WaitForLoad();
-        Jumbotron::instance.BeginPlaying();
+        PlayJumbotron();
         break;
     case 14:
         if (mByPassing)
         {
             break;
         }
-        if (NisPlayer::Instance()->Play())
-        {
-            if (nlTaskManager::m_pInstance->m_CurrState == 0x100)
-            {
-                break;
-            }
-            if (!IsDuringGamePauseState())
-            {
-                nlTaskManager::SetNextState(0x100);
-            }
-        }
-        else
-        {
-            StopWithUndo();
-        }
+        PlayNis();
         break;
     case 15:
     {
@@ -1350,20 +1481,18 @@ void Presentation::DoFunctionCall(unsigned int func)
         length = *(float*)m_SP;
         m_SP--;
         delay = *(float*)m_SP;
-        m_SP--;
-        name = (const char*)*m_SP;
+        name = (const char*)Pop();
         PlayOverlay(name, delay, length);
         break;
     }
     case 16:
     {
-        m_SP--;
-        const char* name = (const char*)*m_SP;
+        const char* name = (const char*)Pop();
         if (mByPassing)
         {
             break;
         }
-        Audio::PlayWorldSFXbyStr(name, 100.0f, -1.0f, false, true, NULL, NULL, NULL);
+        PlaySfx(name);
         break;
     }
     case 17:
@@ -1372,113 +1501,70 @@ void Presentation::DoFunctionCall(unsigned int func)
         const char* name;
         m_SP--;
         vol = *(float*)m_SP;
-        m_SP--;
-        name = (const char*)*m_SP;
+        name = (const char*)Pop();
         if (mByPassing)
         {
             break;
         }
-        Audio::PlayWorldSFXbyStr(name, vol, -1.0f, false, true, NULL, NULL, NULL);
+        PlaySfxWithVol(name, vol);
         break;
     }
     case 18:
-        m_SP--;
-        m_SP--;
-        m_SP--;
-        m_SP--;
+        Pop();
+        Pop();
+        Pop();
+        Pop();
         break;
     case 19:
     {
-        m_SP--;
-        const char* Param = (const char*)*m_SP;
-        m_SP--;
-        RaiseEvent((const char*)*m_SP, Param);
+        const char* Param = (const char*)Pop();
+        RaiseEvent((const char*)Pop(), Param);
         break;
     }
     case 20:
-        NisPlayer::Instance()->Reset();
+        ResetNisPlayer();
         break;
     case 21:
         if (mByPassing)
         {
             break;
         }
-        ReplayChoreo::Instance().SaveHighlight((ReplayChoreo::HighlightQuality)mGoalQuality);
+        SaveGoalAsHighlight();
         break;
     case 22:
-        m_SP--;
-        CrowdManager::instance.SetState((eCrowdState)*m_SP, false);
+        CrowdManager::instance.SetState((eCrowdState)Pop(), false);
         break;
     case 23:
     {
-        m_SP--;
-        bool enable = *m_SP;
-        if (cupTrophyHash == 0)
-        {
-            break;
-        }
-        DrawableObject* obj = WorldManager::s_World->FindDrawableObject(cupTrophyHash);
-        if (enable)
-        {
-            obj->m_uObjectFlags |= 1;
-        }
-        else
-        {
-            obj->m_uObjectFlags &= ~1;
-        }
-        if (enable)
-        {
-            CrowdMood::AdjustMood(CrowdMood::CM_Positive, 0xa);
-            CrowdMood::EnableCrowdDecay(false);
-        }
-        else
-        {
-            cupTrophyHash = 0;
-            CrowdMood::EnableCrowdDecay(true);
-        }
+        SetTrophyVisible(Pop());
         break;
     }
     case 24:
-        Audio::StopStreaming();
+        StopAllStreams();
         break;
     case 25:
-        if (Jumbotron::instance.m_State == 4)
-        {
-            Jumbotron::instance.StopPlaying();
-        }
+        StopJumbotron();
         break;
     case 26:
         StopOverlay();
         break;
     case 27:
-        m_SP--;
+        Pop();
         break;
     case 28:
-        if (Jumbotron::instance.m_State == 4)
-        {
-            Jumbotron::instance.StopPlaying();
-        }
-        Jumbotron::instance.Reset();
+        UnloadJumbotron();
         break;
     case 29:
         BeginFrameTask::s_FramerateLocked = 0;
         break;
     case 30:
     {
-        m_SP--;
-        const char* filter = (const char*)*m_SP;
+        const char* filter = (const char*)Pop();
         if (mByPassing)
         {
             break;
         }
-        if (nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition == NULL)
-        {
-            nlSingleton<ScreenTransitionManager>::s_pInstance->SelectRandomTransition(filter);
-        }
-        if (!ReplayChoreo::Instance().Done())
-        {
-            StopWithUndo();
-        }
+        WaitForAutoReplayCompletion(filter);
         break;
     }
     case 31:
@@ -1486,35 +1572,16 @@ void Presentation::DoFunctionCall(unsigned int func)
         {
             break;
         }
-        if (mWaitingForCharacterDirectionSince > 0.0f)
-        {
-            if (FixedUpdateTask::mSimulationTime - mWaitingForCharacterDirectionSince < 1.0f)
-            {
-                StopWithUndo();
-            }
-        }
+        WaitForCharacterDirection();
         break;
     case 32:
     {
-        m_SP--;
-        const char* filter = (const char*)*m_SP;
+        const char* filter = (const char*)Pop();
         if (mByPassing)
         {
             break;
         }
-        float threshold = 0.0f;
-        if (nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition == NULL)
-        {
-            nlSingleton<ScreenTransitionManager>::s_pInstance->SelectRandomTransition(filter);
-        }
-        if (nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition != NULL)
-        {
-            threshold = 0.2f + nlSingleton<ScreenTransitionManager>::s_pInstance->GetSelectedTransitionCutTime();
-        }
-        if (NisPlayer::Instance()->TimeLeft() > threshold)
-        {
-            StopWithUndo();
-        }
+        WaitForNisCompletion(filter);
         break;
     }
     case 33:
@@ -1530,8 +1597,7 @@ void Presentation::DoFunctionCall(unsigned int func)
         break;
     case 34:
     {
-        m_SP--;
-        const char* wipeName = (const char*)*m_SP;
+        const char* wipeName = (const char*)Pop();
         if (mByPassing)
         {
             break;

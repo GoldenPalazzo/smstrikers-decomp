@@ -48,6 +48,23 @@ public:
     void StopOverlay();
     void Reset();
     static void RaiseEvent(const char*, const char*);
+    void BeginByPass();
+    void EndByPass();
+    void PlayCharacterDirection();
+    void PlayCupOverlay();
+    void PlayNis();
+    void PlaySfx(const char*);
+    void PlaySfxWithVol(const char*, float);
+    static void ResetNisPlayer();
+    void SaveGoalAsHighlight();
+    static void SetTrophyVisible(bool);
+    static void StopAllStreams();
+    static void StopJumbotron();
+    static void UnloadJumbotron();
+    static void PlayJumbotron();
+    void WaitForAutoReplayCompletion(const char*);
+    void WaitForCharacterDirection();
+    void WaitForNisCompletion(const char*);
 
     /* 0x24 */ char mCurrentFunction[64];
     /* 0x64 */ bool mByPassWasSkipped;
