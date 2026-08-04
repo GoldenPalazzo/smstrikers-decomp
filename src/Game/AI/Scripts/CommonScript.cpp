@@ -3057,7 +3057,6 @@ static inline float GetWindupDekeConfidence(float attacked, float needDeke, floa
 
 /**
  * Offset/Address/Size: 0x2CB4 | 0x8006CE84 | size: 0x131C
- * TODO: 99.80% match - cache lookup/insert stack slots and weighted confidence registers
  */
 FuzzyVariant Fuzzy::GetBestWindupShotAction(cFielder* TheFielder)
 {
@@ -3066,15 +3065,21 @@ FuzzyVariant Fuzzy::GetBestWindupShotAction(cFielder* TheFielder)
     float fBestConfidence = 0.0f;
 
     const FuzzyVariant& fvFielder = FuzzyVariant((cPlayer*)TheFielder);
-    volatile unsigned long funcAddr = (unsigned long)GetBestWindupShotAction;
-    unsigned long hash = funcAddr + ((Variant*)&fvFielder)->GetHash();
+    union FunctionAddress
+    {
+        FuzzyVariant (*function)(cFielder*);
+        unsigned long address;
+    } functionAddress;
+    functionAddress.function = GetBestWindupShotAction;
+    unsigned long hash = functionAddress.address + ((Variant*)&fvFielder)->GetHash();
     FuzzyVariant((cPlayer*)TheFielder);
 
-    if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
+    ScriptQuestionCache* const lookupCache = ScriptQuestionCache::Instance();
+    if (lookupCache->Lookup(hash, bestValue, NULL))
     {
-        bestValue.Confidence = bestValue.Confidence;
-        const FuzzyVariant& cacheValue = bestValue;
-        ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
+        fBestConfidence = bestValue.Confidence;
+        bestValue.Confidence = fBestConfidence;
+        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
         return bestValue;
     }
 
@@ -3125,10 +3130,10 @@ FuzzyVariant Fuzzy::GetBestWindupShotAction(cFielder* TheFielder)
                 float fCaptain = Captain(TheFielder);
                 float fOpenToTheirNet = OpenToTheirNet(TheFielder);
                 float fClosedToTheirNet = 1.0f - fOpenToTheirNet;
-                float fNotOpen = 1.0f - Open(TheFielder);
+                float fOpen = Open(TheFielder);
                 float fEdgeWeight = 0.2f;
                 float fCenterWeight = 0.6f;
-                fTrueConfidence = fClosedToTheirNet * fEdgeWeight + fCenterWeight * fNotOpen + fCaptain * fEdgeWeight;
+                fTrueConfidence = (1.0f - fOpen) * fCenterWeight + fClosedToTheirNet * fEdgeWeight + fCaptain * fEdgeWeight;
                 float fFalseConfidence = 1.0f - fTrueConfidence;
                 float fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
                 float fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
@@ -3303,8 +3308,7 @@ FuzzyVariant Fuzzy::GetBestWindupShotAction(cFielder* TheFielder)
     }
 
     bestValue.Confidence = fBestConfidence;
-    const FuzzyVariant& finalCacheValue = bestValue;
-    ScriptQuestionCache::Instance()->AddToCache(hash, finalCacheValue, NULL);
+    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
     return bestValue;
 }
 
