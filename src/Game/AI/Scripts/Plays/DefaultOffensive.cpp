@@ -1,6 +1,7 @@
 #include "Game/AI/Scripts/Plays/DefaultOffensive.h"
 
 #include "Game/AI/Fuzzy.h"
+#include "Game/AI/Scripts/ScriptCaching.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/AI/SpaceSearch.h"
 
@@ -69,9 +70,31 @@ static inline float OffensiveIdentity(float value)
     return value;
 }
 
-static inline float OffensiveGood(float& output, const FuzzyVariant& value)
+static inline float OffensiveAnd(float a, float b)
 {
-    return output = value.mData.f;
+    return (a <= b) ? a : b;
+}
+
+static inline float OffensiveAnd(float a, float b, float c)
+{
+    b = (b <= c) ? b : c;
+    return (a <= b) ? a : b;
+}
+
+static inline float OffensiveOr(float a, float b)
+{
+    return (a >= b) ? a : b;
+}
+
+static inline float OffensiveOr(float a, float b, float c)
+{
+    b = (b >= c) ? b : c;
+    return (a >= b) ? a : b;
+}
+
+static inline float OffensiveNot(float value)
+{
+    return 1.0f - value;
 }
 
 FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
@@ -627,61 +650,19 @@ FuzzyVariant Fuzzy::GoodBallCarrier(cFielder* TheFielder)
     return bestValue;
 }
 
-/**
- * Offset/Address/Size: 0x3128 | 0x8008FBB4 | size: 0x1368
- * TODO: 99.96% match - late scoring temporaries still differ in f-register
- * allocation.
- */
-struct StdMapNodeBase
+static inline unsigned long OffensiveQuestionHash(
+    unsigned long functionAddress,
+    FuzzyVariant& argument)
 {
-    void* left;
-    void* right;
-    void* parent;
-};
-
-struct StdMapTree
-{
-    unsigned long x0;
-    StdMapNodeBase x4;
-};
-
-struct StdMapNode
-{
-    StdMapNodeBase base;
-    unsigned long key;
-    FuzzyVariant value;
-};
-
-#include "Game/AI/Scripts/ScriptCaching.h"
-
-static inline unsigned long OffensiveHash(unsigned long value)
-{
-    return value;
-}
-
-
-static inline float OffensiveMax(float a, float b)
-{
-    return (b <= a) ? a : b;
+    return functionAddress + ((Variant*)&argument)->GetHash();
 }
 
 static inline float OffensiveHalfScore(const FuzzyVariant& value, float fLosing)
 {
-    float fGoodToShoot = OffensiveIdentity(OffensiveDanger(value));
+    float fGoodToShoot = OffensiveDanger(value);
     float fHalf = 0.5f;
     float fWeightedGoodToShoot = fGoodToShoot * fHalf;
     return fLosing * fHalf + fWeightedGoodToShoot;
-}
-
-extern float InFrontOfTheirNet(cFielder*);
-extern cFielder* g_pScriptCurrentFielder;
-extern float FarToTheirNet(cPlayer*);
-extern float FGREATER(float, float);
-
-static inline float OffensiveInitialMax(float a)
-{
-    float b = FGREATER(FarToTheirNet(g_pScriptCurrentFielder), 0.85f);
-    return (b >= a) ? b : a;
 }
 
 static inline void OffensiveBranchValues(
@@ -693,234 +674,57 @@ static inline void OffensiveBranchValues(
     fBranchRatio = fMinVal / fMaxVal;
 }
 
-
-static inline float OffensiveThreeScore(
-    const FuzzyVariant& value,
-    float fNotFarToTheirNet,
-    float fOpen,
-    float fLosing)
+static inline float max_float(float a, float b)
 {
-    float fGoodToShoot = OffensiveDanger(value);
-    fGoodToShoot = (fNotFarToTheirNet >= fGoodToShoot) ? fNotFarToTheirNet : fGoodToShoot;
-    fGoodToShoot = (fOpen >= fGoodToShoot) ? fOpen : fGoodToShoot;
-
-    float fInFront = InFrontOfTheirNet(g_pScriptCurrentFielder);
-    float fWeighted = fInFront * 0.2f;
-    fWeighted = fLosing * 0.25f + fWeighted;
-    return fGoodToShoot * 0.55f + fWeighted;
-}
-
-static inline float OffensiveTwoScore(
-    const FuzzyVariant& value,
-    float fNotFarToTheirNet,
-    float fOpen)
-{
-    float fGoodToShoot = OffensiveDanger(value);
-    fGoodToShoot = (fNotFarToTheirNet >= fGoodToShoot) ? fNotFarToTheirNet : fGoodToShoot;
-    float fSelected = OffensiveMax(fGoodToShoot, fOpen);
-
-    float fInFront = InFrontOfTheirNet(g_pScriptCurrentFielder);
-    float fGoodWeight = 0.7f;
-    float fFrontWeight = 0.3f;
-    float fWeighted = fSelected * fGoodWeight;
-    return fInFront * fFrontWeight + fWeighted;
-}
-
-static inline void OffensiveThreeValues(
-    const FuzzyVariant& value,
-    float fNotFarToTheirNet,
-    float fOpen,
-    float fLosing,
-    float& fGoodToShoot,
-    float& fInFrontScore)
-{
-    fGoodToShoot = OffensiveDanger(value);
-    fGoodToShoot = (fNotFarToTheirNet >= fGoodToShoot) ? fNotFarToTheirNet : fGoodToShoot;
-    fGoodToShoot = (fOpen >= fGoodToShoot) ? fOpen : fGoodToShoot;
-    fInFrontScore = InFrontOfTheirNet(g_pScriptCurrentFielder);
-}
-
-static inline FuzzyVariant OffensiveThreeVariant(
-    const FuzzyVariant& value,
-    float fNotFarToTheirNet,
-    float fOpen,
-    float fLosing)
-{
-    float fGoodToShoot = OffensiveDanger(value);
-    fGoodToShoot = (fNotFarToTheirNet >= fGoodToShoot) ? fNotFarToTheirNet : fGoodToShoot;
-    fGoodToShoot = (fOpen >= fGoodToShoot) ? fOpen : fGoodToShoot;
-    float fInFrontScore = InFrontOfTheirNet(g_pScriptCurrentFielder);
-    float fGoodWeight = 0.55f;
-    float fLosingWeight = 0.25f;
-    float fFrontWeight = 0.2f;
-    return FuzzyVariant(
-        fGoodToShoot * fGoodWeight
-        + (fLosing * fLosingWeight + fInFrontScore * fFrontWeight));
-}
-
-extern unsigned char g_bScriptQuestionCachingUseSTD;
-extern unsigned char g_bScriptQuestionCachingOn;
-
-static inline unsigned char OffensiveLookup(unsigned long hash, FuzzyVariant& returnVal)
-{
-    ScriptQuestionCache* cache = ScriptQuestionCache::Instance();
-    FuzzyVariant* pValue;
-
-    cache->mTotalLookups++;
-
-    if (g_bScriptQuestionCachingUseSTD)
+    if (a >= b)
     {
-        StdMapNode* stdFound = (StdMapNode*)cache->mQuestionCacheMapSTD.find(hash).ptr_;
-        if ((StdMapNodeBase*)stdFound != &((StdMapTree*)&cache->mQuestionCacheMapSTD)->x4)
-        {
-            cache->mCacheHits++;
-            returnVal = stdFound->value;
-            return 1;
-        }
+        return a;
     }
-    else
-    {
-        unsigned long key;
-        AVLTreeEntry<unsigned long, FuzzyVariant>* node = cache->mQuestionCacheMap.m_Root;
-        key = hash;
-        unsigned char found;
-
-        while (node != NULL)
-        {
-            int cmpResult;
-            if (key == node->key)
-            {
-                cmpResult = 0;
-            }
-            else if (key < node->key)
-            {
-                cmpResult = -1;
-            }
-            else
-            {
-                cmpResult = 1;
-            }
-
-            if (cmpResult == 0)
-            {
-                if (&pValue != NULL)
-                {
-                    pValue = &node->value;
-                }
-                found = 1;
-                goto found_done;
-            }
-            if (cmpResult < 0)
-            {
-                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.left;
-            }
-            else
-            {
-                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.right;
-            }
-        }
-
-        found = 0;
-
-    found_done:
-
-        if (found)
-        {
-            cache->mCacheHits++;
-            returnVal = *pValue;
-            return 1;
-        }
-    }
-
-    return 0;
+    return b;
 }
 
-static inline void OffensiveAddAVL(
-    ScriptQuestionCache* cache,
-    unsigned long& key,
-    const FuzzyVariant& variant)
+static inline float WeightedScore2(float fScoreA, float fWeightA, float fScoreB, float fWeightB)
 {
-    AVLTreeNode* existingNode;
-    cache->mQuestionCacheMap.AddAVLNode(
-        (AVLTreeNode**)&cache->mQuestionCacheMap.m_Root,
-        (void*)&key,
-        (void*)&variant,
-        &existingNode,
-        cache->mQuestionCacheMap.m_NumElements);
-    if (existingNode == NULL)
-    {
-        cache->mQuestionCacheMap.m_NumElements++;
-    }
+    return fScoreA * fWeightA + fScoreB * fWeightB;
 }
 
-static inline const FuzzyVariant& OffensiveAddToCache(
-    ScriptQuestionCache* cache,
-    unsigned long hash,
-    const FuzzyVariant& variant,
-    const char* name)
+static inline float WeightedScore3(float fScoreA, float fWeightA, float fScoreB, float fWeightB, float fScoreC, float fWeightC)
 {
-    unsigned long key = hash;
-    if (g_bScriptQuestionCachingOn)
-    {
-        unsigned char useSTD = g_bScriptQuestionCachingUseSTD;
-        const FuzzyVariant* variantPtr = &variant;
-        if (useSTD)
-        {
-            std::pair<const unsigned long, FuzzyVariant>& pair =
-                cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(key);
-            pair.second = *variantPtr;
-        }
-        else
-        {
-            OffensiveAddAVL(cache, key, *variantPtr);
-        }
-    }
-    return variant;
+    return fScoreA * fWeightA + fScoreB * fWeightB + fScoreC * fWeightC;
 }
 
+/**
+ * Offset/Address/Size: 0x3128 | 0x8008FBB4 | size: 0x1368
+ */
 FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 {
-    extern unsigned char g_bScriptQuestionCachingUseSTD;
-    extern unsigned char g_bScriptQuestionCachingOn;
-
-    extern cFielder* g_pScriptCurrentFielder;
-    extern cTeam* g_pScriptCurrentTeam;
-    extern cGame* g_pGame;
-
-    extern float InOffensiveZone(cPlayer*);
-    extern float FarToTheirNet(cPlayer*);
-    extern float Invincible(cFielder*);
-    extern float WideOpen(cFielder*);
-    extern float InFrontOfTheirNet(cFielder*);
-    extern float LikelyToScore(cFielder*);
-    extern float Losing(cTeam*);
-    extern float TimeNearlyOver(cGame*);
-    extern float FLESS(float, float);
-    extern float FGREATER(float, float);
-
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
     FuzzyVariant fvFielder((cPlayer*)TheFielder);
-    volatile unsigned long funcAddrTemp = (unsigned long)InGoodWindupPosition;
-    unsigned long hash = OffensiveHash(funcAddrTemp + ((Variant*)&fvFielder)->GetHash());
+    union FunctionAddress
+    {
+        FuzzyVariant (*function)(cFielder*);
+        unsigned long address;
+    } functionAddress;
+    functionAddress.function = InGoodWindupPosition;
+    unsigned long hash = OffensiveQuestionHash(functionAddress.address, fvFielder);
     FuzzyVariant fvFielder2((cPlayer*)TheFielder);
 
-    if (OffensiveLookup(hash, bestValue))
+    if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
         bestValue.Confidence = bestValue.Confidence;
-        OffensiveAddToCache(ScriptQuestionCache::Instance(), hash, bestValue, NULL);
+        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
         return bestValue;
     }
 
-    float fTrueConfidence = OffensiveInitialMax(
+    float fTrueConfidence = OffensiveOr(
+        FGREATER(FarToTheirNet(g_pScriptCurrentFielder), 0.85f),
         FLESS(InOffensiveZone(g_pScriptCurrentFielder), 0.4f));
     float fFalseConfidence;
     float fBranchRatio;
     OffensiveBranchValues(fTrueConfidence, fBranchRatio, fFalseConfidence);
-    float fMinVal;
-    float fMaxVal;
 
     if (fTrueConfidence > 0.0f)
     {
@@ -928,10 +732,7 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 
         fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
         if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
-        {
-            double d = fConfidence;
-            fConfidence = (float)d * fBranchRatio;
-        }
+            fConfidence = fConfidence * fBranchRatio;
 
         if (fConfidence > 0.0f)
         {
@@ -946,16 +747,13 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 
         fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
         if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
-        {
-            double d = fConfidence;
-            fConfidence = (float)d * fBranchRatio;
-        }
+            fConfidence = fConfidence * fBranchRatio;
 
         float fTrueConfidence = Invincible(g_pScriptCurrentFielder);
         float fFalseConfidence = 1.0f - fTrueConfidence;
         float fBranchRatio;
-        float fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-        float fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        float fMinVal = OffensiveAnd(fTrueConfidence, fFalseConfidence);
+        float fMaxVal = OffensiveOr(fTrueConfidence, fFalseConfidence);
         fBranchRatio = fMinVal / fMaxVal;
 
         if (fTrueConfidence > 0.0f)
@@ -964,10 +762,7 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 
             fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
             if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
-            {
-                double d = fConfidence;
-                fConfidence = (float)d * fBranchRatio;
-            }
+                fConfidence = fConfidence * fBranchRatio;
 
             if (fConfidence > fBestConfidence)
             {
@@ -982,34 +777,22 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 
             fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
             if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
-            {
-                double d = fConfidence;
-                fConfidence = (float)d * fBranchRatio;
-            }
+                fConfidence = fConfidence * fBranchRatio;
 
-            float fOpen = FGREATER(WideOpen(g_pScriptCurrentFielder), 0.4f);
-            float fOpenInOffensiveZone = InOffensiveZone(g_pScriptCurrentFielder);
-            if (fOpenInOffensiveZone <= fOpen)
-            {
-                fOpen = fOpenInOffensiveZone;
-            }
+            float fOpen = OffensiveAnd(
+                InOffensiveZone(g_pScriptCurrentFielder),
+                FGREATER(WideOpen(g_pScriptCurrentFielder), 0.4f));
 
-            float fNotInDanger = OffensiveIdentity(1.0f - OffensiveDanger(InDanger(g_pScriptCurrentFielder)));
-            float fNotFarToTheirNet = FarToTheirNet(g_pScriptCurrentFielder);
-            fNotFarToTheirNet = 1.0f - fNotFarToTheirNet;
-            fNotFarToTheirNet = (fNotFarToTheirNet <= fNotInDanger) ? fNotFarToTheirNet : fNotInDanger;
+            float fNotInDanger = OffensiveNot(OffensiveDanger(InDanger(g_pScriptCurrentFielder)));
+            float fFarToTheirNet = FarToTheirNet(g_pScriptCurrentFielder);
+            float fNotFarToTheirNet = OffensiveAnd(1.0f - fFarToTheirNet, fNotInDanger);
 
-            float fLosing = Losing(g_pScriptCurrentTeam);
-            float fTimeNearlyOver = TimeNearlyOver(g_pGame);
-            if (fTimeNearlyOver <= fLosing)
-            {
-                fLosing = fTimeNearlyOver;
-            }
+            float fLosing = OffensiveAnd(TimeNearlyOver(g_pGame), Losing(g_pScriptCurrentTeam));
 
             float fInFront = FLESS(InFrontOfTheirNet(g_pScriptCurrentFielder), 0.4f);
             float fNotInFront = 1.0f - fInFront;
-            float fInFrontMin = (fInFront <= fNotInFront) ? fInFront : fNotInFront;
-            float fInFrontMax = (fInFront >= fNotInFront) ? fInFront : fNotInFront;
+            float fInFrontMin = OffensiveAnd(fInFront, fNotInFront);
+            float fInFrontMax = OffensiveOr(fInFront, fNotInFront);
             float fInFrontBranchRatio = fInFrontMin / fInFrontMax;
 
             if (fInFront > 0.0f)
@@ -1018,14 +801,11 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 
                 fConfidence = (fConfidence <= fInFront) ? fConfidence : fInFront;
                 if (fConfidence < fInFront && fInFront < 0.5f)
-                {
-                    double d = fConfidence;
-                    fConfidence = (float)d * fInFrontBranchRatio;
-                }
+                    fConfidence = fConfidence * fInFrontBranchRatio;
 
                 float fLosingFalse = 1.0f - fLosing;
-                float fLosingMin = (fLosing <= fLosingFalse) ? fLosing : fLosingFalse;
-                float fLosingMax = (fLosing >= fLosingFalse) ? fLosing : fLosingFalse;
+                float fLosingMin = OffensiveAnd(fLosing, fLosingFalse);
+                float fLosingMax = OffensiveOr(fLosing, fLosingFalse);
                 float fLosingBranchRatio = fLosingMin / fLosingMax;
 
                 if (fLosing > 0.0f)
@@ -1034,10 +814,7 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 
                     fConfidence = (fConfidence <= fLosing) ? fConfidence : fLosing;
                     if (fConfidence < fLosing && fLosing < 0.5f)
-                    {
-                        double d = fConfidence;
-                        fConfidence = (float)d * fLosingBranchRatio;
-                    }
+                        fConfidence = fConfidence * fLosingBranchRatio;
 
                     if (fConfidence > fBestConfidence)
                     {
@@ -1053,10 +830,7 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 
                     fConfidence = (fConfidence <= fLosingFalse) ? fConfidence : fLosingFalse;
                     if (fConfidence < fLosingFalse && fLosingFalse < 0.5f)
-                    {
-                        double d = fConfidence;
-                        fConfidence = (float)d * fLosingBranchRatio;
-                    }
+                        fConfidence = fConfidence * fLosingBranchRatio;
 
                     if (fConfidence > fBestConfidence)
                     {
@@ -1072,16 +846,13 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 
                 fConfidence = (fConfidence <= fNotInFront) ? fConfidence : fNotInFront;
                 if (fConfidence < fNotInFront && fNotInFront < 0.5f)
-                {
-                    double d = fConfidence;
-                    fConfidence = (float)d * fInFrontBranchRatio;
-                }
+                    fConfidence = fConfidence * fInFrontBranchRatio;
 
-                fTrueConfidence = LikelyToScore(g_pScriptCurrentFielder);
-                fFalseConfidence = OffensiveIdentity(1.0f - fTrueConfidence);
-                fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                fBranchRatio = fMinVal / fMaxVal;
+                float fTrueConfidence = LikelyToScore(g_pScriptCurrentFielder);
+                float fFalseConfidence = OffensiveNot(fTrueConfidence);
+                float fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fBranchRatio = fMinVal / fMaxVal;
 
                 if (fTrueConfidence > 0.0f)
                 {
@@ -1089,10 +860,7 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 
                     fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
-                    {
-                        double d = fConfidence;
-                        fConfidence = (float)d * fBranchRatio;
-                    }
+                        fConfidence = fConfidence * fBranchRatio;
 
                     if (fConfidence > fBestConfidence)
                     {
@@ -1102,31 +870,27 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
                 }
 
                 {
-                    float fTrueConfidence = fLosing;
-                    float fFalseConfidence = 1.0f - fTrueConfidence;
-                    float fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                    float fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                    float fFalseConfidence = 1.0f - fLosing;
+                    float fMinVal = (fLosing <= fFalseConfidence) ? fLosing : fFalseConfidence;
+                    float fMaxVal = (fLosing >= fFalseConfidence) ? fLosing : fFalseConfidence;
                     float fBranchRatio = fMinVal / fMaxVal;
 
-                    if (fTrueConfidence > 0.0f)
+                    if (fLosing > 0.0f)
                     {
                         SaveConfidence PushDOM5(&fConfidence);
 
-                        fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
-                        if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
-                        {
-                            double d = fConfidence;
-                            fConfidence = (float)d * fBranchRatio;
-                        }
+                        fConfidence = (fConfidence <= fLosing) ? fConfidence : fLosing;
+                        if (fConfidence < fLosing && fLosing < 0.5f)
+                            fConfidence = fConfidence * fBranchRatio;
 
                         if (fConfidence > fBestConfidence)
                         {
                             fBestConfidence = fConfidence;
-                            bestValue = OffensiveThreeVariant(
-                                GoodToShoot(g_pScriptCurrentFielder),
-                                fNotFarToTheirNet,
-                                fOpen,
-                                fLosing);
+                            bestValue = FuzzyVariant(WeightedScore3(
+                                fLosing, 0.25f,
+                                InFrontOfTheirNet(g_pScriptCurrentFielder), 0.2f,
+                                max_float(fOpen, max_float(fNotFarToTheirNet,
+                                    OffensiveDanger(GoodToShoot(g_pScriptCurrentFielder)))), 0.55f));
                         }
                     }
 
@@ -1136,18 +900,15 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 
                         fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
                         if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
-                        {
-                            double d = fConfidence;
-                            fConfidence = (float)d * fBranchRatio;
-                        }
+                            fConfidence = fConfidence * fBranchRatio;
 
                         if (fConfidence > fBestConfidence)
                         {
                             fBestConfidence = fConfidence;
-                            bestValue = FuzzyVariant(OffensiveTwoScore(
-                                GoodToShoot(g_pScriptCurrentFielder),
-                                fNotFarToTheirNet,
-                                fOpen));
+                            bestValue = FuzzyVariant(WeightedScore2(
+                                InFrontOfTheirNet(g_pScriptCurrentFielder), 0.3f,
+                                max_float(fOpen, max_float(fNotFarToTheirNet,
+                                    OffensiveDanger(GoodToShoot(g_pScriptCurrentFielder)))), 0.7f));
                         }
                     }
                 }
@@ -1157,7 +918,7 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 
     bestValue.Confidence = fBestConfidence;
 
-    OffensiveAddToCache(ScriptQuestionCache::Instance(), hash, bestValue, NULL);
+    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
 
     return bestValue;
 }
@@ -1224,8 +985,6 @@ FuzzyVariant Fuzzy::CutAndBreak(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0x22A0 | 0x8008ED2C | size: 0x88C
- * TODO: 99.85% match - chip-shot confidence register and defensive temporary
- * register/stack allocation differ.
  */
 FuzzyVariant Fuzzy::DoShooting(float fConfidence, cDecisionEntity* pDecision)
 {
@@ -1295,24 +1054,17 @@ FuzzyVariant Fuzzy::DoShooting(float fConfidence, cDecisionEntity* pDecision)
     }
 
     {
-        fTrueConfidence = Winning(g_pScriptCurrentTeam);
-        float fTimeNearlyOver = TimeNearlyOver(g_pGame);
-        fTrueConfidence = (fTimeNearlyOver <= fTrueConfidence) ? fTimeNearlyOver : fTrueConfidence;
+        fTrueConfidence = OffensiveAnd(TimeNearlyOver(g_pGame), Winning(g_pScriptCurrentTeam));
 
-        float fStunnedGoalie;
-        float fInDanger = InDanger(g_pScriptCurrentFielder).mData.f;
-        fStunnedGoalie = Stunned(g_pScriptCurrentTeam->GetGoalie());
-        float fCloseToNet = CloseToMyNet(g_pScriptCurrentFielder);
+        float fStunnedGoalie = OffensiveOr(
+            FGREATER(FurthestBackOnMyTeam(g_pScriptCurrentFielder).mData.f, 0.5f),
+            OffensiveAnd(
+                CloseToMyNet(g_pScriptCurrentFielder),
+                Stunned(g_pScriptCurrentTeam->GetGoalie()),
+                InDanger(g_pScriptCurrentFielder).mData.f),
+            fTrueConfidence);
 
-        fStunnedGoalie = (fStunnedGoalie <= fInDanger) ? fStunnedGoalie : fInDanger;
-        fStunnedGoalie = (fCloseToNet <= fStunnedGoalie) ? fCloseToNet : fStunnedGoalie;
-
-        float fFurthestBack = FGREATER(FurthestBackOnMyTeam(g_pScriptCurrentFielder).mData.f, 0.5f);
-        fStunnedGoalie = (fStunnedGoalie >= fTrueConfidence) ? fStunnedGoalie : fTrueConfidence;
-        fStunnedGoalie = (fFurthestBack >= fStunnedGoalie) ? fFurthestBack : fStunnedGoalie;
-
-        fTrueConfidence = InDefensiveZone(g_pScriptCurrentFielder);
-        fTrueConfidence = (fTrueConfidence <= fStunnedGoalie) ? fTrueConfidence : fStunnedGoalie;
+        fTrueConfidence = OffensiveAnd(InDefensiveZone(g_pScriptCurrentFielder), fStunnedGoalie);
 
         float fFalseConfidence = 1.0f - fTrueConfidence;
         float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
