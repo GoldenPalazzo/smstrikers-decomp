@@ -3850,9 +3850,6 @@ FuzzyVariant Fuzzy::InDangerDelayed(cFielder* TheFielder)
 /**
  * Offset/Address/Size: 0x0 | 0x8006A1D0 | size: 0x3B4
  */
-/**
- * TODO: 99.4% match - residual fuzzy-score accumulator register selection
- */
 FuzzyVariant Fuzzy::GoalieAndGonnaPickupBall(cPlayer* ThePlayer)
 {
     FuzzyVariant bestValue;
@@ -3862,17 +3859,11 @@ FuzzyVariant Fuzzy::GoalieAndGonnaPickupBall(cPlayer* ThePlayer)
 
     FuzzyVariant fvPlayer2((cPlayer*)ThePlayer);
 
-    float ableToIntercept = AbleToInterceptBall(ThePlayer);
-    float closingTo = ClosingTo(ThePlayer, g_pScriptBall);
-    float closeToBall = CloseToBall(ThePlayer);
-    float goalieType = GoalieType(ThePlayer);
-
-    closingTo = (ableToIntercept <= closingTo) ? ableToIntercept : closingTo;
-    closeToBall = (closingTo <= closeToBall) ? closingTo : closeToBall;
-    if (goalieType <= closeToBall)
-        closeToBall = goalieType;
-
-    FuzzyVariant fvResult(closeToBall);
+    FuzzyVariant fvResult(nlMinFour(
+        GoalieType(ThePlayer),
+        CloseToBall(ThePlayer),
+        ClosingTo(ThePlayer, g_pScriptBall),
+        AbleToInterceptBall(ThePlayer)));
 
     bestValue = fvResult;
     bestValue.Confidence = 1.0f;
