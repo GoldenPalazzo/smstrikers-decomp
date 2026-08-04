@@ -9,7 +9,6 @@ extern cTeam* g_pCurrentlyUpdatingTeam;
 extern PowerupBase* g_pPowerups[];
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
-static const nlVector3 v3ApplyRepulsionZero = { 0.0f, 0.0f, 0.0f };
 static const nlVector2 v2Zero = { 0.0f, 0.0f };
 
 /**
@@ -949,21 +948,9 @@ bool AvoidController::AvoidSidelines()
 
 /**
  * Offset/Address/Size: 0x0 | 0x80007654 | size: 0x41C
- * TODO: 96.36% match - residual FP register coloring in the rotation and
- * sideline sections.
  */
 void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
 {
-    struct LocalVectors
-    {
-        nlVector3 repulsionDir;
-        nlVector3 desiredVelDir;
-    } v;
-
-    f32 fCos;
-    f32 fSin;
-    f32 fDesiredSpeed;
-
     if (m_pFielder->GetDistanceToDesiredPos() <= 0.5f)
     {
         return;
@@ -977,13 +964,17 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
         return;
     }
 
-    v.desiredVelDir = v3ApplyRepulsionZero;
-    if (&v.desiredVelDir != NULL)
+    nlVector3 v3DesiredVelDir = { 0.0f, 0.0f, 0.0f };
+    nlVector3 v3RepulsionDir;
+    nlVector3& rRepulsionDir = v3RepulsionDir;
+    f32 fDesiredSpeed;
+
+    if (&v3DesiredVelDir != NULL)
     {
-        nlSinCos(&v.desiredVelDir.f.y, &v.desiredVelDir.f.x, m_pFielder->m_aDesiredMovementDirection);
+        nlSinCos(&v3DesiredVelDir.f.y, &v3DesiredVelDir.f.x, m_pFielder->m_aDesiredMovementDirection);
     }
 
-    v.desiredVelDir.f.z = 0.0f;
+    v3DesiredVelDir.f.z = 0.0f;
 
     f32 fInvRepulsionMag = nlRecipSqrt(
         v3Repulsion.f.x * v3Repulsion.f.x + v3Repulsion.f.y * v3Repulsion.f.y + v3Repulsion.f.z * v3Repulsion.f.z,
@@ -993,16 +984,19 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
     f32 fRepulsionZ = fInvRepulsionMag * v3Repulsion.f.z;
     f32 fRepulsionY = fInvRepulsionMag * v3Repulsion.f.y;
 
-    v.repulsionDir.f.x = fRepulsionX;
-    v.repulsionDir.f.y = fRepulsionY;
-    v.repulsionDir.f.z = fRepulsionZ;
+    rRepulsionDir.f.x = fRepulsionX;
+    rRepulsionDir.f.y = fRepulsionY;
+    rRepulsionDir.f.z = fRepulsionZ;
 
-    f32 fDot = nlVec3DotProduct(v.desiredVelDir, v.repulsionDir);
+    f32 fDot = nlVec3DotProduct(v3DesiredVelDir, rRepulsionDir);
 
     if (fDot <= -0.75f || fDot >= 0.7f)
     {
+        f32 fCos;
+        f32 fSin;
+
         f32 fRepulsionAngle = nlATan2f(fRepulsionY, fRepulsionX);
-        f32 fDesiredAngle = nlATan2f(v.desiredVelDir.f.y, v.desiredVelDir.f.x);
+        f32 fDesiredAngle = nlATan2f(v3DesiredVelDir.f.y, v3DesiredVelDir.f.x);
 
         u16 aDesired = (u16)(s32)(10430.378f * fDesiredAngle);
         u16 aRepulsion = (u16)(s32)(10430.378f * fRepulsionAngle);
@@ -1020,79 +1014,59 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
 
         nlSinCos(&fSin, &fCos, (u16)aAdjust);
 
-        f32 fParallelX = v.desiredVelDir.f.x * fCos - v.desiredVelDir.f.y * fSin;
-        f32 fParallelY = v.desiredVelDir.f.y * fCos + v.desiredVelDir.f.x * fSin;
+        rRepulsionDir.f.x = v3DesiredVelDir.f.x * fCos - v3DesiredVelDir.f.y * fSin;
+        rRepulsionDir.f.y = v3DesiredVelDir.f.y * fCos + v3DesiredVelDir.f.x * fSin;
 
-        v.repulsionDir.f.y = fParallelY;
-        v.repulsionDir.f.x = fParallelX;
-
-        v3Repulsion.f.x = fRepulsionMag * fParallelX;
-        v3Repulsion.f.y = fRepulsionMag * fParallelY;
-        v3Repulsion.f.z = fRepulsionMag * v.repulsionDir.f.z;
+        nlVec3Scale(v3Repulsion, rRepulsionDir, fRepulsionMag);
     }
 
     if (m_VeryCloseToSideline)
     {
-        f32 fRepulsionDirY = v.repulsionDir.f.y;
-        f32 fNormalY = m_SidelineNormal.f.y;
-        f32 fRepulsionDirX = v.repulsionDir.f.x;
-        f32 fDotNormalVel = fRepulsionDirY * fNormalY;
+        f32 fDotNormalVel = rRepulsionDir.f.y * m_SidelineNormal.f.y;
         f32 fNormalX = m_SidelineNormal.f.x;
-        fDotNormalVel = fRepulsionDirX * fNormalX + fDotNormalVel;
+        fDotNormalVel = rRepulsionDir.f.x * fNormalX + fDotNormalVel;
 
         if (fDotNormalVel < -0.1f)
         {
-            f32 fSidelineDirY = m_SidelineDirection.f.y;
-            f32 fSidelineDirX = m_SidelineDirection.f.x;
-            f32 fSidelineLenSq = fSidelineDirY * fSidelineDirY;
-            fSidelineLenSq = fSidelineDirX * fSidelineDirX + fSidelineLenSq;
+            f32 fSidelineDirXSq = m_SidelineDirection.f.x * m_SidelineDirection.f.x;
+            f32 fSidelineDirYSq = m_SidelineDirection.f.y * m_SidelineDirection.f.y;
 
-            if (fSidelineLenSq > 0.0f)
+            if (fSidelineDirXSq + fSidelineDirYSq > 0.0f)
             {
-                f32 fDotDirVel = fRepulsionDirY * fSidelineDirY;
-                f32 fRepulsionDirZ = v.repulsionDir.f.z;
+                f32 fRepulsionDirZ = rRepulsionDir.f.z;
                 f32 fSidelineDirZ = 0.0f;
                 f32 fMinusOne = -1.0f;
 
-                fDotDirVel = fRepulsionDirX * fSidelineDirX + fDotDirVel;
                 v3Repulsion.f.z = fRepulsionMag * fSidelineDirZ;
 
-                fSidelineLenSq = 0.0f + (fSidelineDirX * fSidelineDirX + fSidelineDirY * fSidelineDirY);
-                fDotDirVel = fRepulsionDirZ * fSidelineDirZ + fDotDirVel;
-
-                f32 fScale = fDotDirVel / fSidelineLenSq;
-                f32 fParallelY = fScale * fSidelineDirY;
-                f32 fParallelX = fScale * fSidelineDirX;
+                f32 fScale = (fRepulsionDirZ * fSidelineDirZ
+                    + (rRepulsionDir.f.x * m_SidelineDirection.f.x + rRepulsionDir.f.y * m_SidelineDirection.f.y))
+                    / nlGetLengthSquared3D(m_SidelineDirection.f.x, m_SidelineDirection.f.y, fSidelineDirZ);
+                f32 fParallelY = fScale * m_SidelineDirection.f.y;
+                f32 fParallelX = fScale * m_SidelineDirection.f.x;
                 f32 fParallelZ = fScale * fSidelineDirZ;
 
-                f32 fPerpY = v.repulsionDir.f.y - fParallelY;
-                f32 fPerpX = v.repulsionDir.f.x - fParallelX;
-                f32 fPerpZ = fRepulsionDirZ - fParallelZ;
+                rRepulsionDir.f.x = fMinusOne * (rRepulsionDir.f.x - fParallelX) + fParallelX;
+                rRepulsionDir.f.z = fMinusOne * (fRepulsionDirZ - fParallelZ) + fParallelZ;
+                rRepulsionDir.f.y = fMinusOne * (rRepulsionDir.f.y - fParallelY) + fParallelY;
+                rRepulsionDir.f.z = fSidelineDirZ;
 
-                fParallelX = fMinusOne * fPerpX + fParallelX;
-                fParallelY = fMinusOne * fPerpY + fParallelY;
-                fParallelZ = fMinusOne * fPerpZ + fParallelZ;
-
-                v.repulsionDir.f.y = fParallelY;
-                v.repulsionDir.f.z = fParallelZ;
-                v.repulsionDir.f.x = fParallelX;
-                v.repulsionDir.f.z = fSidelineDirZ;
-
-                v3Repulsion.f.x = fRepulsionMag * fParallelX;
-                v3Repulsion.f.y = fRepulsionMag * fParallelY;
+                v3Repulsion.f.x = fRepulsionMag * rRepulsionDir.f.x;
+                v3Repulsion.f.y = fRepulsionMag * rRepulsionDir.f.y;
             }
             else
             {
                 v3Repulsion.f.x = fRepulsionMag * fNormalX;
-                v3Repulsion.f.y = fRepulsionMag * fNormalY;
+                v3Repulsion.f.y = fRepulsionMag * m_SidelineNormal.f.y;
             }
         }
     }
 
-    f32 fCurrentDesiredSpeed = m_pFielder->m_fDesiredSpeed;
-    f32 fResultantX = fCurrentDesiredSpeed * v.desiredVelDir.f.x + v3Repulsion.f.x;
-    f32 fResultantY = fCurrentDesiredSpeed * v.desiredVelDir.f.y + v3Repulsion.f.y;
-    f32 fResultantZ = fCurrentDesiredSpeed * v.desiredVelDir.f.z + v3Repulsion.f.z;
+    nlVector3 v3Resultant;
+    nlVec3ScaleAdd(v3Resultant, m_pFielder->m_fDesiredSpeed, v3DesiredVelDir, v3Repulsion);
+    f32 fResultantX = v3Resultant.f.x;
+    f32 fResultantY = v3Resultant.f.y;
+    f32 fResultantZ = v3Resultant.f.z;
 
     f32 fResultantMag = nlSqrt(fResultantX * fResultantX + fResultantY * fResultantY + fResultantZ * fResultantZ, true);
 
