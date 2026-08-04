@@ -200,41 +200,33 @@ void LoadMemoryCardIconData()
 
 /**
  * Offset/Address/Size: 0x355C | 0x8018CEB8 | size: 0x1C4
- * TODO: 97.57% match - size and instruction schedule are exact; the residual is
- * pure register colouring in the header-size block. Retail keeps BannerFormat in
- * r10 (we get r7) and materialises the shared 0x200 constant after the
- * IconFormat load, so that load reads through the still-live incoming r6 rather
- * than r30. The two are one coupled web: every source form that frees r6 early
- * drops BannerFormat to r7, and every form that keeps r6 live routes all four
- * IconCfg accesses through it.
  */
 unsigned long LoadCallbacks::LoadIconDataDoneCB(unsigned long Slot, long Result, void* pUserData)
 {
-    void* pReadBuf = m_pReadBuffer;
-    MemCard::MC_FILE* pFile = (MemCard::MC_FILE*)pUserData;
-    int bannerFmt = pFile->IconCfg.BannerFormat;
-    s8 iconFmt = pFile->IconCfg.IconFormat;
+    MCFILE_HEADER* fileheader = (MCFILE_HEADER*)m_pReadBuffer;
+    MemCard::MC_FILE* file = (MemCard::MC_FILE*)pUserData;
+    s8 iconFmt = file->IconCfg.IconFormat;
     int iconPixels = iconFmt << 10;
+    int bannerFmt = file->IconCfg.BannerFormat;
 
-    int headerSize = 0;
-    headerSize += ((bannerFmt == 1) ? 0x200 : 0);
-    headerSize += bannerFmt * 0xC00;
+    int bannerHeader = 0;
+    bannerHeader += ((bannerFmt == 1) ? 0x200 : 0);
+    bannerHeader += bannerFmt * 0xC00;
     u32 iconClut = ((iconFmt == 1) ? 0x200 : 0);
-    int iconTotal = pFile->IconCfg.IconCount * iconPixels;
-    headerSize = iconTotal + headerSize;
+    int headerSize = bannerHeader + (file->IconCfg.IconCount * iconPixels);
     headerSize = headerSize + iconClut;
     headerSize += 0x40;
-    pFile->IconCfg.HeaderSize = headerSize;
+    file->IconCfg.HeaderSize = headerSize;
 
     u32 crc = nlChecksum32(m_pIconReadBuffer, headerSize);
     m_IconLoadedCRC = crc;
     m_MustFreeBuffers = true;
 
-    if (((unsigned long*)pReadBuf)[2] != m_IconLoadedCRC)
+    if (fileheader->IconCRC != m_IconLoadedCRC)
     {
-        if (pFile != NULL)
+        if (file != NULL)
         {
-            g_MemCards[Slot]->CloseFile(pFile);
+            g_MemCards[Slot]->CloseFile((MemCard::MC_FILE*)pUserData);
         }
         MemCard* card = g_MemCards[Slot];
         card->m_State = IS_IDLE;
@@ -246,7 +238,7 @@ unsigned long LoadCallbacks::LoadIconDataDoneCB(unsigned long Slot, long Result,
         return -1;
     }
 
-    gIconCRC = ((unsigned long*)pReadBuf)[2];
+    gIconCRC = fileheader->IconCRC;
     if (m_TestGameID)
     {
         *(u8*)&m_GameIDTestResult = nlSingleton<GameInfoManager>::s_pInstance->CheckSaveIDChanged((void*)((u8*)m_pReadBuffer + 12));
@@ -257,7 +249,7 @@ unsigned long LoadCallbacks::LoadIconDataDoneCB(unsigned long Slot, long Result,
     }
 
     mRequiredMemoryCardID = g_MemCards[Slot]->GetSerialID();
-    g_MemCards[Slot]->CloseFile(pFile);
+    g_MemCards[Slot]->CloseFile((MemCard::MC_FILE*)pUserData);
 
     MemCard* card = g_MemCards[Slot];
     card->m_State = IS_IDLE;
