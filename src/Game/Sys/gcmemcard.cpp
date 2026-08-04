@@ -414,38 +414,7 @@ s32 MemCard::BeginCardAccess(const MemCardFunctor& Callback)
         return -100;
     }
 
-    struct FunctorWords
-    {
-        unsigned long w0;
-        unsigned long w1;
-        unsigned long w2;
-        unsigned long w3;
-        unsigned long w4;
-        unsigned long w5;
-    };
-
-    volatile FunctorWords* dst = (volatile FunctorWords*)&m_CB[1];
-    const volatile FunctorWords* src = (const volatile FunctorWords*)&Callback;
-    unsigned long b;
-    unsigned long a;
-    unsigned long e;
-    unsigned long d;
-    unsigned long c;
-
-    a = src->w0;
-    b = src->w1;
-    dst->w0 = a;
-    dst->w1 = b;
-
-    d = src->w2;
-    e = src->w3;
-    dst->w2 = d;
-    dst->w3 = e;
-
-    b = src->w4;
-    a = src->w5;
-    dst->w4 = b;
-    dst->w5 = a;
+    m_CB[1] = Callback;
 
     s32 result = CARDProbeEx(m_Slot, &m_CardInfo.CardSize, &m_CardInfo.SectorSize);
     if (result != 0)
@@ -517,39 +486,7 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
         }
     }
 
-    struct FunctorWords
-    {
-        unsigned long w0;
-        unsigned long w1;
-        unsigned long w2;
-        unsigned long w3;
-        unsigned long w4;
-        unsigned long w5;
-    };
-
-    volatile FunctorWords* fdst = (volatile FunctorWords*)&m_CB[5];
-    const volatile FunctorWords* fsrc = (const volatile FunctorWords*)&Callback;
-    unsigned long b;
-    unsigned long a;
-    unsigned long e;
-    unsigned long d;
-    unsigned long c;
-    unsigned long f;
-
-    a = fsrc->w0;
-    b = fsrc->w1;
-    fdst->w0 = a;
-    fdst->w1 = b;
-
-    d = fsrc->w2;
-    e = fsrc->w3;
-    fdst->w2 = d;
-    fdst->w3 = e;
-
-    f = fsrc->w4;
-    c = fsrc->w5;
-    fdst->w4 = f;
-    fdst->w5 = c;
+    m_CB[5] = Callback;
 
     unsigned long hash = nlStringHash(FileName);
     MC_FILE* pNewFile = m_OpenFiles.AddEntry(hash);
@@ -709,38 +646,7 @@ s32 MemCard::FormatCard(const MemCardFunctor& Callback)
         return -100;
     }
 
-    struct FunctorWords
-    {
-        unsigned long w0;
-        unsigned long w1;
-        unsigned long w2;
-        unsigned long w3;
-        unsigned long w4;
-        unsigned long w5;
-    };
-
-    volatile FunctorWords* dst = (volatile FunctorWords*)&m_CB[4];
-    const volatile FunctorWords* src = (const volatile FunctorWords*)&Callback;
-    unsigned long b;
-    unsigned long a;
-    unsigned long e;
-    unsigned long d;
-    unsigned long c;
-
-    a = src->w0;
-    b = src->w1;
-    dst->w0 = a;
-    dst->w1 = b;
-
-    d = src->w2;
-    e = src->w3;
-    dst->w2 = d;
-    dst->w3 = e;
-
-    b = src->w4;
-    c = src->w5;
-    dst->w4 = b;
-    dst->w5 = c;
+    m_CB[4] = Callback;
 
     m_State = IS_FORMATTING;
     m_CardState = CS_FORMATTING;
@@ -768,38 +674,7 @@ long MemCard::DeleteFile(const char* FileName, const MemCardFunctor& Callback)
         return -100;
     }
 
-    struct FunctorWords
-    {
-        unsigned long w0;
-        unsigned long w1;
-        unsigned long w2;
-        unsigned long w3;
-        unsigned long w4;
-        unsigned long w5;
-    };
-
-    volatile FunctorWords* dst = (volatile FunctorWords*)&m_CB[6];
-    const volatile FunctorWords* src = (const volatile FunctorWords*)&Callback;
-    unsigned long b;
-    unsigned long a;
-    unsigned long e;
-    unsigned long d;
-    unsigned long c;
-
-    a = src->w0;
-    b = src->w1;
-    dst->w0 = a;
-    dst->w1 = b;
-
-    d = src->w2;
-    e = src->w3;
-    dst->w2 = d;
-    dst->w3 = e;
-
-    c = src->w4;
-    b = src->w5;
-    dst->w4 = c;
-    dst->w5 = b;
+    m_CB[6] = Callback;
 
     unsigned long hash = nlStringHash(FileName);
 
@@ -857,38 +732,7 @@ long MemCard::InternalReadFile(MC_FILE* pFile, void* Buffer, unsigned long Lengt
         return -100;
     }
 
-    struct FunctorWords
-    {
-        unsigned long w0;
-        unsigned long w1;
-        unsigned long w2;
-        unsigned long w3;
-        unsigned long w4;
-        unsigned long w5;
-    };
-
-    volatile FunctorWords* dst = (volatile FunctorWords*)&m_CB[7];
-    const volatile FunctorWords* src = (const volatile FunctorWords*)&Callback;
-    unsigned long b;
-    unsigned long a;
-    unsigned long e;
-    unsigned long d;
-    unsigned long c;
-
-    a = src->w0;
-    b = src->w1;
-    dst->w0 = a;
-    dst->w1 = b;
-
-    d = src->w2;
-    e = src->w3;
-    dst->w2 = d;
-    dst->w3 = e;
-
-    b = src->w4;
-    a = src->w5;
-    dst->w4 = b;
-    dst->w5 = a;
+    m_CB[7] = Callback;
 
     m_State = IS_READING;
     m_CardState = CS_READING;
@@ -1028,38 +872,7 @@ long MemCard::WriteFileIconData(MemCard::MC_FILE* pFile, void* pData, const MemC
     unsigned char fmt = *bannerFmt;
     *bannerFmt = (unsigned char)((fmt & ~CARD_STAT_ANIM_MASK) | pFile->IconCfg.IconAnimType);
 
-    struct FunctorWords
-    {
-        unsigned long w0;
-        unsigned long w1;
-        unsigned long w2;
-        unsigned long w3;
-        unsigned long w4;
-        unsigned long w5;
-    };
-
-    volatile FunctorWords* dst = (volatile FunctorWords*)&m_CB[8];
-    const volatile FunctorWords* src = (const volatile FunctorWords*)&functor;
-    unsigned long b;
-    unsigned long a;
-    unsigned long e;
-    unsigned long d;
-    unsigned long c;
-
-    a = src->w0;
-    b = src->w1;
-    dst->w0 = a;
-    dst->w1 = b;
-
-    d = src->w2;
-    e = src->w3;
-    dst->w2 = d;
-    dst->w3 = e;
-
-    b = src->w4;
-    a = src->w5;
-    dst->w4 = b;
-    dst->w5 = a;
+    m_CB[8] = functor;
 
     m_State = IS_WRITINGSTATUS;
     m_CardState = CS_WRITING;

@@ -39,12 +39,15 @@ public:
     void Finish();
     void Update(float);
     bool DuringEndOfGamePresentation() const;
+    bool DetectSkipPress() const;
+    void HandleOverlay(float);
     void Call(const char*, const char*);
     void EventHandler(Event*);
     static void EventHandler(Event* event, void* userData) { ((Presentation*)userData)->EventHandler(event); }
     void PlayOverlay(const char*, float, float);
     void StopOverlay();
     void Reset();
+    static void RaiseEvent(const char*, const char*);
 
     /* 0x24 */ char mCurrentFunction[64];
     /* 0x64 */ bool mByPassWasSkipped;

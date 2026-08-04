@@ -241,6 +241,92 @@ void Presentation::LoadTrophyModel()
     glBeginLoadModel(trophyFileName, ReadTrophyModel, NULL);
 }
 
+inline bool Presentation::DetectSkipPress() const
+{
+    if (nlSingleton<GameInfoManager>::s_pInstance->IsInDemoMode())
+    {
+        return false;
+    }
+
+    Config& cfg = Config::Global();
+    TagValuePair& tvp = cfg.FindTvp("no_presentation_skip");
+    bool noPresentationSkip;
+
+    if (tvp.tag == 0)
+    {
+        cfg.Set("no_presentation_skip", false);
+        noPresentationSkip = false;
+    }
+    else if (tvp.type == _BOOL)
+    {
+        noPresentationSkip = LexicalCast<bool, bool>(tvp.value.b);
+    }
+    else if (tvp.type == _INT)
+    {
+        noPresentationSkip = LexicalCast<bool, int>(tvp.value.i);
+    }
+    else if (tvp.type == _FLOAT)
+    {
+        noPresentationSkip = LexicalCast<bool, float>(tvp.value.f);
+    }
+    else if (tvp.type == _STRING)
+    {
+        noPresentationSkip = LexicalCast<bool, const char*>(tvp.value.s);
+    }
+    else
+    {
+        noPresentationSkip = false;
+    }
+
+    if (noPresentationSkip)
+    {
+        bool trophyShown;
+        if (cupTrophyHash != 0)
+        {
+            trophyShown = (WorldManager::s_World->FindDrawableObject(cupTrophyHash)->m_uObjectFlags & 1) != 0;
+        }
+        else
+        {
+            trophyShown = false;
+        }
+
+        if (nlStrCmp<char>(mCurrentFunction, "PlayHighlight") != 0 && !trophyShown)
+        {
+            return false;
+        }
+    }
+
+    if (DuringEndOfGamePresentation() & (mTimeInFunction <= 1.2f))
+    {
+        return false;
+    }
+
+    if (nlTaskManager::m_pInstance->m_CurrState == 0x100 || nlTaskManager::m_pInstance->m_CurrState == 0x10)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            if (!mIsAllowedToSkip[i])
+            {
+                if (nlStrCmp<char>(mCurrentFunction, "PlayHighlight") != 0)
+                {
+                    continue;
+                }
+            }
+
+            cGlobalPad* pad = cPadManager::GetPad(i);
+            if (pad != 0)
+            {
+                if (cPadManager::GetPad(i)->JustPressed(7, true))
+                {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
 /**
  * Offset/Address/Size: 0x14EC | 0x80125CD0 | size: 0x35C
  */
@@ -364,225 +450,8 @@ public:
     bool mIsWidescreen;
 };
 
-/**
- * Offset/Address/Size: 0xE70 | 0x80125654 | size: 0x67C
- */
-void Presentation::Update(float deltaT)
+inline void Presentation::HandleOverlay(float deltaT)
 {
-    mTimeInFunction += deltaT;
-
-    if (mDisplayLetterBox > 0.0f)
-    {
-        mDisplayLetterBox -= deltaT;
-        if (mDisplayLetterBox <= 0.0f)
-        {
-            ReplayChoreo::Instance().SaveHighlight(ReplayChoreo::HIGHLIGHT_QUALITY_SAVE);
-            mDisplayLetterBox = 0.0f;
-        }
-    }
-
-    bool isPaused = false;
-    if (!FrontEnd::m_bGameOver && nlTaskManager::m_pInstance->m_CurrState == 1)
-    {
-        isPaused = true;
-    }
-
-    if (!isPaused)
-    {
-        if (nlStrCmp<char>(mCurrentFunction, "GameBegin") == 0)
-        {
-            if (nlTaskManager::m_pInstance->m_CurrState != 0x100)
-            {
-                glDiscardFrame(1);
-            }
-        }
-
-        Run();
-
-        ReplayChoreo::Instance().Update(deltaT);
-        ReplayCamera::UpdateTweakMode();
-
-        if (!mSkipPressed)
-        {
-            bool pressedSkip;
-            if (nlSingleton<GameInfoManager>::s_pInstance->IsInDemoMode())
-            {
-                pressedSkip = false;
-            }
-            else
-            {
-                Config& cfg = Config::Global();
-                TagValuePair& tvp = cfg.FindTvp("no_presentation_skip");
-                bool noPresentationSkip;
-
-                if (tvp.tag == 0)
-                {
-                    cfg.Set("no_presentation_skip", false);
-                    noPresentationSkip = false;
-                }
-                else if (tvp.type == _BOOL)
-                {
-                    noPresentationSkip = LexicalCast<bool, bool>(tvp.value.b);
-                }
-                else if (tvp.type == _INT)
-                {
-                    noPresentationSkip = LexicalCast<bool, int>(tvp.value.i);
-                }
-                else if (tvp.type == _FLOAT)
-                {
-                    noPresentationSkip = LexicalCast<bool, float>(tvp.value.f);
-                }
-                else if (tvp.type == _STRING)
-                {
-                    noPresentationSkip = LexicalCast<bool, const char*>(tvp.value.s);
-                }
-                else
-                {
-                    noPresentationSkip = false;
-                }
-
-                if (noPresentationSkip)
-                {
-                    bool trophyShown;
-                    if (cupTrophyHash != 0)
-                    {
-                        trophyShown = (WorldManager::s_World->FindDrawableObject(cupTrophyHash)->m_uObjectFlags & 1) != 0;
-                    }
-                    else
-                    {
-                        trophyShown = false;
-                    }
-
-                    if (nlStrCmp<char>(mCurrentFunction, "PlayHighlight") != 0 && !trophyShown)
-                    {
-                        pressedSkip = false;
-                        goto set_skip_pressed;
-                    }
-                }
-
-                bool duringEndPresentation = DuringEndOfGamePresentation();
-
-                if (duringEndPresentation & (mTimeInFunction <= 1.2f))
-                {
-                    pressedSkip = false;
-                }
-                else
-                {
-                    if (nlTaskManager::m_pInstance->m_CurrState == 0x100 || nlTaskManager::m_pInstance->m_CurrState == 0x10)
-                    {
-                        for (int i = 0; i < 4; i++)
-                        {
-                            if (!mIsAllowedToSkip[i])
-                            {
-                                if (nlStrCmp<char>(mCurrentFunction, "PlayHighlight") != 0)
-                                {
-                                    continue;
-                                }
-                            }
-
-                            cGlobalPad* pad = cPadManager::GetPad(i);
-                            if (pad != 0)
-                            {
-                                if (cPadManager::GetPad(i)->JustPressed(7, true))
-                                {
-                                    pressedSkip = true;
-                                    goto set_skip_pressed;
-                                }
-                            }
-                        }
-                    }
-                    pressedSkip = false;
-                }
-            }
-
-        set_skip_pressed:
-            mSkipPressed = pressedSkip;
-        }
-
-    done_skip_detect:
-        if (mSkipPressed && mInsideByPass)
-        {
-            mByPassing = true;
-            mSkipPressed = false;
-            g_pEventManager->CreateValidEvent(0x1C, 0x14);
-            mUseInterruptWipe = mInterruptWipe;
-            mInterruptWipe = 0;
-
-            if (DuringEndOfGamePresentation())
-            {
-                mTimeInFunction = 0.0f;
-            }
-        }
-
-        if (IsFinished())
-        {
-            Finish();
-        }
-    }
-
-    bool isPausedForRender = false;
-    if (!FrontEnd::m_bGameOver && nlTaskManager::m_pInstance->m_CurrState == 1)
-    {
-        isPausedForRender = true;
-    }
-
-    float renderDelta;
-    if (isPausedForRender)
-    {
-        renderDelta = 0.0f;
-    }
-    else
-    {
-        renderDelta = deltaT;
-    }
-
-    Wiper::Instance().Render(renderDelta);
-
-    if (mLetterBoxEnabled)
-    {
-        mLetterBoxDuration += 0.05f;
-    }
-    else
-    {
-        mLetterBoxDuration -= 0.05f;
-    }
-
-    if (mLetterBoxDuration < 0.0f)
-    {
-        mLetterBoxDuration = 0.0f;
-    }
-
-    if (mLetterBoxDuration > 1.0f)
-    {
-        mLetterBoxDuration = 1.0f;
-    }
-
-    if (!((GameInfoWidescreenProbe*)nlSingleton<GameInfoManager>::s_pInstance)->mIsWidescreen)
-    {
-        if (mLetterBoxDuration > 0.0f)
-        {
-            nlColour black = { { 0x00, 0x00, 0x00, 0xFF } };
-            g_ShapeRenderer.DrawRectangle2D(0.0f, 0.0f, glGetOrthographicWidth(), 38.0f * mLetterBoxDuration, 1.0f, black, GLV_Transitions);
-            g_ShapeRenderer.DrawRectangle2D(0.0f, glGetOrthographicHeight() - 38.0f * mLetterBoxDuration, glGetOrthographicWidth(), 38.0f * mLetterBoxDuration, 1.0f, black, GLV_Transitions);
-        }
-    }
-
-    bool pauseOverlay = false;
-    if (!FrontEnd::m_bGameOver && nlTaskManager::m_pInstance->m_CurrState == 1)
-    {
-        pauseOverlay = true;
-    }
-
-    if (pauseOverlay)
-    {
-        return;
-    }
-
-    if (mOverlayToDisplay == SCENE_INVALID)
-    {
-        return;
-    }
-
     if (!mOverlayDisplayed)
     {
         mOverlayDelay -= deltaT;
@@ -614,17 +483,118 @@ void Presentation::Update(float deltaT)
     }
 }
 
+static inline bool IsDuringGamePauseState()
+{
+    return !FrontEnd::m_bGameOver && nlTaskManager::m_pInstance->m_CurrState == 1;
+}
+
+/**
+ * Offset/Address/Size: 0xE70 | 0x80125654 | size: 0x67C
+ */
+void Presentation::Update(float deltaT)
+{
+    mTimeInFunction += deltaT;
+
+    if (mDisplayLetterBox > 0.0f)
+    {
+        mDisplayLetterBox -= deltaT;
+        if (mDisplayLetterBox <= 0.0f)
+        {
+            ReplayChoreo::Instance().SaveHighlight(ReplayChoreo::HIGHLIGHT_QUALITY_SAVE);
+            mDisplayLetterBox = 0.0f;
+        }
+    }
+
+    if (!IsDuringGamePauseState())
+    {
+        if (nlStrCmp<char>(mCurrentFunction, "GameBegin") == 0)
+        {
+            if (nlTaskManager::m_pInstance->m_CurrState != 0x100)
+            {
+                glDiscardFrame(1);
+            }
+        }
+
+        Run();
+
+        ReplayChoreo::Instance().Update(deltaT);
+        ReplayCamera::UpdateTweakMode();
+
+        if (!mSkipPressed)
+        {
+            mSkipPressed = DetectSkipPress();
+        }
+
+        if (mSkipPressed && mInsideByPass)
+        {
+            mByPassing = true;
+            mSkipPressed = false;
+            g_pEventManager->CreateValidEvent(0x1C, 0x14);
+            mUseInterruptWipe = mInterruptWipe;
+            mInterruptWipe = 0;
+
+            if (DuringEndOfGamePresentation())
+            {
+                mTimeInFunction = 0.0f;
+            }
+        }
+
+        if (IsFinished())
+        {
+            Finish();
+        }
+    }
+
+    Wiper::Instance().Render(IsDuringGamePauseState() ? 0.0f : deltaT);
+
+    if (mLetterBoxEnabled)
+    {
+        mLetterBoxDuration += 0.05f;
+    }
+    else
+    {
+        mLetterBoxDuration -= 0.05f;
+    }
+
+    if (mLetterBoxDuration < 0.0f)
+    {
+        mLetterBoxDuration = 0.0f;
+    }
+
+    if (mLetterBoxDuration > 1.0f)
+    {
+        mLetterBoxDuration = 1.0f;
+    }
+
+    if (!((GameInfoWidescreenProbe*)nlSingleton<GameInfoManager>::s_pInstance)->mIsWidescreen)
+    {
+        if (mLetterBoxDuration > 0.0f)
+        {
+            nlColour black = { { 0x00, 0x00, 0x00, 0xFF } };
+            g_ShapeRenderer.DrawRectangle2D(0.0f, 0.0f, glGetOrthographicWidth(), 38.0f * mLetterBoxDuration, 1.0f, black, GLV_Transitions);
+            g_ShapeRenderer.DrawRectangle2D(0.0f, glGetOrthographicHeight() - 38.0f * mLetterBoxDuration, glGetOrthographicWidth(), 38.0f * mLetterBoxDuration, 1.0f, black, GLV_Transitions);
+        }
+    }
+
+    if (IsDuringGamePauseState())
+    {
+        return;
+    }
+
+    if (mOverlayToDisplay == SCENE_INVALID)
+    {
+        return;
+    }
+
+    HandleOverlay(deltaT);
+}
+
 /**
  * Offset/Address/Size: 0xDBC | 0x801255A0 | size: 0xB4
  */
 bool Presentation::DuringEndOfGamePresentation() const
 {
-    bool result = false;
-    if (nlStrCmp<char>("ImplGameEnd", mCurrentFunction) == 0 || nlStrCmp<char>("GameEndNoSuddenDeath", mCurrentFunction) == 0 || nlStrCmp<char>("GoalSuddenDeath", mCurrentFunction) == 0 || nlStrCmp<char>("PlayHighlight", mCurrentFunction) == 0 || nlStrCmp<char>("PlayCupThrophy", mCurrentFunction) == 0)
-    {
-        result = true;
-    }
-    return result;
+    return nlStrCmp<char>("ImplGameEnd", mCurrentFunction) == 0 || nlStrCmp<char>("GameEndNoSuddenDeath", mCurrentFunction) == 0 || nlStrCmp<char>("GoalSuddenDeath", mCurrentFunction) == 0 || nlStrCmp<char>("PlayHighlight", mCurrentFunction) == 0 || nlStrCmp<char>("PlayCupThrophy", mCurrentFunction) == 0;
 }
 
 /**
@@ -1178,11 +1148,19 @@ void Presentation::Reset()
     ReplayManager::Instance()->Flush();
 }
 
+inline void Presentation::RaiseEvent(const char* type, const char* param)
+{
+    NISData* data = new ((u8*)g_pEventManager->CreateValidEvent(0x56, 0x20) + 0x10) NISData();
+    data->Type = type;
+    data->Param = param;
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x801267BC | size: 0xAE4
- * TODO: 99.46% match - the script-load case and the task-state guard hold their
- * popped values one callee-saved register higher than the target (r27.. vs r26..),
- * shifting the saved-register range; logic and call sequence are otherwise exact.
+ * TODO: 99.80% match - size is exact and only 27 rows differ, all of them the
+ * same register renumbering: the target allocates six callee-saved registers
+ * (r26..r31) where we fit the same webs into five (r27..r31), so the stmw/lmw
+ * range and every popped value shift by one. Logic and call sequence are exact.
  */
 void Presentation::DoFunctionCall(unsigned int func)
 {
@@ -1218,13 +1196,13 @@ void Presentation::DoFunctionCall(unsigned int func)
     case 6:
     {
         m_SP--;
-        int arg4 = *m_SP;
+        NisWinnerType arg4 = (NisWinnerType)*m_SP;
         m_SP--;
-        int arg3 = *m_SP;
+        NisUseFilter arg3 = (NisUseFilter)*m_SP;
         m_SP--;
-        int arg2 = *m_SP;
+        NisUseStadiumOffset arg2 = (NisUseStadiumOffset)*m_SP;
         m_SP--;
-        int arg1 = *m_SP;
+        NisTarget arg1 = (NisTarget)*m_SP;
         m_SP--;
         const char* name = (const char*)*m_SP;
         if (mByPassing)
@@ -1235,7 +1213,7 @@ void Presentation::DoFunctionCall(unsigned int func)
         {
             break;
         }
-        NisPlayer::Instance()->Load(name, (NisTarget)arg1, (NisUseStadiumOffset)arg2, (NisUseFilter)arg3, (NisWinnerType)arg4);
+        NisPlayer::Instance()->Load(name, arg1, arg2, arg3, arg4);
         break;
     }
     case 7:
@@ -1253,27 +1231,16 @@ void Presentation::DoFunctionCall(unsigned int func)
     case 9:
     {
         m_SP--;
-        int arg0 = *m_SP;
+        ReplayType arg0 = (ReplayType)*m_SP;
         if (mByPassing)
         {
             break;
         }
+        if (nlTaskManager::m_pInstance->m_CurrState != 0x10 && !IsDuringGamePauseState())
         {
-            unsigned int state = nlTaskManager::m_pInstance->m_CurrState;
-            if (state != 0x10)
-            {
-                bool isKickoff = false;
-                if (!FrontEnd::m_bGameOver && state == 1)
-                {
-                    isKickoff = true;
-                }
-                if (!isKickoff)
-                {
-                    nlTaskManager::SetNextState(0x10);
-                }
-            }
+            nlTaskManager::SetNextState(0x10);
         }
-        ReplayChoreo::Instance().StartAutoReplay((ReplayType)arg0);
+        ReplayChoreo::Instance().StartAutoReplay(arg0);
         if (arg0 == 7)
         {
             nlSingleton<OverlayManager>::s_pInstance->SetCurrentTextOverlaySlide((OverlaySlideName)7);
@@ -1361,17 +1328,11 @@ void Presentation::DoFunctionCall(unsigned int func)
         }
         if (NisPlayer::Instance()->Play())
         {
-            unsigned int state = nlTaskManager::m_pInstance->m_CurrState;
-            if (state == 0x100)
+            if (nlTaskManager::m_pInstance->m_CurrState == 0x100)
             {
                 break;
             }
-            bool isKickoff = false;
-            if (!FrontEnd::m_bGameOver && state == 1)
-            {
-                isKickoff = true;
-            }
-            if (!isKickoff)
+            if (!IsDuringGamePauseState())
             {
                 nlTaskManager::SetNextState(0x100);
             }
@@ -1431,10 +1392,7 @@ void Presentation::DoFunctionCall(unsigned int func)
         m_SP--;
         const char* Param = (const char*)*m_SP;
         m_SP--;
-        const char* Type = (const char*)*m_SP;
-        NISData* data = new ((u8*)g_pEventManager->CreateValidEvent(0x56, 0x20) + 0x10) NISData();
-        data->Type = Type;
-        data->Param = Param;
+        RaiseEvent((const char*)*m_SP, Param);
         break;
     }
     case 20:
