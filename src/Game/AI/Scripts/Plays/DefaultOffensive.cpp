@@ -65,9 +65,9 @@ FuzzyVariant Fuzzy::AbortOffensivePlay(cDecisionEntity*)
 /**
  * Offset/Address/Size: 0x51D8 | 0x80091C64 | size: 0x19C4
  */
-static inline float OffensiveIdentity(float value)
+static inline float OffensiveDanger(const FuzzyVariant& value)
 {
-    return value;
+    return value.mData.f;
 }
 
 static inline float OffensiveAnd(float a, float b)
@@ -97,6 +97,13 @@ static inline float OffensiveNot(float value)
     return 1.0f - value;
 }
 
+static inline float NotUserControlled(cTeam* team)
+{
+    float value = UserControlledT(team);
+    value = 1.0f - value;
+    return value;
+}
+
 FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
 {
     float fConfidence = 1.0f;
@@ -122,16 +129,14 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
         const FuzzyVariant& doShooting = DoShooting(fConfidence, pDecision);
         float fDoShooting = (doShooting.mData.f >= 0.0f) ? doShooting.mData.f : 0.0f;
 
-        float fDoPassing = OffensiveIdentity(DoPassing(fConfidence, pDecision).mData.f);
-        fDoPassing = (fDoPassing >= fDoShooting) ? fDoPassing : fDoShooting;
+        float fDoPassing = OffensiveDanger(DoPassing(fConfidence, pDecision));
+        fDoPassing = fBestConfidence = OffensiveOr(fDoPassing, fDoShooting);
 
-        fBestConfidence = fDoPassing;
+        float fGoodBallCarrier = OffensiveDanger(GoodBallCarrier(g_pScriptCurrentFielder));
 
-        float fGoodBallCarrier = OffensiveIdentity(GoodBallCarrier(g_pScriptCurrentFielder).mData.f);
-
-        float fNotRepeatingDeke = OffensiveIdentity(1.0f - RepeatingLastDesire(g_pScriptCurrentFielder, edDeke));
-        float fNotCloseSideline = OffensiveIdentity(1.0f - CloseToSideline(g_pScriptCurrentFielder));
-        float fNotInvincible = OffensiveIdentity(1.0f - Invincible(g_pScriptCurrentFielder));
+        float fNotRepeatingDeke = OffensiveNot(RepeatingLastDesire(g_pScriptCurrentFielder, edDeke));
+        float fNotCloseSideline = OffensiveNot(CloseToSideline(g_pScriptCurrentFielder));
+        float fNotInvincible = OffensiveNot(Invincible(g_pScriptCurrentFielder));
 
         {
             float fTrueConfidence = InControlOfBall(g_pScriptCurrentFielder);
@@ -167,14 +172,7 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
 
-                    if (fBestConfidence >= fConfidence)
-                    {
-                        fBestConfidence = OffensiveIdentity(fBestConfidence);
-                    }
-                    else
-                    {
-                        fBestConfidence = fConfidence;
-                    }
+                    fBestConfidence = OffensiveOr(fBestConfidence, fConfidence);
 
                     pDecision->QueueActionSetDesire(2, fConfidence, -1.0f, fvNotSet, fvNotSet);
 
@@ -205,14 +203,7 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
                         if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                             fConfidence = fConfidence * fBranchRatio;
 
-                        if (fBestConfidence >= fConfidence)
-                        {
-                            fBestConfidence = OffensiveIdentity(fBestConfidence);
-                        }
-                        else
-                        {
-                            fBestConfidence = fConfidence;
-                        }
+                        fBestConfidence = OffensiveOr(fBestConfidence, fConfidence);
 
                         pDecision->QueueActionSetDesire(2, fConfidence, -1.0f, fvNotSet, fvNotSet);
 
@@ -224,18 +215,9 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
         }
 
         {
-            float fTrueConfidence = OffensiveIdentity(BallOwner(g_pScriptCurrentFielder));
-            float fNotUserControlled = UserControlledT(g_pScriptCurrentTeam);
-            fNotUserControlled = 1.0f - fNotUserControlled;
-            if (fNotUserControlled <= fTrueConfidence)
-            {
-                fNotUserControlled = OffensiveIdentity(fNotUserControlled);
-            }
-            else
-            {
-                fNotUserControlled = fTrueConfidence;
-            }
-            fTrueConfidence = fNotUserControlled;
+            float fTrueConfidence = OffensiveAnd(
+                NotUserControlled(g_pScriptCurrentTeam),
+                BallOwner(g_pScriptCurrentFielder));
 
             float fFalseConfidence = 1.0f - fTrueConfidence;
             float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
@@ -278,14 +260,7 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
 
-                    if (fBestConfidence >= fConfidence)
-                    {
-                        fBestConfidence = OffensiveIdentity(fBestConfidence);
-                    }
-                    else
-                    {
-                        fBestConfidence = fConfidence;
-                    }
+                    fBestConfidence = OffensiveOr(fBestConfidence, fConfidence);
                     pDecision->QueueActionSetDesire(9, fConfidence, -1.0f, fvNotSet, fvNotSet);
                 }
             }
@@ -321,14 +296,7 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
             if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                 fConfidence = fConfidence * fBranchRatio;
 
-            if (fBestConfidence >= fConfidence)
-            {
-                fBestConfidence = OffensiveIdentity(fBestConfidence);
-            }
-            else
-            {
-                fBestConfidence = fConfidence;
-            }
+            fBestConfidence = OffensiveOr(fBestConfidence, fConfidence);
 
             pDecision->QueueActionSetDesire(1, fConfidence, -1.0f, fvNotSet, fvNotSet);
 
@@ -339,13 +307,10 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
         FuzzyVariant strategicBallOwner = GetStrategicBallCarrier(g_pScriptCurrentTeam);
 
         {
-            float fStriker;
-            float fBallOwnerGoalie = OffensiveIdentity(BallOwner(g_pScriptCurrentTeam->GetGoalie()));
-            fStriker = OffensiveIdentity(Striker(g_pScriptCurrentFielder));
-            float fWinger = Winger(g_pScriptCurrentFielder);
-
-            fStriker = (fStriker >= fBallOwnerGoalie) ? fStriker : fBallOwnerGoalie;
-            fWinger = (fWinger >= fStriker) ? fWinger : fStriker;
+            float fWinger = OffensiveOr(
+                Winger(g_pScriptCurrentFielder),
+                Striker(g_pScriptCurrentFielder),
+                BallOwner(g_pScriptCurrentTeam->GetGoalie()));
 
             float fFalseConfidence = 1.0f - fWinger;
             float fTrueConfidence = fWinger;
@@ -362,12 +327,10 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
                 if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                     fConfidence = fConfidence * fBranchRatio;
 
-                float fWindup = OffensiveIdentity(WindingUpForShot((cFielder*)strategicBallOwner.mData.pPlayer));
-                float fNotNearToTheirNet = OffensiveIdentity(1.0f - NearToTheirNet(g_pScriptCurrentFielder));
-                float fNotStrategicConfidence = OffensiveIdentity(1.0f - strategicBallOwner.Confidence);
-
-                fNotNearToTheirNet = (fNotNearToTheirNet >= fWindup) ? fNotNearToTheirNet : fWindup;
-                fNotStrategicConfidence = (fNotStrategicConfidence >= fNotNearToTheirNet) ? fNotStrategicConfidence : fNotNearToTheirNet;
+                float fNotStrategicConfidence = OffensiveOr(
+                    OffensiveNot(strategicBallOwner.Confidence),
+                    OffensiveNot(NearToTheirNet(g_pScriptCurrentFielder)),
+                    WindingUpForShot((cFielder*)strategicBallOwner.mData.pPlayer));
 
                 float fFalseConfidence = 1.0f - fNotStrategicConfidence;
                 float fTrueConfidence = fNotStrategicConfidence;
@@ -384,14 +347,7 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
 
-                    if (fBestConfidence >= fConfidence)
-                    {
-                        fBestConfidence = OffensiveIdentity(fBestConfidence);
-                    }
-                    else
-                    {
-                        fBestConfidence = fConfidence;
-                    }
+                    fBestConfidence = OffensiveOr(fBestConfidence, fConfidence);
 
                     pDecision->QueueActionSetDesire(10, fConfidence, -1.0f, fvNotSet, fvNotSet);
                 }
@@ -404,14 +360,7 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
                     if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
 
-                    if (fBestConfidence >= fConfidence)
-                    {
-                        fBestConfidence = OffensiveIdentity(fBestConfidence);
-                    }
-                    else
-                    {
-                        fBestConfidence = fConfidence;
-                    }
+                    fBestConfidence = OffensiveOr(fBestConfidence, fConfidence);
                     pDecision->QueueActionSetDesire(4, fConfidence, -1.0f, fvNotSet, fvNotSet);
                 }
             }
@@ -440,14 +389,7 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
 
-                    if (fBestConfidence >= fConfidence)
-                    {
-                        fBestConfidence = OffensiveIdentity(fBestConfidence);
-                    }
-                    else
-                    {
-                        fBestConfidence = fConfidence;
-                    }
+                    fBestConfidence = OffensiveOr(fBestConfidence, fConfidence);
                     pDecision->QueueActionSetDesire(4, fConfidence, -1.0f, fvNotSet, fvNotSet);
                 }
 
@@ -459,14 +401,7 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
                     if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
 
-                    if (fBestConfidence >= fConfidence)
-                    {
-                        fBestConfidence = OffensiveIdentity(fBestConfidence);
-                    }
-                    else
-                    {
-                        fBestConfidence = fConfidence;
-                    }
+                    fBestConfidence = OffensiveOr(fBestConfidence, fConfidence);
                     pDecision->QueueActionSetDesire(3, fConfidence, -1.0f, fvNotSet, fvNotSet);
                 }
             }
@@ -575,11 +510,6 @@ FuzzyVariant Fuzzy::DoPassing(float fConfidence, cDecisionEntity* pDecision)
     }
 
     return FuzzyVariant(fBestConfidence);
-}
-
-static inline float OffensiveDanger(const FuzzyVariant& value)
-{
-    return value.mData.f;
 }
 
 /**
@@ -1024,7 +954,7 @@ FuzzyVariant Fuzzy::DoShooting(float fConfidence, cDecisionEntity* pDecision)
     }
 
     {
-        fTrueConfidence = OffensiveIdentity(GoodToChipShot(g_pScriptCurrentFielder).mData.f);
+        fTrueConfidence = OffensiveDanger(GoodToChipShot(g_pScriptCurrentFielder));
         float fFarToMyNet = FarToMyNet(g_pScriptCurrentFielder);
         fTrueConfidence = (fFarToMyNet <= fTrueConfidence) ? fFarToMyNet : fTrueConfidence;
         float fFalseConfidence = 1.0f - fTrueConfidence;
