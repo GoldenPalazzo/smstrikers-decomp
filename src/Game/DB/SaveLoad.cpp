@@ -343,23 +343,22 @@ inline unsigned long LoadCallbacks::ReadDoneCB(unsigned long Slot, long Result, 
     new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<LoadCallbacks>(this, cb, pUserData);
 
     MemCard::MC_FILE* pLoadFile = m_pLoadFile;
-    MemCard** memCards = g_MemCards;
-    u8 bannerFmt = pLoadFile->IconCfg.BannerFormat;
+    void* iconBuf = m_pIconReadBuffer;
     s8 iconFmt = pLoadFile->IconCfg.IconFormat;
-    u8 iconCount = pLoadFile->IconCfg.IconCount;
+    int iconPixels = iconFmt << 10;
+    int bannerFmt = pLoadFile->IconCfg.BannerFormat;
+    int bannerHeader = 0;
+    MemCard** cards = g_MemCards;
+    bannerHeader += ((bannerFmt == 1) ? 0x200 : 0);
+    MemCard* card = cards[Slot];
+    bannerHeader += bannerFmt * 0xC00;
+    u32 iconClut = ((iconFmt == 1) ? 0x200 : 0);
+    int headerSize = bannerHeader + (pLoadFile->IconCfg.IconCount * iconPixels);
+    headerSize = headerSize + iconClut;
+    u32 totalSize = (pLoadFile->IconCfg.HeaderSize = headerSize + 0x40);
+    u32 alignedSize = (totalSize + 0x1FF) & ~0x1FF;
 
-    u32 totalHeader = 0;
-    totalHeader += ((bannerFmt == 1) ? 0x200 : 0);
-    totalHeader += bannerFmt * 0xC00;
-    totalHeader += ((iconFmt == 1) ? 0x200 : 0);
-    totalHeader += iconCount * (iconFmt << 10);
-
-    u32 headerSize = totalHeader + 0x40;
-    pLoadFile->IconCfg.HeaderSize = headerSize;
-
-    u32 alignedSize = (headerSize + 0x1FF) & ~0x1FF;
-
-    long result = memCards[Slot]->InternalReadFile(pLoadFile, m_pIconReadBuffer, alignedSize, 0, functor);
+    long result = card->InternalReadFile(pLoadFile, iconBuf, alignedSize, 0, functor);
 
     if (result != 0)
     {
