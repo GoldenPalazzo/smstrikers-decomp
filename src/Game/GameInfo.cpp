@@ -609,16 +609,16 @@ u16 GameInfoManager::GetNumGamesPerRound(int round) const
     }
     else
     {
-        unsigned short temp;
+        unsigned short numTeams;
         if (mCurrentMode == GM_BOWSER_CUP || mCurrentMode == GM_SUPER_BOWSER_CUP)
         {
-            temp = 8;
+            numTeams = 8;
         }
         else
         {
-            temp = mCurrentCup->GetNumTeams();
+            numTeams = mCurrentCup->GetNumTeams();
         }
-        returnValue = temp >> 1;
+        returnValue = numTeams >> 1;
     }
     return returnValue;
 }
@@ -847,8 +847,6 @@ void GameInfoManager::ResetPlayingSides()
 
 /**
  * Offset/Address/Size: 0x8638 | 0x8017DCDC | size: 0x4D8
- * TODO: 90.85% match - remaining differences are in mode-check branch shape and
- * register allocation for numplayingteams/numGamesPerRound/home-away temporaries.
  */
 static const int THREE_TEAM_MATCHUPS[3][2] = {
     { 0, 1 },
@@ -1138,11 +1136,6 @@ void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* skli
 
 /**
  * Offset/Address/Size: 0x81CC | 0x8017D870 | size: 0x46C
- */
-/**
- * Offset/Address/Size: 0x7EF0 + 0x380 | 0x8017D870 | size: 0x46C
- * TODO: 99.89% match - first loop body uses r5/r4/r0 register assignment order for
- * sidekick/team loads instead of target r4/r0/r5 order.
  */
 static const eTrophyType MILESTONES[5] = {
     TROPHY_VETERAN_CUP,
@@ -1710,16 +1703,16 @@ BaseCup* GameInfoManager::GetCup(GameInfoManager::eGameModes mode)
 
     switch (mode)
     {
-    case GM_FRIENDLY:
+    case GM_MUSHROOM_CUP:
         result = &mMushroomCupSeries;
         break;
-    case GM_MUSHROOM_CUP:
+    case GM_FLOWER_CUP:
         result = &mFlowerCupSeries;
         break;
-    case GM_FLOWER_CUP:
+    case GM_STAR_CUP:
         result = &mStarCupSeries;
         break;
-    case GM_STAR_CUP:
+    case GM_BOWSER_CUP:
         if (mBowserCupSeries.mRoundNumber == -5 && mBowserCupKnockout.mRoundNumber != -5)
         {
             result = &mBowserCupKnockout;
@@ -1729,16 +1722,16 @@ BaseCup* GameInfoManager::GetCup(GameInfoManager::eGameModes mode)
             result = &mBowserCupSeries;
         }
         break;
-    case GM_BOWSER_CUP:
+    case GM_SUPER_MUSHROOM_CUP:
         result = &mSuperMushroomCupSeries;
         break;
-    case GM_SUPER_MUSHROOM_CUP:
+    case GM_SUPER_FLOWER_CUP:
         result = &mSuperFlowerCupSeries;
         break;
-    case GM_SUPER_FLOWER_CUP:
+    case GM_SUPER_STAR_CUP:
         result = &mSuperStarCupSeries;
         break;
-    case GM_SUPER_STAR_CUP:
+    case GM_SUPER_BOWSER_CUP:
         if (mSuperBowserCupSeries.mRoundNumber == -5 && mSuperBowserCupKnockout.mRoundNumber != -5)
         {
             result = &mSuperBowserCupKnockout;
@@ -1857,22 +1850,22 @@ void GameInfoManager::SetMode(GameInfoManager::eGameModes mode)
 
     switch (mCurrentMode)
     {
-    case GM_FRIENDLY:
+    case GM_MUSHROOM_CUP:
         mCurrentCup = &mMushroomCupSeries;
         mDoingKnockout = false;
         return;
 
-    case GM_MUSHROOM_CUP:
+    case GM_FLOWER_CUP:
         mCurrentCup = &mFlowerCupSeries;
         mDoingKnockout = false;
         return;
 
-    case GM_FLOWER_CUP:
+    case GM_STAR_CUP:
         mCurrentCup = &mStarCupSeries;
         mDoingKnockout = false;
         return;
 
-    case GM_STAR_CUP:
+    case GM_BOWSER_CUP:
         mCurrentCup = &mBowserCupSeries;
         mDoingKnockout = false;
 
@@ -1885,22 +1878,22 @@ void GameInfoManager::SetMode(GameInfoManager::eGameModes mode)
 
         return;
 
-    case GM_BOWSER_CUP:
+    case GM_SUPER_MUSHROOM_CUP:
         mCurrentCup = &mSuperMushroomCupSeries;
         mDoingKnockout = false;
         return;
 
-    case GM_SUPER_MUSHROOM_CUP:
+    case GM_SUPER_FLOWER_CUP:
         mCurrentCup = &mSuperFlowerCupSeries;
         mDoingKnockout = false;
         return;
 
-    case GM_SUPER_FLOWER_CUP:
+    case GM_SUPER_STAR_CUP:
         mCurrentCup = &mSuperStarCupSeries;
         mDoingKnockout = false;
         return;
 
-    case GM_SUPER_STAR_CUP:
+    case GM_SUPER_BOWSER_CUP:
         mCurrentCup = &mSuperBowserCupSeries;
         mDoingKnockout = false;
 
@@ -2721,9 +2714,9 @@ void GameInfoManager::OnPreCupGameState()
         int highPoints;
         int j;
         int teamBuf[16];
-        int tempBuf[16];
+        int copiedStatsBuffer[16];
         TeamStats* team = (TeamStats*)teamBuf;
-        TeamStats* pTemp = (TeamStats*)tempBuf;
+        TeamStats* copiedStats = (TeamStats*)copiedStatsBuffer;
 
         highPoints = 0;
 
@@ -2731,18 +2724,18 @@ void GameInfoManager::OnPreCupGameState()
         {
             if (mCurrentMode == GM_BOWSER_CUP)
             {
-                *pTemp = *mBowserCupSeries.GetTeamStats((unsigned short)j);
+                *copiedStats = *mBowserCupSeries.GetTeamStats((unsigned short)j);
             }
             else if (mCurrentMode == GM_SUPER_BOWSER_CUP)
             {
-                *pTemp = *mSuperBowserCupSeries.GetTeamStats((unsigned short)j);
+                *copiedStats = *mSuperBowserCupSeries.GetTeamStats((unsigned short)j);
             }
             else
             {
-                *pTemp = *mCurrentCup->GetTeamStats((unsigned short)j);
+                *copiedStats = *mCurrentCup->GetTeamStats((unsigned short)j);
             }
 
-            *team = *pTemp;
+            *team = *copiedStats;
 
             if (team->mNumPoints > highPoints)
             {
@@ -2866,8 +2859,8 @@ void GameInfoManager::OnPostCupGameState()
             int numTeams;
             int i;
             int j;
-            int tempBuf[16];
-            TeamStats* pTemp = (TeamStats*)tempBuf;
+            int copiedStatsBuffer[16];
+            TeamStats* copiedStats = (TeamStats*)copiedStatsBuffer;
 
             numTeams = GetNumPlayingTeams();
 
@@ -2875,18 +2868,18 @@ void GameInfoManager::OnPostCupGameState()
             {
                 if (mCurrentMode == GM_BOWSER_CUP)
                 {
-                    *pTemp = *mBowserCupSeries.GetTeamStats((unsigned short)i);
+                    *copiedStats = *mBowserCupSeries.GetTeamStats((unsigned short)i);
                 }
                 else if (mCurrentMode == GM_SUPER_BOWSER_CUP)
                 {
-                    *pTemp = *mSuperBowserCupSeries.GetTeamStats((unsigned short)i);
+                    *copiedStats = *mSuperBowserCupSeries.GetTeamStats((unsigned short)i);
                 }
                 else
                 {
-                    *pTemp = *mCurrentCup->GetTeamStats((unsigned short)i);
+                    *copiedStats = *mCurrentCup->GetTeamStats((unsigned short)i);
                 }
 
-                allStats[i] = *pTemp;
+                allStats[i] = *copiedStats;
 
                 eTeamID teamIndex = allStats[i].mTeamIndex;
 
@@ -3346,37 +3339,37 @@ eTeamID GameInfoManager::FindWinningTeam()
 
     TeamStats allStats[8];
     int rankIndices[8];
-    int tempBuf[16];
+    int copiedStatsBuffer[16];
     int numTeams;
     int i;
 
-    unsigned short temp;
+    unsigned short teamCount;
     if (mCurrentMode == GM_BOWSER_CUP || mCurrentMode == GM_SUPER_BOWSER_CUP)
     {
-        temp = 8;
+        teamCount = 8;
     }
     else
     {
-        temp = mCurrentCup->GetNumTeams();
+        teamCount = mCurrentCup->GetNumTeams();
     }
-    numTeams = temp;
+    numTeams = teamCount;
 
-    TeamStats* pTemp = (TeamStats*)tempBuf;
+    TeamStats* copiedStats = (TeamStats*)copiedStatsBuffer;
     for (i = 0; i < numTeams; i++)
     {
         if (mCurrentMode == GM_BOWSER_CUP)
         {
-            *pTemp = *mBowserCupSeries.GetTeamStats((u16)i);
+            *copiedStats = *mBowserCupSeries.GetTeamStats((u16)i);
         }
         else if (mCurrentMode == GM_SUPER_BOWSER_CUP)
         {
-            *pTemp = *mSuperBowserCupSeries.GetTeamStats((u16)i);
+            *copiedStats = *mSuperBowserCupSeries.GetTeamStats((u16)i);
         }
         else
         {
-            *pTemp = *mCurrentCup->GetTeamStats((u16)i);
+            *copiedStats = *mCurrentCup->GetTeamStats((u16)i);
         }
-        allStats[i] = *pTemp;
+        allStats[i] = *copiedStats;
     }
 
     nlSingleton<StatsTracker>::s_pInstance->GetSortedTeamStats(allStats, numTeams, rankIndices, numTeams);

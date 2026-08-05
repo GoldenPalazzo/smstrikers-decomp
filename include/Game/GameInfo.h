@@ -18,27 +18,6 @@
 #include "Game/DB/StatsTracker.h"
 #include "Game/DB/Cup.h"
 
-struct Spoil
-{
-    Spoil()
-        : mNumRecords(0)
-        , mNumWins(0)
-        , mNumLosses(0)
-        , mNumCupWins(0)
-        , mCurrentChamp(TEAM_INVALID)
-        , mIsCPUChamp(false)
-    {
-    }
-
-    /* 0x000 */ CupRecord mCupHistory[10];
-    /* 0x208 */ unsigned char mNumRecords;
-    /* 0x20A */ unsigned short mNumWins;
-    /* 0x20C */ unsigned short mNumLosses;
-    /* 0x20E */ unsigned short mNumCupWins;
-    /* 0x210 */ eTeamID mCurrentChamp;
-    /* 0x214 */ bool mIsCPUChamp;
-}; // total size: 0x218
-
 struct UserInfo
 {
     UserInfo()
