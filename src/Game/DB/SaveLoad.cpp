@@ -7,6 +7,7 @@
 #include "NL/nlMain.h"
 #include "NL/nlMath.h"
 #include "Game/ResetTask.h"
+#include <dolphin/charPipeline/texPalette.h>
 #include <string.h>
 
 extern void nlFree(void*);
@@ -1233,10 +1234,15 @@ unsigned long FormatCallbacks::FormatDoneCB(unsigned long channel, long result, 
     return (-result | result) >> 31;
 }
 
+static TEXHeaderPtr GetTPLImageHeader(TEXPalettePtr tpl)
+{
+    return ((TEXDescriptorPtr)((u8*)tpl + (u32)tpl->descriptorArray))->textureHeader;
+}
+
 /**
  * Offset/Address/Size: 0x11DC | 0x8018AB38 | size: 0xC7C
- * TODO: 97.70% match - mount-error result/card registers and icon header
- * copy register flow differ.
+ * TODO: 99.66% match - functor storage and icon header data use r9/r10 in the
+ * opposite order.
  */
 #pragma push
 #pragma opt_propagation off
@@ -1250,6 +1256,7 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
     m_Slot = Slot;
     if (Result != 0)
     {
+        MemCard* card2;
         long errorCode = Result;
         if (m_pSaveFile != NULL)
         {
@@ -1264,7 +1271,7 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
         if (errorCode == -4)
         {
             unsigned long slotOffset = Slot << 2;
-            MemCard* card2 = g_MemCards[slotOffset >> 2];
+            card2 = g_MemCards[slotOffset >> 2];
             int dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
             int numBlocks = 0;
             dataSize += 12;
@@ -1364,50 +1371,45 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
         MemCard::ICON_DATA_INFO localDataInfo1;
         m_pSaveFile->IconCfg.GetValidDataInfo(localDataInfo1);
         localDataInfo1.pHeaderData = (unsigned char*)gIconDataCache.mIconHdrBuffer;
-        void* bannerBuf = gIconDataCache.mBannerBuffer;
-        u32 bannerOfs = localDataInfo1.BannerOffset;
-        void* destBanner = localDataInfo1.pHeaderData + bannerOfs;
+        TEXPalettePtr bannerTpl = (TEXPalettePtr)gIconDataCache.mBannerBuffer;
+        TEXHeaderPtr bannerHeader = GetTPLImageHeader(bannerTpl);
+        void* srcBanner =
+            (u8*)bannerTpl + (u32)((TEXHeaderPtr)((u8*)bannerTpl + (u32)bannerHeader))->data;
+        void* destBanner = localDataInfo1.pHeaderData + localDataInfo1.BannerOffset;
         u8 bannerFmt = m_pSaveFile->IconCfg.BannerFormat;
-        u32 tableOfs = *(u32*)((u8*)bannerBuf + 8);
-        u32 entryVal = *(u32*)((u8*)bannerBuf + tableOfs);
-        u32 dataOfs = *(u32*)((u8*)bannerBuf + entryVal + 8);
-        void* srcBanner = (u8*)bannerBuf + dataOfs;
-        u32 bannerCopySize = ((bannerFmt == 1) ? 0x200 : 0) + bannerFmt * 0xC00;
-        memcpy(destBanner, srcBanner, bannerCopySize);
+        memcpy(
+            destBanner, srcBanner, ((bannerFmt == 1) ? 0x200 : 0) + bannerFmt * 0xC00);
+
         MemCard::ICON_DATA_INFO localDataInfo2;
         m_pSaveFile->IconCfg.GetValidDataInfo(localDataInfo2);
         localDataInfo2.pHeaderData = (unsigned char*)gIconDataCache.mIconHdrBuffer;
-        void* iconBuf = gIconDataCache.mIconBuffer;
-        u32 iconOfs = localDataInfo2.IconOffset[0];
-        void* destIcon = localDataInfo2.pHeaderData + iconOfs;
-        u32 itableOfs = *(u32*)((u8*)iconBuf + 8);
-        u32 ientryVal = *(u32*)((u8*)iconBuf + itableOfs);
-        s8 iconFmtS = m_pSaveFile->IconCfg.IconFormat;
-        u32 idataOfs = *(u32*)((u8*)iconBuf + ientryVal + 8);
-        void* srcIcon = (u8*)iconBuf + idataOfs;
-        u32 iconCopySize = iconFmtS << 10;
-        memcpy(destIcon, srcIcon, iconCopySize);
-        u8 bannerFmt2 = m_pSaveFile->IconCfg.BannerFormat;
-        s8 iconFmt2 = m_pSaveFile->IconCfg.IconFormat;
-        u8 iconCount2 = m_pSaveFile->IconCfg.IconCount;
-        int bannerClut2 = ((bannerFmt2 == 1) ? 0x200 : 0);
-        int bannerData2 = bannerFmt2 * 0xC00;
-        int iconPixels2 = iconCount2 * (iconFmt2 << 10);
-        int iconClut2 = ((iconFmt2 == 1) ? 0x200 : 0);
-        int headerTotal = bannerClut2 + bannerData2;
-        headerTotal += iconPixels2;
-        headerTotal += iconClut2;
-        u32 headerSize = headerTotal + 0x40;
-        m_pSaveFile->IconCfg.HeaderSize = headerSize;
+        TEXPalettePtr iconTpl = (TEXPalettePtr)gIconDataCache.mIconBuffer;
+        TEXHeaderPtr iconHeader = GetTPLImageHeader(iconTpl);
+        memcpy(
+            localDataInfo2.pHeaderData + localDataInfo2.IconOffset[0],
+            (u8*)iconTpl + (u32)((TEXHeaderPtr)((u8*)iconTpl + (u32)iconHeader))->data,
+            m_pSaveFile->IconCfg.IconFormat << 10);
+
+        MemCard::MC_FILE* fileH = m_pSaveFile;
+        char iconFmtH = fileH->IconCfg.IconFormat;
+        int iconPixelsH = iconFmtH << 10;
+        unsigned char bannerFmtH = fileH->IconCfg.BannerFormat;
+        int bannerDataH = bannerFmtH * 0xC00;
+        int bannerClutH = ((bannerFmtH == 1) ? 0x200 : 0);
+        u32 iconClutH = ((iconFmtH == 1) ? 0x200 : 0);
+        int bannerHeaderH = bannerClutH + bannerDataH;
+        int iconHeaderH = bannerHeaderH + fileH->IconCfg.IconCount * iconPixelsH;
+        int totalHeaderH = iconHeaderH + iconClutH;
+        u32 headerSize = totalHeaderH + 0x40;
+        fileH->IconCfg.HeaderSize = headerSize;
+
         u32 crc = nlChecksum32(localDataInfo2.pHeaderData, headerSize);
         m_IconCRC = crc;
         gIconCRC = m_IconCRC;
+
         void* headerData = gIconDataCache.mIconDataInfo.pHeaderData;
         cb2 = &SaveCallbacks::FileWriteIconCB;
-        union
-        {
-            MemCardFunctor functor;
-        };
+        MemCardFunctor functor;
         new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<SaveCallbacks>(this, cb2, headerData);
         long writeResult = g_MemCards[Slot]->WriteFileIconData(m_pSaveFile, gIconDataCache.mIconDataInfo.pHeaderData, functor);
         if (writeResult != 0)
