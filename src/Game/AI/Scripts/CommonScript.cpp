@@ -633,9 +633,24 @@ static inline float min_float(float a, float b)
     return b;
 }
 
+static inline float FuzzyNot(const FuzzyVariant& v)
+{
+    return 1.0f - v.mData.f;
+}
+
+static inline float FuzzyNot(float f)
+{
+    return 1.0f - f;
+}
+
 static inline float nlMinFour(float a, float b, float c, float d)
 {
     return min_float(a, min_float(b, min_float(c, d)));
+}
+
+static inline float nlMinThree(float a, float b, float c)
+{
+    return min_float(a, min_float(b, c));
 }
 
 static inline float nlMaxThree(float a, float b, float c)
@@ -3096,8 +3111,6 @@ FuzzyVariant Fuzzy::GetBestWindupShotAction(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0x1A48 | 0x8006BC18 | size: 0x126C
- * TODO: 99.372350% match - 47 argument mismatches, 4 replacements, and
- * 2 insertions; current size is 0x1274.
  */
 FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
 {
@@ -3109,25 +3122,20 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
     SCRIPT_QUESTION_KEY(fielderFunction, GetPowerupToUseForPassReceiveDefence, (cPlayer*)TheFielder);
 
     float fTrueConfidence = nlMinFour(
-        1.0f
-            - Fuzzy::GoalieAndGonnaPickupBall(
+        FuzzyNot(Fuzzy::GoalieAndGonnaPickupBall(
                 TheFielder != NULL
                     ? ((TheFielder != NULL) ? TheFielder->m_pTeam : NULL)->GetGoalie()
-                    : NULL)
-                .mData.f,
-        1.0f
-            - Fuzzy::GoalieAndGonnaPickupBall(
+                    : NULL)),
+        FuzzyNot(Fuzzy::GoalieAndGonnaPickupBall(
                 TheFielder != NULL
                     ? ((TheFielder != NULL) ? TheFielder->m_pTeam->GetOtherTeam() : NULL)->GetGoalie()
-                    : NULL)
-                .mData.f,
-        1.0f - UserControlledT((TheFielder != NULL) ? TheFielder->m_pTeam : NULL),
+                    : NULL)),
+        FuzzyNot(UserControlledT((TheFielder != NULL) ? TheFielder->m_pTeam : NULL)),
         OnScreen((cPlayer*)TheFielder));
 
     float fFalseConfidence = 1.0f - fTrueConfidence;
-    float fMinConfidence = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-    float fMaxConfidence = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-    float fBranchRatio = fMinConfidence / fMaxConfidence;
+    float fBranchRatio = min_float(fTrueConfidence, fFalseConfidence)
+        / max_float(fTrueConfidence, fFalseConfidence);
 
     if (fTrueConfidence > 0.0f)
     {
@@ -3143,9 +3151,8 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
 
         float fLikelyConfidence = LikelyToUsePowerup(TheFielder, 0);
         float fLikelyFalseConfidence = 1.0f - fLikelyConfidence;
-        float fLikelyMin = (fLikelyConfidence <= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
-        float fLikelyMax = (fLikelyConfidence >= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
-        float fLikelyBranchRatio = fLikelyMin / fLikelyMax;
+        float fLikelyBranchRatio = min_float(fLikelyConfidence, fLikelyFalseConfidence)
+            / max_float(fLikelyConfidence, fLikelyFalseConfidence);
 
         if (fLikelyConfidence > 0.0f)
         {
@@ -3169,9 +3176,8 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
         {
             float fLikelyConfidence = LikelyToUsePowerup(TheFielder, 1);
             float fLikelyFalseConfidence = 1.0f - fLikelyConfidence;
-            float fLikelyMin = (fLikelyConfidence <= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
-            float fLikelyMax = (fLikelyConfidence >= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
-            float fLikelyBranchRatio = fLikelyMin / fLikelyMax;
+            float fLikelyBranchRatio = min_float(fLikelyConfidence, fLikelyFalseConfidence)
+                / max_float(fLikelyConfidence, fLikelyFalseConfidence);
 
             if (fLikelyConfidence > 0.0f)
             {
@@ -3196,9 +3202,8 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
         {
             float fLikelyConfidence = LikelyToUsePowerup(TheFielder, 2);
             float fLikelyFalseConfidence = 1.0f - fLikelyConfidence;
-            float fLikelyMin = (fLikelyConfidence <= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
-            float fLikelyMax = (fLikelyConfidence >= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
-            float fLikelyBranchRatio = fLikelyMin / fLikelyMax;
+            float fLikelyBranchRatio = min_float(fLikelyConfidence, fLikelyFalseConfidence)
+                / max_float(fLikelyConfidence, fLikelyFalseConfidence);
 
             if (fLikelyConfidence > 0.0f)
             {
@@ -3223,9 +3228,8 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
         {
             float fLikelyConfidence = LikelyToUsePowerup(TheFielder, 3);
             float fLikelyFalseConfidence = 1.0f - fLikelyConfidence;
-            float fLikelyMin = (fLikelyConfidence <= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
-            float fLikelyMax = (fLikelyConfidence >= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
-            float fLikelyBranchRatio = fLikelyMin / fLikelyMax;
+            float fLikelyBranchRatio = min_float(fLikelyConfidence, fLikelyFalseConfidence)
+                / max_float(fLikelyConfidence, fLikelyFalseConfidence);
 
             if (fLikelyConfidence > 0.0f)
             {
@@ -3250,9 +3254,8 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
         {
             float fLikelyConfidence = LikelyToUsePowerup(TheFielder, 4);
             float fLikelyFalseConfidence = 1.0f - fLikelyConfidence;
-            float fLikelyMin = (fLikelyConfidence <= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
-            float fLikelyMax = (fLikelyConfidence >= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
-            float fLikelyBranchRatio = fLikelyMin / fLikelyMax;
+            float fLikelyBranchRatio = min_float(fLikelyConfidence, fLikelyFalseConfidence)
+                / max_float(fLikelyConfidence, fLikelyFalseConfidence);
 
             if (fLikelyConfidence > 0.0f)
             {
@@ -3277,9 +3280,8 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
         {
             float fLikelyConfidence = LikelyToUsePowerup(TheFielder, 5);
             float fLikelyFalseConfidence = 1.0f - fLikelyConfidence;
-            float fLikelyMin = (fLikelyConfidence <= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
-            float fLikelyMax = (fLikelyConfidence >= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
-            float fLikelyBranchRatio = fLikelyMin / fLikelyMax;
+            float fLikelyBranchRatio = min_float(fLikelyConfidence, fLikelyFalseConfidence)
+                / max_float(fLikelyConfidence, fLikelyFalseConfidence);
 
             if (fLikelyConfidence > 0.0f)
             {
@@ -3301,37 +3303,13 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
             }
         }
 
-        fTrueConfidence = 1.0f - High(g_pBall);
-        float fNotNearBall = 1.0f - NearToBall((cPlayer*)TheFielder);
-        float fChasingBall = ChasingBall((cPlayer*)TheFielder);
-
-        fNotNearBall = (fNotNearBall <= fTrueConfidence) ? fNotNearBall : fTrueConfidence;
-        fChasingBall = (fChasingBall <= fNotNearBall) ? fChasingBall : fNotNearBall;
-
-        fTrueConfidence = fChasingBall;
-
-        fFalseConfidence = 1.0f - fTrueConfidence;
-        fMinConfidence = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-        fMaxConfidence = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-        fBranchRatio = fMinConfidence / fMaxConfidence;
-
-        if (fTrueConfidence > 0.0f)
         {
-            SaveConfidence PushDOM(&fConfidence);
+            fTrueConfidence = nlMinThree(ChasingBall((cPlayer*)TheFielder),
+                FuzzyNot(NearToBall((cPlayer*)TheFielder)), FuzzyNot(High(g_pBall)));
 
-            fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
-
-            if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
-            {
-                double d = fConfidence;
-                fConfidence = (float)d * fBranchRatio;
-            }
-
-            fTrueConfidence = 1.0f - OnMushrooms(g_pScriptCurrentFielder);
-            fFalseConfidence = 1.0f - fTrueConfidence;
-            fMinConfidence = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-            fMaxConfidence = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-            fBranchRatio = fMinConfidence / fMaxConfidence;
+            float fFalseConfidence = 1.0f - fTrueConfidence;
+            float fBranchRatio = min_float(fTrueConfidence, fFalseConfidence)
+                / max_float(fTrueConfidence, fFalseConfidence);
 
             if (fTrueConfidence > 0.0f)
             {
@@ -3345,50 +3323,58 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
                     fConfidence = (float)d * fBranchRatio;
                 }
 
+                fTrueConfidence = 1.0f - OnMushrooms(g_pScriptCurrentFielder);
+                float fFalseConfidence = 1.0f - fTrueConfidence;
+                float fBranchRatio = min_float(fTrueConfidence, fFalseConfidence)
+                    / max_float(fTrueConfidence, fFalseConfidence);
+
+                if (fTrueConfidence > 0.0f)
                 {
-                    float fLikelyConfidence = LikelyToUsePowerup(TheFielder, 7);
-                    float fLikelyFalseConfidence = 1.0f - fLikelyConfidence;
-                    float fLikelyMin = (fLikelyConfidence <= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
-                    float fLikelyMax = (fLikelyConfidence >= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
-                    float fLikelyBranchRatio = fLikelyMin / fLikelyMax;
+                    SaveConfidence PushDOM(&fConfidence);
 
-                    if (fLikelyConfidence > 0.0f)
+                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+
+                    if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                     {
-                        SaveConfidence PushDOM(&fConfidence);
+                        double d = fConfidence;
+                        fConfidence = (float)d * fBranchRatio;
+                    }
 
-                        fConfidence = (fConfidence <= fLikelyConfidence) ? fConfidence : fLikelyConfidence;
+                    {
+                        float fLikelyConfidence = LikelyToUsePowerup(TheFielder, 7);
+                        float fLikelyFalseConfidence = 1.0f - fLikelyConfidence;
+                        float fLikelyBranchRatio = min_float(fLikelyConfidence, fLikelyFalseConfidence)
+                            / max_float(fLikelyConfidence, fLikelyFalseConfidence);
 
-                        if (fConfidence < fLikelyConfidence && fLikelyConfidence < 0.5f)
+                        if (fLikelyConfidence > 0.0f)
                         {
-                            double d = fConfidence;
-                            fConfidence = (float)d * fLikelyBranchRatio;
-                        }
+                            SaveConfidence PushDOM(&fConfidence);
 
-                        if (fConfidence > fBestConfidence)
-                        {
-                            fBestConfidence = fConfidence;
-                            bestValue = FuzzyVariant(7);
+                            fConfidence = (fConfidence <= fLikelyConfidence) ? fConfidence : fLikelyConfidence;
+
+                            if (fConfidence < fLikelyConfidence && fLikelyConfidence < 0.5f)
+                            {
+                                double d = fConfidence;
+                                fConfidence = (float)d * fLikelyBranchRatio;
+                            }
+
+                            if (fConfidence > fBestConfidence)
+                            {
+                                fBestConfidence = fConfidence;
+                                bestValue = FuzzyVariant(7);
+                            }
                         }
                     }
                 }
             }
         }
 
-        float fNotInDefensiveZone = 1.0f - InDefensiveZone((cPlayer*)TheFielder);
-        float fCaptain = Captain(TheFielder);
-        float fReceivingPass = ReceivingPass(TheFielder);
-        float fBallOwner = BallOwner((cPlayer*)TheFielder);
+        fTrueConfidence = nlMinThree(nlMaxEquals(BallOwner((cPlayer*)TheFielder), ReceivingPass(TheFielder)),
+            Captain(TheFielder), FuzzyNot(InDefensiveZone((cPlayer*)TheFielder)));
 
-        fBallOwner = (fBallOwner >= fReceivingPass) ? fBallOwner : fReceivingPass;
-        fCaptain = (fCaptain <= fNotInDefensiveZone) ? fCaptain : fNotInDefensiveZone;
-        fBallOwner = (fBallOwner <= fCaptain) ? fBallOwner : fCaptain;
-
-        fTrueConfidence = fBallOwner;
-
-        fFalseConfidence = 1.0f - fTrueConfidence;
-        fMinConfidence = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-        fMaxConfidence = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-        fBranchRatio = fMinConfidence / fMaxConfidence;
+        float fFalseConfidence = 1.0f - fTrueConfidence;
+        float fBranchRatio = min_float(fTrueConfidence, fFalseConfidence)
+            / max_float(fTrueConfidence, fFalseConfidence);
 
         if (fTrueConfidence > 0.0f)
         {
@@ -3405,9 +3391,8 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
             {
                 float fLikelyConfidence = LikelyToUsePowerup(TheFielder, 8);
                 float fLikelyFalseConfidence = 1.0f - fLikelyConfidence;
-                float fLikelyMin = (fLikelyConfidence <= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
-                float fLikelyMax = (fLikelyConfidence >= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
-                float fLikelyBranchRatio = fLikelyMin / fLikelyMax;
+                float fLikelyBranchRatio = min_float(fLikelyConfidence, fLikelyFalseConfidence)
+                    / max_float(fLikelyConfidence, fLikelyFalseConfidence);
 
                 if (fLikelyConfidence > 0.0f)
                 {
