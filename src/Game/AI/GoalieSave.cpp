@@ -333,13 +333,7 @@ void GoalieSave::InitData(Goalie* pGoalie)
 
         int animKey = pSaveData->mnAnimID;
         SaveData* pValue = pSaveData;
-        AVLTreeNode* pExistingNode;
-        gSaveMap.AddAVLNode((AVLTreeNode**)&gSaveMap.m_Root, &animKey, &pValue, &pExistingNode, gSaveMap.m_NumElements);
-        if (pExistingNode == NULL)
-        {
-            gSaveMap.m_NumElements++;
-        }
-
+        gSaveMap.Add(animKey, pValue);
         pSaveInfo++;
     }
 

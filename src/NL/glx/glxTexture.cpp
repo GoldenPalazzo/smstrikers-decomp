@@ -274,7 +274,6 @@ PlatTexture* glx_GetTex(unsigned long handle, bool bMissingFatal, bool bAllowGri
  */
 bool glx_AddTex(unsigned long handle, PlatTexture* pTex)
 {
-    AVLTreeNode* existingNode;
     nlAVLTree<unsigned long, PlatTexture*, DefaultKeyCompare<unsigned long> >* textureTree;
 
     if ((pTex == NULL) || (handle == -1))
@@ -283,12 +282,7 @@ bool glx_AddTex(unsigned long handle, PlatTexture* pTex)
     }
     textureTree = textures[currentMarkerLevel];
 
-    textures[currentMarkerLevel]->AddAVLNode((AVLTreeNode**)&textures[currentMarkerLevel]->m_Root, &handle, &pTex, &existingNode, textures[currentMarkerLevel]->m_NumElements);
-
-    if (existingNode == NULL)
-    {
-        textureTree->m_NumElements += 1;
-    }
+    textureTree->Add(handle, pTex);
     return true;
 }
 
@@ -759,7 +753,6 @@ void glplatTextureAdd(unsigned long handle, const void* textureData, unsigned lo
 {
     unsigned long handleCopy;
     PlatTexture* pTex = glx_MakeTexture((GXTextureHeader*)textureData, handle);
-    AVLTreeNode* existingNode;
     nlAVLTree<unsigned long, PlatTexture*, DefaultKeyCompare<unsigned long> >* textureTree;
     handleCopy = handle;
 
@@ -767,12 +760,7 @@ void glplatTextureAdd(unsigned long handle, const void* textureData, unsigned lo
     {
         textureTree = textures[currentMarkerLevel];
 
-        textureTree->AddAVLNode((AVLTreeNode**)&textureTree->m_Root, &handleCopy, &pTex, &existingNode, textureTree->m_NumElements);
-
-        if (existingNode == NULL)
-        {
-            textureTree->m_NumElements += 1;
-        }
+        textureTree->Add(handleCopy, pTex);
     }
 }
 #pragma dont_inline off

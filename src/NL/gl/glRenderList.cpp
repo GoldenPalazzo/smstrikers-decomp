@@ -256,7 +256,6 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
         DepthPacketPair pair;
         nlMatrix4 m;
         GLDepthPacketTree* pTree;
-        AVLTreeNode* existingNode;
         unsigned int* pCount;
         unsigned long sortKey;
         nlVector3 out;
@@ -289,17 +288,7 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
 
             pTree = depthPacketTree;
             const unsigned int& one = 1;
-            pTree->AddAVLNode((AVLTreeNode**)&pTree->m_Root, &pair, (void*)&one, &existingNode, pTree->m_NumElements);
-
-            if (existingNode == NULL)
-            {
-                pTree->m_NumElements++;
-                pCount = NULL;
-            }
-            else
-            {
-                pCount = &((AVLTreeEntry<DepthPacketPair, unsigned int>*)existingNode)->value;
-            }
+            pCount = pTree->Add(pair, one);
 
             if (pCount != NULL)
             {
@@ -392,19 +381,7 @@ void gl_ViewAttachPacket(eGLView view, unsigned long layer, const glModelPacket*
 
     GLTexturePacketTree* pTree = pList->texPacketTree[layer];
     const unsigned int& one = 1;
-    AVLTreeNode* existingNode;
-    pTree->AddAVLNode((AVLTreeNode**)&pTree->m_Root, &pKey, (void*)&one, &existingNode, pTree->m_NumElements);
-
-    unsigned int* pCount;
-    if (existingNode == NULL)
-    {
-        pTree->m_NumElements++;
-        pCount = NULL;
-    }
-    else
-    {
-        pCount = &((AVLTreeEntry<const glModelPacket*, unsigned int>*)existingNode)->value;
-    }
+    unsigned int* pCount = pTree->Add(pKey, one);
 
     if (pCount != NULL)
     {

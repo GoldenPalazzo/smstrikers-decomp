@@ -98,6 +98,57 @@ extern float Interpolate(float, float, float);
 
 extern "C" double fabs(double);
 
+union FunctionAddress
+{
+    FuzzyVariant (*teamFunction)(cTeam*);
+    FuzzyVariant (*playerFunction)(cPlayer*);
+    FuzzyVariant (*fielderFunction)(cFielder*);
+    unsigned long address;
+};
+
+/*
+ * The script-question cache key. Every Fuzzy question builds the same key: a
+ * FuzzyVariant wrapping the subject, hashed with the question function's own
+ * address. Each site also constructs a second FuzzyVariant from the same subject
+ * and discards it; retail's code contains both constructions, so both are here.
+ *
+ * Each macro declares hash, fvQuestion, fvQuestion2 and functionAddress into the
+ * CALLER's scope -- that is where the `hash` used by Lookup/AddToCache further
+ * down each function comes from.
+ *
+ * Two spellings, NOT interchangeable: forcing _REF everywhere costs +529 diff
+ * rows across the TU, and it does not compile where a bare identifier is passed.
+ *   SCRIPT_QUESTION_KEY      subject held in a named FuzzyVariant object
+ *   SCRIPT_QUESTION_KEY_REF  subject held by const reference to a temporary
+ * Pass a CAST as `arg` to _REF: its trailing (void)FuzzyVariant(arg) is an
+ * expression only while arg is not a bare identifier; with one it would be the
+ * most vexing parse and would silently declare a variable instead.
+ *
+ * Six sites do not consult the cache and previously carried a shorter form with
+ * no address arithmetic; the macro re-adds it. Measured inert, and verified three
+ * ways: deleting the arithmetic again is byte-identical, retail's object holds no
+ * self-referencing relocation in those functions, and they sit at 0 diff rows.
+ * `hash` there is unused, so the arithmetic is dead-stripped and only the two
+ * constructions and the GetHash call survive -- what those functions emit.
+ *
+ * UNCONFIRMED: that this was a macro in retail. It reproduces retail's BYTES at
+ * all 20 sites, but dwarf.txt's CommonScript CU names no functionAddress, hash or
+ * fv* local anywhere, so the original spelling is not attested.
+ */
+#define SCRIPT_QUESTION_KEY_REF(member, fn, arg)                                       \
+    const FuzzyVariant& fvQuestion = FuzzyVariant(arg);                                \
+    FunctionAddress functionAddress;                                                   \
+    functionAddress.member = fn;                                                       \
+    unsigned long hash = functionAddress.address + ((Variant*)&fvQuestion)->GetHash(); \
+    (void)FuzzyVariant(arg)
+
+#define SCRIPT_QUESTION_KEY(member, fn, arg)                                         \
+    FuzzyVariant fvQuestion(arg);                                                      \
+    FunctionAddress functionAddress;                                                   \
+    functionAddress.member = fn;                                                       \
+    unsigned long hash = StrategicQuestionHash(functionAddress.address, fvQuestion);   \
+    FuzzyVariant fvQuestion2(arg)
+
 float InBetweenMyNetAnd(cFielder*, cFielder*);
 float InBetweenMyNetAnd(cFielder*, cBall*);
 float AbleToInterceptBall(cPlayer*);
@@ -156,26 +207,6 @@ extern cBall* g_pScriptBall;
 // {
 // }
 
-struct StdMapNodeBase
-{
-    void* left;
-    void* right;
-    void* parent;
-};
-
-struct StdMapTree
-{
-    unsigned long x0;
-    StdMapNodeBase x4;
-};
-
-struct StdMapNode
-{
-    StdMapNodeBase base;
-    unsigned long key;
-    FuzzyVariant value;
-};
-
 #include "Game/AI/Scripts/ScriptCaching.h"
 
 static inline unsigned long StrategicQuestionHash(
@@ -196,15 +227,7 @@ FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
-    FuzzyVariant fvTeam(TheTeam);
-    union FunctionAddress
-    {
-        FuzzyVariant (*function)(cTeam*);
-        unsigned long address;
-    } functionAddress;
-    functionAddress.function = GetStrategicBallCarrier;
-    unsigned long hash = StrategicQuestionHash(functionAddress.address, fvTeam);
-    FuzzyVariant fvTeam2(TheTeam);
+    SCRIPT_QUESTION_KEY(teamFunction, GetStrategicBallCarrier, TheTeam);
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
@@ -252,15 +275,7 @@ FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
-    FuzzyVariant fvTeam(TheTeam);
-    union FunctionAddress
-    {
-        FuzzyVariant (*function)(cTeam*);
-        unsigned long address;
-    } functionAddress;
-    functionAddress.function = GetBestBallInterceptor;
-    unsigned long hash = StrategicQuestionHash(functionAddress.address, fvTeam);
-    FuzzyVariant fvTeam2(TheTeam);
+    SCRIPT_QUESTION_KEY(teamFunction, GetBestBallInterceptor, TheTeam);
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
@@ -307,10 +322,7 @@ FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
 {
     FuzzyVariant bestValue;
 
-    FuzzyVariant fvPlayer((cPlayer*)ThePlayer);
-    ((Variant*)&fvPlayer)->GetHash();
-
-    FuzzyVariant fvPlayer2((cPlayer*)ThePlayer);
+    SCRIPT_QUESTION_KEY(playerFunction, GetSwapControllerScore, (cPlayer*)ThePlayer);
 
     unsigned char flag = 0;
     float weightedSum = 0.0f;
@@ -421,10 +433,7 @@ FuzzyVariant Fuzzy::ShouldIStrafeBall(cFielder* TheFielder)
 
     float confidence = 0.0f;
 
-    FuzzyVariant fvFielder((cPlayer*)TheFielder);
-    ((Variant*)&fvFielder)->GetHash();
-
-    FuzzyVariant fvFielder2((cPlayer*)TheFielder);
+    SCRIPT_QUESTION_KEY(fielderFunction, ShouldIStrafeBall, (cPlayer*)TheFielder);
 
     if (!((bool)StrategicBallOwner(TheFielder)))
     {
@@ -484,10 +493,7 @@ FuzzyVariant Fuzzy::ShouldIStrafeMark(cFielder* TheFielder)
 {
     FuzzyVariant bestValue;
 
-    FuzzyVariant fvFielder((cPlayer*)TheFielder);
-    ((Variant*)&fvFielder)->GetHash();
-
-    FuzzyVariant fvFielder2((cPlayer*)TheFielder);
+    SCRIPT_QUESTION_KEY(fielderFunction, ShouldIStrafeMark, (cPlayer*)TheFielder);
 
     cFielder* mark = TheFielder != NULL ? TheFielder->m_pMark : NULL;
     float inBetween = InBetweenMyNetAnd(TheFielder, mark);
@@ -516,9 +522,7 @@ FuzzyVariant Fuzzy::ShouldIMarkBallOwner(cFielder* pFielder)
     float confidence = 1.0f;
     float bestConfidence = 0.0f;
 
-    FuzzyVariant fvFielder((cPlayer*)pFielder);
-    ((Variant*)&fvFielder)->GetHash();
-    FuzzyVariant fvFielder2((cPlayer*)pFielder);
+    SCRIPT_QUESTION_KEY(fielderFunction, ShouldIMarkBallOwner, (cPlayer*)pFielder);
 
     float score = 1.0f - Marking(g_pScriptCurrentFielder, g_pScriptBallOwner);
     float complement = 1.0f - score;
@@ -644,6 +648,11 @@ static inline float nlMaxFour(float a, float b, float c, float d)
     return max_float(a, max_float(b, max_float(c, d)));
 }
 
+static inline float nlMaxFive(float a, float b, float c, float d, float e)
+{
+    return max_float(a, max_float(b, max_float(c, max_float(d, e))));
+}
+
 static inline float WeightedScore2(float fScoreA, float fWeightA, float fScoreB, float fWeightB)
 {
     return fScoreA * fWeightA + fScoreB * fWeightB;
@@ -665,15 +674,7 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
-    const FuzzyVariant& fvFielder = FuzzyVariant((cPlayer*)TheFielder);
-    union FunctionAddress
-    {
-        FuzzyVariant (*function)(cFielder*);
-        unsigned long address;
-    } functionAddress;
-    functionAddress.function = ShouldIAttemptOneTimer;
-    unsigned long hash = functionAddress.address + fvFielder.GetHash();
-    FuzzyVariant((cPlayer*)TheFielder);
+    SCRIPT_QUESTION_KEY_REF(fielderFunction, ShouldIAttemptOneTimer, (cPlayer*)TheFielder);
 
     {
         ScriptQuestionCache* const lookupCache = ScriptQuestionCache::Instance();
@@ -869,8 +870,7 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0xB89C | 0x80075A6C | size: 0x8A8
- * TODO: 98.70% match - remaining register allocation differs in cache
- * pointer/hash/sret paths and second confidence gate f2/f3 temporaries.
+ * TODO: 99.15% match - cache-path register allocation.
  */
 FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
 {
@@ -879,34 +879,12 @@ FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
     float fBestConfidence = 0.0f;
     cFielder* const fielder = TheFielder;
 
-    const FuzzyVariant& fvFielder = FuzzyVariant((cPlayer*)fielder);
-    volatile unsigned long funcAddr = (unsigned long)GetBestLooseBallPassTarget;
-    unsigned long hash = funcAddr + ((Variant*)&fvFielder)->GetHash();
-    FuzzyVariant((cPlayer*)fielder);
+    SCRIPT_QUESTION_KEY_REF(fielderFunction, GetBestLooseBallPassTarget, (cPlayer*)fielder);
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
         bestValue.Confidence = bestValue.Confidence;
-        unsigned long hashCopy = hash;
-        ScriptQuestionCache* addCache = ScriptQuestionCache::Instance();
-        if (g_bScriptQuestionCachingOn)
-        {
-            const FuzzyVariant& cacheValue = bestValue;
-            if (g_bScriptQuestionCachingUseSTD)
-            {
-                std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy);
-                pair.second = cacheValue;
-            }
-            else
-            {
-                AVLTreeNode* existingNode;
-                addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy, (void*)&cacheValue, &existingNode, addCache->mQuestionCacheMap.m_NumElements);
-                if (existingNode == NULL)
-                {
-                    addCache->mQuestionCacheMap.m_NumElements++;
-                }
-            }
-        }
+        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
         return bestValue;
     }
 
@@ -946,26 +924,7 @@ FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
     }
 
     bestValue.Confidence = fBestConfidence;
-    unsigned long hashCopy = hash;
-    ScriptQuestionCache* addCache = ScriptQuestionCache::Instance();
-    if (g_bScriptQuestionCachingOn)
-    {
-        const FuzzyVariant& cacheValue = bestValue;
-        if (g_bScriptQuestionCachingUseSTD)
-        {
-            std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy);
-            pair.second = cacheValue;
-        }
-        else
-        {
-            AVLTreeNode* existingNode;
-            addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy, (void*)&cacheValue, &existingNode, addCache->mQuestionCacheMap.m_NumElements);
-            if (existingNode == NULL)
-            {
-                addCache->mQuestionCacheMap.m_NumElements++;
-            }
-        }
-    }
+    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
     return bestValue;
 }
 
@@ -979,8 +938,7 @@ static inline void UpdatePassTargetConfidence(float& confidence, float incapacit
 
 /**
  * Offset/Address/Size: 0xAC34 | 0x80074E04 | size: 0xC68
- * TODO: 99.27% match - cache hash/cache registers and insertion key/node stack
- *       slots.
+ * TODO: 99.85% match - cache hash/insertion-key register colouring.
  */
 FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
 {
@@ -989,16 +947,13 @@ FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
-    const FuzzyVariant& fvPlayer = FuzzyVariant((cPlayer*)ThePlayer);
-    volatile unsigned long funcAddr = (unsigned long)GetBestPassTarget;
-    unsigned long hash = funcAddr + ((Variant*)&fvPlayer)->GetHash();
-    const FuzzyVariant& fvPlayer2 = FuzzyVariant((cPlayer*)ThePlayer);
+    SCRIPT_QUESTION_KEY_REF(playerFunction, GetBestPassTarget, (cPlayer*)ThePlayer);
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
-        bestValue.Confidence = bestValue.Confidence;
-        const FuzzyVariant& cacheValue1 = bestValue;
-        ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue1, NULL);
+        fBestConfidence = bestValue.Confidence;
+        bestValue.Confidence = fBestConfidence;
+        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
 
         return bestValue;
     }
@@ -1130,8 +1085,7 @@ FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
     }
 
     bestValue.Confidence = fBestConfidence;
-    const FuzzyVariant& cacheValue2 = bestValue;
-    ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue2, NULL);
+    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
 
     return bestValue;
 }
@@ -1340,8 +1294,7 @@ FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* The
 
 /**
  * Offset/Address/Size: 0x95A0 | 0x80073770 | size: 0xB98
- * TODO: 97.54% match - remaining diffs are cache lookup stack slots and
- *       weighted expression register/order differences.
+ * TODO: 98.92% match - cache lookup stack slots and register colouring.
  */
 FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
 {
@@ -1350,101 +1303,12 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
-    FuzzyVariant fvFielder(TheFielder);
-    unsigned long hash = (unsigned long)GetBestHitTarget;
-    hash += ((Variant*)&fvFielder)->GetHash();
-    unsigned long hashKey = hash;
-    FuzzyVariant fvFielder2(TheFielder);
+    SCRIPT_QUESTION_KEY(fielderFunction, GetBestHitTarget, TheFielder);
 
-    ScriptQuestionCache* cache = nlSingleton<ScriptQuestionCache>::s_pInstance;
-    cache->mTotalLookups++;
-
-    unsigned char lookupFound;
-    FuzzyVariant* pValue;
-
-    if (g_bScriptQuestionCachingUseSTD)
-    {
-        std::map<unsigned long, FuzzyVariant>::iterator stdIt = cache->mQuestionCacheMapSTD.find(hash);
-        if (*(StdMapNodeBase**)&stdIt != &((StdMapTree*)&cache->mQuestionCacheMapSTD)->x4)
-        {
-            cache->mCacheHits++;
-            bestValue = (*(StdMapNode**)&stdIt)->value;
-            lookupFound = 1;
-        }
-    }
-    else
-    {
-        AVLTreeEntry<unsigned long, FuzzyVariant>* node = cache->mQuestionCacheMap.m_Root;
-        unsigned long key = hash;
-
-        while (node != NULL)
-        {
-            int cmpResult;
-            if (key == node->key)
-            {
-                cmpResult = 0;
-            }
-            else if (key < node->key)
-            {
-                cmpResult = -1;
-            }
-            else
-            {
-                cmpResult = 1;
-            }
-
-            if (cmpResult == 0)
-            {
-                if (&pValue != NULL)
-                {
-                    pValue = &node->value;
-                }
-                lookupFound = 1;
-                goto found_done;
-            }
-
-            if (cmpResult < 0)
-            {
-                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.left;
-            }
-            else
-            {
-                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.right;
-            }
-        }
-
-        lookupFound = 0;
-
-    found_done:
-
-        if (lookupFound)
-        {
-            cache->mCacheHits++;
-            bestValue = *pValue;
-        }
-    }
-
-    if (lookupFound)
+    if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
         bestValue.Confidence = bestValue.Confidence;
-        unsigned long hashCopy1 = hashKey;
-        ScriptQuestionCache* addCache = nlSingleton<ScriptQuestionCache>::s_pInstance;
-        if (g_bScriptQuestionCachingOn)
-        {
-            const FuzzyVariant& cacheValue1 = bestValue;
-            if (g_bScriptQuestionCachingUseSTD)
-            {
-                std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1);
-                pair.second = cacheValue1;
-            }
-            else
-            {
-                AVLTreeNode* existingNode1;
-                addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy1, (void*)&cacheValue1, &existingNode1, addCache->mQuestionCacheMap.m_NumElements);
-                if (existingNode1 == NULL)
-                    addCache->mQuestionCacheMap.m_NumElements++;
-            }
-        }
+        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
         return bestValue;
     }
 
@@ -1558,24 +1422,7 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
 
     bestValue.Confidence = fBestConfidence;
 
-    unsigned long hashCopy2 = hashKey;
-    ScriptQuestionCache* addCache = nlSingleton<ScriptQuestionCache>::s_pInstance;
-    if (g_bScriptQuestionCachingOn)
-    {
-        const FuzzyVariant& cacheValue2 = bestValue;
-        if (g_bScriptQuestionCachingUseSTD)
-        {
-            std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
-            pair.second = cacheValue2;
-        }
-        else
-        {
-            AVLTreeNode* existingNode2;
-            addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy2, (void*)&cacheValue2, &existingNode2, addCache->mQuestionCacheMap.m_NumElements);
-            if (existingNode2 == NULL)
-                addCache->mQuestionCacheMap.m_NumElements++;
-        }
-    }
+    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
 
     return bestValue;
 }
@@ -1673,7 +1520,7 @@ FuzzyVariant Fuzzy::GetPassDirection(cPlayer* pFromPlayer, cPlayer* pTargetPlaye
 
 /**
  * Offset/Address/Size: 0x801C | 0x800721EC | size: 0xD64
- * TODO: 99.30% match - return/hash registers and cache insertion stack slots differ.
+ * TODO: 99.38% match - return/hash registers and cache insertion stack slots.
  */
 FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
 {
@@ -1681,34 +1528,12 @@ FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
-    FuzzyVariant fvFielder((cPlayer*)TheFielder);
-    volatile unsigned long funcAddr = (unsigned long)GoodToShoot;
-    unsigned long hash = funcAddr + ((Variant*)&fvFielder)->GetHash();
-    FuzzyVariant fvFielder2((cPlayer*)TheFielder);
+    SCRIPT_QUESTION_KEY(fielderFunction, GoodToShoot, (cPlayer*)TheFielder);
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
         bestValue.Confidence = bestValue.Confidence;
-        unsigned long hashCopy = hash;
-        ScriptQuestionCache* addCache = ScriptQuestionCache::Instance();
-        if (g_bScriptQuestionCachingOn)
-        {
-            const FuzzyVariant& cacheValue = bestValue;
-            if (g_bScriptQuestionCachingUseSTD)
-            {
-                std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy);
-                pair.second = cacheValue;
-            }
-            else
-            {
-                AVLTreeNode* existingNode;
-                addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy, (void*)&cacheValue, &existingNode, addCache->mQuestionCacheMap.m_NumElements);
-                if (existingNode == NULL)
-                {
-                    addCache->mQuestionCacheMap.m_NumElements++;
-                }
-            }
-        }
+        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
         return bestValue;
     }
 
@@ -1849,26 +1674,7 @@ FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
     }
 
     bestValue.Confidence = fBestConfidence;
-    unsigned long hashCopy2 = hash;
-    ScriptQuestionCache* addCache2 = ScriptQuestionCache::Instance();
-    if (g_bScriptQuestionCachingOn)
-    {
-        const FuzzyVariant& cacheValue2 = bestValue;
-        if (g_bScriptQuestionCachingUseSTD)
-        {
-            std::pair<const unsigned long, FuzzyVariant>& pair = addCache2->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
-            pair.second = cacheValue2;
-        }
-        else
-        {
-            AVLTreeNode* existingNode;
-            addCache2->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache2->mQuestionCacheMap.m_Root, (void*)&hashCopy2, (void*)&cacheValue2, &existingNode, addCache2->mQuestionCacheMap.m_NumElements);
-            if (existingNode == NULL)
-            {
-                addCache2->mQuestionCacheMap.m_NumElements++;
-            }
-        }
-    }
+    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
     return bestValue;
 }
 
@@ -1884,15 +1690,7 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
     float fFalseConfidence;
     float fBranchRatio;
 
-    FuzzyVariant fvFielder(TheFielder);
-    union FunctionAddress
-    {
-        FuzzyVariant (*function)(cFielder*);
-        unsigned long address;
-    } functionAddress;
-    functionAddress.function = GoodToChipShot;
-    unsigned long hash = functionAddress.address + ((Variant*)&fvFielder)->GetHash();
-    FuzzyVariant fvFielder2(TheFielder);
+    SCRIPT_QUESTION_KEY(fielderFunction, GoodToChipShot, TheFielder);
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
@@ -2075,16 +1873,12 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
-    const FuzzyVariant& fvFielder = FuzzyVariant((cPlayer*)TheFielder);
-    volatile unsigned long funcAddr = (unsigned long)GetBestPassReceiveAction;
-    unsigned long hash = funcAddr + ((Variant*)&fvFielder)->GetHash();
-    FuzzyVariant((cPlayer*)TheFielder);
+    SCRIPT_QUESTION_KEY_REF(fielderFunction, GetBestPassReceiveAction, (cPlayer*)TheFielder);
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
         bestValue.Confidence = bestValue.Confidence;
-        const FuzzyVariant& cacheValue = bestValue;
-        ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
+        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
         return bestValue;
     }
 
@@ -2454,16 +2248,15 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
     }
 
     bestValue.Confidence = fBestConfidence;
-    const FuzzyVariant& cacheValue2 = bestValue;
 
-    ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue2, NULL);
+    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
 
     return bestValue;
 }
 
 /**
  * Offset/Address/Size: 0x3FD0 | 0x8006E1A0 | size: 0x17F4
- * TODO: 98.54% match - remaining diffs are register/branch ordering in confidence gates.
+ * TODO: 98.61% match - remaining diffs are register/branch ordering in confidence gates.
  */
 FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
 {
@@ -2473,10 +2266,7 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
-    const FuzzyVariant& fvFielder = FuzzyVariant((cPlayer*)TheFielder);
-    volatile unsigned long funcAddr = (unsigned long)GetBestLooseBallAction;
-    unsigned long hash = funcAddr + ((Variant*)&fvFielder)->GetHash();
-    FuzzyVariant((cPlayer*)TheFielder);
+    SCRIPT_QUESTION_KEY_REF(fielderFunction, GetBestLooseBallAction, (cPlayer*)TheFielder);
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
@@ -3064,15 +2854,7 @@ FuzzyVariant Fuzzy::GetBestWindupShotAction(cFielder* TheFielder)
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
-    const FuzzyVariant& fvFielder = FuzzyVariant((cPlayer*)TheFielder);
-    union FunctionAddress
-    {
-        FuzzyVariant (*function)(cFielder*);
-        unsigned long address;
-    } functionAddress;
-    functionAddress.function = GetBestWindupShotAction;
-    unsigned long hash = functionAddress.address + ((Variant*)&fvFielder)->GetHash();
-    FuzzyVariant((cPlayer*)TheFielder);
+    SCRIPT_QUESTION_KEY_REF(fielderFunction, GetBestWindupShotAction, (cPlayer*)TheFielder);
 
     ScriptQuestionCache* const lookupCache = ScriptQuestionCache::Instance();
     if (lookupCache->Lookup(hash, bestValue, NULL))
@@ -3324,8 +3106,7 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
-    ((Variant*)&FuzzyVariant((cPlayer*)TheFielder))->GetHash();
-    FuzzyVariant((cPlayer*)TheFielder);
+    SCRIPT_QUESTION_KEY(fielderFunction, GetPowerupToUseForPassReceiveDefence, (cPlayer*)TheFielder);
 
     float fTrueConfidence = nlMinFour(
         1.0f
@@ -3663,8 +3444,7 @@ FuzzyVariant Fuzzy::GetPowerupToUseForWindupDefence(cFielder* TheFielder)
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
-    ((Variant*)&FuzzyVariant((cPlayer*)TheFielder))->GetHash();
-    FuzzyVariant((cPlayer*)TheFielder);
+    SCRIPT_QUESTION_KEY_REF(fielderFunction, GetPowerupToUseForWindupDefence, (cPlayer*)TheFielder);
 
     FuzzyVariant usePowerup = Fuzzy::GetPowerupToUseForPassReceiveDefence(TheFielder);
 
@@ -3700,44 +3480,36 @@ FuzzyVariant Fuzzy::GetPowerupToUseForWindupDefence(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0xE64 | 0x8006B034 | size: 0x7BC
- * TODO: 98.27% match - return/hash/temp registers rotate in the cache path and final copy.
+ * TODO: 99.21% match - one callee-saved transposition: retail colours the sret
+ *       pointer r29 and the FuzzyVariant temps / cache pointer r28; we invert
+ *       the two. Opcodes, stack slots, FP registers and size are exact.
  */
 FuzzyVariant Fuzzy::InDanger(cFielder* TheFielder)
 {
     cFielder* const fielder = TheFielder;
     FuzzyVariant bestValue;
 
-    FuzzyVariant fvFielder((cPlayer*)fielder);
-    volatile unsigned long funcAddr = (unsigned long)InDanger;
-    unsigned long hash = funcAddr + ((Variant*)&fvFielder)->GetHash();
-    FuzzyVariant fvFielder2((cPlayer*)fielder);
+    SCRIPT_QUESTION_KEY(fielderFunction, InDanger, (cPlayer*)fielder);
 
-    if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
+    ScriptQuestionCache* const cache = ScriptQuestionCache::Instance();
+    if (cache->Lookup(hash, bestValue, NULL))
     {
         bestValue.Confidence = bestValue.Confidence;
-        const FuzzyVariant& cacheValue = bestValue;
-        ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
+        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
         return bestValue;
     }
 
-    float fDanger = FGREATER(1.0f - Open(fielder), 0.35f);
-    float fOther = AvoidingPowerups(fielder);
-    float fThird = StuckOnSidelines(fielder);
-    float fFourth = Pressured(fielder);
-    float fFifth = Attacked(fielder);
-    float fBestConfidence = fDanger;
-
-    fBestConfidence = (fOther <= fBestConfidence) ? fBestConfidence : fOther;
-    fBestConfidence = (fBestConfidence >= fThird) ? fBestConfidence : fThird;
-    fBestConfidence = (fBestConfidence >= fFourth) ? fBestConfidence : fFourth;
-    fBestConfidence = (fBestConfidence >= fFifth) ? fBestConfidence : fFifth;
+    float fBestConfidence = nlMaxFive(Attacked(fielder),
+        Pressured(fielder),
+        StuckOnSidelines(fielder),
+        AvoidingPowerups(fielder),
+        FGREATER(1.0f - Open(fielder), 0.35f));
 
     FuzzyVariant fvResult(fBestConfidence);
     bestValue = fvResult;
     bestValue.Confidence = 1.0f;
 
-    const FuzzyVariant& cacheValue = bestValue;
-    ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
+    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
     return bestValue;
 }
 
@@ -3749,7 +3521,7 @@ const nlVector2 g_vInDangerDelayedMax = { 1.0f, 1.0f };
 
 /**
  * Offset/Address/Size: 0x3B4 | 0x8006A584 | size: 0xAB0
- * TODO: 98.74% match - cache key stack slots and return-copy registers differ.
+ * TODO: 99.10% match - cache key stack slots and return-copy registers.
  */
 FuzzyVariant Fuzzy::InDangerDelayed(cFielder* TheFielder)
 {
@@ -3757,16 +3529,13 @@ FuzzyVariant Fuzzy::InDangerDelayed(cFielder* TheFielder)
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
-    FuzzyVariant fvFielder((cPlayer*)TheFielder);
-    volatile unsigned long funcAddr = (unsigned long)InDangerDelayed;
-    unsigned long hash = funcAddr + ((Variant*)&fvFielder)->GetHash();
-    FuzzyVariant fvFielder2((cPlayer*)TheFielder);
+    SCRIPT_QUESTION_KEY(fielderFunction, InDangerDelayed, (cPlayer*)TheFielder);
 
-    if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
+    ScriptQuestionCache* const lookupCache = ScriptQuestionCache::Instance();
+    if (lookupCache->Lookup(hash, bestValue, NULL))
     {
         bestValue.Confidence = bestValue.Confidence;
-        const FuzzyVariant& cacheValue = bestValue;
-        ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
+        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
         return bestValue;
     }
 
@@ -3846,8 +3615,7 @@ FuzzyVariant Fuzzy::InDangerDelayed(cFielder* TheFielder)
     }
 
     bestValue.Confidence = fBestConfidence;
-    const FuzzyVariant& cacheValue = bestValue;
-    ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
+    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
     return bestValue;
 }
 
@@ -3858,10 +3626,7 @@ FuzzyVariant Fuzzy::GoalieAndGonnaPickupBall(cPlayer* ThePlayer)
 {
     FuzzyVariant bestValue;
 
-    FuzzyVariant fvPlayer((cPlayer*)ThePlayer);
-    ((Variant*)&fvPlayer)->GetHash();
-
-    FuzzyVariant fvPlayer2((cPlayer*)ThePlayer);
+    SCRIPT_QUESTION_KEY(playerFunction, GoalieAndGonnaPickupBall, (cPlayer*)ThePlayer);
 
     FuzzyVariant fvResult(nlMinFour(
         GoalieType(ThePlayer),

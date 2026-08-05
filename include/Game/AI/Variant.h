@@ -70,9 +70,8 @@ public:
     template <typename T>
     Variant(eVariantType type, T value)
     {
-        T val = value;
         Reset();
-        *(T*)&mData = val;
+        *(T*)&mData = value;
         mType = type;
     }
 

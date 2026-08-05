@@ -212,12 +212,7 @@ void GLInventory::AddModel(unsigned long key, glModel* model)
     unsigned long k = key;
     glModel* value = model;
     nlAVLTree<unsigned long, glModel*, DefaultKeyCompare<unsigned long> >* pTree = m_pModels[m_nLevel]->m_pItems;
-    AVLTreeNode* existingNode;
-    pTree->AddAVLNode((AVLTreeNode**)&pTree->m_Root, &k, &value, &existingNode, pTree->m_NumElements);
-    if (existingNode == nullptr)
-    {
-        pTree->m_NumElements++;
-    }
+    pTree->Add(k, value);
 }
 
 /**
@@ -345,12 +340,7 @@ void GLInventory::AddTextureAnim(unsigned long key, GLTextureAnim* anim)
     unsigned long k = key;
     GLTextureAnim* value = anim;
     nlAVLTree<unsigned long, GLTextureAnim*, DefaultKeyCompare<unsigned long> >* pTree = m_pTextureAnims[m_nLevel]->m_pItems;
-    AVLTreeNode* existingNode;
-    pTree->AddAVLNode((AVLTreeNode**)&pTree->m_Root, &k, &value, &existingNode, pTree->m_NumElements);
-    if (existingNode == nullptr)
-    {
-        pTree->m_NumElements++;
-    }
+    pTree->Add(k, value);
 }
 
 /**
@@ -421,12 +411,7 @@ void GLInventory::AddVertexAnim(unsigned long key, GLVertexAnim* vertexAnim)
     unsigned long k = key;
     GLVertexAnim* value = vertexAnim;
     nlAVLTree<unsigned long, GLVertexAnim*, DefaultKeyCompare<unsigned long> >* pTree = m_pVertexAnims[m_nLevel]->m_pItems;
-    AVLTreeNode* existingNode;
-    pTree->AddAVLNode((AVLTreeNode**)&pTree->m_Root, &k, &value, &existingNode, pTree->m_NumElements);
-    if (existingNode == nullptr)
-    {
-        pTree->m_NumElements++;
-    }
+    pTree->Add(k, value);
 }
 
 /**
@@ -501,19 +486,8 @@ void GLInventory::AddMaterialList(unsigned long key, GLMaterialList* materialLis
     unsigned long k = key;
     GLMaterialList* value = materialList;
     nlAVLTree<unsigned long, GLMaterialList*, DefaultKeyCompare<unsigned long> >* pItems = m_pMaterialLists[m_nLevel]->m_pItems;
-    AVLTreeNode* existingNode;
 
-    pItems->AddAVLNode(
-        (AVLTreeNode**)&pItems->m_Root,
-        &k,
-        &value,
-        &existingNode,
-        pItems->m_NumElements);
-
-    if (existingNode == NULL)
-    {
-        pItems->m_NumElements++;
-    }
+    pItems->Add(k, value);
 }
 
 /**
@@ -587,21 +561,10 @@ void GLInventory::AddSkinData(unsigned long key, nlChunk* skinData)
 {
     unsigned long key2 = key;
     nlChunk* skinData2 = skinData;
-    AVLTreeNode* existingNode;
     freeing_GLInventory<nlChunk>* pSkinData = m_pSkinData[m_nLevel];
     nlAVLTree<unsigned long, nlChunk*, DefaultKeyCompare<unsigned long> >* tree = pSkinData->m_pItems;
 
-    tree->AddAVLNode(
-        (AVLTreeNode**)&tree->m_Root,
-        &key2,
-        &skinData2,
-        &existingNode,
-        tree->m_NumElements);
-
-    if (existingNode == nullptr)
-    {
-        tree->m_NumElements++;
-    }
+    tree->Add(key2, skinData2);
 }
 
 /**

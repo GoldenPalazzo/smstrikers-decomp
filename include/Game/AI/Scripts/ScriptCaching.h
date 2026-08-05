@@ -96,9 +96,7 @@ inline const FuzzyVariant& ScriptQuestionCache::AddToCache(
         const FuzzyVariant& cacheValue = variant;
         if (g_bScriptQuestionCachingUseSTD)
         {
-            std::pair<const unsigned long, FuzzyVariant>& pair =
-                mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(key);
-            pair.second = cacheValue;
+            mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(key).second = cacheValue;
         }
         else
         {

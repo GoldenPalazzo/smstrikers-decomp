@@ -48,7 +48,6 @@ void gl_ConstantMarkerBackup(int arg)
 
 static inline void glConstantSet(unsigned long constantHash, const nlVector4& value)
 {
-    AVLTreeNode* existingNode;
     nlVector4* foundValue;
     unsigned long key = constantHash;
     nlVector4* result;
@@ -69,12 +68,7 @@ found:
     {
         ConstantTree* tree = constants[level];
 
-        tree->AddAVLNode((AVLTreeNode**)&tree->m_Root, &key, (void*)&value, &existingNode, tree->m_NumElements);
-
-        if (existingNode == NULL)
-        {
-            tree->m_NumElements++;
-        }
+        tree->Add(key, value);
     }
     else
     {

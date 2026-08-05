@@ -218,23 +218,11 @@ void FEResourceManager::TextureResourceLoadComplete(void*, unsigned long uReadSi
 
     u32 key;
     FEResourceHandle* value;
-    AVLTreeNode* existingNode;
 
     value = pHandle;
     key = pHandle->m_hashID;
 
-    s_loadedResourceList.AddAVLNode(
-        (AVLTreeNode**)&s_loadedResourceList.m_Root,
-        &key,
-        &value,
-        &existingNode,
-        s_loadedResourceList.m_NumElements);
-
-    if (existingNode == NULL)
-    {
-        s_loadedResourceList.m_NumElements++;
-    }
-
+    s_loadedResourceList.Add(key, value);
     pHandle->m_bValid = true;
 }
 
@@ -565,20 +553,10 @@ inline void FEResourceManager::LoadPermanentTextures()
 
             pTextureResource->m_glTextureHandle = pTextureResource->m_hashID;
 
-            AVLTreeNode* existingNodeB;
             AVLTreeNode* existingNodeA;
             FEResourceHandle* valueA = pTextureResource;
             u32 keyA = pTextureResource->m_hashID;
-            s_loadedResourceList.AddAVLNode(
-                (AVLTreeNode**)&s_loadedResourceList.m_Root,
-                &keyA,
-                &valueA,
-                &existingNodeB,
-                s_loadedResourceList.m_NumElements);
-            if (existingNodeB == NULL)
-            {
-                s_loadedResourceList.m_NumElements++;
-            }
+            s_loadedResourceList.Add(keyA, valueA);
             pTextureResource->m_bValid = true;
 
             delete[] s_pResourceLoadBuffer;

@@ -166,21 +166,7 @@ LightObject* World::GetShadowLight(const nlVector3& vPosition, float)
  */
 bool World::AddDrawableObject(unsigned long uHashID, DrawableObject* pDrawableObject)
 {
-    AVLTreeNode* pExistingNode;
-    AVLTreeNode** ppRoot = (AVLTreeNode**)&m_drawableMap.m_Root;
-
-    m_drawableMap.AddAVLNode(ppRoot, &uHashID, &pDrawableObject, &pExistingNode, m_drawableMap.m_NumElements);
-
-    DrawableObject** ppValue = nullptr;
-    if (pExistingNode == nullptr)
-    {
-        m_drawableMap.m_NumElements++;
-        ppValue = nullptr;
-    }
-    else
-    {
-        ppValue = (DrawableObject**)((u8*)pExistingNode + 0x10);
-    }
+    DrawableObject** ppValue = m_drawableMap.Add(uHashID, pDrawableObject);
 
     if (ppValue == nullptr)
     {
@@ -1266,12 +1252,7 @@ void World::CreateHelperObjFromChunk(nlChunk* chunk)
         nlStrNCpy<char>(pHelper->m_szName, pWorldHelperChunkData->m_szName, 0x40);
     }
 
-    AVLTreeNode* pExistingNode;
-    m_helperMap.AddAVLNode((AVLTreeNode**)&m_helperMap.m_Root, pHelper, &pHelper, &pExistingNode, m_helperMap.m_NumElements);
-    if (pExistingNode == NULL)
-    {
-        m_helperMap.m_NumElements++;
-    }
+    m_helperMap.Add(pHelper->m_uHashID, pHelper);
 }
 
 static inline void World_CreateEmitterObjFromChunk(World* pWorld, nlChunk* pChunk)
@@ -1706,15 +1687,7 @@ static void World_DrawCullingInfo(int nDrawn, int nSubmitted)
  */
 void World::AddToHyperSTSDrawables(unsigned long key, DrawableModel* pDrawableModel)
 {
-    AVLTreeNode* pExistingNode;
-    AVLTreeNode** ppRoot = (AVLTreeNode**)&m_hyperSTSDrawableMap.m_Root;
-
-    m_hyperSTSDrawableMap.AddAVLNode(ppRoot, &key, &pDrawableModel, &pExistingNode, m_hyperSTSDrawableMap.m_NumElements);
-
-    if (pExistingNode == nullptr)
-    {
-        m_hyperSTSDrawableMap.m_NumElements++;
-    }
+    m_hyperSTSDrawableMap.Add(key, pDrawableModel);
 }
 
 static const unsigned long eOC_SHINY = 0x00000008;
@@ -1808,16 +1781,7 @@ u8 World::HandleObjectCreation(WorldObjectData* pObjectData)
     pDrawable->m_worldMatrix = pData->m_worldMatrix;
     pDrawable->m_fBoundingRadius = pData->m_fRadius;
 
-    AVLTreeNode* pExistingNode;
-    AVLTreeNode** ppRoot = (AVLTreeNode**)&m_drawableMap.m_Root;
-
-    m_drawableMap.AddAVLNode(ppRoot, &pDrawable->m_uHashID, &pDrawable, &pExistingNode, m_drawableMap.m_NumElements);
-
-    if (pExistingNode == NULL)
-    {
-        m_drawableMap.m_NumElements++;
-    }
-
+    m_drawableMap.Add(pDrawable->m_uHashID, pDrawable);
     return 1;
 }
 
