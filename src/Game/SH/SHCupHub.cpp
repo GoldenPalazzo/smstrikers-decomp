@@ -258,7 +258,6 @@ typedef Function0<void>::FunctorImpl<BindExp1_vfmfcp> FunctorImpl_vfmfcp;
 
 /**
  * Offset/Address/Size: 0x72C8 | 0x800F1024 | size: 0x6E4
- * TODO: 99.89% match - previous TeamStats copy uses rotated offset registers for mTeamIndex and stat halfword stores.
  */
 CupHubScene::CupHubScene(bool doAnimations, bool playAllKnockoutAnimations)
     : mTextColour(HUB_COLOUR_WHITE)
@@ -927,7 +926,6 @@ unsigned char CupHubScene::UpdateDisplayedStat()
 
 /**
  * Offset/Address/Size: 0x4E34 | 0x800EEB90 | size: 0x10D4
- * TODO: 99.54% match - r16/r18 swap between title and the team-count/position-offset live range
  */
 void CupHubScene::CreateLeague()
 {
@@ -2998,15 +2996,15 @@ void CupHubScene::HandleButtonComponent()
 
 /**
  * Offset/Address/Size: 0x12EC | 0x800EB048 | size: 0x2D8
- * TODO: 99.59% match - remaining register allocation mismatch in round-index loop and current-cup pointer reuse
  */
 #pragma opt_lifetimes off
 void CupHubScene::SetRoundColours(eHubColour* coloursArray, int sizeOfArray)
 {
     GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
     int i;
-    eHubColour* pColour;
     BaseCup* cup;
+    int k;
+    eHubColour* pColour;
 
     for (i = 0; i < sizeOfArray; i++)
     {
@@ -3025,7 +3023,6 @@ void CupHubScene::SetRoundColours(eHubColour* coloursArray, int sizeOfArray)
                 int green = 1;
                 int red = 0;
                 int yellow = 3;
-                int k;
                 pColour = coloursArray;
 
                 for (k = 0; k <= lastPlayedRound; k++)

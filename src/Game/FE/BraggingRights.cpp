@@ -570,10 +570,12 @@ BraggingRightsScene::~BraggingRightsScene()
 
 /**
  * Offset/Address/Size: 0x2E4 | 0x800D22E0 | size: 0x11E0
- * TODO: 99.29% match - presentation and info hold the wrong callee-saved
- *       registers (presentation r31 vs r24, info r30 vs r31), cascading a
- *       one-register shift through the stat loops. Declaration reordering
- *       regresses; the frame and stack offsets already match.
+ * TODO: 5 diff rows. The callee-saved colouring and the frame are now exact;
+ *       what remains are two one-instruction scheduling ties. At entry the
+ *       userStats constructor's memset address is emitted before the
+ *       s_pInstance load instead of after it, and in the else arm below the
+ *       mBuffer row address is hoisted above the c_str() expansion. See
+ *       $SMS_NOTES_ROOT/docs/0084 for the mechanism and the measured ledger.
  */
 void BraggingRightsScene::SceneCreated()
 {
@@ -684,7 +686,8 @@ void BraggingRightsScene::SceneCreated()
         {
             BasicString<char, Detail::TempStringAllocator> statString
                 = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(totalStats[i]);
-            nlStrToWcs(statString.c_str(), mBuffer[i], 256);
+            unsigned short* buf = mBuffer[i];
+            nlStrToWcs(statString.c_str(), buf, 256);
             pStatText->SetString(mBuffer[i]);
         }
 
