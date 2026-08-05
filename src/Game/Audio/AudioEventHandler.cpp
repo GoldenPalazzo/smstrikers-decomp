@@ -56,8 +56,8 @@ extern cGame* g_pGame;
 
 /**
  * Offset/Address/Size: 0x0 | 0x801423B4 | size: 0x1A18
- * TODO: 99.92% match. Remaining diffs are queued-stream iterator stack slot
- * offsets and r29/r30 allocation in the loop, ground, goalie, and Bobomb paths.
+ * TODO: Remaining diffs are whole-TU anonymous constant-pool renumbering
+ * (@NNNN ids) and r29/r30 allocation in the two PlatAudio emitter loops.
  */
 void Audio::AudioEventHandler(Event* pEvent, void*)
 {
@@ -76,20 +76,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
         AudioStreamTrack::StreamTrack* pTrack = (AudioStreamTrack::StreamTrack*)
                                                     pTrackMgr->GetTrack(nlStringLowerHash("Music"));
-        DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>* qentry;
-        AudioStreamTrack::StreamTrack::QUEUED_STREAM* qs;
-        if (pTrack->m_QueuedStreams.m_Head == NULL)
-        {
-            qs = NULL;
-        }
-        else
-        {
-            qentry = nlDLRingGetStart(pTrack->m_QueuedStreams.m_Head);
-            nlDLListIterator<AudioStreamTrack::StreamTrack::QUEUED_STREAM> iter;
-            iter.m_Curr = qentry;
-            iter.m_Head = pTrack->m_QueuedStreams.m_Head;
-            qs = &iter.m_Curr->entry;
-        }
+        AudioStreamTrack::StreamTrack::QUEUED_STREAM* qs = pTrack->m_QueuedStreams.GetHead();
         g_MusicTrackPrePauseStreamId = qs ? qs->StreamId : 0;
 
         bool bMatchPause;

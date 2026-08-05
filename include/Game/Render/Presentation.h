@@ -62,6 +62,7 @@ public:
     static void StopJumbotron();
     static void UnloadJumbotron();
     static void PlayJumbotron();
+    void Wipe(const char*);
     void WaitForAutoReplayCompletion(const char*);
     void WaitForCharacterDirection();
     void WaitForNisCompletion(const char*);

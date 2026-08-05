@@ -74,6 +74,23 @@ public:
         m_Allocator.DeleteEntry(entry);
     }
 
+    nlDLListIterator<T> Begin() const
+    {
+        nlDLListIterator<T> iter;
+        iter.m_Curr = nlDLRingGetStart(m_Head);
+        iter.m_Head = m_Head;
+        return iter;
+    }
+
+    T* GetHead() const
+    {
+        if (m_Head == NULL)
+        {
+            return NULL;
+        }
+        return &Begin().m_Curr->entry;
+    }
+
     T* AllocateAtEnd(unsigned long* outEntry);
 
     void DeleteEntry(DLListEntry<T>* entry);

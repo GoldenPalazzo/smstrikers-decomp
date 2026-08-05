@@ -193,28 +193,11 @@ static const char* GetGimmeCupTrophyName()
         cfg.Set("gimme_cup_trophy", "FlowerCup");
         return "FlowerCup";
     }
-    else if (tvp.type == _BOOL)
-    {
-        return LexicalCast<const char*, bool>(tvp.value.b);
-    }
-    else if (tvp.type == _INT)
-    {
-        return LexicalCast<const char*, int>(tvp.value.i);
-    }
-    else if (tvp.type == _FLOAT)
-    {
-        return LexicalCast<const char*, float>(tvp.value.f);
-    }
-    else if (tvp.type == _STRING)
-    {
-        return LexicalCast<const char*, const char*>(tvp.value.s);
-    }
-    return (const char*)0;
+    return tvp.Get<const char*>();
 }
 
 /**
  * Offset/Address/Size: 0x1848 | 0x8012602C | size: 0x460
- * TODO: 99.00% match - BasicString temporary flags still shift constructor data from r29/r30/r31 to r28/r29/r30
  */
 void Presentation::LoadTrophyModel()
 {
@@ -443,13 +426,6 @@ void Presentation::Finish()
     }
 }
 
-class GameInfoWidescreenProbe
-{
-public:
-    u8 _pad[0x2F00];
-    bool mIsWidescreen;
-};
-
 inline void Presentation::HandleOverlay(float deltaT)
 {
     if (!mOverlayDisplayed)
@@ -566,7 +542,7 @@ void Presentation::Update(float deltaT)
         mLetterBoxDuration = 1.0f;
     }
 
-    if (!((GameInfoWidescreenProbe*)nlSingleton<GameInfoManager>::s_pInstance)->mIsWidescreen)
+    if (!nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mVisualOptions.mIsWidescreen)
     {
         if (mLetterBoxDuration > 0.0f)
         {
@@ -1182,7 +1158,7 @@ inline void Presentation::PlayCupOverlay()
     PlayOverlay("cup", 0.2f, -15.0f);
     const char* streamName = GetCupStreamName(nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode());
     AudioLoader::StartFEStream(streamName, false, "Music");
-    AudioStreamTrack::TrackManagerBase* mgr = g_pTrackManager;
+    AudioStreamTrack::TrackManagerBase* mgr = AudioStreamTrack::TrackManagerBase::Get();
     AudioStreamTrack::StreamTrack* track = mgr->GetTrack(nlStringLowerHash("Music"));
     Function0<void> f0(CupWinStingerDone);
     SetIdleCallback(track, f0);
@@ -1322,12 +1298,29 @@ inline void Presentation::WaitForNisCompletion(const char* wipe)
     }
 }
 
+inline void Presentation::Wipe(const char* wipe)
+{
+    if (mByPassing)
+    {
+        return;
+    }
+    if (mUseInterruptWipe != NULL)
+    {
+        wipe = mUseInterruptWipe;
+    }
+    Wiper::Instance().DoWipe(wipe);
+    if (!Wiper::Instance().CutHasOccured() && Wiper::Instance().WipeInProgress())
+    {
+        StopWithUndo();
+    }
+    else
+    {
+        mUseInterruptWipe = 0;
+    }
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x801267BC | size: 0xAE4
- * TODO: 99.80% match - size is exact and only 27 rows differ, all of them the
- * same register renumbering: the target allocates six callee-saved registers
- * (r26..r31) where we fit the same webs into five (r27..r31), so the stmw/lmw
- * range and every popped value shift by one. Logic and call sequence are exact.
  */
 void Presentation::DoFunctionCall(unsigned int func)
 {
@@ -1354,11 +1347,12 @@ void Presentation::DoFunctionCall(unsigned int func)
         break;
     case 6:
     {
+        const char* name;
         NisWinnerType arg4 = (NisWinnerType)Pop();
         NisUseFilter arg3 = (NisUseFilter)Pop();
         NisUseStadiumOffset arg2 = (NisUseStadiumOffset)Pop();
         NisTarget arg1 = (NisTarget)Pop();
-        const char* name = (const char*)Pop();
+        name = (const char*)Pop();
         if (mByPassing)
         {
             break;
@@ -1516,11 +1510,8 @@ void Presentation::DoFunctionCall(unsigned int func)
         Pop();
         break;
     case 19:
-    {
-        const char* Param = (const char*)Pop();
-        RaiseEvent((const char*)Pop(), Param);
+        RaiseEvent((const char*)Pop(), (const char*)Pop());
         break;
-    }
     case 20:
         ResetNisPlayer();
         break;
@@ -1536,7 +1527,9 @@ void Presentation::DoFunctionCall(unsigned int func)
         break;
     case 23:
     {
-        SetTrophyVisible(Pop());
+        bool arg0;
+        arg0 = Pop() != 0;
+        SetTrophyVisible(arg0);
         break;
     }
     case 24:
@@ -1596,27 +1589,8 @@ void Presentation::DoFunctionCall(unsigned int func)
         StopWithUndo();
         break;
     case 34:
-    {
-        const char* wipeName = (const char*)Pop();
-        if (mByPassing)
-        {
-            break;
-        }
-        if (mUseInterruptWipe != NULL)
-        {
-            wipeName = mUseInterruptWipe;
-        }
-        Wiper::Instance().DoWipe(wipeName);
-        if (!Wiper::Instance().CutHasOccured() && Wiper::Instance().WipeInProgress())
-        {
-            StopWithUndo();
-        }
-        else
-        {
-            mUseInterruptWipe = 0;
-        }
+        Wipe((const char*)Pop());
         break;
-    }
     default:
         nlBreak();
         break;

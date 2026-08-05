@@ -1047,28 +1047,7 @@ void AudioStreamTrack::StreamTrack::Pause(unsigned long Fadeout, bool bPause)
 {
     m_InFakePause = 1;
 
-    struct Iter
-    {
-        DLListEntry<QUEUED_STREAM>* m_head;
-        DLListEntry<QUEUED_STREAM>* m_current;
-        ~Iter() { }
-    };
-    Iter iter;
-
-    DLListEntry<QUEUED_STREAM>* pEntry;
-    QUEUED_STREAM* qs;
-
-    if (m_QueuedStreams.m_Head == NULL)
-    {
-        qs = NULL;
-    }
-    else
-    {
-        pEntry = nlDLRingGetStart(m_QueuedStreams.m_Head);
-        qs = &pEntry->entry;
-        iter.m_current = pEntry;
-        iter.m_head = m_QueuedStreams.m_Head;
-    }
+    QUEUED_STREAM* qs = m_QueuedStreams.GetHead();
 
     if (qs == NULL)
     {
