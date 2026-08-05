@@ -3490,8 +3490,7 @@ static int PutString(int x, int y, int scale, const char* str, unsigned long col
 
 static inline int DrawStatLine(const char* str, int x, int y)
 {
-    PutString(x, y, 0x0B, str, 0xFFFFFF88);
-    y += 0x13;
+    y = PutString(x, y, 0x0B, str, 0xFFFFFF88);
     return y;
 }
 
@@ -3589,9 +3588,9 @@ static void ErrorHandler(unsigned short error, OSContext* context, unsigned long
         nlSNPrintf(buf, 0x3C, "LR=%08x", context->lr);
         callStackY = DrawStatLine(buf, x, callStackY);
         nlSNPrintf(buf, 0x3C, "CR=%08x", context->cr);
-        callStackY = DrawStatLine(buf, x, callStackY);
+        callStackY = PutString(x, callStackY, 0x0B, buf, 0xFFFFFF88);
         nlSNPrintf(buf, 0x3C, "SRR1=%08x", context->srr1);
-        callStackY = DrawStatLine(buf, x, callStackY);
+        callStackY = PutString(x, callStackY, 0x0B, buf, 0xFFFFFF88);
         nlSNPrintf(buf, 0x3C, "DSISR=%08x", dsisr);
         PutString(x, callStackY, 0x0B, buf, 0xFFFFFF88);
 

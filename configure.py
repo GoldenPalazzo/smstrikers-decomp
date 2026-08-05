@@ -765,7 +765,7 @@ config.libs = [
             Object(Matching, "Game/Sys/geventdst.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Sys/tweak.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Sys/FloatingPointExceptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Sys/CallStackDumper.cpp", extra_cflags=["-inline auto", "-inline deferred"]),    
+            Object(Matching, "Game/Sys/CallStackDumper.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Core/mtRandom.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             Object(NonMatching, "Game/Sys/PlatStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
