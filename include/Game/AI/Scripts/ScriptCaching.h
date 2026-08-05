@@ -16,6 +16,8 @@ typedef std::__tree<ScriptCachePair, ScriptCacheMap::value_compare, std::allocat
 class ScriptQuestionCache : public nlSingleton<ScriptQuestionCache>
 {
 public:
+    static ScriptQuestionCache* const* InstanceStorage() { return &s_pInstance; }
+
     ScriptQuestionCache()
         : mQuestionCacheMap(16, 16)
     {
