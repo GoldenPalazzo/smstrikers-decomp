@@ -74,7 +74,7 @@ static inline const unsigned short* LookupLocHash(nlLocalization* loc, unsigned 
     return MissingLocString;
 }
 
-static const unsigned short* LookupLocHash(unsigned long hash)
+static inline const unsigned short* LookupLocHash(unsigned long hash)
 {
     return LookupLocHash(g_pLocalization, hash);
 }
