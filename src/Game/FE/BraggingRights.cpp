@@ -570,16 +570,15 @@ BraggingRightsScene::~BraggingRightsScene()
 
 /**
  * Offset/Address/Size: 0x2E4 | 0x800D22E0 | size: 0x11E0
- * TODO: 5 diff rows. The callee-saved colouring and the frame are now exact;
- *       what remains are two one-instruction scheduling ties. At entry the
- *       userStats constructor's memset address is emitted before the
- *       s_pInstance load instead of after it, and in the else arm below the
- *       mBuffer row address is hoisted above the c_str() expansion. See
- *       $SMS_NOTES_ROOT/docs/0084 for the mechanism and the measured ledger.
+ * TODO: 3 diff rows. Colouring, frame and the entry schedule are exact; the
+ *       one remaining artifact is the statWideString address in the if arm
+ *       below, born one block before the c_str() expansion where retail
+ *       materialises it at the call. See $SMS_NOTES_ROOT/docs/0084.
  */
 void BraggingRightsScene::SceneCreated()
 {
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+    UserInfo& ui = nlSingleton<GameInfoManager>::s_pInstance->mUserInfo;
     GameInfoManager* info = nlSingleton<GameInfoManager>::s_pInstance;
 
     int wins;
@@ -601,35 +600,35 @@ void BraggingRightsScene::SceneCreated()
         }
     }
 
-    totalStats[0] = info->mUserInfo.mNumGamesPlayed;
+    totalStats[0] = ui.mNumGamesPlayed;
     currentStats[0] = userStats.mPlayerTotalStats.mNumGamesPlayed;
     if (totalStats[0] >= 100)
     {
         complete[0] = 1;
     }
 
-    totalStats[1] = info->mUserInfo.mNumGoalsScored;
+    totalStats[1] = ui.mNumGoalsScored;
     currentStats[1] = userStats.mPlayerTotalStats.mNumGoalsFor;
     if (totalStats[1] >= 300)
     {
         complete[1] = 1;
     }
 
-    totalStats[2] = info->mUserInfo.mNumSTSAttempts;
+    totalStats[2] = ui.mNumSTSAttempts;
     currentStats[2] = userStats.mPlayerTotalStats.mNumSTSAttempts;
     if (totalStats[2] >= 100)
     {
         complete[2] = 1;
     }
 
-    totalStats[3] = info->mUserInfo.mNumPerfectPasses;
+    totalStats[3] = ui.mNumPerfectPasses;
     currentStats[3] = userStats.mPlayerTotalStats.mNumPerfectPasses;
     if (totalStats[3] >= 300)
     {
         complete[3] = 1;
     }
 
-    totalStats[4] = info->mUserInfo.mNumHits;
+    totalStats[4] = ui.mNumHits;
     currentStats[4] = userStats.mPlayerTotalStats.mNumHitsMade;
     if (totalStats[4] >= 1000)
     {
@@ -673,7 +672,8 @@ void BraggingRightsScene::SceneCreated()
             unsigned short statWideString[32];
             unsigned short currentStatWideString[32];
 
-            nlStrToWcs(statString.c_str(), statWideString, 32);
+            unsigned short* pStat = statWideString;
+            nlStrToWcs(statString.c_str(), pStat, 32);
             nlStrToWcs(currentStatString.c_str(), currentStatWideString, 32);
 
             BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[32], unsigned short[32]>(
@@ -686,8 +686,7 @@ void BraggingRightsScene::SceneCreated()
         {
             BasicString<char, Detail::TempStringAllocator> statString
                 = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(totalStats[i]);
-            unsigned short* buf = mBuffer[i];
-            nlStrToWcs(statString.c_str(), buf, 256);
+            nlStrToWcs(statString.c_str(), mBuffer[i], 256);
             pStatText->SetString(mBuffer[i]);
         }
 
