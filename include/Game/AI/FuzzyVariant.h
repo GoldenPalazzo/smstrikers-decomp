@@ -43,6 +43,8 @@ public:
         SelectionChance = 1.0f;
     };
 
+    float GetFloat() const { return mData.f; }
+
     float Confidence;      // offset 0x14, size 0x4
     float SelectionChance; // offset 0x18, size 0x4
     Variant ExtraData;     // offset 0x1C, size 0x14

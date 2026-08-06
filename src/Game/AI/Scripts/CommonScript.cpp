@@ -1111,9 +1111,6 @@ FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
 
 /**
  * Offset/Address/Size: 0xA138 | 0x80074308 | size: 0xAFC
- * TODO: 99.64% match - remaining diffs are weighted-score register
- *       allocation, FuzzyVariant temporary stack-slot ordering, and sda21
- *       pool-label numbering.
  */
 FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* TheBallOwner)
 {
@@ -1173,12 +1170,11 @@ FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* The
                 fConfidence = (float)(double)fConfidence * fBranchRatioNear;
             }
 
-            float fOwnerCanShoot = Fuzzy::GoodToShoot(TheBallOwner).mData.f;
-            float fTargetCanShoot = Fuzzy::GoodToShoot(TheTargetFielder).mData.f;
-            float fNetOpeness = FGREATER(fTargetCanShoot, fOwnerCanShoot);
-            float fPlayerDistance = FGREATER(Fuzzy::GoodToShoot(TheTargetFielder).mData.f, 0.3f);
+            float fShootWeight = 0.5f;
+            float fTotalSum = WeightedScore2(
+                FGREATER(Fuzzy::GoodToShoot(TheTargetFielder).GetFloat(), 0.3f), fShootWeight,
+                FGREATER(Fuzzy::GoodToShoot(TheTargetFielder).GetFloat(), Fuzzy::GoodToShoot(TheBallOwner).GetFloat()), fShootWeight);
             float fCaptainBonus = 1.0f;
-            float fTotalSum = 0.5f * fNetOpeness + 0.5f * fPlayerDistance;
             if (AbleToUsePowerup(TheTargetFielder, 8) && Captain(TheTargetFielder))
             {
                 fCaptainBonus = 2.0f;
@@ -1187,10 +1183,13 @@ FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* The
             float fPlayerWeighting = PerfectPassCandidateFrom(TheTargetFielder, TheBallOwner);
             float fNetWeighting = OpenTo((cPlayer*)TheBallOwner, (cPlayer*)TheTargetFielder);
             float fOnScreen = OnScreen((cPlayer*)TheTargetFielder);
-            float fTrueConfidence2 = fTotalSum * 0.2f
-                                   + fOnScreen * 0.15f
-                                   + fNetWeighting * 0.15f
-                                   + fPlayerWeighting * 0.5f;
+            float fTotalSumWeight = 0.2f;
+            float fOnScreenNetWeight = 0.15f;
+            float fPlayerWeight = 0.5f;
+            float fTrueConfidence2 = fPlayerWeighting * fPlayerWeight
+                                   + (fNetWeighting * fOnScreenNetWeight
+                                       + (fOnScreen * fOnScreenNetWeight
+                                           + fTotalSum * fTotalSumWeight));
 
             float fFalseConfidence2 = 1.0f - fTrueConfidence2;
             float fMinVal2 = (fTrueConfidence2 <= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2;
@@ -1210,8 +1209,7 @@ FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* The
                 if (fConfidence > fBestConfidence)
                 {
                     fBestConfidence = fConfidence;
-                    FuzzyVariant fvResult(fConfidence * fCaptainBonus);
-                    bestValue = fvResult;
+                    bestValue = FuzzyVariant(fConfidence * fCaptainBonus);
                 }
             }
 
@@ -1235,10 +1233,13 @@ FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* The
                 float fOpenToBallOwner = OpenTo((cPlayer*)TheBallOwner, (cPlayer*)TheTargetFielder);
                 float fDownfield = DownfieldFrom((cPlayer*)TheBallOwner, (cPlayer*)TheTargetFielder);
 
-                float fTrueConfidence4 = (fDownfield * 0.2f)
-                                       + (fTotalSum * 0.425f)
-                                       + (fOpenToBallOwner * 0.2f)
-                                       + ((1.0f - fLastBallOwner) * 0.175f);
+                float fDownfieldOpenWeight = 0.2f;
+                float fTotalSumWeight = 0.425f;
+                float fLastOwnerWeight = 0.175f;
+                float fTrueConfidence4 = (1.0f - fLastBallOwner) * fLastOwnerWeight
+                                       + (fOpenToBallOwner * fDownfieldOpenWeight
+                                           + (fTotalSum * fTotalSumWeight
+                                               + fDownfield * fDownfieldOpenWeight));
                 float fFalseConfidence4 = 1.0f - fTrueConfidence4;
                 float fMinVal4 = (fTrueConfidence4 <= fFalseConfidence4) ? fTrueConfidence4 : fFalseConfidence4;
                 float fMaxVal4 = (fTrueConfidence4 >= fFalseConfidence4) ? fTrueConfidence4 : fFalseConfidence4;
@@ -1257,8 +1258,7 @@ FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* The
                     if (fConfidence > fBestConfidence)
                     {
                         fBestConfidence = fConfidence;
-                        FuzzyVariant fvResult(fConfidence * fCaptainBonus);
-                        bestValue = fvResult;
+                        bestValue = FuzzyVariant(fConfidence * fCaptainBonus);
                     }
                 }
             }
@@ -1277,10 +1277,14 @@ FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* The
                 float fOpenToBallOwner = OpenTo((cPlayer*)TheBallOwner, (cPlayer*)TheTargetFielder);
                 float fDownfield = DownfieldFrom((cPlayer*)TheBallOwner, (cPlayer*)TheTargetFielder);
 
-                float fTrueConfidence4 = (fDownfield * 0.35f)
-                                       + (fTotalSum * 0.3f)
-                                       + (fOpenToBallOwner * 0.2f)
-                                       + ((1.0f - fLastBallOwner) * 0.15f);
+                float fDownfieldWeight = 0.35f;
+                float fTotalSumWeight = 0.3f;
+                float fOpenWeight = 0.2f;
+                float fLastOwnerWeight = 0.15f;
+                float fTrueConfidence4 = (1.0f - fLastBallOwner) * fLastOwnerWeight
+                                       + (fOpenToBallOwner * fOpenWeight
+                                           + (fTotalSum * fTotalSumWeight
+                                               + fDownfield * fDownfieldWeight));
                 float fFalseConfidence4 = 1.0f - fTrueConfidence4;
                 float fMinVal4 = (fTrueConfidence4 <= fFalseConfidence4) ? fTrueConfidence4 : fFalseConfidence4;
                 float fMaxVal4 = (fTrueConfidence4 >= fFalseConfidence4) ? fTrueConfidence4 : fFalseConfidence4;
@@ -1299,8 +1303,7 @@ FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* The
                     if (fConfidence > fBestConfidence)
                     {
                         fBestConfidence = fConfidence;
-                        FuzzyVariant fvResult(fConfidence * fCaptainBonus);
-                        bestValue = fvResult;
+                        bestValue = FuzzyVariant(fConfidence * fCaptainBonus);
                     }
                 }
             }
