@@ -772,7 +772,6 @@ void IChooseCaptain::UpdateSound(float dt)
 
 /**
  * Offset/Address/Size: 0x141C | 0x800BEDB8 | size: 0x694
- * TODO: 99.68% match - side temp, GetSide inline, and final image update registers still differ.
  */
 UpdateResult IChooseCaptain::Update(float)
 {
@@ -783,43 +782,12 @@ UpdateResult IChooseCaptain::Update(float)
 
     unsigned char goback;
     unsigned char isdoneanimating;
-    int side;
 
     for (int i = 0; i < 4; i++)
     {
         eFEINPUT_PAD inputpad = (eFEINPUT_PAD)i;
+        int side = GetSide(i);
 
-        if (mIsSinglePlayerInput)
-        {
-            if (mComponentState[0].mCurrentPhase < PHASE_READY)
-            {
-                side = 0;
-            }
-            else
-            {
-                side = 1;
-            }
-        }
-        else
-        {
-            int j = 0;
-            IChooseCaptain* p = this;
-
-            for (; j < mNumTotalPushedPlayers; j++)
-            {
-                if (p->mAllPushedPlayers[0] == i)
-                {
-                    side = mAllPushedPlayerSides[j];
-                    goto found_side;
-                }
-
-                p = (IChooseCaptain*)((u8*)p + 4);
-            }
-
-            side = -1;
-        }
-
-    found_side:
         if (side == -1)
         {
             continue;
@@ -916,24 +884,7 @@ UpdateResult IChooseCaptain::Update(float)
 
             if (isdoneanimating)
             {
-                int side2;
-                int pad = inputpad;
-
-                if (mIsSinglePlayerInput)
-                {
-                    if (mComponentState[0].mCurrentPhase < PHASE_READY)
-                    {
-                        side2 = 0;
-                    }
-                    else
-                    {
-                        side2 = 1;
-                    }
-                }
-                else
-                {
-                    side2 = GetSide(pad);
-                }
+                int side2 = GetSide(inputpad);
 
                 mComponentState[side2].GotoNextPhase();
 
@@ -1660,14 +1611,28 @@ void IChooseCaptain::FindAliveHumanPlayers()
 
 inline int IChooseCaptain::GetSide(int padid)
 {
-    for (int i = 0; i < mNumTotalPushedPlayers; i++)
+    if (mIsSinglePlayerInput)
     {
-        if (mAllPushedPlayers[i] == padid)
+        if (mComponentState[0].mCurrentPhase < PHASE_READY)
         {
-            return mAllPushedPlayerSides[i];
+            return 0;
+        }
+        else
+        {
+            return 1;
         }
     }
-    return -1;
+    else
+    {
+        for (int i = 0; i < mNumTotalPushedPlayers; i++)
+        {
+            if (mAllPushedPlayers[i] == padid)
+            {
+                return mAllPushedPlayerSides[i];
+            }
+        }
+        return -1;
+    }
 }
 
 inline void IChooseCaptain::UpdateSinglePlayerState()
