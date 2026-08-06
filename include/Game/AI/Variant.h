@@ -86,6 +86,11 @@ public:
     virtual unsigned long GetHash() const;
     virtual BasicString<char, Detail::TempStringAllocator> ToString() const;
 
+    cPlayer* GetPlayer() const
+    {
+        return mData.pPlayer;
+    }
+
     inline bool operator==(const Variant& other) const
     {
         bool bEqual = (mType == other.mType);

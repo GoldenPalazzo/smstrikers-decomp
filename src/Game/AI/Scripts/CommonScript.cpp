@@ -61,7 +61,6 @@ extern float OnTheGround(cPlayer*);
 extern float PassReceiveCloseToDone(cFielder*);
 extern float Passer(cFielder*);
 extern float FLESS(float, float);
-extern cPlayer* GetClosestOpponentFielder(cPlayer*, nlVector3*);
 extern cTeam* g_pScriptOtherTeam;
 extern cBall* g_pScriptBall;
 extern cGame* g_pGame;
@@ -1882,6 +1881,7 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0x57C4 | 0x8006F994 | size: 0x1A30
+ * TODO: 99.50% match - remaining differences are FPR allocation, one branch, and a four-byte size shortfall.
  */
 FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
 {
@@ -1980,7 +1980,7 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
             }
         }
 
-        cPlayer* pClosestOpponent = GetClosestOpponentFielder((cPlayer*)TheFielder, NULL);
+        cPlayer* pClosestOpponent = TheFielder->GetClosestOpponentFielder(NULL);
 
         fTrueConfidence = nlMinThree(OnScreen((cPlayer*)pClosestOpponent),
             NearTo((cPlayer*)TheFielder, (cPlayer*)pClosestOpponent),
@@ -2165,7 +2165,7 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
 
                 float fPassConf = nlMinFour(
                     FGREATER(bestPassTargetFielder.Confidence, 0.0f),
-                    1.0f - NearTo(bestPassTargetFielder.mData.pPlayer, (cPlayer*)TheFielder),
+                    1.0f - NearTo(bestPassTargetFielder.GetPlayer(), (cPlayer*)TheFielder),
                     FLESS(oneTimerScore.GetFloat(), 0.5f),
                     nlMaxThree(1.0f - WideOpen(TheFielder),
                         FGREATER(InDangerDelayed(TheFielder).GetFloat(), 0.0f),
@@ -2208,7 +2208,7 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
 
                 fTrueConfidence = nlMinThree(
                     FGREATER(bestPassTargetFielder.Confidence, 0.3f),
-                    1.0f - NearTo(bestPassTargetFielder.mData.pPlayer, (cPlayer*)TheFielder),
+                    1.0f - NearTo(bestPassTargetFielder.GetPlayer(), (cPlayer*)TheFielder),
                     nlMaxEquals(InDangerDelayed(TheFielder).GetFloat(),
                         min_float(1.0f - FarTo((cPlayer*)pClosestOpponent, (cPlayer*)TheFielder),
                             ClosingTo((cPlayer*)pClosestOpponent, (cPlayer*)TheFielder))));
@@ -2246,7 +2246,6 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0x3FD0 | 0x8006E1A0 | size: 0x17F4
- * TODO: 98.61% match - remaining diffs are register/branch ordering in confidence gates.
  */
 FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
 {
@@ -2282,7 +2281,7 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
             fConfidence = (float)(double)fConfidence * fBranchRatio;
         }
 
-        float fCanSlide = TheFielder->CanISlideAttack(g_pScriptBall->m_v3Position, g_pScriptBall->m_v3Velocity, NULL) ? 1.0f : 0.0f;
+        float fCanSlide = TheFielder->CanISlideAttack(g_pScriptBall->GetPosition(), g_pScriptBall->GetVelocity(), NULL) ? 1.0f : 0.0f;
 
         float fNotOpenMax = nlMaxFour(Pressured(TheFielder), 1.0f - Open(TheFielder),
             1.0f - Ownerless(g_pScriptBall), OnMushrooms(TheFielder));
@@ -2379,8 +2378,7 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
             {
                 if (WindingUpForShot((cFielder*)otherSBC.mData.pPlayer))
                 {
-                    cTeam* fielderTeam = TheFielder ? ((cPlayer*)TheFielder)->m_pTeam : NULL;
-                    float fLosing = Losing(fielderTeam);
+                    float fLosing = Losing(TheFielder ? ((cPlayer*)TheFielder)->m_pTeam : NULL);
                     float fTimeNearly = TimeNearlyOver(g_pGame);
                     if (fTimeNearly <= fLosing)
                     {
@@ -2435,7 +2433,7 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
                         }
 
                         float fDefZone = InDefensiveZoneOfPlayer(g_pScriptBall, (cPlayer*)TheFielder);
-                        cPlayer* pOtherPlayer = otherSBC.mData.pPlayer;
+                        cPlayer* pOtherPlayer = otherSBC.GetPlayer();
                         float fGreater = FGREATER(NearToBall(pOtherPlayer), NearToBall((cPlayer*)TheFielder));
 
                         if (fGreater >= fDefZone)
@@ -2653,17 +2651,12 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
 
         FuzzyVariant bestPassTargetFielder = Fuzzy::GetBestLooseBallPassTarget(TheFielder);
 
-        float fClosingTo = ClosingTo(otherSBC.mData.pPlayer, (cPlayer*)TheFielder);
-        float fNearTo = NearTo(otherSBC.mData.pPlayer, (cPlayer*)TheFielder);
-        if (fNearTo <= fClosingTo)
-        {
-            fClosingTo = fNearTo;
-        }
-
-        float fDanger = nlMaxEquals(Fuzzy::InDangerDelayed(TheFielder).mData.f, fClosingTo);
-
-        float fNotCloseToPass = FuzzyNot(CloseTo(bestPassTargetFielder.mData.pPlayer, (cPlayer*)TheFielder));
-        float fCanPass = nlMinFour(TheFielder->CanLooseBallPass() ? 1.0f : 0.0f, fNotCloseToPass, FGREATER(bestPassTargetFielder.Confidence, 0.3f), fDanger);
+        float fCanPass = nlMinFour(TheFielder->CanLooseBallPass() ? 1.0f : 0.0f,
+            FGREATER(bestPassTargetFielder.Confidence, 0.3f),
+            FuzzyNot(CloseTo(bestPassTargetFielder.GetPlayer(), (cPlayer*)TheFielder)),
+            nlMaxEquals(Fuzzy::InDangerDelayed(TheFielder).mData.f,
+                nlMinEquals(NearTo(otherSBC.mData.pPlayer, (cPlayer*)TheFielder),
+                    ClosingTo(otherSBC.mData.pPlayer, (cPlayer*)TheFielder))));
 
         float fFalseConfidence11 = 1.0f - fCanPass;
         float fBranchRatio11 = min_float(fCanPass, fFalseConfidence11) / max_float(fCanPass, fFalseConfidence11);

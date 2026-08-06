@@ -31,6 +31,16 @@ public:
         return m_pPhysicsBall;
     }
 
+    const nlVector3& GetPosition() const
+    {
+        return m_v3Position;
+    }
+
+    const nlVector3& GetVelocity() const
+    {
+        return m_v3Velocity;
+    }
+
     float PredictLandingSpotAndTime(nlVector3&);
     void KillBlurHandler();
     void ClearPassTarget();
