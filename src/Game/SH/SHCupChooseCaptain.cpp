@@ -192,7 +192,7 @@ inline void CupChooseCaptainSceneV2::UpdateImages()
 void CupChooseCaptainSceneV2::SceneCreated()
 {
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
-    TLSlide* slide = presentation->m_currentSlide;
+    TLSlide* slide = presentation->GetActiveSlide();
 
     TLComponentInstance* comp;
 
@@ -304,7 +304,7 @@ void CupChooseCaptainSceneV2::SceneCreated()
     mPressAComponent->m_bVisible = false;
 
     {
-        GameInfoManager::eGameModes gameMode = nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode;
+        GameInfoManager::eGameModes gameMode = nlSingleton<GameInfoManager>::s_pInstance->GetCurrentMode();
         mCupStartString = Format(
             BasicString<unsigned short, Detail::TempStringAllocator>(LookupCupCaptainLoc(0xB862AB94)),
             LookupCupCaptainLoc(GetLOCModeName(gameMode)));
