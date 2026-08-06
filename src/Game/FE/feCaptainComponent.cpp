@@ -1554,7 +1554,6 @@ void IChooseCaptain::SetupCaptainComponent(TLComponentInstance* compinstance, in
 
 /**
  * Offset/Address/Size: 0x70C | 0x800BE0A8 | size: 0x184
- * TODO: 98.7% match - r30/r31 allocation remains swapped between the homeaway offset and source texture pointer.
  */
 void IChooseCaptain::StartSidekickMiniHead(int homeaway, eSidekickID sidekick)
 {
@@ -1588,7 +1587,7 @@ void IChooseCaptain::StartSidekickMiniHead(int homeaway, eSidekickID sidekick)
     component->Update(0.0f);
     component->m_bVisible = true;
 
-    TLComponentInstance* sourcecomp = mSidekickGridComponents[homeaway]->mParentComponent;
+    TLComponentInstance* sourcecomp = mSidekickGridComponents[homeaway]->GetParentComponent();
     sourceimage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         sourcecomp->GetActiveSlide(),
         InlineHasher(nlStringLowerHash(SidekickImageNames[sidekick])));

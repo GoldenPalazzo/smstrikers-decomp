@@ -32,6 +32,10 @@ public:
 
     IGridComponent(TLComponentInstance* parentcomponent, const char* highlitename, bool ismirrored);
     void RebindHighliteComponent(const char* highlitename);
+    TLComponentInstance* GetParentComponent() const
+    {
+        return mParentComponent;
+    }
 
     /* 0x00 */ // vtable
     /* 0x04 */ TLInstance** mInstanceTable;
