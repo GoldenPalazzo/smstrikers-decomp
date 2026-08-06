@@ -4,7 +4,12 @@
 #include "Game/FE/feInput.h"
 #include "Game/FE/feHelpFuncs.h"
 #include "Game/FE/feCaptainGridComponent.h"
+#include "Game/FE/feSidekickGridComponent.h"
 #include "Game/GameInfo.h"
+#include "Game/FE/feAsyncImage.h"
+#include "Game/FE/feFinder.h"
+#include "Game/FE/feMapMenu.h"
+#include "Game/FE/tlTextInstance.h"
 
 class TLComponentInstance;
 class TLInstance;
@@ -20,6 +25,8 @@ enum UpdateResult
     UPDATE_GO_BACK = 1,
     UPDATE_GO_FORWARD = 2,
 };
+
+extern bool g_e3_Build;
 
 class IChooseCaptain
 {
@@ -80,7 +87,6 @@ public:
 
     void SetPhaseReady(int homeaway)
     {
-        FORCE_DONT_INLINE;
         mComponentState[homeaway].SetCurrentPhase(ComponentState::PHASE_READY);
     }
 
@@ -123,40 +129,520 @@ public:
 #define PHASE_CHOOSING_SIDEKICK IChooseCaptain::ComponentState::PHASE_CHOOSING_SIDEKICK
 #define PHASE_READY             IChooseCaptain::ComponentState::PHASE_READY
 
-// class FEFinder<TLComponentInstance, 4>
-// {
-// public:
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-// };
+/**
+ * Offset/Address/Size: 0x1104 | 0x800C08A8 | size: 0x6CC
+ */
+inline void IChooseCaptain::ComponentState::GotoNextPhase()
+{
+    ICaptainGridComponent* captaingrid;
+    ISidekickGridComponent* sidekickgrid;
+    eTeamID chosenteam;
+    char filenameC2[0x80];
+    char filenameC1[0x80];
+    char filenameC0[0x80];
+    char filenameS2[0x80];
+    char filenameS1[0x80];
+    char filenameS0[0x80];
 
-// class FEFinder<TLTextInstance, 3>
-// {
-// public:
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-// };
+    switch (mCurrentPhase)
+    {
+    case PHASE_CHOOSING_CAPTAIN:
+        captaingrid = mParent->mCaptainGridComponents[mHomeAway];
 
-// class FEFinder<TLImageInstance, 2>
-// {
-// public:
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-// };
+        if (!captaingrid->mMapMenu->IsSelectedItemActive())
+        {
+            FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+            break;
+        }
 
-// class IGridComponent<eSidekickID>
-// {
-// public:
-//     void RebindHighliteComponent(const char*);
-// };
+        captaingrid->mParentComponent->SetActiveSlide("OUT");
+        captaingrid->mParentComponent->Update(0.0f);
+        captaingrid->RebuildInstanceTable();
+        captaingrid->mMapMenu->UpdateAllItems();
+        captaingrid->RebindHighliteComponent("HIGHLIGHT");
+        captaingrid->mHighliteComponent->m_bVisible = false;
 
-// class IGridComponent<eTeamID>
-// {
-// public:
-//     void RebindHighliteComponent(const char*);
-// };
+        FEAudio::PlayAnimAudioEvent((mHomeAway == 0) ? "sfx_character_group_left_exit" : "sfx_character_group_right_exit", false);
+
+        mParent->mHomeAwayTeam[mHomeAway] = captaingrid->GetSelectedItem();
+
+        {
+            FEMapMenu* mapmenu = mParent->mCaptainGridComponents[mHomeAway ^ 1]->mMapMenu;
+            mapmenu->SetItemActive(captaingrid->mMapMenu->GetSelectedItem(), false);
+        }
+
+        chosenteam = captaingrid->GetSelectedItem();
+        if (chosenteam != TEAM_MYSTERY)
+        {
+            sidekickgrid = mParent->mSidekickGridComponents[mHomeAway];
+            sidekickgrid->mParentComponent->SetActiveSlide("IN");
+            sidekickgrid->mParentComponent->Update(0.0f);
+            sidekickgrid->RebuildInstanceTable();
+            sidekickgrid->mMapMenu->UpdateAllItems();
+            sidekickgrid->RebindHighliteComponent("HIGHLIGHT");
+            sidekickgrid->mHighliteComponent->m_bVisible = false;
+            sidekickgrid->mHighliteVisibilityAtAnimEnd = true;
+            sidekickgrid->SetVisibleInstanceTable(true);
+            sidekickgrid->mParentComponent->m_bVisible = true;
+            mCurrentPhase = PHASE_CHOOSING_SIDEKICK;
+
+            FEAudio::PlayAnimAudioEvent((mHomeAway == 0) ? "sfx_character_group_left_enter" : "sfx_character_group_right_enter", false);
+
+            NameComponent* namecomponent = &mParent->mNameComponents[mHomeAway];
+            namecomponent->mComponent->SetActiveSlide("Slide2");
+            namecomponent->mComponent->Update(0.0f);
+            mParent->mNameComponents[mHomeAway].SetCaptainName(GetLOCCharacterName((eTeamID)mParent->mHomeAwayTeam[mHomeAway], false, false));
+            mParent->mNameComponents[mHomeAway].SetCaptainLogo(GetTeamName((eTeamID)mParent->mHomeAwayTeam[mHomeAway]));
+            mParent->mNameComponents[mHomeAway].SetSidekickName(GetLOCSidekickName(sidekickgrid->GetSelectedItem()));
+
+            if (g_e3_Build)
+            {
+                mParent->mSidekickGridComponents[mHomeAway]->MoveHighlightToTarget((eSidekickID)(mHomeAway ? 1 : 0));
+                mParent->mNameComponents[mHomeAway].SetSidekickName(GetLOCSidekickName(sidekickgrid->GetSelectedItem()));
+                GotoNextPhase();
+            }
+        }
+        else
+        {
+            int teamID = mParent->mHomeAwayTeam[mHomeAway];
+            IChooseCaptain* parent = mParent;
+            int homeaway = mHomeAway;
+
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filenameC0, 0x80, teamID, homeaway);
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filenameC1, 0x80, teamID, homeaway);
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filenameC2, 0x80, teamID, homeaway);
+
+            parent->mAsyncImage[homeaway][0]->QueueLoad(filenameC0, false);
+            parent->mAsyncImage[homeaway][1]->QueueLoad(filenameC1, false);
+            parent->mAsyncImage[homeaway][2]->QueueLoad(filenameC2, false);
+
+            parent->mDidSwapCaptains[homeaway] = false;
+            mCurrentPhase = PHASE_READY;
+        }
+
+        FEAudio::PlayAnimAudioEvent("sfx_accept_no_screen_change", false);
+        mParent->mLastCaptainSelectSoundStrPlayed[mHomeAway] = (char*)FECharacterSound::PlayCaptainName((eTeamID)mParent->mHomeAwayTeam[mHomeAway]);
+        break;
+
+    case PHASE_CHOOSING_SIDEKICK:
+        ISidekickGridComponent* sidekickgrid2 = mParent->mSidekickGridComponents[mHomeAway];
+
+        sidekickgrid2->mParentComponent->SetActiveSlide("OUT");
+        sidekickgrid2->mParentComponent->Update(0.0f);
+        sidekickgrid2->RebuildInstanceTable();
+        sidekickgrid2->mMapMenu->UpdateAllItems();
+        sidekickgrid2->RebindHighliteComponent("HIGHLIGHT");
+        sidekickgrid2->mHighliteComponent->m_bVisible = false;
+
+        FEAudio::PlayAnimAudioEvent((mHomeAway == 0) ? "sfx_character_group_left_exit" : "sfx_character_group_right_exit", false);
+
+        if (g_e3_Build)
+        {
+            sidekickgrid2->SetVisibleInstanceTable(false);
+        }
+
+        mParent->mHomeAwaySidekicks[mHomeAway] = sidekickgrid2->GetSelectedItem();
+        {
+            IChooseCaptain* parent = mParent;
+            int homeaway = mHomeAway;
+            int teamID = parent->mHomeAwayTeam[homeaway];
+
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filenameS0, 0x80, teamID, homeaway);
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filenameS1, 0x80, teamID, homeaway);
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filenameS2, 0x80, teamID, homeaway);
+
+            parent->mAsyncImage[homeaway][0]->QueueLoad(filenameS0, false);
+            parent->mAsyncImage[homeaway][1]->QueueLoad(filenameS1, false);
+            parent->mAsyncImage[homeaway][2]->QueueLoad(filenameS2, false);
+
+            parent->mDidSwapCaptains[homeaway] = false;
+            mParent->StartSidekickMiniHead(mHomeAway, (eSidekickID)mParent->mHomeAwaySidekicks[mHomeAway]);
+        }
+        mCurrentPhase = PHASE_READY;
+
+        FEAudio::PlayAnimAudioEvent("sfx_accept_no_screen_change", false);
+
+        if (!g_e3_Build)
+        {
+            if (mParent->mLastCaptainSelectSoundStrPlayed[mHomeAway] != NULL)
+            {
+                FEAudio::StopAnimAudioEvent(mParent->mLastCaptainSelectSoundStrPlayed[mHomeAway]);
+                mParent->mLastCaptainSelectSoundStrPlayed[mHomeAway] = NULL;
+            }
+
+            FECharacterSound::PlaySidekickName((eSidekickID)mParent->mHomeAwaySidekicks[mHomeAway]);
+        }
+        break;
+
+    case PHASE_READY:
+        if (mParent->mCaptainGridComponents[mHomeAway]->GetSelectedItem() != TEAM_MYSTERY)
+        {
+            mParent->mSidekickComponents[mHomeAway]->m_bVisible = false;
+        }
+
+        FEAudio::PlayAnimAudioEvent("sfx_accept_no_screen_change", false);
+        break;
+
+    default:
+        break;
+    }
+}
+
+/**
+ * Offset/Address/Size: 0xA48 | 0x800C01EC | size: 0x6BC
+ */
+inline void IChooseCaptain::ComponentState::GotoPreviousPhase()
+{
+    ICaptainGridComponent* gridcomponent;
+    ISidekickGridComponent* sidekickgrid;
+    ICaptainGridComponent* captaingrid;
+    ICaptainGridComponent* othercaptaingrid;
+    ICaptainGridComponent* captaingrid2;
+    ICaptainGridComponent* othercaptaingrid2;
+    NameComponent* namecomponent;
+
+    switch (mCurrentPhase)
+    {
+    case PHASE_CHOOSING_CAPTAIN:
+        mCurrentPhase = PHASE_IDLE;
+
+        gridcomponent = mParent->mCaptainGridComponents[mHomeAway];
+        gridcomponent->mParentComponent->SetActiveSlide("OUT");
+        gridcomponent->mParentComponent->Update(0.0f);
+        gridcomponent->RebuildInstanceTable();
+        gridcomponent->mMapMenu->UpdateAllItems();
+        gridcomponent->RebindHighliteComponent("HIGHLIGHT");
+        gridcomponent->mHighliteComponent->m_bVisible = false;
+
+        mParent->mNameComponents[mHomeAway].SetCaptainName(0);
+        mParent->mNameComponents[mHomeAway].SetCaptainLogo(NULL);
+        mParent->mSidekickMiniHeadComponents[mHomeAway]->m_bVisible = false;
+
+        FEAudio::PlayAnimAudioEvent("sfx_back_no_screen_change", true);
+        break;
+
+    case PHASE_CHOOSING_SIDEKICK:
+        mCurrentPhase = PHASE_CHOOSING_CAPTAIN;
+
+        mParent->mSidekickGridComponents[mHomeAway]->mParentComponent->m_bVisible = false;
+
+        captaingrid = mParent->mCaptainGridComponents[mHomeAway];
+        captaingrid->mParentComponent->SetActiveSlide("SELECT");
+        captaingrid->mParentComponent->Update(0.0f);
+        captaingrid->RebuildInstanceTable();
+        captaingrid->mMapMenu->UpdateAllItems();
+        captaingrid->RebindHighliteComponent("HIGHLIGHT");
+        captaingrid->mHighliteComponent->m_bVisible = true;
+        captaingrid->mParentComponent->m_bVisible = true;
+        captaingrid->MoveHighlightToTarget((eTeamID)mParent->mHomeAwayTeam[mHomeAway]);
+
+        othercaptaingrid = mParent->mCaptainGridComponents[mHomeAway ^ 1];
+        othercaptaingrid->RebuildInstanceTable();
+        othercaptaingrid->SetAllItemsActive();
+        captaingrid->RebuildInstanceTable();
+        captaingrid->SetAllItemsActive();
+
+        namecomponent = &mParent->mNameComponents[mHomeAway];
+        namecomponent->mComponent->SetActiveSlide("Slide1");
+        namecomponent->mComponent->Update(0.0f);
+        mParent->mNameComponents[mHomeAway].SetCaptainName(GetLOCCharacterName(captaingrid->GetSelectedItem(), false, false));
+        mParent->mNameComponents[mHomeAway].SetCaptainLogo(GetTeamName(captaingrid->GetSelectedItem()));
+
+        if (mParent->mComponentState[mHomeAway ^ 1].mCurrentPhase > PHASE_CHOOSING_CAPTAIN)
+        {
+            FEMapMenu* menu = captaingrid->mMapMenu;
+            menu->SetItemActive(othercaptaingrid->mMapMenu->GetSelectedItem(), false);
+        }
+
+        mParent->mSidekickMiniHeadComponents[mHomeAway]->m_bVisible = false;
+
+        FEAudio::PlayAnimAudioEvent("sfx_back_no_screen_change", false);
+        break;
+
+    case PHASE_READY:
+        if (mParent->mCaptainGridComponents[mHomeAway]->GetSelectedItem() != (eTeamID)8 && mParent->mHomeAwayTeam[mHomeAway] != 8)
+        {
+            mCurrentPhase = PHASE_CHOOSING_SIDEKICK;
+
+            sidekickgrid = mParent->mSidekickGridComponents[mHomeAway];
+            sidekickgrid->mParentComponent->SetActiveSlide("SELECT");
+            sidekickgrid->mParentComponent->Update(0.0f);
+            sidekickgrid->RebuildInstanceTable();
+            sidekickgrid->mMapMenu->UpdateAllItems();
+
+            mParent->mSidekickGridComponents[mHomeAway]->RebindHighliteComponent("HIGHLIGHT");
+            mParent->mSidekickGridComponents[mHomeAway]->mHighliteComponent->m_bVisible = true;
+            mParent->mSidekickGridComponents[mHomeAway]->SetVisibleInstanceTable(true);
+            mParent->mSidekickGridComponents[mHomeAway]->MoveHighlightToTarget((eSidekickID)mParent->mHomeAwaySidekicks[mHomeAway]);
+            mParent->mSidekickGridComponents[mHomeAway]->mParentComponent->m_bVisible = true;
+
+            mParent->mSidekickComponents[mHomeAway]->m_bVisible = false;
+            mParent->mCaptainComponents[mHomeAway]->m_bVisible = false;
+            mParent->mSidekickMiniHeadComponents[mHomeAway]->m_bVisible = false;
+
+            if (g_e3_Build)
+            {
+                GotoPreviousPhase();
+            }
+        }
+        else
+        {
+            mCurrentPhase = PHASE_CHOOSING_CAPTAIN;
+
+            captaingrid2 = mParent->mCaptainGridComponents[mHomeAway];
+            captaingrid2->mParentComponent->SetActiveSlide("SELECT");
+            captaingrid2->mParentComponent->Update(0.0f);
+            captaingrid2->RebuildInstanceTable();
+            captaingrid2->mMapMenu->UpdateAllItems();
+            captaingrid2->RebindHighliteComponent("HIGHLIGHT");
+            captaingrid2->mHighliteComponent->m_bVisible = true;
+            captaingrid2->mParentComponent->m_bVisible = true;
+            captaingrid2->MoveHighlightToTarget((eTeamID)mParent->mHomeAwayTeam[mHomeAway]);
+            mParent->mCaptainComponents[mHomeAway]->m_bVisible = false;
+
+            othercaptaingrid2 = mParent->mCaptainGridComponents[mHomeAway ^ 1];
+            othercaptaingrid2->RebuildInstanceTable();
+            othercaptaingrid2->SetAllItemsActive();
+            captaingrid2->RebuildInstanceTable();
+            captaingrid2->SetAllItemsActive();
+
+            namecomponent = &mParent->mNameComponents[mHomeAway];
+            namecomponent->mComponent->SetActiveSlide("Slide1");
+            namecomponent->mComponent->Update(0.0f);
+            mParent->mNameComponents[mHomeAway].SetCaptainName(GetLOCCharacterName(captaingrid2->GetSelectedItem(), false, false));
+            mParent->mNameComponents[mHomeAway].SetCaptainLogo(GetTeamName(captaingrid2->GetSelectedItem()));
+
+            if (mParent->mComponentState[mHomeAway ^ 1].mCurrentPhase > PHASE_CHOOSING_CAPTAIN)
+            {
+                FEMapMenu* menu = captaingrid2->mMapMenu;
+                menu->SetItemActive(othercaptaingrid2->mMapMenu->GetSelectedItem(), false);
+            }
+        }
+
+        FEAudio::PlayAnimAudioEvent("sfx_back_no_screen_change", false);
+        break;
+
+    case PHASE_IDLE:
+    default:
+        break;
+    }
+}
+
+/**
+ * Offset/Address/Size: 0xA20 | 0x800C01C4 | size: 0x28
+ */
+inline void IChooseCaptain::NameComponent::SetSidekickName(unsigned long id)
+{
+    SetTextName(mSidekickObjName, id);
+}
+
+/**
+ * Offset/Address/Size: 0x1AC | 0x800BF950 | size: 0x874
+ */
+inline void IChooseCaptain::ComponentState::SetCurrentPhase(Phase phase)
+{
+    ICaptainGridComponent* captaingrid;
+    NameComponent* namecomponent;
+    ISidekickGridComponent* gridcomponent;
+    FEMapMenu* menu;
+    IChooseCaptain* parent;
+    int teamID;
+    int homeaway;
+    char filename2[0x80];
+    char filename1[0x80];
+    char filename0[0x80];
+
+    switch (phase)
+    {
+    case PHASE_IDLE:
+        mParent->mCaptainGridComponents[mHomeAway]->mParentComponent->m_bVisible = false;
+        mParent->mSidekickGridComponents[mHomeAway]->mParentComponent->m_bVisible = false;
+        mParent->mCaptainComponents[mHomeAway]->m_bVisible = false;
+        mParent->mSidekickComponents[mHomeAway]->m_bVisible = false;
+        mParent->mSidekickMiniHeadComponents[mHomeAway]->m_bVisible = false;
+        mParent->mNameComponents[mHomeAway].SetCaptainName(0);
+        mParent->mNameComponents[mHomeAway].SetCaptainLogo(NULL);
+        break;
+
+    case PHASE_CHOOSING_CAPTAIN:
+        captaingrid = mParent->mCaptainGridComponents[mHomeAway];
+        captaingrid->mParentComponent->SetActiveSlide("IN");
+        captaingrid->mParentComponent->Update(0.0f);
+        captaingrid->RebuildInstanceTable();
+        captaingrid->mMapMenu->UpdateAllItems();
+        captaingrid->mParentComponent->m_bVisible = true;
+        captaingrid->RebindHighliteComponent("HIGHLIGHT");
+        captaingrid->mHighliteComponent->m_bVisible = false;
+        captaingrid->mHighliteVisibilityAtAnimEnd = true;
+        captaingrid->RebuildInstanceTable();
+        captaingrid->SetAllItemsActive();
+
+        FEAudio::PlayAnimAudioEvent(mHomeAway == 0 ? "sfx_character_group_left_enter" : "sfx_character_group_right_enter", false);
+
+        if (mParent->mComponentState[mHomeAway ^ 1].mCurrentPhase > PHASE_CHOOSING_CAPTAIN)
+        {
+            FEMapMenu* captaingridmenu = captaingrid->mMapMenu;
+            captaingridmenu->SetItemActive(mParent->mCaptainGridComponents[mHomeAway ^ 1]->mMapMenu->GetSelectedItem(), false);
+        }
+
+        FEMapMenu* captaingridmenu = captaingrid->mMapMenu;
+        int firstcaptain = captaingridmenu->GetSelectedItem();
+        int rowfirstcaptain = firstcaptain;
+
+        while (!captaingridmenu->IsSelectedItemActive())
+        {
+            captaingridmenu->MoveDown(true);
+            if (rowfirstcaptain == captaingridmenu->GetSelectedItem())
+            {
+                captaingridmenu->MoveRight(true);
+                rowfirstcaptain = captaingridmenu->GetSelectedItem();
+                if (rowfirstcaptain == firstcaptain)
+                {
+                    break;
+                }
+            }
+        }
+
+        mParent->mSidekickGridComponents[mHomeAway]->mParentComponent->m_bVisible = false;
+        mParent->mCaptainComponents[mHomeAway]->m_bVisible = false;
+        mParent->mSidekickComponents[mHomeAway]->m_bVisible = false;
+
+        namecomponent = &mParent->mNameComponents[mHomeAway];
+        namecomponent->mComponent->SetActiveSlide("Slide1");
+        namecomponent->mComponent->Update(0.0f);
+        mParent->mNameComponents[mHomeAway].SetCaptainName(GetLOCCharacterName(captaingrid->GetSelectedItem(), false, true));
+        mParent->mNameComponents[mHomeAway].SetCaptainLogo(GetTeamName(captaingrid->GetSelectedItem()));
+
+        mParent->mSidekickMiniHeadComponents[mHomeAway]->m_bVisible = false;
+        break;
+
+    case PHASE_CHOOSING_SIDEKICK:
+        mParent->mCaptainGridComponents[mHomeAway]->mParentComponent->m_bVisible = false;
+
+        gridcomponent = mParent->mSidekickGridComponents[mHomeAway];
+        gridcomponent->mParentComponent->SetActiveSlide("IN");
+        gridcomponent->mParentComponent->Update(0.0f);
+        gridcomponent->RebuildInstanceTable();
+        gridcomponent->mMapMenu->UpdateAllItems();
+        gridcomponent->RebindHighliteComponent("HIGHLIGHT");
+        gridcomponent->mHighliteComponent->m_bVisible = false;
+        gridcomponent->mHighliteVisibilityAtAnimEnd = true;
+        gridcomponent->SetVisibleInstanceTable(true);
+        gridcomponent->mParentComponent->m_bVisible = true;
+
+        FEAudio::PlayAnimAudioEvent(mHomeAway == 0 ? "sfx_character_group_left_enter" : "sfx_character_group_right_enter", false);
+
+        namecomponent = &mParent->mNameComponents[mHomeAway];
+        namecomponent->mComponent->SetActiveSlide("Slide2");
+        namecomponent->mComponent->Update(0.0f);
+        mParent->mNameComponents[mHomeAway].SetCaptainName(GetLOCCharacterName((eTeamID)mParent->mHomeAwayTeam[mHomeAway], false, false));
+        mParent->mNameComponents[mHomeAway].SetSidekickName(GetLOCSidekickName(gridcomponent->GetSelectedItem()));
+        mParent->mNameComponents[mHomeAway].SetCaptainLogo(GetTeamName((eTeamID)mParent->mHomeAwayTeam[mHomeAway]));
+
+        mParent->mCaptainComponents[mHomeAway]->m_bVisible = false;
+        mParent->mSidekickComponents[mHomeAway]->m_bVisible = false;
+        mParent->mSidekickMiniHeadComponents[mHomeAway]->m_bVisible = false;
+        break;
+
+    case PHASE_READY:
+    {
+        mParent->mCaptainGridComponents[mHomeAway]->mParentComponent->m_bVisible = false;
+        mParent->mSidekickGridComponents[mHomeAway]->mParentComponent->m_bVisible = true;
+        mParent->mSidekickGridComponents[mHomeAway]->mParentComponent->SetActiveSlide("in");
+        mParent->mSidekickGridComponents[mHomeAway]->SetVisibleInstanceTable(false);
+        mParent->mSidekickGridComponents[mHomeAway]->mHighliteComponent->m_bVisible = false;
+
+        teamID = mParent->mHomeAwayTeam[mHomeAway];
+        parent = mParent;
+        homeaway = mHomeAway;
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filename0, 0x80, teamID, homeaway);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filename1, 0x80, teamID, homeaway);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filename2, 0x80, teamID, homeaway);
+        parent->mAsyncImage[homeaway][0]->QueueLoad(filename0, true);
+        parent->mAsyncImage[homeaway][1]->QueueLoad(filename1, true);
+        parent->mAsyncImage[homeaway][2]->QueueLoad(filename2, true);
+        parent->mDidSwapCaptains[homeaway] = false;
+
+        mParent->mCaptainComponents[mHomeAway]->m_bVisible = true;
+        if (mParent->mHomeAwayTeam[mHomeAway] != TEAM_MYSTERY)
+        {
+            mParent->mSidekickComponents[mHomeAway]->m_bVisible = false;
+            namecomponent = &mParent->mNameComponents[mHomeAway];
+            namecomponent->mComponent->SetActiveSlide("Slide2");
+            namecomponent->mComponent->Update(0.0f);
+            mParent->mNameComponents[mHomeAway].SetSidekickName(GetLOCSidekickName((eSidekickID)mParent->mHomeAwaySidekicks[mHomeAway]));
+        }
+
+        mParent->mNameComponents[mHomeAway].SetCaptainName(GetLOCCharacterName((eTeamID)mParent->mHomeAwayTeam[mHomeAway], false, false));
+        mParent->mNameComponents[mHomeAway].SetCaptainLogo(GetTeamName((eTeamID)mParent->mHomeAwayTeam[mHomeAway]));
+
+        mParent->mCaptainGridComponents[mHomeAway]->mMapMenu->SetSelectedItem(mParent->mHomeAwayTeam[mHomeAway]);
+        mParent->mCaptainGridComponents[mHomeAway ^ 1]->mMapMenu->SetSelectedItem(mParent->mHomeAwayTeam[mHomeAway ^ 1]);
+
+        menu = mParent->mCaptainGridComponents[mHomeAway]->mMapMenu;
+        menu->SetItemActive(menu->GetSelectedItem(), false);
+
+        menu = mParent->mCaptainGridComponents[mHomeAway ^ 1]->mMapMenu;
+        menu->SetItemActive(menu->GetSelectedItem(), false);
+
+        mParent->StartSidekickMiniHead(mHomeAway, (eSidekickID)mParent->mHomeAwaySidekicks[mHomeAway]);
+        break;
+    }
+
+    default:
+        break;
+    }
+
+    mCurrentPhase = phase;
+}
+
+/**
+ * Offset/Address/Size: 0xEC | 0x800BF890 | size: 0xC0
+ */
+inline void IChooseCaptain::NameComponent::SetTextName(const char* objname, unsigned long locstring)
+{
+    TLTextInstance* textinstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        mComponent->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash(objname)));
+
+    if (locstring != 0)
+    {
+        textinstance->m_LocStrId = locstring;
+        textinstance->m_OverloadFlags |= 0x8u;
+        textinstance->m_bVisible = true;
+    }
+    else
+    {
+        textinstance->m_bVisible = false;
+    }
+}
+
+/**
+ * Offset/Address/Size: 0xC4 | 0x800BF868 | size: 0x28
+ */
+inline void IChooseCaptain::NameComponent::SetCaptainName(unsigned long captainID)
+{
+    SetTextName(mCaptainObjName, captainID);
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x800BF7A4 | size: 0xC4
+ */
+inline void IChooseCaptain::NameComponent::SetCaptainLogo(const char* name)
+{
+    TLComponentInstance* comp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        mComponent->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("component")));
+
+    if (name != NULL)
+    {
+        comp->SetActiveSlide(name);
+        comp->m_bVisible = true;
+    }
+    else
+    {
+        comp->m_bVisible = false;
+    }
+}
 
 #endif // _FECAPTAINCOMPONENT_H_

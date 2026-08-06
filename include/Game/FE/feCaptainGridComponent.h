@@ -1,7 +1,7 @@
 #ifndef _FECAPTAINGRIDCOMPONENT_H_
 #define _FECAPTAINGRIDCOMPONENT_H_
 #include "Game/FE/feInput.h"
-#include "Game/FE/feSidekickGridComponent.h"
+#include "Game/FE/feGridComponent.h"
 #include "Game/FE/feMapMenu.h"
 
 #include "Game/Team.h"
