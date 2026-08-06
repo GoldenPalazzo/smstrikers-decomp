@@ -1336,14 +1336,13 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
     {
         cFielder* theOpponent = g_pScriptOtherTeam->GetFielder(i);
 
-        float fNotInvincible = 1.0f - Invincible(theOpponent);
-        float fNotFallen = 1.0f - FallenDown(theOpponent);
+        float fNotInvincible = FuzzyNot(Invincible(theOpponent));
+        float fNotFallen = FuzzyNot(FallenDown(theOpponent));
         float fTrueConfidence = (fNotFallen <= fNotInvincible) ? fNotFallen : fNotInvincible;
 
         float fFalseConfidence = 1.0f - fTrueConfidence;
-        float fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-        float fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-        float fBranchRatio = fMinVal / fMaxVal;
+        float fBranchRatio = min_float(fTrueConfidence, fFalseConfidence)
+            / max_float(fTrueConfidence, fFalseConfidence);
 
         if (fTrueConfidence > 0.0f)
         {
@@ -1355,18 +1354,13 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
                 fConfidence = (float)d * fBranchRatio;
             }
 
-            float fChasingBall = ChasingBall((cPlayer*)theOpponent);
-            float fReceivingPass = ReceivingPass(theOpponent);
-            float fBallOwner = BallOwner((cPlayer*)theOpponent);
+            float fBallOwner = nlMaxThree(BallOwner((cPlayer*)theOpponent), ReceivingPass(theOpponent),
+                ChasingBall((cPlayer*)theOpponent));
 
-            fReceivingPass = (fReceivingPass >= fChasingBall) ? fReceivingPass : fChasingBall;
-            fBallOwner = (fBallOwner >= fReceivingPass) ? fBallOwner : fReceivingPass;
-
-            fTrueConfidence = 1.0f - fBallOwner;
-            fFalseConfidence = fBallOwner;
-            fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-            fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-            float fBranchRatio2 = fMinVal / fMaxVal;
+            float fTrueConfidence = fBallOwner;
+            float fFalseConfidence = 1.0f - fBallOwner;
+            float fBranchRatio2 = min_float(fTrueConfidence, fFalseConfidence)
+                / max_float(fTrueConfidence, fFalseConfidence);
 
             if (fTrueConfidence > 0.0f)
             {
@@ -1380,9 +1374,8 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
 
                 float fTrueConfidence2 = 1.0f - FarTo((cPlayer*)TheFielder, (cPlayer*)theOpponent);
                 float fFalseConfidence2 = 1.0f - fTrueConfidence2;
-                float fMinVal2 = (fTrueConfidence2 <= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2;
-                float fMaxVal2 = (fTrueConfidence2 >= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2;
-                float fBranchRatio2 = fMinVal2 / fMaxVal2;
+                float fBranchRatio2 = min_float(fTrueConfidence2, fFalseConfidence2)
+                    / max_float(fTrueConfidence2, fFalseConfidence2);
 
                 if (fTrueConfidence2 > 0.0f)
                 {
@@ -1401,11 +1394,11 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
                 }
             }
 
-            if (fTrueConfidence > 0.0f)
+            if (fFalseConfidence > 0.0f)
             {
                 SaveConfidence PushDOM4(&fConfidence);
-                fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
-                if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+                fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
+                if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
                 {
                     double d = fConfidence;
                     fConfidence = (float)d * fBranchRatio2;
@@ -1413,13 +1406,14 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
 
                 float fFacing = Facing((cPlayer*)TheFielder, (cPlayer*)theOpponent);
                 float fNearTo = NearTo((cPlayer*)TheFielder, (cPlayer*)theOpponent);
+                float fNearWeight = 0.6f;
+                float fFacingWeight = 0.3f;
                 float fZero = 0.0f;
-                float fTrueConfidence3 = fNearTo * 0.6f + fZero;
-                fTrueConfidence3 = fFacing * 0.3f + fTrueConfidence3;
+                float fTotalSum = fNearTo * fNearWeight + fZero;
+                float fTrueConfidence3 = fFacing * fFacingWeight + fTotalSum;
                 float fFalseConfidence3 = 1.0f - fTrueConfidence3;
-                float fMinVal3 = (fTrueConfidence3 <= fFalseConfidence3) ? fTrueConfidence3 : fFalseConfidence3;
-                float fMaxVal3 = (fTrueConfidence3 >= fFalseConfidence3) ? fTrueConfidence3 : fFalseConfidence3;
-                float fBranchRatio3 = fMinVal3 / fMaxVal3;
+                float fBranchRatio3 = min_float(fTrueConfidence3, fFalseConfidence3)
+                    / max_float(fTrueConfidence3, fFalseConfidence3);
 
                 if (fTrueConfidence3 > 0.0f)
                 {
