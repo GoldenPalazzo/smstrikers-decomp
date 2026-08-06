@@ -1219,10 +1219,10 @@ void CupChooseCaptainSceneV2::CreateLineup()
 void CupChooseCaptainSceneV2::StartSidekickMiniHead(eSidekickID sidekickId)
 {
     static const char* SidekickImageNames[] = {
-        "toad_minihead",
-        "koopa_minihead",
-        "hammerbros_minihead",
-        "birdo_minihead",
+        "choose_sidek_toad",
+        "choose_sidek_koopa",
+        "choose_sidek_hammer",
+        "choose_sidek_birdo",
     };
 
     if (sidekickId == SK_MYSTERY)
