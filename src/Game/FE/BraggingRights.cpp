@@ -570,16 +570,12 @@ BraggingRightsScene::~BraggingRightsScene()
 
 /**
  * Offset/Address/Size: 0x2E4 | 0x800D22E0 | size: 0x11E0
- * TODO: 3 diff rows. Colouring, frame and the entry schedule are exact; the
- *       one remaining artifact is the statWideString address in the if arm
- *       below, born one block before the c_str() expansion where retail
- *       materialises it at the call. See $SMS_NOTES_ROOT/docs/0084.
  */
 void BraggingRightsScene::SceneCreated()
 {
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     UserInfo& ui = nlSingleton<GameInfoManager>::s_pInstance->mUserInfo;
-    GameInfoManager* info = nlSingleton<GameInfoManager>::s_pInstance;
+    GameInfoManager* info = nlSingleton<GameInfoManager>::Instance();
 
     int wins;
     int losses;
@@ -672,8 +668,7 @@ void BraggingRightsScene::SceneCreated()
             unsigned short statWideString[32];
             unsigned short currentStatWideString[32];
 
-            unsigned short* pStat = statWideString;
-            nlStrToWcs(statString.c_str(), pStat, 32);
+            nlStrToWcs(statString.c_str(), statWideString, 32);
             nlStrToWcs(currentStatString.c_str(), currentStatWideString, 32);
 
             BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[32], unsigned short[32]>(

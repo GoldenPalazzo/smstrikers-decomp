@@ -1036,12 +1036,7 @@ config.libs = [
             Object(Matching, "Game/FE/feChooseSideComponent.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/FE/feAnimModelManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/FE/feButtonComponent.cpp", extra_cflags=["-inline auto"]),
-            # Both grid component objects use deferred expansion without automatic inlining.
-            Object(
-                Matching,
-                "Game/FE/feSidekickGridComponent.cpp",
-                extra_cflags=["-inline noauto", "-inline deferred"],
-            ),
+            Object(Matching, "Game/FE/feSidekickGridComponent.cpp", extra_cflags=["-inline noauto", "-inline deferred"]),
             Object(Matching, "Game/FE/FEAudio.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/FE/fePresentation.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/FE/feMapMenu.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -1055,11 +1050,7 @@ config.libs = [
             Object(Matching, "Game/FE/feSlideMenu.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/FE/LidOpenMessage.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/FE/BraggingRights.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(
-                NonMatching,
-                "Game/FE/Cup/CupTickerManager.cpp",
-                extra_cflags=["-inline auto", "-inline deferred", '-pragma "inline_max_total_size(5120)"'],
-            ),
+            Object(NonMatching, "Game/FE/Cup/CupTickerManager.cpp", extra_cflags=["-inline auto", "-inline deferred", '-pragma "inline_max_total_size(5120)"'],),
             Object(Matching, "Game/FE/Overlay/OverlayHandlerSummary.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/FE/Overlay/OverlayHandlerWinner.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
@@ -1073,11 +1064,7 @@ config.libs = [
             Object(Matching, "Game/SH/SHBackground.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHChooseCaptains.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHChooseCup.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(
-                Matching,
-                "Game/SH/SHChooseSides.cpp",
-                extra_cflags=["-inline auto", "-inline deferred", '-pragma "inline_max_total_size(5120)"'],
-            ),
+            Object(Matching, "Game/SH/SHChooseSides.cpp", extra_cflags=["-inline auto", "-inline deferred", '-pragma "inline_max_total_size(5120)"'],),
             Object(Matching, "Game/SH/SHCredits.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHCrossFader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHCupCheater.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -1096,11 +1083,7 @@ config.libs = [
             Object(Matching, "Game/SH/SHOptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHPause.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHPauseOptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(
-                Matching,
-                "Game/SH/SHPausePostGame.cpp",
-                extra_cflags=['-pragma "inline_max_total_size(5120)"', "-inline auto", "-inline deferred"],
-            ),
+            Object(Matching, "Game/SH/SHPausePostGame.cpp", extra_cflags=['-pragma "inline_max_total_size(5120)"', "-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHProgressiveScan.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHQuickGameplayOptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHSaveLoad.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
