@@ -12,6 +12,7 @@
 #include "Game/GameSceneManager.h"
 #include "Game/BaseGameSceneManager.h"
 #include "Game/FE/feFinder.h"
+#include "Game/FE/tlImageInstance.h"
 #include "types.h"
 
 typedef void FnTLComponentInstanceCb(TLComponentInstance*);
@@ -251,42 +252,10 @@ void OptionsSubMenu::BuildSubMenuList(int menuitem, TLComponentInstance* compins
  */
 void OptionsSubMenu::SetButtonState(ButtonComponent::ButtonState buttonState)
 {
-    FORCE_DONT_INLINE;
-
-    typedef TLComponentInstance* (*FindComponentByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindComponentByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    union
-    {
-        FindComponentByValue byValue;
-        FindComponentByRef byRef;
-    } findComponent;
-
-    volatile InlineHasher hB, hA;
-    volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-
-    h9.m_Hash = h8.m_Hash = nlStringLowerHash("buttons");
-    hA.m_Hash = hB.m_Hash = nlStringLowerHash("Layer");
-
-    findComponent.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-
-    m_buttons = findComponent.byRef(
+    m_buttons = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         m_pres->GetActiveSlide(),
-        (InlineHasher&)hB,
-        (InlineHasher&)h9,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("buttons")));
 
     mButtons.mButtonInstance = m_buttons;
     mButtons.SetState(buttonState);
@@ -300,48 +269,14 @@ void OptionsSubMenu::SetButtonState(ButtonComponent::ButtonState buttonState)
  */
 void OptionsSubMenu::SetAButtonLOC(unsigned long locStrId)
 {
-    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    union
-    {
-        FindTextByValue byValue;
-        FindTextByRef byRef;
-    } findText;
-
     if (m_buttons == NULL)
     {
         return;
     }
 
-    volatile InlineHasher hB, hA;
-    volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-    findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-    h8.m_Hash = 0;
-    h9.m_Hash = 0;
-
-    unsigned long hash = nlStringLowerHash("accept");
-    hB.m_Hash = hash;
-    hA.m_Hash = hash;
-
-    TLTextInstance* textInstance = findText.byRef(
+    TLTextInstance* textInstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         m_buttons->GetActiveSlide(),
-        (InlineHasher&)hB,
-        (InlineHasher&)h9,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("accept")));
 
     if (textInstance != NULL)
     {
@@ -1665,86 +1600,19 @@ void OptionsGameplayMenuV2::Revert()
  */
 void OptionsGameplayMenuV2::CloseItem(TLComponentInstance* compinstance)
 {
-    typedef TLComponentInstance* (*FindComponentByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindComponentByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLImageInstance* (*FindImageByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLInstance* (*FindImageAsInstance)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    union
-    {
-        FindComponentByValue byValue;
-        FindComponentByRef byRef;
-    } findComponent;
-
-    union
-    {
-        FindImageByValue typed;
-        FindImageAsInstance asInstance;
-    } findImage;
-
-    unsigned long hash;
-
-    findComponent.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-    findImage.typed = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
-
     compinstance->SetActiveSlide("out");
     compinstance->Update(0.0f);
 
-    volatile InlineHasher hB, hA;
-    volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-    h8.m_Hash = 0;
-    h9.m_Hash = 0;
-
-    hash = nlStringLowerHash("high");
-    hA.m_Hash = hash;
-    hB.m_Hash = hash;
-
-    compinstance = findComponent.byRef(
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         compinstance->GetActiveSlide(),
-        (InlineHasher&)hB,
-        (InlineHasher&)h9,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("high")));
 
     compinstance->SetActiveSlide("out");
     compinstance->Update(0.0f);
 
-    volatile InlineHasher g7, g6;
-    volatile InlineHasher g5, g4, g3, g2, g1, g0;
-
-    g0.m_Hash = 0;
-    h1.m_Hash = 0;
-    g1.m_Hash = 0;
-    h3.m_Hash = 0;
-    g2.m_Hash = 0;
-    h5.m_Hash = 0;
-    g3.m_Hash = 0;
-    h7.m_Hash = 0;
-    g4.m_Hash = 0;
-    h9.m_Hash = 0;
-
-    hash = nlStringLowerHash("may_highlite");
-    g6.m_Hash = hash;
-    g7.m_Hash = hash;
-    findImage.asInstance(
-                 compinstance->GetActiveSlide(),
-                 (InlineHasher&)g7,
-                 (InlineHasher&)h9,
-                 (InlineHasher&)h7,
-                 (InlineHasher&)h5,
-                 (InlineHasher&)h3,
-                 (InlineHasher&)h1)
+    FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        compinstance->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("may_highlite")))
         ->SetAssetColour(MenuHighliteColour);
 }
 

@@ -69,44 +69,11 @@ void SuperTeamScene::Update(float fDeltaT)
  */
 void SuperTeamScene::SceneCreated()
 {
-    typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
-    union
-    {
-        FindCompByValue byValue;
-        FindCompByRef byRef;
-    } findComp;
-
-    volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-    findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-
-    unsigned long hash1 = nlStringLowerHash("buttons");
-    h8.m_Hash = hash1;
-    h9.m_Hash = hash1;
-
-    unsigned long hash2 = nlStringLowerHash("Layer");
-    hB.m_Hash = hash2;
-    hA.m_Hash = hash2;
-
-    mButtons.mButtonInstance = findComp.byRef(
+    mButtons.mButtonInstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,
-        (InlineHasher&)hB,
-        (InlineHasher&)h9,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("buttons")));
 
     mButtons.SetState(ButtonComponent::BS_A_ONLY);
 

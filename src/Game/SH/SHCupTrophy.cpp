@@ -780,51 +780,15 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
  */
 void CupTrophyScene::ChangeSlides()
 {
-    typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
     FEPresentation* pres = m_pFEPresentation;
     float starTime;
-    unsigned long hash;
-    volatile InlineHasher hB, hA;
-    volatile InlineHasher h9, h8;
-    volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
 
     if (mFirstSlideChange)
     {
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        hash = nlStringLowerHash("star rotation");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hB.m_Hash = hash;
-        hA.m_Hash = hash;
-
-        TLComponentInstance* starComp = findComp.byRef(
+        TLComponentInstance* starComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             pres->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("star rotation")));
         starTime = starComp->GetActiveSlide()->m_time;
     }
 
@@ -833,41 +797,10 @@ void CupTrophyScene::ChangeSlides()
 
     if (mFirstSlideChange)
     {
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-        volatile InlineHasher g7, g6;
-        volatile InlineHasher g5, g4, g3, g2, g1, g0;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-
-        g0.m_Hash = 0;
-        h1.m_Hash = 0;
-        g1.m_Hash = 0;
-        h3.m_Hash = 0;
-        g2.m_Hash = 0;
-        h5.m_Hash = 0;
-        g3.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        hash = nlStringLowerHash("star rotation");
-        g4.m_Hash = hash;
-        g5.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        g7.m_Hash = hash;
-        g6.m_Hash = hash;
-
-        TLComponentInstance* starComp = findComp.byRef(
+        TLComponentInstance* starComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             pres->m_currentSlide,
-            (InlineHasher&)g7,
-            (InlineHasher&)g5,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("star rotation")));
         starComp->Update(starTime);
         mFirstSlideChange = false;
     }

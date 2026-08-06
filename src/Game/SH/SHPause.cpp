@@ -238,31 +238,6 @@ void PauseMenuScene::SceneCreated()
 {
     extern bool g_e3_Build;
 
-    typedef TLInstance* (*FindInstByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLInstance* (*FindInstByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLComponentInstance* (*FindCompSlideByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompSlideByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLComponentInstance* (*FindCompPresByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompPresByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    union
-    {
-        FindInstByValue byValue;
-        FindInstByRef byRef;
-    } findInst;
-
-    union
-    {
-        FindCompSlideByValue byValue;
-        FindCompSlideByRef byRef;
-    } findCompSlide;
-
-    union
-    {
-        FindCompPresByValue byValue;
-        FindCompPresByRef byRef;
-    } findCompPres;
-
     typedef Detail::MemFunImpl<void, void (PauseMenuScene::*)(TLComponentInstance*)> PauseMemFun;
     typedef BindExp2<void, PauseMemFun, PauseMenuScene*, Placeholder<0> > PauseBind;
     typedef MenuItem<TLComponentInstance>::Callback MenuCallback;
@@ -586,47 +561,14 @@ void PauseMenuScene::TransitionOut(PauseMenuScene::TransitionType newtype)
         int i;
         for (i = 0; i < mMenuItems.GetNumItemsAdded(); i++)
         {
-            typedef TLInstance* (*FindByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-            typedef TLInstance* (*FindByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-            union
-            {
-                FindByValue byValue;
-                FindByRef byRef;
-            } find;
-            find.byValue = FEFinder<TLInstance, 4>::Find<TLSlide>;
 
             char menuname[64];
             nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
 
-            volatile InlineHasher hB, hA;
-            volatile InlineHasher h9, h8;
-            volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
-
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-            h6.m_Hash = 0;
-            h7.m_Hash = 0;
-
-            unsigned long hash = nlStringLowerHash(menuname);
-            h8.m_Hash = hash;
-            h9.m_Hash = hash;
-
-            hash = nlStringLowerHash("Layer");
-            hB.m_Hash = hash;
-            hA.m_Hash = hash;
-
-            TLInstance* instance = find.byRef(
+            TLInstance* instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
                 presentation->m_currentSlide,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
+                InlineHasher(nlStringLowerHash("Layer")),
+                InlineHasher(nlStringLowerHash(menuname)));
 
             TLComponentInstance* compinstance = (TLComponentInstance*)instance;
 

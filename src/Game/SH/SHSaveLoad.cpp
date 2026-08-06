@@ -708,90 +708,20 @@ void SaveLoadScene::SceneCreated()
     FEPresentation* pres = m_pFEScene->m_pFEPackage->GetPresentation();
     pres->SetActiveSlide("Slide1");
 
-    typedef TLTextInstance* (*FindTextByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindTextByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    volatile InlineHasher hB, hA;
-    volatile InlineHasher h9, h8;
-    volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
-
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-
-    unsigned long hash;
-    hash = nlStringLowerHash("Text");
-    h6.m_Hash = hash;
-    h7.m_Hash = hash;
-
-    hash = nlStringLowerHash("Layer");
-    h8.m_Hash = hash;
-    h9.m_Hash = hash;
-
-    hash = nlStringLowerHash("Slide1");
-    hA.m_Hash = hash;
-    hB.m_Hash = hash;
-
-    union
-    {
-        FindTextByValue byValue;
-        FindTextByRef byRef;
-    } findText;
-    findText.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
-
-    m_displayText = findText.byRef(
+    m_displayText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         pres,
-        (InlineHasher&)hB,
-        (InlineHasher&)h9,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Text")));
 
     if (mIsAutoSaving)
     {
         pres->SetActiveSlide("Slide2");
     }
 
-    typedef TLSlide* (*FindSlideByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLSlide* (*FindSlideByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    volatile InlineHasher gB, gA;
-    volatile InlineHasher g9, g8, g7, g6, g4, g2, g0;
-
-    g0.m_Hash = 0;
-    h1.m_Hash = 0;
-    g2.m_Hash = 0;
-    h3.m_Hash = 0;
-    g4.m_Hash = 0;
-    h5.m_Hash = 0;
-    g6.m_Hash = 0;
-    g7.m_Hash = 0;
-    g8.m_Hash = 0;
-    g9.m_Hash = 0;
-
-    hash = nlStringLowerHash("Slide3");
-    gA.m_Hash = hash;
-    gB.m_Hash = hash;
-
-    union
-    {
-        FindSlideByValue byValue;
-        FindSlideByRef byRef;
-    } findSlide;
-    findSlide.byValue = FEFinder<TLSlide, 0>::Find<FEPresentation>;
-
-    mAboutAutoSaveSlide = findSlide.byRef(
+    mAboutAutoSaveSlide = FEFinder<TLSlide, 0>::Find<FEPresentation>(
         pres,
-        (InlineHasher&)gB,
-        (InlineHasher&)g9,
-        (InlineHasher&)g7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("Slide3")));
 
     TLTextInstance* text = m_displayText;
     if (text != NULL)
@@ -1079,14 +1009,6 @@ bool SaveLoadScene::IsIOEnabled()
  */
 void SaveLoadScene::SetupForAboutAutoSave()
 {
-    typedef TLComponentInstance* (*FindByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    union
-    {
-        FindByValue byValue;
-        FindByRef byRef;
-    } findFunc;
 
     m_pFEPresentation->SetActiveSlide(mAboutAutoSaveSlide);
 
@@ -1095,35 +1017,10 @@ void SaveLoadScene::SetupForAboutAutoSave()
         ButtonComponent* ptr = new ((u8*)nlMalloc(sizeof(ButtonComponent), 8, false)) ButtonComponent();
         mButtonComponent = ptr;
 
-        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash;
-        hash = nlStringLowerHash("buttons");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hB.m_Hash = hash;
-        hA.m_Hash = hash;
-
-        findFunc.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-
-        mButtonComponent->mButtonInstance = findFunc.byRef(
+        mButtonComponent->mButtonInstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             mAboutAutoSaveSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("buttons")));
     }
 
     mButtonComponent->SetState(ButtonComponent::BS_A_ONLY);

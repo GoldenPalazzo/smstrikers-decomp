@@ -218,34 +218,10 @@ void CreditScene::SetupForNLGMovie()
 
     m_pFEPresentation->SetActiveSlide("NLG");
 
-    typedef TLImageInstance* (*FindByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLImageInstance* (*FindByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    union
-    {
-        FindByValue byValue;
-        FindByRef byRef;
-    } findImg;
-    findImg.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
-
-    volatile InlineHasher lRef, lLocal;
-    volatile InlineHasher nRef, nLocal;
-    volatile InlineHasher h, g, f, e, d, c, b, a;
-    a.m_Hash = 0;
-    b.m_Hash = 0;
-    c.m_Hash = 0;
-    d.m_Hash = 0;
-    e.m_Hash = 0;
-    f.m_Hash = 0;
-    g.m_Hash = 0;
-    h.m_Hash = 0;
-    u32 hash1 = nlStringLowerHash("A_button");
-    nLocal.m_Hash = hash1;
-    nRef.m_Hash = hash1;
-    u32 hash2 = nlStringLowerHash("Layer");
-    lRef.m_Hash = hash2;
-    lLocal.m_Hash = hash2;
-    TLImageInstance* pImage = findImg.byRef(
-        m_pFEPresentation->m_currentSlide, (InlineHasher&)lRef, (InlineHasher&)nRef, (InlineHasher&)h, (InlineHasher&)f, (InlineHasher&)d, (InlineHasher&)b);
+    TLImageInstance* pImage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        m_pFEPresentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("A_button")));
     pImage->m_bVisible = false;
 }
 
@@ -485,32 +461,9 @@ void CreditScene::UpdateForNLGMovie(float)
 TLComponentInstance* CreditScene::GetWhiteFadeComponent()
 {
     FORCE_DONT_INLINE;
-    typedef TLComponentInstance* (*FindByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    union
-    {
-        FindByValue byValue;
-        FindByRef byRef;
-    } findComp;
-    findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
 
-    volatile InlineHasher lRef, lLocal;
-    volatile InlineHasher wRef, wLocal;
-    volatile InlineHasher h, g, f, e, d, c, b, a;
-    a.m_Hash = 0;
-    b.m_Hash = 0;
-    c.m_Hash = 0;
-    d.m_Hash = 0;
-    e.m_Hash = 0;
-    f.m_Hash = 0;
-    g.m_Hash = 0;
-    h.m_Hash = 0;
-    u32 hash1 = nlStringLowerHash("WHITE FADE");
-    wLocal.m_Hash = hash1;
-    wRef.m_Hash = hash1;
-    u32 hash2 = nlStringLowerHash("Layer");
-    lRef.m_Hash = hash2;
-    lLocal.m_Hash = hash2;
-    return findComp.byRef(
-        m_pFEPresentation->m_currentSlide, (InlineHasher&)lRef, (InlineHasher&)wRef, (InlineHasher&)h, (InlineHasher&)f, (InlineHasher&)d, (InlineHasher&)b);
+    return FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        m_pFEPresentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("WHITE FADE")));
 }

@@ -28,6 +28,7 @@ public:
     virtual ~StadiumSelectSceneV2();
     virtual void SceneCreated();
     virtual void Update(float);
+    void OnSelectStadium();
     void ResetFromRight();
     void ResetFromLeft();
 

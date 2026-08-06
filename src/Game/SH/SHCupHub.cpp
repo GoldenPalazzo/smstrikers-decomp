@@ -481,10 +481,6 @@ void CupHubScene::SceneCreated()
  */
 void CupHubScene::Update(float fDeltaT)
 {
-    typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
     GameInfoManager* gameInfo;
     SaveLoadScene* scene;
@@ -569,78 +565,18 @@ void CupHubScene::Update(float fDeltaT)
         mHubState = HUB_KNOCKOUT4;
         presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
-        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("message");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hB.m_Hash = hash;
-        hA.m_Hash = hash;
-
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-        pComp = findComp.byRef(
+        pComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
+            InlineHasher(nlStringLowerHash("message")));
 
         pComp->SetActiveSlide("Slide1");
         pComp->Update(0.0f);
         pComp->m_bVisible = true;
 
-        volatile InlineHasher g7, g6, g5, g4, g3, g2, g1, g0;
-
-        g0.m_Hash = 0;
-        h1.m_Hash = 0;
-        g1.m_Hash = 0;
-        h3.m_Hash = 0;
-        g2.m_Hash = 0;
-        h5.m_Hash = 0;
-        g3.m_Hash = 0;
-        h7.m_Hash = 0;
-        g4.m_Hash = 0;
-        g5.m_Hash = 0;
-
-        hash = nlStringLowerHash("Text");
-        g6.m_Hash = hash;
-        g7.m_Hash = hash;
-
-        union
-        {
-            FindTextByValue byValue;
-            FindTextByRef byRef;
-        } findText;
-
-        findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-
-        pText = findText.byRef(
+        pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pComp->GetActiveSlide(),
-            (InlineHasher&)g7,
-            (InlineHasher&)g5,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash("Text")));
 
         pText->SetStringId("STANDINGS_SEMI");
 
@@ -1857,18 +1793,12 @@ unsigned char CupHubScene::UpdateLeague(float fDeltaT)
  */
 unsigned char CupHubScene::UpdateKnockout8(float fDeltaT)
 {
-    typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
     TLSlide* pSlide1 = mAnimComponents[mAnimatingKnockoutTeams[0]]->GetActiveSlide();
     TLSlide* pSlide2 = mAnimComponents[mAnimatingKnockoutTeams[1]]->GetActiveSlide();
     TLSlide* pSlide3 = mAnimComponents[mAnimatingKnockoutTeams[2]]->GetActiveSlide();
     TLSlide* pSlide4 = mAnimComponents[mAnimatingKnockoutTeams[3]]->GetActiveSlide();
     GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
-
-    volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
 
     if (mKnockoutLoserAnimations && mSlideSwitchDelay > 0.0f)
     {
@@ -1913,38 +1843,10 @@ unsigned char CupHubScene::UpdateKnockout8(float fDeltaT)
 
         FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("vs");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hB.m_Hash = hash;
-        hA.m_Hash = hash;
-
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-
-        TLComponentInstance* vsComp = findComp.byRef(
+        TLComponentInstance* vsComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
+            InlineHasher(nlStringLowerHash("vs")));
 
         vsComp->SetActiveSlide("Slide2");
 
@@ -1965,77 +1867,18 @@ unsigned char CupHubScene::UpdateKnockout8(float fDeltaT)
 
         FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
-        volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("message");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hB.m_Hash = hash;
-        hA.m_Hash = hash;
-
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-
-        TLComponentInstance* pComp = findComp.byRef(
+        TLComponentInstance* pComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
+            InlineHasher(nlStringLowerHash("message")));
 
         pComp->SetActiveSlide("Slide1");
         pComp->Update(0.0f);
         pComp->m_bVisible = true;
 
-        volatile InlineHasher g7, g6, g5, g4, g3, g2, g1, g0;
-
-        g0.m_Hash = 0;
-        h1.m_Hash = 0;
-        g1.m_Hash = 0;
-        h3.m_Hash = 0;
-        g2.m_Hash = 0;
-        h5.m_Hash = 0;
-        g3.m_Hash = 0;
-        h7.m_Hash = 0;
-        g4.m_Hash = 0;
-        g5.m_Hash = 0;
-
-        hash = nlStringLowerHash("Text");
-        g6.m_Hash = hash;
-        g7.m_Hash = hash;
-
-        union
-        {
-            FindTextByValue byValue;
-            FindTextByRef byRef;
-        } findText;
-        findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-
-        TLTextInstance* pText = findText.byRef(
+        TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pComp->GetActiveSlide(),
-            (InlineHasher&)g7,
-            (InlineHasher&)g5,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash("Text")));
 
         pText->SetStringId("STANDINGS_SEMI");
 
@@ -2063,16 +1906,10 @@ unsigned char CupHubScene::UpdateKnockout8(float fDeltaT)
  */
 unsigned char CupHubScene::UpdateKnockout4(float fDeltaT)
 {
-    typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
     TLSlide* pSlide1 = mAnimComponents[mAnimatingKnockoutTeams[0]]->GetActiveSlide();
     TLSlide* pSlide2 = mAnimComponents[mAnimatingKnockoutTeams[1]]->GetActiveSlide();
     GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
-
-    volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
 
     if (mKnockoutLoserAnimations && mSlideSwitchDelay > 0.0f)
     {
@@ -2105,39 +1942,10 @@ unsigned char CupHubScene::UpdateKnockout4(float fDeltaT)
 
         FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("vs");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hB.m_Hash = hash;
-        hA.m_Hash = hash;
-
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-
-        TLComponentInstance* vsComp = findComp.byRef(
+        TLComponentInstance* vsComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
+            InlineHasher(nlStringLowerHash("vs")));
 
         vsComp->SetActiveSlide("Slide2");
 
@@ -2157,44 +1965,13 @@ unsigned char CupHubScene::UpdateKnockout4(float fDeltaT)
 
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     TLComponentInstance* pComp;
-    unsigned long hash;
 
     {
-        volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
 
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        hash = nlStringLowerHash("message");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hB.m_Hash = hash;
-        hA.m_Hash = hash;
-
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-
-        pComp = findComp.byRef(
+        pComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
+            InlineHasher(nlStringLowerHash("message")));
     }
 
     pComp->SetActiveSlide("Slide1");
@@ -2204,39 +1981,9 @@ unsigned char CupHubScene::UpdateKnockout4(float fDeltaT)
     feVector3 position = pComp->GetAssetPosition();
     pComp->SetAssetPosition(position.f.x, 60.0f, position.f.z);
 
-    volatile InlineHasher g7, g6, g5, g4, g3, g2, g1, g0;
-
-    g0.m_Hash = 0;
-    h1.m_Hash = 0;
-    g1.m_Hash = 0;
-    h3.m_Hash = 0;
-    g2.m_Hash = 0;
-    h5.m_Hash = 0;
-    g3.m_Hash = 0;
-    h7.m_Hash = 0;
-    g4.m_Hash = 0;
-    g5.m_Hash = 0;
-
-    hash = nlStringLowerHash("Text");
-    g6.m_Hash = hash;
-    g7.m_Hash = hash;
-
-    union
-    {
-        FindTextByValue byValue;
-        FindTextByRef byRef;
-    } findText;
-
-    findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-
-    TLTextInstance* pText = findText.byRef(
+    TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pComp->GetActiveSlide(),
-        (InlineHasher&)g7,
-        (InlineHasher&)g5,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("Text")));
 
     pText->SetStringId("STANDINGS_FINAL");
 
@@ -2260,10 +2007,6 @@ unsigned char CupHubScene::UpdateKnockout4(float fDeltaT)
  */
 unsigned char CupHubScene::UpdateKnockout2(float fDeltaT)
 {
-    typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
     TLSlide* pSlide1 = mAnimComponents[mAnimatingKnockoutTeams[0]]->GetActiveSlide();
     GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
@@ -2378,10 +2121,6 @@ unsigned char CupHubScene::UpdateKnockout2(float fDeltaT)
  */
 void CupHubScene::UpdateProgressIndicator()
 {
-    typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLImageInstance* (*FindImageByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLImageInstance* (*FindImageByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
     extern const char* CUP_PROGRESS_NAME;
     extern const char* CUP_HIGHLIGHT_NAME;
@@ -2406,8 +2145,6 @@ void CupHubScene::UpdateProgressIndicator()
     TLComponentInstance* highlight;
     TLImageInstance* nodeImage;
     feVector3 position;
-    volatile InlineHasher hB, hA;
-    volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
 
     numRounds = cursor.gameInfo->GetNumRounds();
     if (cursor.gameInfo->mDidRoundJustEnd && mDoAnimations && cursor.gameInfo->GetCurrentRoundNumber() != -5)
@@ -2428,77 +2165,20 @@ void CupHubScene::UpdateProgressIndicator()
     TLSlide* initialSlide = m_pFEScene->m_pFEPackage->GetPresentation()->m_currentSlide;
 
     {
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
 
-        unsigned long hash = nlStringLowerHash(CUP_PROGRESS_NAME);
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
-
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-        TLComponentInstance* progress = findComp.byRef(
+        TLComponentInstance* progress = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             initialSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
+            InlineHasher(nlStringLowerHash(CUP_PROGRESS_NAME)));
 
         pSlide = progress->GetActiveSlide();
     }
 
-    volatile InlineHasher g7, g6, g5;
-
     {
-        volatile InlineHasher g4, g3, g2, g1, g0;
 
-        g0.m_Hash = 0;
-        h1.m_Hash = 0;
-        g1.m_Hash = 0;
-        h3.m_Hash = 0;
-        g2.m_Hash = 0;
-        h5.m_Hash = 0;
-        g3.m_Hash = 0;
-        h7.m_Hash = 0;
-        g4.m_Hash = 0;
-        g5.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash(CUP_HIGHLIGHT_NAME);
-        g6.m_Hash = hash;
-        g7.m_Hash = hash;
-
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-        highlight = findComp.byRef(
+        highlight = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             pSlide,
-            (InlineHasher&)g7,
-            (InlineHasher&)g5,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash(CUP_HIGHLIGHT_NAME)));
     }
 
     TLSlide* highlightSlide = highlight->GetActiveSlide();
@@ -2554,39 +2234,10 @@ void CupHubScene::UpdateProgressIndicator()
 
     if (numRounds == 5 || numRounds == 7 || numRounds == 10 || numRounds == 14)
     {
-        volatile InlineHasher g7, g6;
-        volatile InlineHasher g4, g3, g2, g1, g0;
 
-        g0.m_Hash = 0;
-        h1.m_Hash = 0;
-        g1.m_Hash = 0;
-        h3.m_Hash = 0;
-        g2.m_Hash = 0;
-        h5.m_Hash = 0;
-        g3.m_Hash = 0;
-        h7.m_Hash = 0;
-        g4.m_Hash = 0;
-        g5.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("progress_joiner");
-        g6.m_Hash = hash;
-        g7.m_Hash = hash;
-
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-        TLComponentInstance* joiner = findComp.byRef(
+        TLComponentInstance* joiner = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             pSlide,
-            (InlineHasher&)g7,
-            (InlineHasher&)g5,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash("progress_joiner")));
 
         switch (numRounds)
         {
@@ -2727,39 +2378,10 @@ void CupHubScene::UpdateProgressIndicator()
 
     for (int i = 0; i < 16; i++)
     {
-        volatile InlineHasher g7, g6;
-        volatile InlineHasher g4, g3, g2, g1, g0;
 
-        g0.m_Hash = 0;
-        h1.m_Hash = 0;
-        g1.m_Hash = 0;
-        h3.m_Hash = 0;
-        g2.m_Hash = 0;
-        h5.m_Hash = 0;
-        g3.m_Hash = 0;
-        h7.m_Hash = 0;
-        g4.m_Hash = 0;
-        g5.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash(PROGRESS_IMAGE_NAMES[i]);
-        g6.m_Hash = hash;
-        g7.m_Hash = hash;
-
-        union
-        {
-            FindImageByValue byValue;
-            FindImageByRef byRef;
-        } findImage;
-
-        findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
-        nodeImage = findImage.byRef(
+        nodeImage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             pSlide,
-            (InlineHasher&)g7,
-            (InlineHasher&)g5,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash(PROGRESS_IMAGE_NAMES[i])));
 
         if (displayRounds[i] != -10)
         {
@@ -2820,10 +2442,6 @@ static inline unsigned char IsUserRow(eTeamID teamInRow)
  */
 void CupHubScene::ColourUserRow()
 {
-    typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
     struct PointerState
     {
@@ -2844,79 +2462,23 @@ void CupHubScene::ColourUserRow()
 
     for (row = 0; row < numTeams; row++)
     {
-        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("ranks");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hB.m_Hash = hash;
-        hA.m_Hash = hash;
 
         TLComponentInstance* pComp;
         {
-            union
-            {
-                FindCompByValue byValue;
-                FindCompByRef byRef;
-            } findComp;
 
-            findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-            pComp = findComp.byRef(
+            pComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
                 state.pres->m_currentSlide,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
+                InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
+                InlineHasher(nlStringLowerHash("ranks")));
         }
 
         TLSlide* pSlide = pComp->GetActiveSlide();
 
-        volatile InlineHasher g7, g6, g5, g4, g3, g2, g1, g0;
-
-        g0.m_Hash = 0;
-        h1.m_Hash = 0;
-        g1.m_Hash = 0;
-        h3.m_Hash = 0;
-        g2.m_Hash = 0;
-        h5.m_Hash = 0;
-        g3.m_Hash = 0;
-        h7.m_Hash = 0;
-        g4.m_Hash = 0;
-        g5.m_Hash = 0;
-
-        hash = nlStringLowerHash(*state.row);
-        g6.m_Hash = hash;
-        g7.m_Hash = hash;
-
         {
-            union
-            {
-                FindTextByValue byValue;
-                FindTextByRef byRef;
-            } findText;
 
-            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            pTextInstance = findText.byRef(
+            pTextInstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
                 pSlide,
-                (InlineHasher&)g7,
-                (InlineHasher&)g5,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
+                InlineHasher(nlStringLowerHash(*state.row)));
         }
 
         if (row < numTeams)
@@ -2939,46 +2501,13 @@ void CupHubScene::ColourUserRow()
  */
 void CupHubScene::HandleButtonComponent()
 {
-    typedef TLComponentInstance* (*FindByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    union
-    {
-        FindByValue byValue;
-        FindByRef byRef;
-    } findComp;
-
-    findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
 
     FEPresentation* pres = m_pFEPresentation;
 
-    volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-
-    unsigned long buttonHash = nlStringLowerHash("buttons");
-    h8.m_Hash = buttonHash;
-    h9.m_Hash = buttonHash;
-
-    unsigned long layerHash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-    hB.m_Hash = layerHash;
-    hA.m_Hash = layerHash;
-
-    TLComponentInstance* inst = findComp.byRef(
+    TLComponentInstance* inst = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         pres->m_currentSlide,
-        (InlineHasher&)hB,
-        (InlineHasher&)h9,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
+        InlineHasher(nlStringLowerHash("buttons")));
 
     mButtons.mButtonInstance = inst;
     inst->m_bVisible = false;
@@ -3114,10 +2643,6 @@ void CupHubScene::SetRoundColours(eHubColour* coloursArray, int sizeOfArray)
 #pragma dont_inline on
 void CupHubScene::UpdateRoundMessage(bool hideMessage)
 {
-    typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
     typedef BasicString<char, Detail::TempStringAllocator> NarrowString;
 
     extern const char* CUP_PROGRESS_NAME;
@@ -3239,45 +2764,13 @@ void CupHubScene::UpdateRoundMessage(bool hideMessage)
  */
 void CupHubScene::LoadCaptainImage()
 {
-    typedef TLImageInstance* (*FindImageByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLImageInstance* (*FindImageByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-    h0.m_Hash = 0;
-    h2.m_Hash = 0;
-    h4.m_Hash = 0;
-    h6.m_Hash = 0;
 
     GameInfoManager* gameInfoMgr = *(GameInfoManager* volatile*)&nlSingleton<GameInfoManager>::s_pInstance;
 
-    h1.m_Hash = 0;
-    h3.m_Hash = 0;
-    h5.m_Hash = 0;
-    h7.m_Hash = 0;
-
-    unsigned long imageHash = nlStringLowerHash("WALUIGI_L");
-    h8.m_Hash = imageHash;
-    h9.m_Hash = imageHash;
-
-    unsigned long layerHash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-    hB.m_Hash = layerHash;
-    hA.m_Hash = layerHash;
-
-    union
-    {
-        FindImageByValue byValue;
-        FindImageByRef byRef;
-    } findImage;
-    findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
-    TLImageInstance* imageInst = findImage.byRef(
+    TLImageInstance* imageInst = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,
-        (InlineHasher&)hB,
-        (InlineHasher&)h9,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
+        InlineHasher(nlStringLowerHash("WALUIGI_L")));
 
     eTeamID teamId;
     if (gameInfoMgr->IsInCupMode() || gameInfoMgr->GetNumHumanTeams() == 1)

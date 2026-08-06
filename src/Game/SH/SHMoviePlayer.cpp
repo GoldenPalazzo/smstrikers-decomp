@@ -85,18 +85,6 @@ void MoviePlayerScene::SetMovieDetails(const char* filename, bool withsound, boo
  */
 void MoviePlayerScene::Update(float fDeltaT)
 {
-    typedef TLImageInstance* (*FindImageByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLImageInstance* (*FindImageByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    union
-    {
-        FindImageByValue byValue;
-        FindImageByRef byRef;
-    } findImage;
-
-    volatile InlineHasher hB, hA;
-    volatile InlineHasher h9, h8;
-    volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
 
     BaseSceneHandler::Update(fDeltaT);
 
@@ -176,33 +164,11 @@ void MoviePlayerScene::Update(float fDeltaT)
 
     if (mSwappedTexture == false)
     {
-        findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
 
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        u32 hash = nlStringLowerHash("movie");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hB.m_Hash = hash;
-        hA.m_Hash = hash;
-
-        mMovieInstance = findImage.byRef(
+        mMovieInstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             m_pFEPresentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("movie")));
 
         u32 movieHandle = glGetTexture("movie");
         mMovieInstance->m_pTextureResource->m_glTextureHandle = movieHandle;
@@ -274,48 +240,13 @@ void MoviePlayerScene::OverrideMovieDimensions()
  */
 void LessonMoviePlayerScene::SceneCreated()
 {
-    typedef TLComponentInstance* (*FindComponentByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindComponentByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    union
-    {
-        FindComponentByValue byValue;
-        FindComponentByRef byRef;
-    } findComponent;
-
-    volatile InlineHasher hB, hA;
-    volatile InlineHasher h9, h8;
-    volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
-
-    findComponent.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
 
     OverrideMovieDimensions();
 
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-
-    u32 hash = nlStringLowerHash("buttons");
-    h8.m_Hash = hash;
-    h9.m_Hash = hash;
-
-    hash = nlStringLowerHash("Layer");
-    hB.m_Hash = hash;
-    hA.m_Hash = hash;
-
-    mButtonComponent.mButtonInstance = findComponent.byRef(
+    mButtonComponent.mButtonInstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,
-        (InlineHasher&)hB,
-        (InlineHasher&)h9,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("buttons")));
 
     mButtonComponent.SetState(ButtonComponent::BS_B_ONLY);
 }
