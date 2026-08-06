@@ -21,10 +21,18 @@
 #include "NL/nlLocalization.h"
 #include "NL/nlString.h"
 
+template <>
+NLString LexicalCast<NLString, int>(const int& value);
+template <>
+WideBasicString LexicalCast<WideBasicString, const unsigned short*>(
+    const unsigned short* const& value);
+
 namespace SingleHighlite
 {
-static const char* SLIDE_IN = "in";
-static const char* SLIDE_OUT = "out";
+static char SLIDE_IN_TEXT[] = "in";
+static char SLIDE_OUT_TEXT[] = "out";
+static const char* SLIDE_IN = SLIDE_IN_TEXT;
+static const char* SLIDE_OUT = SLIDE_OUT_TEXT;
 } // namespace SingleHighlite
 
 static char* TEXT_NAMES[] = { "PLAYER", "PLAYER2", "PLAYER3", "PLAYER4", "PLAYER5" };
@@ -122,16 +130,16 @@ void BraggingRightsOverlay::SceneCreated()
     mTicker = new (nlMalloc(sizeof(FEScrollText), 8, false))
         FEScrollText(scrollText, 0, screenInfo->ScreenWidth + 50);
 
-    char menuname[64];
+    char menuName[64];
 
     for (int i = 0; i < 5; i++)
     {
-        nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
+        nlSNPrintf(menuName, 64, "MENU ITEM%d", i + 1);
 
         TLComponentInstance* instance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             m_pFEPresentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(menuname)));
+            InlineHasher(nlStringLowerHash(menuName)));
 
         instance->SetActiveSlide((i == 0) ? SingleHighlite::SLIDE_IN : SingleHighlite::SLIDE_OUT);
 
@@ -175,8 +183,8 @@ void BraggingRightsOverlay::IngameSceneCreated()
     PlayerStats userStats[4];
     for (int i = 0; i < 4; i++)
     {
-        PlayerStats temp = nlSingleton<StatsTracker>::s_pInstance->mCumulativeUserStats[i];
-        userStats[i] = temp;
+        PlayerStats playerStats = nlSingleton<StatsTracker>::s_pInstance->mCumulativeUserStats[i];
+        userStats[i] = playerStats;
     }
 
     int highestTieBreaker[5];
@@ -255,14 +263,14 @@ void BraggingRightsOverlay::IngameSceneCreated()
 
             nlColour colour;
             const unsigned char* padColour = PAD_COLOURS[mAwardWinners[award]];
-            unsigned char colour2 = padColour[2];
-            unsigned char colour1 = padColour[1];
-            unsigned char colour0 = padColour[0];
+            unsigned char blue = padColour[2];
+            unsigned char green = padColour[1];
+            unsigned char red = padColour[0];
 
             colour.c[3] = 0xFF;
-            colour.c[1] = colour1;
-            colour.c[0] = colour0;
-            colour.c[2] = colour2;
+            colour.c[1] = green;
+            colour.c[0] = red;
+            colour.c[2] = blue;
 
             pText->SetAssetColour(colour);
         }
@@ -282,19 +290,16 @@ void BraggingRightsOverlay::IngameSceneCreated()
  */
 void BraggingRightsOverlay::TournamentSceneCreated()
 {
-    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
-    GameInfoManager* info = nlSingleton<GameInfoManager>::s_pInstance;
     PlayerStats stats[8];
-    PlayerStats* statsBase = stats;
     TLTextInstance* pText;
     int highestTieBreaker[5];
     int i;
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+    GameInfoManager* info = nlSingleton<GameInfoManager>::Instance();
 
-    PlayerStats* writeStats = statsBase;
     for (i = 0; i < (int)info->GetNumPlayingTeams(); i++)
     {
-        *writeStats = info->GetTeamStatsByIndex((unsigned short)i).mPlayerTotalStats;
-        writeStats++;
+        stats[i] = info->GetTeamStatsByIndex((unsigned short)i).mPlayerTotalStats;
     }
 
     for (int award = 0; award < 5; award++)
@@ -302,7 +307,6 @@ void BraggingRightsOverlay::TournamentSceneCreated()
         mHighestStats[award] = -1;
         highestTieBreaker[award] = -1;
 
-        PlayerStats* userStats = statsBase;
         int user = 0;
         int mainStat;
         int tieBreaker;
@@ -316,7 +320,7 @@ void BraggingRightsOverlay::TournamentSceneCreated()
                 {
                 case 0:
                 {
-                    unsigned short shotsOnGoal = userStats->mNumShotsOnGoal;
+                    unsigned short shotsOnGoal = stats[user].mNumShotsOnGoal;
                     mainStat = shotsOnGoal;
                     if (shotsOnGoal == 0)
                     {
@@ -324,32 +328,33 @@ void BraggingRightsOverlay::TournamentSceneCreated()
                     }
                     else
                     {
-                        tieBreaker = (int)(((float)userStats->mNumGoalsFor / (float)shotsOnGoal) * 100.0f);
+                        tieBreaker = (int)(((float)stats[user].mNumGoalsFor / (float)shotsOnGoal) * 100.0f);
                     }
                     break;
                 }
 
                 case 1:
-                    mainStat = userStats->mNumHitsMade;
-                    tieBreaker = userStats->mNumFouls;
+                    mainStat = stats[user].mNumHitsMade;
+                    tieBreaker = stats[user].mNumFouls;
                     break;
 
                 case 2:
                 {
-                    unsigned short steals = userStats->mNumSteals;
+                    unsigned short steals = stats[user].mNumSteals;
+                    unsigned short passesIntercepted = stats[user].mNumPassesIntercepted;
                     tieBreaker = steals;
-                    mainStat = userStats->mNumPassesIntercepted + steals;
+                    mainStat = passesIntercepted + steals;
                     break;
                 }
 
                 case 3:
-                    mainStat = userStats->mNumPowerupsUsed;
-                    tieBreaker = userStats->mNumPowerupsHit;
+                    mainStat = stats[user].mNumPowerupsUsed;
+                    tieBreaker = stats[user].mNumPowerupsHit;
                     break;
 
                 case 4:
-                    mainStat = userStats->mNumPerfectPasses;
-                    tieBreaker = userStats->mNumPassesReceived;
+                    mainStat = stats[user].mNumPerfectPasses;
+                    tieBreaker = stats[user].mNumPassesReceived;
                     break;
                 }
 
@@ -362,7 +367,6 @@ void BraggingRightsOverlay::TournamentSceneCreated()
                 }
             }
 
-            userStats++;
             user++;
         }
 
@@ -588,10 +592,10 @@ void BraggingRightsScene::SceneCreated()
 
     for (i = 0; i < info->GetNumPlayingTeams(); i++)
     {
-        TeamStats tempStats = info->GetTeamStatsByIndex((unsigned short)i);
-        if (tempStats.mTeamIndex == info->GetUserSelectedCupTeam())
+        TeamStats teamStats = info->GetTeamStatsByIndex((unsigned short)i);
+        if (teamStats.mTeamIndex == info->GetUserSelectedCupTeam())
         {
-            userStats = tempStats;
+            userStats = teamStats;
             break;
         }
     }
@@ -700,9 +704,9 @@ void BraggingRightsScene::SceneCreated()
     {
         if (info->GetTeamStatsByIndex((unsigned short)i).mTeamIndex == info->GetUserSelectedCupTeam())
         {
-            TeamStats userTeam = info->GetTeamStatsByIndex((unsigned short)i);
-            wins = userTeam.mNumWins;
-            losses = userTeam.mNumLosses + userTeam.mNumOTLosses;
+            TeamStats selectedTeamStats = info->GetTeamStatsByIndex((unsigned short)i);
+            wins = selectedTeamStats.mNumWins;
+            losses = selectedTeamStats.mNumLosses + selectedTeamStats.mNumOTLosses;
             break;
         }
     }
@@ -734,14 +738,14 @@ void BraggingRightsScene::SceneCreated()
         InlineHasher(nlStringLowerHash("Win_Loss_Record")));
     pText->SetString(mRatioBuffer);
 
-    TLComponentInstance* pTemp = FEFinder<TLComponentInstance, 4>::Find(
+    TLComponentInstance* placementComponent = FEFinder<TLComponentInstance, 4>::Find(
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("Placement")));
 
     pText = FEFinder<TLTextInstance, 3>::Find(
-        pTemp->GetActiveSlide(),
+        placementComponent->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("Placement")));
 
     if (mUserPlace == -2)
