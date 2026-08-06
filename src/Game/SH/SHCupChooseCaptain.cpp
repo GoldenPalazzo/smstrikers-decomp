@@ -1149,21 +1149,19 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
 
 /**
  * Offset/Address/Size: 0x15C | 0x800DD028 | size: 0x1D4
- * TODO: 98.85% match - remaining register mismatch is in selected sidekick,
- * numPlayingTeams/slot, and lineup/sklineup traversal registers.
  */
 void CupChooseCaptainSceneV2::CreateLineup()
 {
-    eSidekickID chosenSidekick;
-    GameInfoManager* const pGameInfo = nlSingleton<GameInfoManager>::s_pInstance;
-    int numPlayingTeams;
     eTeamID chosenCaptain;
+    GameInfoManager* pGameInfo;
+    eSidekickID chosenSidekick;
+    int numPlayingTeams;
     u32 slot;
 
     chosenCaptain = mCurrentCaptain;
     chosenSidekick = mCurrentSK;
 
-    numPlayingTeams = pGameInfo->GetNumPlayingTeams();
+    numPlayingTeams = (pGameInfo = nlSingleton<GameInfoManager>::Instance())->GetNumPlayingTeams();
     slot = nlRandom((u32)numPlayingTeams, &nlDefaultSeed);
 
     eTeamID lineup[8];
@@ -1181,7 +1179,7 @@ void CupChooseCaptainSceneV2::CreateLineup()
 
     for (i = 0; i < numPlayingTeams; i++)
     {
-        if (slot != (u32)i)
+        if ((u32)i != slot)
         {
             eTeamID teamChoice;
             u8 notAlreadyChosen;
