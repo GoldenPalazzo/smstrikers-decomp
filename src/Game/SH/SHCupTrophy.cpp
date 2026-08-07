@@ -1,3 +1,10 @@
+// LOAD-BEARING INCLUDE ORDER: nlFormat.h must be included FIRST, ahead of
+// SHCupTrophy.h. It is not needed here to compile -- it is what puts the
+// nlLexicalCast.h and nlFormat.h linkonce groups ahead of nlFunction.h's, which
+// is retail's group order. Moving it into sorted position still COMPILES but
+// silently breaks the DOL (this TU is Matching). Do not let an include sort or
+// IWYU pass move it.
+#include "NL/nlFormat.h"
 #include "Game/SH/SHCupTrophy.h"
 
 #include "Game/GameSceneManager.h"
@@ -8,11 +15,17 @@
 #include "Game/FE/tlComponentInstance.h"
 
 #include "NL/nlAlgorithm.h"
-#include "NL/nlFormat.h"
 #include "NL/nlFunction.h"
 #include "NL/nlLocalization.h"
 #include "NL/nlMemory.h"
 #include "NL/nlString.h"
+
+// Declared, never defined: retail references this specialization instead of
+// emitting it (SHLoading.o owns the weak definition in both trees).
+template <>
+WideBasicString Format<WideBasicString, unsigned short[16]>(
+    const WideBasicString& string, const unsigned short (&t0)[16]);
+
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800CDAC8 | size: 0x38
@@ -212,10 +225,6 @@ CupTrophyScene::~CupTrophyScene()
     delete mAsyncTrophy;
 }
 
-static const char* CUP_TROPHY_TEXT_NAME = "CUP TITLE";
-static const char* CUP_TROPHY_IMAGE_NAME = "Trophy";
-static const char* CUP_TROPHY_TOTAL_NAME = "TOTAL CUPS";
-
 static const char* TROPHY_TEXTURE_FILENAMES[13] = {
     "fe/trophies/cups_mushroom",
     "fe/trophies/cups_flower",
@@ -227,12 +236,15 @@ static const char* TROPHY_TEXTURE_FILENAMES[13] = {
     "fe/trophies/cups_super_bowser",
     "fe/trophies/cups_veteran",
     "fe/trophies/cups_sniper",
-    "fe/trophies/cups_striker",
+    "fe/trophies/cups_super_striker",
     "fe/trophies/cups_super_team",
     "fe/trophies/cups_lakitu",
 };
 
-static const nlColour TROPHY_BLACK_CUP = { 0x00, 0x00, 0x00, 0xFF };
+static const char* CUP_TROPHY_TEXT_NAME = "CUP TITLE";
+static const char* CUP_TROPHY_IMAGE_NAME = "Trophy";
+static const char* CUP_FIRST_TEXT_NAME_LEFT = "FIRST WON TIME";
+static const char* CUP_FIRST_TEXT_NAME_RIGHT = "FIRST WON TIME2";
 
 static const char* TROPHY_RECORD_ROW_NAMES[3] = {
     "THE HISTORY",
@@ -242,6 +254,7 @@ static const char* TROPHY_RECORD_ROW_NAMES[3] = {
 
 static const nlColour SPOILS_COLOUR_HIGHLIGHT = { 0xFE, 0xEE, 0x00, 0xFF };
 static const nlColour SPOILS_COLOUR_NORMAL = { 0xFF, 0xFF, 0xFF, 0xFF };
+static const nlColour TROPHY_BLACK_CUP = { 0x00, 0x00, 0x00, 0xFF };
 
 extern nlLocalization* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
@@ -622,15 +635,12 @@ struct SpoilNumLossesView
     unsigned short mNumLosses;
 };
 
-static const char* CUP_FIRST_TEXT_NAME_LEFT = "FIRST WON TIME";
-
 /**
  * Offset/Address/Size: 0x1524 | 0x800CABD8 | size: 0x3F8
- * TODO: 99.11% match - remaining r29/r30/r31 roles differ in BasicString and localization temporary paths
  */
 void CupTrophyScene::SetWinRecord(Spoil& spoil)
 {
-    FEPresentation* pres = m_pFEPresentation;
+    FEPresentation* pres = GetPresentation();
     BasicString<char, Detail::TempStringAllocator> winString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(spoil.mNumWins);
     unsigned short winBuf[16];
     nlStrToWcs(winString.c_str(), winBuf, 16);
@@ -648,17 +658,12 @@ void CupTrophyScene::SetWinRecord(Spoil& spoil)
     text->SetString(mFirstWinBuffer);
 }
 
-static const char* CUP_FIRST_TEXT_NAME_RIGHT = "FIRST WON TIME2";
-
 /**
  * Offset/Address/Size: 0x112C | 0x800CA7E0 | size: 0x3F8
- * 99.25% match - residual is the same r29/r30 callee-saved coloring tie as SetWinRecord
- * (pres web wants r30, the BasicString-release temp wants r29); a same-lifetime allocator
- * tiebreak not reachable by any source/header shape (decomp2, 27 agents).
  */
 void CupTrophyScene::SetLossRecord(Spoil& spoil)
 {
-    FEPresentation* pres = m_pFEPresentation;
+    FEPresentation* pres = GetPresentation();
     BasicString<char, Detail::TempStringAllocator> lossString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(((SpoilNumLossesView&)spoil).mNumLosses);
     unsigned short lossBuf[16];
     nlStrToWcs(lossString.c_str(), lossBuf, 16);
@@ -780,7 +785,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
  */
 void CupTrophyScene::ChangeSlides()
 {
-    FEPresentation* pres = m_pFEPresentation;
+    FEPresentation* pres = GetPresentation();
     float starTime;
 
     if (mFirstSlideChange)

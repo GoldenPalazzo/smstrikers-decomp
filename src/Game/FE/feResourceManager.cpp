@@ -707,12 +707,37 @@ FEResourceManager::~FEResourceManager()
 /**
  * Offset/Address/Size: 0xD48 | 0x8020C888 | size: 0x1C
  *
- * Semantically this is `FEResourceManager::FEResourceManager() : nlTask() { }`.
- * Written as an asm function because MWCC r0-forwards the first (nlTask)
- * vtable pointer (`addi r0, r5, ...` / `stw r0`) while the original keeps it
- * in r5 -- a register-allocation tiebreak that proved unreachable from C++
- * source shape (100+ source/pragma/compiler variants probed). These 7
- * instructions are the only bytes in the whole TU that would not match.
+ * TODO(banned-asm): REMOVE THIS. A hand-written `asm` function body is banned
+ * match-only scaffolding -- it does not reconstruct retail source, it just
+ * re-types the target bytes. This is the ONLY such body in game code
+ * (the others, in Dolphin/os, PowerPC_EABI_Support/Runtime and src/ode, are
+ * legitimate system code). Retained only until it is addressed as its own task.
+ *
+ * The justification below is FALSIFIED -- left in place per the evidence policy
+ * rather than deleted, so nobody re-derives it:
+ *
+ *   [FALSIFIED 2026-08-07] "Written as an asm function because MWCC r0-forwards
+ *   the first (nlTask) vtable pointer (`addi r0, r5, ...` / `stw r0`) while the
+ *   original keeps it in r5 -- a register-allocation tiebreak that proved
+ *   unreachable from C++ source shape (100+ source/pragma/compiler variants
+ *   probed). These 7 instructions are the only bytes in the whole TU that would
+ *   not match."
+ *
+ * MEASURED REFUTATION: replacing this entire block (the extern "C" raw-vtable
+ * declarations and the asm body) with the ordinary
+ *
+ *     FEResourceManager::FEResourceManager()
+ *     {
+ *     }
+ *
+ * compiles to __ct__17FEResourceManagerFv at 0 real rows and exactly 28 bytes
+ * (0x1C), with all 32 symbols of the TU at 0 rows and no regression. The claim
+ * that no C++ source shape reaches these bytes is simply not true; the plain
+ * default constructor reaches them on the first try.
+ *
+ * Reproduce:
+ *   SMS_ROOT=<worktree> python3 <tools>/gradetu.py Game/FE/feResourceManager \
+ *       --overlay <dir containing the edited feResourceManager.cpp>
  */
 extern "C"
 {

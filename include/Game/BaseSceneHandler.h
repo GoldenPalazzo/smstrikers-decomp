@@ -42,6 +42,8 @@ public:
     virtual void SceneCreated() { };
     virtual void SetVisible(bool visible) { m_bVisible = visible; };
 
+    FEPresentation* GetPresentation() { return m_pFEPresentation; };
+
     /* 0x04 */ unsigned long m_uHashID;
     /* 0x08 */ bool m_bVisible; // is it 0x0C?
     /* 0x0C */ BaseScreenHandler* m_pScreenHandlerList;

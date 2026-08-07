@@ -16,6 +16,47 @@
 #include "NL/platvmath.h"
 #include "NL/gl/gl.h"
 
+/*
+ * TODO(scaffolding): this TU still carries match-only scaffolding. It is
+ * RETAINED DELIBERATELY for now -- revisit once the general code structure of
+ * the FERender inline call tree is understood, because several of these
+ * constructs are load-bearing for the current (hand-flattened) function
+ * shapes and removing them piecemeal measurably regresses the match.
+ *
+ * Inventory (counts, not line numbers, so this survives edits):
+ *
+ *  1. feKeepU(x) -- an identity helper that just returns its argument.
+ *     Explicitly banned. 3 call sites.
+ *  2. ConvertFloatColourToColour_ -- defined, never called. Dead duplicate of
+ *     ConvertFloatColourToColour, which is itself a TU-local duplicate of the
+ *     shared ConvertColour used elsewhere in this file.
+ *  3. nlFloatColour copied through u32* punning -- 7 sites, 28 lines, in
+ *     RenderComponentInstance, RenderSlide and RenderTimeLineAsset.
+ *     COUNTER-EVIDENCE: dwarf.txt attests a real "nlFloatColour colour" local
+ *     (RenderSlide r1+0x38, RenderTimeLineAsset r1+0x5C), so retail used the
+ *     real type here and the pun is not retail source.
+ *  4. #pragma inline_depth(0) bracketing a single statement -- 10 pairs. These
+ *     are codegen forcers, not plausible retail source. (The inline_depth(255)
+ *     pair near the bottom of the file is a separate case.)
+ *  5. Duplicate-reference locals: rotZ/rotY bound to the SAME GetRotation()
+ *     call, and scaleZ/scaleY to the same GetScale() call, in 5 functions.
+ *     NOTE: a SINGLE such reference can be authentic -- dwarf.txt names
+ *     "const feVector3& tlPosition" in PushTransformMatrix. Only the
+ *     duplicated pairs are suspect.
+ *  6. [WITHDRAWN -- measured AUTHENTIC, do not "fix" it] The apparently
+ *     duplicated "if (activeSlide == 0) return;" in RenderComponentInstance is
+ *     NOT dead code. Retail emits two consecutive `beq` with no intervening
+ *     `cmp` (RenderComponentInstance instructions 15 and 16), which is exactly
+ *     what the doubled test produces -- it is an inlined callee's own null
+ *     check surviving next to the caller's. Deleting it measures WORSE
+ *     (8 -> 9 real rows, -4 bytes). Left here as a warning: it looks like
+ *     scaffolding and is not.
+ *
+ * The project scanner (skills/audit-decomp-scaffolding/scripts/scan_scaffolding.py)
+ * reports 0 findings for this file -- none of the patterns above are in its
+ * pattern set. Do not read a clean scan here as an all-clear.
+ */
+
 static inline unsigned long feKeepU(unsigned long x)
 {
     return x;
@@ -54,6 +95,7 @@ inline void GLMeshWriterCore::Position(const nlVector3& v)
 /**
  * Offset/Address/Size: 0x0 | 0x8020A288 | size: 0x3BC
  */
+// TODO(scaffolding): see the inventory at the top of this file.
 unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInstance)
 {
     unsigned long textureHandle;
@@ -190,6 +232,7 @@ unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInsta
 /**
  * Offset/Address/Size: 0x3BC | 0x8020A644 | size: 0xD0
  */
+// TODO(scaffolding): see the inventory at the top of this file.
 void FERender::RenderTextInstance(TLTextInstance* textInstance)
 {
     nlMatrix4 combinedMatrix;
@@ -255,6 +298,7 @@ void FERender::RenderPresentation(const FEPresentation* presentation)
  * Offset/Address/Size: 0x528 | 0x8020A7B0 | size: 0x42C
  * TODO: 99.81% match - first colour-loop base/index registers differ.
  */
+// TODO(scaffolding): see the inventory at the top of this file.
 void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
 {
     TLInstance* nextInstance;
@@ -461,6 +505,7 @@ void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
  * TODO: 99.81% match - first colour-loop pointer/index registers differ.
  * No opcode or control-flow diffs.
  */
+// TODO(scaffolding): see the inventory at the top of this file.
 void FERender::RenderSlide(const TLSlide* slide)
 {
     TLInstance* nextChild;
@@ -658,6 +703,7 @@ void FERender::RenderSlide(const TLSlide* slide)
  * registers still differ from target. Stack offsets are shifted accordingly.
  * No opcode or control-flow diffs.
  */
+// TODO(scaffolding): see the inventory at the top of this file.
 void FERender::RenderTimeLineAsset(TLInstance* pTLInstance, float fCurrentTime)
 {
     if (!pTLInstance->IsValidAtTime(fCurrentTime))
@@ -1055,6 +1101,7 @@ void FERender::PopTransformMatrix()
 /**
  * Offset/Address/Size: 0x155C | 0x8020B7E4 | size: 0xF4
  */
+// TODO(scaffolding): see the inventory at the top of this file.
 void FERender::PushTransformMatrix(const TLInstance* instance)
 {
     nlMatrix4 combinedMatrix;
