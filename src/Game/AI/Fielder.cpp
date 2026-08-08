@@ -6609,7 +6609,7 @@ bool cFielder::DoAILooseBallActionSelection()
 
     eFielderDesireState action;
     cPlayer* pTarget;
-    register bool bDidSomething = false;
+    bool bDidSomething = false;
 
     FuzzyVariant looseBallAction = Fuzzy::GetBestLooseBallAction(this);
 
