@@ -245,7 +245,8 @@ public:
         return this->mTag != EMPTY;
     }
 
-    Function& operator=(const Function& other)
+    template <typename Other>
+    Function& operator=(const Other& other)
     {
         Base::operator=(other);
         return *this;
@@ -270,7 +271,7 @@ public:
     {
     }
 
-    Function(ReturnType (*function)(NLF_PARAMETER_TYPES))
+    Function(ReturnType(*function)(NLF_PARAMETER_TYPES))
         : Base(function)
     {
     }

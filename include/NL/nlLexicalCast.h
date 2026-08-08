@@ -236,6 +236,20 @@ inline To LexicalCastImpl<To, bool>::Do(bool t)
 } // namespace Detail
 
 template <>
+inline WideBasicString LexicalCast<WideBasicString, WideBasicString>(
+    const WideBasicString& from)
+{
+    return Detail::LexicalCastImpl<WideBasicString, WideBasicString>::Do(from);
+}
+
+template <>
+inline WideBasicString LexicalCast<WideBasicString, const unsigned short*>(
+    const unsigned short* const& from)
+{
+    return Detail::LexicalCastImpl<WideBasicString, const unsigned short*>::Do(from);
+}
+
+template <>
 const char* LexicalCast<const char*, const char*>(const char* const& value);
 template <>
 const char* LexicalCast<const char*, int>(const int& value);
