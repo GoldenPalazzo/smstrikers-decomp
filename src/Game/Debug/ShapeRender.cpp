@@ -17,7 +17,6 @@ static unsigned char g_bLit;
 
 /**
  * Offset/Address/Size: 0x149C | 0x801FC72C | size: 0x418
- * TODO: 98.84% match - constant and angle temporaries still use different saved registers.
  */
 void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
 {
@@ -26,22 +25,21 @@ void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
     nlVector3* ndst;
     nlVector2* tdst;
     int nRing;
-    float y1;
+    int angle0;
+    int angle1;
+    int angle;
+    int angle90;
     float ring0;
     float ring1;
-    float z0Sq;
-    float z1Sq;
     float z0;
     float z1;
+    int nSegment;
     float x0;
     float y0;
     float x1;
-    float x0Sq;
-    float y0Sq;
-    float x1Sq;
-    float y1Sq;
+    float y1;
+    float lengthSquared;
     float invLen;
-    int nSegment;
 
     prim.vertCount = 0xA0;
     prim.position = (nlVector3*)glResourceAlloc(0x780, GLM_VertexData);
@@ -54,8 +52,6 @@ void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
 
     for (nRing = 0; nRing < 5; nRing++)
     {
-        int angle1;
-        int angle0;
         float fAngle;
 
         fAngle = (float)nRing;
@@ -71,13 +67,8 @@ void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
         ring0 = nlSin((u16)((u16)angle0 + 0x4000));
         ring1 = nlSin((u16)((u16)angle1 + 0x4000));
 
-        z0Sq = z0 * z0;
-        z1Sq = z1 * z1;
-
         for (nSegment = 0; nSegment < 0x10; nSegment++)
         {
-            int angle;
-            int angle90;
             float fSegmentAngle;
 
             fSegmentAngle = (float)nSegment;
@@ -86,19 +77,17 @@ void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
             x0 = 0.5f * (ring0 * nlSin((u16)angle));
 
             angle90 = (u16)angle + 0x4000;
-            y0 = 0.5f * (ring0 * nlSin((u16)(s32)angle90));
+            y0 = 0.5f * (ring0 * nlSin((u16)angle90));
 
-            x1 = ring1 * (0.5f * nlSin((u16)angle));
-            y1 = ring1 * (0.5f * nlSin((u16)(s32)angle90));
-
-            x0Sq = x0 * x0;
-            y0Sq = y0 * y0;
+            x1 = 0.5f * (ring1 * nlSin((u16)angle));
+            y1 = 0.5f * (ring1 * nlSin((u16)angle90));
 
             vNormal.f.x = x0;
             vNormal.f.y = y0;
             vNormal.f.z = z0;
 
-            invLen = nlRecipSqrt(z0Sq + (x0Sq + y0Sq), true);
+            lengthSquared = vNormal.GetLengthSq3D();
+            invLen = nlRecipSqrt(lengthSquared, true);
 
             pdst->f.x = x0;
             nlVec3Scale(vNormal, invLen);
@@ -109,31 +98,25 @@ void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
             tdst->f.x = (float)nSegment / 15.0f;
             tdst->f.y = (float)nRing / 5.0f;
 
-            pdst++;
-            ndst++;
-            tdst++;
-
-            x1Sq = x1 * x1;
-            y1Sq = y1 * y1;
-
             vNormal.f.x = x1;
             vNormal.f.y = y1;
             vNormal.f.z = z1;
 
-            invLen = nlRecipSqrt(z1Sq + (x1Sq + y1Sq), true);
+            lengthSquared = vNormal.GetLengthSq3D();
+            invLen = nlRecipSqrt(lengthSquared, true);
 
-            pdst->f.x = x1;
+            pdst[1].f.x = x1;
             nlVec3Scale(vNormal, invLen);
-            pdst->f.y = y1;
-            pdst->f.z = z1;
-            *ndst = vNormal;
+            pdst[1].f.y = y1;
+            pdst[1].f.z = z1;
+            ndst[1] = vNormal;
 
-            tdst->f.x = (float)nSegment / 15.0f;
-            tdst->f.y = (float)(nRing + 1) / 5.0f;
+            tdst[1].f.x = (float)nSegment / 15.0f;
+            tdst[1].f.y = (float)(nRing + 1) / 5.0f;
 
-            pdst++;
-            ndst++;
-            tdst++;
+            pdst += 2;
+            ndst += 2;
+            tdst += 2;
         }
     }
 }
