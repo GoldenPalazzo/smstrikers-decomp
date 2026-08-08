@@ -22,34 +22,6 @@ static MemCard* MemCards[2] = { new (8, false) MemCard(0), new (8, false) MemCar
 MemCard** g_MemCards = MemCards;
 bool MemCard::s_InitDone;
 
-inline void MemCard::SetStatusDone(long Result)
-{
-    if (Result == 0)
-    {
-        m_State = IS_MOUNTED;
-        long Result = InternalWriteFile(m_pFileCB, m_pDataCB, m_pFileCB->TotalHeaderSize, 0, m_CB[8], false);
-        if (Result != 0)
-        {
-            m_State = IS_MOUNTED;
-            m_CardState = CS_MOUNTED;
-        }
-    }
-
-    if (Result != 0)
-    {
-        MemCardFunctor::MCInternalFunctorBase* pFunctor = (MemCardFunctor::MCInternalFunctorBase*)&m_CB[8];
-        unsigned long slot = m_Slot;
-        if (*(long*)pFunctor != 0)
-        {
-            pFunctor->Call(slot, Result);
-        }
-        else
-        {
-            nlPrintf("Trying to call unset MC functor");
-        }
-    }
-}
-
 extern "C" void* memset(void*, int, unsigned long);
 
 /**
@@ -337,11 +309,7 @@ long MemCard::DeleteFile(const char* FileName, const MemCardFunctor& Callback)
 
     if (file != NULL)
     {
-        file->TotalHeaderSize = 0;
-        if (CARDClose(&file->FileInfo) == 0 && file != NULL)
-        {
-            m_OpenFiles.DeleteEntry(file);
-        }
+        CloseFile(file);
     }
 
     m_State = IS_DELETING;
@@ -504,9 +472,7 @@ long MemCard::WriteFileIconData(MemCard::MC_FILE* pFile, void* pData, const MemC
         CARDSetIconSpeed(&stat, i, 0);
     }
 
-    volatile unsigned char* bannerFmt = (volatile unsigned char*)&stat.bannerFormat;
-    unsigned char fmt = *bannerFmt;
-    *bannerFmt = (unsigned char)((fmt & ~CARD_STAT_ANIM_MASK) | pFile->IconCfg.IconAnimType);
+    CARDSetIconAnim(&stat, pFile->IconCfg.IconAnimType);
 
     m_CB[8] = functor;
 
@@ -555,6 +521,194 @@ void MemCard::ICON_CONFIG::GetValidDataInfo(MemCard::ICON_DATA_INFO& DataInfo) c
     }
 
     DataInfo.IconCLUTOffset = DataInfo.IconOffset[IconCount - 1] + ((s32)IconFormat << 10);
+}
+
+void MemCard::MountDone(long result)
+{
+    CARDGetSerialNo(m_Slot, (u64*)&m_SerialID);
+
+    switch (result)
+    {
+    case -6: // CARD_RESULT_BROKEN
+        m_State = IS_CARDCHECK;
+        result = CARDCheckAsync(m_Slot, CardCheckBrokenDoneCB);
+        if (result != 0)
+        {
+            m_State = IS_MOUNTED_ERROR;
+            m_CardState = CS_MOUNTED_ERROR;
+        }
+        break;
+    case 0: // CARD_RESULT_READY
+        m_State = IS_CARDCHECK;
+        CARDFreeBlocks(m_Slot, &m_CardInfo.FreeBytes, &m_CardInfo.FreeFiles);
+        result = CARDCheckAsync(m_Slot, CardCheckDoneCB);
+        if (result != 0)
+        {
+            m_State = IS_MOUNTED_ERROR;
+            m_CardState = CS_MOUNTED_ERROR;
+        }
+        break;
+    case -13: // CARD_RESULT_ENCODING
+        m_State = IS_MOUNTED_ERROR;
+        m_CardState = CS_MOUNTED_ERROR;
+        break;
+    default:
+        m_State = IS_IDLE;
+        m_CardState = CS_IDLE;
+        break;
+    }
+
+    if (result != 0)
+    {
+        m_CB[1].Call(m_Slot, result);
+    }
+}
+
+void MemCard::CardCheckDone(long result)
+{
+    if (result == 0)
+    {
+        m_State = IS_MOUNTED;
+        m_CardState = CS_MOUNTED;
+    }
+    else
+    {
+        m_State = IS_IDLE;
+        m_CardState = CS_IDLE;
+    }
+    m_CB[1].Call(m_Slot, result);
+}
+
+void MemCard::CardCheckBrokenDone(long result)
+{
+    if (result == 0)
+    {
+        CARDFreeBlocks(m_Slot, &m_CardInfo.FreeBytes, &m_CardInfo.FreeFiles);
+    }
+    else
+    {
+        m_State = IS_MOUNTED_ERROR;
+        m_CardState = CS_MOUNTED_ERROR;
+    }
+    if (result == 0)
+    {
+        m_State = IS_MOUNTED;
+        m_CardState = CS_MOUNTED;
+    }
+    else
+    {
+        m_State = IS_IDLE;
+        m_CardState = CS_IDLE;
+    }
+    m_CB[1].Call(m_Slot, result);
+}
+
+void MemCard::FormatDone(long result)
+{
+    if (result == 0L)
+    {
+        CARDFreeBlocks(m_Slot, &m_CardInfo.FreeBytes, &m_CardInfo.FreeFiles);
+        m_State = IS_MOUNTED;
+        m_CardState = CS_MOUNTED;
+    }
+    else
+    {
+        m_State = IS_IDLE;
+        m_CardState = CS_IDLE;
+    }
+    m_CB[4].Call(m_Slot, result);
+}
+
+void MemCard::CreateFileDone(long result)
+{
+    CARDFreeBlocks(m_Slot, &m_CardInfo.FreeBytes, &m_CardInfo.FreeFiles);
+
+    if (result != 0)
+    {
+        MC_FILE* pFile = m_pFileCB;
+        if (pFile != NULL)
+        {
+            m_OpenFiles.DeleteEntry(pFile);
+        }
+        m_pFileCB = NULL;
+    }
+
+    m_State = IS_MOUNTED;
+    m_CardState = CS_MOUNTED;
+    if (CARDProbeEx(m_Slot, &m_CardInfo.CardSize, &m_CardInfo.SectorSize) != 0)
+    {
+        m_State = IS_IDLE;
+        m_CardState = CS_IDLE;
+    }
+    CARDFreeBlocks(m_Slot, &m_CardInfo.FreeBytes, &m_CardInfo.FreeFiles);
+    m_CB[5].Call(m_Slot, result);
+}
+
+void MemCard::DeleteFileDone(long result)
+{
+    CARDFreeBlocks(m_Slot, &m_CardInfo.FreeBytes, &m_CardInfo.FreeFiles);
+    m_State = IS_MOUNTED;
+    m_CardState = CS_MOUNTED;
+    if (CARDProbeEx(m_Slot, &m_CardInfo.CardSize, &m_CardInfo.SectorSize) != 0)
+    {
+        m_State = IS_IDLE;
+        m_CardState = CS_IDLE;
+    }
+    CARDFreeBlocks(m_Slot, &m_CardInfo.FreeBytes, &m_CardInfo.FreeFiles);
+    m_CB[6].Call(m_Slot, result);
+}
+
+void MemCard::ReadFileDone(long result)
+{
+    m_State = IS_MOUNTED;
+    m_CardState = CS_MOUNTED;
+    if (CARDProbeEx(m_Slot, &m_CardInfo.CardSize, &m_CardInfo.SectorSize) != 0)
+    {
+        m_State = IS_IDLE;
+        m_CardState = CS_IDLE;
+    }
+    m_CB[7].Call(m_Slot, result);
+}
+
+void MemCard::WriteFileDone(long result)
+{
+    m_State = IS_MOUNTED;
+    m_CardState = CS_MOUNTED;
+    if (CARDProbeEx(m_Slot, &m_CardInfo.CardSize, &m_CardInfo.SectorSize) != 0)
+    {
+        m_State = IS_IDLE;
+        m_CardState = CS_IDLE;
+    }
+    m_CB[8].Call(m_Slot, result);
+}
+
+void MemCard::SetStatusDone(long Result)
+{
+    if (Result == 0)
+    {
+        m_State = IS_MOUNTED;
+        long Result = InternalWriteFile(m_pFileCB, m_pDataCB, m_pFileCB->TotalHeaderSize, 0, m_CB[8], false);
+        if (Result != 0)
+        {
+            m_State = IS_MOUNTED;
+            m_CardState = CS_MOUNTED;
+        }
+    }
+
+    if (Result != 0)
+    {
+        m_CB[8].Call(m_Slot, Result);
+    }
+}
+
+void MemCard::CardRemoved(long)
+{
+    m_State = IS_IDLE;
+    m_CardState = CS_IDLE;
+    m_LastTransferSize = 0;
+    m_OpenFiles.Clear();
+
+    m_CB[0].Call(m_Slot, -3);
 }
 
 /**

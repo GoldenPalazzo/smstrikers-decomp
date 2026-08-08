@@ -116,6 +116,17 @@ public:
         m_EntryCount = m_EntryCount - 1;
     }
 
+    void Clear()
+    {
+        for (unsigned long i = 0; i < m_EntryCount; i++)
+        {
+            FreeEntry(m_pEntryLookup[i].pEntry);
+        }
+
+        FreeLookup();
+        m_EntryCount = 0;
+    }
+
     /* 0x04 */ EntryLookup<T>* m_pEntryLookup;
     /* 0x08 */ unsigned long m_EntryCount;
     /* 0x0C */ unsigned long m_LookupAllocated;
