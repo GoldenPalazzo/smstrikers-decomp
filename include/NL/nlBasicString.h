@@ -95,7 +95,7 @@ public:
 
         void DecRef() const
         {
-            if (--mRefCount == 0)
+            if (!--mRefCount)
             {
                 delete this;
             }
@@ -167,20 +167,7 @@ public:
         if (mData)
         {
             Data* data = mData;
-            if (--data->mRefCount == 0)
-            {
-                if (data)
-                {
-                    if (data)
-                    {
-                        delete[] data->mData.mData;
-                    }
-                    if (data)
-                    {
-                        nlFree(data);
-                    }
-                }
-            }
+            data->DecRef();
         }
     }
 

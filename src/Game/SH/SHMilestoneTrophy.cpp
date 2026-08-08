@@ -1,3 +1,4 @@
+#include "NL/nlFormat.h"
 #include "Game/SH/SHMilestoneTrophy.h"
 
 #include "Game/FE/FEAudio.h"
@@ -9,99 +10,10 @@
 #include "Game/GameInfo.h"
 #include "Game/GameSceneManager.h"
 #include "NL/nlAlgorithm.h"
-#include "NL/nlFormat.h"
 #include "NL/nlLocalization.h"
 
 typedef BasicString<unsigned short, Detail::TempStringAllocator> WideBasicString;
 typedef BasicString<char, Detail::TempStringAllocator> CharBasicString;
-
-// /**
-//  * Offset/Address/Size: 0x5A8 | 0x800CFB68 | size: 0x15C
-// */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x524 | 0x800CFAE4 | size: 0x84
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x4EC | 0x800CFAAC | size: 0x38
-//  */
-// void FEFinder<TLTextInstance, 3>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x390 | 0x800CF950 | size: 0x15C
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x30C | 0x800CF8CC | size: 0x84
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800CF894 | size: 0x38
-//  */
-// void FEFinder<TLImageInstance, 2>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800CF810 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800CF7D8 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher, InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800CF67C | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800CF5F8 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800CF5C0 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
 
 extern unsigned long GetLOCTrophyName(eTrophyType);
 extern nlLocalization* g_pLocalization;
@@ -132,28 +44,22 @@ static const char* MILESTONE_DESCRIPTION_TEXT_NAME = "THE TOTAL2";
 
 static const nlColour TROPHY_BLACK_MILESTONE = { 0x00, 0x00, 0x00, 0xFF };
 
-#define LOOKUP_LOC(_hash, _out)                                                                                             \
-    do                                                                                                                      \
-    {                                                                                                                       \
-        unsigned long locKey = (_hash);                                                                                     \
-        nlLocalization* _loc = g_pLocalization;                                                                             \
-        if (_loc->m_LookupTable == 0)                                                                                       \
-        {                                                                                                                   \
-            (_out) = LocalizationTableNotFound;                                                                             \
-        }                                                                                                                   \
-        else                                                                                                                \
-        {                                                                                                                   \
-            nlLocalization::StringLookup* _entry = nlBSearch(locKey, _loc->m_LookupTable, (int)_loc->m_pFile->StringCount); \
-            if (_entry != 0)                                                                                                \
-            {                                                                                                               \
-                (_out) = _loc->m_FirstString + _entry->StringOffset;                                                        \
-            }                                                                                                               \
-            else                                                                                                            \
-            {                                                                                                               \
-                (_out) = MissingLocString;                                                                                  \
-            }                                                                                                               \
-        }                                                                                                                   \
-    } while (0)
+static inline const unsigned short* LookupMilestoneTrophyLoc(unsigned long key)
+{
+    nlLocalization* loc = g_pLocalization;
+    if (loc->m_LookupTable == 0)
+    {
+        return LocalizationTableNotFound;
+    }
+
+    nlLocalization::StringLookup* entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+    if (entry != 0)
+    {
+        return loc->m_FirstString + entry->StringOffset;
+    }
+
+    return MissingLocString;
+}
 
 /**
  * Offset/Address/Size: 0x19F4 | 0x800CF4F4 | size: 0xCC
@@ -169,8 +75,8 @@ MilestoneTrophyScene::MilestoneTrophyScene()
 {
     const char* trophyImagePath = "art/fe/TrophiesUI.res";
 
-    AsyncImage* pTrophyImage = new ((AsyncImage*)nlMalloc(0x1C, 0x20, true)) AsyncImage(trophyImagePath, NULL);
-    mAsyncTrophy = pTrophyImage;
+    AsyncImage* trophyImage = new (nlMalloc(0x1C, 0x20, true)) AsyncImage(trophyImagePath, NULL);
+    mAsyncTrophy = trophyImage;
 }
 
 /**
@@ -183,7 +89,6 @@ MilestoneTrophyScene::~MilestoneTrophyScene()
 
 /**
  * Offset/Address/Size: 0x3CC | 0x800CDECC | size: 0x1584
- * TODO: 99.58097% match - 369 argument mismatches and two inserts remain.
  */
 void MilestoneTrophyScene::SceneCreated()
 {
@@ -211,10 +116,7 @@ void MilestoneTrophyScene::SceneCreated()
     mAsyncTrophy->mImageInstance = pTrophyImage;
     pTrophyImage->m_bVisible = true;
 
-    const unsigned short* locString;
-    LOOKUP_LOC(0x3C479468, locString);
-
-    BasicString<unsigned short, Detail::TempStringAllocator> unformatted(locString);
+    BasicString<unsigned short, Detail::TempStringAllocator> unformatted(LookupMilestoneTrophyLoc(0x3C479468));
     BasicString<unsigned short, Detail::TempStringAllocator> stat;
     BasicString<unsigned short, Detail::TempStringAllocator> unlockable;
     BasicString<unsigned short, Detail::TempStringAllocator> description;
@@ -227,11 +129,9 @@ void MilestoneTrophyScene::SceneCreated()
         silverStat = 50;
         goldStat = 100;
 
-        LOOKUP_LOC(0x8A5C9314, locString);
-        stat = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
+        stat = BasicString<unsigned short, Detail::TempStringAllocator>(LookupMilestoneTrophyLoc(0x8A5C9314));
 
-        LOOKUP_LOC(0x759CD858, locString);
-        unlockable = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
+        unlockable = BasicString<unsigned short, Detail::TempStringAllocator>(LookupMilestoneTrophyLoc(0x759CD858));
         break;
 
     case TROPHY_SNIPER_CUP:
@@ -240,11 +140,9 @@ void MilestoneTrophyScene::SceneCreated()
         silverStat = 150;
         goldStat = 300;
 
-        LOOKUP_LOC(0x49772A70, locString);
-        stat = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
+        stat = BasicString<unsigned short, Detail::TempStringAllocator>(LookupMilestoneTrophyLoc(0x49772A70));
 
-        LOOKUP_LOC(0xE3FA84B4, locString);
-        unlockable = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
+        unlockable = BasicString<unsigned short, Detail::TempStringAllocator>(LookupMilestoneTrophyLoc(0xE3FA84B4));
         break;
 
     case TROPHY_STRIKER_CUP:
@@ -253,11 +151,9 @@ void MilestoneTrophyScene::SceneCreated()
         silverStat = 50;
         goldStat = 100;
 
-        LOOKUP_LOC(0x593E7EE3, locString);
-        stat = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
+        stat = BasicString<unsigned short, Detail::TempStringAllocator>(LookupMilestoneTrophyLoc(0x593E7EE3));
 
-        LOOKUP_LOC(0x1D5A2367, locString);
-        unlockable = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
+        unlockable = BasicString<unsigned short, Detail::TempStringAllocator>(LookupMilestoneTrophyLoc(0x1D5A2367));
         break;
 
     case TROPHY_TACTICIAN_CUP:
@@ -266,11 +162,9 @@ void MilestoneTrophyScene::SceneCreated()
         silverStat = 150;
         goldStat = 300;
 
-        LOOKUP_LOC(0x243FB12F, locString);
-        stat = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
+        stat = BasicString<unsigned short, Detail::TempStringAllocator>(LookupMilestoneTrophyLoc(0x243FB12F));
 
-        LOOKUP_LOC(0x1F42DEB3, locString);
-        unlockable = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
+        unlockable = BasicString<unsigned short, Detail::TempStringAllocator>(LookupMilestoneTrophyLoc(0x1F42DEB3));
         break;
 
     case TROPHY_PARAMEDIC_CUP:
@@ -279,11 +173,9 @@ void MilestoneTrophyScene::SceneCreated()
         silverStat = 500;
         goldStat = 1000;
 
-        LOOKUP_LOC(0xD9A2F4C5, locString);
-        stat = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
+        stat = BasicString<unsigned short, Detail::TempStringAllocator>(LookupMilestoneTrophyLoc(0xD9A2F4C5));
 
-        LOOKUP_LOC(0xAB6BFAC9, locString);
-        unlockable = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
+        unlockable = BasicString<unsigned short, Detail::TempStringAllocator>(LookupMilestoneTrophyLoc(0xAB6BFAC9));
         break;
     }
 
@@ -314,8 +206,7 @@ void MilestoneTrophyScene::SceneCreated()
         pTrophyImage->SetAssetColour(TROPHY_BLACK_MILESTONE);
 
         statNeeded = bronzeStat;
-        LOOKUP_LOC(0x138E19E5, locString);
-        unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
+        unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupMilestoneTrophyLoc(0x138E19E5));
     }
     else if (levelReached == MILESTONE_BRONZE)
     {
@@ -325,8 +216,7 @@ void MilestoneTrophyScene::SceneCreated()
         pTrophyImage->SetAssetColour(colour);
 
         statNeeded = silverStat;
-        LOOKUP_LOC(0x3A916A4A, locString);
-        unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
+        unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupMilestoneTrophyLoc(0x3A916A4A));
     }
     else if (levelReached == MILESTONE_SILVER)
     {
@@ -336,8 +226,7 @@ void MilestoneTrophyScene::SceneCreated()
         pTrophyImage->SetAssetColour(colour);
 
         statNeeded = goldStat;
-        LOOKUP_LOC(0x0AD790FB, locString);
-        unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
+        unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupMilestoneTrophyLoc(0x0AD790FB));
     }
     else
     {
@@ -354,8 +243,7 @@ void MilestoneTrophyScene::SceneCreated()
         unsigned short accumulatedWideString[128];
         nlStrToWcs(accumulatedString.c_str(), accumulatedWideString, 128);
 
-        LOOKUP_LOC(0x59B161FF, locString);
-        unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
+        unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupMilestoneTrophyLoc(0x59B161FF));
 
         formatted = Format(unformatted, accumulatedWideString);
 
@@ -367,8 +255,7 @@ void MilestoneTrophyScene::SceneCreated()
             InlineHasher(nlStringLowerHash(MILESTONE_STAT_TEXT_NAME)));
         pText->SetString(mStatBuffer);
 
-        LOOKUP_LOC(0xF8710578, locString);
-        description = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
+        description = BasicString<unsigned short, Detail::TempStringAllocator>(LookupMilestoneTrophyLoc(0xF8710578));
 
         formatted = Format(description, unlockable);
     }
@@ -403,8 +290,7 @@ void MilestoneTrophyScene::SceneCreated()
         nlStrToWcs(silverString.c_str(), silverWideString, 16);
         nlStrToWcs(goldString.c_str(), goldWideString, 16);
 
-        LOOKUP_LOC(0x42FDAE95, locString);
-        description = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
+        description = BasicString<unsigned short, Detail::TempStringAllocator>(LookupMilestoneTrophyLoc(0x42FDAE95));
 
         formatted = Format(description, bronzeWideString, silverWideString, goldWideString);
     }
@@ -541,94 +427,27 @@ void MilestoneTrophyScene::CreateTrophyScene(eTrophyType trophy, ButtonComponent
  */
 void MilestoneTrophyScene::ChangeSlides()
 {
-    typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    FEPresentation* pres = m_pFEPresentation;
-    f32 starTime;
-
-    volatile unsigned long hB, hA;
-    volatile unsigned long h9, h8;
-    volatile unsigned long h7, h6, h5, h4, h3, h2, h1, h0;
+    FEPresentation* presentation = m_pFEPresentation;
+    float starTime;
 
     if (mFirstSlideChange)
     {
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-
-        h0 = 0;
-        h1 = 0;
-        h2 = 0;
-        h3 = 0;
-        h4 = 0;
-        h5 = 0;
-        h6 = 0;
-        h7 = 0;
-
-        unsigned long hash = nlStringLowerHash("star rotation");
-        h8 = hash;
-        h9 = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hB = hash;
-        hA = hash;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-        TLSlide* slide = pres->m_currentSlide;
-        TLComponentInstance* starComp = findComp.byRef(
-            slide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+        TLComponentInstance* starComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+            presentation->m_currentSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("star rotation")));
         starTime = starComp->GetActiveSlide()->m_time;
     }
 
-    pres->SetActiveSlide("CHANGE");
-    pres->Update(0.0f);
+    presentation->SetActiveSlide("CHANGE");
+    presentation->Update(0.0f);
 
     if (mFirstSlideChange)
     {
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-        volatile unsigned long g7, g6;
-        volatile unsigned long g5, g4, g3, g2, g1, g0;
-
-        g0 = 0;
-        h1 = 0;
-        g1 = 0;
-        h3 = 0;
-        g2 = 0;
-        h5 = 0;
-        g3 = 0;
-        h7 = 0;
-
-        unsigned long hash = nlStringLowerHash("star rotation");
-        g4 = hash;
-        g5 = hash;
-
-        hash = nlStringLowerHash("Layer");
-        g7 = hash;
-        g6 = hash;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-        TLSlide* slide = pres->m_currentSlide;
-        TLComponentInstance* starComp = findComp.byRef(
-            slide,
-            (InlineHasher&)g7,
-            (InlineHasher&)g5,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+        TLComponentInstance* starComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+            presentation->m_currentSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("star rotation")));
         starComp->Update(starTime);
         mFirstSlideChange = false;
     }

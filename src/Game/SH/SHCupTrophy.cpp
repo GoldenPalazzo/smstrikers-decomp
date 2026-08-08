@@ -15,6 +15,7 @@
 #include "Game/FE/tlComponentInstance.h"
 
 #include "NL/nlAlgorithm.h"
+#include "NL/nlBind.h"
 #include "NL/nlFunction.h"
 #include "NL/nlLocalization.h"
 #include "NL/nlMemory.h"
@@ -26,180 +27,6 @@ template <>
 WideBasicString Format<WideBasicString, unsigned short[16]>(
     const WideBasicString& string, const unsigned short (&t0)[16]);
 
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800CDAC8 | size: 0x38
-//  */
-// void Bind<void, Detail::MemFunImpl<void, void (CupTrophyScene::*)()>, CupTrophyScene*>(Detail::MemFunImpl<void, void
-// (CupTrophyScene::*)()>,
-//                                                                                        CupTrophyScene* const&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800CDAAC | size: 0x1C
-//  */
-// void MemFun<CupTrophyScene, void>(void (CupTrophyScene::*)())
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xFB4 | 0x800CD994 | size: 0x118
-//  */
-// void Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[32]>(
-//     const BasicString<unsigned short, Detail::TempStringAllocator>&, const unsigned short (&)[32])
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xE5C | 0x800CD83C | size: 0x158
-//  */
-// void Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[16], unsigned short[16], unsigned short[16],
-//             const unsigned short*, const unsigned short*>(const BasicString<unsigned short, Detail::TempStringAllocator>&,
-//                                                           const unsigned short (&)[16], const unsigned short (&)[16],
-//                                                           const unsigned short (&)[16], const unsigned short* const&,
-//                                                           const unsigned short* const&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x16C | 0x800CCB4C | size: 0xCF0
-//  */
-// void FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator>>::operator% <const unsigned short*>(const unsigned short*
-// const&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800CC9E0 | size: 0x16C
-//  */
-// void Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[16], unsigned short[16], unsigned short[16],
-//             const unsigned short*, const unsigned short*, const unsigned short*>(
-//     const BasicString<unsigned short, Detail::TempStringAllocator>&, const unsigned short (&)[16], const unsigned short (&)[16],
-//     const unsigned short (&)[16], const unsigned short* const&, const unsigned short* const&, const unsigned short* const&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800CC984 | size: 0x5C
-//  */
-// void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (CupTrophyScene::*)()>, CupTrophyScene*>>::~FunctorImpl()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800CC8DC | size: 0x78
-//  */
-// void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (CupTrophyScene::*)()>, CupTrophyScene*>>::Clone() const
-// -- moved after type definitions below
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800CC6F8 | size: 0x1E4
-//  */
-// void BasicString<char, Detail::TempStringAllocator>::AppendInPlace<Detail::TempStringAllocator>(
-//     const BasicString<char, Detail::TempStringAllocator>&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800CC63C | size: 0xBC
-//  */
-// void BasicString<char, Detail::TempStringAllocator>::Append<Detail::TempStringAllocator>(
-//     const BasicString<char, Detail::TempStringAllocator>&) const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x680 | 0x800CC5B8 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                              unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x648 | 0x800CC580 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                             InlineHasher, InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x4EC | 0x800CC424 | size: 0x15C
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                     unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x468 | 0x800CC3A0 | size: 0x84
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                  unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x430 | 0x800CC368 | size: 0x38
-//  */
-// void FEFinder<TLTextInstance, 3>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                 InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800CC20C | size: 0x15C
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                      unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800CC188 | size: 0x84
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                   unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800CC150 | size: 0x38
-//  */
-// void FEFinder<TLImageInstance, 2>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                  InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800CBFF4 | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                          unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800CBF70 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                       unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800CBF38 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                      InlineHasher)
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x27B0 | 0x800CBE64 | size: 0xD4
  */
@@ -208,13 +35,14 @@ CupTrophyScene::CupTrophyScene()
     , mCreated(false)
     , mIsNew(false)
     , mFirstSlideChange(true)
-    , mButtonState((ButtonComponent::ButtonState)(mScrollOffset = 0, mRow = 0,
-          mDoBlockLoad = true, 0))
+    , mScrollOffset(0)
+    , mRow(0)
+    , mDoBlockLoad(true)
+    , mButtonState(ButtonComponent::BS_A_AND_B)
 {
-    CupTrophyScene* self = this;
     const char* asyncPath = "art/fe/TrophiesUI.res";
     AsyncImage* image = new (nlMalloc(0x1C, 0x20, true)) AsyncImage(asyncPath, NULL);
-    self->mAsyncTrophy = image;
+    mAsyncTrophy = image;
 }
 
 /**
@@ -383,16 +211,9 @@ void CupTrophyScene::SceneCreated()
     pTotal->SetString(mWonBuffer);
 }
 
-#include "NL/nlBind.h"
-
-typedef Detail::MemFunImpl<void, void (CupTrophyScene::*)()> MemFunImpl_CupTrophyScene_v;
-typedef BindExp1<void, MemFunImpl_CupTrophyScene_v, CupTrophyScene*> BindExp1_vfmfcp;
-typedef Function0<void>::FunctorImpl<BindExp1_vfmfcp> FunctorImpl_vfmfcp;
-
 /**
  * Offset/Address/Size: 0x1D70 | 0x800CB424 | size: 0x1E4
  */
-#pragma dont_inline on
 void CupTrophyScene::HandleUnlockedTriggers()
 {
     static const ePopupMenu PopupMap[] = {
@@ -435,13 +256,11 @@ void CupTrophyScene::HandleUnlockedTriggers()
 
     nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_BRAG, SCREEN_NOTHING, true);
 }
-#pragma dont_inline reset
+extern FEInput* g_pFEInput;
 
 /**
  * Offset/Address/Size: 0x1970 | 0x800CB024 | size: 0x400
  */
-extern FEInput* g_pFEInput;
-
 void CupTrophyScene::Update(float fDeltaT)
 {
     BaseSceneHandler::Update(fDeltaT);
@@ -450,11 +269,10 @@ void CupTrophyScene::Update(float fDeltaT)
     mAsyncTrophy->Update(true);
 
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
-    char* pBase = (char*)nlSingleton<GameInfoManager>::s_pInstance;
+    UserInfo* userInfo = &nlSingleton<GameInfoManager>::Instance()->mUserInfo;
+    Spoil* pSpoil = &userInfo->mSpoils[(int)mTrophy];
     bool canAccept = true;
     int buttonState = mButtonState;
-    pBase += mTrophy * 0x218;
-    Spoil* pSpoil = (Spoil*)(pBase + 0x2F24);
 
     if (buttonState != ButtonComponent::BS_A_AND_B && buttonState != ButtonComponent::BS_A_ONLY)
     {
@@ -505,9 +323,8 @@ void CupTrophyScene::Update(float fDeltaT)
     {
         if (pSpoil->mNumRecords > 3)
         {
-            char* pBase2 = (char*)nlSingleton<GameInfoManager>::s_pInstance;
-            pBase2 += mTrophy * 0x218;
-            Spoil* pSpoil = (Spoil*)(pBase2 + 0x2F24);
+            UserInfo* userInfo = &nlSingleton<GameInfoManager>::Instance()->mUserInfo;
+            Spoil* pSpoil = &userInfo->mSpoils[(int)mTrophy];
             unsigned char numRecords = pSpoil->mNumRecords;
 
             if (numRecords <= 1)
@@ -629,18 +446,12 @@ void CupTrophyScene::CreateTrophyScene(eTrophyType trophy, ButtonComponent::Butt
     mButtonState = buttonState;
 }
 
-struct SpoilNumLossesView
-{
-    unsigned char mPad[0x20C];
-    unsigned short mNumLosses;
-};
-
 /**
  * Offset/Address/Size: 0x1524 | 0x800CABD8 | size: 0x3F8
  */
 void CupTrophyScene::SetWinRecord(Spoil& spoil)
 {
-    FEPresentation* pres = GetPresentation();
+    FEPresentation* presentation = GetPresentation();
     BasicString<char, Detail::TempStringAllocator> winString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(spoil.mNumWins);
     unsigned short winBuf[16];
     nlStrToWcs(winString.c_str(), winBuf, 16);
@@ -651,7 +462,7 @@ void CupTrophyScene::SetWinRecord(Spoil& spoil)
     memcpy(mFirstWinBuffer, formattedResult.c_str(), 0x100);
 
     TLTextInstance* text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-        pres->m_currentSlide,
+        presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash(CUP_FIRST_TEXT_NAME_LEFT)));
 
@@ -663,8 +474,8 @@ void CupTrophyScene::SetWinRecord(Spoil& spoil)
  */
 void CupTrophyScene::SetLossRecord(Spoil& spoil)
 {
-    FEPresentation* pres = GetPresentation();
-    BasicString<char, Detail::TempStringAllocator> lossString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(((SpoilNumLossesView&)spoil).mNumLosses);
+    FEPresentation* presentation = GetPresentation();
+    BasicString<char, Detail::TempStringAllocator> lossString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(spoil.mNumLosses);
     unsigned short lossBuf[16];
     nlStrToWcs(lossString.c_str(), lossBuf, 16);
 
@@ -674,7 +485,7 @@ void CupTrophyScene::SetLossRecord(Spoil& spoil)
     memcpy(mHistoryBuffer, formattedResult.c_str(), 0x100);
 
     TLTextInstance* text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-        pres->m_currentSlide,
+        presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash(CUP_FIRST_TEXT_NAME_RIGHT)));
 
@@ -698,10 +509,10 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
 
         TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find(pComp->GetActiveSlide(), nlStringLowerHash(TROPHY_RECORD_ROW_NAMES[i]));
 
-        nlVector2 hackboxsize;
-        hackboxsize.f.x = 999.9f;
-        hackboxsize.f.y = pText->m_OverloadedAttributes.BoxSize.f.y;
-        pText->m_OverloadedAttributes.BoxSize = hackboxsize;
+        nlVector2 boxSize;
+        boxSize.f.x = 999.9f;
+        boxSize.f.y = pText->m_OverloadedAttributes.BoxSize.f.y;
+        pText->m_OverloadedAttributes.BoxSize = boxSize;
         pText->m_OverloadFlags |= 0x4;
 
         if (i == mRow && (spoil.mNumRecords == 0 || spoil.mNumRecords > 3))
@@ -785,25 +596,25 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
  */
 void CupTrophyScene::ChangeSlides()
 {
-    FEPresentation* pres = GetPresentation();
+    FEPresentation* presentation = GetPresentation();
     float starTime;
 
     if (mFirstSlideChange)
     {
         TLComponentInstance* starComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-            pres->m_currentSlide,
+            presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash("star rotation")));
         starTime = starComp->GetActiveSlide()->m_time;
     }
 
-    pres->SetActiveSlide("IN2");
-    pres->Update(0.0f);
+    presentation->SetActiveSlide("IN2");
+    presentation->Update(0.0f);
 
     if (mFirstSlideChange)
     {
         TLComponentInstance* starComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-            pres->m_currentSlide,
+            presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash("star rotation")));
         starComp->Update(starTime);
