@@ -61,6 +61,7 @@ public:
     /* 0x24*/ virtual void Vertex(const nlVector3&);
     /* 0x28*/ virtual void Vertex(const nlVector4&);
     void Position(const nlVector3&);
+    void Position(float, float, float);
     glModel* GetModel();
 
     /* 0x04 */ glModel* pModel;

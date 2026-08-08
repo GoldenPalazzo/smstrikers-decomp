@@ -22,12 +22,6 @@ static unsigned long _defaultProgram = glGetProgram("2d unlit");
 /**
  * Offset/Address/Size: 0x610 | 0x801D7C10 | size: 0x210
  */
-
-inline void GLMeshWriterCore::Position(const nlVector3& v)
-{
-    Vertex(v);
-}
-
 bool glPoly2::Attach(eGLView view, int layer, unsigned long* pMatrixHandle, unsigned long programHandle)
 {
     eGLStream streamsDesc[3] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };

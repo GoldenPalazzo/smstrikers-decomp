@@ -17,18 +17,11 @@
 #include "NL/platvmath.h"
 #include "NL/gl/gl.h"
 
-#pragma inline_max_size(536)
-
 static nlFloatColour s_currentAssetColour;
 static unsigned long drawQuadProgram = glGetProgram("2d unlit");
 FEScene* FERender::m_pRenderScene = nullptr;
 GLMatrixStack* FERender::m_pMatrixStack = nullptr;
 static const unsigned long grabTex = nlStringLowerHash("target/grab_texture");
-
-inline void GLMeshWriterCore::Position(const nlVector3& v)
-{
-    Vertex(v);
-}
 
 /**
  * Offset/Address/Size: 0x16D8 | 0x8020B960 | size: 0xB4
@@ -56,7 +49,6 @@ void FERender::Cleanup()
 /**
  * Offset/Address/Size: 0x1650 | 0x8020B8D8 | size: 0x50
  */
-#pragma inline_depth(255)
 void FERender::Initialize()
 {
     if (m_pMatrixStack == nullptr)
@@ -74,24 +66,21 @@ void FERender::PushTransformMatrix(const TLInstance* instance)
     nlMatrix4 scaleMatrix;
     nlMatrix4 rotationMatrix;
 
-    const feVector3& rotZ = instance->GetRotation();
-    const feVector3& rotY = instance->GetRotation();
     nlMakeRotationMatrixEulerAngles(rotationMatrix,
         instance->GetRotation().f.x,
-        rotY.f.y,
-        rotZ.f.z);
+        instance->GetRotation().f.y,
+        instance->GetRotation().f.z);
 
-    const feVector3& scaleZ = instance->GetScale();
-    const feVector3& scaleY = instance->GetScale();
     nlMakeScaleMatrix(scaleMatrix,
         instance->GetScale().f.x,
-        scaleY.f.y,
-        scaleZ.f.z);
+        instance->GetScale().f.y,
+        instance->GetScale().f.z);
 
     nlMultMatrices(combinedMatrix, scaleMatrix, rotationMatrix);
 
+    const feVector3& tlPosition = instance->GetPosition();
     nlVector3 v3Pos;
-    instance->GetPosition().GetNLVector3(v3Pos);
+    tlPosition.GetNLVector3(v3Pos);
     combinedMatrix.SetTranslation(v3Pos);
     combinedMatrix.f.m43 *= -1.0f;
 
@@ -176,24 +165,23 @@ void FERender::RenderSlide(const TLSlide* pTLSlide)
         return;
     }
 
-    if (pTLSlide->m_instances == nullptr)
+    if (!pTLSlide->m_instances)
     {
         return;
     }
 
     {
-        nlFloatColour* const pSave = &s_currentAssetColour;
         TLInstance* curr = pTLSlide->m_instances->m_next;
         TLInstance* next;
 
         while (true)
         {
             next = curr->m_next;
-            nlFloatColour colour = *pSave;
+            nlFloatColour colour = s_currentAssetColour;
 
             RenderTimeLineAsset(curr, pTLSlide->GetCurrentTime());
 
-            *pSave = colour;
+            s_currentAssetColour = colour;
 
             if (curr == pTLSlide->m_instances)
             {
@@ -211,19 +199,18 @@ void FERender::RenderSlide(const TLSlide* pTLSlide)
 void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
 {
     TLComponent* component = (TLComponent*)componentInstance->GetLibRefObject();
-    if (component == 0)
+    if (!component)
     {
         return;
     }
 
-    if (component->GetActiveSlide() == 0)
+    if (!component->GetActiveSlide())
     {
         return;
     }
 
     RenderSlide(component->GetActiveSlide());
 }
-#pragma inline_depth()
 
 /**
  * Offset/Address/Size: 0x4F0 | 0x8020A778 | size: 0x38
@@ -286,11 +273,13 @@ void FERender::RenderTextInstance(TLTextInstance* textInstance)
     textInstance->Render(m_pRenderScene->GetRenderView(), colour);
 }
 
-static inline unsigned long SetupQuadMatrix(const nlMatrix4& matTM)
+static inline u32 glAllocSetMatrix(const nlMatrix4& matrix)
 {
-    unsigned long handle = glAllocMatrix();
+    u32 handle = glAllocMatrix();
     if (handle != 0xFFFFFFFF)
-        glSetMatrix(handle, matTM);
+    {
+        glSetMatrix(handle, matrix);
+    }
     return handle;
 }
 
@@ -319,7 +308,7 @@ unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInsta
     m_pMatrixStack->GetTop(matTM);
     nlMultMatrices(matTM, matTM, m_pRenderScene->m_matView);
 
-    unsigned long matrixHandle = SetupQuadMatrix(matTM);
+    unsigned long matrixHandle = glAllocSetMatrix(matTM);
 
     nlVector2 pos[4];
     nlVector2 uv[4];
@@ -379,7 +368,7 @@ unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInsta
     unsigned long matrix;
     eGLPrimitive prim;
     int* pMap;
-    u8 texconfig;
+    unsigned long texconfig;
 
     texconfig = gl_GetCurrentStateBundle()->texconfig;
     program = glSetCurrentProgram(drawQuadProgram);
@@ -404,11 +393,7 @@ unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInsta
             meshWriter.Colour(colour);
             if (texconfig)
                 meshWriter.Texcoord(uv[index]);
-            nlVector3 vertex;
-            vertex.f.x = pos[index].e[0];
-            vertex.f.y = pos[index].e[1];
-            vertex.f.z = 0.0f;
-            meshWriter.Position(vertex);
+            meshWriter.Position(pos[index].e[0], pos[index].e[1], 0.0f);
         }
 
         if (!meshWriter.End())

@@ -35,13 +35,14 @@ public:
     void SetAssetRotation(float, float, float);
     void SetAssetPosition(float, float, float);
     bool IsValidAtTime(float);
-    const nlColour& GetColour() const;
-    const feVector3& GetScale() const;
-    const feVector3& GetRotation() const;
-    const feVector3& GetPosition() const;
-    const nlColour& GetAssetColour() const;
-    const feVector3& GetAssetScale() const;
-    const feVector3& GetAssetPosition() const;
+    nlColour& GetColour() const;
+    feVector3& GetScale() const;
+    feVector3& GetRotation() const;
+    feVector3& GetPosition() const;
+    nlColour& GetAssetColour() const;
+    feVector3& GetAssetScale() const;
+    feVector3& GetAssetRotation() const;
+    feVector3& GetAssetPosition() const;
 
     /* 0x00 */ TLInstance* m_next;
     /* 0x04 */ TLInstance* m_prev;

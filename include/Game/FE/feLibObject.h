@@ -52,10 +52,10 @@ struct FELibObjectAttributes
 class FELibObject
 {
 public:
-    const feVector3& GetScale() const;
-    const feVector3& GetRotation() const;
-    const feVector3& GetPosition() const;
-    const nlColour& GetColour() const;
+    feVector3& GetScale() const;
+    feVector3& GetRotation() const;
+    feVector3& GetPosition() const;
+    nlColour& GetColour() const;
 
     /* 0x00 */ FELibObject* next;
     /* 0x04 */ FELibObject* prev;

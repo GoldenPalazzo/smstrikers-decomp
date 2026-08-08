@@ -90,11 +90,11 @@ bool TLInstance::IsValidAtTime(float arg0)
 /**
  * Offset/Address/Size: 0xF8 | 0x80210078 | size: 0x38
  */
-const nlColour& TLInstance::GetColour() const
+nlColour& TLInstance::GetColour() const
 {
     if (m_overloadFlags & 0x10)
     {
-        return m_overloadedAttributes.colour;
+        return const_cast<nlColour&>(m_overloadedAttributes.colour);
     }
     return m_component->GetColour();
 }
@@ -102,11 +102,11 @@ const nlColour& TLInstance::GetColour() const
 /**
  * Offset/Address/Size: 0x130 | 0x802100B0 | size: 0x38
  */
-const feVector3& TLInstance::GetScale() const
+feVector3& TLInstance::GetScale() const
 {
     if (m_overloadFlags & 0x4)
     {
-        return m_overloadedAttributes.v3Scale;
+        return const_cast<feVector3&>(m_overloadedAttributes.v3Scale);
     }
     return m_component->GetScale();
 }
@@ -114,11 +114,11 @@ const feVector3& TLInstance::GetScale() const
 /**
  * Offset/Address/Size: 0x168 | 0x802100E8 | size: 0x38
  */
-const feVector3& TLInstance::GetRotation() const
+feVector3& TLInstance::GetRotation() const
 {
     if (m_overloadFlags & 0x2)
     {
-        return m_overloadedAttributes.v3Rotation;
+        return const_cast<feVector3&>(m_overloadedAttributes.v3Rotation);
     }
     return m_component->GetRotation();
 }
@@ -126,11 +126,11 @@ const feVector3& TLInstance::GetRotation() const
 /**
  * Offset/Address/Size: 0x1A0 | 0x80210120 | size: 0x38
  */
-const feVector3& TLInstance::GetPosition() const
+feVector3& TLInstance::GetPosition() const
 {
     if (m_overloadFlags & 0x1)
     {
-        return m_overloadedAttributes.v3Position;
+        return const_cast<feVector3&>(m_overloadedAttributes.v3Position);
     }
     return m_component->GetPosition();
 }
@@ -138,25 +138,30 @@ const feVector3& TLInstance::GetPosition() const
 /**
  * Offset/Address/Size: 0x1D8 | 0x80210158 | size: 0x8
  */
-const nlColour& TLInstance::GetAssetColour() const
+nlColour& TLInstance::GetAssetColour() const
 {
-    return m_overloadedAttributes.colour;
+    return const_cast<nlColour&>(m_overloadedAttributes.colour);
 }
 
 /**
  * Offset/Address/Size: 0x1E0 | 0x80210160 | size: 0x8
  */
-const feVector3& TLInstance::GetAssetScale() const
+feVector3& TLInstance::GetAssetScale() const
 {
-    return m_overloadedAttributes.v3Scale;
+    return const_cast<feVector3&>(m_overloadedAttributes.v3Scale);
+}
+
+inline feVector3& TLInstance::GetAssetRotation() const
+{
+    return const_cast<feVector3&>(m_overloadedAttributes.v3Rotation);
 }
 
 /**
  * Offset/Address/Size: 0x1E8 | 0x80210168 | size: 0x8
  */
-const feVector3& TLInstance::GetAssetPosition() const
+feVector3& TLInstance::GetAssetPosition() const
 {
-    return m_overloadedAttributes.v3Position;
+    return const_cast<feVector3&>(m_overloadedAttributes.v3Position);
 }
 
 // eTimeLineAssetType TLInstance::GetType() const
