@@ -2167,7 +2167,7 @@ void cFielder::DoClearBall()
     nlPolar pClearingBottomAngle;
     u16 aClearingAngle;
 
-    float fRandomDistance = nlRandomf(5.0f, &nlDefaultSeed);
+    float fRandomDistance = nlRandomf(3.0f, &nlDefaultSeed);
     float fGoalline = cField::GetGoalLineX(m_pTeam->GetOtherNet()->m_sideSign);
 
     float fTopY = cField::GetSidelineY(1) - fRandomDistance;
@@ -2183,11 +2183,11 @@ void cFielder::DoClearBall()
     s16 nBottomDelta = GetAngleDifference(aFacing, aBottom);
     s16 nTopDelta = GetAngleDifference(aFacing, aTop);
 
-    if (pShotMeter->mfSShotAimValue > 0.5f)
+    if (pShotMeter->mfSShotAimValue > 0.001f)
     {
         aClearingAngle = pClearingTopAngle.a;
     }
-    else if (m_pShotMeter->mfSShotAimValue < -0.5f)
+    else if (m_pShotMeter->mfSShotAimValue < -0.0001f)
     {
         aClearingAngle = pClearingBottomAngle.a;
     }
@@ -2228,7 +2228,7 @@ void cFielder::DoClearBall()
 
     g_pBall->ShootRelease(v3ClearBallVelocity,
         nlRandom(2, &nlDefaultSeed) != 0 ? SPINTYPE_FORWARD : SPINTYPE_BACK);
-    SetNoPickUpTime(0.25f);
+    SetNoPickUpTime(0.2f);
 
     Audio::SoundAttributes sndAtr;
     sndAtr.Init();
@@ -2922,7 +2922,7 @@ cFielder* cFielder::DoFindBestHitTarget()
         return (cFielder*)vBestTarget.mData.pPlayer;
     }
 
-    float fBestScore = 99999.0f;
+    float fBestScore = 99999.9f;
     cFielder* pBestCandidate = NULL;
     cTeam* pTeam = m_pTeam->GetOtherTeam();
     u16 aDirection = m_aActualFacingDirection;
@@ -2934,7 +2934,7 @@ cFielder* cFielder::DoFindBestHitTarget()
 
     for (int i = 0; i < 4; i++)
     {
-        float fTempScore = 99999.0f;
+        float fTempScore = 99999.9f;
         cFielder* pCandidate = pTeam->GetFielder(i);
 
         if (!pCandidate->IsFallenDown(0.0f) && pCandidate->m_tFrozenTimer.m_uPackedTime == 0)
@@ -2950,7 +2950,7 @@ cFielder* cFielder::DoFindBestHitTarget()
                     aDirection,
                     g_pGame->m_pGameTweaks->fAngleWeighting,
                     0.0f,
-                    100.0f);
+                    9999.0f);
             }
         }
 
@@ -4629,7 +4629,7 @@ bool cFielder::CanISlideAttack(const nlVector3& v3Position, const nlVector3& v3V
     float fYDiff = m_v3Position.f.y - v3Position.f.y;
     float fXDiff = m_v3Position.f.x - v3Position.f.x;
 
-    t = 99999.0f;
+    t = -1.0f;
 
     GameTweaks* pGameTweaks = g_pGame->m_pGameTweaks;
 
@@ -5146,11 +5146,11 @@ u8 cFielder::ShouldIStrafe()
         float threshold;
         if (isStrafing)
         {
-            threshold = 0.3f;
+            threshold = 0.5f;
         }
         else
         {
-            threshold = 0.5f;
+            threshold = 0.75f;
         }
 
         if (fTotalScore > threshold)
@@ -5221,7 +5221,7 @@ bool cFielder::ShouldITurboWithoutBall()
         m_fDistanceToDesiredPosition = nlSqrt(dx * dx + dy * dy, true);
     }
 
-    if (m_fDistanceToDesiredPosition > 5.0f)
+    if (m_fDistanceToDesiredPosition > 10.0f)
     {
         return true;
     }
@@ -5453,7 +5453,10 @@ bool cFielder::TestQueuedActions()
 
 /**
  * Offset/Address/Size: 0x2BB0 | 0x8001BEEC | size: 0x8BC
- * TODO: 99.68% match - pooled zero-float literal differs in ReceivingVolleyPass bool conversion.
+ * OPEN: 99.89% match - 8 rows, the two inlined CanLooseBall* distance tests colour
+ * their fsubs destinations f2/f3 where retail uses f4/f2. Reproduced by any caller
+ * that inlines those bodies; writing them out at depth 0 fixes the colouring but
+ * changes the branch structure. See notes 0086.
  */
 void cFielder::TestButtonsRunning()
 {
@@ -5808,38 +5811,7 @@ void cFielder::Update(float fDeltaT)
         cCharacter::Update(fDeltaT);
     }
 
-    {
-        eFielderActionState eAction = m_eActionState;
-        Audio::cCharacterSFX* pSFX = m_pCharacterSFX;
-        bool bIsActive = false;
-
-        if (((int)eAction == ACTION_RUNNING_WB) || ((int)eAction == ACTION_RUNNING_WB_TURBO) || ((int)eAction == ACTION_RUNNING_WB_TURBO_TURN))
-        {
-            bIsActive = true;
-        }
-
-        if (bIsActive || eAction == ACTION_DEKE || (eAction == ACTION_NEED_ACTION && GetGlobalPad() != NULL))
-        {
-            if (m_fActualSpeed >= 4.5f && m_fDesiredSpeed > 0.0f && !g_pGame->mbCaptainShotToScoreOn)
-            {
-                if (!pSFX->IsMovementLoopStarted() || (pSFX->IsMovementLoopStarted() && !pSFX->IsMovementLoopPlaying()))
-                {
-                    pSFX->StartMovementLoop();
-                }
-            }
-            else
-            {
-                if (pSFX->IsMovementLoopStarted() && m_fDesiredSpeed < 0.001f && m_fActualSpeed < 0.5f && m_eActionState != ACTION_RUNNING_WB_TURBO_TURN)
-                {
-                    pSFX->StopMovementLoop();
-                }
-            }
-        }
-        else
-        {
-            pSFX->StopMovementLoop();
-        }
-    }
+    UpdateMovementLoopSFX();
 
     UpdateController(fDeltaT);
     m_bHasBeenUpdated = true;
@@ -6504,6 +6476,40 @@ void cFielder::UpdateController(float)
     else
     {
         mActionRumbleVars.fRumbleDirection = 0.0f;
+    }
+}
+
+void cFielder::UpdateMovementLoopSFX()
+{
+    eFielderActionState eAction = m_eActionState;
+    Audio::cCharacterSFX* pSFX = m_pCharacterSFX;
+    bool bIsActive = false;
+
+    if (((int)eAction == ACTION_RUNNING_WB) || ((int)eAction == ACTION_RUNNING_WB_TURBO) || ((int)eAction == ACTION_RUNNING_WB_TURBO_TURN))
+    {
+        bIsActive = true;
+    }
+
+    if (bIsActive || eAction == ACTION_DEKE || (eAction == ACTION_NEED_ACTION && GetGlobalPad() != NULL))
+    {
+        if (m_fActualSpeed >= 4.5f && m_fDesiredSpeed > 0.0f && !g_pGame->mbCaptainShotToScoreOn)
+        {
+            if (!pSFX->IsMovementLoopStarted() || (pSFX->IsMovementLoopStarted() && !pSFX->IsMovementLoopPlaying()))
+            {
+                pSFX->StartMovementLoop();
+            }
+        }
+        else
+        {
+            if (pSFX->IsMovementLoopStarted() && m_fDesiredSpeed < 0.001f && m_fActualSpeed < 0.5f && m_eActionState != ACTION_RUNNING_WB_TURBO_TURN)
+            {
+                pSFX->StopMovementLoop();
+            }
+        }
+    }
+    else
+    {
+        pSFX->StopMovementLoop();
     }
 }
 

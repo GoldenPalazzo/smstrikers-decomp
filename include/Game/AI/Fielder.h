@@ -284,6 +284,7 @@ public:
     void UpdateActionState(float);
     void UpdateHeadTracking(float);
     void UpdateController(float);
+    void UpdateMovementLoopSFX();
     void UpdatePlay(float);
     float GetDistanceToDesiredPos();
     bool S2SShootWasPressed();
