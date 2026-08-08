@@ -60,13 +60,9 @@ public:
         while (count != (unsigned long)insertPos)
         {
             unsigned long previous = count - 1;
-            EntryLookup<T>* source = &m_pEntryLookup[previous];
-            unsigned long sourceId = source->hash;
-            EntryLookup<T>* destination = &m_pEntryLookup[count];
+            // lookup records are 8 bytes; shift them as one 64-bit unit
+            ((unsigned long long*)m_pEntryLookup)[count] = ((unsigned long long*)m_pEntryLookup)[previous];
             count = previous;
-            T* sourceEntry = source->pEntry;
-            destination->pEntry = sourceEntry;
-            destination->hash = sourceId;
         }
 
         m_pEntryLookup[insertPos].hash = id;
@@ -97,13 +93,9 @@ public:
         while ((unsigned long)index != total)
         {
             long next = index + 1;
-            EntryLookup<T>* source = &m_pEntryLookup[next];
-            unsigned long id = source->hash;
-            EntryLookup<T>* destination = &m_pEntryLookup[index];
+            // lookup records are 8 bytes; shift them as one 64-bit unit
+            ((unsigned long long*)m_pEntryLookup)[index] = ((unsigned long long*)m_pEntryLookup)[next];
             index = next;
-            T* sourceEntry = source->pEntry;
-            destination->pEntry = sourceEntry;
-            destination->hash = id;
         }
         m_EntryCount = m_EntryCount - 1;
     }
@@ -117,13 +109,9 @@ public:
         while ((unsigned long)index != total)
         {
             long next = index + 1;
-            EntryLookup<T>* source = &m_pEntryLookup[next];
-            unsigned long id = source->hash;
-            EntryLookup<T>* destination = &m_pEntryLookup[index];
+            // lookup records are 8 bytes; shift them as one 64-bit unit
+            ((unsigned long long*)m_pEntryLookup)[index] = ((unsigned long long*)m_pEntryLookup)[next];
             index = next;
-            T* sourceEntry = source->pEntry;
-            destination->pEntry = sourceEntry;
-            destination->hash = id;
         }
         m_EntryCount = m_EntryCount - 1;
     }

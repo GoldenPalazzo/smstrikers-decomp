@@ -195,7 +195,6 @@ void MemCard::MountDoneCB(long channel, long result)
 
 /**
  * Offset/Address/Size: 0x540 | 0x801CB080 | size: 0x1A0
- * TODO: 99.90% match - DeleteEntry copies pEntry through r0 instead of target r5.
  */
 void MemCard::CreateFileDoneCB(long channel, long result)
 {
@@ -459,7 +458,6 @@ unsigned long MemCard::AlignBytesToSectorSize(unsigned long bytes)
 
 /**
  * Offset/Address/Size: 0xF28 | 0x801CA698 | size: 0x3B4
- * TODO: 99.18% match - shift-up loop pEntry copy uses r0 instead of target r5.
  */
 long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::ICON_CONFIG* pIconConfig, MemCard::MC_FILE*& pFile, const MemCardFunctor& Callback)
 {
@@ -552,8 +550,6 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
 
 /**
  * Offset/Address/Size: 0xBE8 | 0x801CA358 | size: 0x340
- * TODO: 99.78% match - both lookup pEntry copies use r0 instead of target r5;
- * icon count/stride and the two header accumulators retain allocation differences.
  */
 extern "C" void* memset(void*, int, unsigned long);
 
@@ -671,7 +667,6 @@ s32 MemCard::FormatCard(const MemCardFunctor& Callback)
 
 /**
  * Offset/Address/Size: 0x3060 | 0x801CA0A0 | size: 0x1F8
- * TODO: 99.92% match - DeleteEntry copies pEntry through r0 instead of target r5.
  */
 long MemCard::DeleteFile(const char* FileName, const MemCardFunctor& Callback)
 {
@@ -798,7 +793,6 @@ long MemCard::InternalWriteFile(MC_FILE* pFile, void* Buffer, unsigned long Leng
 
 /**
  * Offset/Address/Size: 0x620 | 0x801C9D90 | size: 0x120
- * TODO: 99.86% match - DeleteEntry copies pEntry through r0 instead of target r5.
  */
 s32 MemCard::CloseFile(MC_FILE* pFile)
 {
