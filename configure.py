@@ -772,7 +772,7 @@ config.libs = [
             Object(NonMatching, "Game/Sys/GCStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Sys/movie.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Sys/THPSimple.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Sys/gcmemcard.cpp", extra_cflags=["-inline auto"]),
+            Object(NonMatching, "Game/Sys/gcmemcard.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Game Objects
             Object(Matching, "Game/Game.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
