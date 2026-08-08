@@ -437,9 +437,9 @@ bool cFielder::CanLooseBallShoot()
 
         if (v3PredictedPos.f.z < 1.0f)
         {
-            float fDeltaX = v3PredictedPos.f.x - m_v3Position.f.x;
-            float fDeltaY = v3PredictedPos.f.y - m_v3Position.f.y;
-            float fDistanceSquared = fDeltaX * fDeltaX + fDeltaY * fDeltaY;
+            nlVector3 v3Delta;
+            v3Delta.Sub2D(v3PredictedPos, m_v3Position);
+            float fDistanceSquared = v3Delta.GetLengthSq2D();
 
             if (fDistanceSquared < fInterpolatedValue * fInterpolatedValue)
             {
@@ -486,9 +486,9 @@ bool cFielder::CanLooseBallPass()
         {
             if (v3PredictedPos.f.z < 1.0f)
             {
-                float fDeltaX = v3PredictedPos.f.x - m_v3Position.f.x;
-                float fDeltaY = v3PredictedPos.f.y - m_v3Position.f.y;
-                float fDistanceSquared = fDeltaX * fDeltaX + fDeltaY * fDeltaY;
+                nlVector3 v3Delta;
+                v3Delta.Sub2D(v3PredictedPos, m_v3Position);
+                float fDistanceSquared = v3Delta.GetLengthSq2D();
 
                 if (fDistanceSquared < fLooseBallRadius * fLooseBallRadius)
                 {
@@ -5453,10 +5453,6 @@ bool cFielder::TestQueuedActions()
 
 /**
  * Offset/Address/Size: 0x2BB0 | 0x8001BEEC | size: 0x8BC
- * OPEN: 99.89% match - 8 rows, the two inlined CanLooseBall* distance tests colour
- * their fsubs destinations f2/f3 where retail uses f4/f2. Reproduced by any caller
- * that inlines those bodies; writing them out at depth 0 fixes the colouring but
- * changes the branch structure. See notes 0086.
  */
 void cFielder::TestButtonsRunning()
 {
