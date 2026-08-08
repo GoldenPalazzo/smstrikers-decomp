@@ -9,6 +9,11 @@ class FETextureResource : public FEResourceHandle
 public:
     FETextureResource();
 
+    u32 GetTextureHandle() const
+    {
+        return m_glTextureHandle;
+    }
+
     /* 0x14 */ u32 m_glTextureHandle;
 };
 
