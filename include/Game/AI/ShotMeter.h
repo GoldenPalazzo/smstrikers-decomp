@@ -20,6 +20,10 @@ public:
     void Abort(cFielder*);
     void CalcOneTimerValue(cFielder* pFielder, bool bWasPerfectPass);
     float GetTotalDuration() const;
+    float GetShotAimValue() const
+    {
+        return mfSShotAimValue;
+    }
     void Reset();
     void ShotReleased(cFielder*);
 
