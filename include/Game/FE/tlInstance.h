@@ -23,6 +23,10 @@ class TLInstance
 {
 public:
     eTimeLineAssetType GetType() const;
+    unsigned long GetHashID() const
+    {
+        return m_hash;
+    }
     bool IsVisible() const;
     FELibObject* GetLibRefObject() const;
 

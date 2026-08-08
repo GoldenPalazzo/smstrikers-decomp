@@ -77,7 +77,7 @@ public:
     {
     }
 
-    TLComponentInstance* const& GetComponentInstance() const
+    TLComponentInstance* GetComponentInstance() const
     {
         return mComponentInstance;
     }

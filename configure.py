@@ -516,7 +516,7 @@ def GameLib(lib_name: str, objects: Objects) -> Library:
             "-DdSINGLE=1",
             "-DdTHREADING_INTF_DISABLED",
             "-DHAVE_MALLOC_H=1",
-            "-DdODE_SMStricker_Patch"
+            "-DdODE_SMStricker_Patch",
             "-DMUSY_VERSION_MAJOR=2",
             "-DMUSY_VERSION_MINOR=0",
             "-DMUSY_VERSION_PATCH=3",
@@ -1092,7 +1092,7 @@ config.libs = [
             Object(Matching, "Game/SH/SHStadiumSelect.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHSuperTeam.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHTitleScreen.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/SH/SHTournSetParams.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/SH/SHTournSetParams.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHTournTeamSetup.cpp", extra_cflags=["-inline deferred"]),
 
             # GFX

@@ -50,7 +50,7 @@ OptionsSubMenu::~OptionsSubMenu()
 
 /**
  * Offset/Address/Size: 0x55A4 | 0x800BA5E8 | size: 0xA30
- * TODO: 99.51% match, size exact, zero structural rows. Two colouring groups remain:
+ * TODO: 99.67% match, size exact, zero structural rows. Two colouring groups remain:
  * the first ColourAllText expansion ranks its webs in declaration order where retail
  * ranks the callee's hash first, and the Previous/NextItem index temps sit in r25
  * where retail uses r31/r29.
@@ -287,7 +287,6 @@ void OptionsSubMenu::SetAButtonLOC(unsigned long locStrId)
 
 /**
  * Offset/Address/Size: 0x47AC | 0x800B97F0 | size: 0x720
- * TODO: 99.88% match - GameInfoManager pointer and cheat flag registers differ.
  */
 OptionsCheatsMenu::OptionsCheatsMenu(FEPresentation* pres, ButtonComponent::ButtonState btnState, CheatSettings& settings)
     : OptionsSubMenu(pres, btnState)
@@ -620,50 +619,7 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
         if (slidesAdded > 1)
         {
             ((SlideMenuList*)mSlideMenuLists[0])->SetFlag(1);
-
-            if (((SlideMenuList*)mSlideMenuLists[0]) != NULL)
-            {
-                TLInstance* inst;
-                TLInstance* firstChild;
-                TLSlide* currentMenuSlide;
-                TLSlide* startSlide;
-                TLComponentInstance* comp = ((SlideMenuList*)mSlideMenuLists[0])->GetComponentInstance();
-                if (comp != NULL && comp->GetActiveSlide() != NULL)
-                {
-                    startSlide = comp->GetActiveSlide();
-                    currentMenuSlide = startSlide;
-
-                    do
-                    {
-                        comp->SetActiveSlide(currentMenuSlide);
-                        firstChild = comp->GetActiveSlide()->m_instances;
-                        inst = firstChild;
-                        if (firstChild != NULL)
-                        {
-                            do
-                            {
-                                if (inst->m_type == TLAT_TEXT)
-                                {
-                                    inst->SetAssetColour(SubMenuHighliteColour);
-                                }
-                                else if (inst->m_type == TLAT_IMAGE)
-                                {
-                                    unsigned long instHash = inst->m_hash;
-                                    if (instHash != nlStringLowerHash("white_box"))
-                                    {
-                                        inst->SetAssetColour(SubMenuHighliteColour);
-                                    }
-                                }
-                                inst = inst->m_next;
-                            } while (inst != firstChild);
-                        }
-
-                        currentMenuSlide = currentMenuSlide->m_next;
-                    } while (currentMenuSlide != startSlide);
-
-                    comp->SetActiveSlide(startSlide);
-                }
-            }
+            ColourAllText(SubMenuHighliteColour, 0);
         }
         else
         {
@@ -884,7 +840,7 @@ void OptionsAudioMenuV2::Revert()
 
 /**
  * Offset/Address/Size: 0x20C8 | 0x800B710C | size: 0xA3C
- * TODO: 99.57% match, size exact, zero structural rows. Same two colouring groups as
+ * TODO: 99.65% match, size exact, zero structural rows. Same two colouring groups as
  * OptionsSubMenu::Update.
  */
 void OptionsAudioMenuV2::Update(float)
@@ -1140,56 +1096,7 @@ OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::
     compinstance->m_bVisible = true;
     mMenuItems.GetMenuItem(2)->GetType()->m_bVisible = true;
 
-    SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
-    if (slideMenuList != NULL)
-    {
-        TLInstance* inst;
-        TLInstance* firstChild;
-        TLSlide* currentMenuSlide;
-        TLSlide* startSlide;
-        TLComponentInstance* finalCompinstance;
-
-        finalCompinstance = slideMenuList->GetComponentInstance();
-        if (finalCompinstance != NULL)
-        {
-            if (finalCompinstance->GetActiveSlide() != NULL)
-            {
-                startSlide = finalCompinstance->GetActiveSlide();
-                currentMenuSlide = startSlide;
-
-                do
-                {
-                    finalCompinstance->SetActiveSlide(currentMenuSlide);
-                    firstChild = finalCompinstance->GetActiveSlide()->m_instances;
-                    inst = firstChild;
-                    if (firstChild != NULL)
-                    {
-                        do
-                        {
-                            if (inst->m_type == TLAT_TEXT)
-                            {
-                                inst->SetAssetColour(SubMenuHighliteColour);
-                            }
-                            else if (inst->m_type == TLAT_IMAGE)
-                            {
-                                unsigned long hash = inst->m_hash;
-                                if (hash != nlStringLowerHash("white_box"))
-                                {
-                                    inst->SetAssetColour(SubMenuHighliteColour);
-                                }
-                            }
-
-                            inst = inst->m_next;
-                        } while (inst != firstChild);
-                    }
-
-                    currentMenuSlide = currentMenuSlide->m_next;
-                } while (currentMenuSlide != startSlide);
-
-                finalCompinstance->SetActiveSlide(startSlide);
-            }
-        }
-    }
+    ColourAllText(SubMenuHighliteColour, mMenuItems.GetActiveItemIndex());
 
     memcpy(&mBackupSettings, &mSettings, sizeof(VisualSettings));
     mSettingsCRC = nlChecksum32(&mBackupSettings, sizeof(VisualSettings));
@@ -1715,7 +1622,6 @@ void OptionsSaveLoad::Update(float dt)
  */
 void OptionsSaveLoad::Save()
 {
-    // Empty
 }
 
 /**
@@ -1723,166 +1629,4 @@ void OptionsSaveLoad::Save()
  */
 void OptionsSaveLoad::Revert()
 {
-    // Empty
 }
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800BB21C | size: 0x48
-//  */
-// void Function1<void, SlideMenuItem*>::FunctorBase::~FunctorBase()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x54 | 0x800BB270 | size: 0x78
-//  */
-// void Function1<void, SlideMenuItem*>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (SlideMenuList::*)()>,
-// SlideMenuList*>>::Clone() const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xCC | 0x800BB2E8 | size: 0x30
-//  */
-// void Function1<void, SlideMenuItem*>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (SlideMenuList::*)()>,
-// SlideMenuList*>>::operator()(SlideMenuItem*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xE4 | 0x800BB3FC | size: 0x60
-//  */
-// void MenuItem<SlideMenuItem>::~MenuItem()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x210 | 0x800BB528 | size: 0x5C
-//  */
-// void Function1<void, SlideMenuItem*>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (SlideMenuList::*)()>,
-// SlideMenuList*>>::~FunctorImpl()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800BB588 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800BB5C0 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800BB644 | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800BB7A0 | size: 0x38
-//  */
-// void FEFinder<TLImageInstance, 2>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800BB7D8 | size: 0x84
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800BB85C | size: 0x15C
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x430 | 0x800BB9B8 | size: 0x38
-//  */
-// void FEFinder<TLTextInstance, 3>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x468 | 0x800BB9F0 | size: 0x84
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x4EC | 0x800BBA74 | size: 0x15C
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x648 | 0x800BBBD0 | size: 0x38
-//  */
-// void FEFinder<TLInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x680 | 0x800BBC08 | size: 0x84
-//  */
-// void FEFinder<TLInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x704 | 0x800BBC8C | size: 0x15C
-//  */
-// void FEFinder<TLInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800BBDE8 | size: 0x70
-//  */
-// void MenuList<SlideMenuItem>::~MenuList()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x70 | 0x800BBE58 | size: 0x58
-//  */
-// void MenuItem<SlideMenuItem>::MenuItem()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800BBEB0 | size: 0x1C
-//  */
-// void MemFun<SlideMenuList, void>(void (SlideMenuList::*)())
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800BBECC | size: 0x38
-//  */
-// void Bind<void, Detail::MemFunImpl<void, void (SlideMenuList::*)()>, SlideMenuList*>(Detail::MemFunImpl<void, void (SlideMenuList::*)()>,
-// SlideMenuList* const&)
-// {
-// }

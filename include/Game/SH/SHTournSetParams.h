@@ -2,6 +2,7 @@
 #define _SHTOURNSETPARAMS_H_
 
 #include "types.h"
+#include "NL/nlString.h"
 #include "Game/BaseSceneHandler.h"
 #include "Game/FE/tlComponentInstance.h"
 #include "Game/FE/feButtonComponent.h"
@@ -20,6 +21,10 @@ public:
     void SetInitialParams(bool, int, int);
     void ApplyMenuDefaults();
     void InitializeMenu();
+    void Proceed();
+
+    bool ColourAllText(const nlColour&, int);
+    void ColourAllText(TLComponentInstance&, const nlColour&);
 
     /* 0x01C */ MenuList<TLComponentInstance> mMenuItems; // size 0x214
     /* 0x230 */ SlideMenuList* mSlideMenuLists[3];
@@ -29,13 +34,5 @@ public:
     /* 0x244 */ s32 m_numGames;
     /* 0x248 */ ButtonComponent mButtons;
 }; // total size: 0x26C
-
-// class FEFinder<TLComponentInstance, 4>
-// {
-// public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-// };
 
 #endif // _SHTOURNSETPARAMS_H_

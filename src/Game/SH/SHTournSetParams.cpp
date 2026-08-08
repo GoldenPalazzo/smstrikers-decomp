@@ -7,8 +7,6 @@
 #include "Game/GameSceneManager.h"
 #include "NL/nlPrint.h"
 
-typedef void FnTLComponentInstanceCb(TLComponentInstance*);
-
 namespace SingleHighlite
 {
 void OpenItem(TLComponentInstance*);
@@ -18,31 +16,6 @@ void TempDisableSound();
 
 extern nlColour SubMenuHighliteColour;
 extern nlColour SubMenuUnhighliteColour;
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800E1D48 | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                          unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800E1CC4 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                       unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800E1C8C | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                      InlineHasher)
-// {
-// }
 
 /**
  * Offset/Address/Size: 0x21F0 | 0x800E1BC4 | size: 0xC8
@@ -69,6 +42,35 @@ TournSetParamsScene::~TournSetParamsScene()
     {
         delete mSlideMenuLists[i];
     }
+}
+
+void TournSetParamsScene::Proceed()
+{
+    SlideMenuList* list = mSlideMenuLists[0];
+    CustomTournament* customTourn = &GameInfoManager::Instance()->mCustomTournamentInfo;
+    SlideMenuItem* item = list->GetMenuItem()->GetType();
+    m_isLeagueMode = !item->GetUserEnumType();
+
+    list = mSlideMenuLists[1];
+    item = list->GetMenuItem()->GetType();
+    m_numTeams = item->GetUserEnumType() + 3;
+
+    list = mSlideMenuLists[2];
+    item = list->GetMenuItem()->GetType();
+    m_numGames = (item->GetUserEnumType() == 0) ? 1 : 2;
+
+    customTourn->m_tournMode = (eTournamentMode)(m_isLeagueMode ? 0 : 1);
+    customTourn->m_numTeams = m_numTeams;
+    if (m_isLeagueMode)
+    {
+        customTourn->m_numGamesPerTeam = m_numGames;
+    }
+
+    customTourn->ConstructCup();
+    GameInfoManager::Instance()->SetMode(GameInfoManager::GM_TOURNAMENT);
+    GameInfoManager::Instance()->mCurrentCup->mCupSettings = GameInfoManager::Instance()->mUserInfo.mGameplayOptions;
+
+    GameSceneManager::Instance()->Push(SCENE_CUP_OPTIONS_INITIAL_TOURN, SCREEN_FORWARD, true);
 }
 
 /**
@@ -111,12 +113,9 @@ void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* co
 
 /**
  * Offset/Address/Size: 0x168C | 0x800E1060 | size: 0x644
- * TODO: 99.74% match - first submenu call uses a direct instance argument instead of a temporary move.
  */
 void TournSetParamsScene::SceneCreated()
 {
-    MenuItem<TLComponentInstance>* menuItem;
-    TLComponentInstance* instance;
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
     char menuname[16] = { 0 };
@@ -125,12 +124,12 @@ void TournSetParamsScene::SceneCreated()
     {
         nlSNPrintf(menuname, 16, "MENU ITEM%d", i + 1);
 
-        instance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        TLComponentInstance* instance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(menuname)));
 
-        menuItem = mMenuItems.AddItem(instance);
+        MenuItem<TLComponentInstance>* menuItem = mMenuItems.AddItem(instance);
 
         menuItem->SetCallback(ON_HIGHLIGHT, SingleHighlite::OpenItem);
         menuItem->SetCallback(ON_UNHIGHLIGHT, SingleHighlite::CloseItem);
@@ -145,9 +144,9 @@ void TournSetParamsScene::SceneCreated()
 
     mMenuItems.SetFlag(3);
 
-    TLSlide* currentSlide = presentation->m_currentSlide;
+    TLSlide* currentSlide = presentation->GetActiveSlide();
 
-    instance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+    TLComponentInstance* instance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("CHOICES")));
@@ -167,51 +166,7 @@ void TournSetParamsScene::SceneCreated()
         InlineHasher(nlStringLowerHash("numbers2")));
     BuildSubMenuList(2, instance, true, 0);
 
-    SlideMenuList* slideMenuList = mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
-    if (slideMenuList != NULL)
-    {
-        TLInstance* inst;
-        TLInstance* head;
-        TLSlide* slide;
-        TLSlide* firstSlide;
-        TLComponentInstance* comp = slideMenuList->GetComponentInstance();
-        if (comp != NULL)
-        {
-            if (comp->GetActiveSlide() != NULL)
-            {
-                firstSlide = comp->GetActiveSlide();
-                slide = firstSlide;
-                do
-                {
-                    comp->SetActiveSlide(slide);
-                    head = comp->GetActiveSlide()->m_instances;
-                    inst = head;
-                    if (inst != NULL)
-                    {
-                        do
-                        {
-                            if (inst->m_type == TLAT_TEXT)
-                            {
-                                inst->SetAssetColour(SubMenuHighliteColour);
-                            }
-                            else if (inst->m_type == TLAT_IMAGE)
-                            {
-                                unsigned long hash = inst->m_hash;
-                                if (hash != nlStringLowerHash("white_box"))
-                                {
-                                    inst->SetAssetColour(SubMenuHighliteColour);
-                                }
-                            }
-                            inst = inst->m_next;
-                        } while (inst != head);
-                    }
-                    slide = slide->m_next;
-                } while (slide != firstSlide);
-
-                comp->SetActiveSlide(firstSlide);
-            }
-        }
-    }
+    ColourAllText(SubMenuHighliteColour, mMenuItems.GetActiveItemIndex());
 
     InitializeMenu();
 
@@ -225,42 +180,15 @@ void TournSetParamsScene::SceneCreated()
 
 /**
  * Offset/Address/Size: 0xBA0 | 0x800E0574 | size: 0xAEC
- * TODO: 99.31% match - remaining slide traversal register swaps
  */
 void TournSetParamsScene::Update(float fDeltaT)
 {
     BaseSceneHandler::Update(fDeltaT);
     mButtons.CentreButtons();
 
-    SlideMenuList* slideMenuList;
-
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
     {
-        SlideMenuList* list = mSlideMenuLists[0];
-        CustomTournament* customTourn = &nlSingleton<GameInfoManager>::s_pInstance->mCustomTournamentInfo;
-        SlideMenuItem* item = list->GetMenuItem()->GetType();
-        m_isLeagueMode = !item->GetUserEnumType();
-
-        list = mSlideMenuLists[1];
-        item = list->GetMenuItem()->GetType();
-        m_numTeams = item->GetUserEnumType() + 3;
-
-        list = mSlideMenuLists[2];
-        item = list->GetMenuItem()->GetType();
-        m_numGames = (item->GetUserEnumType() == 0) ? 1 : 2;
-
-        customTourn->m_tournMode = (eTournamentMode)(m_isLeagueMode ? 0 : 1);
-        customTourn->m_numTeams = m_numTeams;
-        if (m_isLeagueMode)
-        {
-            customTourn->m_numGamesPerTeam = m_numGames;
-        }
-
-        customTourn->ConstructCup();
-        nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_TOURNAMENT);
-        nlSingleton<GameInfoManager>::s_pInstance->mCurrentCup->mCupSettings = nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mGameplayOptions;
-
-        GameSceneManager::Instance()->Push(SCENE_CUP_OPTIONS_INITIAL_TOURN, SCREEN_FORWARD, true);
+        Proceed();
 
         FEAudio::PlayAnimAudioEvent("sfx_accept", false);
     }
@@ -273,217 +201,28 @@ void TournSetParamsScene::Update(float fDeltaT)
     }
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
     {
-        slideMenuList = mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
-        if (slideMenuList != NULL)
-        {
-            TLInstance* inst;
-            TLInstance* firstChild;
-            TLSlide* currentSlide;
-            TLSlide* startSlide;
-            TLComponentInstance* comp;
-            unsigned long hash;
-            comp = slideMenuList->GetComponentInstance();
-            if (comp != NULL && comp->GetActiveSlide() != NULL)
-            {
-                startSlide = comp->GetActiveSlide();
-                currentSlide = startSlide;
-
-                do
-                {
-                    comp->SetActiveSlide(currentSlide);
-                    firstChild = comp->GetActiveSlide()->m_instances;
-                    inst = firstChild;
-
-                    if (firstChild != NULL)
-                    {
-                        do
-                        {
-                            if (inst->m_type == TLAT_TEXT)
-                            {
-                                inst->SetAssetColour(SubMenuUnhighliteColour);
-                            }
-                            else if (inst->m_type == TLAT_IMAGE)
-                            {
-                                hash = inst->m_hash;
-                                if (hash != nlStringLowerHash("white_box"))
-                                {
-                                    inst->SetAssetColour(SubMenuUnhighliteColour);
-                                }
-                            }
-
-                            inst = inst->m_next;
-                        } while (inst != firstChild);
-                    }
-
-                    currentSlide = currentSlide->m_next;
-                } while (currentSlide != startSlide);
-
-                comp->SetActiveSlide(startSlide);
-            }
-        }
+        ColourAllText(SubMenuUnhighliteColour, mMenuItems.GetActiveItemIndex());
 
         if (mMenuItems.PreviousItem() == RES_OK)
         {
-            slideMenuList = mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
-            if (slideMenuList != NULL)
-            {
-                TLComponentInstance* comp;
-                TLInstance* firstChild;
-                TLInstance* inst;
-                TLSlide* startSlide;
-                TLSlide* currentSlide;
-                unsigned long hash;
-                comp = slideMenuList->GetComponentInstance();
-                if (comp != NULL && comp->GetActiveSlide() != NULL)
-                {
-                    startSlide = comp->GetActiveSlide();
-                    currentSlide = startSlide;
-
-                    do
-                    {
-                        comp->SetActiveSlide(currentSlide);
-                        firstChild = comp->GetActiveSlide()->m_instances;
-                        inst = firstChild;
-
-                        if (firstChild != NULL)
-                        {
-                            do
-                            {
-                                if (inst->m_type == TLAT_TEXT)
-                                {
-                                    inst->SetAssetColour(SubMenuHighliteColour);
-                                }
-                                else if (inst->m_type == TLAT_IMAGE)
-                                {
-                                    hash = inst->m_hash;
-                                    if (hash != nlStringLowerHash("white_box"))
-                                    {
-                                        inst->SetAssetColour(SubMenuHighliteColour);
-                                    }
-                                }
-
-                                inst = inst->m_next;
-                            } while (inst != firstChild);
-                        }
-
-                        currentSlide = currentSlide->m_next;
-                    } while (currentSlide != startSlide);
-
-                    comp->SetActiveSlide(startSlide);
-                }
-            }
+            ColourAllText(SubMenuHighliteColour, mMenuItems.GetActiveItemIndex());
         }
     }
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
     {
-        slideMenuList = mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
-        if (slideMenuList != NULL)
-        {
-            TLComponentInstance* comp;
-            TLInstance* firstChild;
-            TLInstance* inst;
-            TLSlide* startSlide;
-            TLSlide* currentSlide;
-            unsigned long hash;
-            comp = slideMenuList->GetComponentInstance();
-            if (comp != NULL && comp->GetActiveSlide() != NULL)
-            {
-                startSlide = comp->GetActiveSlide();
-                currentSlide = startSlide;
-
-                do
-                {
-                    comp->SetActiveSlide(currentSlide);
-                    firstChild = comp->GetActiveSlide()->m_instances;
-                    inst = firstChild;
-
-                    if (firstChild != NULL)
-                    {
-                        do
-                        {
-                            if (inst->m_type == TLAT_TEXT)
-                            {
-                                inst->SetAssetColour(SubMenuUnhighliteColour);
-                            }
-                            else if (inst->m_type == TLAT_IMAGE)
-                            {
-                                hash = inst->m_hash;
-                                if (hash != nlStringLowerHash("white_box"))
-                                {
-                                    inst->SetAssetColour(SubMenuUnhighliteColour);
-                                }
-                            }
-
-                            inst = inst->m_next;
-                        } while (inst != firstChild);
-                    }
-
-                    currentSlide = currentSlide->m_next;
-                } while (currentSlide != startSlide);
-
-                comp->SetActiveSlide(startSlide);
-            }
-        }
+        ColourAllText(SubMenuUnhighliteColour, mMenuItems.GetActiveItemIndex());
 
         if (mMenuItems.NextItem() == RES_OK)
         {
-            slideMenuList = mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
-            if (slideMenuList != NULL)
-            {
-                TLComponentInstance* comp;
-                TLInstance* firstChild;
-                TLInstance* inst;
-                TLSlide* startSlide;
-                TLSlide* currentSlide;
-                unsigned long hash;
-                comp = slideMenuList->GetComponentInstance();
-                if (comp != NULL && comp->GetActiveSlide() != NULL)
-                {
-                    startSlide = comp->GetActiveSlide();
-                    currentSlide = startSlide;
-
-                    do
-                    {
-                        comp->SetActiveSlide(currentSlide);
-                        firstChild = comp->GetActiveSlide()->m_instances;
-                        inst = firstChild;
-
-                        if (firstChild != NULL)
-                        {
-                            do
-                            {
-                                if (inst->m_type == TLAT_TEXT)
-                                {
-                                    inst->SetAssetColour(SubMenuHighliteColour);
-                                }
-                                else if (inst->m_type == TLAT_IMAGE)
-                                {
-                                    hash = inst->m_hash;
-                                    if (hash != nlStringLowerHash("white_box"))
-                                    {
-                                        inst->SetAssetColour(SubMenuHighliteColour);
-                                    }
-                                }
-
-                                inst = inst->m_next;
-                            } while (inst != firstChild);
-                        }
-
-                        currentSlide = currentSlide->m_next;
-                    } while (currentSlide != startSlide);
-
-                    comp->SetActiveSlide(startSlide);
-                }
-            }
+            ColourAllText(SubMenuHighliteColour, mMenuItems.GetActiveItemIndex());
         }
     }
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL))
     {
         int menuIndex = mMenuItems.GetActiveItemIndex();
-        slideMenuList = mSlideMenuLists[menuIndex];
-        if (slideMenuList != NULL)
+        if (mSlideMenuLists[menuIndex] != NULL)
         {
-            MenuResult res = slideMenuList->PreviousItem();
+            MenuResult res = mSlideMenuLists[mMenuItems.GetActiveItemIndex()]->PreviousItem();
 
             switch (res)
             {
@@ -503,10 +242,9 @@ void TournSetParamsScene::Update(float fDeltaT)
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xC, true, NULL))
     {
         int menuIndex = mMenuItems.GetActiveItemIndex();
-        slideMenuList = mSlideMenuLists[menuIndex];
-        if (slideMenuList != NULL)
+        if (mSlideMenuLists[menuIndex] != NULL)
         {
-            MenuResult res = slideMenuList->NextItem();
+            MenuResult res = mSlideMenuLists[mMenuItems.GetActiveItemIndex()]->NextItem();
 
             switch (res)
             {
@@ -633,4 +371,55 @@ void TournSetParamsScene::InitializeMenu()
             mSlideMenuLists[1]->GetMenuItem(i)->SetDisabledFlag(false);
         }
     }
+}
+
+void TournSetParamsScene::ColourAllText(TLComponentInstance& component, const nlColour& colour)
+{
+    if (component.GetActiveSlide() != NULL)
+    {
+        TLSlide* firstSlide = component.GetActiveSlide();
+        TLSlide* slide = firstSlide;
+        do
+        {
+            component.SetActiveSlide(slide);
+            TLInstance* firstChild = component.GetActiveSlide()->m_instances;
+            TLInstance* child = firstChild;
+            if (firstChild != NULL)
+            {
+                do
+                {
+                    if (child->m_type == TLAT_TEXT)
+                    {
+                        child->SetAssetColour(colour);
+                    }
+                    else if (child->m_type == TLAT_IMAGE)
+                    {
+                        unsigned long hash = child->GetHashID();
+                        if (hash != nlStringLowerHash("white_box"))
+                        {
+                            child->SetAssetColour(colour);
+                        }
+                    }
+                    child = child->m_next;
+                } while (child != firstChild);
+            }
+            slide = slide->m_next;
+        } while (slide != firstSlide);
+        component.SetActiveSlide(firstSlide);
+    }
+}
+
+bool TournSetParamsScene::ColourAllText(const nlColour& colour, int menuitem)
+{
+    SlideMenuList* list = mSlideMenuLists[menuitem];
+    if (list != NULL)
+    {
+        TLComponentInstance* component = list->GetComponentInstance();
+        if (component != NULL)
+        {
+            ColourAllText(*component, colour);
+            return true;
+        }
+    }
+    return false;
 }

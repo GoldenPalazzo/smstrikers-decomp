@@ -65,7 +65,7 @@ public:
                             }
                             else if (child->m_type == TLAT_IMAGE)
                             {
-                                hash = child->m_hash;
+                                hash = child->GetHashID();
                                 if (hash != nlStringLowerHash("white_box"))
                                 {
                                     child->SetAssetColour(colour);
@@ -102,7 +102,7 @@ public:
                         }
                         else if (child->m_type == TLAT_IMAGE)
                         {
-                            unsigned long hash = child->m_hash;
+                            unsigned long hash = child->GetHashID();
                             if (hash != nlStringLowerHash("white_box"))
                             {
                                 child->SetAssetColour(colour);
@@ -227,85 +227,5 @@ public:
     /* 0x26C */ CheatSettings& mSettings;
     /* 0x270 */ CheatSettings mBackupSettings;
 }; // total size: 0x278
-
-// class Function1<void, SlideMenuItem*>
-// {
-// public:
-//     void FunctorBase::~FunctorBase();
-//     void FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (SlideMenuList::*)()>, SlideMenuList*>>::Clone() const;
-//     void FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (SlideMenuList::*)()>, SlideMenuList*>>::operator()(SlideMenuItem*);
-//     void FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (SlideMenuList::*)()>, SlideMenuList*>>::~FunctorImpl();
-// };
-
-// class SlideMenuList
-// {
-// public:
-//     ~SlideMenuList();
-//     void Update(float);
-// };
-
-// class MenuItem<SlideMenuItem>
-// {
-// public:
-//     void ~MenuItem();
-//     void MenuItem();
-// };
-
-// class SlideMenuItem
-// {
-// public:
-//     ~SlideMenuItem();
-// };
-
-// class FEFinder<TLComponentInstance, 4>
-// {
-// public:
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-// };
-
-// class FEFinder<TLImageInstance, 2>
-// {
-// public:
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-// };
-
-// class FEFinder<TLTextInstance, 3>
-// {
-// public:
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-// };
-
-// class FEFinder<TLInstance, 4>
-// {
-// public:
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-// };
-
-// class MenuList<SlideMenuItem>
-// {
-// public:
-//     void ~MenuList();
-// };
-
-// class MemFun<SlideMenuList, void>(void (SlideMenuList
-// {
-// public:
-//     void *)());
-// };
-
-// class Bind < void, Detail
-// {
-// public:
-//     void MemFunImpl<void, void (SlideMenuList::*)()>,
-//         SlideMenuList * > (Detail::MemFunImpl<void, void (SlideMenuList::*)()>, SlideMenuList* const&);
-// };
 
 #endif // _FEOPTIONSSUBMENUS_H_
