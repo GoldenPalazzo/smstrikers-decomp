@@ -23,6 +23,9 @@ public:
     void CreateFlatCylinderEndGeometry(PrimitiveShape& prim);
     void CreateCylinderGeometry(PrimitiveShape& prim);
     void DrawSpherePrimitive(const nlMatrix4& mat_world, float radius, const nlColour& colour) const;
+    void DrawBoxPrimitive(const nlMatrix4& mat_world, float fX, float fY, float fZ, const nlColour& colour) const;
+    void DrawCircle2D(const nlVector3& p0, float fRadius, const nlColour& colour, bool bWithDepth) const;
+    void DrawEllipse2D(const nlVector3& p0, float fRadius, float fScaleX, float fScaleY, const nlColour& colour, bool bWithDepth) const;
     void DrawLine3D(const nlVector3& p0, const nlVector3& p1, const nlColour& colour, bool bWithDepth) const;
     void DrawRectangle2D(float x, float y, float w, float h, float z, const nlColour& colour, int view) const;
     void Initialize();

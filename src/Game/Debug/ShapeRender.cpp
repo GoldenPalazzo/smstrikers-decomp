@@ -9,11 +9,12 @@
 #include "NL/gl/glState.h"
 
 ShapeRender g_ShapeRenderer;
+static unsigned char g_bWire;
 static unsigned long UnlitProgram = glGetProgram("3d unlit");
 static unsigned long LitProgram = glGetProgram("3d pointlit");
 const u32 WhiteTexture = glGetTexture("global/white");
 
-static unsigned char g_bLit;
+static unsigned char g_bLit = 1;
 
 /**
  * Offset/Address/Size: 0x149C | 0x801FC72C | size: 0x418
@@ -311,7 +312,7 @@ void ShapeRender::DrawSpherePrimitive(const nlMatrix4& mat_world, float radius, 
     unsigned long topLitProgram;
     void* pLightData;
 
-    radius = radius / 100.0f;
+    radius = radius / 0.5f;
 
     nlMakeScaleMatrix(mat_hemiTop, radius, radius, radius);
     nlMakeRotationMatrixX(mat_rot, 3.1415927f);
@@ -423,6 +424,69 @@ void ShapeRender::DrawSpherePrimitive(const nlMatrix4& mat_world, float radius, 
 }
 
 /**
+ * Dead-stripped by mwld (MarioSoccerZ.MAP: UNUSED, size 0x1C0).
+ */
+void ShapeRender::DrawBoxPrimitive(const nlMatrix4& mat_world, float fX, float fY, float fZ, const nlColour& colour) const
+{
+    nlMatrix4 objMatrix;
+    nlMatrix4 mat_out;
+
+    nlMakeScaleMatrix(objMatrix, fX, fY, fZ);
+    nlMultMatrices(mat_out, objMatrix, mat_world);
+
+    {
+        unsigned long matrix = glAllocMatrix();
+        if (matrix + 0x10000 != 0xFFFF)
+        {
+            glSetMatrix(matrix, mat_out);
+        }
+
+        glModelPacket* packet;
+        void* pUserData;
+        glModel* pModel = glModelDupNoStreams(m_Box.model, true, false);
+
+        if (g_bLit)
+        {
+            void* pColourData;
+            pUserData = glUserAlloc(GLUD_Diffuse, sizeof(nlFloatColour), false);
+            pColourData = glUserGetData(pUserData);
+
+            ((nlFloatColour*)pColourData)->c[0] = (float)colour.c[0] / 255.0f;
+            ((nlFloatColour*)pColourData)->c[1] = (float)colour.c[1] / 255.0f;
+            ((nlFloatColour*)pColourData)->c[2] = (float)colour.c[2] / 255.0f;
+            ((nlFloatColour*)pColourData)->c[3] = (float)colour.c[3] / 255.0f;
+        }
+        else
+        {
+            void* pColourData;
+            pUserData = glUserAlloc(GLUD_ConstantColour, sizeof(nlColour), false);
+            pColourData = glUserGetData(pUserData);
+            *(unsigned long*)pColourData = *(unsigned long*)&colour;
+        }
+
+        packet = pModel->packets;
+        void* pLightData = m_pLightUserData;
+        const unsigned long boxLitProgram = LitProgram;
+
+        while (packet < &pModel->packets[pModel->numPackets])
+        {
+            packet->state.matrix = matrix;
+            glUserAttach(pUserData, packet, false);
+
+            if (g_bLit && pLightData != NULL)
+            {
+                packet->state.program = boxLitProgram;
+                glUserAttach(pLightData, packet, false);
+            }
+
+            packet++;
+        }
+
+        glViewAttachModel(m_eView, pModel);
+    }
+}
+
+/**
  * Offset/Address/Size: 0x930 | 0x801FBBC0 | size: 0x190
  */
 void ShapeRender::DrawLine3D(const nlVector3& p0, const nlVector3& p1, const nlColour& colour, bool bWithDepth) const
@@ -460,6 +524,76 @@ void ShapeRender::DrawLine3D(const nlVector3& p0, const nlVector3& p1, const nlC
 
         glViewAttachModel(m_eView, 2, writer.GetModel());
     }
+}
+
+/**
+ * Dead-stripped by mwld (MarioSoccerZ.MAP: UNUSED, size 0x278).
+ */
+void ShapeRender::DrawEllipse2D(const nlVector3& p0, float fRadius, float fScaleX, float fScaleY, const nlColour& colour, bool bWithDepth) const
+{
+    GLMeshWriter mesh;
+
+    glSetDefaultState(bWithDepth);
+    glSetCurrentMatrix(glGetIdentityMatrix());
+    glSetCurrentTexture(WhiteTexture, GLTT_Diffuse);
+    glSetCurrentProgram(UnlitProgram);
+
+    const eGLStream stream_decl[3] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+
+    if (mesh.Begin(31, g_bWire ? GLP_LineStrip : GLP_TriFan, 3, stream_decl, false))
+    {
+        nlVector3 v3point;
+        nlVector2 uv0;
+
+        v3point.f.z = p0.f.z;
+        v3point.f.x = p0.f.x;
+        v3point.f.y = p0.f.y;
+
+        float fRadians = 0.0f;
+
+        mesh.Colour(colour);
+        uv0.f.x = 0.0f;
+        uv0.f.y = 0.0f;
+        ((GLMeshWriterCore*)&mesh)->Texcoord(uv0);
+        mesh.Vertex(v3point);
+
+        const float angleScale = 10430.378f;
+        int i = 0;
+        const float uvZero = 0.0f;
+        const float angleStep = 0.20943951f;
+        nlVector2 uv1;
+
+        while (i < 30)
+        {
+            nlSinCos(&v3point.f.x, &v3point.f.y, (unsigned short)(int)(angleScale * fRadians));
+            v3point.f.x = p0.f.x + fScaleX * (v3point.f.x * fRadius);
+            v3point.f.y = p0.f.y + fScaleY * (v3point.f.y * fRadius);
+
+            mesh.Colour(colour);
+            uv1.f.x = uvZero;
+            uv1.f.y = uvZero;
+            ((GLMeshWriterCore*)&mesh)->Texcoord(uv1);
+            mesh.Vertex(v3point);
+
+            i++;
+            fRadians += angleStep;
+        }
+
+        if (!mesh.End())
+        {
+            return;
+        }
+
+        glViewAttachModel(m_eView, 2, mesh.GetModel());
+    }
+}
+
+/**
+ * Dead-stripped by mwld (MarioSoccerZ.MAP: UNUSED, size 0x264).
+ */
+void ShapeRender::DrawCircle2D(const nlVector3& p0, float fRadius, const nlColour& colour, bool bWithDepth) const
+{
+    DrawEllipse2D(p0, fRadius, 1.0f, 1.0f, colour, bWithDepth);
 }
 
 /**
@@ -553,7 +687,7 @@ static inline void BuildShapeMesh(PrimitiveShape& shape)
     }
 }
 
-static inline void* CreateLightData2()
+static inline void* CreateLightData()
 {
     void* p = glUserAlloc(GLUD_Light, sizeof(unsigned long) + sizeof(GLLightUserData), true);
     unsigned long* p32 = (unsigned long*)glUserGetData(p);
@@ -574,7 +708,7 @@ static inline void* CreateLightData2()
     return p;
 }
 
-static inline void AllocResource2(PrimitiveShape* pPrimitive, int nVerts)
+static inline void AllocResource(PrimitiveShape* pPrimitive, int nVerts)
 {
     pPrimitive->position = (nlVector3*)glResourceAlloc(nVerts * sizeof(nlVector3), GLM_VertexData);
     pPrimitive->normal = (nlVector3*)glResourceAlloc(nVerts * sizeof(nlVector3), GLM_VertexData);
@@ -582,7 +716,7 @@ static inline void AllocResource2(PrimitiveShape* pPrimitive, int nVerts)
     pPrimitive->vertCount = nVerts;
 }
 
-static inline void CreateBoxGeometry2(PrimitiveShape& prim)
+static inline void CreateBoxGeometry(PrimitiveShape& prim)
 {
     static int ind_vert[24] = {
         0,
@@ -668,15 +802,15 @@ static inline void CreateBoxGeometry2(PrimitiveShape& prim)
         { 0.0f, -1.0f, 0.0f },
         { 0.0f, -1.0f, 0.0f },
 
-        { 0.0f, 1.0f, 0.0f },
-        { 0.0f, 1.0f, 0.0f },
-        { 0.0f, 1.0f, 0.0f },
-        { 0.0f, 1.0f, 0.0f },
+        { 1.0f, 0.0f, 0.0f },
+        { 1.0f, 0.0f, 0.0f },
+        { 1.0f, 0.0f, 0.0f },
+        { 1.0f, 0.0f, 0.0f },
 
-        { 1.0f, 0.0f, 0.0f },
-        { 1.0f, 0.0f, 0.0f },
-        { 1.0f, 0.0f, 0.0f },
-        { 1.0f, 0.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f },
 
         { -1.0f, 0.0f, 0.0f },
         { -1.0f, 0.0f, 0.0f },
@@ -728,8 +862,8 @@ void ShapeRender::Initialize()
     if (!m_Initialized)
     {
         m_Initialized = true;
-        AllocResource2(&m_Box, 0x24);
-        CreateBoxGeometry2(m_Box);
+        AllocResource(&m_Box, 0x24);
+        CreateBoxGeometry(m_Box);
         CreateCylinderGeometry(m_Cylinder);
         CreateHemisphereGeometry(m_Hemisphere);
         CreateFlatCylinderEndGeometry(m_FlatCylinderEnd);
@@ -737,7 +871,7 @@ void ShapeRender::Initialize()
         BuildShapeMesh(m_Cylinder);
         BuildShapeMesh(m_Hemisphere);
         BuildShapeMesh(m_FlatCylinderEnd);
-        m_pLightUserData = CreateLightData2();
+        m_pLightUserData = CreateLightData();
         m_eView = (eGLView)7;
     }
 }

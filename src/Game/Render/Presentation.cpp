@@ -63,8 +63,7 @@ public:
     void DoCupWinOverlay();
 };
 
-extern unsigned long cupTrophyHash;
-char trophyFileName[0xFF];
+char trophyFileName[0xFF] = "";
 static const char* idleFun = "Idle";
 static bool loopPresentation;
 
@@ -141,7 +140,7 @@ Presentation::Presentation()
     mQueuedFunction = NULL;
     mGoalQuality = HIGHLIGHT_QUALITY_EMPTY;
     unsigned long fileSize = 0;
-    void* bc = nlLoadEntireFile("presentation.bc", &fileSize, 0x20, AllocateStart);
+    void* bc = nlLoadEntireFile("art/presentation/presentation.byte_code", &fileSize, 0x20, AllocateStart);
     LoadByteCode(bc);
     nlStrNCpy<char>(mCurrentFunction, idleFun, 64);
     mIsAllowedToSkip[0] = true;
@@ -158,6 +157,8 @@ Presentation& Presentation::Instance()
     static Presentation instance;
     return instance;
 }
+
+unsigned long cupTrophyHash;
 
 /**
  * Offset/Address/Size: 0x1D18 | 0x801264FC | size: 0x140
@@ -340,7 +341,7 @@ void Presentation::Finish()
     }
     else
     {
-        if (mCurrentFunction == strstr(mCurrentFunction, "frame"))
+        if (mCurrentFunction == strstr(mCurrentFunction, "Goal"))
         {
             if (g_pGame->m_eGameState != GS_END_GAME)
             {
@@ -463,6 +464,208 @@ static inline bool IsDuringGamePauseState()
 {
     return !FrontEnd::m_bGameOver && nlTaskManager::m_pInstance->m_CurrState == 1;
 }
+
+static inline void SetIdleCallback(AudioStreamTrack::StreamTrack* track, const Function0<void>& f0)
+{
+    track->m_IdleCallback = Function<FnVoidVoid>(f0);
+}
+
+inline void Presentation::RaiseEvent(const char* type, const char* param)
+{
+    NISData* data = new ((u8*)g_pEventManager->CreateValidEvent(0x56, 0x20) + 0x10) NISData();
+    data->Type = type;
+    data->Param = param;
+}
+
+inline void Presentation::BeginByPass()
+{
+    mByPassWasSkipped = false;
+    mInsideByPass = true;
+}
+
+inline void Presentation::EndByPass()
+{
+    if (mByPassing)
+    {
+        mByPassWasSkipped = true;
+    }
+    mInsideByPass = false;
+    mByPassing = false;
+}
+
+inline void Presentation::PlayCharacterDirection()
+{
+    mWaitingForCharacterDirectionSince = FixedUpdateTask::mSimulationTime;
+    NisPlayer::Instance()->PlayCharacterDirection();
+}
+
+inline void Presentation::PlayCupOverlay()
+{
+    PlayOverlay("cup", 0.2f, -15.0f);
+    const char* streamName = GetCupStreamName(nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode());
+    AudioLoader::StartFEStream(streamName, false, "Music");
+    AudioStreamTrack::TrackManagerBase* mgr = AudioStreamTrack::TrackManagerBase::Get();
+    AudioStreamTrack::StreamTrack* track = mgr->GetTrack(nlStringLowerHash("Music"));
+    Function0<void> f0(CupWinStingerDone);
+    SetIdleCallback(track, f0);
+}
+
+inline void Presentation::PlayNis()
+{
+    if (NisPlayer::Instance()->Play())
+    {
+        if (nlTaskManager::m_pInstance->m_CurrState == 0x100)
+        {
+            return;
+        }
+        if (!IsDuringGamePauseState())
+        {
+            nlTaskManager::SetNextState(0x100);
+        }
+    }
+    else
+    {
+        StopWithUndo();
+    }
+}
+
+inline void Presentation::PlaySfx(const char* sfx)
+{
+    Audio::PlayWorldSFXbyStr(sfx, 100.0f, -1.0f, false, true, NULL, NULL, NULL);
+}
+
+inline void Presentation::PlaySfxWithVol(const char* sfx, float fVol)
+{
+    Audio::PlayWorldSFXbyStr(sfx, fVol, -1.0f, false, true, NULL, NULL, NULL);
+}
+
+inline void Presentation::ResetNisPlayer()
+{
+    NisPlayer::Instance()->Reset();
+}
+
+inline void Presentation::SaveGoalAsHighlight()
+{
+    ReplayChoreo::Instance().SaveHighlight((ReplayChoreo::HighlightQuality)mGoalQuality);
+}
+
+inline void Presentation::SetTrophyVisible(bool visible)
+{
+    if (cupTrophyHash == 0)
+    {
+        return;
+    }
+    DrawableObject* obj = WorldManager::s_World->FindDrawableObject(cupTrophyHash);
+    if (visible)
+    {
+        obj->m_uObjectFlags |= 1;
+    }
+    else
+    {
+        obj->m_uObjectFlags &= ~1;
+    }
+    if (visible)
+    {
+        CrowdMood::AdjustMood(CrowdMood::CM_Positive, 0xa);
+        CrowdMood::EnableCrowdDecay(false);
+    }
+    else
+    {
+        cupTrophyHash = 0;
+        CrowdMood::EnableCrowdDecay(true);
+    }
+}
+
+inline void Presentation::StopAllStreams()
+{
+    Audio::StopStreaming();
+}
+
+inline void Presentation::StopJumbotron()
+{
+    if (Jumbotron::instance.m_State == 4)
+    {
+        Jumbotron::instance.StopPlaying();
+    }
+}
+
+inline void Presentation::UnloadJumbotron()
+{
+    if (Jumbotron::instance.m_State == 4)
+    {
+        Jumbotron::instance.StopPlaying();
+    }
+    Jumbotron::instance.Reset();
+}
+
+inline void Presentation::PlayJumbotron()
+{
+    Jumbotron::instance.WaitForLoad();
+    Jumbotron::instance.BeginPlaying();
+}
+
+inline void Presentation::WaitForAutoReplayCompletion(const char* wipe)
+{
+    if (nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition == NULL)
+    {
+        nlSingleton<ScreenTransitionManager>::s_pInstance->SelectRandomTransition(wipe);
+    }
+    if (!ReplayChoreo::Instance().Done())
+    {
+        StopWithUndo();
+    }
+}
+
+inline void Presentation::WaitForCharacterDirection()
+{
+    if (mWaitingForCharacterDirectionSince > 0.0f)
+    {
+        if (FixedUpdateTask::mSimulationTime - mWaitingForCharacterDirectionSince < 1.0f)
+        {
+            StopWithUndo();
+        }
+    }
+}
+
+inline void Presentation::WaitForNisCompletion(const char* wipe)
+{
+    float cutTime = 0.0f;
+    if (nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition == NULL)
+    {
+        nlSingleton<ScreenTransitionManager>::s_pInstance->SelectRandomTransition(wipe);
+    }
+    if (nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition != NULL)
+    {
+        cutTime = 0.2f + nlSingleton<ScreenTransitionManager>::s_pInstance->GetSelectedTransitionCutTime();
+    }
+    if (NisPlayer::Instance()->TimeLeft() > cutTime)
+    {
+        StopWithUndo();
+    }
+}
+
+inline void Presentation::Wipe(const char* wipe)
+{
+    if (mByPassing)
+    {
+        return;
+    }
+    if (mUseInterruptWipe != NULL)
+    {
+        wipe = mUseInterruptWipe;
+    }
+    Wiper::Instance().DoWipe(wipe);
+    if (!Wiper::Instance().CutHasOccured() && Wiper::Instance().WipeInProgress())
+    {
+        StopWithUndo();
+    }
+    else
+    {
+        mUseInterruptWipe = 0;
+    }
+}
+
+#include "Presentation_interp.cpp"
 
 /**
  * Offset/Address/Size: 0xE70 | 0x80125654 | size: 0x67C
@@ -1056,11 +1259,6 @@ void Presentation::StopOverlay()
     mOverlayDelay = 0.0f;
 }
 
-static inline void SetIdleCallback(AudioStreamTrack::StreamTrack* track, const Function0<void>& f0)
-{
-    track->m_IdleCallback = Function<FnVoidVoid>(f0);
-}
-
 /**
  * Offset/Address/Size: 0x19C | 0x80124980 | size: 0x1D0
  */
@@ -1122,477 +1320,4 @@ void Presentation::Reset()
     NisPlayer::Instance()->Reset();
     ReplayChoreo::Instance().Reset();
     ReplayManager::Instance()->Flush();
-}
-
-inline void Presentation::RaiseEvent(const char* type, const char* param)
-{
-    NISData* data = new ((u8*)g_pEventManager->CreateValidEvent(0x56, 0x20) + 0x10) NISData();
-    data->Type = type;
-    data->Param = param;
-}
-
-inline void Presentation::BeginByPass()
-{
-    mByPassWasSkipped = false;
-    mInsideByPass = true;
-}
-
-inline void Presentation::EndByPass()
-{
-    if (mByPassing)
-    {
-        mByPassWasSkipped = true;
-    }
-    mInsideByPass = false;
-    mByPassing = false;
-}
-
-inline void Presentation::PlayCharacterDirection()
-{
-    mWaitingForCharacterDirectionSince = FixedUpdateTask::mSimulationTime;
-    NisPlayer::Instance()->PlayCharacterDirection();
-}
-
-inline void Presentation::PlayCupOverlay()
-{
-    PlayOverlay("cup", 0.2f, -15.0f);
-    const char* streamName = GetCupStreamName(nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode());
-    AudioLoader::StartFEStream(streamName, false, "Music");
-    AudioStreamTrack::TrackManagerBase* mgr = AudioStreamTrack::TrackManagerBase::Get();
-    AudioStreamTrack::StreamTrack* track = mgr->GetTrack(nlStringLowerHash("Music"));
-    Function0<void> f0(CupWinStingerDone);
-    SetIdleCallback(track, f0);
-}
-
-inline void Presentation::PlayNis()
-{
-    if (NisPlayer::Instance()->Play())
-    {
-        if (nlTaskManager::m_pInstance->m_CurrState == 0x100)
-        {
-            return;
-        }
-        if (!IsDuringGamePauseState())
-        {
-            nlTaskManager::SetNextState(0x100);
-        }
-    }
-    else
-    {
-        StopWithUndo();
-    }
-}
-
-inline void Presentation::PlaySfx(const char* sfx)
-{
-    Audio::PlayWorldSFXbyStr(sfx, 100.0f, -1.0f, false, true, NULL, NULL, NULL);
-}
-
-inline void Presentation::PlaySfxWithVol(const char* sfx, float fVol)
-{
-    Audio::PlayWorldSFXbyStr(sfx, fVol, -1.0f, false, true, NULL, NULL, NULL);
-}
-
-inline void Presentation::ResetNisPlayer()
-{
-    NisPlayer::Instance()->Reset();
-}
-
-inline void Presentation::SaveGoalAsHighlight()
-{
-    ReplayChoreo::Instance().SaveHighlight((ReplayChoreo::HighlightQuality)mGoalQuality);
-}
-
-inline void Presentation::SetTrophyVisible(bool visible)
-{
-    if (cupTrophyHash == 0)
-    {
-        return;
-    }
-    DrawableObject* obj = WorldManager::s_World->FindDrawableObject(cupTrophyHash);
-    if (visible)
-    {
-        obj->m_uObjectFlags |= 1;
-    }
-    else
-    {
-        obj->m_uObjectFlags &= ~1;
-    }
-    if (visible)
-    {
-        CrowdMood::AdjustMood(CrowdMood::CM_Positive, 0xa);
-        CrowdMood::EnableCrowdDecay(false);
-    }
-    else
-    {
-        cupTrophyHash = 0;
-        CrowdMood::EnableCrowdDecay(true);
-    }
-}
-
-inline void Presentation::StopAllStreams()
-{
-    Audio::StopStreaming();
-}
-
-inline void Presentation::StopJumbotron()
-{
-    if (Jumbotron::instance.m_State == 4)
-    {
-        Jumbotron::instance.StopPlaying();
-    }
-}
-
-inline void Presentation::UnloadJumbotron()
-{
-    if (Jumbotron::instance.m_State == 4)
-    {
-        Jumbotron::instance.StopPlaying();
-    }
-    Jumbotron::instance.Reset();
-}
-
-inline void Presentation::PlayJumbotron()
-{
-    Jumbotron::instance.WaitForLoad();
-    Jumbotron::instance.BeginPlaying();
-}
-
-inline void Presentation::WaitForAutoReplayCompletion(const char* wipe)
-{
-    if (nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition == NULL)
-    {
-        nlSingleton<ScreenTransitionManager>::s_pInstance->SelectRandomTransition(wipe);
-    }
-    if (!ReplayChoreo::Instance().Done())
-    {
-        StopWithUndo();
-    }
-}
-
-inline void Presentation::WaitForCharacterDirection()
-{
-    if (mWaitingForCharacterDirectionSince > 0.0f)
-    {
-        if (FixedUpdateTask::mSimulationTime - mWaitingForCharacterDirectionSince < 1.0f)
-        {
-            StopWithUndo();
-        }
-    }
-}
-
-inline void Presentation::WaitForNisCompletion(const char* wipe)
-{
-    float cutTime = 0.0f;
-    if (nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition == NULL)
-    {
-        nlSingleton<ScreenTransitionManager>::s_pInstance->SelectRandomTransition(wipe);
-    }
-    if (nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition != NULL)
-    {
-        cutTime = 0.2f + nlSingleton<ScreenTransitionManager>::s_pInstance->GetSelectedTransitionCutTime();
-    }
-    if (NisPlayer::Instance()->TimeLeft() > cutTime)
-    {
-        StopWithUndo();
-    }
-}
-
-inline void Presentation::Wipe(const char* wipe)
-{
-    if (mByPassing)
-    {
-        return;
-    }
-    if (mUseInterruptWipe != NULL)
-    {
-        wipe = mUseInterruptWipe;
-    }
-    Wiper::Instance().DoWipe(wipe);
-    if (!Wiper::Instance().CutHasOccured() && Wiper::Instance().WipeInProgress())
-    {
-        StopWithUndo();
-    }
-    else
-    {
-        mUseInterruptWipe = 0;
-    }
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x801267BC | size: 0xAE4
- */
-void Presentation::DoFunctionCall(unsigned int func)
-{
-    switch (func)
-    {
-    case 0:
-        BeginByPass();
-        break;
-    case 1:
-        DisplayElectricFence();
-        break;
-    case 2:
-        EndByPass();
-        break;
-    case 3:
-        StopWithUndo();
-        break;
-    case 4:
-        mInterruptWipe = (const char*)Pop();
-        break;
-    case 5:
-        Jumbotron::instance.m_AnimationClass = (eJumboType)Pop();
-        Jumbotron::instance.BeginLoad();
-        break;
-    case 6:
-    {
-        const char* name;
-        NisWinnerType arg4 = (NisWinnerType)Pop();
-        NisUseFilter arg3 = (NisUseFilter)Pop();
-        NisUseStadiumOffset arg2 = (NisUseStadiumOffset)Pop();
-        NisTarget arg1 = (NisTarget)Pop();
-        name = (const char*)Pop();
-        if (mByPassing)
-        {
-            break;
-        }
-        if (nlStrCmp<char>(name, "trophy") == 0 && !Config::Global().Exists("gimme_cup_trophy") && !nlSingleton<StatsTracker>::s_pInstance->mIsUserCupWinner)
-        {
-            break;
-        }
-        NisPlayer::Instance()->Load(name, arg1, arg2, arg3, arg4);
-        break;
-    }
-    case 7:
-        if (cupTrophyHash == 0)
-        {
-            break;
-        }
-        mTrophyTextureLoaded = false;
-        trophyFileName[nlStrLen<char>(trophyFileName) - 1] = 't';
-        glBeginLoadTextureBundle(trophyFileName, ReadTrophyTexture, g_TrophyTextureLocationInMemory);
-        break;
-    case 8:
-        BeginFrameTask::s_FramerateLocked = 1;
-        break;
-    case 9:
-    {
-        ReplayType arg0 = (ReplayType)Pop();
-        if (mByPassing)
-        {
-            break;
-        }
-        if (nlTaskManager::m_pInstance->m_CurrState != 0x10 && !IsDuringGamePauseState())
-        {
-            nlTaskManager::SetNextState(0x10);
-        }
-        ReplayChoreo::Instance().StartAutoReplay(arg0);
-        if (arg0 == 7)
-        {
-            nlSingleton<OverlayManager>::s_pInstance->SetCurrentTextOverlaySlide((OverlaySlideName)7);
-            nlSingleton<OverlayManager>::s_pInstance->SetVisible((SceneList)0x44, false, true);
-            nlSingleton<OverlayManager>::s_pInstance->mIsInHighlights = true;
-            if (mOverlayDisplayed)
-            {
-                nlSingleton<OverlayManager>::s_pInstance->SetVisible(mOverlayToDisplay, false, false);
-            }
-            mOverlayDisplayed = false;
-            mOverlayToDisplay = SCENE_INVALID;
-            mOverlayDisplayLength = 0.0f;
-            mOverlayDelay = 0.0f;
-            PlayOverlay("highlight", 0.5f, 30.0f);
-        }
-        else
-        {
-            nlSingleton<OverlayManager>::s_pInstance->SetCurrentTextOverlaySlide((OverlaySlideName)7);
-            nlSingleton<OverlayManager>::s_pInstance->SetVisible((SceneList)0x44, true, true);
-            nlSingleton<OverlayManager>::s_pInstance->mIsInHighlights = false;
-        }
-        break;
-    }
-    case 10:
-        if (mByPassing)
-        {
-            break;
-        }
-        PlayCharacterDirection();
-        break;
-    case 11:
-    {
-        bool hasOverride = Config::Global().Exists("gimme_cup_trophy");
-        if (!hasOverride && !nlSingleton<StatsTracker>::s_pInstance->mIsUserCupWinner)
-        {
-            break;
-        }
-        if (hasOverride)
-        {
-            break;
-        }
-        PlayCupOverlay();
-        break;
-    }
-    case 12:
-    {
-        nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition = NULL;
-        if (ReplayChoreo::Instance().NumHighlights() <= 0)
-        {
-            break;
-        }
-        FixedUpdateTask::mTimeScale = 1.0f;
-        ParticleUpdateTask::SetTimeScale(1.0f);
-        if (nlStrCmp<char>(idleFun, mCurrentFunction) != 0 && nlStrCmp<char>(idleFun, "PlayHighlight") != 0)
-        {
-            mQueuedFunction = "PlayHighlight";
-            break;
-        }
-        nlStrNCpy<char>(mCurrentFunction, "PlayHighlight", 64);
-        mSkipPressed = false;
-        mInsideByPass = false;
-        mByPassing = false;
-        mInterruptWipe = 0;
-        mUseInterruptWipe = 0;
-        mTimeInFunction = 0.0f;
-        NisPlayer::Instance()->SetExtraNameFilter("");
-        CallFunction(nlStringHash("PlayHighlight"));
-        break;
-    }
-    case 13:
-        PlayJumbotron();
-        break;
-    case 14:
-        if (mByPassing)
-        {
-            break;
-        }
-        PlayNis();
-        break;
-    case 15:
-    {
-        float length, delay;
-        const char* name;
-        m_SP--;
-        length = *(float*)m_SP;
-        m_SP--;
-        delay = *(float*)m_SP;
-        name = (const char*)Pop();
-        PlayOverlay(name, delay, length);
-        break;
-    }
-    case 16:
-    {
-        const char* name = (const char*)Pop();
-        if (mByPassing)
-        {
-            break;
-        }
-        PlaySfx(name);
-        break;
-    }
-    case 17:
-    {
-        float vol;
-        const char* name;
-        m_SP--;
-        vol = *(float*)m_SP;
-        name = (const char*)Pop();
-        if (mByPassing)
-        {
-            break;
-        }
-        PlaySfxWithVol(name, vol);
-        break;
-    }
-    case 18:
-        Pop();
-        Pop();
-        Pop();
-        Pop();
-        break;
-    case 19:
-        RaiseEvent((const char*)Pop(), (const char*)Pop());
-        break;
-    case 20:
-        ResetNisPlayer();
-        break;
-    case 21:
-        if (mByPassing)
-        {
-            break;
-        }
-        SaveGoalAsHighlight();
-        break;
-    case 22:
-        CrowdManager::instance.SetState((eCrowdState)Pop(), false);
-        break;
-    case 23:
-    {
-        bool arg0;
-        arg0 = Pop() != 0;
-        SetTrophyVisible(arg0);
-        break;
-    }
-    case 24:
-        StopAllStreams();
-        break;
-    case 25:
-        StopJumbotron();
-        break;
-    case 26:
-        StopOverlay();
-        break;
-    case 27:
-        Pop();
-        break;
-    case 28:
-        UnloadJumbotron();
-        break;
-    case 29:
-        BeginFrameTask::s_FramerateLocked = 0;
-        break;
-    case 30:
-    {
-        const char* filter = (const char*)Pop();
-        if (mByPassing)
-        {
-            break;
-        }
-        WaitForAutoReplayCompletion(filter);
-        break;
-    }
-    case 31:
-        if (mByPassing)
-        {
-            break;
-        }
-        WaitForCharacterDirection();
-        break;
-    case 32:
-    {
-        const char* filter = (const char*)Pop();
-        if (mByPassing)
-        {
-            break;
-        }
-        WaitForNisCompletion(filter);
-        break;
-    }
-    case 33:
-        if (cupTrophyHash == 0)
-        {
-            break;
-        }
-        if (mTrophyTextureLoaded)
-        {
-            break;
-        }
-        StopWithUndo();
-        break;
-    case 34:
-        Wipe((const char*)Pop());
-        break;
-    default:
-        nlBreak();
-        break;
-    }
 }

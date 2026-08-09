@@ -405,7 +405,7 @@ void ReplayManager::RenderSnapshotAt(float deltaTime)
 
     if (!g_bEnableGamecubePadMonkey)
     {
-        static bool debugReplay = GetConfigBool(Config::Global(), "debugReplay", false);
+        static bool debugReplay = GetConfigBool(Config::Global(), "debug_replay_in_release", false);
 
         if (debugReplay && !g_bTweaking && !g_bProfiling)
         {

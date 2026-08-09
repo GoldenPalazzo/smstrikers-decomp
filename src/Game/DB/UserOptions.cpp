@@ -1,5 +1,4 @@
 #include "types.h"
-#pragma pool_data off
 
 #include "Game/DB/UserOptions.h"
 
@@ -49,7 +48,6 @@ AudioSettings::AudioSettings()
 /**
  * Offset/Address/Size: 0xBB0 | 0x801902BC | size: 0x438
  */
-#pragma optimization_level 2
 void AudioSettings::InitializeDefaults()
 {
     Config cfg(Config::ALLOCATE_HIGH);
@@ -80,7 +78,6 @@ void AudioSettings::InitializeDefaults()
         Mode = OSGetSoundMode() == 0 ? MONO : STEREO;
     }
 }
-#pragma optimization_level 4
 
 /**
  * Offset/Address/Size: 0xB20 | 0x8019022C | size: 0x90

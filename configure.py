@@ -1272,7 +1272,7 @@ config.libs = [
 
             # Debug
             Object(Matching, "Game/Debug/FrameCounter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Debug/ShapeRender.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Debug/ShapeRender.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Debug/TimeRegions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Loader
