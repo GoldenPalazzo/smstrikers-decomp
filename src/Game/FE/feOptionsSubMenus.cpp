@@ -377,7 +377,6 @@ void OptionsCheatsMenu::Save()
     SlideMenuList* list;
     int val;
 
-    // Custom Powerups
     list = (SlideMenuList*)mSlideMenuLists[0];
     if (list != NULL)
     {
@@ -389,7 +388,6 @@ void OptionsCheatsMenu::Save()
     }
     localSettings.mCustomPowerups = (CustomPowerups)val;
 
-    // Stunned Goalies
     list = (SlideMenuList*)mSlideMenuLists[1];
     if (list != NULL)
     {
@@ -401,7 +399,6 @@ void OptionsCheatsMenu::Save()
     }
     localSettings.mStunnedGoalies = (val != 0);
 
-    // Infinite Powerups
     list = (SlideMenuList*)mSlideMenuLists[2];
     if (list != NULL)
     {
@@ -413,7 +410,6 @@ void OptionsCheatsMenu::Save()
     }
     localSettings.mInfinitePowerups = (val != 0);
 
-    // Cheat TBD1
     list = (SlideMenuList*)mSlideMenuLists[3];
     if (list != NULL)
     {
@@ -425,7 +421,6 @@ void OptionsCheatsMenu::Save()
     }
     localSettings.mCheatTBD1Enabled = (val != 0);
 
-    // Cheat TBD2
     list = (SlideMenuList*)mSlideMenuLists[4];
     if (list != NULL)
     {
@@ -753,7 +748,6 @@ void OptionsAudioMenuV2::Save()
     SlideMenuList* list;
     int val;
 
-    // Music Volume
     list = (SlideMenuList*)mSlideMenuLists[0];
     if (list != NULL)
     {
@@ -765,7 +759,6 @@ void OptionsAudioMenuV2::Save()
     }
     mSettings.MusicVolume = val;
 
-    // SFX Volume
     list = (SlideMenuList*)mSlideMenuLists[1];
     if (list != NULL)
     {
@@ -777,7 +770,6 @@ void OptionsAudioMenuV2::Save()
     }
     mSettings.SFXVolume = val;
 
-    // Voice Volume
     list = (SlideMenuList*)mSlideMenuLists[2];
     if (list != NULL)
     {
@@ -789,7 +781,6 @@ void OptionsAudioMenuV2::Save()
     }
     mSettings.VoiceVolume = val;
 
-    // Audio Mode
     list = (SlideMenuList*)mSlideMenuLists[3];
     if (list != NULL)
     {
@@ -1113,7 +1104,6 @@ void OptionsVisualMenuV2::Save()
     SlideMenuList* list;
     int val;
 
-    // Auto zoom camera
     list = (SlideMenuList*)mSlideMenuLists[0];
     if (list != NULL)
     {
@@ -1125,7 +1115,6 @@ void OptionsVisualMenuV2::Save()
     }
     mSettings.mIsAutoZoomCamera = (val == 0);
 
-    // Camera zoom level
     list = (SlideMenuList*)mSlideMenuLists[1];
     if (list != NULL)
     {
@@ -1137,7 +1126,6 @@ void OptionsVisualMenuV2::Save()
     }
     mSettings.mCameraZoomLevel = (float)val / 10.0f;
 
-    // Widescreen
     list = (SlideMenuList*)mSlideMenuLists[2];
     if (list != NULL)
     {
@@ -1337,7 +1325,6 @@ void OptionsGameplayMenuV2::Save()
     SlideMenuList* list;
     int val;
 
-    // Skill Level
     list = (SlideMenuList*)mSlideMenuLists[0];
     if (list != NULL)
     {
@@ -1349,7 +1336,7 @@ void OptionsGameplayMenuV2::Save()
     }
     localSettings.SkillLevel = (GameplaySettings::eSkillLevel)val;
 
-    // Game Time - convert from menu index to seconds
+    // Convert the menu index to seconds.
     list = (SlideMenuList*)mSlideMenuLists[1];
     if (list != NULL)
     {
@@ -1384,7 +1371,6 @@ void OptionsGameplayMenuV2::Save()
         break;
     }
 
-    // Power Ups
     list = (SlideMenuList*)mSlideMenuLists[2];
     if (list != NULL)
     {
@@ -1396,7 +1382,6 @@ void OptionsGameplayMenuV2::Save()
     }
     localSettings.PowerUps = (val == 0);
 
-    // Shoot2Score
     list = (SlideMenuList*)mSlideMenuLists[3];
     if (list != NULL)
     {
@@ -1408,7 +1393,6 @@ void OptionsGameplayMenuV2::Save()
     }
     localSettings.Shoot2Score = (val == 0);
 
-    // RumbleEnabled (index 4 stores to offset 0xB)
     list = (SlideMenuList*)mSlideMenuLists[4];
     if (list != NULL)
     {
@@ -1420,7 +1404,6 @@ void OptionsGameplayMenuV2::Save()
     }
     localSettings.RumbleEnabled = (val == 0);
 
-    // BowserAttackEnabled (index 5 stores to offset 0xA)
     list = (SlideMenuList*)mSlideMenuLists[5];
     if (list != NULL)
     {
@@ -1448,6 +1431,44 @@ void OptionsGameplayMenuV2::Revert()
     cPlatPad::m_bDisableRumble = !mSettings.RumbleEnabled;
 }
 
+void OptionsGameplayMenuV2::OpenItem(TLComponentInstance* compinstance)
+{
+    TLComponentInstance* highlight;
+    TLInstance* highlightimage;
+    TLTextInstance* text;
+
+    compinstance->SetActiveSlide("in");
+
+    highlight = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        compinstance->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("high")));
+
+    highlight->SetActiveSlide("in");
+
+    text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        highlight->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("CENTER")));
+    if (!mMenuItems.GetMenuItem()->IsLocked())
+    {
+        text->SetAssetColour(MenuHighliteColour);
+    }
+
+    highlightimage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        highlight->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("may_highlite")));
+    highlightimage->SetAssetColour(MenuHighliteColour);
+
+    compinstance->Update(0.0f);
+
+    if (SingleHighlite::TEMPDISABLESOUND == false)
+    {
+        FEAudio::PlayAnimAudioEvent("sfx_menu_highlight_open", false);
+    }
+
+    SingleHighlite::TEMPDISABLESOUND = false;
+}
+
 /**
  * Offset/Address/Size: 0x620 | 0x800B5664 | size: 0x124
  */
@@ -1471,7 +1492,6 @@ void OptionsGameplayMenuV2::CloseItem(TLComponentInstance* compinstance)
 
 /**
  * Offset/Address/Size: 0x210 | 0x800B5254 | size: 0x410
- * Matches: only residual is the TU-wide MENU_ITEMS$NNNN local-static suffix (link-neutral).
  */
 OptionsSaveLoad::OptionsSaveLoad(FEPresentation* presentation, ButtonComponent::ButtonState buttonstate)
     : OptionsSubMenu(presentation, buttonstate)

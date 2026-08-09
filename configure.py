@@ -1014,7 +1014,7 @@ config.libs = [
             Object(Matching, "Game/OverlayHandlerGoal.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             Object(Matching, "Game/FE/feTweenFuncs.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/FE/feOptionsSubMenus.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/FE/feOptionsSubMenus.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/FE/feScene.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/FE/feRender.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/FE/feFontResource.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

@@ -98,13 +98,13 @@ public:
     void SetButtonState(ButtonComponent::ButtonState);
     void BuildSubMenuList(int, TLComponentInstance*, bool, int);
 
-    /* 0x004 */ FEPresentation* m_pres;                            // offset 0x4, size 0x4
-    /* 0x008 */ TLComponentInstance* m_buttons;                    // offset 0x8, size 0x4
-    /* 0x00C */ ButtonComponent::ButtonState m_currentButtonState; // offset 0xC, size 0x4
-    /* 0x010 */ ButtonComponent mButtons;                          // offset 0x10, size 0x24
-    /* 0x034 */ MenuList<TLComponentInstance> mMenuItems;          // offset 0x34, size 0x214
-    /* 0x248 */ SlideMenuList* mSlideMenuLists[8];                 // offset 0x248, size 0x20
-    /* 0x268 */ unsigned long mSettingsCRC;                        // offset 0x268, size 0x4
+    /* 0x004 */ FEPresentation* m_pres;
+    /* 0x008 */ TLComponentInstance* m_buttons;
+    /* 0x00C */ ButtonComponent::ButtonState m_currentButtonState;
+    /* 0x010 */ ButtonComponent mButtons;
+    /* 0x034 */ MenuList<TLComponentInstance> mMenuItems;
+    /* 0x248 */ SlideMenuList* mSlideMenuLists[8];
+    /* 0x268 */ unsigned long mSettingsCRC;
 }; // total size: 0x26C
 
 class OptionsSaveLoad : public OptionsSubMenu
@@ -136,6 +136,7 @@ public:
 
     void BuildSkillLevelMenu(TLComponentInstance*, int, int);
     void CloseItem(TLComponentInstance*);
+    void OpenItem(TLComponentInstance*);
 
     /* 0x26C */ GameplaySettings& mSettings;
     /* 0x270 */ GameplaySettings mBackupSettings;
