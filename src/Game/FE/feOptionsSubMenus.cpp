@@ -50,10 +50,6 @@ OptionsSubMenu::~OptionsSubMenu()
 
 /**
  * Offset/Address/Size: 0x55A4 | 0x800BA5E8 | size: 0xA30
- * TODO: 99.67% match, size exact, zero structural rows. Two colouring groups remain:
- * the first ColourAllText expansion ranks its webs in declaration order where retail
- * ranks the callee's hash first, and the Previous/NextItem index temps sit in r25
- * where retail uses r31/r29.
  */
 void OptionsSubMenu::Update(float)
 {
@@ -75,11 +71,7 @@ void OptionsSubMenu::Update(float)
 
         if (!locked)
         {
-            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
-            if (slideMenuList != NULL && slideMenuList->GetComponentInstance() != NULL)
-            {
-                ColourAllText(*slideMenuList->GetComponentInstance(), SubMenuUnhighliteColour);
-            }
+            ColourAllText(SubMenuUnhighliteColour, mMenuItems.GetActiveItemIndex());
         }
 
         mMenuItems.PreviousItem();
@@ -97,11 +89,7 @@ void OptionsSubMenu::Update(float)
 
         if (!locked)
         {
-            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
-            if (slideMenuList != NULL && slideMenuList->GetComponentInstance() != NULL)
-            {
-                ColourAllText(*slideMenuList->GetComponentInstance(), SubMenuHighliteColour);
-            }
+            ColourAllText(SubMenuHighliteColour, mMenuItems.GetActiveItemIndex());
         }
 
         return;
@@ -123,11 +111,7 @@ void OptionsSubMenu::Update(float)
 
         if (!locked)
         {
-            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
-            if (slideMenuList != NULL && slideMenuList->GetComponentInstance() != NULL)
-            {
-                ColourAllText(*slideMenuList->GetComponentInstance(), SubMenuUnhighliteColour);
-            }
+            ColourAllText(SubMenuUnhighliteColour, mMenuItems.GetActiveItemIndex());
         }
 
         mMenuItems.NextItem();
@@ -145,11 +129,7 @@ void OptionsSubMenu::Update(float)
 
         if (!locked)
         {
-            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
-            if (slideMenuList != NULL && slideMenuList->GetComponentInstance() != NULL)
-            {
-                ColourAllText(*slideMenuList->GetComponentInstance(), SubMenuHighliteColour);
-            }
+            ColourAllText(SubMenuHighliteColour, mMenuItems.GetActiveItemIndex());
         }
 
         return;
@@ -840,8 +820,6 @@ void OptionsAudioMenuV2::Revert()
 
 /**
  * Offset/Address/Size: 0x20C8 | 0x800B710C | size: 0xA3C
- * TODO: 99.65% match, size exact, zero structural rows. Same two colouring groups as
- * OptionsSubMenu::Update.
  */
 void OptionsAudioMenuV2::Update(float)
 {
@@ -850,51 +828,19 @@ void OptionsAudioMenuV2::Update(float)
 
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
     {
-        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
-        if (slideMenuList != NULL)
-        {
-            TLComponentInstance* comp = slideMenuList->GetComponentInstance();
-            if (comp != NULL)
-            {
-                ColourAllText(*comp, SubMenuUnhighliteColour);
-            }
-        }
+        ColourAllText(SubMenuUnhighliteColour, mMenuItems.GetActiveItemIndex());
 
         mMenuItems.PreviousItem();
 
-        slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
-        if (slideMenuList != NULL)
-        {
-            TLComponentInstance* comp = slideMenuList->GetComponentInstance();
-            if (comp != NULL)
-            {
-                ColourAllText(*comp, SubMenuHighliteColour);
-            }
-        }
+        ColourAllText(SubMenuHighliteColour, mMenuItems.GetActiveItemIndex());
     }
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
     {
-        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
-        if (slideMenuList != NULL)
-        {
-            TLComponentInstance* comp = slideMenuList->GetComponentInstance();
-            if (comp != NULL)
-            {
-                ColourAllText(*comp, SubMenuUnhighliteColour);
-            }
-        }
+        ColourAllText(SubMenuUnhighliteColour, mMenuItems.GetActiveItemIndex());
 
         mMenuItems.NextItem();
 
-        slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.GetActiveItemIndex()];
-        if (slideMenuList != NULL)
-        {
-            TLComponentInstance* comp = slideMenuList->GetComponentInstance();
-            if (comp != NULL)
-            {
-                ColourAllText(*comp, SubMenuHighliteColour);
-            }
-        }
+        ColourAllText(SubMenuHighliteColour, mMenuItems.GetActiveItemIndex());
     }
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL))
     {

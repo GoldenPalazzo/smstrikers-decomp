@@ -40,43 +40,13 @@ public:
 
     void ColourAllText(const nlColour& colour, int menuitem)
     {
-        unsigned long hash;
-
         SlideMenuList* list = mSlideMenuLists[menuitem];
         if (list != NULL)
         {
             TLComponentInstance* component = list->GetComponentInstance();
-            if (component != NULL && component->GetActiveSlide() != NULL)
+            if (component != NULL)
             {
-                TLSlide* firstSlide = component->GetActiveSlide();
-                TLSlide* slide = firstSlide;
-                do
-                {
-                    component->SetActiveSlide(slide);
-                    TLInstance* firstChild = component->GetActiveSlide()->m_instances;
-                    TLInstance* child = firstChild;
-                    if (firstChild != NULL)
-                    {
-                        do
-                        {
-                            if (child->m_type == TLAT_TEXT)
-                            {
-                                child->SetAssetColour(colour);
-                            }
-                            else if (child->m_type == TLAT_IMAGE)
-                            {
-                                hash = child->GetHashID();
-                                if (hash != nlStringLowerHash("white_box"))
-                                {
-                                    child->SetAssetColour(colour);
-                                }
-                            }
-                            child = child->m_next;
-                        } while (child != firstChild);
-                    }
-                    slide = slide->m_next;
-                } while (slide != firstSlide);
-                component->SetActiveSlide(firstSlide);
+                ColourAllText(*component, colour);
             }
         }
     }
