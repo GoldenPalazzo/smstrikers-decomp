@@ -18,6 +18,7 @@
 #include "NL/gl/glTexture.h"
 #include "NL/glx/glxTexture.h"
 #include "Game/Sys/debug.h"
+#include "Game/Game.h"
 #include "Game/Drawable/DrawableObj.h"
 #include "Game/Drawable/DrawableModel.h"
 #include "Game/Drawable/DrawableSkinModel.h"
@@ -45,7 +46,7 @@ static unsigned char g_bFreezeFrustum;
 static unsigned char g_bDrawCullingInfo;
 static unsigned char g_bDebugEqualsSide;
 static unsigned char g_bDebugEqualsEnd;
-static unsigned long WhiteTexture = glGetTexture("global/white50percent");
+static const unsigned long WhiteTexture = glGetTexture("global/white50percent");
 static unsigned long BallModelID = nlStringHash("gameplay/ball");
 static unsigned long HammerModelID = nlStringHash("gameplay/hammer");
 unsigned long SpecificModelID = nlStringLowerHash("The_Palace/Pod_Metal_42");
@@ -325,8 +326,6 @@ extern cBall* g_pBall;
 extern unsigned char sSTSLighting__17DrawableCharacter;
 void DoTranslucency(DrawableObject* pObject);
 
-static void World_DrawCullingInfo(int nDrawn, int nSubmitted);
-
 static inline u8 World_IsSphereInFrustum(const nlVector4* pPlanes, const nlMatrix4& mWorld, f32 fRadius)
 {
     nlVector3 v3Position = mWorld.GetTranslation();
@@ -362,7 +361,8 @@ static inline u8 World_IsSphereInFrustumInline(World* pWorld, const nlMatrix4& m
 
 static inline void RenderBoundingSphere(const nlMatrix4& matWorld, f32 fRadius)
 {
-    glModel* pSphere = glModelDup(glInventory.GetModel(nlStringHash("debug/sphere")), true);
+    glModel* pSphere = glInventory.GetModel(nlStringHash("debug/sphere"));
+    glModel* pNewModel = glModelDup(pSphere, true);
     nlMatrix4 m;
     m.SetIdentity();
     m.m[3][0] = matWorld.m[3][0];
@@ -372,19 +372,41 @@ static inline void RenderBoundingSphere(const nlMatrix4& matWorld, f32 fRadius)
     m.m[0][0] = fRadius;
     m.m[1][1] = fRadius;
     m.m[2][2] = fRadius;
-    glModelPacket* pPacket = pSphere->packets;
-    u32 whiteTex = WhiteTexture;
-    while (pPacket < (glModelPacket*)((u8*)pSphere->packets + pSphere->numPackets * 0x4A))
+    glModelPacket* pPacket = pNewModel->packets;
+    while (pPacket < (glModelPacket*)((u8*)pNewModel->packets + pNewModel->numPackets * 0x4A))
     {
         glSetRasterState(pPacket->state.raster, (eGLState)5, 1);
         u32 matID = glAllocMatrix();
         if ((matID + 0x10000) != 0xFFFF)
             glSetMatrix(matID, m);
         pPacket->state.matrix = matID;
-        pPacket->state.texture[0] = whiteTex;
+        pPacket->state.texture[0] = WhiteTexture;
         pPacket = (glModelPacket*)((u8*)pPacket + 0x4A);
     }
-    glViewAttachModel((eGLView)7, pSphere);
+    glViewAttachModel((eGLView)7, pNewModel);
+}
+
+static inline void World_DrawCullingInformation(int nNumSubmitted, int nNumDrawn)
+{
+    char szBuffer[255];
+    f32 drawnPct = 100.0f * ((f32)nNumDrawn / (f32)nNumSubmitted);
+    nlSNPrintf(szBuffer, 255, "%d submitted, %d culled, %d ( %0.2f%% )drawn", nNumSubmitted, nNumSubmitted - nNumDrawn, nNumDrawn, drawnPct);
+    static int x = 10;
+    static int y = 0;
+    nlColour OtherColour = { 0xFF, 0xFF, 0xFF, 0xFF };
+    glStateBundle state;
+    glStateSave(state);
+    glFontBegin(false);
+    glFontPrint((eGLView)0x21, x, y, OtherColour, szBuffer);
+    glFontEnd();
+    glStateRestore(state);
+}
+
+bool World::IsCaptainShootToScorePresentationOn()
+{
+    if (g_pGame == NULL)
+        return false;
+    return g_pGame->mbCaptainShotToScoreOn;
 }
 
 /**
@@ -411,13 +433,13 @@ void World::Render()
     g_bDebugEqualsEnd = bFreezeEnd;
     if (!g_bFreezeFrustum && !bFreezeSide && !bFreezeEnd)
         ExtractFrustumPlanes();
-    u8 gameFlag = (g_pGame == NULL) ? (u8)0 : *(u8*)((u8*)g_pGame + 0x40);
+    u8 gameFlag = IsCaptainShootToScorePresentationOn();
     if (!gameFlag)
         sSTSLighting__17DrawableCharacter = 0;
     CreateLightUserData();
 
     NodeStack* iter;
-    register World* pWorld = this;
+    World* pWorld = this;
     if (!sbIsHyperShootToScoreRenderingEnabled)
     {
         iter = (NodeStack*)nlMalloc(sizeof(NodeStack), 8, false);
@@ -583,9 +605,7 @@ void World::Render()
                             pObject->Draw();
                             if (g_bDrawBoundingSphere)
                             {
-                                f32 fRad = pObject->m_fBoundingRadius;
-                                const nlMatrix4& wmDraw = pObject->GetWorldMatrix();
-                                RenderBoundingSphere(wmDraw, fRad);
+                                RenderBoundingSphere(pObject->GetWorldMatrix(), pObject->m_fBoundingRadius);
                             }
                             nDrawn++;
                         }
@@ -638,9 +658,7 @@ void World::Render()
                 pObject->Draw();
                 if (g_bDrawBoundingSphere)
                 {
-                    f32 fRad = pObject->m_fBoundingRadius;
-                    const nlMatrix4& wmDraw = pObject->GetWorldMatrix();
-                    RenderBoundingSphere(wmDraw, fRad);
+                    RenderBoundingSphere(pObject->GetWorldMatrix(), pObject->m_fBoundingRadius);
                 }
                 nDrawn++;
             }
@@ -679,7 +697,7 @@ void World::Render()
 
     if (g_bDrawCullingInfo)
     {
-        World_DrawCullingInfo(nDrawn, nSubmitted);
+        World_DrawCullingInformation(nSubmitted, nDrawn);
     }
 }
 /**
@@ -1664,22 +1682,6 @@ bool World::LoadObjectData(const char* szWorldName)
     delete pWorldData;
     AssignLightBitmasks();
     return true;
-}
-
-static void World_DrawCullingInfo(int nDrawn, int nSubmitted)
-{
-    char buf[256];
-    f32 drawnPct = 100.0f * ((f32)nDrawn / (f32)nSubmitted);
-    nlSNPrintf(buf, 255, "%d submitted, %d culled, %d ( %0.2f%% )drawn", nSubmitted, nSubmitted - nDrawn, nDrawn, drawnPct);
-    static int x = 10;
-    static int y = 0;
-    nlColour color = { 0xFF, 0xFF, 0xFF, 0xFF };
-    glStateBundle state;
-    glStateSave(state);
-    glFontBegin(false);
-    glFontPrint((eGLView)0x21, x, y, color, buf);
-    glFontEnd();
-    glStateRestore(state);
 }
 
 /**
