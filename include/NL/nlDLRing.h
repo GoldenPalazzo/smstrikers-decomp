@@ -108,6 +108,57 @@ T* nlDLRingGetStart(T* current)
 }
 
 template <typename T>
+bool nlDLRingValidateContainsElement(T* head, const T* node)
+{
+    if (head == 0)
+        return false;
+
+    T* cur = head->m_next;
+
+    for (;;)
+    {
+        if (node == cur)
+            return true;
+
+        T* next = cur->m_next;
+
+        if (cur == head)
+            break;
+
+        cur = next;
+    }
+
+    return false;
+}
+
+template <typename T>
+bool nlDLRingRemoveSafely(T** head, const T* node)
+{
+    T* next;
+
+    if (nlDLRingValidateContainsElement(*head, node) == 0)
+    {
+        return false;
+    }
+
+    next = node->m_next;
+    if (next == node)
+    {
+        *head = NULL;
+        return 1;
+    }
+    node->m_prev->m_next = next;
+    node->m_next->m_prev = node->m_prev;
+    if (*head == node)
+    {
+        *head = node->m_prev;
+        return true;
+    }
+
+    return true;
+}
+
+template <typename T>
 T* nlDLRingGetEnd(T* current)
 {
     if (current != 0)
@@ -158,57 +209,6 @@ T* nlDLRingRemoveEnd(T** head)
     T* node = *head;
     nlDLRingRemove<T>(head, node);
     return node;
-}
-
-template <typename T>
-bool nlDLRingValidateContainsElement(T* head, const T* node)
-{
-    if (head == 0)
-        return false;
-
-    T* cur = head->m_next;
-
-    for (;;)
-    {
-        if (node == cur)
-            return true;
-
-        T* next = cur->m_next;
-
-        if (cur == head)
-            break;
-
-        cur = next;
-    }
-
-    return false;
-}
-
-template <typename T>
-bool nlDLRingRemoveSafely(T** head, const T* node)
-{
-    T* temp_r0;
-
-    if (nlDLRingValidateContainsElement(*head, node) == 0)
-    {
-        return false;
-    }
-
-    temp_r0 = node->m_next;
-    if (temp_r0 == node)
-    {
-        *head = NULL;
-        return 1;
-    }
-    node->m_prev->m_next = temp_r0;
-    node->m_next->m_prev = node->m_prev;
-    if (*head == node)
-    {
-        *head = node->m_prev;
-        return true;
-    }
-
-    return true;
 }
 
 template <typename T>

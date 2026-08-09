@@ -12,6 +12,7 @@
 #include "Game/Camera/rumblefilter.h"
 #include "Game/Camera/GameplayCam.h"
 #include "NL/nlBasicString.h"
+#include "Game/Debug/ShapeRender.h"
 #include "Game/Drawable/DrawableObj.h"
 #include "Game/FE/feHelpFuncs.h"
 #include "Game/Field.h"
@@ -63,8 +64,6 @@ void FireCameraRumbleFilter(float fRumbleX, float fRumbleY)
 void cCameraManager::Startup()
 {
     int i;
-    cRumbleFilter* pFilter1;
-    cRumbleFilter* pFilter2;
     cBaseCamera* pBaseCamera = (cBaseCamera*)new ((GameplayCamera*)nlMalloc(sizeof(GameplayCamera), 8, false)) GameplayCamera();
     pBaseCamera->m_pFilter = pRumbleFilter = new (nlMalloc(sizeof(cRumbleFilter), 8, false)) cRumbleFilter();
 
@@ -76,20 +75,7 @@ void cCameraManager::Startup()
     }
     m_transition = eCT_NONE;
 
-    if (nlDLRingGetStart<cBaseCamera>(m_cameraStack) != NULL)
-    {
-        if (nlDLRingGetStart<cBaseCamera>(m_cameraStack)->m_pFilter != NULL)
-        {
-            pFilter1 = nlDLRingGetStart<cBaseCamera>(m_cameraStack)->m_pFilter;
-            pFilter2 = nlDLRingGetStart<cBaseCamera>(m_cameraStack)->m_pFilter;
-            float dy = pFilter2->v2Pos0.f.y - pFilter1->v2Pos1.f.y;
-            float dx = pFilter2->v2Pos0.f.x - pFilter1->v2Pos1.f.x;
-            if (nlSqrt(dx * dx + dy * dy, true) > 0.0f)
-            {
-                g_pEventManager->CreateValidEvent(0x58, 0x14);
-            }
-        }
-    }
+    StopCurrentCamRumbleFilterSFXLoop();
 
     nlDLRingAddStart<cBaseCamera>(&m_cameraStack, pBaseCamera);
     g_eCurrentCameraType = pBaseCamera->GetType();
@@ -410,19 +396,7 @@ void cCameraManager::PushCamera(cBaseCamera* pCamera)
 
     cCameraManager::m_transition = eCT_NONE;
 
-    if ((nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack) != NULL)
-        && (nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter != 0))
-    {
-        cRumbleFilter* filter1 = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter;
-        cRumbleFilter* filter2 = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter;
-
-        nlVector2 diff_pos;
-        nlVec2Set(diff_pos, filter2->v2Pos0.f.x - filter1->v2Pos1.f.x, filter2->v2Pos0.f.y - filter1->v2Pos1.f.y);
-        if (nlSqrt((diff_pos.f.x * diff_pos.f.x) + (diff_pos.f.y * diff_pos.f.y), 1) > 0.0f)
-        {
-            g_pEventManager->CreateValidEvent(0x58, 0x14);
-        }
-    }
+    cCameraManager::StopCurrentCamRumbleFilterSFXLoop();
 
     nlDLRingAddStart<cBaseCamera>(&cCameraManager::m_cameraStack, pCamera);
 }
@@ -453,11 +427,11 @@ void cCameraManager::Remove(const cBaseCamera& camera)
 void cCameraManager::Remove(eCameraType type, bool bDeleteAfterRemoving)
 {
     bool actuallyRemoved;
-    cBaseCamera* pCamera = cCameraManager::m_cameraStack; // r31
+    cBaseCamera* pCamera = cCameraManager::m_cameraStack;
 
     if (cCameraManager::m_cameraStack != NULL)
     {
-        cBaseCamera* pCameraNext; // r30
+        cBaseCamera* pCameraNext;
         do
         {
             pCameraNext = pCamera->m_next;
@@ -533,7 +507,7 @@ void cCameraManager::PushCameraWithTransition(cBaseCamera* pCamera, float fDurat
 /**
  * Offset/Address/Size: 0x590 | 0x801A6C18 | size: 0x268
  */
-/* static */ cBaseCamera* cCameraManager::PopCameraWithTransition(float fDuration, eCameraTransition transition, void (*pCallback)(eCameraMessage))
+cBaseCamera* cCameraManager::PopCameraWithTransition(float fDuration, eCameraTransition transition, void (*pCallback)(eCameraMessage))
 {
     if (cCameraManager::m_transition != eCT_NONE)
     {
@@ -560,6 +534,48 @@ void cCameraManager::PushCameraWithTransition(cBaseCamera* pCamera, float fDurat
     cCameraManager::m_fTransitionTime = 1.0f - cCameraManager::m_fTransitionTime;
 
     return cCameraManager::PerformCameraPop();
+}
+
+static void DrawBoundingSphere(const DrawableObject* drawable)
+{
+    const nlMatrix4& worldMatrix = drawable->GetWorldMatrix();
+    nlVector3 centre = *(const nlVector3*)&worldMatrix.f.m41;
+    const nlColour yellow = { 0xFF, 0xFF, 0, 0 };
+    const nlColour blue = { 0, 0, 0xFF, 0 };
+
+    nlMatrix4 viewMatrix = cCameraManager::PeekCamera()->GetViewMatrix();
+    nlVector4 xVector;
+    nlVector4 yVector;
+    nlVec4Set(xVector, viewMatrix.f.m11, viewMatrix.f.m12, viewMatrix.f.m13, 0.0f);
+    nlVec4Set(yVector, viewMatrix.f.m21, viewMatrix.f.m22, viewMatrix.f.m23, 0.0f);
+
+    u16 startAngle = (u16)(s32)(10430.378f * nlATan2f(xVector.f.y, xVector.f.x));
+    nlVector3 lastPoint;
+    nlVector3 firstPoint;
+    int i;
+    for (i = 0; i < 16; i++)
+    {
+        nlVector3 p;
+        nlVector3 v;
+        nlSinCos(&v.f.x, &v.f.y, (u16)(startAngle + (i << 12)));
+        v.f.z = 0.0f;
+        p.f.x = centre.f.x + drawable->m_fBoundingRadius * (xVector.f.x * v.f.x + yVector.f.x * v.f.y);
+        p.f.y = centre.f.y + drawable->m_fBoundingRadius * (xVector.f.y * v.f.x + yVector.f.y * v.f.y);
+        p.f.z = centre.f.z + drawable->m_fBoundingRadius * (xVector.f.z * v.f.x + yVector.f.z * v.f.y);
+
+        if (i == 0)
+        {
+            firstPoint = p;
+        }
+        else
+        {
+            g_ShapeRenderer.DrawLine3D(lastPoint, p, blue, true);
+        }
+        lastPoint = p;
+    }
+
+    g_ShapeRenderer.DrawLine3D(lastPoint, firstPoint, blue, true);
+    g_ShapeRenderer.DrawSpherePrimitive(worldMatrix, drawable->m_fBoundingRadius, yellow);
 }
 
 /**
@@ -693,8 +709,8 @@ void cCameraManager::GetUpVector(nlVector3& upVector)
  */
 void cCameraManager::SetWorldUpVectorTilt(float fXAxisTilt, float fYAxisTilt)
 {
-    float fSin; // r1+0xC
-    float fCos; // r1+0x8
+    float fSin;
+    float fCos;
 
     nlSinCos(&fSin, &fCos, ((s32)(65536.0f * fXAxisTilt)) / 360);
 
@@ -716,6 +732,24 @@ void cCameraManager::SetWorldUpVectorTilt(float fXAxisTilt, float fYAxisTilt)
     nlVec3Scale(*pUp, temp_f1);
 }
 
+void cCameraManager::StopCurrentCamRumbleFilterSFXLoop()
+{
+    if (nlDLRingGetStart<cBaseCamera>(m_cameraStack) != NULL)
+    {
+        if (nlDLRingGetStart<cBaseCamera>(m_cameraStack)->m_pFilter != NULL)
+        {
+            cRumbleFilter* pFilter1 = nlDLRingGetStart<cBaseCamera>(m_cameraStack)->m_pFilter;
+            cRumbleFilter* pFilter2 = nlDLRingGetStart<cBaseCamera>(m_cameraStack)->m_pFilter;
+            float dy = pFilter2->v2Pos0.f.y - pFilter1->v2Pos1.f.y;
+            float dx = pFilter2->v2Pos0.f.x - pFilter1->v2Pos1.f.x;
+            if (nlSqrt(dx * dx + dy * dy, true) > 0.0f)
+            {
+                g_pEventManager->CreateValidEvent(0x58, 0x14);
+            }
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0xC | 0x801A6694 | size: 0x10
  */
@@ -730,18 +764,4 @@ void cCameraManager::PushWorldUpVector()
 void cCameraManager::PopWorldUpVector()
 {
     cCameraManager::m_UpVectorStackSize = 0;
-}
-
-// Unreferenced helper; with -inline deferred this seeds the float pool in target order.
-static void CameraMan_sdata2_stub(
-    float& zero, float& angleScale, float& joystickScale, float& one, float& faceDistance, float& easeTen, float& easeNegFifteen, float& easeSix)
-{
-    zero = 0.0f;
-    angleScale = 65536.0f;
-    joystickScale = 10430.378f;
-    one = 1.0f;
-    faceDistance = 2.0f;
-    easeTen = 10.0f;
-    easeNegFifteen = -15.0f;
-    easeSix = 6.0f;
 }

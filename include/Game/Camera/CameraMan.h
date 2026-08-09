@@ -43,6 +43,7 @@ public:
     static void GetViewVector(nlVector3& viewVector);
     static void GetUpVector(nlVector3& upVector);
     static void SetWorldUpVectorTilt(float fXAxisTilt, float fYAxisTilt);
+    static void StopCurrentCamRumbleFilterSFXLoop();
     static void PushWorldUpVector();
     static void PopWorldUpVector();
 
