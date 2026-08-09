@@ -36,8 +36,7 @@ Replay::~Replay()
     do
     {
         Frame* next = frame->mNext;
-        ((SlotPoolEntry*)frame)->next = Frame::mSlotPool.m_FreeList;
-        Frame::mSlotPool.m_FreeList = (SlotPoolEntry*)frame;
+        Frame::mSlotPool.Free(frame);
         frame = next;
     } while (frame != mFree);
 
@@ -145,8 +144,7 @@ void Replay::NewFrame()
                 mFree->mSize += nextFrame->mSize;
                 mFree->mNext = nextFrame->mNext;
                 mFree->mReelIdx = -1;
-                ((SlotPoolEntry*)nextFrame)->next = Frame::mSlotPool.m_FreeList;
-                Frame::mSlotPool.m_FreeList = (SlotPoolEntry*)nextFrame;
+                Frame::mSlotPool.Free(nextFrame);
             }
             else
             {

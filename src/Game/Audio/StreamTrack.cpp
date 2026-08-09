@@ -325,10 +325,7 @@ void AudioStreamTrack::TrackManagerBase::FadeManager::CompleteFade(
     nlDLRingIsEnd(m_Fades.m_Head, entry);
     nlDLRingRemove(&m_Fades.m_Head, entry);
 
-    entry->~DLListEntry();
-
-    entry->m_next = (FadeEntry*)m_Fades.m_Allocator.m_FreeList;
-    m_Fades.m_Allocator.m_FreeList = (SlotPoolEntry*)entry;
+    m_Fades.DeleteEntry(entry);
 
     if (callback)
     {
@@ -995,12 +992,7 @@ fade_found:
         nlDLRingIsEnd(mgr.m_FadeMgr.m_Fades.m_Head, fadeEntry);
         nlDLRingRemove(&mgr.m_FadeMgr.m_Fades.m_Head, fadeEntry);
 
-        if (fadeEntry != NULL)
-        {
-            fadeEntry->entry.~FadeCtrl();
-        }
-
-        mgr.m_FadeMgr.m_Fades.m_Allocator.Free(fadeEntry);
+        mgr.m_FadeMgr.m_Fades.DeleteEntry(fadeEntry);
     }
 
     if (TrackOwns)

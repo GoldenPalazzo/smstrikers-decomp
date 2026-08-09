@@ -1792,10 +1792,10 @@ static inline void glud_DirectionalLight(void* pData)
 
     unsigned long* p32 = (unsigned long*)pData;
     unsigned long numLights = *p32;
-    register unsigned long lightMask;
-    register int index;
-    register GLDirectionalLightUserData* pLight;
-    register GLDirectionalLightUserData* pEndLight;
+    unsigned long lightMask;
+    int index;
+    GLDirectionalLightUserData* pLight;
+    GLDirectionalLightUserData* pEndLight;
 
     glx_ReloadPointLights = true;
     if (numLights != 0)
@@ -2266,21 +2266,17 @@ static inline void setWorldAmbient()
     gxSetChanAmbColour(0, ambient);
 }
 
-static void glx_SwitchUserData(register const glModelPacket* p)
+static void glx_SwitchUserData(const glModelPacket* p)
 {
     static bool bDeferredEnvDiffuse;
     static signed char init;
-    register unsigned long* pTable;
-    register GLViewportUserData* pViewportDest;
-    register unsigned long pViewportHigh;
-    register const glModelPacket* pSaved;
-    register int i;
+    unsigned long* pTable;
+    GLViewportUserData* pViewportDest;
+    const glModelPacket* pSaved;
+    int i;
     void* pData;
 
-    asm {
-        mr r30, p
-        mr pSaved, r30
-    }
+    pSaved = p;
 
     if (!init)
     {
@@ -2333,10 +2329,7 @@ static void glx_SwitchUserData(register const glModelPacket* p)
         return;
     }
 
-    asm {
-        lwz r31, 0(pSaved)
-        mr pTable, r31
-    }
+    pTable = (unsigned long*)pSaved->userData;
     if (pTable == NULL)
     {
         return;
@@ -2356,11 +2349,7 @@ static void glx_SwitchUserData(register const glModelPacket* p)
         }
     }
 
-    asm {
-        lis pViewportHigh, g_viewport@ha
-        addi r29, pViewportHigh, g_viewport@l
-        mr pViewportDest, r29
-    }
+    pViewportDest = &g_viewport;
 
     for (i = 0; i < GLUD_Num; i++, pTable++)
     {

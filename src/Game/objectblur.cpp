@@ -70,8 +70,7 @@ void BlurManager::Update(float deltaTime)
             if (current != NULL)
             {
                 delete[] current->m_pointRingBuffer;
-                current->m_next = (BlurHandler*)BlurHandler::m_BlurHandlerSlotPool.m_FreeList;
-                BlurHandler::m_BlurHandlerSlotPool.m_FreeList = (SlotPoolEntry*)current;
+                BlurHandler::m_BlurHandlerSlotPool.Free(current);
             }
         }
         else
@@ -94,8 +93,7 @@ void BlurManager::DestroyHandler(BlurHandler* handler, float timeToDie)
         if (handler != NULL)
         {
             delete[] handler->m_pointRingBuffer;
-            handler->m_next = (BlurHandler*)BlurHandler::m_BlurHandlerSlotPool.m_FreeList;
-            BlurHandler::m_BlurHandlerSlotPool.m_FreeList = (SlotPoolEntry*)handler;
+            BlurHandler::m_BlurHandlerSlotPool.Free(handler);
         }
     }
     else
@@ -113,16 +111,7 @@ BlurHandler* BlurManager::GetNewHandler(const char* szTextureName, float fLineWi
 {
     BlurHandler* handler = nullptr;
 
-    if (BlurHandler::m_BlurHandlerSlotPool.m_FreeList == nullptr)
-    {
-        SlotPoolBase::BaseAddNewBlock(&BlurHandler::m_BlurHandlerSlotPool, 0x4C);
-    }
-
-    if (BlurHandler::m_BlurHandlerSlotPool.m_FreeList != nullptr)
-    {
-        handler = (BlurHandler*)BlurHandler::m_BlurHandlerSlotPool.m_FreeList;
-        BlurHandler::m_BlurHandlerSlotPool.m_FreeList = (SlotPoolEntry*)handler->m_next;
-    }
+    BlurHandler::m_BlurHandlerSlotPool.Allocate(handler);
 
     if (handler != nullptr)
     {

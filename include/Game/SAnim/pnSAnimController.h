@@ -24,8 +24,7 @@ public:
     /* 0x08 */ virtual ~cPN_SAnimController() { };
     static void operator delete(void* ptr)
     {
-        ((SlotPoolEntry*)ptr)->next = m_SAnimControllerSlotPool.m_FreeList;
-        m_SAnimControllerSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+        m_SAnimControllerSlotPool.Free((cPN_SAnimController*)ptr);
     }
     /* 0x10 */ virtual void Evaluate(float, cPoseAccumulator*) const;
     /* 0x14 */ virtual void Evaluate(int, float, cPoseAccumulator*) const;
@@ -81,16 +80,7 @@ public:
 inline cPN_SAnimController* AllocateSAnimController()
 {
     cPN_SAnimController* controller = nullptr;
-    if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&cPN_SAnimController::m_SAnimControllerSlotPool, sizeof(cPN_SAnimController));
-    }
-
-    if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
-    {
-        controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
-    }
+    cPN_SAnimController::m_SAnimControllerSlotPool.Allocate(controller);
     return controller;
 }
 

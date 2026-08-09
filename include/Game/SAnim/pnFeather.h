@@ -57,16 +57,7 @@ inline cPN_Feather* AllocateFeather()
 {
     cPN_Feather* feather = nullptr;
 
-    if (cPN_Feather::m_FeatherSlotPool.m_FreeList == nullptr)
-    {
-        SlotPoolBase::BaseAddNewBlock(&cPN_Feather::m_FeatherSlotPool, sizeof(cPN_Feather));
-    }
-
-    if (cPN_Feather::m_FeatherSlotPool.m_FreeList != nullptr)
-    {
-        feather = (cPN_Feather*)cPN_Feather::m_FeatherSlotPool.m_FreeList;
-        cPN_Feather::m_FeatherSlotPool.m_FreeList = cPN_Feather::m_FeatherSlotPool.m_FreeList->next;
-    }
+    cPN_Feather::m_FeatherSlotPool.Allocate(feather);
 
     return feather;
 }

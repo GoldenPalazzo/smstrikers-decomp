@@ -59,15 +59,7 @@ u8 AnimTagScriptInterpreter::SetupAnimationTriggers(const char* TriggerFileName,
                 file.m_CurrentTrigger < file.m_pCurrentAnim->TriggerCount)
             {
                 pSlot = NULL;
-                if (m_AnimTagSlotPool.m_FreeList == NULL)
-                {
-                    SlotPoolBase::BaseAddNewBlock(&m_AnimTagSlotPool, sizeof(AnimTagCBInfo));
-                }
-                if (m_AnimTagSlotPool.m_FreeList != NULL)
-                {
-                    pSlot = (AnimTagCBInfo*)m_AnimTagSlotPool.m_FreeList;
-                    m_AnimTagSlotPool.m_FreeList = m_AnimTagSlotPool.m_FreeList->next;
-                }
+                m_AnimTagSlotPool.Allocate(pSlot);
 
                 pSlot->pAnimTagScript = this;
                 pSlot->ScriptInfo.Trigger = pTriggerRecord->Trigger;

@@ -441,9 +441,7 @@ state_change:
     {
         pStream = pCur->entry;
         pStream->~StereoAudioStream();
-
-        ((SlotPoolEntry*)pStream)->next = pTM->m_StreamPool.m_FreeList;
-        pTM->m_StreamPool.m_FreeList = (SlotPoolEntry*)pStream;
+        pTM->m_StreamPool.Free(pStream);
 
         pRemove = pCur;
         pFree = pCur;
@@ -1468,9 +1466,7 @@ void AudioLoader::UnloadInGame()
     {
         pStream = pCur->entry;
         pStream->~StereoAudioStream();
-
-        ((SlotPoolEntry*)pStream)->next = pTM->m_StreamPool.m_FreeList;
-        pTM->m_StreamPool.m_FreeList = (SlotPoolEntry*)pStream;
+        pTM->m_StreamPool.Free(pStream);
 
         pRemove = pCur;
         pFree = pCur;

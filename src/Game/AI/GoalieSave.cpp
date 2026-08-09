@@ -357,15 +357,7 @@ void GoalieSave::InitData(Goalie* pGoalie)
         pPos->mnAnimID = animID;
 
         cPN_SAnimController* pController = NULL;
-        if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList == NULL)
-        {
-            SlotPoolBase::BaseAddNewBlock(&cPN_SAnimController::m_SAnimControllerSlotPool, 0x54);
-        }
-        if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
-        {
-            pController = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
-            cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->next;
-        }
+        cPN_SAnimController::m_SAnimControllerSlotPool.Allocate(pController);
 
         if (pController != NULL)
         {

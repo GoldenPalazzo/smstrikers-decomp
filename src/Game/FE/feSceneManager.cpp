@@ -113,16 +113,7 @@ static inline void FindSceneAndQueuePop(
 
     entry = NULL;
 
-    if (m_pushPopMessageQueue.m_Allocator.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&m_pushPopMessageQueue.m_Allocator, sizeof(DLListEntry<PackagePushPopMessage*>));
-    }
-
-    if (m_pushPopMessageQueue.m_Allocator.m_FreeList != NULL)
-    {
-        entry = (DLListEntry<PackagePushPopMessage*>*)m_pushPopMessageQueue.m_Allocator.m_FreeList;
-        m_pushPopMessageQueue.m_Allocator.m_FreeList = m_pushPopMessageQueue.m_Allocator.m_FreeList->next;
-    }
+    m_pushPopMessageQueue.m_Allocator.Allocate(entry);
 
     if (entry != NULL)
     {
@@ -224,16 +215,7 @@ void FESceneManager::QueueScenePop()
 
     msg = NULL;
 
-    if (PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&PackagePushPopMessage::m_PushPopMessageSlotPool, sizeof(PackagePushPopMessage));
-    }
-
-    if (PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList != NULL)
-    {
-        msg = (PackagePushPopMessage*)PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList;
-        PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList = PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList->next;
-    }
+    PackagePushPopMessage::m_PushPopMessageSlotPool.Allocate(msg);
 
     msg->m_szFilename[0] = 0;
     msg->m_pSceneHandler = NULL;
@@ -252,16 +234,7 @@ void FESceneManager::QueueScenePush(BaseSceneHandler* pSceneHandler, const char*
 {
     PackagePushPopMessage* msg = nullptr;
 
-    if (PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&PackagePushPopMessage::m_PushPopMessageSlotPool, sizeof(PackagePushPopMessage));
-    }
-
-    if (PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList != NULL)
-    {
-        msg = (PackagePushPopMessage*)PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList;
-        PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList = PackagePushPopMessage::m_PushPopMessageSlotPool.m_FreeList->next;
-    }
+    PackagePushPopMessage::m_PushPopMessageSlotPool.Allocate(msg);
 
     msg->m_bPush = true;
     msg->m_pSceneHandler = pSceneHandler;
@@ -270,16 +243,7 @@ void FESceneManager::QueueScenePush(BaseSceneHandler* pSceneHandler, const char*
 
     DLListEntry<PackagePushPopMessage*>* entry = nullptr;
 
-    if (m_pushPopMessageQueue.m_Allocator.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&m_pushPopMessageQueue.m_Allocator, sizeof(DLListEntry<PackagePushPopMessage*>));
-    }
-
-    if (m_pushPopMessageQueue.m_Allocator.m_FreeList != NULL)
-    {
-        entry = (DLListEntry<PackagePushPopMessage*>*)m_pushPopMessageQueue.m_Allocator.m_FreeList;
-        m_pushPopMessageQueue.m_Allocator.m_FreeList = m_pushPopMessageQueue.m_Allocator.m_FreeList->next;
-    }
+    m_pushPopMessageQueue.m_Allocator.Allocate(entry);
 
     if (entry != NULL)
     {
@@ -348,8 +312,7 @@ void FESceneManager::ProcessPushPopQueue()
                 {
                     nlDLRingIsEnd(headEntry, sceneEntry);
                     nlDLRingRemove(&pSceneManager->m_sceneHandlerStack.m_Head, sceneEntry);
-                    sceneEntry->m_next = (DLListEntry<BaseSceneHandler*>*)pSceneManager->m_sceneHandlerStack.m_Allocator.m_FreeList;
-                    pSceneManager->m_sceneHandlerStack.m_Allocator.m_FreeList = (SlotPoolEntry*)sceneEntry;
+                    pSceneManager->m_sceneHandlerStack.m_Allocator.Free(sceneEntry);
                     break;
                 }
 

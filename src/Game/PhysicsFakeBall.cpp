@@ -40,28 +40,12 @@ static inline BallCacheInfo* AddCacheEntry(PhysicsBall* pPhysicsBall)
 {
     DLListEntry<BallCacheInfo*>* pNewEntry;
     BallCacheInfo* pNewInfo = NULL;
-    if (BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&BallCacheInfo::mBallCacheInfoSlotPool, sizeof(BallCacheInfo));
-    }
-    if (BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList != NULL)
-    {
-        pNewInfo = (BallCacheInfo*)BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList;
-        BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList = BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList->next;
-    }
+    BallCacheInfo::mBallCacheInfoSlotPool.Allocate(pNewInfo);
     pNewInfo->mfTime = FakeBallWorld::mfLastCacheTime;
     pNewInfo->mv3Position = ((PhysicsObject*)pPhysicsBall)->GetPosition();
     pNewInfo->mv3LinearVelocity = ((PhysicsObject*)pPhysicsBall)->GetLinearVelocity();
     pNewEntry = NULL;
-    if (FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&FakeBallWorld::mBallCacheList.m_Allocator, sizeof(DLListEntry<BallCacheInfo*>));
-    }
-    if (FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList != NULL)
-    {
-        pNewEntry = (DLListEntry<BallCacheInfo*>*)FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList;
-        FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList = FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList->next;
-    }
+    FakeBallWorld::mBallCacheList.m_Allocator.Allocate(pNewEntry);
     if (pNewEntry != NULL)
     {
         pNewEntry->m_next = NULL;
@@ -667,8 +651,7 @@ static inline void ClearBallCacheInline(SlotPool<BallCacheInfo>* pBCIPool)
         while (current != NULL)
         {
             BallCacheInfo* data = current->entry;
-            ((SlotPoolEntry*)data)->next = pBCIPool->m_FreeList;
-            pBCIPool->m_FreeList = (SlotPoolEntry*)data;
+            pBCIPool->Free(data);
             if (nlDLRingIsEnd(end, current) || current == NULL)
             {
                 current = NULL;
@@ -725,10 +708,8 @@ bool FakeBallWorld::GetPredictedBallPosition(float fDeltaTime, nlVector3& v3Posi
                     {
                         *ppLast = removed->entry;
                     }
-                    ((SlotPoolEntry*)removed)->next = pCacheList->m_Allocator.m_FreeList;
-                    pCacheList->m_Allocator.m_FreeList = (SlotPoolEntry*)removed;
-                    ((SlotPoolEntry*)pLast)->next = pBCIPool->m_FreeList;
-                    pBCIPool->m_FreeList = (SlotPoolEntry*)pLast;
+                    pCacheList->m_Allocator.Free(removed);
+                    pBCIPool->Free(pLast);
                 }
                 pLast = pCur;
                 if (nlDLRingIsEnd(pHead, pEntry) || pEntry == NULL)
@@ -868,8 +849,7 @@ void FakeBallWorld::InvalidateBallCache()
         while (current != NULL)
         {
             BallCacheInfo* data = current->entry;
-            ((SlotPoolEntry*)data)->next = BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList;
-            BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList = (SlotPoolEntry*)data;
+            BallCacheInfo::mBallCacheInfoSlotPool.Free(data);
 
             if (nlDLRingIsEnd(end, current) || current == NULL)
             {
@@ -902,8 +882,7 @@ static inline void DestroyBallCacheInline()
         while (current != NULL)
         {
             BallCacheInfo* data = current->entry;
-            ((SlotPoolEntry*)data)->next = BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList;
-            BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList = (SlotPoolEntry*)data;
+            BallCacheInfo::mBallCacheInfoSlotPool.Free(data);
 
             if (nlDLRingIsEnd(end, current) || current == NULL)
             {
@@ -983,8 +962,7 @@ void FakeBallWorld::Init(cBall* pBall)
         while (current != NULL)
         {
             BallCacheInfo* data = current->entry;
-            ((SlotPoolEntry*)data)->next = BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList;
-            BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList = (SlotPoolEntry*)data;
+            BallCacheInfo::mBallCacheInfoSlotPool.Free(data);
 
             if (nlDLRingIsEnd(end, current) || current == NULL)
             {

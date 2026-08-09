@@ -115,16 +115,7 @@ static inline void LoadFontTexture(BundleFile& fileBundle, unsigned long fileHas
 static inline void AddFontEntry(BasicSlotPool<DLListEntry<nlFont*> >& alloc, DLListEntry<nlFont*>** head, nlFont* newFont)
 {
     DLListEntry<nlFont*>* entry = NULL;
-    if (alloc.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&alloc, sizeof(DLListEntry<nlFont*>));
-    }
-
-    if (alloc.m_FreeList != NULL)
-    {
-        entry = (DLListEntry<nlFont*>*)alloc.m_FreeList;
-        alloc.m_FreeList = alloc.m_FreeList->next;
-    }
+    alloc.Allocate(entry);
 
     if (entry != NULL)
     {

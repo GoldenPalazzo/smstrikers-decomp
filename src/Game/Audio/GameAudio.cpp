@@ -1136,15 +1136,7 @@ SFXPlaySet* cGameSFX::KeepTrack(SFXEmitter* pEmitter, const Audio::SoundAttribut
 
     SFXPlaySet* slot = NULL;
 
-    if (SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&SFXPlaySet::m_TrackedSFXSlotPool, sizeof(SFXPlaySet));
-    }
-    if (SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList != NULL)
-    {
-        slot = (SFXPlaySet*)SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList;
-        SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList = SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList->next;
-    }
+    SFXPlaySet::m_TrackedSFXSlotPool.Allocate(slot);
 
     slot->type = (unsigned long)-1;
     slot->voiceID = Audio::GetSndIDError();

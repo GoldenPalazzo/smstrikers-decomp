@@ -10,8 +10,7 @@ SlotPool<cPN_Feather> cPN_Feather::m_FeatherSlotPool(0x10, 0x10);
 
 void cPN_Feather::operator delete(void* ptr)
 {
-    ((SlotPoolEntry*)ptr)->next = m_FeatherSlotPool.m_FreeList;
-    m_FeatherSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+    m_FeatherSlotPool.Free((cPN_Feather*)ptr);
 }
 
 /**

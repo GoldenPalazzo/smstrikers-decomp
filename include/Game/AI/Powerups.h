@@ -142,21 +142,12 @@ public:
     static void* operator new(unsigned long)
     {
         Bobomb* result = NULL;
-        if (m_BobombSlotPool.m_FreeList == NULL)
-        {
-            SlotPoolBase::BaseAddNewBlock(&m_BobombSlotPool, sizeof(Bobomb));
-        }
-        if (m_BobombSlotPool.m_FreeList != NULL)
-        {
-            result = (Bobomb*)m_BobombSlotPool.m_FreeList;
-            m_BobombSlotPool.m_FreeList = m_BobombSlotPool.m_FreeList->next;
-        }
+        m_BobombSlotPool.Allocate(result);
         return result;
     }
     static void operator delete(void* ptr)
     {
-        ((SlotPoolEntry*)ptr)->next = m_BobombSlotPool.m_FreeList;
-        m_BobombSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+        m_BobombSlotPool.Free((Bobomb*)ptr);
     }
     virtual void Update(float);
     virtual void ThrowAt(cFielder*, Bowser*);
@@ -175,8 +166,7 @@ public:
     virtual ~FreezeShell();
     static void operator delete(void* ptr)
     {
-        ((SlotPoolEntry*)ptr)->next = m_FreezeShellSlotPool.m_FreeList;
-        m_FreezeShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+        m_FreezeShellSlotPool.Free((FreezeShell*)ptr);
     }
     virtual void Update(float);
     void Destroy(bool);
@@ -191,8 +181,7 @@ public:
     virtual ~SpinyShell();
     static void operator delete(void* ptr)
     {
-        ((SlotPoolEntry*)ptr)->next = m_SpinyShellSlotPool.m_FreeList;
-        m_SpinyShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+        m_SpinyShellSlotPool.Free((SpinyShell*)ptr);
     }
     virtual void Update(float);
     void Destroy(bool);
@@ -207,8 +196,7 @@ public:
     virtual ~Banana();
     static void operator delete(void* ptr)
     {
-        ((SlotPoolEntry*)ptr)->next = m_BananaSlotPool.m_FreeList;
-        m_BananaSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+        m_BananaSlotPool.Free((Banana*)ptr);
     }
     virtual void Update(float);
     void Destroy(bool);
@@ -223,8 +211,7 @@ public:
     virtual ~RedShell();
     static void operator delete(void* ptr)
     {
-        ((SlotPoolEntry*)ptr)->next = m_RedShellSlotPool.m_FreeList;
-        m_RedShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+        m_RedShellSlotPool.Free((RedShell*)ptr);
     }
     virtual void Update(float);
     void Destroy(bool);
@@ -240,8 +227,7 @@ public:
     virtual ~GreenShell();
     static void operator delete(void* ptr)
     {
-        ((SlotPoolEntry*)ptr)->next = m_GreenShellSlotPool.m_FreeList;
-        m_GreenShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+        m_GreenShellSlotPool.Free((GreenShell*)ptr);
     }
     virtual void Update(float);
     void Destroy(bool);
