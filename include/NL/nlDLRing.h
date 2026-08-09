@@ -269,8 +269,8 @@ public:
 
     nlDLListIterator(Pointer head, Pointer current)
     {
-        m_Head = head;
         m_Curr = current;
+        m_Head = head;
     }
 
     bool hasNext() const { return m_Curr != 0; }

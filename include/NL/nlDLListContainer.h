@@ -31,8 +31,7 @@ public:
 
     void Clear()
     {
-        void (DLListContainerBase::*func)(DLListEntry<T>*) = &DLListContainerBase::DeleteEntry;
-        nlWalkDLRing<DLListEntry<T>, DLListContainerBase>(m_Head, this, func);
+        nlWalkDLRing(m_Head, this, &DLListContainerBase::DeleteEntry);
         m_Head = NULL;
     }
 
@@ -76,10 +75,12 @@ public:
 
     nlDLListIterator<T> Begin() const
     {
-        nlDLListIterator<T> iter;
-        iter.m_Curr = nlDLRingGetStart(m_Head);
-        iter.m_Head = m_Head;
-        return iter;
+        return nlDLListIterator<T>(m_Head, nlDLRingGetStart(m_Head));
+    }
+
+    bool IsEmpty() const
+    {
+        return m_Head == NULL;
     }
 
     T* GetHead() const
@@ -142,27 +143,20 @@ public:
     nlDLListSlotPool()
         : DLListContainerBase<T, BasicSlotPool<DLListEntry<T> > >(0)
     {
-        this->m_Allocator.m_Initial = 16;
-        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&this->m_Allocator, sizeof(DLListEntry<T>));
-        this->m_Allocator.m_Delta = 16;
+        this->m_Allocator.Initialize(16, 16);
     }
 
     nlDLListSlotPool(const int initial)
         : DLListContainerBase<T, BasicSlotPool<DLListEntry<T> > >(0)
     {
-        this->m_Allocator.m_Initial = initial;
-        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&this->m_Allocator, sizeof(DLListEntry<T>));
-        this->m_Allocator.m_Delta = 0;
+        this->m_Allocator.Initialize(initial, 0);
     }
 
     nlDLListSlotPool(const int initial, const int delta)
         : DLListContainerBase<T, BasicSlotPool<DLListEntry<T> > >(0)
     {
-        this->m_Allocator.m_Initial = initial;
-        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&this->m_Allocator, sizeof(DLListEntry<T>));
-        this->m_Allocator.m_Delta = delta;
+        this->m_Allocator.Initialize(initial, delta);
     }
-
 }; // total size: 0x1C
 
 template <typename T, typename Adapter>

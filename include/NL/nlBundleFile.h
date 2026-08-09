@@ -1,8 +1,7 @@
 #ifndef _NLBUNDLEFILE_H_
 #define _NLBUNDLEFILE_H_
 
-extern int nlPrintf(const char*, ...);
-
+#include "NL/nlWare.h"
 #include "NL/nlFileGC.h"
 #include "NL/nlString.h"
 
@@ -108,6 +107,11 @@ public:
     {
         u32 hash = HashFilename(filename);
         return FindHashIndex(hash, bMissingFileFatal);
+    }
+
+    inline unsigned long GetNumFiles() const
+    {
+        return m_pHeader->nNumFiles;
     }
 
 public:

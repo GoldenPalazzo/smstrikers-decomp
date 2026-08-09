@@ -75,6 +75,7 @@ public:
     inline ValueType* FindGet(const KeyType& key) const;
     inline bool FindGet(const KeyType& key, ValueType** foundValue) const;
     inline ValueType* Add(const KeyType& key, const ValueType& value);
+    inline void Remove(const KeyType& key);
 
     typedef void (AVLTreeBase::*ENTRY_DELETE_FUNC)(AVLTreeEntry<KeyType, ValueType>*);
 
@@ -165,6 +166,19 @@ inline ValueType* AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::A
         return NULL;
     }
     return &CastUp(existingNode)->value;
+}
+
+template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
+inline void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::Remove(
+    const KeyType& key)
+{
+    AVLTreeNode* removedNode =
+        RemoveAVLNode((AVLTreeNode**)&m_Root, (void*)&key, m_NumElements);
+    if (removedNode != NULL)
+    {
+        m_Allocator.Free(CastUp(removedNode));
+        m_NumElements--;
+    }
 }
 
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
@@ -375,7 +389,9 @@ class nlAVLTreeIterator
 public:
     typedef AVLTreeEntry<KeyType, ValueType> Entry;
 
-    nlAVLTreeIterator(nlAVLTree<KeyType, ValueType, CompareType>& tree)
+    template <typename AllocatorType>
+    nlAVLTreeIterator(
+        AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>& tree)
     {
         Entry* node = tree.m_Root;
         m_Stack = (Entry**)nlMalloc((tree.m_NumElements + 1) * sizeof(Entry*), 8, false);

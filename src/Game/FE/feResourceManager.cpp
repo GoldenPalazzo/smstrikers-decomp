@@ -1,4 +1,3 @@
-#include "Game/FE/FEResourceManager.h"
 #include "Game/FE/feFontResource.h"
 #include "Game/FE/feResourceManager.h"
 #include "Game/FE/feScene.h"
@@ -24,40 +23,25 @@ static FESceneResource* s_pPermanentBundleSceneResource;
 template <>
 FEResourceManager* nlSingleton<FEResourceManager>::s_pInstance = 0;
 
-inline FEResourceHandle* FEResourceManager::FindExistingResourceInResourceList(FEResourceHandle* pFEResourceHandle)
+void FEResourceManager::AddResourceToResourceList(FEResourceHandle* pFEResourceHandle)
+{
+    s_loadedResourceList.Add(pFEResourceHandle->GetHashID(), pFEResourceHandle);
+}
+
+void FEResourceManager::RemoveResourceFromResourceList(FEResourceHandle* pFEResourceHandle)
+{
+    FEResourceHandle** pLoadedResourceHandle;
+    if (!s_loadedResourceList.FindGet(pFEResourceHandle->GetHashID(), &pLoadedResourceHandle))
+        return;
+    if (*pLoadedResourceHandle != pFEResourceHandle)
+        return;
+    s_loadedResourceList.Remove(pFEResourceHandle->GetHashID());
+}
+
+FEResourceHandle* FEResourceManager::FindExistingResourceInResourceList(FEResourceHandle* pFEResourceHandle)
 {
     FEResourceHandle** pPreExistingResourceHandle;
-    unsigned long key = pFEResourceHandle->m_hashID;
-    AVLTreeEntry<unsigned long, FEResourceHandle*>* node = s_loadedResourceList.m_Root;
-    DefaultKeyCompare<unsigned long> compare;
-
-    while (node != NULL)
-    {
-        int cmpResult = compare(node->key, key);
-
-        if (cmpResult == 0)
-        {
-            if (&pPreExistingResourceHandle != NULL)
-            {
-                pPreExistingResourceHandle = &node->value;
-            }
-            key = 1;
-            goto check_found;
-        }
-
-        if (cmpResult < 0)
-        {
-            node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)node->node.left;
-        }
-        else
-        {
-            node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)node->node.right;
-        }
-    }
-
-    key = 0;
-check_found:
-    if ((u8)key)
+    if (s_loadedResourceList.FindGet(pFEResourceHandle->GetHashID(), &pPreExistingResourceHandle))
     {
         return *pPreExistingResourceHandle;
     }
@@ -65,22 +49,250 @@ check_found:
     return NULL;
 }
 
-inline void FEResourceManager::PlaceHolderForceTextureValid(FETextureResource* pFETextureResource)
+/**
+ * Offset/Address/Size: 0xD48 | 0x8020C888 | size: 0x1C
+ */
+FEResourceManager::FEResourceManager()
 {
 }
 
-static inline eFEResourceType GetResourceType_Inline(FEResourceHandle* pFeResourceHandle)
+/**
+ * Offset/Address/Size: 0xCEC | 0x8020C82C | size: 0x5C
+ */
+FEResourceManager::~FEResourceManager()
 {
-    return pFeResourceHandle->m_type;
+    Cleanup();
 }
 
-inline ResourceResult FEResourceManager::IssueTextureLoadRequest(FETextureResource* pFeTextureResource)
+/**
+ * Offset/Address/Size: 0xAF4 | 0x8020C634 | size: 0x1F8
+ */
+void FEResourceManager::Cleanup()
+{
+    if (s_pOnDemandBundle != NULL)
+    {
+        s_pOnDemandBundle->Close();
+        delete s_pOnDemandBundle;
+        s_pOnDemandBundle = NULL;
+    }
+
+    if (s_loadedResourceList.m_NumElements != 0)
+    {
+        nlPrintf("FEResourceManager: Warning! Manager being destroyed while resources are still loaded!\n");
+        nlPrintf("                   Did all the scenes get popped before destroying the FEResourceManager?\n");
+
+        typedef nlAVLTreeIterator<unsigned long, FEResourceHandle*,
+            DefaultKeyCompare<unsigned long> > ResourceIterator;
+
+        ResourceIterator* iterator =
+            new (nlMalloc(sizeof(ResourceIterator), 8, false))
+                ResourceIterator(s_loadedResourceList);
+
+        while (iterator->IsValid())
+        {
+            FEResourceHandle* pFeResourceHandle = iterator->Current()->value;
+            nlPrintf(
+                "                   Outstanding resource 0x%08x ( type = 0x%08x ) for load\n",
+                pFeResourceHandle->m_hashID,
+                pFeResourceHandle->m_type);
+            iterator->Next();
+        }
+
+        delete iterator;
+    }
+
+    s_loadedResourceList.Clear();
+}
+
+/**
+ * Offset/Address/Size: 0x848 | 0x8020C388 | size: 0x2AC
+ */
+void FEResourceManager::LoadPermanentResourceBundle(const char* szBundleFileName)
+{
+    nlStrNCpy(m_szPermanentBundleFileName, szBundleFileName, 0x20);
+
+    s_pPermanentBundleSceneResource = new (nlMalloc(sizeof(FESceneResource), 8, false)) FESceneResource();
+    s_pPermanentBundleSceneResource->m_pFESceneContext = NULL;
+    s_pPermanentBundleSceneResource->m_hashID = nlStringLowerHash("PermanentContext");
+    s_pPermanentBundleSceneResource->m_next = NULL;
+    s_pPermanentBundleSceneResource->m_prev = NULL;
+    s_pPermanentBundleSceneResource->m_type = FERT_SCENE;
+
+    IssueSceneContextSwitch(s_pPermanentBundleSceneResource);
+
+    s_pPermanentBundle = new (nlMalloc(sizeof(BundleFile), 8, false)) BundleFile();
+    s_pPermanentBundle->Open(m_szPermanentBundleFileName);
+
+    LoadPermanentTextures();
+
+    s_pPermanentBundle->Close();
+    delete s_pPermanentBundle;
+    s_pPermanentBundle = NULL;
+}
+
+void FEResourceManager::LoadPermanentTextures()
+{
+    unsigned long uFileLength;
+    unsigned long uFileHashID;
+    BundleFileDirectoryEntry fileDirectoryEntry;
+    unsigned long i;
+    unsigned char b;
+    unsigned long fileCount = s_pPermanentBundle->GetNumFiles();
+
+    for (i = 0; i < fileCount; i++)
+    {
+        b = s_pPermanentBundle->GetFileInfoByIndex(i, &fileDirectoryEntry);
+        if (!b)
+        {
+            nlPrintf("FEResourceManager Error: Failed to get file information in permanent bundle!\n");
+        }
+        else
+        {
+            uFileLength = fileDirectoryEntry.m_length;
+            uFileHashID = fileDirectoryEntry.m_hash;
+
+            FETextureResource* pTextureResource = CreateTextureResourceFromHandle(uFileHashID);
+
+            s_pResourceLoadBuffer = new (0x20, true) unsigned char[uFileLength];
+            s_pPermanentBundle->ReadFileByIndex(i, s_pResourceLoadBuffer, uFileLength);
+            TextureResourceLoadComplete(NULL, uFileLength, (unsigned long)pTextureResource);
+
+            delete[] s_pResourceLoadBuffer;
+            s_pResourceLoadBuffer = NULL;
+
+            AddResourceToResourceList(pTextureResource);
+            PlaceHolderForceTextureValid(pTextureResource);
+        }
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x7D0 | 0x8020C310 | size: 0x78
+ */
+bool FEResourceManager::OpenOnDemandResourceBundle(const char* szBundleFileName)
+{
+    nlStrNCpy(m_szOnDemandBundleFileName, szBundleFileName, 0x20);
+
+    BundleFile* pBundle = new (nlMalloc(sizeof(BundleFile), 8, false)) BundleFile();
+    s_pOnDemandBundle = pBundle;
+
+    if (!pBundle->Open(szBundleFileName))
+    {
+        return false;
+    }
+    return true;
+}
+
+/**
+ * Offset/Address/Size: 0x7CC | 0x8020C30C | size: 0x4
+ */
+void FEResourceManager::Initialize()
+{
+}
+
+FETextureResource* FEResourceManager::CreateTextureResourceFromHandle(unsigned long handle)
+{
+    FETextureResource* pTextureResource = new (8, false) FETextureResource();
+    pTextureResource->m_hashID = handle;
+    return pTextureResource;
+}
+
+/**
+ * Offset/Address/Size: 0x72C | 0x8020C26C | size: 0xA0
+ */
+void FEResourceManager::QueueResourceLoad(FEResourceHandle* pHandle)
+{
+    pendingResourceQueue.AddEnd(pHandle);
+}
+
+/**
+ * Offset/Address/Size: 0x5F4 | 0x8020C134 | size: 0x138
+ */
+void FEResourceManager::UnloadResource(FEResourceHandle* pFeResourceHandle)
+{
+    switch (pFeResourceHandle->m_type)
+    {
+    case FERT_TEXTURE:
+        RemoveResourceFromResourceList(pFeResourceHandle);
+        break;
+    case FERT_SCENE:
+        glplatResourceRelease(((FESceneResource*)pFeResourceHandle)->m_glResourceMarker);
+        break;
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x344 | 0x8020BE84 | size: 0x2B0
+ */
+void FEResourceManager::UnloadPermanentResourceBundle()
+{
+    s_pPermanentBundle = new (nlMalloc(sizeof(BundleFile), 8, false)) BundleFile();
+    s_pPermanentBundle->Open(m_szPermanentBundleFileName);
+
+    unsigned long fileCount = s_pPermanentBundle->GetNumFiles();
+    BundleFileDirectoryEntry fileDirectoryEntry;
+    unsigned long fileIndex;
+    FEResourceHandle** pLoadedResourceHandle;
+    u32 hashtodelete;
+
+    UnloadResource(s_pPermanentBundleSceneResource);
+
+    for (fileIndex = 0; fileIndex < fileCount; fileIndex++)
+    {
+        s_pPermanentBundle->GetFileInfoByIndex(fileIndex, &fileDirectoryEntry);
+
+        bool found = s_loadedResourceList.FindGet(
+            fileDirectoryEntry.m_hash, &pLoadedResourceHandle);
+        if (found)
+        {
+            hashtodelete = (*pLoadedResourceHandle)->GetHashID();
+            ::operator delete(*pLoadedResourceHandle);
+            s_loadedResourceList.Remove(hashtodelete);
+        }
+    }
+
+    s_pPermanentBundle->Close();
+    delete s_pPermanentBundle;
+    s_pPermanentBundle = NULL;
+
+    ::operator delete(s_pPermanentBundleSceneResource);
+    s_pPermanentBundleSceneResource = NULL;
+}
+
+ResourceResult FEResourceManager::IssueFontLoadRequest(FEFontResource* pFeFontResource)
+{
+    FEResourceHandle* pFeResourceHandle = (FEResourceHandle*)pFeFontResource;
+    nlFont* pExistingFont = FontManager::Instance()->GetFontByHashID(pFeResourceHandle->m_hashID);
+    pFeFontResource->SetFontReference(pExistingFont);
+    pFeResourceHandle->m_bValid = true;
+    return FERR_AlreadyLoaded;
+}
+
+/**
+ * Offset/Address/Size: 0x29C | 0x8020BDDC | size: 0xA8
+ */
+void FEResourceManager::TextureResourceLoadComplete(void*, unsigned long uReadSize, unsigned long uParam)
+{
+    FEResourceHandle* pHandle = (FEResourceHandle*)uParam;
+
+    glTextureAdd(pHandle->m_hashID, s_pResourceLoadBuffer, uReadSize);
+
+    delete[] s_pResourceLoadBuffer;
+    s_pResourceLoadBuffer = NULL;
+
+    ((FETextureResource*)pHandle)->m_glTextureHandle = pHandle->m_hashID;
+
+    AddResourceToResourceList(pHandle);
+    PlaceHolderForceTextureValid((FETextureResource*)pHandle);
+}
+
+ResourceResult FEResourceManager::IssueTextureLoadRequest(FETextureResource* pFeTextureResource)
 {
     BundleFileDirectoryEntry fileDirectoryEntry;
     FETextureResource* pFeExistingTextureResource = (FETextureResource*)FindExistingResourceInResourceList((FEResourceHandle*)pFeTextureResource);
 
     if ((pFeExistingTextureResource != NULL)
-        && (GetResourceType_Inline(pFeExistingTextureResource) == GetResourceType_Inline(pFeTextureResource)))
+        && (pFeExistingTextureResource->GetResourceType() == pFeTextureResource->GetResourceType()))
     {
         pFeTextureResource->m_glTextureHandle = pFeExistingTextureResource->m_glTextureHandle;
         pFeTextureResource->m_bValid = pFeExistingTextureResource->m_bValid;
@@ -102,7 +314,7 @@ inline ResourceResult FEResourceManager::IssueTextureLoadRequest(FETextureResour
     return FERR_WaitingForResource;
 }
 
-inline ResourceResult FEResourceManager::IssueSceneContextSwitch(FESceneResource* pFeSceneResource)
+ResourceResult FEResourceManager::IssueSceneContextSwitch(FESceneResource* pFeSceneResource)
 {
     if ((s_pCurrentFESceneResourceContext != NULL)
         && (s_pCurrentFESceneResourceContext != pFeSceneResource)
@@ -119,29 +331,14 @@ inline ResourceResult FEResourceManager::IssueSceneContextSwitch(FESceneResource
     return FERR_WaitingForResource;
 }
 
-inline ResourceResult FEResourceManager::IssueFontLoadRequest(FEFontResource* pFeFontResource)
-{
-    FEResourceHandle* pFeResourceHandle = (FEResourceHandle*)pFeFontResource;
-    nlFont* pExistingFont = FontManager::Instance()->GetFontByHashID(pFeResourceHandle->m_hashID);
-    pFeFontResource->SetFontReference(pExistingFont);
-    pFeResourceHandle->m_bValid = true;
-    return FERR_AlreadyLoaded;
-}
-
-inline ResourceResult FEResourceManager::IssueResourceLoadRequest(FEResourceHandle* pFeResourceHandle,
-    DLListEntry<FEResourceHandle*>* pQueueEntry,
-    DLListEntry<FEResourceHandle*>* pQueueHead)
+ResourceResult FEResourceManager::IssueResourceLoadRequest(FEResourceHandle* pFeResourceHandle)
 {
     ResourceResult resourceRequestResult = FERR_WaitingForResource;
-    DLListEntry<FEResourceHandle*>* volatile pQueueHeadSpill;
-    DLListEntry<FEResourceHandle*>* volatile pQueueEntrySpill;
-    pQueueEntrySpill = pQueueEntry;
-    pQueueHeadSpill = pQueueHead;
 
     switch (pFeResourceHandle->m_type)
     {
     case FERT_TEXTURE:
-        resourceRequestResult = IssueTextureLoadRequest((FETextureResource*)pFeResourceHandle);
+        resourceRequestResult = IssueTextureLoadRequest((FETextureResource*)s_pCurrentResourceBeingLoaded);
         break;
 
     case FERT_SCENE:
@@ -164,598 +361,40 @@ inline ResourceResult FEResourceManager::IssueResourceLoadRequest(FEResourceHand
  */
 void FEResourceManager::Update(float)
 {
-    FEResourceHandle* pFeResourceHandle;
     ResourceResult result;
-    DLListEntry<FEResourceHandle*>** pPendingHead = &pendingResourceQueue.m_Head;
     bool bQueueNextResource = true;
 
     while (bQueueNextResource)
     {
-        FEResourceHandle* pCurrentResource = s_pCurrentResourceBeingLoaded;
-        if ((pCurrentResource != NULL) && !pCurrentResource->m_bValid)
+        if ((s_pCurrentResourceBeingLoaded != NULL) && !s_pCurrentResourceBeingLoaded->IsValid())
         {
             return;
         }
 
-        if (pCurrentResource != NULL)
+        if (s_pCurrentResourceBeingLoaded != NULL)
         {
-            DLListEntry<FEResourceHandle*>* removedEntry = nlDLRingRemoveStart(pPendingHead);
-            pendingResourceQueue.m_Allocator.Free(removedEntry);
+            pendingResourceQueue.RemoveStart(NULL);
             s_pCurrentResourceBeingLoaded = NULL;
 
-            if (*pPendingHead == NULL)
+            if (pendingResourceQueue.IsEmpty())
             {
                 s_pCurrentFESceneResourceContext->m_pFESceneContext->m_bValid = true;
                 s_pCurrentFESceneResourceContext = NULL;
             }
         }
-        DLListEntry<FEResourceHandle*>* pQueueHead = *pPendingHead;
-        if (pQueueHead == NULL)
+
+        if (pendingResourceQueue.IsEmpty())
         {
             return;
         }
-        DLListEntry<FEResourceHandle*>* pQueueEntry = nlDLRingGetStart(pQueueHead);
-        pFeResourceHandle = pQueueEntry->entry;
-        s_pCurrentResourceBeingLoaded = pFeResourceHandle;
-        result = IssueResourceLoadRequest(pFeResourceHandle, pQueueEntry, *pPendingHead);
+
+        s_pCurrentResourceBeingLoaded = pendingResourceQueue.Begin().m_Curr->entry;
+        result = IssueResourceLoadRequest(s_pCurrentResourceBeingLoaded);
         bQueueNextResource = (result == FERR_AlreadyLoaded);
     }
 }
 
-/**
- * Offset/Address/Size: 0x29C | 0x8020BDDC | size: 0xA8
- */
-void FEResourceManager::TextureResourceLoadComplete(void*, unsigned long uReadSize, unsigned long uParam)
+void FEResourceManager::PlaceHolderForceTextureValid(FETextureResource* pFETextureResource)
 {
-    FEResourceHandle* pHandle = (FEResourceHandle*)uParam;
-
-    glTextureAdd(pHandle->m_hashID, s_pResourceLoadBuffer, uReadSize);
-
-    delete[] s_pResourceLoadBuffer;
-    s_pResourceLoadBuffer = NULL;
-
-    ((FETextureResource*)pHandle)->m_glTextureHandle = pHandle->m_hashID;
-
-    u32 key;
-    FEResourceHandle* value;
-
-    value = pHandle;
-    key = pHandle->m_hashID;
-
-    s_loadedResourceList.Add(key, value);
-    pHandle->m_bValid = true;
-}
-
-static inline bool FindLoadedResourceByRoot(
-    AVLTreeNode** root, const unsigned long& key, FEResourceHandle*** foundValue)
-{
-    AVLTreeEntry<unsigned long, FEResourceHandle*>* node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)*root;
-
-    while (node != NULL)
-    {
-        int cmpResult;
-        if (key == node->key)
-        {
-            cmpResult = 0;
-        }
-        else if (key < node->key)
-        {
-            cmpResult = -1;
-        }
-        else
-        {
-            cmpResult = 1;
-        }
-
-        if (cmpResult == 0)
-        {
-            if (foundValue != NULL)
-            {
-                *foundValue = (FEResourceHandle**)&node->value;
-            }
-            return true;
-        }
-        else
-        {
-            if (cmpResult < 0)
-            {
-                node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)node->node.left;
-            }
-            else
-            {
-                node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)node->node.right;
-            }
-        }
-    }
-
-    return false;
-}
-
-/**
- * Offset/Address/Size: 0x344 | 0x8020BE84 | size: 0x2B0
- */
-void FEResourceManager::UnloadPermanentResourceBundle()
-{
-    s_pPermanentBundle = new (nlMalloc(sizeof(BundleFile), 8, false)) BundleFile();
-    s_pPermanentBundle->Open(m_szPermanentBundleFileName);
-
-    FESceneResource* pPermanentSceneResource = s_pPermanentBundleSceneResource;
-    unsigned long fileCount = s_pPermanentBundle->m_pHeader->nNumFiles;
-    BundleFileDirectoryEntry fileDirectoryEntry;
-    AVLTreeNode** pRoot;
-    unsigned long fileIndex;
-    FEResourceHandle** pLoadedResourceHandle;
-    u32 hashtodelete;
-
-    switch (pPermanentSceneResource->m_type)
-    {
-    case FERT_TEXTURE:
-    {
-        u32 key;
-        FEResourceHandle** foundValue;
-        u32 searchState = pPermanentSceneResource->m_hashID;
-        AVLTreeEntry<unsigned long, FEResourceHandle*>* node = s_loadedResourceList.m_Root;
-
-        while (node != NULL)
-        {
-            unsigned long nodeKey = node->key;
-            int cmpResult;
-
-            if (searchState == nodeKey)
-            {
-                cmpResult = 0;
-            }
-            else if (searchState < nodeKey)
-            {
-                cmpResult = -1;
-            }
-            else
-            {
-                cmpResult = 1;
-            }
-
-            if (cmpResult == 0)
-            {
-                if (&foundValue != NULL)
-                {
-                    foundValue = (FEResourceHandle**)&node->value;
-                }
-                searchState = 1;
-                goto check_scene_found;
-            }
-            else
-            {
-                if (cmpResult < 0)
-                {
-                    node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)node->node.left;
-                }
-                else
-                {
-                    node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)node->node.right;
-                }
-            }
-        }
-
-        searchState = 0;
-    check_scene_found:
-        if (!(u8)searchState)
-            break;
-        if (*foundValue != pPermanentSceneResource)
-            break;
-
-        key = pPermanentSceneResource->m_hashID;
-        AVLTreeNode* removedNode = s_loadedResourceList.RemoveAVLNode(
-            (AVLTreeNode**)&s_loadedResourceList.m_Root,
-            &key,
-            s_loadedResourceList.m_NumElements);
-
-        if (removedNode != NULL)
-        {
-            s_loadedResourceList.DeleteEntry(
-                (AVLTreeEntry<unsigned long, FEResourceHandle*>*)removedNode);
-            s_loadedResourceList.m_NumElements--;
-        }
-
-        break;
-    }
-    case FERT_SCENE:
-        glplatResourceRelease(pPermanentSceneResource->m_glResourceMarker);
-        break;
-    }
-
-    pRoot = (AVLTreeNode**)&s_loadedResourceList.m_Root;
-    for (fileIndex = 0; fileIndex < fileCount; fileIndex++)
-    {
-        s_pPermanentBundle->GetFileInfoByIndex(fileIndex, &fileDirectoryEntry);
-
-        bool found = FindLoadedResourceByRoot(pRoot, fileDirectoryEntry.m_hash, &pLoadedResourceHandle);
-        if (found)
-        {
-            hashtodelete = (*pLoadedResourceHandle)->m_hashID;
-            ::operator delete(*pLoadedResourceHandle);
-
-            AVLTreeNode* removedNode = s_loadedResourceList.RemoveAVLNode(
-                pRoot,
-                &hashtodelete,
-                s_loadedResourceList.m_NumElements);
-
-            if (removedNode != NULL)
-            {
-                s_loadedResourceList.m_Allocator.Free((AVLTreeEntry<unsigned long, FEResourceHandle*>*)removedNode);
-                s_loadedResourceList.m_NumElements--;
-            }
-        }
-    }
-
-    s_pPermanentBundle->Close();
-    delete s_pPermanentBundle;
-    s_pPermanentBundle = NULL;
-
-    ::operator delete(s_pPermanentBundleSceneResource);
-    s_pPermanentBundleSceneResource = NULL;
-}
-
-inline void FEResourceManager::RemoveResourceFromResourceList(FEResourceHandle* pFeResourceHandle)
-{
-    FEResourceHandle** foundValue;
-    u32 searchKey = pFeResourceHandle->m_hashID;
-    u32 key;
-    AVLTreeEntry<unsigned long, FEResourceHandle*>* node = s_loadedResourceList.m_Root;
-    DefaultKeyCompare<unsigned long> compare;
-
-    while (node != nullptr)
-    {
-        int cmpResult = compare(node->key, searchKey);
-
-        if (cmpResult == 0)
-        {
-            if (&foundValue != nullptr)
-            {
-                foundValue = (FEResourceHandle**)&node->value;
-            }
-            searchKey = 1;
-            goto check_found;
-        }
-        else
-        {
-            if (cmpResult < 0)
-            {
-                node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)node->node.left;
-            }
-            else
-            {
-                node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)node->node.right;
-            }
-        }
-    }
-
-    searchKey = 0;
-check_found:
-    if (!(u8)searchKey)
-        return;
-    if (*foundValue != pFeResourceHandle)
-        return;
-
-    key = pFeResourceHandle->m_hashID;
-    {
-        AVLTreeNode* removedNode = s_loadedResourceList.RemoveAVLNode(
-            (AVLTreeNode**)&s_loadedResourceList.m_Root, &key, s_loadedResourceList.m_NumElements);
-
-        if (removedNode != NULL)
-        {
-            s_loadedResourceList.m_Allocator.Free((AVLTreeEntry<unsigned long, FEResourceHandle*>*)removedNode);
-            s_loadedResourceList.m_NumElements--;
-        }
-    }
-}
-
-/**
- * Offset/Address/Size: 0x5F4 | 0x8020C134 | size: 0x138
- */
-void FEResourceManager::UnloadResource(FEResourceHandle* pFeResourceHandle)
-{
-    switch (pFeResourceHandle->m_type)
-    {
-    case FERT_TEXTURE:
-        RemoveResourceFromResourceList(pFeResourceHandle);
-        break;
-    case FERT_SCENE:
-        glplatResourceRelease(*(unsigned long long*)((u8*)pFeResourceHandle + 0x18));
-        break;
-    }
-}
-
-/**
- * Offset/Address/Size: 0x72C | 0x8020C26C | size: 0xA0
- */
-void FEResourceManager::QueueResourceLoad(FEResourceHandle* pHandle)
-{
-    DLListEntry<FEResourceHandle*>* entry = NULL;
-
-    if (pendingResourceQueue.m_Allocator.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&pendingResourceQueue.m_Allocator, sizeof(DLListEntry<FEResourceHandle*>));
-    }
-
-    SlotPoolEntry* freeEntry = pendingResourceQueue.m_Allocator.m_FreeList;
-    if (freeEntry != NULL)
-    {
-        entry = (DLListEntry<FEResourceHandle*>*)freeEntry;
-        pendingResourceQueue.m_Allocator.m_FreeList = freeEntry->next;
-    }
-
-    if (entry != NULL)
-    {
-        entry->m_next = NULL;
-        entry->m_prev = NULL;
-        entry->entry = pHandle;
-    }
-
-    nlDLRingAddEnd(&pendingResourceQueue.m_Head, entry);
-}
-
-inline FETextureResource* FEResourceManager::CreateTextureResourceFromHandle(unsigned long handle)
-{
-}
-
-/**
- * Offset/Address/Size: 0x7CC | 0x8020C30C | size: 0x4
- */
-void FEResourceManager::Initialize()
-{
-}
-
-/**
- * Offset/Address/Size: 0x7D0 | 0x8020C310 | size: 0x78
- */
-bool FEResourceManager::OpenOnDemandResourceBundle(const char* szBundleFileName)
-{
-    nlStrNCpy(m_szOnDemandBundleFileName, szBundleFileName, 0x20);
-
-    BundleFile* pBundle = new (nlMalloc(sizeof(BundleFile), 8, false)) BundleFile();
-    s_pOnDemandBundle = pBundle;
-
-    if (!pBundle->Open(szBundleFileName))
-    {
-        return false;
-    }
-    return true;
-}
-
-inline void FEResourceManager::LoadPermanentTextures()
-{
-    FETextureResource* pTextureResource;
-    u32 fileCount = s_pPermanentBundle->m_pHeader->nNumFiles;
-    u32 fileIndex;
-
-    for (fileIndex = 0; fileIndex < fileCount; fileIndex++)
-    {
-        BundleFileDirectoryEntry fileDirectoryEntry;
-
-        if (!s_pPermanentBundle->GetFileInfoByIndex(fileIndex, &fileDirectoryEntry))
-        {
-            nlPrintf("FEResourceManager Error: Failed to get file information in permanent bundle!\n");
-        }
-        else
-        {
-            u32 fileLength = fileDirectoryEntry.m_length;
-            u32 fileHash = fileDirectoryEntry.m_hash;
-
-            pTextureResource = new (nlMalloc(sizeof(FETextureResource), 8, false)) FETextureResource();
-            pTextureResource->m_hashID = fileHash;
-
-            s_pResourceLoadBuffer = (unsigned char*)nlMalloc(fileLength, 0x20, true);
-            s_pPermanentBundle->ReadFileByIndex(fileIndex, s_pResourceLoadBuffer, fileLength);
-            glTextureAdd(pTextureResource->m_hashID, s_pResourceLoadBuffer, fileLength);
-
-            delete[] s_pResourceLoadBuffer;
-            s_pResourceLoadBuffer = NULL;
-
-            pTextureResource->m_glTextureHandle = pTextureResource->m_hashID;
-
-            AVLTreeNode* existingNodeA;
-            FEResourceHandle* valueA = pTextureResource;
-            u32 keyA = pTextureResource->m_hashID;
-            s_loadedResourceList.Add(keyA, valueA);
-            pTextureResource->m_bValid = true;
-
-            delete[] s_pResourceLoadBuffer;
-            s_pResourceLoadBuffer = NULL;
-
-            FEResourceHandle* valueB = pTextureResource;
-            u32 keyB = pTextureResource->m_hashID;
-            s_loadedResourceList.AddAVLNode(
-                (AVLTreeNode**)&s_loadedResourceList.m_Root,
-                &keyB,
-                &valueB,
-                &existingNodeA,
-                s_loadedResourceList.m_NumElements);
-            if (existingNodeA == NULL)
-            {
-                s_loadedResourceList.m_NumElements++;
-            }
-            pTextureResource->m_bValid = true;
-        }
-    }
-}
-
-/**
- * Offset/Address/Size: 0x848 | 0x8020C388 | size: 0x2AC
- */
-void FEResourceManager::LoadPermanentResourceBundle(const char* szBundleFileName)
-{
-    nlStrNCpy(m_szPermanentBundleFileName, szBundleFileName, 0x20);
-
-    s_pPermanentBundleSceneResource = new (nlMalloc(sizeof(FESceneResource), 8, false)) FESceneResource();
-    s_pPermanentBundleSceneResource->m_pFESceneContext = NULL;
-    s_pPermanentBundleSceneResource->m_hashID = nlStringLowerHash("PermanentContext");
-    s_pPermanentBundleSceneResource->m_next = NULL;
-    s_pPermanentBundleSceneResource->m_prev = NULL;
-    s_pPermanentBundleSceneResource->m_type = FERT_SCENE;
-
-    FESceneResource* pPermanentSceneResource = s_pPermanentBundleSceneResource;
-
-    if ((s_pCurrentFESceneResourceContext != NULL) && (s_pCurrentFESceneResourceContext != pPermanentSceneResource)
-        && (pPermanentSceneResource != s_pCurrentFESceneResourceContext))
-    {
-        s_pCurrentFESceneResourceContext->m_pFESceneContext->m_bValid = true;
-        s_pCurrentFESceneResourceContext->m_pFESceneContext->AllResourcesLoadedCallback();
-    }
-
-    pPermanentSceneResource->m_glResourceMarker = glplatResourceMark();
-    pPermanentSceneResource->m_bValid = true;
-    s_pCurrentFESceneResourceContext = pPermanentSceneResource;
-
-    s_pPermanentBundle = new (nlMalloc(sizeof(BundleFile), 8, false)) BundleFile();
-    s_pPermanentBundle->Open(m_szPermanentBundleFileName);
-
-    LoadPermanentTextures();
-
-    s_pPermanentBundle->Close();
-    delete s_pPermanentBundle;
-    s_pPermanentBundle = NULL;
-}
-
-/**
- * Offset/Address/Size: 0xAF4 | 0x8020C634 | size: 0x1F8
- */
-void FEResourceManager::Cleanup()
-{
-    if (s_pOnDemandBundle != NULL)
-    {
-        s_pOnDemandBundle->Close();
-        delete s_pOnDemandBundle;
-        s_pOnDemandBundle = NULL;
-    }
-
-    if (s_loadedResourceList.m_NumElements != 0)
-    {
-        nlPrintf("FEResourceManager: Warning! Manager being destroyed while resources are still loaded!\n");
-        nlPrintf("                   Did all the scenes get popped before destroying the FEResourceManager?\n");
-
-        struct NodeStack
-        {
-            AVLTreeEntry<unsigned long, FEResourceHandle*>** data;
-            u32 count;
-        };
-
-        NodeStack* stack = (NodeStack*)nlMalloc(sizeof(NodeStack), 8, false);
-
-        if (stack != NULL)
-        {
-            AVLTreeEntry<unsigned long, FEResourceHandle*>* node = s_loadedResourceList.m_Root;
-
-            stack->data = (AVLTreeEntry<unsigned long, FEResourceHandle*>**)nlMalloc(
-                (s_loadedResourceList.m_NumElements + 1) * sizeof(AVLTreeEntry<unsigned long, FEResourceHandle*>*), 8, false);
-            stack->count = 0;
-
-            if (node != NULL)
-            {
-                while (node->node.left != NULL)
-                {
-                    stack->data[stack->count] = node;
-                    stack->count = stack->count + 1;
-                    node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)node->node.left;
-                }
-                stack->data[stack->count] = node;
-                stack->count = stack->count + 1;
-            }
-        }
-
-        while (stack->count != 0)
-        {
-            AVLTreeEntry<unsigned long, FEResourceHandle*>* top = stack->data[stack->count - 1];
-            FEResourceHandle* handle = top->value;
-            nlPrintf("                   Outstanding resource 0x%08x ( type = 0x%08x ) for load\n", handle->m_hashID, handle->m_type);
-
-            stack->count--;
-
-            AVLTreeEntry<unsigned long, FEResourceHandle*>* current = stack->data[stack->count];
-            AVLTreeEntry<unsigned long, FEResourceHandle*>* right = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)current->node.right;
-
-            if (right != NULL)
-            {
-                while (right->node.left != NULL)
-                {
-                    stack->data[stack->count] = right;
-                    stack->count = stack->count + 1;
-                    right = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)right->node.left;
-                }
-                stack->data[stack->count] = right;
-                stack->count = stack->count + 1;
-            }
-        }
-
-        if (stack != NULL)
-        {
-            delete[] stack->data;
-            delete stack;
-        }
-    }
-
-    s_loadedResourceList.Clear();
-}
-
-/**
- * Offset/Address/Size: 0xCEC | 0x8020C82C | size: 0x5C
- */
-FEResourceManager::~FEResourceManager()
-{
-    Cleanup();
-}
-
-/**
- * Offset/Address/Size: 0xD48 | 0x8020C888 | size: 0x1C
- *
- * TODO(banned-asm): REMOVE THIS. A hand-written `asm` function body is banned
- * match-only scaffolding -- it does not reconstruct retail source, it just
- * re-types the target bytes. This is the ONLY such body in game code
- * (the others, in Dolphin/os, PowerPC_EABI_Support/Runtime and src/ode, are
- * legitimate system code). Retained only until it is addressed as its own task.
- *
- * The justification below is FALSIFIED -- left in place per the evidence policy
- * rather than deleted, so nobody re-derives it:
- *
- *   [FALSIFIED 2026-08-07] "Written as an asm function because MWCC r0-forwards
- *   the first (nlTask) vtable pointer (`addi r0, r5, ...` / `stw r0`) while the
- *   original keeps it in r5 -- a register-allocation tiebreak that proved
- *   unreachable from C++ source shape (100+ source/pragma/compiler variants
- *   probed). These 7 instructions are the only bytes in the whole TU that would
- *   not match."
- *
- * MEASURED REFUTATION: replacing this entire block (the extern "C" raw-vtable
- * declarations and the asm body) with the ordinary
- *
- *     FEResourceManager::FEResourceManager()
- *     {
- *     }
- *
- * compiles to __ct__17FEResourceManagerFv at 0 real rows and exactly 28 bytes
- * (0x1C), with all 32 symbols of the TU at 0 rows and no regression. The claim
- * that no C++ source shape reaches these bytes is simply not true; the plain
- * default constructor reaches them on the first try.
- *
- * Reproduce:
- *   SMS_ROOT=<worktree> python3 <tools>/gradetu.py Game/FE/feResourceManager \
- *       --overlay <dir containing the edited feResourceManager.cpp>
- */
-extern "C"
-{
-    // Raw vtable symbols for the asm ctor below; they have no C++-level name.
-    extern char __vt__6nlTask[];
-    extern char __vt__17FEResourceManager[];
-}
-
-asm FEResourceManager::FEResourceManager()
-{
-    // clang-format off
-    nofralloc
-    lis r5, __vt__6nlTask@ha
-    lis r4, __vt__17FEResourceManager@ha
-    addi r5, r5, __vt__6nlTask@l
-    stw r5, 0(r3)
-    addi r0, r4, __vt__17FEResourceManager@l
-    stw r0, 0(r3)
-    blr
-    // clang-format on
+    pFETextureResource->m_bValid = true;
 }
