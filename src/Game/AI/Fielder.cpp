@@ -87,24 +87,6 @@ FuzzyVariant GetBestWindupShotAction(cFielder*);
 
 const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 
-static inline void SetCurrentTeamPowerupImpl(cFielder* pFielder, cTeam* pTeam)
-{
-    pFielder->SetPowerup(
-        pTeam->GetCurrentPowerUp().eType,
-        pTeam->GetCurrentPowerUp().nnumOfPowerups,
-        NULL);
-}
-
-static inline void SetCurrentTeamPowerup(cFielder* pFielder, cTeam* pTeam)
-{
-    SetCurrentTeamPowerupImpl(pFielder, pTeam);
-}
-
-static inline ePowerUpType GetTeamPowerupTypeByIndex(cTeam* pTeam, int index)
-{
-    return pTeam->GetPowerUpByIndex(index).eType;
-}
-
 static inline const nlVector3& GetBallPosition(cBall* pBall)
 {
     return pBall->m_v3Position;
@@ -625,77 +607,6 @@ static inline void DoPenaltyCardBookingInline(cFielder* pFouler, cFielder* pFoul
     pData->pFoulee = pFoulee;
 }
 
-static inline void TestCollisionForInvicibilityInline(cFielder* pFielder, cFielder* pOpponent)
-{
-    cFielder* pReactee = NULL;
-    cFielder* pAttacker = NULL;
-    static ePowerUpType currPowerup = POWER_UP_STAR;
-
-    if (pFielder->m_ePowerup == POWER_UP_STAR)
-    {
-        currPowerup = pFielder->m_ePowerup;
-    }
-
-    if (pFielder->IsOnSameTeam(pOpponent))
-    {
-        return;
-    }
-
-    ePowerUpType thisPowerup = pFielder->m_ePowerup;
-
-    do
-    {
-        bool bThisInvincible = (thisPowerup == POWER_UP_STAR && pFielder->m_tPowerupEffectTime.m_uPackedTime != 0) || (pFielder->mActionShootToScoreVars.isCurrentlyInvincible != 0);
-        if (bThisInvincible)
-        {
-            bool bOtherInvincible = (pOpponent->m_ePowerup == POWER_UP_STAR && pOpponent->m_tPowerupEffectTime.m_uPackedTime != 0) || (pOpponent->mActionShootToScoreVars.isCurrentlyInvincible != 0);
-            if (!bOtherInvincible)
-            {
-                pReactee = pOpponent;
-                pAttacker = pFielder;
-                break;
-            }
-        }
-
-        bool bOtherInvincible = (pOpponent->m_ePowerup == POWER_UP_STAR && pOpponent->m_tPowerupEffectTime.m_uPackedTime != 0) || (pOpponent->mActionShootToScoreVars.isCurrentlyInvincible != 0);
-        if (bOtherInvincible)
-        {
-            bool bThisInvincible2 = (thisPowerup == POWER_UP_STAR && pFielder->m_tPowerupEffectTime.m_uPackedTime != 0) || (pFielder->mActionShootToScoreVars.isCurrentlyInvincible != 0);
-            if (!bThisInvincible2)
-            {
-                pReactee = pFielder;
-                pAttacker = pOpponent;
-            }
-        }
-    } while (false);
-
-    if (pReactee == NULL)
-        return;
-
-    if (pReactee->IsFallenDown(0.0f))
-        return;
-
-    pReactee->InitActionSlideAttackReact(pFielder, true);
-
-    PowerupBase::PlayPowerupSound(currPowerup, PowerupBase::PWRUP_SOUND_HIT, pFielder->m_pPhysicsCharacter, 100.0f);
-
-    if (pAttacker->CanPickupBall(g_pBall))
-    {
-        pAttacker->PickupBall(g_pBall);
-    }
-
-    if (g_pGame->IsGameplayOrOvertime())
-    {
-        nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_POWERUPS_HIT,
-            pReactee->m_pTeam->m_nSide,
-            pReactee->m_ID,
-            0,
-            0,
-            0,
-            0);
-    }
-}
-
 /**
  * Offset/Address/Size: 0xAEBC | 0x800241F8 | size: 0x151C
  */
@@ -707,7 +618,7 @@ void cFielder::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
         return;
 
     cFielder* pFielderCollidedWith = (cFielder*)pPlayerCollidedWith;
-    TestCollisionForInvicibilityInline(this, pFielderCollidedWith);
+    TestCollisionForInvicibility(pFielderCollidedWith);
 
     if (pFielderCollidedWith->m_pTeam == m_pTeam)
         return;
@@ -5282,10 +5193,11 @@ void cFielder::TestCollisionForInvicibility(cFielder* pOpponent)
     cFielder* pReactee = NULL;
     cFielder* pAttacker = NULL;
     static ePowerUpType currPowerup = POWER_UP_STAR;
+    ePowerUpType thisPowerup = m_ePowerup;
 
-    if (m_ePowerup == POWER_UP_STAR)
+    if (thisPowerup == POWER_UP_STAR)
     {
-        currPowerup = m_ePowerup;
+        currPowerup = thisPowerup;
     }
 
     if (IsOnSameTeam(pOpponent))
@@ -5293,15 +5205,11 @@ void cFielder::TestCollisionForInvicibility(cFielder* pOpponent)
         return;
     }
 
-    ePowerUpType thisPowerup = m_ePowerup;
-
     do
     {
-        bool bThisInvincible = (thisPowerup == POWER_UP_STAR && m_tPowerupEffectTime.m_uPackedTime != 0) || (mActionShootToScoreVars.isCurrentlyInvincible != 0);
-        if (bThisInvincible)
+        if (IsInvincible())
         {
-            bool bOtherInvincible = (pOpponent->m_ePowerup == POWER_UP_STAR && pOpponent->m_tPowerupEffectTime.m_uPackedTime != 0) || (pOpponent->mActionShootToScoreVars.isCurrentlyInvincible != 0);
-            if (!bOtherInvincible)
+            if (!pOpponent->IsInvincible())
             {
                 pReactee = pOpponent;
                 pAttacker = this;
@@ -5309,11 +5217,9 @@ void cFielder::TestCollisionForInvicibility(cFielder* pOpponent)
             }
         }
 
-        bool bOtherInvincible = (pOpponent->m_ePowerup == POWER_UP_STAR && pOpponent->m_tPowerupEffectTime.m_uPackedTime != 0) || (pOpponent->mActionShootToScoreVars.isCurrentlyInvincible != 0);
-        if (bOtherInvincible)
+        if (pOpponent->IsInvincible())
         {
-            bool bThisInvincible2 = (thisPowerup == POWER_UP_STAR && m_tPowerupEffectTime.m_uPackedTime != 0) || (mActionShootToScoreVars.isCurrentlyInvincible != 0);
-            if (!bThisInvincible2)
+            if (!IsInvincible())
             {
                 pReactee = this;
                 pAttacker = pOpponent;
@@ -6005,8 +5911,6 @@ void cFielder::SetPowerup(ePowerUpType eNewPowerup, int nnumOfPowerups, cFielder
  */
 void cFielder::UseTeamPowerup(cFielder* pTarget)
 {
-    cTeam* pTeam;
-
     if ((m_ePowerup == POWER_UP_STAR) || (m_tFrozenTimer.m_uPackedTime != 0))
     {
         return;
@@ -6014,33 +5918,36 @@ void cFielder::UseTeamPowerup(cFielder* pTarget)
 
     if (IsFallenDown(0.0f))
     {
-        if (m_pTeam->IsCurrentStar())
+        if (GetTeam()->IsCurrentStar())
         {
             return;
         }
-        if (m_pTeam->IsCurrentMushroom())
+        if (GetTeam()->IsCurrentMushroom())
         {
             return;
         }
     }
 
-    if (!m_pTeam->IsCurrentNoPowerup())
+    if (!GetTeam()->IsCurrentNoPowerup())
     {
-        pTeam = m_pTeam;
-        SetPowerup(pTeam->GetCurrentPowerUp().eType, pTeam->GetCurrentPowerUp().nnumOfPowerups, pTarget);
-        m_pTeam->ClearCurrentPowerUp();
+        SetPowerup(
+            GetTeam()->GetCurrentPowerUp().eType,
+            GetTeam()->GetCurrentPowerUp().nnumOfPowerups,
+            pTarget);
+        GetTeam()->ClearCurrentPowerUp();
     }
     else
     {
-        ePowerUpType powerupType = m_pTeam->GetPowerUpByIndex(1).eType;
-        if (powerupType == POWER_UP_NONE)
+        if (GetTeam()->GetPowerUpByIndex(1).eType == POWER_UP_NONE)
         {
             return;
         }
-        m_pTeam->TogglePowerup(true);
-        pTeam = m_pTeam;
-        SetPowerup(pTeam->GetCurrentPowerUp().eType, pTeam->GetCurrentPowerUp().nnumOfPowerups, pTarget);
-        m_pTeam->ClearCurrentPowerUp();
+        GetTeam()->TogglePowerup(true);
+        SetPowerup(
+            GetTeam()->GetCurrentPowerUp().eType,
+            GetTeam()->GetCurrentPowerUp().nnumOfPowerups,
+            pTarget);
+        GetTeam()->ClearCurrentPowerUp();
     }
 }
 
@@ -6668,31 +6575,7 @@ bool cFielder::DoAILooseBallActionSelection()
                 break;
             if (m_nPowerupAnimID >= 0)
                 break;
-            if (m_ePowerup == POWER_UP_STAR)
-                break;
-            if (m_tFrozenTimer.m_uPackedTime != 0)
-                break;
-            if (IsFallenDown(0.0f) && (m_pTeam->IsCurrentStar() || m_pTeam->IsCurrentMushroom()))
-                break;
-            if (!m_pTeam->IsCurrentNoPowerup())
-            {
-                cTeam* pTeam = m_pTeam;
-                SetCurrentTeamPowerup(this, pTeam);
-                m_pTeam->ClearCurrentPowerUp();
-            }
-            else
-            {
-                if (GetTeamPowerupTypeByIndex(m_pTeam, 1) == POWER_UP_NONE)
-                    break;
-                m_pTeam->TogglePowerup(true);
-                cTeam* pTeam = m_pTeam;
-                const PowerUpTeamType& countPowerup = pTeam->GetCurrentPowerUp();
-                SetPowerup(
-                    pTeam->GetCurrentPowerUp().eType,
-                    countPowerup.nnumOfPowerups,
-                    NULL);
-                m_pTeam->ClearCurrentPowerUp();
-            }
+            UseTeamPowerup(NULL);
             break;
         }
         default:
@@ -6783,31 +6666,7 @@ bool cFielder::DoAIReceivePassActionSelection()
                 break;
             if (m_nPowerupAnimID >= 0)
                 break;
-            if (m_ePowerup == POWER_UP_STAR)
-                break;
-            if (m_tFrozenTimer.m_uPackedTime != 0)
-                break;
-            if (IsFallenDown(0.0f) && (m_pTeam->IsCurrentStar() || m_pTeam->IsCurrentMushroom()))
-                break;
-            if (!m_pTeam->IsCurrentNoPowerup())
-            {
-                cTeam* pTeam = m_pTeam;
-                SetCurrentTeamPowerup(this, pTeam);
-                m_pTeam->ClearCurrentPowerUp();
-            }
-            else
-            {
-                if (GetTeamPowerupTypeByIndex(m_pTeam, 1) == POWER_UP_NONE)
-                    break;
-                m_pTeam->TogglePowerup(true);
-                cTeam* pTeam = m_pTeam;
-                const PowerUpTeamType& countPowerup = pTeam->GetCurrentPowerUp();
-                SetPowerup(
-                    pTeam->GetCurrentPowerUp().eType,
-                    countPowerup.nnumOfPowerups,
-                    NULL);
-                m_pTeam->ClearCurrentPowerUp();
-            }
+            UseTeamPowerup(NULL);
             break;
         }
         case FIELDERDESIRE_HIT:
@@ -6832,8 +6691,6 @@ bool cFielder::DoAIReceivePassActionSelection()
 
 /**
  * Offset/Address/Size: 0x3C | 0x80019378 | size: 0x680
- * TODO: 98.9% match - persistent r30/r31 swap for this vs bDidSomething in
- * PASS/DEKE/SHOOT call paths
  */
 bool cFielder::DoAIWindupActionSelection()
 {
@@ -6904,31 +6761,8 @@ bool cFielder::DoAIWindupActionSelection()
                 break;
             if (m_nPowerupAnimID >= 0)
                 break;
-            if (m_ePowerup == POWER_UP_STAR)
-                break;
-            if (m_tFrozenTimer.m_uPackedTime != 0)
-                break;
-            if (IsFallenDown(0.0f) && (m_pTeam->IsCurrentStar() || m_pTeam->IsCurrentMushroom()))
-                break;
-            if (!m_pTeam->IsCurrentNoPowerup())
-            {
-                cTeam* pTeam = m_pTeam;
-                SetCurrentTeamPowerup(this, pTeam);
-                m_pTeam->ClearCurrentPowerUp();
-            }
-            else
-            {
-                if (GetTeamPowerupTypeByIndex(m_pTeam, 1) == POWER_UP_NONE)
-                    break;
-                m_pTeam->TogglePowerup(true);
-                cTeam* pTeam = m_pTeam;
-                const PowerUpTeamType& countPowerup = pTeam->GetCurrentPowerUp();
-                SetPowerup(
-                    pTeam->GetCurrentPowerUp().eType,
-                    countPowerup.nnumOfPowerups,
-                    NULL);
-                m_pTeam->ClearCurrentPowerUp();
-            }
+            cFielder* pPowerupTarget = NULL;
+            UseTeamPowerup(pPowerupTarget);
             break;
         }
         case FIELDERDESIRE_SHOOT:
