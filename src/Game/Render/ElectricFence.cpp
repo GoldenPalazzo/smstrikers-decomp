@@ -68,8 +68,8 @@ static void GetWallPoint(const nlVector3& impactPosition, float xOffset, float z
     bool yIsPositive = impactPosition.y > 0.0f;
 
     nlVector3 impactPositionPositive = { {
-        nlAbs(impactPosition.x),
-        nlAbs(impactPosition.y),
+        std::fabsf(impactPosition.x),
+        std::fabsf(impactPosition.y),
         impactPosition.z,
     } };
 

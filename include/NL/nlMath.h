@@ -36,7 +36,7 @@ inline unsigned int nlAlignUp(unsigned int value, unsigned int alignment)
     return (value + alignment - 1) & ~(alignment - 1);
 }
 
-inline float nlAbs(float value)
+inline float nlAbs(const float& value)
 {
     return std::fabsf(value);
 }
@@ -109,8 +109,10 @@ public:
 
     inline void Sub2D(const nlVector3& a, const nlVector3& b)
     {
-        f.x = a.f.x - b.f.x;
-        f.y = a.f.y - b.f.y;
+        float y = a.f.y - b.f.y;
+        float x = a.f.x - b.f.x;
+        f.x = x;
+        f.y = y;
     }
 
     inline float GetLengthSq3D() const

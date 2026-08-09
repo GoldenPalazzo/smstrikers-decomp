@@ -187,7 +187,6 @@ public:
     bool IsReceivingVolleyPass() const;
     bool IsPreparingForOneTimer() const;
     void CleanUpAction();
-    // void EndAction();
     void CleanUpPowerupEffect();
     void CalcRegularShot(nlVector3&, nlVector3&);
     void CalcShootToScoreShot(nlVector3&, nlVector3&);
@@ -209,6 +208,7 @@ public:
     cFielder* DoFindBestHitTarget();
     void DoFindBestShotTarget(nlVector3&, float&, bool);
     void DoRegularShooting();
+    void DoDebugShooting();
     void DoResetShotMeter(float);
     bool IsActionDone() const;
     void SetAction(eFielderActionState);
@@ -218,6 +218,7 @@ public:
     const LooseBallContactAnimInfo* GetReceivePassBallContactAnimInfo(cBall*, const nlVector3&, unsigned short, bool, bool);
     void GetReceivePassBallContactOffset(nlVector3&, unsigned short, const LooseBallContactAnimInfo*);
     bool IsFallenDown(float) const;
+    bool HasNoDesire() const;
     bool IsHitting() const;
     bool IsSlideTackling() const;
     bool IsStriker() const;
@@ -279,6 +280,7 @@ public:
     void TestButtonsRunning();
     void TestButtonsRunningWB(float);
     void ThrowPowerup();
+    ePowerUpType GetPowerupType() const { return m_ePowerup; }
     void SetPowerup(ePowerUpType, int, cFielder*);
     void UseTeamPowerup(cFielder*);
     void UpdateActionState(float);
@@ -309,7 +311,7 @@ public:
             }
             if (isRunningWithBall)
             {
-                goto set_result; // ugly, but works. I suspect it is solvable with another class-inline method.
+                goto set_result;
             }
         }
         else
@@ -438,7 +440,6 @@ public:
     void ActionSlideAttackFailReact(float);
     void InitActionSquishReact(const nlVector3&);
     void DoSlideAttackStats();
-    // void InitActionSlideAttackReact(cPlayer*, bool);
     void InitActionSTSHitReact(cPlayer*);
     void ActionSlideAttackReact(float);
     void ActionBombReact(float);
@@ -453,8 +454,6 @@ public:
 
     inline void SetAnim(const u16 facingDelta, const int* animIDs)
     {
-        // u16 facingDelta = delta + 0x2000;
-        // int animID = animIDs[(facingDelta >> 14) & 3];
         SetAnimState(animIDs[(facingDelta >> 14) & 3], true, 0.2f, false, false);
     }
 
@@ -630,6 +629,5 @@ public:
     unsigned long mThoughtHashInitCutAndBreak; // offset 0x3E8, size 0x4
 
 }; // total size: 0x3EC
-
 
 #endif // _FIELDER_H_

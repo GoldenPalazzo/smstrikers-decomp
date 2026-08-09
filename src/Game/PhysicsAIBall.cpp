@@ -621,8 +621,8 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalPost()
  */
 bool PhysicsAIBall::DidBallJustEnterNet(const nlVector3& oldPosition, const nlVector3 newPosition)
 {
-    float absOldX = nlAbs(oldPosition.f.x);
-    float absNewX = nlAbs(newPosition.f.x);
+    float absOldX = std::fabsf(oldPosition.f.x);
+    float absNewX = std::fabsf(newPosition.f.x);
     float goalLineX = cField::GetGoalLineX(1U) + g_pBall->GetPhysicsBall()->GetRadius() - 0.08f;
 
     if ((absOldX < goalLineX) && (absNewX >= goalLineX))
@@ -632,7 +632,7 @@ bool PhysicsAIBall::DidBallJustEnterNet(const nlVector3& oldPosition, const nlVe
 
         deltaX = newPosition.f.x - oldPosition.f.x;
 
-        if (nlAbs(deltaX) > 0.0001f)
+        if (std::fabsf(deltaX) > 0.0001f)
         {
             float alpha = (newPosition.f.x > 0.0f) ? goalLineX : -goalLineX;
             alpha = (alpha - oldPosition.f.x) / deltaX;
@@ -660,5 +660,5 @@ bool PhysicsAIBall::DidBallJustEnterNet(const nlVector3& oldPosition, const nlVe
 bool PhysicsAIBall::IsBallOutsideNet(const nlVector3& ballPosition)
 {
     float radius = g_pBall->GetPhysicsBall()->GetRadius();
-    return nlAbs(ballPosition.f.x) < cField::GetGoalLineX(1U) + radius - 0.08f;
+    return std::fabsf(ballPosition.f.x) < cField::GetGoalLineX(1U) + radius - 0.08f;
 }
