@@ -98,8 +98,6 @@ public:
     void DrawString(eGLView, const FontCharString&, const nlVector2&, const nlColour&, const nlColour&, int, nlFont::TextPass, bool, unsigned long*, nlColour*) const;
     unsigned char Load(const char*, char*, unsigned long);
     void Unload();
-    // void GlyphInfo::SortProc(const nlFont::GlyphInfo*, const nlFont::GlyphInfo*);
-    // void KernPair::SortProc(const nlFont::KernPair*, const nlFont::KernPair*);
 
     ~nlFont();
     nlFont();
@@ -141,7 +139,6 @@ public:
     /* 0x4 */ unsigned char m_InternalBuffer;
 }; // total size: 0x8
 
-// TODO: 95.45% match - remaining diffs are escape-copy loop guard shape and extended glyph assignment register.
 template <typename T>
 FontCharString::FontCharString(const T* Source, const nlFont* pFont, T* pBuffer)
 {

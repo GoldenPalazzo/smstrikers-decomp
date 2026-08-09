@@ -357,11 +357,26 @@ void nlFont::DrawString(eGLView View, const FontCharString& Text, const nlVector
 
 /**
  * Offset/Address/Size: 0x830 | 0x8021116C | size: 0x9C0
- * TODO: 98.70% match - register assignments differ in glyph and kerning list parsing.
+ * TODO: 99.25% match - OPEN. The only residual is a three-way register cycle in
+ * case 'K': our kern-pair token cursor takes r24 (the outer pToken register) and
+ * the two list-end aliases take r22/r21, where retail colours the cursor r21 and
+ * the aliases r24/r22. Everything else, including both drain loops and the whole
+ * 'G' case, is exact.
  */
 unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned long HashId)
 {
     char* pCurrentLine;
+
+    nlStrNCpy(m_FontName, szFontName, 0x20);
+
+    pCurrentLine = pFontDescData;
+
+    nlListSlotPoolHigh<nlFont::KernPair> KernList(0x10, 0x10);
+    m_KernTableSize = 0;
+
+    nlListSlotPoolHigh<nlFont::GlyphInfo> ExtendedGlyphList(0x10, 0x10);
+    m_ExtendedGlyphCount = 0;
+
     unsigned long CurrentPage;
     unsigned long CurrentTexelX;
     unsigned long CurrentTexelY;
@@ -371,325 +386,297 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
     nlFont::GlyphInfo* pInfo;
     unsigned short Base;
     nlFont::KernPair kp;
+    nlFont::KernPair* pCurKP;
     nlFont::KernPair* pKP;
-    unsigned long page;
 
-    nlStrNCpy(m_FontName, szFontName, 0x20);
+    CurrentPage = 0;
+    CurrentTexelX = 0;
+    CurrentTexelY = 0;
+    m_bScissorBox = false;
+    m_Metrics.FontName = HashId;
 
-    pCurrentLine = pFontDescData;
-
-    nlListSlotPoolHigh<nlFont::KernPair> KernList(0x10, 0x10);
-    m_KernTableSize = 0;
-
+    for (;;)
     {
-        nlListSlotPoolHigh<nlFont::GlyphInfo> ExtendedGlyphList(0x10, 0x10);
-        ListEntry<nlFont::GlyphInfo>** pExtHead = &ExtendedGlyphList.m_Head;
-        m_ExtendedGlyphCount = 0;
-
-        CurrentPage = 0;
-        CurrentTexelX = 0;
-        CurrentTexelY = 0;
-        m_bScissorBox = false;
-        m_Metrics.FontName = HashId;
-
-        for (;;)
+        if (nlToUpper(*pCurrentLine) == 'E')
+            break;
+        pEOL = nlStrChr(pCurrentLine, '\r');
+        if (pEOL != NULL)
         {
-            if (nlToUpper(*pCurrentLine) == 'E')
-                break;
-            pEOL = nlStrChr(pCurrentLine, '\r');
-            if (pEOL != NULL)
+            *pEOL = 0;
+        }
+
+        pToken = nlStrChr(pCurrentLine, ' ') + 1;
+
+        switch (nlToUpper(*pCurrentLine))
+        {
+        case 'P':
+        {
+            m_PageSize = atoi(pToken);
+            m_InvTexSize = 1.0f / (float)m_PageSize;
+
+            pCurrentLine = nlStrChr(pToken, ' ');
+            pCurrentLine++;
+            pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
+            m_PageCount = atoi(pCurrentLine);
+
+            pCurrentLine = nlStrChr(pCurrentLine, ' ');
+            pCurrentLine++;
+            pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
+            switch (nlToLower(*pCurrentLine))
             {
-                *pEOL = 0;
-            }
-
-            pToken = nlStrChr(pCurrentLine, ' ') + 1;
-
-            switch (nlToUpper(*pCurrentLine))
-            {
-            case 'P':
-            {
-                m_PageSize = atoi(pToken);
-                m_InvTexSize = 1.0f / (float)m_PageSize;
-
-                pCurrentLine = nlStrChr(pToken, ' ');
-                pCurrentLine++;
-                pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
-                m_PageCount = atoi(pCurrentLine);
-
-                pCurrentLine = nlStrChr(pCurrentLine, ' ');
-                pCurrentLine++;
-                pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
-                switch (nlToLower(*pCurrentLine))
-                {
-                case 'c':
-                    m_TextureType = Colour;
-                    break;
-                case 'g':
-                    m_TextureType = Greyscale;
-                    break;
-                case 's':
-                    m_TextureType = SplitFX;
-                    break;
-                default:
-                    break;
-                }
-
-                pCurrentLine = nlStrChr(pCurrentLine, ' ');
-                pCurrentLine++;
-                pCurrentLine = nlStrChr(pCurrentLine, ' ');
-                switch (nlToLower(pCurrentLine[1]))
-                {
-                case 'e':
-                    m_Distribution = English;
-                    break;
-                case 'i':
-                    m_Distribution = InOrder;
-                    break;
-                default:
-                    break;
-                }
+            case 'c':
+                m_TextureType = Colour;
                 break;
-            }
-
-            case 'H':
-            {
-                m_Metrics.Height = (unsigned short)atoi(pToken);
-
-                pCurrentLine = nlStrChr(pToken, ' ');
-                pCurrentLine++;
-                pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
-                m_Metrics.RenderHeight = (unsigned short)atoi(pCurrentLine);
-
-                pCurrentLine = nlStrChr(pCurrentLine, ' ');
-                pCurrentLine++;
-                pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
-                m_Metrics.Ascent = (unsigned short)atoi(pCurrentLine);
-
-                pCurrentLine = nlStrChr(pCurrentLine, ' ');
-                pCurrentLine++;
-                pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
-                m_Metrics.RenderAscent = (unsigned short)atoi(pCurrentLine);
-
-                pCurrentLine = nlStrChr(pCurrentLine, ' ');
-                pCurrentLine++;
-                pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
-                m_Metrics.InternalLeading = (unsigned short)atoi(pCurrentLine);
+            case 'g':
+                m_TextureType = Greyscale;
                 break;
-            }
-
-            case 'C':
-            {
-                m_Metrics.Spacing = (float)atoi(pToken) / 100.0f;
-
-                pCurrentLine = nlStrChr(pToken, ' ');
-                pCurrentLine++;
-                pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
-                m_Metrics.LineHeight = (float)atoi(pCurrentLine) / 100.0f;
+            case 's':
+                m_TextureType = SplitFX;
                 break;
-            }
-
-            case 'G':
-            {
-                int nChar;
-                if (pToken[1] != ' ')
-                {
-                    nChar = atoi(pToken);
-                }
-                else
-                {
-                    nChar = (signed char)pToken[0];
-                }
-                Character = (unsigned short)nChar;
-
-                if (Character < 0x7F)
-                {
-                    pInfo = m_GlyphLookup + Character - 0x20;
-                }
-                else
-                {
-                    ListEntry<nlFont::GlyphInfo> localEntry((nlFont::GlyphInfo()));
-                    ListEntry<nlFont::GlyphInfo>* pEntry = NULL;
-                    ExtendedGlyphList.m_Allocator.Allocate(pEntry);
-                    if (pEntry != NULL)
-                    {
-                        *pEntry = localEntry;
-                    }
-                    nlListAddStart<ListEntry<nlFont::GlyphInfo> >(pExtHead, pEntry, &ExtendedGlyphList.m_Tail);
-                    m_ExtendedGlyphCount++;
-                    pInfo = &pEntry->entry;
-                }
-
-                pInfo->UnicodeChar = Character;
-                pInfo->HasKernPairs = 0;
-
-                pCurrentLine = nlStrChr(pToken, ' ');
-                pCurrentLine++;
-                pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
-                pInfo->Advance = (unsigned char)atoi(pCurrentLine);
-
-                pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
-                pInfo->RenderWidth = (unsigned char)atoi(pCurrentLine);
-
-                pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
-                pInfo->Offset = (signed char)atoi(pCurrentLine);
-
-                if ((CurrentTexelX + pInfo->RenderWidth) > m_PageSize)
-                {
-                    CurrentTexelX = 0;
-                    CurrentTexelY += m_Metrics.RenderHeight;
-                    if ((CurrentTexelY + m_Metrics.RenderHeight) > m_PageSize)
-                    {
-                        CurrentTexelX = 0;
-                        CurrentTexelY = 0;
-                        CurrentPage++;
-                    }
-                }
-
-                pInfo->Page = CurrentPage;
-                {
-                    float fInvTexSize = m_InvTexSize;
-                    pInfo->uv.f.x = (float)CurrentTexelX * fInvTexSize;
-                    pInfo->uv.f.y = (float)CurrentTexelY * fInvTexSize;
-                }
-                CurrentTexelX += pInfo->RenderWidth;
-                break;
-            }
-
-            case 'K':
-            {
-                int nBase;
-                if (pToken[1] != ' ')
-                {
-                    nBase = atoi(pToken);
-                }
-                else
-                {
-                    nBase = (signed char)pToken[0];
-                }
-                Base = (unsigned short)nBase;
-
-                if (Base > 0x7F)
-                {
-                    pInfo = &m_pExtendedGlyphs[Base - 0x80];
-                }
-                else
-                {
-                    pInfo = &m_GlyphLookup[Base - 0x20];
-                }
-
-                pInfo->HasKernPairs = 1;
-
-                pToken = nlStrChr(pToken, ' ') + 1;
-                ListEntry<nlFont::KernPair>** pKernTail = &KernList.m_Tail;
-                ListEntry<nlFont::KernPair>** pKernHead = &KernList.m_Head;
-                while ((unsigned long)pToken != 1)
-                {
-                    kp.s.A = Base;
-                    {
-                        int nB;
-                        if (pToken[1] != ' ')
-                        {
-                            nB = atoi(pToken);
-                        }
-                        else
-                        {
-                            nB = (signed char)pToken[0];
-                        }
-                        kp.s.B = (unsigned short)nB;
-                    }
-
-                    pToken = nlStrChr(pToken, ' ') + 1;
-                    kp.Kern = atoi(pToken);
-                    ListEntry<nlFont::KernPair> localEntry(kp);
-                    ListEntry<nlFont::KernPair>* pEntry = NULL;
-                    KernList.m_Allocator.Allocate(pEntry);
-                    if (pEntry != NULL)
-                    {
-                        *pEntry = localEntry;
-                    }
-                    nlListAddStart<ListEntry<nlFont::KernPair> >(pKernHead, pEntry, pKernTail);
-                    m_KernTableSize++;
-
-                    pToken = nlStrChr(pToken, ' ') + 1;
-                }
-                break;
-            }
-
-            case 'V':
-                break;
-
             default:
                 break;
             }
 
-            pCurrentLine = pEOL + 2;
+            pCurrentLine = nlStrChr(pCurrentLine, ' ');
+            pCurrentLine++;
+            pCurrentLine = nlStrChr(pCurrentLine, ' ');
+            switch (nlToLower(pCurrentLine[1]))
+            {
+            case 'e':
+                m_Distribution = English;
+                break;
+            case 'i':
+                m_Distribution = InOrder;
+                break;
+            default:
+                break;
+            }
+            break;
         }
 
-        if (m_KernTableSize != 0)
+        case 'H':
         {
-            m_pKernTable = (KernPair*)nlMalloc(m_KernTableSize * sizeof(KernPair), 8, false);
-            pKP = m_pKernTable;
+            m_Metrics.Height = (unsigned short)atoi(pToken);
 
-            while (KernList.m_Head != NULL)
+            pCurrentLine = nlStrChr(pToken, ' ');
+            pCurrentLine++;
+            pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
+            m_Metrics.RenderHeight = (unsigned short)atoi(pCurrentLine);
+
+            pCurrentLine = nlStrChr(pCurrentLine, ' ');
+            pCurrentLine++;
+            pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
+            m_Metrics.Ascent = (unsigned short)atoi(pCurrentLine);
+
+            pCurrentLine = nlStrChr(pCurrentLine, ' ');
+            pCurrentLine++;
+            pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
+            m_Metrics.RenderAscent = (unsigned short)atoi(pCurrentLine);
+
+            pCurrentLine = nlStrChr(pCurrentLine, ' ');
+            pCurrentLine++;
+            pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
+            m_Metrics.InternalLeading = (unsigned short)atoi(pCurrentLine);
+            break;
+        }
+
+        case 'C':
+        {
+            m_Metrics.Spacing = (float)atoi(pToken) / 100.0f;
+
+            pCurrentLine = nlStrChr(pToken, ' ');
+            pCurrentLine++;
+            pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
+            m_Metrics.LineHeight = (float)atoi(pCurrentLine) / 100.0f;
+            break;
+        }
+
+        case 'G':
+        {
+            int nChar;
+            if (pToken[1] != ' ')
             {
-                nlFont::KernPair* pCurKP = pKP;
-                pKP++;
-                ListEntry<nlFont::KernPair>* pEntry = nlListRemoveStart<ListEntry<nlFont::KernPair> >(&KernList.m_Head, &KernList.m_Tail);
-                if (pCurKP != NULL)
+                nChar = atoi(pToken);
+            }
+            else
+            {
+                nChar = pToken[0];
+            }
+            Character = (unsigned short)nChar;
+
+            if (Character < 0x7F)
+            {
+                pInfo = m_GlyphLookup + Character - 0x20;
+            }
+            else
+            {
+                ListEntry<nlFont::GlyphInfo>* pEntry = ExtendedGlyphList.Allocate(nlFont::GlyphInfo());
+                nlListAddStart<ListEntry<nlFont::GlyphInfo> >(&ExtendedGlyphList.m_Head, pEntry, &ExtendedGlyphList.m_Tail);
+                m_ExtendedGlyphCount++;
+                pInfo = &pEntry->entry;
+            }
+
+            pInfo->UnicodeChar = Character;
+            pInfo->HasKernPairs = 0;
+
+            pCurrentLine = nlStrChr(pToken, ' ');
+            pCurrentLine++;
+            pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
+            pInfo->Advance = (unsigned char)atoi(pCurrentLine);
+
+            pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
+            pInfo->RenderWidth = (unsigned char)atoi(pCurrentLine);
+
+            pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
+            pInfo->Offset = (signed char)atoi(pCurrentLine);
+
+            if ((CurrentTexelX + pInfo->RenderWidth) > m_PageSize)
+            {
+                CurrentTexelX = 0;
+                CurrentTexelY += m_Metrics.RenderHeight;
+                if ((CurrentTexelY + m_Metrics.RenderHeight) > m_PageSize)
                 {
-                    pCurKP->s.A = pEntry->entry.s.A;
-                    pCurKP->s.B = pEntry->entry.s.B;
-                    pCurKP->Kern = pEntry->entry.Kern;
+                    CurrentTexelX = 0;
+                    CurrentTexelY = 0;
+                    CurrentPage++;
+                }
+            }
+
+            pInfo->Page = CurrentPage;
+            nlVec2Set(pInfo->uv, (float)CurrentTexelX * m_InvTexSize, (float)CurrentTexelY * m_InvTexSize);
+            CurrentTexelX += pInfo->RenderWidth;
+            break;
+        }
+
+        case 'K':
+        {
+            int nBase;
+            if (pToken[1] != ' ')
+            {
+                nBase = atoi(pToken);
+            }
+            else
+            {
+                nBase = pToken[0];
+            }
+            Base = (unsigned short)nBase;
+
+            if (Base > 0x7F)
+            {
+                pInfo = &m_pExtendedGlyphs[Base - 0x80];
+            }
+            else
+            {
+                pInfo = &m_GlyphLookup[Base - 0x20];
+            }
+
+            ListEntry<nlFont::KernPair>** pKernTail = &KernList.m_Tail;
+            ListEntry<nlFont::KernPair>** pKernHead = &KernList.m_Head;
+            pInfo->HasKernPairs = 1;
+
+            pToken = nlStrChr(pToken, ' ') + 1;
+            while ((unsigned long)pToken != 1)
+            {
+                kp.s.A = Base;
+                {
+                    int nB;
+                    if (pToken[1] != ' ')
+                    {
+                        nB = atoi(pToken);
+                    }
+                    else
+                    {
+                        nB = pToken[0];
+                    }
+                    kp.s.B = (unsigned short)nB;
                 }
 
-                pEntry->next = (ListEntry<nlFont::KernPair>*)KernList.m_Allocator.m_FreeList;
-                KernList.m_Allocator.m_FreeList = (SlotPoolEntry*)pEntry;
+                pToken = nlStrChr(pToken, ' ') + 1;
+                kp.Kern = atoi(pToken);
+                ListEntry<nlFont::KernPair>* pEntry = KernList.Allocate(kp);
+                nlListAddStart<ListEntry<nlFont::KernPair> >(pKernHead, pEntry, pKernTail);
+                m_KernTableSize++;
+
+                pToken = nlStrChr(pToken, ' ') + 1;
             }
-
-            nlQSort<nlFont::KernPair>(m_pKernTable, m_KernTableSize, nlFont::KernPair::SortProc);
-        }
-        else
-        {
-            m_pKernTable = NULL;
+            break;
         }
 
-        if (m_ExtendedGlyphCount != 0)
-        {
-            m_pExtendedGlyphs = (GlyphInfo*)nlMalloc(m_ExtendedGlyphCount * sizeof(GlyphInfo), 8, false);
-            pInfo = m_pExtendedGlyphs;
+        case 'V':
+            break;
 
-            while (ExtendedGlyphList.m_Head != NULL)
+        default:
+            break;
+        }
+
+        pCurrentLine = pEOL + 2;
+    }
+
+    if (m_KernTableSize != 0)
+    {
+        m_pKernTable = (KernPair*)nlMalloc(m_KernTableSize * sizeof(KernPair), 8, false);
+        pKP = m_pKernTable;
+
+        while (KernList.m_Head != NULL)
+        {
+            pCurKP = pKP;
+            pKP++;
+            ListEntry<nlFont::KernPair>* pEntry = nlListRemoveStart<ListEntry<nlFont::KernPair> >(&KernList.m_Head, &KernList.m_Tail);
+            if (pCurKP != NULL)
             {
-                ListEntry<nlFont::GlyphInfo>* pEntry = nlListRemoveStart<ListEntry<nlFont::GlyphInfo> >(&ExtendedGlyphList.m_Head, &ExtendedGlyphList.m_Tail);
-                if (pInfo != NULL)
-                {
-                    *pInfo = pEntry->entry;
-                }
-
-                pEntry->next = (ListEntry<nlFont::GlyphInfo>*)ExtendedGlyphList.m_Allocator.m_FreeList;
-                ExtendedGlyphList.m_Allocator.m_FreeList = (SlotPoolEntry*)pEntry;
-                pInfo++;
+                pCurKP->s.A = pEntry->entry.s.A;
+                pCurKP->s.B = pEntry->entry.s.B;
+                pCurKP->Kern = pEntry->entry.Kern;
             }
 
-            nlQSort<nlFont::GlyphInfo>(m_pExtendedGlyphs, m_ExtendedGlyphCount, nlFont::GlyphInfo::SortProc);
-        }
-        else
-        {
-            m_pExtendedGlyphs = NULL;
+            pEntry->next = (ListEntry<nlFont::KernPair>*)KernList.m_Allocator.m_FreeList;
+            KernList.m_Allocator.m_FreeList = (SlotPoolEntry*)pEntry;
         }
 
-        char sHashFontName[265] = { 0 };
-        for (page = 0; page < m_PageCount; page++)
-        {
-            nlStrNCpy(sHashFontName, szFontName, 0x109);
-            nlSNPrintf(sHashFontName, 0x109, "%s_%d", sHashFontName, page + 1);
-            m_TextureHandles[page] = nlStringHash(sHashFontName);
+        nlQSort<nlFont::KernPair>(m_pKernTable, m_KernTableSize, nlFont::KernPair::SortProc);
+    }
+    else
+    {
+        m_pKernTable = NULL;
+    }
 
-            if (m_TextureType == SplitFX)
+    if (m_ExtendedGlyphCount != 0)
+    {
+        m_pExtendedGlyphs = (GlyphInfo*)nlMalloc(m_ExtendedGlyphCount * sizeof(GlyphInfo), 8, false);
+        pInfo = m_pExtendedGlyphs;
+
+        while (ExtendedGlyphList.m_Head != NULL)
+        {
+            ListEntry<nlFont::GlyphInfo>* pEntry = nlListRemoveStart<ListEntry<nlFont::GlyphInfo> >(&ExtendedGlyphList.m_Head, &ExtendedGlyphList.m_Tail);
+            if (pInfo != NULL)
             {
-                nlStrNCat(sHashFontName, sHashFontName, "e", 0x109);
-                m_EffectTextureHandles[page] = nlStringHash(sHashFontName);
+                *pInfo = pEntry->entry;
             }
+
+            pEntry->next = (ListEntry<nlFont::GlyphInfo>*)ExtendedGlyphList.m_Allocator.m_FreeList;
+            ExtendedGlyphList.m_Allocator.m_FreeList = (SlotPoolEntry*)pEntry;
+            pInfo++;
+        }
+
+        nlQSort<nlFont::GlyphInfo>(m_pExtendedGlyphs, m_ExtendedGlyphCount, nlFont::GlyphInfo::SortProc);
+    }
+    else
+    {
+        m_pExtendedGlyphs = NULL;
+    }
+
+    char sHashFontName[265] = { 0 };
+    unsigned long page;
+    for (page = 0; page < m_PageCount; page++)
+    {
+        nlStrNCpy(sHashFontName, szFontName, 0x109);
+        nlSNPrintf(sHashFontName, 0x109, "%s_%d", sHashFontName, page + 1);
+        m_TextureHandles[page] = nlStringHash(sHashFontName);
+
+        if (m_TextureType == SplitFX)
+        {
+            nlStrNCat(sHashFontName, sHashFontName, "e", 0x109);
+            m_EffectTextureHandles[page] = nlStringHash(sHashFontName);
         }
     }
 
