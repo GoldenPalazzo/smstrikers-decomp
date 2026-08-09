@@ -23,7 +23,6 @@ u32 NumberTextures[4] = {
 };
 
 ShootToScoreMeter ShootToScoreMeter::instance;
-// static u32 WHITE_COLOR = 0xFFFFFFFF;
 
 static nlColour sWhiteBarColour = { 255, 255, 255, 255 };
 static nlColour sHyperColour = { 181, 240, 255, 255 };
@@ -96,12 +95,12 @@ inline void ShootToScoreMeter::DrawIndicatorBar(float angle, const nlColour& col
         zDepth = 0.0f;
     }
 
-    s32 angle_s32 = (s32)(10430.378f * angleRadians);
-    float sinVal = nlSin((u16)angle_s32);
-    float cosVal = nlSin((u16)((u16)angle_s32 + 0x4000));
+    s32 angleIndex = (s32)(10430.378f * angleRadians);
+    float sine = nlSin((u16)angleIndex);
+    float cosine = nlSin((u16)((u16)angleIndex + 0x4000));
 
-    barMatrix.m[3][0] = radius * cosVal;
-    barMatrix.m[3][1] = radius * sinVal;
+    barMatrix.m[3][0] = radius * cosine;
+    barMatrix.m[3][1] = radius * sine;
     barMatrix.m[3][2] = zDepth;
     barMatrix.m[3][3] = 1.0f;
     nlMultMatrices(barMatrix, barMatrix, meterMatrix);
@@ -116,6 +115,12 @@ inline void ShootToScoreMeter::DrawIndicatorBar(float angle, const nlColour& col
     }
 
     glAttachQuad3(view, 1, &barQuad, true);
+}
+
+inline void ShootToScoreMeter::DrawTrailIndicatorBar(int index, float angleDifference, const nlColour& colour, const nlMatrix4& meterMatrix, float scale)
+{
+    float angle = sfTrailLengthScale * ((float)index * angleDifference) + m_fWhiteBarAngle;
+    DrawIndicatorBar(angle, colour, meterMatrix, scale);
 }
 
 float ShootToScoreMeter::MeterWidth = 0.4f;
@@ -237,11 +242,11 @@ void ShootToScoreMeter::DrawMeter()
     glAttachQuad3(view, 1, &quad, true);
 
     nlColour green = sGreenRegionColour;
-    green.c[3] = (u8)(s32)(255.0f * m_fGreenAndYellonRegionIntensity);
+    green.c[3] = (u8)(255.0f * m_fGreenAndYellonRegionIntensity);
     nlColour yellow = sYellowRegionColour;
-    yellow.c[3] = (u8)(s32)(255.0f * m_fGreenAndYellonRegionIntensity);
     nlColour black = { 0, 0, 0, 255 };
-    nlColour Hyper = sHyperColour;
+    yellow.c[3] = (u8)(255.0f * m_fGreenAndYellonRegionIntensity);
+    nlColour hyper = sHyperColour;
 
     if (meHyper == STS_GOT_HYPER)
     {
@@ -296,8 +301,8 @@ void ShootToScoreMeter::DrawMeter()
                 DrawColouredRegion(
                     m_fSavedGreenBarAngle - (0.5f * m_fSavedGreenRegionWidth),
                     m_fSavedGreenBarAngle + (0.5f * m_fSavedGreenRegionWidth),
-                    Hyper,
-                    Hyper,
+                    hyper,
+                    hyper,
                     matrix,
                     scale);
                 DrawIndicatorBar(m_fSavedWhiteBarAngle, black, matrix, scale);
@@ -322,7 +327,7 @@ void ShootToScoreMeter::DrawMeter()
             nlColour fadedColour = sWhiteBarColour;
             fadedColour.c[3] = (u8)(s32)(255.0f * (sfTrailIntensity * (1.0f - ((float)i / (float)sfNumBarsInTrail))));
 
-            DrawIndicatorBar(sfTrailLengthScale * ((float)i * diffCurrentPrev) + m_fWhiteBarAngle, fadedColour, matrix, scale);
+            DrawTrailIndicatorBar(i, diffCurrentPrev, fadedColour, matrix, scale);
         }
     }
 
@@ -340,14 +345,14 @@ void ShootToScoreMeter::DrawColouredRegion(float startAngle, float endAngle, con
 
     float scaledWhiteBarWidth;
     float radius;
-    nlVector3 v;
+    nlVector3 vertexPosition;
     float widthAngle;
     int i;
     glQuad3 barQuad;
-    float frac0;
-    float frac1;
-    float radius0;
-    float radius1;
+    float startFraction;
+    float endFraction;
+    float innerRadius;
+    float outerRadius;
 
     scaledWhiteBarWidth = 0.039f * scale;
     widthAngle = endAngle - startAngle;
@@ -360,20 +365,20 @@ void ShootToScoreMeter::DrawColouredRegion(float startAngle, float endAngle, con
 
     for (i = 0; i < 8; i++)
     {
-        frac0 = (float)i * step;
-        frac1 = (float)(i + 1) * step;
-        radius0 = radius - scaledWhiteBarWidth / 2.0f;
-        radius1 = radius + scaledWhiteBarWidth / 2.0f;
+        startFraction = (float)i * step;
+        endFraction = (float)(i + 1) * step;
+        innerRadius = radius - scaledWhiteBarWidth / 2.0f;
+        outerRadius = radius + scaledWhiteBarWidth / 2.0f;
 
-        float angle0 = frac0 * widthAngle + startAngle;
-        s32 angle0_i = (s32)(sinScale * (pi * angle0 / deg));
-        float cos0 = nlSin((u16)((u16)angle0_i + 0x4000));
-        float sin0 = nlSin((u16)angle0_i);
+        float segmentStartAngle = startFraction * widthAngle + startAngle;
+        s32 segmentStartAngleIndex = (s32)(sinScale * (pi * segmentStartAngle / deg));
+        float segmentStartCosine = nlSin((u16)((u16)segmentStartAngleIndex + 0x4000));
+        float segmentStartSine = nlSin((u16)segmentStartAngleIndex);
 
-        float angle1 = frac1 * widthAngle + startAngle;
-        s32 angle1_i = (s32)(sinScale * (pi * angle1 / deg));
-        float cos1 = nlSin((u16)((u16)angle1_i + 0x4000));
-        float sin1 = nlSin((u16)angle1_i);
+        float segmentEndAngle = endFraction * widthAngle + startAngle;
+        s32 segmentEndAngleIndex = (s32)(sinScale * (pi * segmentEndAngle / deg));
+        float segmentEndCosine = nlSin((u16)((u16)segmentEndAngleIndex + 0x4000));
+        float segmentEndSine = nlSin((u16)segmentEndAngleIndex);
 
         float zDepth;
         if (sbMakeSTSMeterOrthographic)
@@ -385,34 +390,34 @@ void ShootToScoreMeter::DrawColouredRegion(float startAngle, float endAngle, con
             zDepth = 0.0f;
         }
 
-        v.f.x = radius0 * cos0;
-        v.f.y = radius0 * sin0;
-        v.f.z = zDepth;
-        nlMultPosVectorMatrix(v, v, meterMatrix);
-        barQuad.m_pos[0] = v;
+        vertexPosition.f.x = innerRadius * segmentStartCosine;
+        vertexPosition.f.y = innerRadius * segmentStartSine;
+        vertexPosition.f.z = zDepth;
+        nlMultPosVectorMatrix(vertexPosition, vertexPosition, meterMatrix);
+        barQuad.m_pos[0] = vertexPosition;
 
-        v.f.x = radius1 * cos0;
-        v.f.y = radius1 * sin0;
-        v.f.z = zDepth;
-        nlMultPosVectorMatrix(v, v, meterMatrix);
-        barQuad.m_pos[1] = v;
+        vertexPosition.f.x = outerRadius * segmentStartCosine;
+        vertexPosition.f.y = outerRadius * segmentStartSine;
+        vertexPosition.f.z = zDepth;
+        nlMultPosVectorMatrix(vertexPosition, vertexPosition, meterMatrix);
+        barQuad.m_pos[1] = vertexPosition;
 
-        v.f.x = radius1 * cos1;
-        v.f.y = radius1 * sin1;
-        v.f.z = zDepth;
-        nlMultPosVectorMatrix(v, v, meterMatrix);
-        barQuad.m_pos[2] = v;
+        vertexPosition.f.x = outerRadius * segmentEndCosine;
+        vertexPosition.f.y = outerRadius * segmentEndSine;
+        vertexPosition.f.z = zDepth;
+        nlMultPosVectorMatrix(vertexPosition, vertexPosition, meterMatrix);
+        barQuad.m_pos[2] = vertexPosition;
 
-        v.f.x = radius0 * cos1;
-        v.f.y = radius0 * sin1;
-        v.f.z = zDepth;
-        nlMultPosVectorMatrix(v, v, meterMatrix);
-        barQuad.m_pos[3] = v;
+        vertexPosition.f.x = innerRadius * segmentEndCosine;
+        vertexPosition.f.y = innerRadius * segmentEndSine;
+        vertexPosition.f.z = zDepth;
+        nlMultPosVectorMatrix(vertexPosition, vertexPosition, meterMatrix);
+        barQuad.m_pos[3] = vertexPosition;
 
-        InterpolateColours(startColour, endColour, frac0, barQuad.m_colour[0]);
+        InterpolateColours(startColour, endColour, startFraction, barQuad.m_colour[0]);
         barQuad.m_colour[1] = barQuad.m_colour[0];
 
-        InterpolateColours(startColour, endColour, frac1, barQuad.m_colour[2]);
+        InterpolateColours(startColour, endColour, endFraction, barQuad.m_colour[2]);
         barQuad.m_colour[3] = barQuad.m_colour[2];
 
         eGLView view = GLV_UnsortedPerspective;
@@ -480,7 +485,6 @@ void ShootToScoreMeter::SetGreenRegionWidth(float width)
 
 /**
  * Offset/Address/Size: 0x0 | 0x80160260 | size: 0x34C
- * TODO: f30/f31 register swap for -500.0f and 1.0f constants
  */
 void ShootToScoreMeter::DrawCaptainMeter()
 {
@@ -505,14 +509,14 @@ void ShootToScoreMeter::DrawCaptainMeter()
 
         float scale = (float)(i + 1) / 12.0f;
         float yOffset = 30.0f * scale;
-        float yPos = 365.0f + (yOffset);
+        float yPosition = 365.0f + (yOffset);
         matrix.m[3][0] = 320.0f;
-        matrix.m[3][1] = yPos;
+        matrix.m[3][1] = yPosition;
         matrix.m[3][2] = -500.0f;
         matrix.m[3][3] = 1.0f;
 
-        nlColour c = { 255, 255, 255, 255 };
-        quad.SetColour(c);
+        nlColour colour = { 255, 255, 255, 255 };
+        quad.SetColour(colour);
         quad.SetupRotatedRectangle(400.0f, 400.0f, matrix, false, false);
         glAttachQuad3(GLV_FrontEnd, 1, &quad, true);
     }
@@ -525,8 +529,8 @@ void ShootToScoreMeter::DrawCaptainMeter()
     matrix.m[3][2] = -500.0f;
     matrix.m[3][3] = 1.0f;
 
-    nlColour c = { 255, 255, 255, 255 };
-    quad.SetColour(c);
+    nlColour colour = { 255, 255, 255, 255 };
+    quad.SetColour(colour);
     quad.SetupRotatedRectangle(400.0f, 400.0f, matrix, false, false);
     glAttachQuad3(GLV_FrontEnd, 1, &quad, true);
 
@@ -535,14 +539,14 @@ void ShootToScoreMeter::DrawCaptainMeter()
     float whiteBarWidthScaled = 400.0f * (0.0035f / MeterWidth);
     whiteBarAngle = (3.1415927f * m_fWhiteBarAngle) / 180.0f;
 
-    nlMatrix4 matrix2;
-    nlMakeRotationMatrixZ(matrix2, whiteBarAngle);
+    nlMatrix4 whiteBarMatrix;
+    nlMakeRotationMatrixZ(whiteBarMatrix, whiteBarAngle);
 
-    float sinVal = nlSin((u16)(s32)(10430.378f * whiteBarAngle));
-    float cosVal = nlSin((u16)((u16)(s32)(10430.378f * whiteBarAngle) + 0x4000));
+    float sine = nlSin((u16)(s32)(10430.378f * whiteBarAngle));
+    float cosine = nlSin((u16)((u16)(s32)(10430.378f * whiteBarAngle) + 0x4000));
 
-    matrix2.SetRow4_(3, 79.2f * cosVal, 79.2f * sinVal, 0.f, 1.0f);
-    nlMultMatrices(matrix2, matrix2, matrix);
+    whiteBarMatrix.SetRow4_(3, 79.2f * cosine, 79.2f * sine, 0.f, 1.0f);
+    nlMultMatrices(whiteBarMatrix, whiteBarMatrix, matrix);
 
     glSetRasterState(GLS_AlphaBlend, 0);
     glSetCurrentRasterState(glHandleizeRasterState());
@@ -551,7 +555,7 @@ void ShootToScoreMeter::DrawCaptainMeter()
     glSetCurrentTextureState(glHandleizeTextureState());
 
     glQuad3 whiteBarQuad;
-    whiteBarQuad.SetupRotatedRectangle(whiteBarHeightScaled, whiteBarWidthScaled, matrix2, false, false);
+    whiteBarQuad.SetupRotatedRectangle(whiteBarHeightScaled, whiteBarWidthScaled, whiteBarMatrix, false, false);
     glAttachQuad3(GLV_FrontEnd, 1, &whiteBarQuad, true);
     glSetDefaultState(false);
 }

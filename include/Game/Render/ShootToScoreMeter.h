@@ -1,8 +1,6 @@
 #ifndef _SHOOTTOSCOREMETER_H_
 #define _SHOOTTOSCOREMETER_H_
 
-// void 0x8028D314..0x8028D318 | size : 0x4;
-
 #include "NL/nlMath.h"
 #include "NL/nlColour.h"
 
@@ -46,6 +44,7 @@ public:
     void DrawMeter();
     void DrawColouredRegion(float, float, const nlColour&, const nlColour&, nlMatrix4, float);
     void DrawIndicatorBar(float, const nlColour&, const nlMatrix4&, float);
+    void DrawTrailIndicatorBar(int, float, const nlColour&, const nlMatrix4&, float);
     void UpdateAndRender(float);
     void SetWhiteBarPosition(float);
     void SetSavedWhiteBarPosition(float);
