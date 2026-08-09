@@ -348,7 +348,6 @@ void TrackManager<N>::Update(float dT)
 
 /**
  * Offset/Address/Size: 0x390 | 0x80141E64 | size: 0x1D0
- * TODO: 99.40% match - search-loop zero init and lookup pEntry load registers differ
  */
 template <int N>
 void TrackManager<N>::DestroyAllTracks()
@@ -367,7 +366,8 @@ void TrackManager<N>::DestroyAllTracks()
         {
             track->m_InFakePause = 0;
             track->Stop(0);
-            track->~StreamTrack();
+            track->m_IdleCallback.~Function();
+            track->m_QueuedStreams.~DLListContainerBase();
         }
 
         if (track == NULL)
