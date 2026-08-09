@@ -831,7 +831,7 @@ config.libs = [
 
             # Game Render
             Object(Matching, "Game/Render/FlareHandler.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Render/Nis.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "Game/Render/Nis.cpp", extra_cflags=["-inline deferred"]),
             Object(Matching, "Game/Render/CameraGuy.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Render/SkinAnimatedNPC.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Render/depthoffield.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

@@ -44,6 +44,10 @@ public:
     void RenderDebugInfo(const RenderSnapshot&, const RenderSnapshot&, float) const;
     void Blend(const float*, const RenderSnapshot&, const RenderSnapshot&);
     RenderSnapshot& GetMutable();
+    inline DrawableCharacter& GetCharacter(int index)
+    {
+        return mCharacters[index];
+    }
 
     /*  0x0000 */ unsigned int mEvents;
     /*  0x0004 */ bool mValid;

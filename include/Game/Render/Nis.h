@@ -6,11 +6,8 @@
 #include "NL/nlSlotPool.h"
 #include "Game/SAnim/pnSAnimController.h"
 
-// #include "Game/Camera/animcam.h"
 class cAnimCamera;
 class SFXEmitter;
-
-// void Bind<void, void (*)(EmissionController&, int), Placeholder<0>, int>(void (*)(EmissionController&, int), const Placeholder<0>&, const int&);
 
 enum NisTriggerType
 {
@@ -102,8 +99,14 @@ enum NisAudioType
 class Nis
 {
 public:
+    static const int MAX_NUM_TRIGGERS = 48;
+    static const int MAX_NUM_CHARACTERS = 10;
+
     struct NisAudioData
     {
+        static const int MAX_NIS_AUDIO_STR_CHARS = 128;
+        static inline NisAudioData* Allocate();
+
         /* 0x00 */ NisAudioType audioType;
         union
         {
@@ -112,10 +115,9 @@ public:
         }
         /* 0x04 */ identifier;
         /* 0x08 */ unsigned long soundType;
-        /* 0x0C */ char str[128];
-        /* 0x8C */ unsigned char isEmitter;
-        /* 0x8D */ unsigned char stopAtNisEnd;
-        /* 0x8E */ unsigned char pad[2];
+        /* 0x0C */ char str[MAX_NIS_AUDIO_STR_CHARS];
+        /* 0x8C */ bool isEmitter;
+        /* 0x8D */ bool stopAtNisEnd;
         /* 0x90 */ NisAudioData* next;
     }; // total size: 0x94
 
@@ -151,61 +153,26 @@ public:
     nlVector3 Offset() const;
     void AddTrigger(NisTriggerType, float, const char*, const char*, Nis::TriggerParams*);
     void StopAllOutstandingNisAudio();
+    NisAudioData* RemoveNisAudioData(NisAudioData*);
+    NisAudioData* StopNisAudio(NisAudioData*, bool);
+    void StopNisAudio(NisAudioType, const char*);
+    void AddNisAudioData(NisAudioType, unsigned long, const char*, bool, bool, unsigned long);
 
-    /* 0x000 */ NisHeader* mHeader;                             // offset 0x0, size 0x4
-    /* 0x004 */ NisTarget mTarget;                              // offset 0x4, size 0x4
-    /* 0x008 */ NisWinnerType mWinnerType;                      // offset 0x8, size 0x4
-    /* 0x00C */ char* mData;                                    // offset 0xC, size 0x4
-    /* 0x010 */ int mSize;                                      // offset 0x10, size 0x4
-    /* 0x014 */ int mBallId[10];                                // offset 0x14, size 0x28
-    /* 0x03C */ cPN_SAnimController* mCharacterControllers[10]; // offset 0x3C, size 0x28
-    /* 0x064 */ bool mMirrored;                                 // offset 0x64, size 0x1
-    /* 0x068 */ cAnimCamera* mCamera;                           // offset 0x68, size 0x4
-    /* 0x06C */ int mNumCameras;                                // offset 0x6C, size 0x4
-    /* 0x070 */ int mNumTriggers;                               // offset 0x70, size 0x4
-    /* 0x074 */ Trigger mTriggers[48];                          // offset 0x74, size 0x6C0
-    /* 0x734 */ int mMainCharacterIndex;                        // offset 0x734, size 0x4
-    /* 0x738 */ int mUnk_0x738;                                 // offset 0x738, size 0x4
-    /* 0x73C */ NisAudioData* mNisAudioDataList;                // offset 0x73C, size 0x4
+    /* 0x000 */ NisHeader* mHeader;                                             // offset 0x0, size 0x4
+    /* 0x004 */ NisTarget mTarget;                                              // offset 0x4, size 0x4
+    /* 0x008 */ NisWinnerType mWinnerType;                                      // offset 0x8, size 0x4
+    /* 0x00C */ char* mData;                                                    // offset 0xC, size 0x4
+    /* 0x010 */ int mSize;                                                      // offset 0x10, size 0x4
+    /* 0x014 */ int mBallId[MAX_NUM_CHARACTERS];                                // offset 0x14, size 0x28
+    /* 0x03C */ cPN_SAnimController* mCharacterControllers[MAX_NUM_CHARACTERS]; // offset 0x3C, size 0x28
+    /* 0x064 */ bool mMirrored;                                                 // offset 0x64, size 0x1
+    /* 0x068 */ cAnimCamera* mCamera;                                           // offset 0x68, size 0x4
+    /* 0x06C */ int mNumCameras;                                                // offset 0x6C, size 0x4
+    /* 0x070 */ int mNumTriggers;                                               // offset 0x70, size 0x4
+    /* 0x074 */ Trigger mTriggers[MAX_NUM_TRIGGERS];                            // offset 0x74, size 0x6C0
+    /* 0x734 */ int mMainCharacterIndex;                                        // offset 0x734, size 0x4
+    /* 0x738 */ int mAudioCharacterIndex;                                       // offset 0x738, size 0x4
+    /* 0x73C */ NisAudioData* mNisAudioDataList;                                // offset 0x73C, size 0x4
 }; // total size: 0x740
-
-// class Function1<void, EmissionController&>
-// {
-// public:
-//     void FunctorImpl<BindExp2<void, void (*)(EmissionController&, int), Placeholder<0>, int>>::~FunctorImpl();
-//     void FunctorImpl<BindExp2<void, void (*)(EmissionController&, int), Placeholder<0>, int>>::operator()(EmissionController&);
-//     void FunctorImpl<BindExp2<void, void (*)(EmissionController&, int), Placeholder<0>, int>>::Clone() const;
-// };
-
-// class nlDeleteList<Nis
-// {
-// public:
-//     void NisAudioData>(Nis::NisAudioData**);
-// };
-
-// class nlListRemoveElement<Nis
-// {
-// public:
-//     void NisAudioData>(Nis::NisAudioData**, Nis::NisAudioData*, Nis::NisAudioData**);
-// };
-
-// class nlListAddStart<Nis
-// {
-// public:
-//     void NisAudioData>(Nis::NisAudioData**, Nis::NisAudioData*, Nis::NisAudioData**);
-// };
-
-// class Format<BasicString<char, Detail
-// {
-// public:
-//     void TempStringAllocator>, char[64], int>(const BasicString<char, Detail::TempStringAllocator>&, const char(&)[64], const int&);
-// };
-
-// class FormatImpl<BasicString<char, Detail
-// {
-// public:
-//     void TempStringAllocator>>::operator%<const char*>(const char* const&);
-//     void TempStringAllocator>>::operator%<int>(const int&);
-// };
 
 #endif // _NIS_H_
