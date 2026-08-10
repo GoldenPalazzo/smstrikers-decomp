@@ -1,18 +1,21 @@
-// LINKABLE NOTE (2026-07-31, notes 0045): our object for this TU weak-emits
-// six functions retail's object does not have (~AudioStream,
-// ~StereoAudioStream, Purge, WarmReadDone, Destructor, and a local
-// nlCountBits at .text offset 0) and misses retail's GLOBAL
-// __vt__Q216GCAudioStreaming15MonoAudioStream - retail defined those bodies
-// in a different TU. Colour-inert for register matching, but a real
-// reconstruction defect for the future /linkable task. Declaration-only
-// shadow headers that reproduce retail's emission set are preserved under
-// tmp/tasks/monowarm-100-20260731-1/candidates/r13*/.
+// LINKABLE NOTE (2026-08-11, notes 0054): our object weak-emits ten extra
+// function bodies plus a LOCAL nlCountBits that retail's LINKED object does
+// not keep. Retail defined those bodies in GCStream.h - a different compile
+// unit of this same object - where they were inlined away or dead-stripped
+// by mwld in favour of earlier objects (AudioLoader.o, CrowdMood.o).
+// nlCountBits lives in a third CU (nlAlgorithm.h), not the GCStream.cpp CU.
+// Known remaining deltas vs retail GCStream.o: StereoAudioStream::
+// CancelPendingReads is defined here (GLOBAL, main .text) where retail
+// emitted it weak from the header - every measured header form leaks an
+// unreferenced linkonce trio into the three TUs that weak-emit
+// __dt__StereoAudioStream (CrowdMood, PriorityStream, StreamTrack); and the
+// dead 52 B WARNING string + WEAK __vt__AudioStream (link-stripped) remain.
 #include "Game/Sys/GCStream.h"
 #include "NL/nlAlgorithm.h"
 #include "NL/nlFileGC.h"
 #include "NL/nlMemory.h"
 
-extern void ___blank(const char*, ...);
+static void ___blank(const char*, ...);
 
 struct SND_ADPCMSTREAM_INFO;
 
@@ -29,25 +32,6 @@ extern "C"
 
 namespace GCAudioStreaming
 {
-
-inline AudioStreamBuffer* AudioBufferMgr::GetFreeBuffer(
-    AudioStream* pStream)
-{
-    unsigned long buffer;
-    for (buffer = 0; buffer < m_BufferCount; buffer++)
-    {
-        if ((int)(bool)(m_BuffersFree & (1 << buffer)) == 1)
-        {
-            SetBufferState(buffer, BAS_Busy);
-            m_Buffers[buffer].Reset(pStream);
-            ___blank(
-                "After buffer alloc there are %d availible\n",
-                nlCountBits(m_BuffersFree));
-            return &m_Buffers[buffer];
-        }
-    }
-    return 0;
-}
 
 inline void AudioStreamBuffer::SetVolume(
     unsigned long volume)
@@ -70,54 +54,6 @@ nlArrayAllocator<GCAudioStreaming::AudioStream::READ_CB_INFO> GCAudioStreaming::
 // void 0x8028D52C..0x8028D530 | size: 0x4
 // {
 // }
-
-/**
- * Offset/Address/Size: 0x49C | 0x801C9620 | size: 0x10
- */
-void GCAudioStreaming::MonoAudioStream::_AsyncCancelCB(nlFile*, void*, unsigned int, unsigned long uParam, void (*)(nlFile*, void*, unsigned int, unsigned long))
-{
-    AudioStream::READ_CB_INFO* pCBInfo = (AudioStream::READ_CB_INFO*)uParam;
-    AudioStream::READ_CB_INFO::s_AllocPool.DeleteEntry(pCBInfo);
-}
-
-/**
- * Offset/Address/Size: 0x470 | 0x801C95F4 | size: 0x2C
- */
-void GCAudioStreaming::MonoAudioStream::CancelPendingReads()
-{
-    nlCancelPendingAsyncReads(m_pFile, &_AsyncCancelCB);
-}
-
-/**
- * Offset/Address/Size: 0x434 | 0x801C95B8 | size: 0x3C
- */
-unsigned long GCAudioStreaming::MonoAudioStream::GetUpdateReadLength()
-{
-    unsigned long streamPos = m_StreamPos;
-    unsigned long length = m_UpdateLen;
-    if (streamPos + length > m_StreamLength)
-    {
-        unsigned long aligned = (m_StreamLength - streamPos + 0x1f) & ~0x1f;
-        if (aligned)
-        {
-            length = aligned;
-        }
-        return length;
-    }
-    return length;
-}
-
-/**
- * Offset/Address/Size: 0x2E4 | 0x801C9468 | size: 0x150
- */
-unsigned long GCAudioStreaming::AudioStreamBuffer::_UpdateHandler(
-    void* pDataA, unsigned long LengthA, void* pDataB,
-    unsigned long LengthB, unsigned long user)
-{
-    AudioStreamBuffer* pBuffer = (AudioStreamBuffer*)user;
-
-    return pBuffer->UpdateHandler(pDataA, LengthA, pDataB, LengthB);
-}
 
 inline unsigned long GCAudioStreaming::AudioStreamBuffer::UpdateHandler(
     void*, unsigned long LengthA, void*, unsigned long LengthB)
@@ -161,48 +97,11 @@ inline unsigned long GCAudioStreaming::AudioStreamBuffer::UpdateHandler(
     return (ChunkASize + ChunkBSize) / 8 * 14;
 }
 
-inline void GCAudioStreaming::AudioStreamBuffer::DoUpdate(
+inline unsigned long GCAudioStreaming::AudioStreamBuffer::DoUpdate(
     unsigned long LengthA, unsigned long LengthB)
 {
-    UpdateHandler(
+    return UpdateHandler(
         0, ((LengthA + LengthB) >> 3) * 14, 0, 0);
-}
-
-/**
- * Offset/Address/Size: 0x2B8 | 0x801C943C | size: 0x2C
- */
-unsigned long GCAudioStreaming::StereoAudioStream::GetUpdateReadLength()
-{
-    unsigned long len = m_Interleave;
-    if (m_StreamPos + len > m_StreamLength)
-    {
-        len = (m_StreamLength - m_StreamPos + 0x1f) & ~0x1f;
-    }
-    return len;
-}
-
-/**
- * Offset/Address/Size: 0x27C | 0x801C9400 | size: 0x3C
- */
-void GCAudioStreaming::StereoAudioStream::_InterleavedHdrReadCB(nlFile* pFile, void* pData, unsigned int Length, unsigned long User)
-{
-    ((StereoAudioStream*)User)->InterleavedHdrReadCB(pFile, pData, Length);
-}
-
-/**
- * Offset/Address/Size: 0x238 | 0x801C93BC | size: 0x44
- */
-void GCAudioStreaming::StereoAudioStream::_AsyncCancelCB(nlFile*, void* buffer, unsigned int, unsigned long uParam, void (*Callback)(nlFile*, void*, unsigned int, unsigned long))
-{
-    if (Callback == &_InterleavedHdrReadCB)
-    {
-        nlFree(buffer);
-    }
-    else
-    {
-        AudioStream::READ_CB_INFO* pCBInfo = (AudioStream::READ_CB_INFO*)uParam;
-        AudioStream::READ_CB_INFO::s_AllocPool.DeleteEntry(pCBInfo);
-    }
 }
 
 /**
@@ -216,7 +115,7 @@ void GCAudioStreaming::StereoAudioStream::CancelPendingReads()
 /**
  * Offset/Address/Size: 0x1984 | 0x801C9134 | size: 0x50
  */
-void ___blank(const char*, ...)
+static void ___blank(const char*, ...)
 {
 }
 
@@ -385,16 +284,19 @@ inline void* GCAudioStreaming::AudioBufferMgr::GetADPCMHdr()
 
 /**
  * Offset/Address/Size: 0x1364 | 0x801C8B14 | size: 0x3A0
- * TODO: 95.88% match - object pointer and allocation-loop registers still differ
+ * OPEN: 98.06% match - 49 diff rows at size 928/928 with identical structure
+ * (same webs, same def/use/death points, same refcounts). The whole residual is
+ * one register-allocation decision: retail promotes `this` to r31 and gives
+ * ReadLen r30, we do the reverse; the ChunkASize/ChunkBSize swap in the inlined
+ * tail follows from it. The allocation loop is byte-exact. Notes 0041/0042/0045.
  */
 void GCAudioStreaming::MonoAudioStream::Warm(bool CoolOnStop)
 {
     m_State = SS_Warming;
-    m_Flags &= ~(1 << SF_SeriousStop);
-    m_Flags = (m_Flags & ~(1 << SF_CoolOnStop)) | ((unsigned long)CoolOnStop << SF_CoolOnStop);
+    SetFlag(SF_SeriousStop, false);
+    SetFlag(SF_CoolOnStop, CoolOnStop);
 
-    AudioStreamBuffer* pBuf = m_BuffMgr.GetFreeBuffer(this);
-    m_Buffers[0] = pBuf;
+    m_Buffers[0] = m_BuffMgr.GetFreeBuffer(this);
 
     m_UpdateLen = m_Buffers[0]->m_BufferSize >> 1;
     m_StreamLength = (unsigned long)-1;
@@ -450,10 +352,9 @@ void GCAudioStreaming::MonoAudioStream::Warm(bool CoolOnStop)
     }
 
     long secondReadLen = m_UpdateLen;
-    unsigned long dataRemaining = AllocSize - 0x60 - ReadLen;
-    if (dataRemaining <= (unsigned long)secondReadLen)
+    if (AllocSize - 0x60 - ReadLen <= (unsigned long)secondReadLen)
     {
-        secondReadLen = dataRemaining;
+        secondReadLen = AllocSize - 0x60 - ReadLen;
     }
 
     if (secondReadLen > 0)
@@ -462,7 +363,7 @@ void GCAudioStreaming::MonoAudioStream::Warm(bool CoolOnStop)
     }
     else
     {
-        m_Flags = (m_Flags & ~(1 << SF_EndAtUpdate)) | (1 << SF_EndAtUpdate);
+        SetFlag(SF_EndAtUpdate, true);
         m_LastPlayable = m_StreamPos;
     }
 }
@@ -634,29 +535,16 @@ void GCAudioStreaming::StereoAudioStream::Warm(bool CoolOnStop)
         sndStreamMixParameterEx(pBuf1->m_StreamId, pBuf1->m_Volume, pBuf1->m_Pan, pBuf1->m_SurroundPan, 0, 0);
     }
 
-    AudioStreamBuffer* pBuffer;
-    AudioStreamBuffer* init;
-    unsigned long Zero = 0;
-    volatile unsigned long BufferIndex = (unsigned long)(init = 0);
-    if (m_BufferCount > Zero)
-    {
-        init = m_Buffers[0];
-    }
-    pBuffer = init;
-    while (pBuffer)
+    AudioStreamBuffer* BufferIndex = NULL;
+    AudioStreamBuffer* pBuffer = GetBuffer((unsigned long)BufferIndex);
+    while (pBuffer != NULL)
     {
         pBuffer->SetVolume(m_Volume);
         pBuffer->SetLPF(m_LPFOn);
         pBuffer->SetLPF(m_LPFFreq);
 
-        unsigned long idx = BufferIndex + 1;
-        BufferIndex = idx;
-        AudioStreamBuffer* pNext;
-        if (idx < m_BufferCount)
-            pNext = m_Buffers[idx];
-        else
-            pNext = 0;
-        pBuffer = pNext;
+        ((unsigned long&)BufferIndex)++;
+        pBuffer = GetBuffer((unsigned long)BufferIndex);
     }
 
     m_StreamLength = (unsigned long)-1;
@@ -715,23 +603,16 @@ void GCAudioStreaming::StereoAudioStream::InterleavedHdrReadCB(nlFile* pFile, vo
     unsigned long offset;
     unsigned long firstLen;
     unsigned long secondLen;
-    AudioStreamBuffer* pBuffer;
-    AudioStreamBuffer* init;
-    unsigned long Zero = 0;
-    volatile unsigned long BufferIndex = (unsigned long)(init = 0);
-    if (m_BufferCount > Zero)
-    {
-        init = m_Buffers[0];
-    }
-    pBuffer = init;
+    AudioStreamBuffer* BufferIndex = NULL;
+    AudioStreamBuffer* pBuffer = GetBuffer((unsigned long)BufferIndex);
 
-    while (pBuffer)
+    while (pBuffer != NULL)
     {
         pBuffer->m_UpdateOffset += m_Interleave;
         pMRAMBuffer = pBuffer->m_MRAMBuffer;
 
         bool enabled = OSDisableInterrupts();
-        register READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.Allocate();
+        READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.Allocate();
         OSRestoreInterrupts(enabled);
 
         if (pCBInfo)
@@ -742,14 +623,8 @@ void GCAudioStreaming::StereoAudioStream::InterleavedHdrReadCB(nlFile* pFile, vo
 
         nlReadAsync(m_pFile, pMRAMBuffer, m_Interleave, _WarmReadCB, (unsigned long)pCBInfo);
 
-        unsigned long idx = BufferIndex + 1;
-        BufferIndex = idx;
-        AudioStreamBuffer* pNext;
-        if (idx < m_BufferCount)
-            pNext = m_Buffers[idx];
-        else
-            pNext = 0;
-        pBuffer = pNext;
+        ((unsigned long&)BufferIndex)++;
+        pBuffer = GetBuffer((unsigned long)BufferIndex);
     }
 
     m_StreamPos = m_Interleave;
@@ -1084,6 +959,31 @@ void GCAudioStreaming::AudioBufferMgr::DeleteBuffers()
     }
     m_BufferCount = 0;
 }
+
+namespace GCAudioStreaming
+{
+
+AudioStreamBuffer* AudioBufferMgr::GetFreeBuffer(
+    AudioStream* pStream)
+{
+    unsigned long buffer;
+    for (buffer = 0; buffer < m_BufferCount; buffer++)
+    {
+        if ((int)(bool)(m_BuffersFree & (1 << buffer)) == 1)
+        {
+            SetBufferState(buffer, BAS_Busy);
+            m_Buffers[buffer].Reset(pStream);
+            ___blank(
+                "After buffer alloc there are %d availible\n",
+                nlCountBits(m_BuffersFree));
+            return &m_Buffers[buffer];
+        }
+    }
+    return 0;
+}
+
+
+} // namespace GCAudioStreaming
 
 /**
  * Offset/Address/Size: 0x0 | 0x801C77B0 | size: 0x98

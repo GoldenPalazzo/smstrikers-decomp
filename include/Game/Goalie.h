@@ -151,6 +151,7 @@ public:
     void DoNavigation(float, float, Goalie::eNaviMode);
     void FindDesiredGoaliePosition(nlVector3&, nlVector3&, nlVector3&, unsigned short&, const nlVector3*);
     bool ShouldReposition();
+    inline cPlayer* FindOpenPassTarget();
     void HandleSTSContact(cBall*);
     bool InitiatePickup();
     void InitiatePanicGrab(cPlayer*);
@@ -178,6 +179,10 @@ public:
     void InitActionLooseBallCatch();
     void InitActionLooseBallSetup();
     inline void ChooseDesperationAnim(float);
+    inline void InitActionSaveReposition();
+    inline void InitActionLooseBallPursueBouncing(const nlVector3&, float);
+    inline void InitActionLooseBallPursueRolling();
+    inline void InitActionLooseBallPickup(float, bool);
     void InitActionMove(bool);
     void InitActionMoveWB();
     void InitActionSaveSetup(bool);

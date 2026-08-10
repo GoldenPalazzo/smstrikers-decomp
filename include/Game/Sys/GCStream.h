@@ -76,8 +76,15 @@ public:
     }
     void Update(unsigned long, unsigned long);
     unsigned long UpdateHandler(void*, unsigned long, void*, unsigned long);
-    void DoUpdate(unsigned long, unsigned long);
-    static unsigned long _UpdateHandler(void*, unsigned long, void*, unsigned long, unsigned long);
+    unsigned long DoUpdate(unsigned long, unsigned long);
+    static unsigned long _UpdateHandler(
+        void* pDataA, unsigned long LengthA, void* pDataB,
+        unsigned long LengthB, unsigned long user)
+    {
+        AudioStreamBuffer* pBuffer = (AudioStreamBuffer*)user;
+
+        return pBuffer->UpdateHandler(pDataA, LengthA, pDataB, LengthB);
+    }
 
     /* 0x00 */ unsigned char* m_MRAMBuffer;   // offset 0x0, size 0x4
     /* 0x04 */ unsigned long m_BufferSize;    // offset 0x4, size 0x4
@@ -274,7 +281,6 @@ public:
     virtual bool SafeToPurge() = 0;
     virtual void Purge()
     {
-        FORCE_DONT_INLINE;
         m_State = SS_New;
     }
     virtual unsigned long DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, AudioStreamBuffer*) = 0;
@@ -282,7 +288,6 @@ public:
     virtual void CancelPendingReads() = 0;
     virtual void WarmReadDone(AudioStreamBuffer* pBuffer)
     {
-        FORCE_DONT_INLINE;
         if (m_Buffers[m_BufferCount - 1] != pBuffer)
         {
             return;
@@ -390,7 +395,6 @@ public:
     }
     void Destructor()
     {
-        FORCE_DONT_INLINE;
         m_Flags = (m_Flags & ~(1 << SF_SeriousStop)) | (1 << SF_SeriousStop);
         m_Flags &= ~(1 << SF_Play);
 
@@ -617,11 +621,32 @@ public:
     {
         Destructor();
     }
-    static void _AsyncCancelCB(nlFile*, void*, unsigned int, unsigned long, void (*)(nlFile*, void*, unsigned int, unsigned long));
-    virtual void CancelPendingReads();
-    virtual unsigned long GetUpdateReadLength();
-    virtual void Warm(bool);
     virtual unsigned long DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, GCAudioStreaming::AudioStreamBuffer*);
+    virtual void Warm(bool);
+    virtual unsigned long GetUpdateReadLength()
+    {
+        unsigned long streamPos = m_StreamPos;
+        unsigned long length = m_UpdateLen;
+        if (streamPos + length > m_StreamLength)
+        {
+            unsigned long aligned = (m_StreamLength - streamPos + 0x1f) & ~0x1f;
+            if (aligned)
+            {
+                length = aligned;
+            }
+            return length;
+        }
+        return length;
+    }
+    virtual void CancelPendingReads()
+    {
+        nlCancelPendingAsyncReads(m_pFile, &_AsyncCancelCB);
+    }
+    static void _AsyncCancelCB(nlFile*, void*, unsigned int, unsigned long uParam, void (*)(nlFile*, void*, unsigned int, unsigned long))
+    {
+        AudioStream::READ_CB_INFO* pCBInfo = (AudioStream::READ_CB_INFO*)uParam;
+        AudioStream::READ_CB_INFO::s_AllocPool.DeleteEntry(pCBInfo);
+    }
     virtual bool SafeToPurge()
     {
         bool result = false;
@@ -667,16 +692,37 @@ public:
     }
     virtual ~StereoAudioStream()
     {
-        FORCE_DONT_INLINE;
         Destructor();
     }
-    virtual unsigned long GetUpdateReadLength();
-    static void _InterleavedHdrReadCB(nlFile*, void*, unsigned int, unsigned long);
-    static void _AsyncCancelCB(nlFile*, void*, unsigned int, unsigned long, void (*)(nlFile*, void*, unsigned int, unsigned long));
-    virtual void CancelPendingReads();
-    virtual void Warm(bool);
-    void InterleavedHdrReadCB(nlFile*, void*, unsigned int);
     virtual unsigned long DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, GCAudioStreaming::AudioStreamBuffer*);
+    void InterleavedHdrReadCB(nlFile*, void*, unsigned int);
+    virtual void Warm(bool);
+    virtual void CancelPendingReads();
+    static void _AsyncCancelCB(nlFile*, void* buffer, unsigned int, unsigned long uParam, void (*Callback)(nlFile*, void*, unsigned int, unsigned long))
+    {
+        if (Callback == &_InterleavedHdrReadCB)
+        {
+            nlFree(buffer);
+        }
+        else
+        {
+            AudioStream::READ_CB_INFO* pCBInfo = (AudioStream::READ_CB_INFO*)uParam;
+            AudioStream::READ_CB_INFO::s_AllocPool.DeleteEntry(pCBInfo);
+        }
+    }
+    static void _InterleavedHdrReadCB(nlFile* pFile, void* pData, unsigned int Length, unsigned long User)
+    {
+        ((StereoAudioStream*)User)->InterleavedHdrReadCB(pFile, pData, Length);
+    }
+    virtual unsigned long GetUpdateReadLength()
+    {
+        unsigned long len = m_Interleave;
+        if (m_StreamPos + len > m_StreamLength)
+        {
+            len = (m_StreamLength - m_StreamPos + 0x1f) & ~0x1f;
+        }
+        return len;
+    }
     virtual bool SafeToPurge()
     {
         bool result = false;
