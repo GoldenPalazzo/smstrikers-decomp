@@ -11,6 +11,15 @@ extern PowerupBase* g_pPowerups[];
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 static const nlVector2 v2Zero = { 0.0f, 0.0f };
 
+static inline float fMin(float a, float b)
+{
+    if (a <= b)
+    {
+        return a;
+    }
+    return b;
+}
+
 /**
  * Offset/Address/Size: 0x22E8 | 0x8000993C | size: 0x98
  */
@@ -96,87 +105,10 @@ nlVector3& AvoidController::GetLastRepulsionVector(eAvoidableThings things)
     return m_LastRepulsionVector[AvoidableEnumToIndex(things)];
 }
 
-static inline bool CalcGoalieRepulsionVector(AvoidController* controller, nlVector3& v3OutRepulsion)
-{
-    bool bAvoidedSomething = false;
-    v3OutRepulsion.f.x = 0.0f;
-    v3OutRepulsion.f.y = 0.0f;
-    v3OutRepulsion.f.z = 0.0f;
-
-    for (int i_team = 0; i_team < 2; i_team++)
-    {
-        Goalie* pGoalie = g_pTeams[i_team]->GetGoalie();
-
-        float fDeltaY = controller->m_pFielder->m_v3Position.f.y - pGoalie->m_v3Position.f.y;
-        float fDeltaX = controller->m_pFielder->m_v3Position.f.x - pGoalie->m_v3Position.f.x;
-        float fDeltaZ = controller->m_pFielder->m_v3Position.f.z - pGoalie->m_v3Position.f.z;
-
-        float fDistanceSq = fDeltaY * fDeltaY;
-        fDistanceSq += fDeltaX * fDeltaX;
-        fDistanceSq += fDeltaZ * fDeltaZ;
-        if (fDistanceSq > 16.0f)
-        {
-            continue;
-        }
-
-        float fDistance = nlSqrt(fDistanceSq, true);
-        float fInvDistance = 1.0f / fDistance;
-        fDeltaX = fInvDistance * fDeltaX;
-        fDeltaZ = fInvDistance * fDeltaZ;
-        fDeltaY = fInvDistance * fDeltaY;
-
-        fDistance -= pGoalie->m_pTweaks->fPhysCapsuleRadius + controller->m_pFTweaks->fPhysCapsuleRadius;
-
-        float fClosingSpeed = GetClosingSpeed2D(
-            controller->m_pFielder->GetPosition(),
-            controller->m_pFielder->GetVelocity(),
-            pGoalie->GetPosition(),
-            pGoalie->GetVelocity());
-
-        float fMagnitude = 10.0f * NormalizeVal(fDistance, 4.0f, 0.5f);
-        fMagnitude += 3.0f * NormalizeVal(fClosingSpeed, 0.0f, 3.0f);
-
-        if (!controller->m_pFielder->IsOnSameTeam(pGoalie))
-        {
-            fMagnitude *= 1.5f;
-        }
-
-        if (controller->m_pFielder->m_pBall != NULL)
-        {
-            SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
-            fMagnitude *= 1.5f * pSkillTweaks->Off_Avoidance;
-        }
-
-        if (controller->m_UseMinimumAvoidance)
-        {
-            fMagnitude *= 0.3f;
-        }
-
-        if (!(fMagnitude <= 0.0f))
-        {
-            fMagnitude = (fMagnitude <= 10.0f) ? fMagnitude : 10.0f;
-
-            float fOutZ = v3OutRepulsion.f.z;
-            float fOutY = v3OutRepulsion.f.y;
-            float fOutX = v3OutRepulsion.f.x;
-            fOutZ = fMagnitude * fDeltaZ + fOutZ;
-            fOutY = fMagnitude * fDeltaY + fOutY;
-            fOutX = fMagnitude * fDeltaX + fOutX;
-            v3OutRepulsion.f.z = fOutZ;
-            v3OutRepulsion.f.x = fOutX;
-            v3OutRepulsion.f.y = fOutY;
-            bAvoidedSomething = true;
-        }
-    }
-
-    return bAvoidedSomething;
-}
-
 /**
  * Offset/Address/Size: 0x12BC | 0x80008910 | size: 0xECC
- * TODO: 98.09% match - remaining diffs are bCanAvoid register choice,
- * Bowser FPR assignments, and final fallback stack slot selection.
  */
+#pragma opt_lifetimes off
 void AvoidController::Update(float)
 {
     nlVector3 vAccumulated_v3 = v3Zero;
@@ -271,7 +203,7 @@ void AvoidController::Update(float)
     if (bCanAvoid)
     {
         nlVector3 v3Repulsion = v3Zero;
-        bool bAvoidedSomething = CalcGoalieRepulsionVector(this, v3Repulsion);
+        bool bAvoidedSomething = CalcGoalieRepulsionVector(v3Repulsion);
 
         if (bAvoidedSomething)
         {
@@ -300,54 +232,7 @@ void AvoidController::Update(float)
     if (bCanAvoid)
     {
         nlVector3 v3Repulsion = v3Zero;
-        bool bAvoidedSomething = false;
-
-        Bowser* pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
-        if ((pBowser != NULL) && (pBowser->meBowserState != BOWSER_STATE_HIDDEN))
-        {
-            float fDeltaZ = m_pFielder->m_v3Position.f.z - pBowser->mv3Position.f.z;
-            float fDeltaY = m_pFielder->m_v3Position.f.y - pBowser->mv3Position.f.y;
-            float fDeltaX = m_pFielder->m_v3Position.f.x - pBowser->mv3Position.f.x;
-
-            float fDistanceSq = fDeltaY * fDeltaY;
-            fDistanceSq += fDeltaX * fDeltaX;
-            fDistanceSq += fDeltaZ * fDeltaZ;
-
-            if (fDistanceSq <= 49.0f)
-            {
-                float fDistance = nlSqrt(fDistanceSq, true);
-                float fInvDistance = 1.0f / fDistance;
-                fDeltaX = fInvDistance * fDeltaX;
-                fDeltaY = fInvDistance * fDeltaY;
-                fDeltaZ = fInvDistance * fDeltaZ;
-
-                fDistance -= m_pFTweaks->fPhysCapsuleRadius + pBowser->mpPhysObj->GetRadius();
-
-                float fClosingSpeed = GetClosingSpeed2D(
-                    m_pFielder->GetPosition(),
-                    m_pFielder->GetVelocity(),
-                    pBowser->mv3Position,
-                    pBowser->mv3Velocity);
-
-                float fMagnitude = 10.0f * NormalizeVal(fDistance, 7.0f, 2.0f);
-                fMagnitude += 3.0f * NormalizeVal(fClosingSpeed, 0.0f, 3.0f);
-
-                if (m_pFielder->m_pBall != NULL)
-                {
-                    SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
-                    fMagnitude *= 3.0f * pSkillTweaks->Off_Avoidance;
-                }
-
-                if (fMagnitude > 0.0f)
-                {
-                    fMagnitude = (fMagnitude <= 10.0f) ? fMagnitude : 10.0f;
-
-                    nlVec3Add(v3Repulsion, fMagnitude * fDeltaX, fMagnitude * fDeltaY, fMagnitude * fDeltaZ);
-
-                    bAvoidedSomething = true;
-                }
-            }
-        }
+        bool bAvoidedSomething = CalcBowserRepulsionVector(v3Repulsion);
 
         if (bAvoidedSomething)
         {
@@ -399,26 +284,17 @@ void AvoidController::Update(float)
     else
     {
         float fLastRepulsionWeight = 0.95f;
-        v3SmoothedRepulsion.f.x = fLastRepulsionWeight * m_LastRepulsionVector[5].f.x;
-        v3SmoothedRepulsion.f.y = fLastRepulsionWeight * m_LastRepulsionVector[5].f.y;
-        v3SmoothedRepulsion.f.z = fLastRepulsionWeight * m_LastRepulsionVector[5].f.z;
+        v3FinalRepulsion.f.x = fLastRepulsionWeight * m_LastRepulsionVector[5].f.x;
+        v3FinalRepulsion.f.y = fLastRepulsionWeight * m_LastRepulsionVector[5].f.y;
+        v3FinalRepulsion.f.z = fLastRepulsionWeight * m_LastRepulsionVector[5].f.z;
 
-        if (m_ThingsToAvoid != 0)
+        if ((m_ThingsToAvoid != 0) && (nlVec3LengthSquared(v3FinalRepulsion) > 0.1f))
         {
-            float fRepulsionSq = nlVec3LengthSquared(v3SmoothedRepulsion);
-
-            if (fRepulsionSq > 0.1f)
-            {
-                ApplyRepulsionVector(v3SmoothedRepulsion);
-            }
-            else
-            {
-                v3SmoothedRepulsion = v3Zero;
-            }
+            ApplyRepulsionVector(v3FinalRepulsion);
         }
         else
         {
-            v3SmoothedRepulsion = v3Zero;
+            v3FinalRepulsion = v3Zero;
         }
     }
 
@@ -426,6 +302,7 @@ void AvoidController::Update(float)
     m_pIgnoreThisPlayer = 0;
     m_LastRepulsionVector[5] = v3FinalRepulsion;
 }
+#pragma opt_lifetimes reset
 
 /**
  * Offset/Address/Size: 0x1060 | 0x800086B4 | size: 0x25C
@@ -516,21 +393,131 @@ bool AvoidController::CalcFielderRepulsionVector(nlVector3& v3OutRepulsion)
     return bAvoidedSomething;
 }
 
-void AvoidController_sdata2_stub()
+bool AvoidController::CalcGoalieRepulsionVector(nlVector3& v3OutRepulsion)
 {
-    // Pre-allocates the .sdata2 literal tail in target order.
-    volatile float f;
-    f = 49.0f;
-    f = 7.0f;
-    f = 16.0f;
-    f = 1.5f;
-    f = 0.3f;
-    f = 6.25f;
-    f = 6.5f;
-    f = 2.5f;
-    f = 0.4f;
-    f = 0.95f;
-    f = 0.1f;
+    bool bAvoidedSomething = false;
+    nlVec3Set(v3OutRepulsion, 0.0f, 0.0f, 0.0f);
+
+    for (int i_team = 0; i_team < 2; i_team++)
+    {
+        Goalie* pGoalie = g_pTeams[i_team]->GetGoalie();
+
+        const float fDeltaY = m_pFielder->m_v3Position.f.y - pGoalie->m_v3Position.f.y;
+        const float fDeltaX = m_pFielder->m_v3Position.f.x - pGoalie->m_v3Position.f.x;
+        nlVector3 v3Delta;
+        nlVec3Set(
+            v3Delta,
+            fDeltaX,
+            fDeltaY,
+            m_pFielder->m_v3Position.f.z - pGoalie->m_v3Position.f.z);
+
+        float fDistanceSq = nlVec3LengthSquared(v3Delta);
+        if (fDistanceSq > 16.0f)
+        {
+            continue;
+        }
+
+        float fDistance = nlSqrt(fDistanceSq, true);
+        nlVec3Scale(v3Delta, v3Delta, 1.0f / fDistance);
+
+        fDistance -= m_pFTweaks->fPhysCapsuleRadius + pGoalie->m_pTweaks->fPhysCapsuleRadius;
+
+        float fMagnitude;
+        float fClosingSpeed = GetClosingSpeed2D(
+            m_pFielder->GetPosition(),
+            m_pFielder->GetVelocity(),
+            pGoalie->GetPosition(),
+            pGoalie->GetVelocity());
+
+        fMagnitude = 10.0f * NormalizeVal(fDistance, 4.0f, 0.5f);
+        fMagnitude += 3.0f * NormalizeVal(fClosingSpeed, 0.0f, 3.0f);
+
+        if (!m_pFielder->IsOnSameTeam(pGoalie))
+        {
+            fMagnitude *= 1.5f;
+        }
+
+        if (m_pFielder->m_pBall != NULL)
+        {
+            SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+            fMagnitude *= 1.5f * pSkillTweaks->Off_Avoidance;
+        }
+
+        if (m_UseMinimumAvoidance)
+        {
+            fMagnitude *= 0.3f;
+        }
+
+        if (!(fMagnitude <= 0.0f))
+        {
+            nlVec3ScaleAdd(
+                v3OutRepulsion,
+                fMin(fMagnitude, 10.0f),
+                v3Delta,
+                v3OutRepulsion);
+            bAvoidedSomething = true;
+        }
+    }
+
+    return bAvoidedSomething;
+}
+
+bool AvoidController::CalcBowserRepulsionVector(nlVector3& v3OutRepulsion)
+{
+    Bowser* pBowser;
+    bool bAvoidedSomething = false;
+    float fDeltaZ;
+    float fDeltaY;
+    float fDeltaX;
+    float fDistance, fMagnitude, fClosingSpeed;
+
+    pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
+    if ((pBowser != NULL) && (pBowser->meBowserState != BOWSER_STATE_HIDDEN))
+    {
+        nlVector3 v3Delta;
+        nlVec3Sub(v3Delta, m_pFielder->m_v3Position, pBowser->mv3Position);
+        fDeltaY = v3Delta.f.y;
+        fDeltaX = v3Delta.f.x;
+        fDeltaZ = v3Delta.f.z;
+
+        float fDistanceSq = fDeltaY * fDeltaY;
+        fDistanceSq += fDeltaX * fDeltaX;
+        fDistanceSq += fDeltaZ * fDeltaZ;
+
+        if (fDistanceSq <= 49.0f)
+        {
+            fDistance = nlSqrt(fDistanceSq, true);
+            float fInvDistance = 1.0f / fDistance;
+            nlVec3Scale(v3Delta, fInvDistance);
+
+            fDistance -= m_pFTweaks->fPhysCapsuleRadius + pBowser->mpPhysObj->GetRadius();
+            fClosingSpeed = GetClosingSpeed2D(
+                m_pFielder->GetPosition(),
+                m_pFielder->GetVelocity(),
+                pBowser->mv3Position,
+                pBowser->mv3Velocity);
+
+            fMagnitude = 10.0f * NormalizeVal(fDistance, 7.0f, 2.0f);
+            fMagnitude += 3.0f * NormalizeVal(fClosingSpeed, 0.0f, 3.0f);
+
+            if (m_pFielder->m_pBall != NULL)
+            {
+                SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+                fMagnitude *= 3.0f * pSkillTweaks->Off_Avoidance;
+            }
+
+            if (fMagnitude > 0.0f)
+            {
+                fMagnitude = (fMagnitude <= 10.0f) ? fMagnitude : 10.0f;
+
+                nlVec3ScaleAdd(v3OutRepulsion, fMagnitude, v3Delta, v3OutRepulsion);
+
+                bAvoidedSomething = true;
+            }
+        }
+    }
+
+    return bAvoidedSomething;
 }
 
 /**
@@ -946,6 +933,30 @@ bool AvoidController::AvoidSidelines()
     return bHitSideline;
 }
 
+inline void AvoidController::CalcDesiredAndCurrentVelocities(
+    nlVector2* vOutDesiredVel, nlVector2* vOutCurrentVel, bool bNormalized)
+{
+    if (vOutDesiredVel != NULL)
+    {
+        nlSinCos(&vOutDesiredVel->f.y, &vOutDesiredVel->f.x, m_pFielder->m_aDesiredMovementDirection);
+        if (!bNormalized)
+        {
+            vOutDesiredVel->f.x *= m_pFielder->m_fDesiredSpeed;
+            vOutDesiredVel->f.y *= m_pFielder->m_fDesiredSpeed;
+        }
+    }
+
+    if (vOutCurrentVel != NULL)
+    {
+        nlSinCos(&vOutCurrentVel->f.y, &vOutCurrentVel->f.x, m_pFielder->m_aActualMovementDirection);
+        if (!bNormalized)
+        {
+            vOutCurrentVel->f.x *= m_pFielder->m_fActualSpeed;
+            vOutCurrentVel->f.y *= m_pFielder->m_fActualSpeed;
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x80007654 | size: 0x41C
  */
@@ -969,10 +980,7 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
     nlVector3& rRepulsionDir = v3RepulsionDir;
     f32 fDesiredSpeed;
 
-    if (&v3DesiredVelDir != NULL)
-    {
-        nlSinCos(&v3DesiredVelDir.f.y, &v3DesiredVelDir.f.x, m_pFielder->m_aDesiredMovementDirection);
-    }
+    CalcDesiredAndCurrentVelocities((nlVector2*)&v3DesiredVelDir, NULL, true);
 
     v3DesiredVelDir.f.z = 0.0f;
 
@@ -1022,9 +1030,8 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
 
     if (m_VeryCloseToSideline)
     {
-        f32 fDotNormalVel = rRepulsionDir.f.y * m_SidelineNormal.f.y;
-        f32 fNormalX = m_SidelineNormal.f.x;
-        fDotNormalVel = rRepulsionDir.f.x * fNormalX + fDotNormalVel;
+        f32 fDotNormalVel = rRepulsionDir.f.x * m_SidelineNormal.f.x
+            + rRepulsionDir.f.y * m_SidelineNormal.f.y;
 
         if (fDotNormalVel < -0.1f)
         {
@@ -1047,17 +1054,20 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
                 f32 fParallelZ = fScale * fSidelineDirZ;
 
                 rRepulsionDir.f.x = fMinusOne * (rRepulsionDir.f.x - fParallelX) + fParallelX;
-                rRepulsionDir.f.z = fMinusOne * (fRepulsionDirZ - fParallelZ) + fParallelZ;
                 rRepulsionDir.f.y = fMinusOne * (rRepulsionDir.f.y - fParallelY) + fParallelY;
+                rRepulsionDir.f.z = fMinusOne * (fRepulsionDirZ - fParallelZ) + fParallelZ;
                 rRepulsionDir.f.z = fSidelineDirZ;
 
-                v3Repulsion.f.x = fRepulsionMag * rRepulsionDir.f.x;
-                v3Repulsion.f.y = fRepulsionMag * rRepulsionDir.f.y;
+                f32 fScaledY = fRepulsionMag * rRepulsionDir.f.y;
+                f32 fScaledX = fRepulsionMag * rRepulsionDir.f.x;
+                v3Repulsion.f.x = fScaledX;
+                v3Repulsion.f.y = fScaledY;
             }
             else
             {
-                v3Repulsion.f.x = fRepulsionMag * fNormalX;
-                v3Repulsion.f.y = fRepulsionMag * m_SidelineNormal.f.y;
+                nlVec2Set(*(nlVector2*)&v3Repulsion,
+                    fRepulsionMag * m_SidelineNormal.f.x,
+                    fRepulsionMag * m_SidelineNormal.f.y);
             }
         }
     }
@@ -1082,17 +1092,14 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
     }
     else
     {
-        f32 fRunningSpeed = m_pFTweaks->fRunningSpeed;
-        f32 fJoggingSpeed = m_pFTweaks->fJoggingSpeed;
-        f32 fRunningDiff = (float)fabs(fResultantMag - fRunningSpeed);
-        f32 fJoggingDiff = (float)fabs(fResultantMag - fJoggingSpeed);
-        if (fJoggingDiff < fRunningDiff)
+        if ((float)fabs(fResultantMag - m_pFTweaks->fJoggingSpeed)
+            < (float)fabs(fResultantMag - m_pFTweaks->fRunningSpeed))
         {
-            fDesiredSpeed = fJoggingSpeed;
+            fDesiredSpeed = m_pFTweaks->fJoggingSpeed;
         }
         else
         {
-            fDesiredSpeed = fRunningSpeed;
+            fDesiredSpeed = m_pFTweaks->fRunningSpeed;
         }
     }
 

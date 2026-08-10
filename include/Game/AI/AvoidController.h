@@ -29,10 +29,17 @@ public:
     nlVector3& GetLastRepulsionVector(eAvoidableThings);
     void Update(float);
     bool CalcFielderRepulsionVector(nlVector3&);
+
+private:
+    bool CalcGoalieRepulsionVector(nlVector3&);
+    bool CalcBowserRepulsionVector(nlVector3&);
+
+public:
     bool CalcPowerupRepulsionVector(nlVector3&);
     bool CalcDesiredVelocityToAvoidSideline(nlVector2&, const nlVector2&, const nlVector2&, const nlVector2&, const nlVector2&);
     bool CalcDesiredVelocityToAvoidCorner(nlVector2&, const sCornerSegment&, const nlVector2&, const nlVector2&);
     bool AvoidSidelines();
+    inline void CalcDesiredAndCurrentVelocities(nlVector2*, nlVector2*, bool);
     void ApplyRepulsionVector(nlVector3);
 
     /* 0x00 */ cFielder* m_pFielder;
