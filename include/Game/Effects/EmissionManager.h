@@ -48,11 +48,11 @@ public:
     static bool IsStillAlive(EmissionController*);
     static EmissionController* Create(EffectsGroup* pEffectsGroup, unsigned short id);
     static efList* GetContainer();
-    static void Render(); // not sure it's static
+    static void Render();
     static void AddEffectsLight(const EffectsLight&);
     static EffectsLight* GetLight(int);
     static s32 GetNumLights();
-    static void Update(float); // not sure it's static
+    static void Update(float);
     static bool Shutdown();
     static bool Startup(eGLView);
 

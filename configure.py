@@ -1260,7 +1260,7 @@ config.libs = [
             Object(Matching, "Game/Effects/EffectsGroup.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Effects/ParticleSystem.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Effects/EmissionController.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Effects/EmissionManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Effects/EmissionManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Effects/PhotoFlashEffect.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # DB

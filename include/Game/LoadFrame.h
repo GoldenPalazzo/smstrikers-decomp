@@ -26,16 +26,10 @@ public:
 }; // total size: 0x14
 
 template <int N, typename T>
-inline void ReplayLoadFrameValue(LoadFrame& frame, T& current)
+inline void LoadFrame::Replayable(T& current)
 {
-    typename ReplayableCategory<T>::Type category;
-    frame.Replayable<N>(current, category);
-}
-
-template <int N, typename T>
-void LoadFrame::Replayable(T& current)
-{
-    ReplayLoadFrameValue<N>(*this, current);
+    typename ReplayableCategory<T>::Type category = ReplayableCategoryOf(current);
+    Replayable<N>(current, category);
 }
 
 template <int N, typename T>
@@ -58,11 +52,11 @@ inline void LoadFrame::Replayable(bool& current, ReplayablePod)
 }
 
 template <int N, typename T>
-void LoadFrame::Replayable(T& current, NotReplayablePod)
+inline void LoadFrame::Replayable(T& current, NotReplayablePod)
 {
     if (N == 0 || mInterval == N)
     {
-        ReplayLoadObject(*this, current);
+        current.Replay(*this);
     }
 }
 

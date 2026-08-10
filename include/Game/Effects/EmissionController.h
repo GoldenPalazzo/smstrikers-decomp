@@ -35,6 +35,9 @@ public:
     void SetUpdateCallback(const Function1<void, EmissionController&>&);
     void SetFinishedCallback(const Function1<void, EmissionController&>&);
 
+    template <typename T>
+    void Replay(T& frame);
+
     /* 0x8, */ EffectsGroup* m_pGroup;
     /* 0xC, */ efList m_Systems;
     /* 0x18 */ Function1<void, EmissionController&> mUpdateCallback;
@@ -60,5 +63,65 @@ public:
     /* 0x84 */ UserEffectSpec** m_pUserEffects;
     /* 0x88 */ bool m_bPoseErrorDisplayed;
 };
+
+
+template <typename T>
+inline void EmissionController::Replay(T& frame)
+{
+    ::Replayable<0>(frame, (unsigned int&)m_pPose);
+    ::Replayable<0>(frame, (unsigned int&)m_pAnimController);
+    frame.template Replayable<0>(m_uUserData);
+    ::Replayable<0>(frame, m_fGround);
+    frame.template Replayable<0>(m_aFacing);
+    ::Replayable<0>(frame, (char&)m_GlView);
+    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vPosition.f.x));
+    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vPosition.f.y));
+    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vPosition.f.z));
+    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vDirection.f.x));
+    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vDirection.f.y));
+    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vDirection.f.z));
+    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vVelocity.f.x));
+    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vVelocity.f.y));
+    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vVelocity.f.z));
+
+    if (ReplayFrameTraits<T>::IsLoadFrame)
+    {
+        m_Replaying = true;
+
+        float age = 0.0f;
+        ::Replayable<0>(frame, age);
+        age += reinterpret_cast<LoadFrame&>(frame).mNonBlendableAheadOfFrame;
+        m_ReplayDeltaTime = age - m_Age;
+        m_Age = age;
+
+        unsigned int updateCb = 0;
+        ::Replayable<0>(frame, updateCb);
+        unsigned int callback = updateCb;
+        if (callback != 0)
+        {
+            mUpdateCallback = (void (*)(EmissionController&))callback;
+        }
+
+        unsigned int finishedCb = 0;
+        ::Replayable<0>(frame, finishedCb);
+        callback = finishedCb;
+        if (callback != 0)
+        {
+            mFinishedCallback = (void (*)(EmissionController&))callback;
+        }
+    }
+    else
+    {
+        m_Replaying = false;
+        m_ReplayDeltaTime = 0.0f;
+        ::Replayable<0>(frame, m_Age);
+
+        unsigned int updateCb = (unsigned int)mUpdateCallback.GetFreeFunction();
+        ::Replayable<0>(frame, updateCb);
+
+        unsigned int finishedCb = (unsigned int)mFinishedCallback.GetFreeFunction();
+        ::Replayable<0>(frame, finishedCb);
+    }
+}
 
 #endif // _EMISSIONCONTROLLER_H_

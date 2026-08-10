@@ -131,6 +131,13 @@ struct ReplayableCategory<nlQuaternion>
     typedef ReplayablePod Type;
 };
 
+template <typename T>
+inline typename ReplayableCategory<T>::Type ReplayableCategoryOf(const T& current)
+{
+    typename ReplayableCategory<T>::Type category;
+    return category;
+}
+
 class SaveFrame
 {
 public:
@@ -156,7 +163,7 @@ public:
 template <int N, typename T>
 inline void SaveFrame::Replayable(T& current)
 {
-    typename ReplayableCategory<T>::Type category;
+    typename ReplayableCategory<T>::Type category = ReplayableCategoryOf(current);
     Replayable<N>(current, category);
 }
 
@@ -192,16 +199,6 @@ void Replayable(FrameType& frame, T& current);
 
 template <int N>
 void Replayable(SaveFrame& frame, char typeId, cPoseNode*& poseNode);
-
-template <typename FrameType>
-static inline void ReplayControllerFloats(FrameType& frame, EmissionController& controller);
-
-static inline void ReplayControllerState(LoadFrame& frame, EmissionController& controller);
-
-template <typename T>
-static inline void ReplayLoadObject(LoadFrame& frame, T& current);
-
-static inline void ReplayLoadObject(LoadFrame& frame, EmissionController& controller);
 
 #include "Game/LoadFrame.h"
 
@@ -248,123 +245,6 @@ void Replayable(FrameType& frame, const T& proxy)
     }
 }
 
-template <typename FrameType>
-static inline void ReplayControllerFloats(FrameType& frame, EmissionController& controller)
-{
-    const FloatCompressor<-255, 255, 6> positionX(controller.m_vPosition.f.x);
-    ::Replayable<0>(frame, positionX);
-    const FloatCompressor<-255, 255, 6> positionY(controller.m_vPosition.f.y);
-    ::Replayable<0>(frame, positionY);
-    const FloatCompressor<-255, 255, 6> positionZ(controller.m_vPosition.f.z);
-    ::Replayable<0>(frame, positionZ);
-    const FloatCompressor<-255, 255, 6> directionX(controller.m_vDirection.f.x);
-    ::Replayable<0>(frame, directionX);
-    const FloatCompressor<-255, 255, 6> directionY(controller.m_vDirection.f.y);
-    ::Replayable<0>(frame, directionY);
-    const FloatCompressor<-255, 255, 6> directionZ(controller.m_vDirection.f.z);
-    ::Replayable<0>(frame, directionZ);
-    const FloatCompressor<-255, 255, 6> velocityX(controller.m_vVelocity.f.x);
-    ::Replayable<0>(frame, velocityX);
-    const FloatCompressor<-255, 255, 6> velocityY(controller.m_vVelocity.f.y);
-    ::Replayable<0>(frame, velocityY);
-    const FloatCompressor<-255, 255, 6> velocityZ(controller.m_vVelocity.f.z);
-    ::Replayable<0>(frame, velocityZ);
-}
-
-static inline void ReplayControllerState(LoadFrame& frame, EmissionController& controller)
-{
-    float age = 0.0f;
-    ::Replayable<0>(frame, age);
-    age += frame.mNonBlendableAheadOfFrame;
-    controller.m_ReplayDeltaTime = age - controller.m_Age;
-    controller.m_Age = age;
-
-    unsigned int updateCb = 0;
-    ::Replayable<0>(frame, updateCb);
-    unsigned int callback = updateCb;
-    if (callback != 0)
-    {
-        controller.mUpdateCallback = (void (*)(EmissionController&))callback;
-    }
-
-    unsigned int finishedCb = 0;
-    ::Replayable<0>(frame, finishedCb);
-    callback = finishedCb;
-    if (callback != 0)
-    {
-        controller.mFinishedCallback = (void (*)(EmissionController&))callback;
-    }
-}
-
-static inline void ReplayControllerCallbacks(SaveFrame& frame, EmissionController& controller)
-{
-    unsigned int updateCb = (unsigned int)controller.mUpdateCallback.GetFreeFunction();
-    Replayable<0>(frame, updateCb);
-
-    unsigned int finishedCb = (unsigned int)controller.mFinishedCallback.GetFreeFunction();
-    Replayable<0>(frame, finishedCb);
-}
-
-template <typename T>
-static inline void ReplayLoadObject(LoadFrame& frame, T& current)
-{
-    current.Replay(frame);
-}
-
-static inline void ReplayLoadObject(LoadFrame& frame, EmissionController& controller)
-{
-    ::Replayable<0>(frame, (unsigned int&)controller.m_pPose);
-    ::Replayable<0>(frame, (unsigned int&)controller.m_pAnimController);
-    memcpy(&controller.m_uUserData, frame.mStream.mStorage, sizeof(unsigned long));
-    frame.mStream.mStorage += sizeof(unsigned long);
-    ::Replayable<0>(frame, controller.m_fGround);
-    memcpy(&controller.m_aFacing, frame.mStream.mStorage, sizeof(unsigned short));
-    frame.mStream.mStorage += sizeof(unsigned short);
-    ::Replayable<0>(frame, (char&)controller.m_GlView);
-    ReplayControllerFloats(frame, controller);
-    controller.m_Replaying = true;
-    ReplayControllerState(frame, controller);
-}
-
-template <int N, typename FrameType, typename T>
-static inline void ReplayFrameValue(FrameType& frame, T& current, ReplayablePod category)
-{
-    frame.Replayable<N>(current, category);
-}
-
-template <int N, typename FrameType, typename T>
-static inline void ReplayFrameValue(FrameType& frame, T& current, NotReplayablePod)
-{
-    if (N == 0 || frame.mInterval == N)
-    {
-        current.Replay(frame);
-    }
-}
-
-template <>
-inline void ReplayFrameValue<0, LoadFrame, EmissionController>(LoadFrame& frame, EmissionController& controller, NotReplayablePod)
-{
-    frame.Replayable<0>(controller);
-}
-
-template <>
-inline void ReplayFrameValue<0, SaveFrame, EmissionController>(SaveFrame& frame, EmissionController& controller, NotReplayablePod)
-{
-    ::Replayable<0>(frame, (unsigned int&)controller.m_pPose);
-    ::Replayable<0>(frame, (unsigned int&)controller.m_pAnimController);
-    memcpy(frame.mStream.mStorage, &controller.m_uUserData, sizeof(unsigned long));
-    frame.mStream.mStorage += sizeof(unsigned long);
-    ::Replayable<0>(frame, controller.m_fGround);
-    memcpy(frame.mStream.mStorage, &controller.m_aFacing, sizeof(unsigned short));
-    frame.mStream.mStorage += sizeof(unsigned short);
-    ::Replayable<0>(frame, (char&)controller.m_GlView);
-    ReplayControllerFloats(frame, controller);
-    controller.m_Replaying = false;
-    controller.m_ReplayDeltaTime = 0.0f;
-    ::Replayable<0>(frame, controller.m_Age);
-    ReplayControllerCallbacks(frame, controller);
-}
-
 template <int N, typename FrameType, typename T>
 void ReplayablePolymorphic(FrameType& frame, T*& ptr)
 {
@@ -372,12 +252,11 @@ void ReplayablePolymorphic(FrameType& frame, T*& ptr)
 }
 
 template <int N, typename FrameType, typename T>
-void Replayable(FrameType& frame, T& drawable)
+void Replayable(FrameType& frame, T& current)
 {
     if (N == 0 || frame.mInterval == N)
     {
-        typename ReplayableCategory<T>::Type category;
-        ReplayFrameValue<N, FrameType, T>(frame, drawable, category);
+        frame.template Replayable<N>(current);
     }
 }
 

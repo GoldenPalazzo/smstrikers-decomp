@@ -41,28 +41,28 @@ bool EmissionManager::Startup(eGLView view)
 {
     defaultView = view;
 
-    efList* tmp_controllers = (efList*)nlMalloc(sizeof(efList), 8, false);
-    if (tmp_controllers != nullptr)
+    efList* newControllers = (efList*)nlMalloc(sizeof(efList), 8, false);
+    if (newControllers != nullptr)
     {
-        tmp_controllers->m_headNode = nullptr;
-        tmp_controllers->m_tailNode = nullptr;
-        tmp_controllers->m_numNodes = 0;
+        newControllers->m_headNode = nullptr;
+        newControllers->m_tailNode = nullptr;
+        newControllers->m_numNodes = 0;
     }
-    controllers = tmp_controllers;
+    controllers = newControllers;
 
-    efList* tmp_errors = (efList*)nlMalloc(sizeof(efList), 8, false);
-    if (tmp_errors != nullptr)
+    efList* newErrors = (efList*)nlMalloc(sizeof(efList), 8, false);
+    if (newErrors != nullptr)
     {
-        tmp_errors->m_headNode = nullptr;
-        tmp_errors->m_tailNode = nullptr;
-        tmp_errors->m_numNodes = 0;
+        newErrors->m_headNode = nullptr;
+        newErrors->m_tailNode = nullptr;
+        newErrors->m_numNodes = 0;
     }
-    errors = tmp_errors;
+    errors = newErrors;
 
-    nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >* tmp_lingerers = (nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >*)nlMalloc(
+    nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >* newLingerers = (nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >*)nlMalloc(
         sizeof(nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >), 8, false);
-    new (tmp_lingerers) nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >();
-    lingerers = tmp_lingerers;
+    new (newLingerers) nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >();
+    lingerers = newLingerers;
 
     return true;
 }
@@ -615,7 +615,6 @@ void EmissionManager::Replay(LoadFrame& frame)
 /**
  * Offset/Address/Size: 0x11C | 0x801F8A3C | size: 0x130
  */
-
 void EmissionManager::Replay(SaveFrame& frame)
 {
     if (!m_bRecording)
