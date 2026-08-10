@@ -28,55 +28,52 @@
 #include "dolphin/gx/GXVert.h"
 #include <string.h>
 
-// .sdata: non-zero-initialized globals (target order)
-static bool g_bAllowLighting = true;                      // .sdata:0x00
-static bool g_bAllowSpecular = true;                      // .sdata:0x01
-static nlColour nlBlack = { { 0, 0, 0, 0xFF } };          // .sdata:0x04
-static nlColour nlWhite = { { 0xFF, 0xFF, 0xFF, 0xFF } }; // .sdata:0x08
-static bool glx_AlwaysReloadLights = true;                // .sdata:0x0C
-static bool glx_CompiledDraw = true;                      // .sdata:0x0D
-static u8 glx_InvXpose = 1;                               // .sdata:0x0E
-static bool glx_AllowUncompiledDraws = true;              // .sdata:0x0F
-static bool g_bFastSkinPath = true;                       // .sdata:0x10
-static bool g_bMtxSkinMath = true;                        // .sdata:0x11
-static u32 glx_program = (u32)-1;                         // .sdata:0x14
+static bool g_bAllowLighting = true;                      
+static bool g_bAllowSpecular = true;                      
+static nlColour nlBlack = { { 0, 0, 0, 0xFF } };          
+static nlColour nlWhite = { { 0xFF, 0xFF, 0xFF, 0xFF } }; 
+static bool glx_AlwaysReloadLights = true;                
+static bool glx_CompiledDraw = true;                      
+static u8 glx_InvXpose = 1;                               
+static bool glx_AllowUncompiledDraws = true;              
+static bool g_bFastSkinPath = true;                       
+static bool g_bMtxSkinMath = true;                        
+static u32 glx_program = (u32)-1;                         
 
-// .sbss: zero-init globals (target order)
-static eGLView prev_view;            // .sbss:0x00
-static bool glx_IsCoPlanarView;      // .sbss:0x04
-static u32 glx_texdirty;             // .sbss:0x08
-static u8 glx_normals;               // .sbss:0x0C
-static bool glx_envdiffuse;          // .sbss:0x0D
-static bool glx_mobilediffuse;       // .sbss:0x0E
-static bool glx_constantcolour;      // .sbss:0x0F
-static bool glx_viewport;            // .sbss:0x10
-static bool glx_CoPlanar;            // .sbss:0x11
-static u32 glx_texconfig;            // .sbss:0x14
-static u32 glx_NumIndices;           // .sbss:0x18
-static u32 glx_DirtyFlags;           // .sbss:0x1C
-static bool glx_translucent;         // .sbss:0x20
-static bool glx_norasterizedalpha;   // .sbss:0x21
-static s32 glx_RasterizedAlphaStage; // .sbss:0x24
-static s32 glx_RasterizedAlphaArg;   // .sbss:0x28
-static s32 glx_GlossMapStage;        // .sbss:0x2C
-static s32 glx_GlossMapCoord;        // .sbss:0x30
-static bool glx_NoFog;               // .sbss:0x34
-static u32 gx_vtxfmt;                // .sbss:0x38
-static bool glx_allowSpecular;       // .sbss:0x3C
-static bool glx_ReloadPointLights;   // .sbss:0x3D
-static bool glx_ReloadSpecLights;    // .sbss:0x3E
-static u32 glx_prevLightMask;        // .sbss:0x40
-static u32 glx_prevSpecMask;         // .sbss:0x44
-static GXColor rshadow_colour[2];    // .sbss:0x48
-static nlColour world_ambient;       // .sbss:0x50
-static f32 glx_IndDivisor;           // .sbss:0x54
-static _GXTevScale glx_tevscale;     // .sbss:0x58
-static int glx_aniso;                // .sbss:0x5C
-static u8 glx_InvXposeChar;          // .sbss:0x60
+static eGLView prev_view;            
+static bool glx_IsCoPlanarView;      
+static u32 glx_texdirty;             
+static u8 glx_normals;               
+static bool glx_envdiffuse;          
+static bool glx_mobilediffuse;       
+static bool glx_constantcolour;      
+static bool glx_viewport;            
+static bool glx_CoPlanar;            
+static u32 glx_texconfig;            
+static u32 glx_NumIndices;           
+static u32 glx_DirtyFlags;           
+static bool glx_translucent;         
+static bool glx_norasterizedalpha;   
+static s32 glx_RasterizedAlphaStage; 
+static s32 glx_RasterizedAlphaArg;   
+static s32 glx_GlossMapStage;        
+static s32 glx_GlossMapCoord;        
+static bool glx_NoFog;               
+static u32 gx_vtxfmt;                
+static bool glx_allowSpecular;       
+static bool glx_ReloadPointLights;   
+static bool glx_ReloadSpecLights;    
+static u32 glx_prevLightMask;        
+static u32 glx_prevSpecMask;         
+static GXColor rshadow_colour[2];    
+static nlColour world_ambient;       
+static f32 glx_IndDivisor;           
+static _GXTevScale glx_tevscale;     
+static int glx_aniso;                
+static u8 glx_InvXposeChar;          
 
 static void glud_Specular(void*);
 
-// Program-handle statics (initialized at __sinit_)
 static u32 prog_2d_unlit = glGetProgram("2d unlit");
 static u32 prog_2d_movie = glGetProgram("2d movie");
 static u32 prog_3d_unlit = glGetProgram("3d unlit");
@@ -86,13 +83,11 @@ static u32 prog_3d_pointlit_dirt = glGetProgram("3d pointlit dirt");
 static u32 prog_3d_crowd = glGetProgram("3d crowd");
 static u32 prog_3d_crowd_lit = glGetProgram("3d crowd lit");
 
-// .data: non-zero-initialized large arrays (target order)
 static nlVector4 water_Scale = { 1.0f, 1.0f, 0.0f, 0.0f };
 static nlVector4 water_Trans = { 0.0f, 0.0f, 0.0f, 0.0f };
 static nlVector4 water_Follow = { 0.0f, 0.0f, 0.0f, 0.0f };
 static f32 glx_konstlevel[4] = { -1.0f, -1.0f, -1.0f, -1.0f };
 
-// .bss: zero-init large arrays (target order)
 static nlMatrix4 mproj;
 static nlMatrix4 mview;
 static nlMatrix4 modelview;
@@ -125,80 +120,17 @@ static void glud_Light(void*);
 static void glx_SwitchStreams(const glModelPacket*);
 static void glx_SwitchRaster(const glModelPacket*);
 
-/**
- * Offset/Address/Size: 0x0 | 0x801B9B00 | size: 0x538
- * TODO: 99.61% match - texture loop register permutation keeps texnum/i at r25/r24
- * vs target r29/r28, sliding texture/output pointers shifted.
- */
-// Save/restore the alpha-in arg on the rasterized stage. enable=true at setup,
-// false at restore (puts back whatever the previous value was).
-/**
- * Offset/Address/Size: 0x538 | 0x801BA038 | size: 0xB20
- * TODO: 99.59% match - packet and bFogWasDisabled registers still differ,
- * causing dependent texture-loop, env-stage, and display-list pointer registers to differ.
- */
-/**
- * Offset/Address/Size: 0x1058 | 0x801BAB58 | size: 0x964
- * TODO: 99.57% match - 7 outer-loop, 27 inlined directional-light, and
- * 4 env-diffuse gloss-coordinate register rows remain.
- */
 struct GLSkinUserData
 {
     int reg;
     float mat[12];
 };
 
-/**
- * Offset/Address/Size: 0x19BC | 0x801BB4BC | size: 0x1D0
- */
-/**
- * Offset/Address/Size: 0x1B8C | 0x801BB68C | size: 0x320
- */
 struct LightData
 {
     u32 numLights;
     GLLightUserData* lights;
 };
-
-/**
- * Offset/Address/Size: 0x1EAC | 0x801BB9AC | size: 0xC0
- */
-/**
- * Offset/Address/Size: 0x1F6C | 0x801BBA6C | size: 0x334
- * TODO: 96.22% match - directional branch register/order mismatch in worldDir normalization
- *       and viewDir scaling by -1.0f; static local/sdata constant references also differ.
- */
-/**
- * Offset/Address/Size: 0x22A0 | 0x801BBDA0 | size: 0x194
- */
-/**
- * Offset/Address/Size: 0x2434 | 0x801BBF34 | size: 0x25C
- */
-/**
- * Offset/Address/Size: 0x2690 | 0x801BC190 | size: 0x48C
- * TODO: 99.66% match - anonymous constant loads, one loop-entry branch, and
- * aniso table relocation still differ.
- */
-/**
- * Offset/Address/Size: 0x2B1C | 0x801BC61C | size: 0x2154
- * TODO: 99.55% match - texture-attribute loop still differs in temporary
- * registers and branch counter shape.
- */
-/**
- * Offset/Address/Size: 0x4C70 | 0x801BE770 | size: 0x24
- */
-/**
- * Offset/Address/Size: 0x4C94 | 0x801BE794 | size: 0x200
- */
-/**
- * Offset/Address/Size: 0x4E94 | 0x801BE994 | size: 0x310
- */
-/**
- * Offset/Address/Size: 0x51A4 | 0x801BECA4 | size: 0xAC
-//  */
-// void 0x8028D51C..0x8028D520 | size: 0x4
-// {
-// }
 
 static inline GXColor makeColor(f32 r, f32 g, f32 b, f32 a)
 {
@@ -217,6 +149,9 @@ static inline nlColour getWorldAmbient()
     return colour;
 }
 
+/**
+ * Offset/Address/Size: 0x4E94 | 0x801BE994 | size: 0x310
+ */
 static void GetConstants()
 {
     nlVector4 vMult;
@@ -257,7 +192,7 @@ static void GetConstants()
     }
 
     vMult = glConstantGet("lighting/range");
-    if (vMult.f.x == 0.0f)
+    if (vMult.f.x == 1.0f)
     {
         glx_tevscale = (_GXTevScale)0;
     }
@@ -268,7 +203,7 @@ static void GetConstants()
 
     if (glConstantGet("texture/density", vTexel))
     {
-        glx_SetGridMode(vTexel.f.x == 0.0f);
+        glx_SetGridMode(vTexel.f.x == 1.0f);
     }
 
     {
@@ -291,6 +226,9 @@ static inline void glx_SetVtxAttr()
     }
 }
 
+/**
+ * Offset/Address/Size: 0x4C94 | 0x801BE794 | size: 0x200
+ */
 void glx_SendReset()
 {
     prev_view = GLV_Num;
@@ -346,6 +284,9 @@ void glx_SendReset()
     glx_NoFog = false;
 }
 
+/**
+ * Offset/Address/Size: 0x4C70 | 0x801BE770 | size: 0x24
+ */
 void glx_SendEnd()
 {
     glx_SwitchUserData(nullptr);
@@ -353,6 +294,9 @@ void glx_SendEnd()
 
 extern const u32 glv_MatrixChanged;
 
+/**
+ * Offset/Address/Size: 0x2B1C | 0x801BC61C | size: 0x2154
+ */
 static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
 {
     int i;
@@ -992,6 +936,9 @@ static inline void setGreyKColor(GXTevKColorID stage, u8 value)
     GXSetTevKColor(stage, colour);
 }
 
+/**
+ * Offset/Address/Size: 0x2690 | 0x801BC190 | size: 0x48C
+ */
 static void glx_SwitchTextureState(const glModelPacket* p)
 {
     int bit;
@@ -1137,19 +1084,14 @@ static const u32 glv_TexConfigChanged = 0x80;
 
 static inline void glx_SwitchTexture(const glModelPacket* p)
 {
-    static u32 errorTextures[2] = { 0, 0 };
-    static signed char init;
+    static u32 errorTextures[2] = {
+        glGetTexture("global/white"),
+        glGetTexture("global/magenta"),
+    };
     int bit;
     int texnum;
     PlatTexture* pTex;
     unsigned long texhandle;
-
-    if (!init)
-    {
-        errorTextures[0] = glGetTexture("global/white");
-        errorTextures[1] = glGetTexture("global/magenta");
-        init = 1;
-    }
 
     for (bit = texnum = 0; bit < 6; bit++)
     {
@@ -1178,6 +1120,9 @@ static inline void glx_SwitchTexture(const glModelPacket* p)
     glx_SwitchTextureState(p);
 }
 
+/**
+ * Offset/Address/Size: 0x2434 | 0x801BBF34 | size: 0x25C
+ */
 static void glx_SwitchRaster(const glModelPacket* p)
 {
     static _GXCompare gx_DepthFunc[] = {
@@ -1288,6 +1233,9 @@ static void glx_SwitchRaster(const glModelPacket* p)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x22A0 | 0x801BBDA0 | size: 0x194
+ */
 static void glx_SwitchStreams(const glModelPacket* pPacket)
 {
     static u32 gx_streams[] = {
@@ -1372,14 +1320,14 @@ static void glx_SwitchStreams(const glModelPacket* pPacket)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x1F6C | 0x801BBA6C | size: 0x334
+ */
 static void glx_LoadLight(GLLightUserData* pLight, _GXLightID lightId)
 {
-    static float refMult;
-    static signed char init;
-    static float refBright;
-    static signed char init_0;
-    static int refFunc;
-    static signed char init_1;
+    static float refMult = 0.666f;
+    static float refBright = 0.5f;
+    static int refFunc = 2;
     static GXDistAttnFn dist_func[3] = {
         GX_DA_GENTLE,
         GX_DA_MEDIUM,
@@ -1392,91 +1340,10 @@ static void glx_LoadLight(GLLightUserData* pLight, _GXLightID lightId)
     nlVector3 viewDir;
     nlVector3 worldDir;
 
-    if (!init)
-    {
-        init = 1;
-        refMult = 0.666f;
-    }
-
-    if (!init_0)
-    {
-        init_0 = 1;
-        refBright = 0.5f;
-    }
-
-    if (!init_1)
-    {
-        refFunc = 2;
-        init_1 = 1;
-    }
-
-    {
-        int value = (int)(pLight->colour.c[0] * pLight->intensity * 255.5f);
-        if (value < 0)
-        {
-            value = 0;
-        }
-        else if (value > 255)
-        {
-            value = 255;
-        }
-        else
-        {
-            value = (unsigned char)value;
-        }
-        colour.r = value;
-    }
-
-    {
-        int value = (int)(pLight->colour.c[1] * pLight->intensity * 255.5f);
-        if (value < 0)
-        {
-            value = 0;
-        }
-        else if (value > 255)
-        {
-            value = 255;
-        }
-        else
-        {
-            value = (unsigned char)value;
-        }
-        colour.g = value;
-    }
-
-    {
-        int value = (int)(pLight->colour.c[2] * pLight->intensity * 255.5f);
-        if (value < 0)
-        {
-            value = 0;
-        }
-        else if (value > 255)
-        {
-            value = 255;
-        }
-        else
-        {
-            value = (unsigned char)value;
-        }
-        colour.b = value;
-    }
-
-    {
-        int value = (int)(pLight->colour.c[3] * pLight->intensity * 255.5f);
-        if (value < 0)
-        {
-            value = 0;
-        }
-        else if (value > 255)
-        {
-            value = 255;
-        }
-        else
-        {
-            value = (unsigned char)value;
-        }
-        colour.a = value;
-    }
+    colour.r = nlFloatColourToByte(pLight->colour.c[0] * pLight->intensity);
+    colour.g = nlFloatColourToByte(pLight->colour.c[1] * pLight->intensity);
+    colour.b = nlFloatColourToByte(pLight->colour.c[2] * pLight->intensity);
+    colour.a = nlFloatColourToByte(pLight->colour.c[3] * pLight->intensity);
 
     GXInitLightColor(&light, colour);
 
@@ -1527,70 +1394,11 @@ static inline void glx_LoadDirectionalLight(GLDirectionalLightUserData* pLight, 
     GXLightObj light;
     GXColor colour;
     nlVector3 viewDir;
-    {
-        int value = (int)(pLight->colour.c[0] * 255.5f);
-        if (value < 0)
-        {
-            value = 0;
-        }
-        else if (value > 255)
-        {
-            value = 255;
-        }
-        else
-        {
-            value = (u8)value;
-        }
-        colour.r = value;
-    }
-    {
-        int value = (int)(pLight->colour.c[1] * 255.5f);
-        if (value < 0)
-        {
-            value = 0;
-        }
-        else if (value > 255)
-        {
-            value = 255;
-        }
-        else
-        {
-            value = (u8)value;
-        }
-        colour.g = value;
-    }
-    {
-        int value = (int)(pLight->colour.c[2] * 255.5f);
-        if (value < 0)
-        {
-            value = 0;
-        }
-        else if (value > 255)
-        {
-            value = 255;
-        }
-        else
-        {
-            value = (u8)value;
-        }
-        colour.b = value;
-    }
-    {
-        int value = (int)(pLight->colour.c[3] * 255.5f);
-        if (value < 0)
-        {
-            value = 0;
-        }
-        else if (value > 255)
-        {
-            value = 255;
-        }
-        else
-        {
-            value = (u8)value;
-        }
-        colour.a = value;
-    }
+
+    colour.r = nlFloatColourToByte(pLight->colour.c[0]);
+    colour.g = nlFloatColourToByte(pLight->colour.c[1]);
+    colour.b = nlFloatColourToByte(pLight->colour.c[2]);
+    colour.a = nlFloatColourToByte(pLight->colour.c[3]);
 
     GXInitLightColor(&light, colour);
 
@@ -1605,18 +1413,11 @@ static inline void glx_LoadDirectionalLight(GLDirectionalLightUserData* pLight, 
 
 static inline void glx_LoadSpecular(GLSpecularUserData* pLight, GXLightID lightID)
 {
-    static float SpecularFudge;
-    static signed char init;
+    static float SpecularFudge = 1.25f;
     GXLightObj light;
     nlVector3 worldDir;
     nlVector3 viewDir;
     GXColor colour;
-
-    if (!init)
-    {
-        init = 1;
-        SpecularFudge = 1.25f;
-    }
 
     {
         float recipLength = nlRecipSqrt(
@@ -1635,70 +1436,10 @@ static inline void glx_LoadSpecular(GLSpecularUserData* pLight, GXLightID lightI
         nlVec3Set(viewDir, recipLength * viewDir.f.x, recipLength * viewDir.f.y, recipLength * viewDir.f.z);
     }
 
-    {
-        int value = (int)(pLight->colour.c[0] * pLight->intensity * SpecularFudge * 255.5f);
-        if (value < 0)
-        {
-            value = 0;
-        }
-        else if (value > 255)
-        {
-            value = 255;
-        }
-        else
-        {
-            value = (unsigned char)value;
-        }
-        colour.r = value;
-    }
-    {
-        int value = (int)(pLight->colour.c[1] * pLight->intensity * SpecularFudge * 255.5f);
-        if (value < 0)
-        {
-            value = 0;
-        }
-        else if (value > 255)
-        {
-            value = 255;
-        }
-        else
-        {
-            value = (unsigned char)value;
-        }
-        colour.g = value;
-    }
-    {
-        int value = (int)(pLight->colour.c[2] * pLight->intensity * SpecularFudge * 255.5f);
-        if (value < 0)
-        {
-            value = 0;
-        }
-        else if (value > 255)
-        {
-            value = 255;
-        }
-        else
-        {
-            value = (unsigned char)value;
-        }
-        colour.b = value;
-    }
-    {
-        int value = (int)(pLight->colour.c[3] * pLight->intensity * SpecularFudge * 255.5f);
-        if (value < 0)
-        {
-            value = 0;
-        }
-        else if (value > 255)
-        {
-            value = 255;
-        }
-        else
-        {
-            value = (unsigned char)value;
-        }
-        colour.a = value;
-    }
+    colour.r = nlFloatColourToByte(pLight->colour.c[0] * pLight->intensity * SpecularFudge);
+    colour.g = nlFloatColourToByte(pLight->colour.c[1] * pLight->intensity * SpecularFudge);
+    colour.b = nlFloatColourToByte(pLight->colour.c[2] * pLight->intensity * SpecularFudge);
+    colour.a = nlFloatColourToByte(pLight->colour.c[3] * pLight->intensity * SpecularFudge);
 
     GXInitLightColor(&light, colour);
     GXInitSpecularDir(&light, viewDir.f.x, viewDir.f.y, viewDir.f.z);
@@ -1745,6 +1486,9 @@ static inline void glud_Diffuse(void* pData)
 }
 
 #pragma dont_inline on
+/**
+ * Offset/Address/Size: 0x1EAC | 0x801BB9AC | size: 0xC0
+ */
 static void glud_Light(void* pUserData)
 {
     static u32 gxLights[4] = { 1, 2, 4, 8 };
@@ -1812,10 +1556,8 @@ static inline void glud_DirectionalLight(void* pData)
                 break;
             }
 
-            GLDirectionalLightUserData* pCurrentLight = pLight++;
             lightMask |= gxLights[index];
-            GXLightID lightID = (GXLightID)gxLights[index++];
-            glx_LoadDirectionalLight(pCurrentLight, lightID);
+            glx_LoadDirectionalLight(pLight++, (GXLightID)gxLights[index++]);
         }
 
         if (g_bAllowLighting != 0)
@@ -1826,6 +1568,9 @@ static inline void glud_DirectionalLight(void* pData)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x1B8C | 0x801BB68C | size: 0x320
+ */
 static void glud_Specular(void* pData)
 {
     static u32 gxLights[4] = { GX_LIGHT4, GX_LIGHT5, GX_LIGHT6, GX_LIGHT7 };
@@ -1875,14 +1620,7 @@ static void glud_Specular(void* pData)
 
 static inline void glx_TextureSwapMode(bool bSwap)
 {
-    static bool bEnabled;
-    static signed char init;
-
-    if (!init)
-    {
-        bEnabled = false;
-        init = 1;
-    }
+    static bool bEnabled = false;
 
     if (bSwap)
     {
@@ -1975,8 +1713,6 @@ static inline void glud_MobileDiffuse(bool bOn)
     Mtx texmtx;
     Mtx texs;
     Mtx text;
-    static int n;
-    static signed char init;
 
     if (bOn)
     {
@@ -1987,12 +1723,7 @@ static inline void glud_MobileDiffuse(bool bOn)
         PSMTXConcat(texs, texmtx, texmtx);
         PSMTXConcat(text, texmtx, texmtx);
 
-        if (!init)
-        {
-            n = 5;
-            init = 1;
-        }
-
+        static int n = 5;
         float fTransScale = 1.0f / (float)n;
         u32 frame = glGetCurrentFrame();
         u32 frameDiv = frame / n;
@@ -2010,12 +1741,15 @@ static inline void glud_MobileDiffuse(bool bOn)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x19BC | 0x801BB4BC | size: 0x1D0
+ */
 static void glud_Skin(void* pData, const glModelPacket* pPacket)
 {
     float mSkinConcat[3][4];
     float mNormFast[3][4];
     nlMatrix4 nlMat;
-    float tempMtx[3][4];
+    float modelViewMtx[3][4];
     float gxMat[3][4];
     float mNorm[3][4];
     u32 numMatrices;
@@ -2034,7 +1768,6 @@ static void glud_Skin(void* pData, const glModelPacket* pPacket)
 
     if (g_bFastSkinPath && g_bMtxSkinMath && !glx_IsCoPlanarView && pPacket->state.matrix == glGetIdentityMatrix())
     {
-        // Fast path - use gx_mview directly
         for (i = 0; i < numMatrices; i++, pSkin++)
         {
             PSMTXConcat(gx_mview, *(const Mtx*)pSkin->mat, mSkinConcat);
@@ -2053,20 +1786,19 @@ static void glud_Skin(void* pData, const glModelPacket* pPacket)
     }
     else
     {
-        // Slow path
         for (i = 0; i < numMatrices; i++, pSkin++)
         {
             if (g_bMtxSkinMath && !glx_IsCoPlanarView)
             {
                 glxCopyMatrix(gxMat, *(nlMatrix4*)pPacket->state.matrix);
-                PSMTXConcat(gxMat, gx_mview, tempMtx);
-                PSMTXConcat(tempMtx, *(const Mtx*)pSkin->mat, mSkinConcat);
+                PSMTXConcat(gxMat, gx_mview, modelViewMtx);
+                PSMTXConcat(modelViewMtx, *(const Mtx*)pSkin->mat, mSkinConcat);
             }
             else
             {
                 nlMultMatrices(nlMat, *(nlMatrix4*)pPacket->state.matrix, mview);
-                glxCopyMatrix(tempMtx, nlMat);
-                PSMTXConcat(tempMtx, *(const Mtx*)pSkin->mat, mSkinConcat);
+                glxCopyMatrix(modelViewMtx, nlMat);
+                PSMTXConcat(modelViewMtx, *(const Mtx*)pSkin->mat, mSkinConcat);
             }
             slot = pSkin->reg + 99;
             GXLoadPosMtxImm(mSkinConcat, (u32)slot);
@@ -2122,15 +1854,15 @@ static inline void glud_NoRasterizedAlpha()
     glx_norasterizedalpha = true;
 }
 
-static inline void glud_Viewport(void* pData, GLViewportUserData* pDest)
+static inline void glud_Viewport(void* pData)
 {
     GLViewportUserData* pViewport = (GLViewportUserData*)pData;
     g_viewport.x = pViewport->x;
-    pDest->y = pViewport->y;
-    pDest->w = pViewport->w;
-    pDest->h = pViewport->h;
-    pDest->view = pViewport->view;
-    pDest->projection = pViewport->projection;
+    g_viewport.y = pViewport->y;
+    g_viewport.w = pViewport->w;
+    g_viewport.h = pViewport->h;
+    g_viewport.view = pViewport->view;
+    g_viewport.projection = pViewport->projection;
 }
 
 static inline void AdjustViewport(bool bOn)
@@ -2214,13 +1946,7 @@ static inline void glud_Scissor(const GLScissorUserData* pScissor)
 
 inline void EnableTranslucent(bool enable)
 {
-    static _GXTevAlphaArg argSaved;
-    static signed char init;
-    if (!init)
-    {
-        argSaved = (_GXTevAlphaArg)5;
-        init = 1;
-    }
+    static _GXTevAlphaArg argSaved = (_GXTevAlphaArg)5;
     if (glx_RasterizedAlphaStage >= 0 && glx_RasterizedAlphaArg >= 0)
     {
         if (enable)
@@ -2239,13 +1965,7 @@ inline void EnableTranslucent(bool enable)
 
 inline void EnableNoRasterizedAlpha(bool enable)
 {
-    static _GXTevAlphaArg argSaved;
-    static signed char init;
-    if (!init)
-    {
-        argSaved = (_GXTevAlphaArg)5;
-        init = 1;
-    }
+    static _GXTevAlphaArg argSaved = (_GXTevAlphaArg)5;
     if (glx_RasterizedAlphaStage >= 0 && glx_RasterizedAlphaArg >= 0)
     {
         if (enable)
@@ -2266,23 +1986,16 @@ static inline void setWorldAmbient()
     gxSetChanAmbColour(0, ambient);
 }
 
+/**
+ * Offset/Address/Size: 0x1058 | 0x801BAB58 | size: 0x964
+ */
 static void glx_SwitchUserData(const glModelPacket* p)
 {
-    static bool bDeferredEnvDiffuse;
-    static signed char init;
-    unsigned long* pTable;
-    GLViewportUserData* pViewportDest;
-    const glModelPacket* pSaved;
+    static bool bDeferredEnvDiffuse = true;
     int i;
+    unsigned long* pTable;
+    GLViewportUserData* pViewport;
     void* pData;
-
-    pSaved = p;
-
-    if (!init)
-    {
-        bDeferredEnvDiffuse = true;
-        init = 1;
-    }
 
     if (glx_AlwaysReloadLights)
     {
@@ -2324,12 +2037,12 @@ static void glx_SwitchUserData(const glModelPacket* p)
     GXSetScissor(0, 0, 640, 448);
     glx_CoPlanar = false;
 
-    if (pSaved == NULL)
+    if (p == NULL)
     {
         return;
     }
 
-    pTable = (unsigned long*)pSaved->userData;
+    pTable = (unsigned long*)p->userData;
     if (pTable == NULL)
     {
         return;
@@ -2341,15 +2054,12 @@ static void glx_SwitchUserData(const glModelPacket* p)
         {
             if (pTable[GLUD_Viewport] != 0)
             {
-                GLViewportUserData* pViewport =
-                    (GLViewportUserData*)glUserGetData((void*)pTable[GLUD_Viewport]);
+                pViewport = (GLViewportUserData*)glUserGetData((void*)pTable[GLUD_Viewport]);
                 memcpy(&mview, (void*)pViewport->view, sizeof(nlMatrix4));
                 glxCopyMatrix(gx_mview, mview);
             }
         }
     }
-
-    pViewportDest = &g_viewport;
 
     for (i = 0; i < GLUD_Num; i++, pTable++)
     {
@@ -2426,7 +2136,7 @@ static void glx_SwitchUserData(const glModelPacket* p)
             break;
 
         case GLUD_Skin:
-            glud_Skin(pData, pSaved);
+            glud_Skin(pData, p);
             break;
 
         case GLUD_ConstantColour:
@@ -2436,13 +2146,12 @@ static void glx_SwitchUserData(const glModelPacket* p)
 
         case GLUD_Viewport:
             glx_viewport = true;
-            glud_Viewport(pData, pViewportDest);
+            glud_Viewport(pData);
             break;
 
         default:
             break;
         }
-
     }
 }
 static const u32 ColourTargetTexture = glGetTexture("target/colour");
@@ -2484,6 +2193,9 @@ static inline void _Indirect(bool bOn)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x538 | 0x801BA038 | size: 0xB20
+ */
 static void glx_DrawPacket(const glModelPacket* packet)
 {
     static _GXPrimitive primitives[6] = {
@@ -2505,14 +2217,12 @@ static void glx_DrawPacket(const glModelPacket* packet)
     bFogWasDisabled = false;
     bIndirect = false;
 
-    // === Block 1: WarbleBlend indirect-texture setup ===
     if ((prev_view == GLV_WarbleBlend) && (p->state.texture[0] == ColourTargetTexture))
     {
         _Indirect(true);
         bIndirect = true;
     }
 
-    // === Block 2: Texture dirty upload loop ===
     if (glx_texdirty != 0)
     {
         for (i = 0; i < 6; i++)
@@ -2533,7 +2243,6 @@ static void glx_DrawPacket(const glModelPacket* packet)
         }
     }
 
-    // === Block 3: CoPlanar + Fog disable ===
     gxSetCoPlanar(glx_CoPlanar);
 
     if (glx_NoFog && glx_GetFog())
@@ -2542,7 +2251,6 @@ static void glx_DrawPacket(const glModelPacket* packet)
         glx_Fog(false);
     }
 
-    // === Block 4: Env-diffuse / Mobile-diffuse matrix setup ===
     if (glx_envdiffuse)
     {
         glud_EnvDiffuse(true);
@@ -2552,7 +2260,6 @@ static void glx_DrawPacket(const glModelPacket* packet)
         glud_MobileDiffuse(true);
     }
 
-    // === Block 5: Alpha state (translucent / norasterized / constantcolour) ===
     if (glx_norasterizedalpha)
     {
         EnableNoRasterizedAlpha(true);
@@ -2574,13 +2281,11 @@ static void glx_DrawPacket(const glModelPacket* packet)
         }
     }
 
-    // === Block 6: Viewport setup (when glx_viewport flag is set) ===
     if (glx_viewport)
     {
         AdjustViewport(true);
     }
 
-    // === Block 7: Draw - emit primitives or display list ===
     if (p->indexBuffer == 0)
     {
         GXBegin(primitives[p->primType], (_GXVtxFmt)gx_vtxfmt, p->numVertices);
@@ -2655,7 +2360,6 @@ static void glx_DrawPacket(const glModelPacket* packet)
         }
     }
 
-    // === Block 8: Restore states ===
     if (bIndirect)
     {
         _Indirect(false);
@@ -2666,7 +2370,6 @@ static void glx_DrawPacket(const glModelPacket* packet)
         glx_Fog(true);
     }
 
-    // === Block 8b: Env-diffuse / Mobile-diffuse tex-coord-gen restore ===
     if (glx_envdiffuse)
     {
         glud_EnvDiffuse(false);
@@ -2676,7 +2379,6 @@ static void glx_DrawPacket(const glModelPacket* packet)
         glud_MobileDiffuse(false);
     }
 
-    // === Block 8c: Alpha state restore ===
     if (glx_norasterizedalpha)
     {
         EnableNoRasterizedAlpha(false);
@@ -2698,7 +2400,6 @@ static void glx_DrawPacket(const glModelPacket* packet)
         }
     }
 
-    // === Block 9: Viewport restore (when user-viewport was active) ===
     if (glx_viewport)
     {
         AdjustViewport(false);
@@ -2716,8 +2417,7 @@ static inline void glx_SwitchProgram(const glModelPacket* p)
         GXSetTevKAlphaSel(GX_TEVSTAGE1, GX_TEV_KASEL_1);
     }
 
-    glx_normals =
-        program == prog_3d_pointlit || program == prog_3d_pointlit_dirt || program == prog_3d_crowd_lit;
+    glx_normals = program == prog_3d_pointlit || program == prog_3d_pointlit_dirt || program == prog_3d_crowd_lit;
     glx_program = program;
 }
 
@@ -2784,6 +2484,9 @@ static inline void glx_SwitchMatrix(const glModelPacket* p)
     GXSetCurrentMtx(0);
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x801B9B00 | size: 0x538
+ */
 void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
 {
     if (p != NULL)

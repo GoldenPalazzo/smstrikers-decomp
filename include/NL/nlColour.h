@@ -57,6 +57,20 @@ struct nlFloatColour
     float c[4]; // offset 0x0, size 0x10
 }; // total size: 0x10
 
+inline u8 nlFloatColourToByte(float input)
+{
+    int value = (int)(input * 255.5f);
+    if (value < 0)
+    {
+        return 0;
+    }
+    else if (value > 255)
+    {
+        return 255;
+    }
+    return (u8)value;
+}
+
 inline void nlFloatColourSet(nlFloatColour& c0, float _r, float _g, float _b, float _a)
 {
     c0.c[0] = _r;
