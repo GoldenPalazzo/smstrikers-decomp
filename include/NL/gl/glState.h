@@ -4,7 +4,7 @@
 #include "dolphin/gx/GXEnum.h"
 #include "NL/gl/glView.h"
 #include "NL/glx/glxTexture.h"
-#include "NL/gl/glStateBundle.h" // Include the struct definition
+#include "NL/gl/glStateBundle.h"
 
 enum eGLState
 {

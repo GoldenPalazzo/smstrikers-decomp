@@ -37,18 +37,17 @@ public:
 
 static glStateBundle _bundle;
 
-static unsigned long defaultRasterState = 0;
 static glRasterState _state;
-
-static unsigned long long defaultTextureState = 0;
 static glTextureState _textureState;
+static glMaterialState _materialState;
+
+static unsigned long defaultRasterState = 0;
+static unsigned long long defaultTextureState = 0;
+static unsigned long defaultMaterialState = 0;
 
 static gl_StateBitfield packed_raster[GLS_Num + 1] = { 0, 1, 0, 1, 0, 2, 0, 1, 0, 8, 0, 3, 0, 2, 0, 2, 0, 1, 0, 1, 0, 0 };
 static gl_StateBitfield packed_texture[19] = { 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 6, 0, 6, 0, 6, 0, 6, 0, 6, 0, 6, 0, 0 };
-
 static gl_StateBitfield packed_materials[GLMS_Num + 1] = { 0, 7, 0, 0 };
-static glMaterialState _materialState;
-static unsigned long defaultMaterialState = 0;
 
 static inline unsigned long glSetCurrentTextureInline(unsigned long texture, eGLTextureType type)
 {
@@ -78,46 +77,46 @@ void glSetDefaultState(bool setRasterDefaults)
 
     if (setRasterDefaults)
     {
-        s32 startBit = packed_raster[0].startBit;
-        s32 numBits = packed_raster[0].numBits;
+        s32 depthTestBit = packed_raster[0].startBit;
+        s32 depthTestNumBits = packed_raster[0].numBits;
         s32 i;
 
-        for (i = numBits; i > 0; i--)
+        for (i = depthTestNumBits; i > 0; i--)
         {
         }
 
-        for (i = 0; i < numBits; i++)
+        for (i = 0; i < depthTestNumBits; i++)
         {
             if ((1u << i) & 1u)
             {
-                _state.m_State = _state.m_State | (1u << startBit);
+                _state.m_State = _state.m_State | (1u << depthTestBit);
             }
             else
             {
-                _state.m_State = _state.m_State & ~(1u << startBit);
+                _state.m_State = _state.m_State & ~(1u << depthTestBit);
             }
-            startBit++;
+            depthTestBit++;
         }
 
         {
-            s32 startBit2 = packed_raster[1].startBit;
-            s32 numBits2 = packed_raster[1].numBits;
+            s32 depthWriteBit = packed_raster[1].startBit;
+            s32 depthWriteNumBits = packed_raster[1].numBits;
 
-            for (i = numBits2; i > 0; i--)
+            for (i = depthWriteNumBits; i > 0; i--)
             {
             }
 
-            for (i = 0; i < numBits2; i++)
+            for (i = 0; i < depthWriteNumBits; i++)
             {
                 if ((1u << i) & 1u)
                 {
-                    _state.m_State = _state.m_State | (1u << startBit2);
+                    _state.m_State = _state.m_State | (1u << depthWriteBit);
                 }
                 else
                 {
-                    _state.m_State = _state.m_State & ~(1u << startBit2);
+                    _state.m_State = _state.m_State & ~(1u << depthWriteBit);
                 }
-                startBit2++;
+                depthWriteBit++;
             }
         }
     }
@@ -236,6 +235,55 @@ unsigned long glSetTextureState(unsigned long long& texture, eGLTextureState sta
     return SetTextureStateRefImpl(&texture, state, value);
 }
 
+static inline unsigned long SetTextureStateImpl(
+    glTextureState& textureState,
+    gl_StateBitfield* pInfo,
+    const unsigned long& value)
+{
+    s32 numBits = pInfo->numBits;
+    s32 bit = pInfo->startBit;
+    s32 j;
+    unsigned long long tex = textureState.m_State;
+    s32 cnt;
+    unsigned long out = 0;
+    unsigned long long cmp = (unsigned long long)out;
+    unsigned long one = 1;
+    cnt = (s32)out;
+
+    for (; cnt < numBits; cnt++)
+    {
+        unsigned long long mask = 1ULL << (cnt + bit);
+        if ((tex & mask) != cmp)
+        {
+            out |= (one << cnt);
+        }
+    }
+
+    for (j = 0; j < numBits; bit++, j++)
+    {
+        if (value & (1 << j))
+        {
+            unsigned long long mask = 1ULL << bit;
+            textureState.m_State = textureState.m_State | mask;
+        }
+        else
+        {
+            textureState.m_State &= ~(1 << bit);
+        }
+    }
+
+    return out;
+}
+
+static inline unsigned long SetTextureStateImpl(
+    glTextureState& textureState,
+    eGLTextureState state,
+    unsigned long value)
+{
+    gl_StateBitfield* pInfo = &packed_texture[state];
+    return SetTextureStateImpl(textureState, pInfo, value);
+}
+
 static inline gl_StateBitfield* GetTextureStateAndInfo(
     glTextureState& textureState,
     eGLTextureState state,
@@ -320,6 +368,7 @@ static inline unsigned long GetTextureStateImpl(unsigned long long* pTexture, eG
 
     return out;
 }
+
 /**
  * Offset/Address/Size: 0x410 | 0x801DC054 | size: 0x9C
  */
@@ -463,9 +512,9 @@ u32 glGetProgram(const char* programName)
  */
 u32 glSetCurrentMatrix(unsigned long matrix)
 {
-    u32 temp_r0 = _bundle.matrix;
+    u32 prev = _bundle.matrix;
     _bundle.matrix = matrix;
-    return temp_r0;
+    return prev;
 }
 
 /**
@@ -473,9 +522,9 @@ u32 glSetCurrentMatrix(unsigned long matrix)
  */
 u64 glSetCurrentTextureState(unsigned long long state)
 {
-    unsigned long long temp_r0 = _bundle.texturestate;
+    unsigned long long prev = _bundle.texturestate;
     _bundle.texturestate = state;
-    return temp_r0;
+    return prev;
 }
 
 /**
@@ -491,9 +540,9 @@ u64 glGetCurrentTextureState()
  */
 u32 glSetCurrentRasterState(unsigned long raster)
 {
-    u32 temp_r0 = _bundle.raster;
+    u32 prev = _bundle.raster;
     _bundle.raster = raster;
-    return temp_r0;
+    return prev;
 }
 
 /**
@@ -509,9 +558,9 @@ u32 glGetCurrentRasterState()
  */
 u32 glSetCurrentProgram(unsigned long program)
 {
-    u32 temp_r0 = _bundle.program;
+    u32 prev = _bundle.program;
     _bundle.program = program;
-    return temp_r0;
+    return prev;
 }
 
 static inline unsigned long GetCurrentTextureImpl(eGLTextureType type)
@@ -569,15 +618,17 @@ inline unsigned long glMaterialState::SetMaterialState(eGLMaterialState state, u
     gl_StateBitfield* p = &packed_materials[state];
     s32 startBit = p->startBit;
     s32 numBits = p->numBits;
+    unsigned long oldState = m_State;
     unsigned long out = 0;
-    for (s32 k = 0; k < numBits; k++)
+    for (u32 cnt = 0; (s32)cnt < numBits; cnt++)
     {
-        if (m_State & (1u << (k + p->startBit)))
-            out |= (1u << k);
+        if (oldState & (1u << (cnt + startBit)))
+            out |= (1u << cnt);
     }
-    for (u32 i = 0; i < numBits; i++)
+    numBits = p->numBits;
+    for (u32 cnt = 0; (s32)cnt < numBits; cnt++)
     {
-        if (value & (1u << i))
+        if (value & (1u << cnt))
             m_State = m_State | (1u << startBit);
         else
             m_State = m_State & ~(1u << startBit);
@@ -591,18 +642,20 @@ inline unsigned long glRasterState::SetRasterState(eGLState state, unsigned long
     gl_StateBitfield* p = &packed_raster[state];
     s32 startBit = p->startBit;
     s32 numBits = p->numBits;
+    unsigned long oldState = m_State;
     unsigned long out = 0;
-    for (s32 k = 0; k < numBits; k++)
+    for (u32 cnt = 0; (s32)cnt < numBits; cnt++)
     {
-        if (m_State & (1u << (k + p->startBit)))
-            out |= (1u << k);
+        if (oldState & (1u << (cnt + startBit)))
+            out |= (1u << cnt);
     }
-    for (u32 i = 0; i < numBits; i++)
+    numBits = p->numBits;
+    for (u32 cnt = 0; (s32)cnt < numBits; cnt++)
     {
-        if (value & (1u << i))
-            m_State = m_State | (1u << (i + startBit));
+        if (value & (1u << cnt))
+            m_State = m_State | (1u << (cnt + startBit));
         else
-            m_State = m_State & ~(1u << (i + startBit));
+            m_State = m_State & ~(1u << (cnt + startBit));
     }
     return out;
 }
@@ -612,26 +665,26 @@ inline unsigned long glTextureState::SetTextureState(eGLTextureState state, unsi
     gl_StateBitfield* p = &packed_texture[state];
     s32 startBit = p->startBit;
     s32 numBits = p->numBits;
+    unsigned long long oldState = m_State;
     unsigned long out = 0;
-    for (s32 k = 0; k < numBits; k++)
+    for (u32 cnt = 0; (s32)cnt < numBits; cnt++)
     {
-        if (m_State & (1ULL << (k + p->startBit)))
-            out |= (1u << k);
+        if (oldState & (1ULL << (cnt + startBit)))
+            out |= (1u << cnt);
     }
-    for (u32 i = 0; i < numBits; i++)
+    numBits = p->numBits;
+    for (u32 cnt = 0; (s32)cnt < numBits; cnt++)
     {
-        if (value & (1u << i))
-            m_State = m_State | (1ULL << (i + startBit));
+        if (value & (1u << cnt))
+            m_State = m_State | (1ULL << (cnt + startBit));
         else
-            m_State = m_State & ~(1 << (i + startBit));
+            m_State = m_State & ~(1 << (cnt + startBit));
     }
     return out;
 }
 
 /**
  * Offset/Address/Size: 0x910 | 0x801DC554 | size: 0x1E78
- * TODO: 92.19% match - register colouring inside the inlined raster/texture
- * set loops, plus the GLTS_DetailLevel block. See notes 0109.
  */
 void gl_StateStartup()
 {
@@ -693,12 +746,12 @@ void gl_StateStartup()
     _textureState.SetTextureState(GLTS_GlossFilter, 0);
     _textureState.SetTextureState(GLTS_BumpLocalFilter, 0);
 
-    _textureState.SetTextureState(GLTS_DiffuseLevel, 63);
-    glSetTextureState(_textureState.m_State, GLTS_DetailLevel, 0);
-    _textureState.SetTextureState(GLTS_ShadowLevel, 63);
-    _textureState.SetTextureState(GLTS_SelfIllumLevel, 63);
-    _textureState.SetTextureState(GLTS_GlossLevel, 63);
-    _textureState.SetTextureState(GLTS_BumpLocalLevel, 63);
+    SetTextureStateImpl(_textureState, GLTS_DiffuseLevel, 63);
+    SetTextureStateImpl(_textureState, GLTS_DetailLevel, 0);
+    SetTextureStateImpl(_textureState, GLTS_ShadowLevel, 63);
+    SetTextureStateImpl(_textureState, GLTS_SelfIllumLevel, 63);
+    SetTextureStateImpl(_textureState, GLTS_GlossLevel, 63);
+    SetTextureStateImpl(_textureState, GLTS_BumpLocalLevel, 63);
 
     defaultTextureState = _textureState.m_State;
 
