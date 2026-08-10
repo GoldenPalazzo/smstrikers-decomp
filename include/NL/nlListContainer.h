@@ -175,10 +175,6 @@ inline void ListContainerBase<T, Adapter>::DeleteEntry(ListEntry<T>* entry)
 template <typename T>
 class nlListContainer : public ListContainerBase<T, NewAdapter<ListEntry<T> > >
 {
-public:
-    ~nlListContainer()
-    {
-    }
 }; // total size: 0xC
 
 template <typename T>

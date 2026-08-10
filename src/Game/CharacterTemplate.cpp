@@ -281,14 +281,14 @@ cPlayer* CreateCharacter(int nPlayerID, int nTeamID, eCharacterClass cc, bool bF
 /**
  * Offset/Address/Size: 0x1AA0 | 0x80013D88 | size: 0x1C
  */
-static s32 SidekickTexture_cb(unsigned long arg0)
+static s32 SidekickTexture_cb(unsigned long textureId)
 {
-    s32 var_r4 = -1;
-    if (arg0 != skiptexture)
+    s32 result = -1;
+    if (textureId != skiptexture)
     {
-        var_r4 = arg0;
+        result = textureId;
     }
-    return var_r4;
+    return result;
 }
 
 /**
@@ -430,12 +430,6 @@ cPlayer* CreateGoalie(eCharacterClass gcc, bool bForViewer)
     return pPlayer;
 }
 
-/**
- * Offset/Address/Size: 0x954 | 0x80012C3C | size: 0x51C
- * TODO: 97.23% match - register allocation diffs throughout both loops (r21<>r28 for g_pCharacters,
- * r23<>r21 for teami, r27<>r30 for captain values). Inner loop compare loads sidekick/captain into
- * r5/r6 (reused as args) vs target r3/r0 (reloads into r5/r6), causing 2 instruction size difference.
- */
 static inline eCharacterClass GetGoalieFromCaptain(eCharacterClass captain)
 {
     switch (captain)
@@ -580,8 +574,6 @@ void CreateCharacters()
 
 /**
  * Offset/Address/Size: 0x294 | 0x8001257C | size: 0x6C0
- * TODO: 99.44% match - character cleanup index register and callback literal-pool/address diffs
- * across inventory cleanup paths.
  */
 void DestroyCharacters()
 {
@@ -666,9 +658,9 @@ s32 GetCharacterIndex(const cCharacter* character)
 /**
  * Offset/Address/Size: 0x0 | 0x800122E8 | size: 0x1C0
  */
-s32 GetGoalieIndex(int arg0)
+s32 GetGoalieIndex(int side)
 {
-    if (arg0 == 0)
+    if (side == 0)
     {
         cCharacter** ptr = g_pCharacters;
         for (s32 i = 0; i < 10; ++i, ptr++)
@@ -687,31 +679,3 @@ s32 GetGoalieIndex(int arg0)
     }
     return -1;
 }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800144F4 | size: 0x34
-//  */
-// void WalkHelper<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL, DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>, AudioStreamTrack::TrackManagerBase::FadeManager>::Callback(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80014528 | size: 0x24
-//  */
-// void ListContainerBase<cSHierarchy*, NewAdapter<ListEntry<cSHierarchy*>>>::DeleteEntry(ListEntry<cSHierarchy*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x24 | 0x8001454C | size: 0x24
-//  */
-// void ListContainerBase<AnimRetargetList*, NewAdapter<ListEntry<AnimRetargetList*>>>::DeleteEntry(ListEntry<AnimRetargetList*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80014570 | size: 0x48
-//  */
-// void Function0<void>::FunctorBase::~FunctorBase()
-// {
-// }
