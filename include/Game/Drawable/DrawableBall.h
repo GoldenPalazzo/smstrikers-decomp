@@ -17,8 +17,8 @@ public:
     void Replay(T&);
 
     DrawableBall() { }
-    DrawableBall(RenderSnapshot* rs)
-        : mRenderSnapshot(rs)
+    DrawableBall(RenderSnapshot* renderSnapshot)
+        : mRenderSnapshot(renderSnapshot)
         , mVisible(true)
     {
     }
@@ -26,7 +26,7 @@ public:
     void EvaluateFrom(DrawableCharacter&);
     void Blend(const float*, const DrawableBall&, const DrawableBall&);
     inline void RenderMotionBlur(DrawableObject&) const;
-    static inline void RenderLighting(DrawableObject&);
+    inline void RenderLighting(DrawableObject&) const;
     void Render() const;
     void Grab();
     DrawableCharacter* IndexToPlayer(int) const;

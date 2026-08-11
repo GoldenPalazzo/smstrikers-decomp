@@ -31,6 +31,11 @@ public:
         return m_pPhysicsBall;
     }
 
+    DrawableObject* GetDrawableBall() const
+    {
+        return m_pDrawableBall;
+    }
+
     const nlVector3& GetPosition() const
     {
         return m_v3Position;

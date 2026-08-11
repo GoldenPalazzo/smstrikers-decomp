@@ -19,9 +19,9 @@ namespace
 {
 extern "C"
 {
-extern const unsigned long eOC_NO_LIGHT;
+    extern const unsigned long eOC_NO_LIGHT;
 }
-}
+} // namespace
 
 static glModel* BallLightingCB(glModel* pModel, eGLView& view, unsigned long& uLayer);
 static glModel* BallBlurCB(glModel* pModel, eGLView& view, unsigned long& uLayer);
@@ -38,53 +38,56 @@ void DrawableBall::EvaluateFrom(DrawableCharacter& character)
 /**
  * Offset/Address/Size: 0x80 | 0x8011DDD0 | size: 0x140
  */
-void DrawableBall::Blend(const float* alpha, const DrawableBall& a, const DrawableBall& b)
+void DrawableBall::Blend(const float* blendFactors, const DrawableBall& lhs, const DrawableBall& rhs)
 {
     mPrevOrientation = mOrientation;
-    nlQuatNLerp(mOrientation, a.mOrientation, b.mOrientation, *alpha);
+    nlQuatNLerp(mOrientation, lhs.mOrientation, rhs.mOrientation, *blendFactors);
 
-    const f32 t = *alpha;
+    const f32 t = *blendFactors;
 
-    mPosition.f.x = (1.0f - t) * a.mPosition.f.x + t * b.mPosition.f.x;
-    mPosition.f.y = (1.0f - t) * a.mPosition.f.y + t * b.mPosition.f.y;
-    mPosition.f.z = (1.0f - t) * a.mPosition.f.z + t * b.mPosition.f.z;
+    mPosition.f.x = (1.0f - t) * lhs.mPosition.f.x + t * rhs.mPosition.f.x;
+    mPosition.f.y = (1.0f - t) * lhs.mPosition.f.y + t * rhs.mPosition.f.y;
+    mPosition.f.z = (1.0f - t) * lhs.mPosition.f.z + t * rhs.mPosition.f.z;
 
-    mVelocity.f.x = (1.0f - t) * a.mVelocity.f.x + t * b.mVelocity.f.x;
-    mVelocity.f.y = (1.0f - t) * a.mVelocity.f.y + t * b.mVelocity.f.y;
-    mVelocity.f.z = (1.0f - t) * a.mVelocity.f.z + t * b.mVelocity.f.z;
+    mVelocity.f.x = (1.0f - t) * lhs.mVelocity.f.x + t * rhs.mVelocity.f.x;
+    mVelocity.f.y = (1.0f - t) * lhs.mVelocity.f.y + t * rhs.mVelocity.f.y;
+    mVelocity.f.z = (1.0f - t) * lhs.mVelocity.f.z + t * rhs.mVelocity.f.z;
 
-    mVisible = a.mVisible && b.mVisible;
+    mVisible = lhs.mVisible && rhs.mVisible;
 
-    mOwnerIndex = b.mOwnerIndex;
-    mPrevOwnerIndex = b.mPrevOwnerIndex;
-    mPassTargetIndex = b.mPassTargetIndex;
+    mOwnerIndex = rhs.mOwnerIndex;
+    mPrevOwnerIndex = rhs.mPrevOwnerIndex;
+    mPassTargetIndex = rhs.mPassTargetIndex;
 }
 
 inline void DrawableBall::RenderMotionBlur(DrawableObject& obj) const
 {
-    int i;
+    glModel* (*savedBlurCB)(glModel*, eGLView&, unsigned long&);
+    u8 savedBallShadowDisabled;
     float t;
     nlQuaternion q;
     nlMatrix4 mView;
     nlMatrix4 mWorld;
     nlMatrix4 mSaved;
-    unsigned long uSavedFlags;
 
     glViewGetViewMatrix(GLV_Unshadowed, mView);
 
     const float blurOffsetScale = 0.0078125f;
-    float blurOffsetX = blurOffsetScale * mView.f.m13;
-    float blurOffsetY = blurOffsetScale * mView.f.m23;
-    float blurOffsetZ = blurOffsetScale * mView.f.m33;
+    nlVector3 blurOffset;
+    nlVec3Set(blurOffset,
+        blurOffsetScale * mView.f.m13,
+        blurOffsetScale * mView.f.m23,
+        blurOffsetScale * mView.f.m33);
 
-    u8 savedBallShadowDisabled = DrawableModel::sbBallShadowDisabled;
-    DrawableModel::sbBallShadowDisabled = 1;
+    savedBallShadowDisabled = DrawableModel::GetBallShadowDisabled();
+    DrawableModel::SetBallShadowDisabled(1);
 
     mSaved = obj.GetWorldMatrix();
-    glModel* (*savedBlurCB)(glModel*, eGLView&, unsigned long&) = obj.m_CB;
+    savedBlurCB = obj.GetCallback();
     obj.m_CB = BallBlurCB;
 
-    uSavedFlags = obj.m_uObjectCreationFlags;
+    int i;
+    unsigned long uSavedFlags = obj.m_uObjectCreationFlags;
     obj.m_uObjectCreationFlags = uSavedFlags | eOC_NO_LIGHT;
 
     for (i = 0; i < g_nMotionBlurDivs; i++)
@@ -97,33 +100,33 @@ inline void DrawableBall::RenderMotionBlur(DrawableObject& obj) const
         obj.m_worldMatrixUpToDate = 0;
 
         mWorld = obj.GetWorldMatrix();
-        mWorld.f.m41 += blurOffsetX;
-        mWorld.f.m42 += blurOffsetY;
-        mWorld.f.m43 += blurOffsetZ;
+        mWorld.f.m41 += blurOffset.f.x;
+        mWorld.f.m42 += blurOffset.f.y;
+        mWorld.f.m43 += blurOffset.f.z;
         obj.m_worldMatrix = mWorld;
 
         obj.Draw();
     }
 
-    DrawableModel::sbBallShadowDisabled = savedBallShadowDisabled;
+    DrawableModel::SetBallShadowDisabled(savedBallShadowDisabled);
     obj.m_worldMatrix = mSaved;
     obj.m_CB = savedBlurCB;
     obj.m_uObjectCreationFlags = uSavedFlags;
 }
 
-inline void DrawableBall::RenderLighting(DrawableObject& obj)
+inline void DrawableBall::RenderLighting(DrawableObject& obj) const
 {
-    u8 savedBallShadowDisabled = DrawableModel::sbBallShadowDisabled;
-    DrawableModel::sbBallShadowDisabled = 1;
+    u8 savedBallShadowDisabled = DrawableModel::GetBallShadowDisabled();
+    DrawableModel::SetBallShadowDisabled(1);
 
-    glModel* (*savedLightingCB)(glModel*, eGLView&, unsigned long&) = obj.m_CB;
+    glModel* (*savedLightingCB)(glModel*, eGLView&, unsigned long&) = obj.GetCallback();
     obj.m_CB = BallLightingCB;
 
     unsigned long uSavedFlags = obj.m_uObjectCreationFlags;
     obj.m_uObjectCreationFlags &= ~0x80;
     obj.Draw();
 
-    DrawableModel::sbBallShadowDisabled = savedBallShadowDisabled;
+    DrawableModel::SetBallShadowDisabled(savedBallShadowDisabled);
     obj.m_CB = savedLightingCB;
     obj.m_uObjectCreationFlags = uSavedFlags;
 }
@@ -132,18 +135,16 @@ namespace
 {
 extern "C"
 {
-const unsigned long eOC_NO_LIGHT = 0x80;
+    const unsigned long eOC_NO_LIGHT = 0x80;
 }
-}
+} // namespace
 
 /**
  * Offset/Address/Size: 0x1C0 | 0x8011DF10 | size: 0x47C
- * TODO: 98.87% match - remaining diffs are integer register allocation (r18 vs r24
- * shift for savedWorldMatrix and blurMatrix word copies in GetWorldMatrix copies)
  */
 void DrawableBall::Render() const
 {
-    DrawableObject* drawable = g_pBall->m_pDrawableBall;
+    DrawableObject* drawable = g_pBall->GetDrawableBall();
     if (mVisible)
     {
         drawable->m_uObjectFlags |= 1;
@@ -157,7 +158,7 @@ void DrawableBall::Render() const
         return;
     }
 
-    DrawableObject* pDrawableBall = g_pBall->m_pDrawableBall;
+    DrawableObject* pDrawableBall = g_pBall->GetDrawableBall();
     pDrawableBall->m_orientation = mOrientation;
     pDrawableBall->m_worldMatrixUpToDate = 0;
     pDrawableBall->m_translation = mPosition;
@@ -309,38 +310,3 @@ void DrawableBall::Replay<LoadFrame>(LoadFrame& frame)
     Replayable<1, LoadFrame, char>(frame, (char&)mPassTargetIndex);
     Replayable<1, LoadFrame, char>(frame, (char&)mLastTouchIndex);
 }
-
-/**
- * Offset/Address/Size: 0xA4 | 0x8011E950 | size: 0x98
- */
-// void Replayable<1, SaveFrame, FloatCompressor<-127, 127, 7>>(SaveFrame&, const FloatCompressor<-127, 127, 7>&)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x13C | 0x8011E9E8 | size: 0x98
- */
-// void Replayable<1, SaveFrame, FloatCompressor<-1, 1, 13>>(SaveFrame&, const FloatCompressor<-1, 1, 13>&)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x1D4 | 0x8011EA80 | size: 0x98
- */
-// void Replayable<1, SaveFrame, FloatCompressor<-127, 127, 5>>(SaveFrame&, const FloatCompressor<-127, 127, 5>&)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x2E0 | 0x8011EB8C | size: 0x74
- */
-// void Replayable<1, LoadFrame, FloatCompressor<-1, 1, 13>>(LoadFrame&, const FloatCompressor<-1, 1, 13>&)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x354 | 0x8011EC00 | size: 0x74
- */
-// void Replayable<1, LoadFrame, FloatCompressor<-127, 127, 5>>(LoadFrame&, const FloatCompressor<-127, 127, 5>&)
-// {
-// }

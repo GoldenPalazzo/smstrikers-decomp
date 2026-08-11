@@ -62,6 +62,14 @@ public:
     inline glModel* GetModel() const { return m_pModel; }
 
     static unsigned char sbBallShadowDisabled;
+    static unsigned char GetBallShadowDisabled()
+    {
+        return sbBallShadowDisabled;
+    }
+    static void SetBallShadowDisabled(unsigned char disabled)
+    {
+        sbBallShadowDisabled = disabled;
+    }
 
     /* 0x9C */ glModel* m_pModel;
     /* 0xA0 */ GLShadowVolume* m_pShadowVolume;

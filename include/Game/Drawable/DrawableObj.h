@@ -30,6 +30,10 @@ public:
 
     nlMatrix4& GetWorldMatrix() const;
     unsigned long GetHashID() const { return m_uHashID; }
+    glModel* (*GetCallback() const)(glModel*, eGLView&, unsigned long&)
+    {
+        return m_CB;
+    }
 
     /* 0x04 */ mutable nlMatrix4 m_worldMatrix;
     /* 0x44 */ mutable bool m_worldMatrixUpToDate;
