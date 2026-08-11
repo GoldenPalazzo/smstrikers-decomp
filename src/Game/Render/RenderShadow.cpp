@@ -138,7 +138,7 @@ u8 ShouldShadowBeUpdated(const ProjectedShadowParams& params)
     mWorld.f.m42 = params.vPosition.f.y;
     mWorld.f.m43 = params.vPosition.f.z;
     mWorld.f.m44 = 1.0f;
-    mWorld.f.m43 += 0.5f * params.fHeight;
+    mWorld.f.m43 += 0.625f * params.fHeight;
 
     u8 isVisible = WorldManager::s_World->IsSphereInFrustum(mWorld, fRadius);
     u32 interval;
@@ -318,7 +318,7 @@ void SetCharacterShadowUpdated(int index, bool updated)
  * Offset/Address/Size: 0xB44 | 0x80123B78 | size: 0x3E0
  * TODO: 99.82% match - r30 reuse for pPacket in second coplanar block (register allocation difference)
  */
-void SubdivideAndRender(glQuad3& quad, eGLView view)
+static void SubdivideAndRender(glQuad3& quad, eGLView view)
 {
     nlVector3 p0;
     nlVector3 p1;
@@ -411,7 +411,7 @@ void SubdivideAndRender(glQuad3& quad, eGLView view)
 /**
  * Offset/Address/Size: 0x750 | 0x80123784 | size: 0x3F4
  */
-void RenderBlobShadow(const nlVector3& vPosition, const nlVector3* pPoints, int index, const int* uvOrder, const nlColour* pColour)
+static void RenderBlobShadow(const nlVector3& vPosition, const nlVector3* pPoints, int index, const int* uvOrder, const nlColour* pColour)
 {
     static float half_w = 0.625f;
     static float half_h = 0.625f;
@@ -555,7 +555,7 @@ void RenderBlobShadow(const nlVector3& vPosition, const nlVector3* pPoints, int 
     }
 }
 
-static void CastDirectional(nlVector3& p, const nlVector3& lightPos)
+static inline void CastDirectional(nlVector3& p, const nlVector3& lightPos)
 {
     float lz = -lightPos.f.z;
     float ly = -lightPos.f.y;
@@ -563,12 +563,9 @@ static void CastDirectional(nlVector3& p, const nlVector3& lightPos)
     float pz = p.f.z;
     float py = p.f.y;
     float px = p.f.x;
-    float invLen = nlRecipSqrt(lx * lx + ly * ly + lz * lz, false);
     nlVector3 vDir;
-    vDir.f.x = lx;
-    vDir.f.y = ly;
-    vDir.f.z = lz;
-    nlVec3Scale(vDir, invLen);
+    nlVec3Set(vDir, lx, ly, lz);
+    nlVec3Scale(vDir, nlRecipSqrt(vDir.GetLengthSq3D(), false));
     float dirX = vDir.f.x;
     float dirY = vDir.f.y;
     float dirZ = vDir.f.z;
@@ -585,7 +582,7 @@ static void CastDirectional(nlVector3& p, const nlVector3& lightPos)
     p.f.z = pz + t * dirZ;
 }
 
-static void CastPoint(nlVector3& p, const nlVector3& vLight)
+static inline void CastPoint(nlVector3& p, const nlVector3& vLight)
 {
     nlVector4 V = { 0.0f, 0.0f, 1.0f, 0.0f };
     nlVector4 Q = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -595,40 +592,31 @@ static void CastPoint(nlVector3& p, const nlVector3& vLight)
     Q.f.y = p.f.y;
     Q.f.z = p.f.z;
 
-    L.f.x = vLight.f.x;
-    L.f.y = vLight.f.y;
-    L.f.z = vLight.f.z;
+    L.f.x = Q.f.x - vLight.f.x;
+    L.f.y = Q.f.y - vLight.f.y;
+    L.f.z = Q.f.z - vLight.f.z;
 
-    float qx = Q.f.x - L.f.x;
-    float qy = Q.f.y - L.f.y;
-    float qz = Q.f.z - L.f.z;
+    float t = -((V.f.x * Q.f.x + V.f.y * Q.f.y + V.f.z * Q.f.z + V.f.w * Q.f.w)
+        / (V.f.x * L.f.x + V.f.y * L.f.y + V.f.z * L.f.z + V.f.w * L.f.w));
 
-    float qDot = V.f.x * Q.f.x + V.f.y * Q.f.y + V.f.z * Q.f.z + V.f.w * Q.f.w;
-    float lDot = V.f.x * qx + V.f.y * qy + V.f.z * qz + V.f.w * L.f.w;
-    float t = -(qDot / lDot);
-
-    p.f.x = Q.f.x + t * qx;
-    p.f.y = Q.f.y + t * qy;
-    p.f.z = Q.f.z + t * qz;
+    p.f.x = Q.f.x + t * L.f.x;
+    p.f.y = Q.f.y + t * L.f.y;
+    p.f.z = Q.f.z + t * L.f.z;
 }
 
 /**
  * Offset/Address/Size: 0x0 | 0x80123034 | size: 0x750
- * TODO: 94.01% match - register allocation and scheduling still differ in corner setup
- *       and directional/point cast paths.
  */
 void RenderProjectedShadow(const ProjectedShadowParams& params)
 {
     nlVector3 vTemp;
-    nlVector3 vUp = { 0.0f, 0.0f, 1.0f };
+    const nlVector3 vUp = { 0.0f, 0.0f, 1.0f };
     nlVector3 p[4];
     nlVector3 vLight;
     float width;
     float height;
     nlColour c;
     nlVector3 dir;
-    nlColour colour;
-    nlMatrix4 mLight;
 
     if (g_bShadowBlobs)
     {
@@ -645,63 +633,40 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
     }
     else
     {
-        vLight.f.x = params.vLight.f.x;
-        vLight.f.y = params.vLight.f.y;
-        vLight.f.z = params.vLight.f.z;
+        float y;
+        float z;
+        float x;
+        y = params.vLight.f.y;
+        z = params.vLight.f.z;
+        x = params.vLight.f.x;
+        nlVec3Set(vLight, x, y, z);
     }
 
     vTemp = params.vPosition;
 
     {
         nlVector3 vDir;
-        float dx = vTemp.f.x - vLight.f.x;
-        float dy = vTemp.f.y - vLight.f.y;
-        float dz = 0.0f;
+        vDir.Sub2D(vTemp, vLight);
+        vDir.z = 0.0f;
         vTemp.f.z += 0.5f * height;
 
-        float invLen = nlRecipSqrt(dx * dx + dy * dy + dz * dz, false);
-
-        vDir.f.x = dx;
-        vDir.f.y = dy;
-        vDir.f.z = dz;
-        nlVec3Scale(vDir, invLen);
-        nlVec3Cross(vDir, vDir, vUp);
-
-        float negHalfW = -0.5f * width;
-        float halfW = 0.5f * width;
+        nlVec3Scale(vDir, nlRecipSqrt(vDir.GetLengthSq3D(), false));
+        nlVec3CrossProduct(vDir, vDir, vUp);
 
         vTemp.as_u32[0] = params.vPosition.as_u32[0];
         vTemp.as_u32[1] = params.vPosition.as_u32[1];
         vTemp.as_u32[2] = params.vPosition.as_u32[2];
 
-        nlVec3ScaleAdd(p[0], halfW, vDir, vTemp);
-        nlVec3ScaleAdd(p[1], negHalfW, vDir, vTemp);
-
+        nlVec3ScaleAdd(p[0], 0.5f * width, vDir, vTemp);
+        nlVec3ScaleAdd(p[1], -0.5f * width, vDir, vTemp);
+        nlVec3ScaleAdd(p[0], -0.5f * height, vUp, p[0]);
+        nlVec3ScaleAdd(p[1], -0.5f * height, vUp, p[1]);
         float halfH = 0.5f * height;
         vTemp.f.z += halfH;
-
-        nlVec3ScaleAdd(p[2], negHalfW, vDir, vTemp);
-        nlVec3ScaleAdd(p[3], halfW, vDir, vTemp);
-
-        float negHeightX = (-0.5f * height) * vUp.f.x;
-        float heightX = (0.5f * height) * vUp.f.x;
-        float heightY = (0.5f * height) * vUp.f.y;
-        float negHeightY = (-0.5f * height) * vUp.f.y;
-        float negHeightZ = (-0.5f * height) * vUp.f.z;
-        float heightZ = (0.5f * height) * vUp.f.z;
-
-        p[0].f.x += negHeightX;
-        p[0].f.y += negHeightY;
-        p[0].f.z += negHeightZ;
-        p[1].f.x += negHeightX;
-        p[1].f.y += negHeightY;
-        p[1].f.z += negHeightZ;
-        p[2].f.x += heightX;
-        p[2].f.y += heightY;
-        p[2].f.z += heightZ;
-        p[3].f.x += heightX;
-        p[3].f.y += heightY;
-        p[3].f.z += heightZ;
+        nlVec3ScaleAdd(p[2], -0.5f * width, vDir, vTemp);
+        nlVec3ScaleAdd(p[3], 0.5f * width, vDir, vTemp);
+        nlVec3ScaleAdd(p[2], 0.5f * height, vUp, p[2]);
+        nlVec3ScaleAdd(p[3], 0.5f * height, vUp, p[3]);
     }
 
     nlVector3* p1 = &p[1];
@@ -710,10 +675,7 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
 
     if (g_bShadowBounds)
     {
-        c.c[0] = 0x40;
-        c.c[1] = 0x40;
-        c.c[2] = 0xFF;
-        c.c[3] = 0xFF;
+        nlColourSet(c, 0x40, 0x40, 0xFF, 0xFF);
         g_ShapeRenderer.DrawLine3D(p[0], *p1, c, false);
         g_ShapeRenderer.DrawLine3D(*p1, *p2, c, false);
         g_ShapeRenderer.DrawLine3D(*p2, *p3, c, false);
@@ -722,8 +684,7 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
 
     {
         nlVector3* pPoint = p;
-        int i;
-        for (i = 0; i < 4; i++, pPoint++)
+        for (int i = 0; i < 4; i++, pPoint++)
         {
             if (g_bShadowDirectional)
             {
@@ -742,8 +703,7 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
     dir.f.z = 0.0f;
 
     {
-        float invLen = nlRecipSqrt(dir.f.x * dir.f.x + dir.f.y * dir.f.y + dir.f.z * dir.f.z, false);
-        nlVec3Scale(dir, invLen);
+        nlVec3Scale(dir, nlRecipSqrt(dir.GetLengthSq3D(), false));
     }
 
     {
@@ -762,10 +722,7 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
 
     if (g_bShadowBounds)
     {
-        c.c[0] = 0x40;
-        c.c[2] = 0x40;
-        c.c[1] = 0xFF;
-        c.c[3] = 0xFF;
+        nlColourSet(c, 0x40, 0xFF, 0x40, 0xFF);
         g_ShapeRenderer.DrawLine3D(p[0], *p1, c, false);
         g_ShapeRenderer.DrawLine3D(*p1, *p2, c, false);
         g_ShapeRenderer.DrawLine3D(*p2, *p3, c, false);
@@ -773,12 +730,11 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
     }
 
     {
-        static u32 zeroColour;
         float newAntiFlimmer = GetCoPlanarZ();
+        nlColour colour = { 0, 0, 0, 0 };
         float oldAntiFlimmer = g_AntiFlimmer;
         g_AntiFlimmer = newAntiFlimmer;
 
-        *(u32*)&colour = zeroColour;
         colour.c[3] = (u8)g_Alpha[0];
 
         RenderBlobShadow(params.vPosition, p, params.nPartitionIndex, NULL, &colour);
@@ -787,6 +743,7 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
 
     if (g_bShadowBounds)
     {
+        nlMatrix4 mLight;
         mLight.SetIdentity();
         mLight.f.m41 = vLight.f.x;
         mLight.f.m42 = vLight.f.y;
