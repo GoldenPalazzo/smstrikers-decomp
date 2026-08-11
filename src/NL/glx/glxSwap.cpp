@@ -123,93 +123,83 @@ static void DrawLoadingIndicator()
     }
 }
 
+static inline void PutPixel(
+    void* fb, int x, int y, const int yuv[3], const int yuv_p[3], const int yuv_pp[3])
+{
+    u8* fbyte = (u8*)fb + y * 0x500 + (x << 1);
+    fbyte[0] = (u8)yuv[0];
+
+    if ((x & 1) != 0)
+    {
+        fbyte[-1] =
+            (u8)(0.25f * (float)yuv_pp[1] + 0.5f * (float)yuv_p[1] + 0.25f * (float)yuv[1]);
+        fbyte[1] =
+            (u8)(0.25f * (float)yuv_pp[2] + 0.5f * (float)yuv_p[2] + 0.25f * (float)yuv[2]);
+    }
+}
+
 /**
  * Offset/Address/Size: 0x118 | 0x801BEE68 | size: 0x2D0
- * TODO: 97.47% match - remaining register allocation differences in x2, row bases, and loop counters.
  */
-static void BlitImage(int arg0, int arg1, float arg2, float arg3, bool arg4)
+static void BlitImage(int offset_x, int offset_y, float scale_x, float scale_y, bool bSelectedImage)
 {
     float limit = 32.0f;
-    float xStep = limit / (float)(int)(limit * arg2);
-    float yStep = limit / (float)(int)(limit * arg3);
-    float ySample = 0.0f;
-    u8 useSelected;
-    int x2;
-    const u16* selectedBase;
-    const u16* imageBase;
-    int yOffset;
+    float xinc = limit / (float)(int)(limit * scale_x);
+    float yinc = limit / (float)(int)(limit * scale_y);
+    float xpos, ypos;
+    int yuv[3], yuv_p[3], yuv_pp[3];
+    int ix, x, y;
 
-    x2 = arg0 << 1;
-    useSelected = arg4;
-    selectedBase = (const u16*)_SelectedImageData;
-    imageBase = (const u16*)_ImageData;
-    yOffset = 0;
-
-    while (ySample < limit)
+    for (y = 0, ypos = 0.0f; ypos < limit; y++, ypos += yinc)
     {
-        int srcRow = (int)ySample;
-        int dstRow = (arg1 + yOffset) * 0x500;
-        float xSample = 0.0f;
-        int xOffset = 0;
-        const u16* imageRow = imageBase + (srcRow << 5);
-        const u16* selectedRow = selectedBase + (srcRow << 5);
-        int prev0;
-        int older0;
-        int prev1;
-        int older1;
-        while (xSample < limit)
+        int srcRow = (int)ypos;
+        int dstRow = (offset_y + y) * 0x500;
+
+        for (x = 0, xpos = 0.0f; xpos < limit; x++, xpos += xinc)
         {
-            int srcCol = (int)xSample;
-            u16 pixel;
-            if (useSelected)
+            ix = (int)xpos;
+            int pixel;
+            if (bSelectedImage)
             {
-                pixel = selectedRow[srcCol];
+                pixel = _SelectedImageData[srcRow][ix];
             }
             else
             {
-                pixel = imageRow[srcCol];
+                pixel = _ImageData[srcRow][ix];
             }
 
             int alpha = (pixel & 0xF) | ((pixel & 0xF) << 4);
-            int yv = ((pixel >> 12) & 0xF) | (((pixel >> 12) & 0xF) << 4);
-            int uv0 = ((pixel >> 8) & 0xF) | (((pixel >> 8) & 0xF) << 4);
-            int uv1 = ((pixel >> 4) & 0xF) | (((pixel >> 4) & 0xF) << 4);
+            yuv[2] = (((pixel >> 4) & 0xF) << 4);
+            yuv[1] = (pixel >> 8) & 0xF;
+            yuv[0] = (pixel >> 12) & 0xF;
+            yuv[0] |= (((pixel >> 12) & 0xF) << 4);
+            yuv[2] |= (pixel >> 4) & 0xF;
+            yuv[1] |= (((pixel >> 8) & 0xF) << 4);
             if (alpha > 0)
             {
-                int dstX = arg0 + xOffset;
-                u8* dst = (u8*)glx_FrameBuffer[glx_nBuffer ^ glx_nBlitXor] + dstRow + (dstX << 1);
-                dst[0] = (u8)yv;
-
-                if ((dstX & 1) != 0)
-                {
-                    dst[-1] = (u8)(0.25f * (float)older0 + 0.5f * (float)prev0 + 0.25f * (float)uv0);
-                    dst[1] = (u8)(0.25f * (float)older1 + 0.5f * (float)prev1 + 0.25f * (float)uv1);
-                }
+                PutPixel(glx_FrameBuffer[glx_nBuffer ^ glx_nBlitXor], offset_x + x,
+                    offset_y + y, yuv, yuv_p, yuv_pp);
             }
 
-            if (xOffset == 0)
+            if (x == 0)
             {
-                prev0 = uv0;
+                yuv_p[1] = yuv[1];
             }
-            older0 = prev0;
-            prev0 = uv0;
+            yuv_pp[1] = yuv_p[1];
+            yuv_p[1] = yuv[1];
 
-            if (xOffset == 0)
+            if (x == 0)
             {
-                prev1 = uv1;
+                yuv_p[2] = yuv[2];
             }
-            older1 = prev1;
-            prev1 = uv1;
+            yuv_pp[2] = yuv_p[2];
+            yuv_p[2] = yuv[2];
 
-            xSample += xStep;
-            xOffset++;
         }
 
-        DCStoreRangeNoSync((u8*)glx_FrameBuffer[glx_nBuffer ^ glx_nBlitXor] + dstRow + x2,
-            (u32)(xOffset << 1));
-
-        ySample += yStep;
-        yOffset++;
+        DCStoreRangeNoSync(
+            (u8*)glx_FrameBuffer[glx_nBuffer ^ glx_nBlitXor] + dstRow + (offset_x << 1),
+            (u32)(x << 1));
     }
 
     PPCSync();
