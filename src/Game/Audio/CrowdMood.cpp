@@ -9,6 +9,8 @@
 #include "NL/nlMath.h"
 #include "NL/nlString.h"
 
+#include "Game/Audio/AudioStreamVirtuals.h"
+
 extern GCAudioStreaming::AudioBufferMgr g_BufferMgr;
 static void ___blank(const char*, ...);
 static void UpdateTiming(float);

@@ -169,9 +169,9 @@ static void BlitImage(int offset_x, int offset_y, float scale_x, float scale_y, 
             }
 
             int alpha = (pixel & 0xF) | ((pixel & 0xF) << 4);
-            yuv[2] = (((pixel >> 4) & 0xF) << 4);
             yuv[1] = (pixel >> 8) & 0xF;
-            yuv[0] = (pixel >> 12) & 0xF;
+            yuv[0] = (pixel & 0xF000) >> 12;
+            yuv[2] = (((pixel >> 4) & 0xF) << 4);
             yuv[0] |= (((pixel >> 12) & 0xF) << 4);
             yuv[2] |= (pixel >> 4) & 0xF;
             yuv[1] |= (((pixel >> 8) & 0xF) << 4);

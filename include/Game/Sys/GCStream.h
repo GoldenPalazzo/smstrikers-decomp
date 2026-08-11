@@ -50,6 +50,11 @@ class AudioStreamBuffer
 {
 public:
     AudioStreamBuffer();
+    unsigned char* GetMRAMBuffer()
+    {
+        unsigned char* result = m_MRAMBuffer;
+        return result;
+    }
     void SetVolume(unsigned long volume);
     void SetLPF(bool on)
     {
@@ -75,16 +80,11 @@ public:
         m_Pan = 0x40;
     }
     void Update(unsigned long, unsigned long);
-    unsigned long UpdateHandler(void*, unsigned long, void*, unsigned long);
-    unsigned long DoUpdate(unsigned long, unsigned long);
-    static unsigned long _UpdateHandler(
-        void* pDataA, unsigned long LengthA, void* pDataB,
-        unsigned long LengthB, unsigned long user)
-    {
-        AudioStreamBuffer* pBuffer = (AudioStreamBuffer*)user;
-
-        return pBuffer->UpdateHandler(pDataA, LengthA, pDataB, LengthB);
-    }
+    unsigned long UpdateHandler(unsigned long, unsigned long);
+    unsigned long DoUpdate(unsigned long);
+    static inline unsigned long _UpdateHandler(
+        void*, unsigned long LengthA, void*, unsigned long LengthB,
+        unsigned long user);
 
     /* 0x00 */ unsigned char* m_MRAMBuffer;   // offset 0x0, size 0x4
     /* 0x04 */ unsigned long m_BufferSize;    // offset 0x4, size 0x4
@@ -112,9 +112,7 @@ public:
     void* GetADPCMHdr();
     void SetBufferState(unsigned long index, BUFFER_ALLOC_STATE state)
     {
-        m_BuffersFree =
-            (m_BuffersFree & ~(1 << index))
-            | (state << index);
+        m_BuffersFree = (m_BuffersFree & ~(1 << index)) | (state << index);
     }
     void Init(unsigned long);
     void CreateBuffers(unsigned long);
@@ -124,13 +122,13 @@ public:
 
     static const unsigned long MAX_BUFFERS = 8;
 
-    /* 0x000 */ unsigned long m_PoolSize;         // offset 0x0, size 0x4
-    /* 0x004 */ unsigned char* m_MRAMBuffer;      // offset 0x4, size 0x4
+    /* 0x000 */ unsigned long m_PoolSize;                 // offset 0x0, size 0x4
+    /* 0x004 */ unsigned char* m_MRAMBuffer;              // offset 0x4, size 0x4
     /* 0x008 */ AudioStreamBuffer m_Buffers[MAX_BUFFERS]; // offset 0x8, size 0x100
-    /* 0x108 */ unsigned char m_ADPCMHdrMem[128]; // offset 0x108, size 0x80
-    /* 0x188 */ unsigned long m_BuffersFree;      // offset 0x188, size 0x4
-    /* 0x18C */ unsigned long m_BufferCount;      // offset 0x18C, size 0x4
-    /* 0x190 */ unsigned long m_BufferSize;       // offset 0x190, size 0x4
+    /* 0x108 */ unsigned char m_ADPCMHdrMem[128];         // offset 0x108, size 0x80
+    /* 0x188 */ unsigned long m_BuffersFree;              // offset 0x188, size 0x4
+    /* 0x18C */ unsigned long m_BufferCount;              // offset 0x18C, size 0x4
+    /* 0x190 */ unsigned long m_BufferSize;               // offset 0x190, size 0x4
 }; // total size: 0x194
 
 enum STREAM_STATE
@@ -154,11 +152,76 @@ enum STREAM_FLAG
 class AudioStream
 {
 public:
+    class BufferCursor
+    {
+    public:
+        BufferCursor(AudioStream& stream, unsigned long& index)
+            : m_Stream(stream)
+            , m_Index(index)
+        {
+        }
+
+        AudioStreamBuffer* GetBuffer()
+        {
+            return m_Stream.GetBuffer(m_Index);
+        }
+
+        unsigned long GetIndex()
+        {
+            return m_Index;
+        }
+
+        unsigned long Advance()
+        {
+            return ++m_Index;
+        }
+
+    private:
+        AudioStream& m_Stream;
+        unsigned long& m_Index;
+    };
+
     void SetFlag(STREAM_FLAG flag, bool value)
     {
-        m_Flags =
-            (m_Flags & ~(1 << flag))
-            | ((unsigned long)value << flag);
+        m_Flags = (m_Flags & ~(1 << flag))
+                | ((unsigned long)value << flag);
+    }
+    void SetBuffer(unsigned long index, AudioStreamBuffer* buffer)
+    {
+        m_Buffers[index] = buffer;
+    }
+    void AllocBuffer()
+    {
+        SetBuffer(0, m_BuffMgr.GetFreeBuffer(this));
+    }
+    void* GetADPCMHdr()
+    {
+        return m_BuffMgr.GetADPCMHdr();
+    }
+    bool IsSeriousStop()
+    {
+        bool serious;
+        if (m_Flags & (1 << SF_SeriousStop))
+        {
+            switch (m_State)
+            {
+            case SS_New:
+            case SS_Initd:
+                break;
+            case SS_Warming:
+                m_State = SS_Warm;
+                break;
+            case SS_Warm:
+            case SS_Playing:
+                break;
+            }
+            serious = true;
+        }
+        else
+        {
+            serious = false;
+        }
+        return serious;
     }
     AudioStreamBuffer* GetBuffer(unsigned long index)
     {
@@ -275,62 +338,59 @@ public:
             buf = GetBuffer((unsigned long)BufferIndex);
         }
     }
+    void Stop()
+    {
+        SetFlag(SF_Play, false);
+        if (m_State == SS_Playing)
+        {
+            unsigned long bufferIndex = 0;
+            BufferCursor cursor(*this, bufferIndex);
+            AudioStreamBuffer* pBuffer = GetBuffer(cursor.GetIndex());
+            while (pBuffer != NULL)
+            {
+                pBuffer->m_Volume = 0;
+                sndStreamMixParameterEx(
+                    pBuffer->m_StreamId,
+                    pBuffer->m_Volume,
+                    pBuffer->m_Pan,
+                    pBuffer->m_SurroundPan,
+                    0,
+                    0);
+                sndStreamDeactivate(pBuffer->m_StreamId);
+                m_State = SS_Warm;
+
+                cursor.Advance();
+                pBuffer = GetBuffer(cursor.GetIndex());
+            }
+            m_StreamPos = 0;
+            m_State = SS_Warm;
+        }
+
+        CancelPendingReads();
+        Cool();
+    }
     AudioStream(AudioBufferMgr& mgr, unsigned long bufCount);
-    virtual ~AudioStream() { };
+    inline virtual ~AudioStream();
     virtual void Warm(bool) = 0;
     virtual bool SafeToPurge() = 0;
-    virtual void Purge()
-    {
-        m_State = SS_New;
-    }
+    inline virtual void Purge();
     virtual unsigned long DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, AudioStreamBuffer*) = 0;
     virtual unsigned long GetUpdateReadLength() = 0;
     virtual void CancelPendingReads() = 0;
-    virtual void WarmReadDone(AudioStreamBuffer* pBuffer)
+    void ActivateBuffers()
     {
-        if (m_Buffers[m_BufferCount - 1] != pBuffer)
+        unsigned long bufferIndex = 0;
+        BufferCursor cursor(*this, bufferIndex);
+        AudioStreamBuffer* buffer = cursor.GetBuffer();
+
+        while (buffer != NULL)
         {
-            return;
+            sndStreamActivate(buffer->m_StreamId);
+            cursor.Advance();
+            buffer = cursor.GetBuffer();
         }
-
-        m_State = SS_Warm;
-
-        if (!(m_Flags & (1 << SF_Play)))
-        {
-            return;
-        }
-
-        if (pBuffer != m_Buffers[m_BufferCount - 1])
-        {
-            return;
-        }
-
-        m_Flags &= ~(1 << SF_Play);
-
-        unsigned long start = 0;
-        AudioStreamBuffer* buf;
-        volatile unsigned long i = (unsigned long)(buf = NULL);
-        if (start < m_BufferCount)
-        {
-            buf = m_Buffers[0];
-        }
-        while (buf != NULL)
-        {
-            sndStreamActivate(buf->m_StreamId);
-            unsigned long ci = i + 1;
-            i = ci;
-            if (ci < m_BufferCount)
-            {
-                buf = m_Buffers[ci];
-            }
-            else
-            {
-                buf = NULL;
-            }
-        }
-
-        m_State = SS_Playing;
     }
+    inline virtual void WarmReadDone(AudioStreamBuffer* pBuffer);
     void Cool()
     {
         if (m_Flags & (1 << SF_CoolOnStop))
@@ -340,9 +400,8 @@ public:
             {
                 AudioStreamBuffer* buffer = NULL;
                 AudioStreamBuffer* bufferIndex = NULL;
-                m_Flags =
-                    (m_Flags & ~(1 << SF_SeriousStop))
-                    | (1 << SF_SeriousStop);
+                m_Flags = (m_Flags & ~(1 << SF_SeriousStop))
+                        | (1 << SF_SeriousStop);
 
                 if (m_BufferCount > (unsigned long)buffer)
                 {
@@ -364,7 +423,6 @@ public:
             }
         }
     }
-    void Stop();
     void StopPlaying()
     {
         m_Flags &= ~(1 << SF_Play);
@@ -393,129 +451,43 @@ public:
             m_State = SS_Warm;
         }
     }
-    void Destructor()
+    void ReleaseBuffers()
     {
-        m_Flags = (m_Flags & ~(1 << SF_SeriousStop)) | (1 << SF_SeriousStop);
-        m_Flags &= ~(1 << SF_Play);
+        unsigned long bufferIndex;
+        AudioStreamBuffer* pBuffer = NULL;
+        bufferIndex = 0;
+        BufferCursor cursor(*this, bufferIndex);
 
-        if (m_State == SS_Playing)
+        SetFlag(SF_SeriousStop, true);
+        unsigned long start = 0;
+
+        if (start < m_BufferCount)
         {
-            AudioStreamBuffer* pBuffer;
-            volatile unsigned long i = (unsigned long)(pBuffer = NULL);
-            unsigned long start = 0;
-
-            if (start < m_BufferCount)
-            {
-                pBuffer = m_Buffers[0];
-            }
-
-            while (pBuffer != NULL)
-            {
-                pBuffer->m_Volume = 0;
-                sndStreamMixParameterEx(pBuffer->m_StreamId, pBuffer->m_Volume, pBuffer->m_Pan, pBuffer->m_SurroundPan, 0, 0);
-                sndStreamDeactivate(pBuffer->m_StreamId);
-                m_State = SS_Warm;
-
-                {
-                    unsigned long ci = i + 1;
-                    i = ci;
-                    if (ci < m_BufferCount)
-                    {
-                        pBuffer = m_Buffers[ci];
-                    }
-                    else
-                    {
-                        pBuffer = NULL;
-                    }
-                }
-            }
-
-            m_StreamPos = 0;
-            m_State = SS_Warm;
+            pBuffer = m_Buffers[0];
         }
 
-        CancelPendingReads();
-
+        while (pBuffer != NULL)
         {
-            volatile unsigned long main_i;
-            volatile unsigned long cool_i;
+            m_BuffMgr.FreeBuffer(pBuffer);
 
-            if (m_Flags & (1 << SF_CoolOnStop))
-            {
-                m_Flags &= ~(1 << SF_CoolOnStop);
+            unsigned long idx = cursor.GetIndex();
+            m_Buffers[idx] = NULL;
+            idx = cursor.Advance();
+            pBuffer = cursor.GetBuffer();
+        }
+    }
 
-                if (m_State > SS_Initd)
-                {
-                    AudioStreamBuffer* pBuffer;
-                    cool_i = (unsigned long)(pBuffer = NULL);
+    inline void WarnDestructorTimeout();
 
-                    m_Flags = (m_Flags & ~(1 << SF_SeriousStop)) | (1 << SF_SeriousStop);
-                    unsigned long start = 0;
+    void Destructor()
+    {
+        SetFlag(SF_SeriousStop, true);
+        Stop();
 
-                    if (start < m_BufferCount)
-                    {
-                        pBuffer = m_Buffers[0];
-                    }
-
-                    while (pBuffer != NULL)
-                    {
-                        m_BuffMgr.FreeBuffer(pBuffer);
-
-                        {
-                            unsigned long idx = cool_i;
-                            m_Buffers[idx] = NULL;
-                            idx = idx + 1;
-                            cool_i = idx;
-                            if (idx < m_BufferCount)
-                            {
-                                pBuffer = m_Buffers[idx];
-                            }
-                            else
-                            {
-                                pBuffer = NULL;
-                            }
-                        }
-                    }
-
-                    m_State = SS_Initd;
-                }
-            }
-
-            if (m_State > SS_Initd)
-            {
-                AudioStreamBuffer* pBuffer;
-                main_i = (unsigned long)(pBuffer = NULL);
-
-                m_Flags = (m_Flags & ~(1 << SF_SeriousStop)) | (1 << SF_SeriousStop);
-                unsigned long start = 0;
-
-                if (start < m_BufferCount)
-                {
-                    pBuffer = m_Buffers[0];
-                }
-
-                while (pBuffer != NULL)
-                {
-                    m_BuffMgr.FreeBuffer(pBuffer);
-
-                    {
-                        unsigned long idx = main_i;
-                        m_Buffers[idx] = NULL;
-                        idx = idx + 1;
-                        main_i = idx;
-                        if (idx < m_BufferCount)
-                        {
-                            pBuffer = m_Buffers[idx];
-                        }
-                        else
-                        {
-                            pBuffer = NULL;
-                        }
-                    }
-                }
-
-                m_State = SS_Initd;
-            }
+        if (m_State > SS_Initd)
+        {
+            ReleaseBuffers();
+            m_State = SS_Initd;
         }
 
         long long startTime = OSGetTime();
@@ -527,7 +499,7 @@ public:
             long long elapsed = OSGetTime() - startTime;
             if (OSTicksToMilliseconds(elapsed) > 250)
             {
-                nlPrintf("WARNING! Breaking out of audio stream d'tor early!\n");
+                WarnDestructorTimeout();
                 break;
             }
         }
@@ -545,6 +517,11 @@ public:
         /* 0x0 */ AudioStream* pStream;
         /* 0x4 */ class AudioStreamBuffer* pBuffer;
 
+        void Set(AudioStream* stream, AudioStreamBuffer* buffer)
+        {
+            pStream = stream;
+            pBuffer = buffer;
+        }
         static nlArrayAllocator<READ_CB_INFO> s_AllocPool;
     };
 
@@ -564,38 +541,6 @@ public:
     /* 0x30 */ unsigned long m_Flags;
     /* 0x34 */ unsigned long m_BufferCount;
 }; // total size: 0x38
-
-inline void AudioStream::Stop()
-{
-    SetFlag(SF_Play, false);
-    if (m_State == SS_Playing)
-    {
-        AudioStreamBuffer* pBuffer;
-        AudioStreamBuffer* bufferIndex = NULL;
-        pBuffer = GetBuffer((unsigned long)bufferIndex);
-        while (pBuffer != NULL)
-        {
-            pBuffer->m_Volume = 0;
-            sndStreamMixParameterEx(
-                pBuffer->m_StreamId,
-                pBuffer->m_Volume,
-                pBuffer->m_Pan,
-                pBuffer->m_SurroundPan,
-                0,
-                0);
-            sndStreamDeactivate(pBuffer->m_StreamId);
-            m_State = SS_Warm;
-
-            ((unsigned long&)bufferIndex)++;
-            pBuffer = GetBuffer((unsigned long)bufferIndex);
-        }
-        m_StreamPos = 0;
-        m_State = SS_Warm;
-    }
-
-    CancelPendingReads();
-    Cool();
-}
 
 class MonoAudioStream : public AudioStream
 {
@@ -617,53 +562,30 @@ public:
         m_pFile = nlOpen(filename);
         m_State = SS_Initd;
     }
-    virtual ~MonoAudioStream()
-    {
-        Destructor();
-    }
+    inline virtual ~MonoAudioStream();
     virtual unsigned long DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, GCAudioStreaming::AudioStreamBuffer*);
     virtual void Warm(bool);
-    virtual unsigned long GetUpdateReadLength()
+    void ReadHeader();
+    void ReadAsync(void* pData, unsigned int Length)
     {
-        unsigned long streamPos = m_StreamPos;
-        unsigned long length = m_UpdateLen;
-        if (streamPos + length > m_StreamLength)
+        bool enabled = OSDisableInterrupts();
+        READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.Allocate();
+        OSRestoreInterrupts(enabled);
+        unsigned long user = (unsigned long)pCBInfo;
+        if (pCBInfo)
         {
-            unsigned long aligned = (m_StreamLength - streamPos + 0x1f) & ~0x1f;
-            if (aligned)
-            {
-                length = aligned;
-            }
-            return length;
+            AudioStreamBuffer* pBuffer = m_Buffers[0];
+            pCBInfo->Set(this, pBuffer);
         }
-        return length;
+        nlReadAsync(m_pFile, pData, Length, _WarmReadCB, user);
     }
-    virtual void CancelPendingReads()
-    {
-        nlCancelPendingAsyncReads(m_pFile, &_AsyncCancelCB);
-    }
-    static void _AsyncCancelCB(nlFile*, void*, unsigned int, unsigned long uParam, void (*)(nlFile*, void*, unsigned int, unsigned long))
-    {
-        AudioStream::READ_CB_INFO* pCBInfo = (AudioStream::READ_CB_INFO*)uParam;
-        AudioStream::READ_CB_INFO::s_AllocPool.DeleteEntry(pCBInfo);
-    }
-    virtual bool SafeToPurge()
-    {
-        bool result = false;
-        if (m_State <= SS_Initd)
-        {
-            if (!nlAsyncReadsPending(m_pFile))
-            {
-                result = true;
-            }
-        }
-        return result;
-    }
-    virtual void Purge()
-    {
-        m_State = SS_New;
-        nlClose(m_pFile);
-    }
+    inline virtual unsigned long GetUpdateReadLength();
+    inline virtual void CancelPendingReads();
+    static inline void _AsyncCancelCB(
+        nlFile*, void*, unsigned int, unsigned long uParam,
+        void (*)(nlFile*, void*, unsigned int, unsigned long));
+    inline virtual bool SafeToPurge();
+    inline virtual void Purge();
 
     /* 0x38 */ class nlFile* m_pFile;
     /* 0x3C */ unsigned long m_UpdateLen;
@@ -696,50 +618,60 @@ public:
     }
     virtual unsigned long DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, GCAudioStreaming::AudioStreamBuffer*);
     void InterleavedHdrReadCB(nlFile*, void*, unsigned int);
+    AudioStreamBuffer* GetBuffer(unsigned long index)
+    {
+        return index < m_BufferCount ? m_Buffers[index] : NULL;
+    }
+    READ_CB_INFO* AllocReadCBInfo(AudioStreamBuffer* buffer)
+    {
+        bool enabled = OSDisableInterrupts();
+        READ_CB_INFO* info = READ_CB_INFO::s_AllocPool.Allocate();
+        OSRestoreInterrupts(enabled);
+        if (info)
+            info->Set(this, buffer);
+        return info;
+    }
+    void UpdateReadDone(
+        unsigned char* data, unsigned int length,
+        AudioStreamBuffer* buffer)
+    {
+        _UpdateReadCB(
+            m_pFile, data + length, length, (unsigned long)AllocReadCBInfo(buffer));
+    }
+    void ReadFirst(
+        unsigned char* data, unsigned int length,
+        AudioStreamBuffer* buffer,
+        unsigned long offsetA, unsigned long lengthA,
+        unsigned long offsetB, unsigned long lengthB,
+        ReadAsyncCallback callback);
+    unsigned long GetFilePosition()
+    {
+        unsigned long position = nlGetFilePosition(m_pFile);
+        return position;
+    }
+    void SetLastPlayable(
+        unsigned long offsetA, unsigned long lengthA,
+        unsigned long offsetB, unsigned long lengthB)
+    {
+        unsigned long result = offsetA + lengthA;
+        if (lengthB != 0)
+            result = offsetB + lengthB;
+        m_LastPlayable = result;
+    }
+    void AdvanceStreamPosition(unsigned long length)
+    {
+        m_StreamPos += length;
+    }
     virtual void Warm(bool);
-    virtual void CancelPendingReads();
-    static void _AsyncCancelCB(nlFile*, void* buffer, unsigned int, unsigned long uParam, void (*Callback)(nlFile*, void*, unsigned int, unsigned long))
-    {
-        if (Callback == &_InterleavedHdrReadCB)
-        {
-            nlFree(buffer);
-        }
-        else
-        {
-            AudioStream::READ_CB_INFO* pCBInfo = (AudioStream::READ_CB_INFO*)uParam;
-            AudioStream::READ_CB_INFO::s_AllocPool.DeleteEntry(pCBInfo);
-        }
-    }
-    static void _InterleavedHdrReadCB(nlFile* pFile, void* pData, unsigned int Length, unsigned long User)
-    {
-        ((StereoAudioStream*)User)->InterleavedHdrReadCB(pFile, pData, Length);
-    }
-    virtual unsigned long GetUpdateReadLength()
-    {
-        unsigned long len = m_Interleave;
-        if (m_StreamPos + len > m_StreamLength)
-        {
-            len = (m_StreamLength - m_StreamPos + 0x1f) & ~0x1f;
-        }
-        return len;
-    }
-    virtual bool SafeToPurge()
-    {
-        bool result = false;
-        if (m_State <= SS_Initd)
-        {
-            if (!nlAsyncReadsPending(m_pFile))
-            {
-                result = true;
-            }
-        }
-        return result;
-    }
-    virtual void Purge()
-    {
-        m_State = SS_New;
-        nlClose(m_pFile);
-    }
+    inline virtual void CancelPendingReads();
+    static inline void _AsyncCancelCB(
+        nlFile*, void* buffer, unsigned int, unsigned long uParam,
+        void (*Callback)(nlFile*, void*, unsigned int, unsigned long));
+    static inline void _InterleavedHdrReadCB(
+        nlFile* pFile, void* pData, unsigned int Length, unsigned long User);
+    inline virtual unsigned long GetUpdateReadLength();
+    inline virtual bool SafeToPurge();
+    inline virtual void Purge();
 
     /* 0x38 */ nlFile* m_pFile;
     /* 0x3C */ unsigned long m_Interleave;
