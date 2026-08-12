@@ -11,6 +11,7 @@
 #include "NL/nlSingleton.h"
 #include "Game/GameInfo.h"
 #include "Game/FE/feHelpFuncs.h"
+#include "Game/MathHelpers.h"
 
 extern CollisionSpace* g_CollisionSpace;
 extern PhysicsWorld* g_PhysicsWorld;
@@ -45,9 +46,8 @@ PhysicsCharacter::PhysicsCharacter(float radius, float heightScale)
     SET_BIT(flags, one, 28, 3);
     *flagsPtr = flags;
 
-    // m_CanCollideWithWall = true;
-    // m_CanCollideWithBall = true;
-    // m_CanCollidedWithGoalLine = true;
+    // The three writes above set bits 0, 1 and 3 of the bitfield word at 0x80, i.e.
+    // m_CanCollideWithWall, m_CanCollideWithBall and m_CanCollidedWithGoalLine.
 
     m_nDKBallStuckHackCounter = 0;
     m_pAICharacter = NULL;
@@ -126,7 +126,7 @@ ContactType PhysicsCharacter::Contact(PhysicsObject* pOther, dContact* contacts,
     if (objectType == 0xF)
     {
         if (contacts->geom.normal[2] > contacts->geom.normal[0] && contacts->geom.normal[2] > contacts->geom.normal[1])
-            m_unk88 = 1;
+            m_IsOnTopOfBall = 1;
         if (!m_CanCollideWithBall)
             return NO_CONTACT;
         cBall* ball = ((PhysicsAIBall*)pOther)->m_pAIBall;
@@ -238,7 +238,7 @@ void PhysicsCharacter::PreCollide()
     {
         g_pBall->m_pPhysicsBall->AddForceAtCentreOfMass(force);
     }
-    m_unk88 = 0;
+    m_IsOnTopOfBall = 0;
 }
 
 /**
@@ -381,41 +381,28 @@ PhysicsBoneID PhysicsCharacter::ResolvePhysicsBoneIDFromName(const char* name)
 
 /**
  * Offset/Address/Size: 0x100 | 0x80136318 | size: 0x608
- * TODO: 99.01% match - register allocation diffs for self/pFldr and BasicString temporaries remain
  */
 void PhysicsCharacter::PostUpdate()
 {
-    PhysicsCharacter* self = this;
-    u16 angle;
-    cFielder* pFldr;
     nlVector3 characterPosition;
-    nlVector3 v3BallVel;
-    nlVector3 v3BallSpin;
 
-    self->PhysicsObject::PostUpdate();
-    self->GetPosition(&characterPosition);
+    PhysicsObject::PostUpdate();
+    GetPosition(&characterPosition);
 
-    nlVector3 charPos;
-    charPos.f.x = characterPosition.f.x;
-    charPos.f.y = characterPosition.f.y;
-    charPos.f.z = 0.0f;
-    self->SetCharacterPosition(charPos);
+    SetCharacterPositionXY(characterPosition);
 
-    if (self->m_HasCollidedWithBall)
+    if (m_HasCollidedWithBall)
     {
         cBall* const pBall = g_pBall;
         if (pBall->m_unk_0xA6)
         {
-            cCharacter* pCharacter = self->m_pAICharacter;
+            cCharacter* pCharacter = m_pAICharacter;
             if (pCharacter->m_eClassType == FIELDER)
             {
-                pFldr = (cFielder*)pCharacter;
-                float dx, dy, dz;
-                dy = pBall->m_v3Position.f.y - pBall->m_pPrevOwner->m_v3Position.f.y;
-                dx = pBall->m_v3Position.f.x - pBall->m_pPrevOwner->m_v3Position.f.x;
-                dz = pBall->m_v3Position.f.z - pBall->m_pPrevOwner->m_v3Position.f.z;
-                s32 rawAngle = (s32)(10430.378f * nlATan2f(dy, dx));
-                angle = (u16)rawAngle;
+                cFielder* pFldr = (cFielder*)pCharacter;
+                nlVector3 v3PrevOwnerToBall;
+                nlVec3Sub(v3PrevOwnerToBall, pBall->m_v3Position, pBall->m_pPrevOwner->m_v3Position);
+                u16 angle = RadToAng16(nlATan2f(v3PrevOwnerToBall.f.y, v3PrevOwnerToBall.f.x));
 
                 if (!pFldr->IsInvincible())
                 {
@@ -441,10 +428,10 @@ void PhysicsCharacter::PostUpdate()
                     }
                     else
                     {
-                        cPlayer* prevOwner2 = g_pBall->m_pPrevOwner;
-                        if (prevOwner2 != NULL && prevOwner2->m_eClassType == GOALIE)
+                        cPlayer* pPrevOwner = g_pBall->m_pPrevOwner;
+                        if (pPrevOwner != NULL && pPrevOwner->m_eClassType == GOALIE)
                         {
-                            cTeam* otherTeam = prevOwner2->m_pTeam->GetOtherTeam();
+                            cTeam* otherTeam = pPrevOwner->m_pTeam->GetOtherTeam();
                             eTeamID teamID = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)otherTeam->m_nSide);
                             BasicString<char, Detail::TempStringAllocator> effectName(GetTeamName(teamID));
                             effectName.AppendInPlace("_shoot_to_score_catch");
@@ -489,47 +476,44 @@ void PhysicsCharacter::PostUpdate()
                 pBall->m_unk_0xA6 = false;
                 pBall->mpDamageTarget = NULL;
 
-                float dot = dx * pBall->m_v3Velocity.f.x + dy * pBall->m_v3Velocity.f.y + dz * pBall->m_v3Velocity.f.z;
+                float fShotAlignment = nlVec3DotProduct(v3PrevOwnerToBall, pBall->GetVelocity());
 
-                if (dot > 0.0f)
+                nlVector3 v3BallVel;
+                if (fShotAlignment > 0.0f)
                 {
-                    v3BallVel.f.z = -0.1f * pBall->m_v3Velocity.f.z;
-                    v3BallVel.f.y = -0.1f * pBall->m_v3Velocity.f.y;
-                    v3BallVel.f.x = -0.1f * pBall->m_v3Velocity.f.x;
+                    nlVec3Scale(v3BallVel, pBall->GetVelocity(), -0.1f);
 
-                    float dx2 = pBall->m_v3Position.f.x - characterPosition.f.x;
-                    float dy2 = pBall->m_v3Position.f.y - characterPosition.f.y;
-                    float dz2 = pBall->m_v3Position.f.z - characterPosition.f.z;
-                    float dot2 = dx2 * v3BallVel.f.x + dy2 * v3BallVel.f.y + dz2 * v3BallVel.f.z;
+                    nlVector3 v3CharacterToBall;
+                    nlVec3Sub(v3CharacterToBall, pBall->m_v3Position, characterPosition);
+                    float fBounceAlignment = nlVec3DotProduct(v3CharacterToBall, v3BallVel);
 
-                    if (dot2 < 0.0f)
+                    if (fBounceAlignment < 0.0f)
                     {
                         pBall->SetPosition(pBall->m_v3PrevPosition);
                     }
                 }
                 else
                 {
-                    v3BallVel.f.z = 0.1f * pBall->m_v3Velocity.f.z;
-                    v3BallVel.f.y = 0.1f * pBall->m_v3Velocity.f.y;
-                    v3BallVel.f.x = 0.1f * pBall->m_v3Velocity.f.x;
+                    nlVec3Scale(v3BallVel, pBall->GetVelocity(), 0.1f);
                 }
 
                 v3BallVel.f.z += 4.0f + nlRandomf(3.0f, &nlDefaultSeed);
                 v3BallVel.f.y += -4.0f + nlRandomf(8.0f, &nlDefaultSeed);
 
+                nlVector3 v3BallSpin;
                 pBall->m_pPhysicsBall->GetAngularVelocity(&v3BallSpin);
                 pBall->SetVelocity(v3BallVel, SPINTYPE_PARAMETER, &v3BallSpin);
             }
         }
     }
 
-    if (self->m_unk88)
+    if (m_IsOnTopOfBall)
     {
-        self->m_nDKBallStuckHackCounter++;
+        m_nDKBallStuckHackCounter++;
     }
     else
     {
-        self->m_nDKBallStuckHackCounter = 0;
+        m_nDKBallStuckHackCounter = 0;
     }
 }
 

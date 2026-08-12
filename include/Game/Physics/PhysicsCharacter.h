@@ -28,9 +28,8 @@ public:
     /* 0x80 */ unsigned int m_HasCollidedWithBall : 1;
     /* 0x80 */ unsigned int m_CanCollidedWithGoalLine : 1;
 
-    // /* 0x80 */ unsigned int m_Flags;
     /* 0x84 */ int m_nDKBallStuckHackCounter;
-    /* 0x88 */ unsigned char m_unk88;
+    /* 0x88 */ unsigned char m_IsOnTopOfBall;
     /* 0x89 */ unsigned char m_pad89[3];
     /* 0x8C */ class cCharacter* m_pAICharacter;
     /* 0x90 */ class PhysicsColumn* m_pPlayerPlayerColumn;
