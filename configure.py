@@ -878,7 +878,7 @@ config.libs = [
             Object(Matching, "Game/Audio/SebringSoundDefines.cpp" , extra_cflags=["-inline auto", "-inline deferred"]),   
             Object(Matching, "Game/Audio/SoundEventScript.cpp" , extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Audio/WorldAudio.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
-            Object(NonMatching, "Game/Audio/AudioEventHandler.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
+            Object(Matching, "Game/Audio/AudioEventHandler.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Audio/AudioLoader.cpp", mw_version="GC/1.3.2", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Audio/AudioScriptEventMgr.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Audio/AudioStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

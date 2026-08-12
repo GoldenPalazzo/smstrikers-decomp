@@ -98,6 +98,9 @@ public:
         alloc->m_pFree = (TDEVChunkFile*)ptr;
     }
 
+    static unsigned int FileSize(_FILE* pFile);
+    static GCFile* Open(const char* fileName);
+
     static nlArrayAllocator<TDEVChunkFile>* s_pAllocator;
 
     /* 0x0C */ _FILE* m_pFile;
@@ -135,6 +138,8 @@ public:
         *(DolphinFile**)ptr = alloc->m_pFree;
         alloc->m_pFree = (DolphinFile*)ptr;
     }
+
+    static GCFile* Open(const char* fileName);
 
     static nlArrayAllocator<DolphinFile>* s_pAllocator;
 

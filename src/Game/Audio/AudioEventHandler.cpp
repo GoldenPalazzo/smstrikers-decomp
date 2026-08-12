@@ -36,8 +36,6 @@ void InitEmitter(unsigned long);
 bool RemoveEmitter(unsigned long);
 } // namespace PlatAudio
 
-extern unsigned long g_MusicTrackPrePauseStreamId;
-
 namespace Audio
 {
 bool IsInited();
@@ -48,19 +46,26 @@ PriorityStream* GetPriorityStream();
 extern bool gbGameIsPaused;
 extern bool gbStartingGame;
 extern bool g_bHomeTeamHasJustScored;
-extern cPlayer* g_pLastScorer;
+cPlayer* g_pLastScorer;
 } // namespace Audio
+
+unsigned long g_MusicTrackPrePauseStreamId;
 
 class cGame;
 extern cGame* g_pGame;
 
+static void OnEndPause();
+static void OnGamePause();
+
 /**
  * Offset/Address/Size: 0x0 | 0x801423B4 | size: 0x1A18
- * TODO: Remaining diffs are whole-TU anonymous constant-pool renumbering
- * (@NNNN ids) and r29/r30 allocation in the two PlatAudio emitter loops.
  */
 void Audio::AudioEventHandler(Event* pEvent, void*)
 {
+    Bowser* pBowser;
+    bool bOnlySlot0;
+    bool bOnlySlot1;
+
     if (!Audio::IsInited() || g_pGame == NULL)
     {
         return;
@@ -69,77 +74,8 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
     switch (pEvent->m_uEventID)
     {
     case 0:
-    {
-        Audio::gbGameIsPaused = true;
-        Audio::GetPriorityStream()->FakePause(0);
-
-        AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
-        AudioStreamTrack::StreamTrack* pTrack = (AudioStreamTrack::StreamTrack*)
-                                                    pTrackMgr->GetTrack(nlStringLowerHash("Music"));
-        AudioStreamTrack::StreamTrack::QUEUED_STREAM* qs = pTrack->m_QueuedStreams.GetHead();
-        g_MusicTrackPrePauseStreamId = qs ? qs->StreamId : 0;
-
-        bool bMatchPause;
-        switch (g_MusicTrackPrePauseStreamId)
-        {
-        case 0:
-            bMatchPause = false;
-            break;
-        case 0x78058345:
-        case 0x78B7044D:
-        case 0x8FBB8496:
-            bMatchPause = true;
-            break;
-        default:
-            bMatchPause = false;
-            break;
-        }
-        if (bMatchPause)
-        {
-            AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
-            ((AudioStreamTrack::StreamTrack*)pTrackMgr->GetTrack(
-                 nlStringLowerHash("Music")))
-                ->Pause(0, false);
-        }
-
-        g_pTrackManager->StopAllTracks(0);
-        int crowdVol;
-        {
-            Config::TagValuePair& tvp = g_FEStreamConfig.FindTvp("InterruptFadeOut");
-            if (tvp.tag == NULL)
-            {
-                g_FEStreamConfig.Set("InterruptFadeOut", 0xFA);
-                crowdVol = 0xFA;
-            }
-            else if (tvp.type == _BOOL)
-            {
-                crowdVol = LexicalCast<int, bool>(tvp.value.b);
-            }
-            else if (tvp.type == _INT)
-            {
-                crowdVol = LexicalCast<int, int>(tvp.value.i);
-            }
-            else if (tvp.type == _FLOAT)
-            {
-                crowdVol = LexicalCast<int, float>(tvp.value.f);
-            }
-            else if (tvp.type == _STRING)
-            {
-                crowdVol = LexicalCast<int, const char*>(tvp.value.s);
-            }
-            else
-            {
-                crowdVol = 0;
-            }
-        }
-        CrowdMood::SetCrowdVolume(0, crowdVol);
-        CrowdMood::Purge(true);
-        CrowdMood::EnableCrowdDecay(false);
-        Audio::Silence();
-        FEAudio::PlayAnimAudioEvent("sfx_screen_forward", false);
-        AudioLoader::PlayPauseMenuMusic();
+        OnGamePause();
         break;
-    }
 
     case 5:
     {
@@ -164,136 +100,8 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
     }
 
     case 1:
-    {
-        Audio::gbGameIsPaused = false;
-        bool bPadMonkey;
-        {
-            Config& cfg = Config::Global();
-            Config::TagValuePair& tvp = cfg.FindTvp("enable_pad_monkey");
-            if (tvp.tag == NULL)
-            {
-                cfg.Set("enable_pad_monkey", false);
-                bPadMonkey = false;
-            }
-            else if (tvp.type == _BOOL)
-            {
-                bPadMonkey = LexicalCast<bool, bool>(tvp.value.b);
-            }
-            else if (tvp.type == _INT)
-            {
-                bPadMonkey = LexicalCast<bool, int>(tvp.value.i);
-            }
-            else if (tvp.type == _FLOAT)
-            {
-                bPadMonkey = LexicalCast<bool, float>(tvp.value.f);
-            }
-            else if (tvp.type == _STRING)
-            {
-                bPadMonkey = LexicalCast<bool, const char*>(tvp.value.s);
-            }
-            else
-            {
-                bPadMonkey = false;
-            }
-        }
-        if (!bPadMonkey)
-        {
-            Audio::GetPriorityStream()->FakeResume(true);
-        }
-        AudioLoader::StopPauseMenuMusic();
-        bool bMatchResume;
-        switch (g_MusicTrackPrePauseStreamId)
-        {
-        case 0:
-            bMatchResume = false;
-            break;
-        case 0x78058345:
-        case 0x78B7044D:
-        case 0x8FBB8496:
-            bMatchResume = true;
-            break;
-        default:
-            bMatchResume = false;
-            break;
-        }
-        if (bMatchResume)
-        {
-            AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
-            ((AudioStreamTrack::StreamTrack*)pTrackMgr->GetTrack(
-                 nlStringLowerHash("Music")))
-                ->Resume();
-        }
-
-        bool bNoCrowd;
-        {
-            Config& cfg = Config::Global();
-            Config::TagValuePair& tvp = cfg.FindTvp("no_crowd");
-            if (tvp.tag == NULL)
-            {
-                cfg.Set("no_crowd", false);
-                bNoCrowd = false;
-            }
-            else if (tvp.type == _BOOL)
-            {
-                bNoCrowd = LexicalCast<bool, bool>(tvp.value.b);
-            }
-            else if (tvp.type == _INT)
-            {
-                bNoCrowd = LexicalCast<bool, int>(tvp.value.i);
-            }
-            else if (tvp.type == _FLOAT)
-            {
-                bNoCrowd = LexicalCast<bool, float>(tvp.value.f);
-            }
-            else if (tvp.type == _STRING)
-            {
-                bNoCrowd = LexicalCast<bool, const char*>(tvp.value.s);
-            }
-            else
-            {
-                bNoCrowd = false;
-            }
-        }
-        if (bNoCrowd == true)
-            break;
-
-        CrowdMood::RestartLoops();
-        int crowdVol;
-        {
-            Config::TagValuePair& tvp = g_FEStreamConfig.FindTvp("InterruptFadeOut");
-            if (tvp.tag == NULL)
-            {
-                g_FEStreamConfig.Set("InterruptFadeOut", 0xFA);
-                crowdVol = 0xFA;
-            }
-            else if (tvp.type == _BOOL)
-            {
-                crowdVol = LexicalCast<int, bool>(tvp.value.b);
-            }
-            else if (tvp.type == _INT)
-            {
-                crowdVol = LexicalCast<int, int>(tvp.value.i);
-            }
-            else if (tvp.type == _FLOAT)
-            {
-                crowdVol = LexicalCast<int, float>(tvp.value.f);
-            }
-            else if (tvp.type == _STRING)
-            {
-                crowdVol = LexicalCast<int, const char*>(tvp.value.s);
-            }
-            else
-            {
-                crowdVol = 0;
-            }
-        }
-        CrowdMood::SetCrowdVolume(0x7F, crowdVol);
-        CrowdMood::EnableCrowdDecay(true);
-        if (g_pGame->m_eGameState != GS_OVERTIME)
-            break;
-        Audio::gWorldSFX.Play((Audio::eWorldSFX)0xCB, 100.0f, -1.0f, true, 100.0f);
+        OnEndPause();
         break;
-    }
 
     case 9:
         if (Audio::gbGameIsPaused)
@@ -352,7 +160,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         }
         break;
 
-    case 49:
+    case 50:
     {
         if (!Audio::IsWorldSFXLoaded())
             break;
@@ -403,8 +211,8 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         }
         vol *= fSpreadsheetVol;
 
-        static signed char init;
         static float fTimer;
+        static signed char init;
         if (!init)
         {
             fTimer = 0.0f;
@@ -471,8 +279,8 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         float vol = fabsf(speed) / maxSpeed;
         vol *= Audio::gStadGenSFX.mpSFX[0xC7].fVolume;
 
-        static signed char init;
         static float fTimer;
+        static signed char init;
         if (!init)
         {
             fTimer = 0.0f;
@@ -592,8 +400,8 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
     {
         if (Audio::IsWorldSFXLoaded())
         {
-            static signed char init;
             static float fTimer;
+            static signed char init;
             float currTime;
 
             if (!init)
@@ -753,7 +561,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
 
     case 90:
     {
-        Bowser* pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
+        pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
         pBowser->m_pCharacterSFX->Stop((Audio::eCharSFX)0x56, cGameSFX::SFX_STOP_FIRST);
         pBowser->PlaySFX((Audio::eCharSFX)0x55, (PosUpdateMethod)2, -1.0f, true);
         break;
@@ -761,7 +569,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
 
     case 91:
     {
-        Bowser* pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
+        pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
         pBowser->m_pCharacterSFX->Stop((Audio::eCharSFX)0x57, cGameSFX::SFX_STOP_FIRST);
         pBowser->m_pCharacterSFX->Stop((Audio::eCharSFX)0x58, cGameSFX::SFX_STOP_FIRST);
         pBowser->m_pCharacterSFX->Stop((Audio::eCharSFX)0x59, cGameSFX::SFX_STOP_FIRST);
@@ -796,7 +604,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
 
     case 96:
     {
-        Bowser* pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
+        pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
         pBowser->m_pCharacterSFX->Stop((Audio::eCharSFX)0x57, cGameSFX::SFX_STOP_FIRST);
         pBowser->m_pCharacterSFX->Stop((Audio::eCharSFX)0x58, cGameSFX::SFX_STOP_FIRST);
         pBowser->m_pCharacterSFX->Stop((Audio::eCharSFX)0x59, cGameSFX::SFX_STOP_FIRST);
@@ -817,7 +625,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
 
     case 97:
     {
-        Bowser* pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
+        pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
         pBowser->m_pCharacterSFX->Stop((Audio::eCharSFX)0x57, cGameSFX::SFX_STOP_FIRST);
         pBowser->m_pCharacterSFX->Stop((Audio::eCharSFX)0x58, cGameSFX::SFX_STOP_FIRST);
         pBowser->m_pCharacterSFX->Stop((Audio::eCharSFX)0x59, cGameSFX::SFX_STOP_FIRST);
@@ -835,7 +643,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
 
     case 98:
     {
-        Bowser* pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
+        pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
         pBowser->m_pCharacterSFX->Stop((Audio::eCharSFX)0x57, cGameSFX::SFX_STOP_FIRST);
         pBowser->m_pCharacterSFX->Stop((Audio::eCharSFX)0x58, cGameSFX::SFX_STOP_FIRST);
         pBowser->m_pCharacterSFX->Stop((Audio::eCharSFX)0x59, cGameSFX::SFX_STOP_FIRST);
@@ -850,7 +658,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
 
     case 99:
     {
-        Bowser* pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
+        pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
         pBowser->m_pCharacterSFX->Stop((Audio::eCharSFX)0x57, cGameSFX::SFX_STOP_FIRST);
         pBowser->m_pCharacterSFX->Stop((Audio::eCharSFX)0x58, cGameSFX::SFX_STOP_FIRST);
         pBowser->m_pCharacterSFX->Stop((Audio::eCharSFX)0x59, cGameSFX::SFX_STOP_FIRST);
@@ -909,8 +717,6 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         if (nlTaskManager::m_pInstance->m_CurrState & 0x20110)
             break;
 
-        bool bOnlySlot0;
-        bool bOnlySlot1;
         PowerupAcquireEventData* pData;
         if ((int)pEvent->m_data.GetID() == -1)
         {
@@ -1089,7 +895,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
     case 46:
     case 47:
     case 48:
-    case 50:
+    case 49:
     case 51:
     case 52:
     case 53:
@@ -1131,4 +937,93 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
     default:
         break;
     }
+}
+
+static void OnGamePause()
+{
+    Audio::gbGameIsPaused = true;
+    Audio::GetPriorityStream()->FakePause(0);
+
+    AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
+    AudioStreamTrack::StreamTrack* pTrack = (AudioStreamTrack::StreamTrack*)
+                                                pTrackMgr->GetTrack(nlStringLowerHash("Music"));
+    AudioStreamTrack::StreamTrack::QUEUED_STREAM* qs = pTrack->m_QueuedStreams.GetHead();
+    g_MusicTrackPrePauseStreamId = qs ? qs->StreamId : 0;
+
+    bool bMatchPause;
+    switch (g_MusicTrackPrePauseStreamId)
+    {
+    case 0:
+        bMatchPause = false;
+        break;
+    case 0x78058345:
+    case 0x78B7044D:
+    case 0x8FBB8496:
+        bMatchPause = true;
+        break;
+    default:
+        bMatchPause = false;
+        break;
+    }
+    if (bMatchPause)
+    {
+        AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
+        ((AudioStreamTrack::StreamTrack*)pTrackMgr->GetTrack(
+             nlStringLowerHash("Music")))
+            ->Pause(0, false);
+    }
+
+    g_pTrackManager->StopAllTracks(0);
+    int crowdVol = g_FEStreamConfig.Get<int>("InterruptFadeOut", 0xFA);
+    CrowdMood::SetCrowdVolume(0, crowdVol);
+    CrowdMood::Purge(true);
+    CrowdMood::EnableCrowdDecay(false);
+    Audio::Silence();
+    FEAudio::PlayAnimAudioEvent("sfx_screen_forward", false);
+    AudioLoader::PlayPauseMenuMusic();
+}
+
+static void OnEndPause()
+{
+    Audio::gbGameIsPaused = false;
+    bool bPadMonkey = Config::Global().Get<bool>("enable_pad_monkey", false);
+    if (!bPadMonkey)
+    {
+        Audio::GetPriorityStream()->FakeResume(true);
+    }
+    AudioLoader::StopPauseMenuMusic();
+    bool bMatchResume;
+    switch (g_MusicTrackPrePauseStreamId)
+    {
+    case 0:
+        bMatchResume = false;
+        break;
+    case 0x78058345:
+    case 0x78B7044D:
+    case 0x8FBB8496:
+        bMatchResume = true;
+        break;
+    default:
+        bMatchResume = false;
+        break;
+    }
+    if (bMatchResume)
+    {
+        AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
+        ((AudioStreamTrack::StreamTrack*)pTrackMgr->GetTrack(
+             nlStringLowerHash("Music")))
+            ->Resume();
+    }
+
+    bool bNoCrowd = Config::Global().Get<bool>("no_crowd", false);
+    if (bNoCrowd == true)
+        return;
+
+    CrowdMood::RestartLoops();
+    int crowdVol = g_FEStreamConfig.Get<int>("InterruptFadeOut", 0xFA);
+    CrowdMood::SetCrowdVolume(0x7F, crowdVol);
+    CrowdMood::EnableCrowdDecay(true);
+    if (g_pGame->m_eGameState != GS_OVERTIME)
+        return;
+    Audio::gWorldSFX.Play((Audio::eWorldSFX)0xCB, 100.0f, -1.0f, true, 100.0f);
 }

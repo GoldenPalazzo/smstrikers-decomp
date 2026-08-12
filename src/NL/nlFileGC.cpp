@@ -307,7 +307,7 @@ bool nlAsyncReadsPending(nlFile* file)
     return s_pAsyncManager->m_activeEntryList != nullptr;
 }
 
-static inline unsigned int TDEVChunkFileSizeInline(_FILE* pFile)
+unsigned int TDEVChunkFile::FileSize(_FILE* pFile)
 {
     unsigned long uPos = ftell(pFile);
     fseek(pFile, 0, 2);
@@ -316,48 +316,40 @@ static inline unsigned int TDEVChunkFileSizeInline(_FILE* pFile)
     return uSize;
 }
 
-static inline GCFile* TDEVChunkFileOpenInline(const char* fileName)
+GCFile* TDEVChunkFile::Open(const char* FileName)
 {
-    _FILE* pFile = fopen(fileName, "rb");
-    GCFile* pGCFile;
+    _FILE* pFile = fopen(FileName, "rb");
 
     if (pFile == NULL)
     {
-        pGCFile = NULL;
+        return NULL;
     }
-    else
+
+    if (FileSize(pFile) == 0xFFFFFFFF)
     {
-        if (TDEVChunkFileSizeInline(pFile) == 0xFFFFFFFF)
-        {
-            pGCFile = NULL;
-        }
-        else
-        {
-            pGCFile = new TDEVChunkFile(pFile);
-            while (pFile == NULL)
-            {
-            }
-        }
+        return NULL;
+    }
+
+    GCFile* pGCFile = new TDEVChunkFile(pFile);
+    while (pFile == NULL)
+    {
     }
 
     return pGCFile;
 }
 
-static inline GCFile* DolphinFileOpenInline(const char* fileName)
+GCFile* DolphinFile::Open(const char* FileName)
 {
-    long fileEntrynum = DVDConvertPathToEntrynum(fileName);
-    GCFile* pFile;
+    long FileEntrynum = DVDConvertPathToEntrynum(FileName);
 
-    if (fileEntrynum == -1)
+    if (FileEntrynum == -1)
     {
-        pFile = NULL;
+        return NULL;
     }
-    else
+
+    GCFile* pFile = new DolphinFile(FileEntrynum);
+    while (pFile == NULL)
     {
-        pFile = new DolphinFile(fileEntrynum);
-        while (pFile == NULL)
-        {
-        }
     }
 
     return pFile;
@@ -369,11 +361,11 @@ static inline nlFile* nlLoadEntireFileOpen(const char* fileName)
 
     if (fileSystem == eGC_TDEV)
     {
-        pGCFile = TDEVChunkFileOpenInline(fileName);
+        pGCFile = TDEVChunkFile::Open(fileName);
     }
     else
     {
-        pGCFile = DolphinFileOpenInline(fileName);
+        pGCFile = DolphinFile::Open(fileName);
     }
 
     return pGCFile;
@@ -406,15 +398,16 @@ static inline void* nlReadToVirtualMemoryInline(nlFile* file, void* buffer, unsi
 
 /**
  * Offset/Address/Size: 0x2F8 | 0x801CF04C | size: 0x2D0
- * TODO: 99.4% match - remaining saved-register cycle between fileName,
- * size, transferSize, target, and allocType
+ * OPEN: 720/720 bytes, every instruction and branch matches; 16 rows differ, all of
+ * them a three-web rotation of the callee-saved colouring. Ours binds buffer=r29,
+ * fileName=r30, target=r27; retail binds buffer=r30, fileName=r27, target=r29.
+ * size=r26, allocType=r28, transferSize=r31, maxRequiredMemory=r23 already agree.
  */
 void* nlLoadEntireFileToVirtualMemory(const char* fileName, int* size, unsigned int transferSize, void* target, eAllocType allocType)
 {
     void* buffer = NULL;
-    nlFile* const pGCFile = nlLoadEntireFileOpen(fileName);
 
-    if (pGCFile != NULL)
+    if (nlFile* pGCFile = nlLoadEntireFileOpen(fileName))
     {
         unsigned int fileSize = 0;
         nlFileSize(pGCFile, &fileSize);
@@ -1128,11 +1121,11 @@ nlFile* nlOpen(const char* fileName)
 
     if (fileSystem == eGC_TDEV)
     {
-        file = TDEVChunkFileOpenInline(fileName);
+        file = TDEVChunkFile::Open(fileName);
     }
     else
     {
-        file = DolphinFileOpenInline(fileName);
+        file = DolphinFile::Open(fileName);
     }
 
     return file;
