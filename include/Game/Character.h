@@ -155,6 +155,11 @@ public:
     void AdjustPoseMatrices();
     GLSkinMesh* GetSkinMesh() const;
 
+    cAnimInventory* GetAnimInventory() const
+    {
+        return m_pAnimInventory;
+    }
+
     int GetHeadJointIndex() const // does not omit code?
     {
         return m_nHeadJointIndex;

@@ -112,6 +112,7 @@ public:
     bool IsCaptain() const;
     bool IsOnSameTeam(cPlayer*);
     cTeam* GetTeam() const { return m_pTeam; }
+    int GetBallJointIndex() const { return m_nBallJointIndex; }
     void SetAIPad(cAIPad* pPad);
     void PlayAttackReactionSounds(float);
     void PickupBall(cBall*);
