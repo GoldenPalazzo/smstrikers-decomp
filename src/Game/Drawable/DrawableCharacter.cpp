@@ -205,13 +205,6 @@ void Replayable<1>(LoadFrame& frame, char typeId, cPoseNode*& poseNode)
 #include "NL/nlString.h"
 #include "NL/nlDebug.h"
 #include <dolphin/os.h>
-cCharacter* DrawableCharacter::spRenderOnlyThisCharacter = nullptr;
-bool DrawableCharacter::sbRenderOpposingGoalieToo = false;
-bool DrawableCharacter::sCameraRelativeLighting = false;
-bool DrawableCharacter::sSTSLighting = false;
-
-unsigned char sShadowRenderingDisabled__17DrawableCharacter;
-
 const u32 GLTT_BumpLocal_bit = 1 << (int)GLTT_BumpLocal;
 const u32 GLTT_Detail_bit = 1 << (int)GLTT_Detail;
 
@@ -220,12 +213,19 @@ static unsigned long LitProgram = glGetProgram("3d pointlit");
 static unsigned long LightTexture = glGetTexture("global/lightramp");
 static unsigned long BlackTexture = glGetTexture("global/black");
 static unsigned long WhiteTexture = glGetTexture("global/white");
+static int g_nShowBones;
+
+unsigned char sShadowRenderingDisabled__17DrawableCharacter;
+cCharacter* DrawableCharacter::spRenderOnlyThisCharacter = nullptr;
+bool DrawableCharacter::sbRenderOpposingGoalieToo = false;
+bool DrawableCharacter::sSTSLighting = false;
+bool DrawableCharacter::sCameraRelativeLighting = false;
+
 static unsigned long CharacterDirtProgram = glGetProgram("3d pointlit dirt");
 static const unsigned long CharacterProgram = glGetProgram("3d pointlit");
 
-static int g_nShowBones;
-static const int g_nOnscreenUpdate[3] = { 4, 3, 2 };
-static const int g_nOffscreenUpdate[3] = { 8, 8, 6 };
+static int g_nOnscreenUpdate[3] = { 4, 3, 2 };
+static int g_nOffscreenUpdate[3] = { 8, 8, 6 };
 
 struct ShadowScale
 {
@@ -356,77 +356,6 @@ void DrawableCharacter::Replay<LoadFrame>(LoadFrame& frame)
 
         delete mPoseTree;
         mPoseTree = nullptr;
-    }
-}
-
-/**
- * Offset/Address/Size: 0x438 | 0x8011C764 | size: 0x45C
- * TODO: 97.0% match - first nlMatrix4 copy loop initializes byte offset with li r8,0 instead of mr r8,r7
- */
-cPoseAccumulator::cPoseAccumulator(const cPoseAccumulator& other)
-{
-    m_BaseSHierarchy = other.m_BaseSHierarchy;
-
-    int i;
-    int byteOffset;
-
-    m_NodeMatrices.mData = (nlMatrix4*)nlMalloc(other.m_NodeMatrices.mSize * sizeof(nlMatrix4), 8, 0);
-    m_NodeMatrices.mSize = other.m_NodeMatrices.mSize;
-    m_NodeMatrices.mCapacity = other.m_NodeMatrices.mSize;
-    for (i = 0, byteOffset = i; i < m_NodeMatrices.mSize; i++, byteOffset += sizeof(nlMatrix4))
-    {
-        *(nlMatrix4*)((char*)m_NodeMatrices.mData + byteOffset) = *(nlMatrix4*)((char*)other.m_NodeMatrices.mData + byteOffset);
-    }
-
-    m_PrevNodeMatrices.mData = (nlMatrix4*)nlMalloc(other.m_PrevNodeMatrices.mSize * sizeof(nlMatrix4), 8, 0);
-    m_PrevNodeMatrices.mSize = other.m_PrevNodeMatrices.mSize;
-    m_PrevNodeMatrices.mCapacity = other.m_PrevNodeMatrices.mSize;
-    for (i = 0, byteOffset = i; i < m_PrevNodeMatrices.mSize; i++, byteOffset += sizeof(nlMatrix4))
-    {
-        *(nlMatrix4*)((char*)m_PrevNodeMatrices.mData + byteOffset) = *(nlMatrix4*)((char*)other.m_PrevNodeMatrices.mData + byteOffset);
-    }
-
-    m_rot.mData = (RotAccum*)nlMalloc(other.m_rot.mSize * sizeof(RotAccum), 8, 0);
-    m_rot.mSize = other.m_rot.mSize;
-    m_rot.mCapacity = other.m_rot.mSize;
-    for (i = 0; i < m_rot.mSize; i++)
-    {
-        m_rot.mData[i] = other.m_rot.mData[i];
-    }
-
-    m_scale.mData = (ScaleAccum*)nlMalloc(other.m_scale.mSize * sizeof(ScaleAccum), 8, 0);
-    m_scale.mSize = other.m_scale.mSize;
-    m_scale.mCapacity = other.m_scale.mSize;
-    for (i = 0; i < m_scale.mSize; i++)
-    {
-        m_scale.mData[i] = other.m_scale.mData[i];
-    }
-
-    m_trans.mData = (TransAccum*)nlMalloc(other.m_trans.mSize * sizeof(TransAccum), 8, 0);
-    m_trans.mSize = other.m_trans.mSize;
-    m_trans.mCapacity = other.m_trans.mSize;
-    for (i = 0; i < m_trans.mSize; i++)
-    {
-        m_trans.mData[i] = other.m_trans.mData[i];
-    }
-
-    {
-        int n = other.m_cb.mSize;
-        m_cb.mData = new (nlMalloc(n * sizeof(cBuildNodeMatrixCallbackInfo) + 0x10, 8, 0)) cBuildNodeMatrixCallbackInfo[n];
-        m_cb.mSize = n;
-        m_cb.mCapacity = n;
-        for (i = 0; i < m_cb.mSize; i++)
-        {
-            m_cb.mData[i] = other.m_cb.mData[i];
-        }
-    }
-
-    m_MorphWeights.mData = (float*)nlMalloc(other.m_MorphWeights.mSize * sizeof(float), 8, 0);
-    m_MorphWeights.mSize = other.m_MorphWeights.mSize;
-    m_MorphWeights.mCapacity = other.m_MorphWeights.mSize;
-    for (i = 0; i < m_MorphWeights.mSize; i++)
-    {
-        m_MorphWeights.mData[i] = other.m_MorphWeights.mData[i];
     }
 }
 
@@ -706,9 +635,54 @@ static void FindBoundingSphereAccurate(nlVector3* pOutSphere, float* pOutRadius,
     }
 }
 
+static inline void RenderCharacterBoundingSphere(nlMatrix4& sphereWorldMatrix, const nlVector3& vCenter, float fRadius)
+{
+    extern GLInventory glInventory;
+    extern unsigned long ResolvedWhiteTexture;
+
+    float sphereRadius = fRadius;
+    nlColour debugColour = { 0xFF, 0xFF, 0x40, 0x50 };
+    u8 alpha;
+    glModel* pSphereModel;
+    glModelPacket* pSpherePacket;
+    void* pConstantColour;
+    pSphereModel = glModelDup(glInventory.GetModel(nlStringHash("debug/sphere")), true);
+
+    sphereWorldMatrix.SetIdentity();
+    sphereWorldMatrix.f.m41 = vCenter.f.x;
+    sphereWorldMatrix.f.m42 = vCenter.f.y;
+    sphereWorldMatrix.f.m43 = vCenter.f.z;
+    sphereWorldMatrix.f.m44 = 1.0f;
+    sphereWorldMatrix.f.m11 = sphereRadius;
+    sphereWorldMatrix.f.m22 = sphereRadius;
+    sphereWorldMatrix.f.m33 = sphereRadius;
+
+    unsigned long matrix = glAllocMatrix();
+    if (matrix != 0xFFFFFFFF)
+    {
+        glSetMatrix(matrix, sphereWorldMatrix);
+    }
+
+    pConstantColour = glUserAlloc(GLUD_ConstantColour, 4, false);
+    nlColour* pDebugColour = (nlColour*)glUserGetData(pConstantColour);
+    alpha = debugColour.c[3];
+    *pDebugColour = debugColour;
+    for (pSpherePacket = pSphereModel->packets; pSpherePacket < pSphereModel->packets + pSphereModel->numPackets; pSpherePacket++)
+    {
+        pSpherePacket->state.matrix = matrix;
+        pSpherePacket->state.texture[GLTT_Diffuse] = ResolvedWhiteTexture;
+        if (alpha != 0xFF)
+        {
+            glSetRasterState(pSpherePacket->state.raster, GLS_AlphaBlend, GLB_Standard);
+        }
+        glUserAttach(pConstantColour, pSpherePacket, false);
+    }
+
+    glViewAttachModel(GLV_Characters, 6, pSphereModel);
+}
+
 /**
  * Offset/Address/Size: 0x1AE4 | 0x8011A994 | size: 0x808
- * TODO: 99.42% match - detail texture load/register order and debug sphere model save.
  */
 void DrawableCharacter::SendToGl(const cCharacter& character) const
 {
@@ -963,44 +937,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
                 counter = 0;
             }
 
-            float sphereRadius = fRadius;
-            nlColour debugColour = { 0xFF, 0xFF, 0x40, 0x50 };
-            void* pConstantColour;
-            glModelPacket* pSpherePacket;
-            unsigned long sphereHash = nlStringHash("debug/sphere");
-            glModel* pSphereModel = glModelDup(glInventory.GetModel(sphereHash), true);
-
-            sphereWorldMatrix.SetIdentity();
-            sphereWorldMatrix.f.m41 = vCenter.f.x;
-            sphereWorldMatrix.f.m42 = vCenter.f.y;
-            sphereWorldMatrix.f.m43 = vCenter.f.z;
-            sphereWorldMatrix.f.m44 = 1.0f;
-            sphereWorldMatrix.f.m11 = sphereRadius;
-            sphereWorldMatrix.f.m22 = sphereRadius;
-            sphereWorldMatrix.f.m33 = sphereRadius;
-
-            unsigned long matrix = glAllocMatrix();
-            if (matrix != 0xFFFFFFFF)
-            {
-                glSetMatrix(matrix, sphereWorldMatrix);
-            }
-
-            pConstantColour = glUserAlloc(GLUD_ConstantColour, 4, false);
-            nlColour* pDebugColour = (nlColour*)glUserGetData(pConstantColour);
-            u8 alpha = debugColour.c[3];
-            *pDebugColour = debugColour;
-            for (pSpherePacket = pSphereModel->packets; pSpherePacket < pSphereModel->packets + pSphereModel->numPackets; pSpherePacket++)
-            {
-                pSpherePacket->state.matrix = matrix;
-                pSpherePacket->state.texture[GLTT_Diffuse] = ResolvedWhiteTexture;
-                if (alpha != 0xFF)
-                {
-                    glSetRasterState(pSpherePacket->state.raster, GLS_AlphaBlend, GLB_Standard);
-                }
-                glUserAttach(pConstantColour, pSpherePacket, false);
-            }
-
-            glViewAttachModel(GLV_Characters, 6, pSphereModel);
+            RenderCharacterBoundingSphere(sphereWorldMatrix, vCenter, fRadius);
         }
     }
 
@@ -1135,7 +1072,6 @@ void DrawableCharacter::Render(SkinAnimatedMovableNPC& character) const
 
 /**
  * Offset/Address/Size: 0x2B8 | 0x80119168 | size: 0x5C4
- * TODO: 96.25% match - pose accumulator/stride register ordering and morph-weight index scheduling remain.
  */
 void DrawableCharacter::Blend(const float* blendFactors, const DrawableCharacter& lhs, const DrawableCharacter& rhs)
 {
@@ -1162,45 +1098,34 @@ void DrawableCharacter::Blend(const float* blendFactors, const DrawableCharacter
         mPoseAccumulator = new (nlMalloc(sizeof(cPoseAccumulator), 8, false)) cPoseAccumulator(lhs.mPoseAccumulator->m_BaseSHierarchy, false);
     }
     mPoseAccumulator->InitAccumulators();
-    float oneMinusT;
     const float rhsWeight = *blendFactors;
-    const float one = 1.0f;
-    oneMinusT = one - rhsWeight;
     RotAccum* lhsRot;
     RotAccum* rhsRot;
-    cPoseAccumulator* lhsAccumulator = lhs.mPoseAccumulator;
-    cPoseAccumulator* rhsAccumulator = rhs.mPoseAccumulator;
     for (int i = 0; i < mPoseAccumulator->GetNumNodes(); i++)
     {
-        lhsRot = &lhsAccumulator->m_rot.mData[i];
-        rhsRot = &rhsAccumulator->m_rot.mData[i];
+        lhsRot = &lhs.mPoseAccumulator->m_rot[i];
+        rhsRot = &rhs.mPoseAccumulator->m_rot[i];
         float rhsRotAroundZWeight = rhsRot->rotAroundZAccumulatedWeight * rhsWeight;
-        mPoseAccumulator->BlendRotAroundZ(i, lhsRot->rotAroundZ, lhsRot->rotAroundZAccumulatedWeight * oneMinusT);
+        mPoseAccumulator->BlendRotAroundZ(i, lhsRot->rotAroundZ, lhsRot->rotAroundZAccumulatedWeight * (1.0f - *blendFactors));
         mPoseAccumulator->BlendRotAroundZ(i, rhsRot->rotAroundZ, rhsRotAroundZWeight);
         float rhsQuatWeight = rhsRot->quatAccumulatedWeight * rhsWeight;
-        mPoseAccumulator->BlendRot(i, &lhsRot->q, lhsRot->quatAccumulatedWeight * oneMinusT, false);
+        mPoseAccumulator->BlendRot(i, &lhsRot->q, lhsRot->quatAccumulatedWeight * (1.0f - *blendFactors), false);
         mPoseAccumulator->BlendRot(i, &rhsRot->q, rhsQuatWeight, false);
-        mPoseAccumulator->BlendTrans(i, &lhsAccumulator->m_trans.mData[i].t, 1.0f - *blendFactors, false);
-        mPoseAccumulator->BlendTrans(i, &rhsAccumulator->m_trans.mData[i].t, *blendFactors, false);
-        mPoseAccumulator->BlendScale(i, &lhsAccumulator->m_scale.mData[i].s, 1.0f - *blendFactors, false);
-        mPoseAccumulator->BlendScale(i, &rhsAccumulator->m_scale.mData[i].s, *blendFactors, false);
+        mPoseAccumulator->BlendTrans(i, &lhs.mPoseAccumulator->m_trans[i].t, 1.0f - *blendFactors, false);
+        mPoseAccumulator->BlendTrans(i, &rhs.mPoseAccumulator->m_trans[i].t, *blendFactors, false);
+        mPoseAccumulator->BlendScale(i, &lhs.mPoseAccumulator->m_scale[i].s, 1.0f - *blendFactors, false);
+        mPoseAccumulator->BlendScale(i, &rhs.mPoseAccumulator->m_scale[i].s, *blendFactors, false);
     }
-    oneMinusT = one - *blendFactors;
-    t = *blendFactors;
-    cPoseAccumulator* lhsPoseAccum = lhs.mPoseAccumulator;
-    cPoseAccumulator* rhsPoseAccum = rhs.mPoseAccumulator;
-    int j = 0;
-    for (int i = 0; i < 2; i++)
+
+    Vector<float, DefaultAllocator>& lhsMorphWeights = lhs.mPoseAccumulator->m_MorphWeights;
+    Vector<float, DefaultAllocator>& rhsMorphWeights = rhs.mPoseAccumulator->m_MorphWeights;
+    float* factors = (float*)blendFactors;
+    for (int i = 0; i < 8; i++)
     {
-        mPoseAccumulator->m_MorphWeights.mData[j] += lhsPoseAccum->m_MorphWeights.mData[j] * oneMinusT;
-        mPoseAccumulator->m_MorphWeights.mData[j] += rhsPoseAccum->m_MorphWeights.mData[j] * t;
-        mPoseAccumulator->m_MorphWeights.mData[j + 1] += lhsPoseAccum->m_MorphWeights.mData[j + 1] * oneMinusT;
-        mPoseAccumulator->m_MorphWeights.mData[j + 1] += rhsPoseAccum->m_MorphWeights.mData[j + 1] * t;
-        mPoseAccumulator->m_MorphWeights.mData[j + 2] += lhsPoseAccum->m_MorphWeights.mData[j + 2] * oneMinusT;
-        mPoseAccumulator->m_MorphWeights.mData[j + 2] += rhsPoseAccum->m_MorphWeights.mData[j + 2] * t;
-        mPoseAccumulator->m_MorphWeights.mData[j + 3] += lhsPoseAccum->m_MorphWeights.mData[j + 3] * oneMinusT;
-        mPoseAccumulator->m_MorphWeights.mData[j + 3] += rhsPoseAccum->m_MorphWeights.mData[j + 3] * t;
-        j += 4;
+        float& lhsMorphWeight = lhsMorphWeights[i];
+        mPoseAccumulator->m_MorphWeights[i] += lhsMorphWeight * (1.0f - *blendFactors);
+        float& rhsMorphWeight = rhsMorphWeights[i];
+        mPoseAccumulator->m_MorphWeights[i] += rhsMorphWeight * factors[0];
     }
     nlMatrix4 rotMatrix;
     nlMakeRotationMatrixZ(rotMatrix, 0.0000958738f * (float)mFacingDirection);

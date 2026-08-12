@@ -78,6 +78,18 @@ public:
     /* 0x4C */ Vector<float, DefaultAllocator> m_MorphWeights;
 }; // total size: 0x58
 
+inline cPoseAccumulator::cPoseAccumulator(const cPoseAccumulator& other)
+    : m_BaseSHierarchy(other.m_BaseSHierarchy)
+    , m_NodeMatrices(other.m_NodeMatrices, 0)
+    , m_PrevNodeMatrices(other.m_PrevNodeMatrices, 0)
+    , m_rot(other.m_rot, 0)
+    , m_scale(other.m_scale, 0)
+    , m_trans(other.m_trans, 0)
+    , m_cb(other.m_cb, 0)
+    , m_MorphWeights(other.m_MorphWeights, 0)
+{
+}
+
 inline cPoseAccumulator& cPoseAccumulator::operator=(const cPoseAccumulator& other)
 {
     m_BaseSHierarchy = other.m_BaseSHierarchy;
