@@ -12,7 +12,7 @@ static f32 CANT_COLLIDE = *(f32*)__float_max;
 static float ballMaxMotionPerTick = PhysicsBall::GetBallMaxVelocity() * FixedUpdateTask::GetPhysicsUpdateTick();
 
 /**
- * Offset / Address / Size : 0x8F0 | 0x8013A370 | size : 0x34
+ * Offset/Address/Size: 0x8F0 | 0x8013A370 | size: 0x34
  */
 void PhysicsGoalie::PostUpdate()
 {
@@ -23,7 +23,7 @@ void PhysicsGoalie::PostUpdate()
 /**
  * Offset/Address/Size: 0x780 | 0x8013A200 | size: 0x170
  */
-bool PhysicsGoalie::SweepTestForBallContact(const nlVector3& ballPrevPosition, const nlVector3& ballCurrentPosition, const nlVector3& velocity, float ballRadius, nlVector3& outContactPos, nlVector3& outContactNormal) const
+bool PhysicsGoalie::SweepTestForBallContact(const nlVector3& ballPrevPosition, const nlVector3& ballCurrentPosition, const nlVector3& velocity, float ballRadius, nlVector3& positionWhenHit, nlVector3& contactNormal) const
 {
     int testsPassed = 0;
     float goalieRadius = 4.0f * m_CentreOfMassHeight;
@@ -32,16 +32,16 @@ bool PhysicsGoalie::SweepTestForBallContact(const nlVector3& ballPrevPosition, c
     GetPosition(&goaliePos);
     goaliePos.f.z = (2.0 * m_CentreOfMassHeight) + goaliePos.f.z;
 
-    nlVector3 tmp;
-    nlVec3Set(tmp, ballPrevPosition.f.x - goaliePos.f.x, ballPrevPosition.f.y - goaliePos.f.y, ballPrevPosition.f.z - goaliePos.f.z);
+    nlVector3 ballToGoalie;
+    nlVec3Set(ballToGoalie, ballPrevPosition.f.x - goaliePos.f.x, ballPrevPosition.f.y - goaliePos.f.y, ballPrevPosition.f.z - goaliePos.f.z);
 
-    if ((nlSqrt((tmp.f.x * tmp.f.x) + (tmp.f.y * tmp.f.y) + (tmp.f.z * tmp.f.z), true) - (goalieRadius + (ballRadius + ballMaxMotionPerTick))) <= 0.0f)
+    if ((nlSqrt((ballToGoalie.f.x * ballToGoalie.f.x) + (ballToGoalie.f.y * ballToGoalie.f.y) + (ballToGoalie.f.z * ballToGoalie.f.z), true) - (goalieRadius + (ballRadius + ballMaxMotionPerTick))) <= 0.0f)
     {
         testsPassed = 1;
-        float temp_f1_2 = SweepSpheres(ballRadius, ballPrevPosition, ballCurrentPosition, goalieRadius, goaliePos, goaliePos);
+        float sweepResult = SweepSpheres(ballRadius, ballPrevPosition, ballCurrentPosition, goalieRadius, goaliePos, goaliePos);
 
         bool isValidSweep = false;
-        if ((temp_f1_2 == CANT_COLLIDE) || (temp_f1_2 < 0.0f) || (temp_f1_2 > 1.0f))
+        if ((sweepResult == CANT_COLLIDE) || (sweepResult < 0.0f) || (sweepResult > 1.0f))
         {
             isValidSweep = 0;
         }
@@ -53,7 +53,7 @@ bool PhysicsGoalie::SweepTestForBallContact(const nlVector3& ballPrevPosition, c
         if (isValidSweep != 0)
         {
             testsPassed = 2;
-            if (SweepTestEveryBone(ballRadius, ballPrevPosition, ballCurrentPosition, outContactNormal, outContactPos) != 0)
+            if (SweepTestEveryBone(ballRadius, ballPrevPosition, ballCurrentPosition, contactNormal, positionWhenHit) != 0)
             {
                 testsPassed = 3;
             }
@@ -65,86 +65,83 @@ bool PhysicsGoalie::SweepTestForBallContact(const nlVector3& ballPrevPosition, c
 
 /**
  * Offset/Address/Size: 0x4A8 | 0x80139F28 | size: 0x2D8
- * TODO: 98.74% match - extra loop cursor move and contact-normal scheduling diff remain.
  */
-bool PhysicsGoalie::SweepTestEveryBone(float ballRadius, const nlVector3& ballPrevPosition, const nlVector3& ballCurrentPosition, nlVector3& outContactNormal, nlVector3& outContactPos) const
+bool PhysicsGoalie::SweepTestEveryBone(float ballRadius, const nlVector3& ballPrevPosition, const nlVector3& ballCurrentPosition, nlVector3& contactNormal, nlVector3& positionWhenHit) const
 {
-    nlVector3 accumulatedNormal = { 0.0f, 0.0f, 0.0f };
+    nlVector3 normalAccumulator = { 0.0f, 0.0f, 0.0f };
     float cantCollide;
-    float smallestSweepResult = 99999.0f;
+    float smallestTime = 99999.0f;
 
+    nlListConstIterator<PhysicsBoneVolume*> boneVolumeIterator = m_BoneVolumes.Begin();
     PhysicsBoneVolume* boneVolume;
-    ListEntry<PhysicsBoneVolume*>* boneVolumeEntry;
-    bool didHitBone = false;
-    int hitCount = 0;
-
-    if (m_BoneVolumes.m_Head == NULL)
+    bool detectedContact = false;
+    int numContactsDetected = 0;
+    if (!boneVolumeIterator.IsValid())
     {
         return false;
     }
 
     cantCollide = CANT_COLLIDE;
-    for (boneVolumeEntry = m_BoneVolumes.m_Head; boneVolumeEntry != NULL; boneVolumeEntry = boneVolumeEntry->next)
+    while (boneVolumeIterator.IsValid())
     {
-        boneVolume = boneVolumeEntry->entry;
-        PhysicsObject* object = boneVolume->m_pObject;
-        nlVector3& currentBonePos = object->GetPosition();
-        nlVector3& prevBonePos = boneVolume->m_PrevPosition;
-        float sweepResult = SweepSpheres(
+        boneVolume = boneVolumeIterator.Current();
+        PhysicsSphere* physSphere = (PhysicsSphere*)boneVolume->m_pObject;
+        const nlVector3& boneCurrentPosition = physSphere->GetPosition();
+        const nlVector3& bonePreviousPosition = boneVolume->m_PrevPosition;
+        float time = SweepSpheres(
             ballRadius,
             ballPrevPosition,
             ballCurrentPosition,
-            ((PhysicsSphere*)object)->GetRadius(),
-            prevBonePos,
-            currentBonePos);
+            physSphere->GetRadius(),
+            bonePreviousPosition,
+            boneCurrentPosition);
 
-        if ((sweepResult != cantCollide) && (sweepResult > 0.0f) && (sweepResult < 1.0f))
+        if ((time != cantCollide) && (time > 0.0f) && (time < 1.0f))
         {
-            if (sweepResult < smallestSweepResult)
+            if (time < smallestTime)
             {
-                smallestSweepResult = sweepResult;
+                smallestTime = time;
             }
 
-            float oneMinusSweepResult = 1.0f - sweepResult;
+            const float oneMinusTime = 1.0f - time;
 
-            nlVec3WeightedSum(outContactPos, oneMinusSweepResult, ballPrevPosition, sweepResult, ballCurrentPosition);
+            nlVec3WeightedSum(positionWhenHit, oneMinusTime, ballPrevPosition, time, ballCurrentPosition);
 
-            nlVec3Set(outContactNormal,
-                outContactPos.f.x - ((oneMinusSweepResult * prevBonePos.f.x) + (sweepResult * currentBonePos.f.x)),
-                outContactPos.f.y - ((oneMinusSweepResult * prevBonePos.f.y) + (sweepResult * currentBonePos.f.y)),
-                outContactPos.f.z - ((oneMinusSweepResult * prevBonePos.f.z) + (sweepResult * currentBonePos.f.z)));
+            nlVec3Set(contactNormal,
+                positionWhenHit.f.x - ((oneMinusTime * bonePreviousPosition.f.x) + (time * boneCurrentPosition.f.x)),
+                positionWhenHit.f.y - ((oneMinusTime * bonePreviousPosition.f.y) + (time * boneCurrentPosition.f.y)),
+                positionWhenHit.f.z - ((oneMinusTime * bonePreviousPosition.f.z) + (time * boneCurrentPosition.f.z)));
 
-            float normalRecipLength = nlRecipSqrt((outContactNormal.f.x * outContactNormal.f.x) + (outContactNormal.f.y * outContactNormal.f.y) + (outContactNormal.f.z * outContactNormal.f.z),
-                true);
+            float contactNormalLengthSq = contactNormal.GetLengthSq3D();
+            nlVec3Scale(contactNormal, nlRecipSqrt(contactNormalLengthSq, true));
 
-            nlVec3Scale(outContactNormal, normalRecipLength);
+            detectedContact = true;
+            numContactsDetected += 1;
 
-            didHitBone = true;
-            hitCount += 1;
-
-            nlVec3Add(accumulatedNormal, accumulatedNormal, outContactNormal);
+            nlVec3Add(normalAccumulator, normalAccumulator, contactNormal);
         }
+
+        boneVolumeIterator.Next();
     }
 
-    if (didHitBone)
+    if (detectedContact)
     {
-        float oneMinusSweepResult = 1.0f - smallestSweepResult;
-        float invHitCount = 1.0f / (float)hitCount;
+        float oneMinusTime = 1.0f - smallestTime;
+        float inverseContactCount = 1.0f / (float)numContactsDetected;
 
-        nlVec3Scale(outContactNormal, accumulatedNormal, invHitCount);
-        nlVec3WeightedSum(outContactPos, oneMinusSweepResult, ballPrevPosition, smallestSweepResult, ballCurrentPosition);
+        nlVec3Scale(contactNormal, normalAccumulator, inverseContactCount);
+        nlVec3WeightedSum(positionWhenHit, oneMinusTime, ballPrevPosition, smallestTime, ballCurrentPosition);
     }
 
-    return didHitBone;
+    return detectedContact;
 }
 
 /**
  * Offset/Address/Size: 0x70 | 0x80139AF0 | size: 0x438
- * TODO: 97.06% match - remaining float register allocation in the post collision loop.
  */
 void PhysicsGoalie::CollideGoalieWithPost()
 {
-    cPlayer* pGoalie = (cPlayer*)m_pAICharacter;
+    Goalie* pGoalie = (Goalie*)m_pAICharacter;
     nlVector3 v3GoaliePos = GetPosition();
     v3GoaliePos.f.z = 0.0f;
 
@@ -161,18 +158,12 @@ void PhysicsGoalie::CollideGoalieWithPost()
         pNet->GetPostLocation(v3PostPos, 0, 0.0f);
     }
 
-    float postToHeadY = v3PostPos.f.y - v3PrevHeadJointPos.f.y;
-    float postToHeadYSq = postToHeadY * postToHeadY;
-    float postToHeadX = v3PostPos.f.x - v3PrevHeadJointPos.f.x;
-    float postToHeadDistSq = postToHeadYSq + (postToHeadX * postToHeadX);
-
-    if (postToHeadDistSq < 4.0f)
+    if (v3PostPos.CalculateDistanceSquared2D(v3PrevHeadJointPos) < 4.0f)
     {
-        float postRadius = cNet::m_fNetPostRadius;
-        float onePlusPostRadius;
-        float headDistLimitSq = (1.0f + postRadius) * (1.0f + postRadius);
-
         float fJointRadius[3] = { 0.15f, 0.2f, 0.2f };
+        float postRadius = cNet::m_fNetPostRadius;
+        float headDistLimitSq = nlGetLengthSquared1D(1.0f + postRadius);
+
         nlVector3 v3JointPos[3];
 
         v3JointPos[0] = pGoalie->GetJointPosition(pGoalie->m_nHeadJointIndex);
@@ -186,21 +177,20 @@ void PhysicsGoalie::CollideGoalieWithPost()
         nlVector3* pJointPos = v3JointPos;
         float* pJointRadius = fJointRadius;
         u8 bMoved = 0;
-        onePlusPostRadius = 1.0f + postRadius;
 
         for (int i = 0; i < 3; i++, pJointPos++, pJointRadius++)
         {
+            nlVector3 v3JointWorldPos;
             float x = pJointPos->f.x;
             float y = pJointPos->f.y;
 
-            nlVector3 v3JointWorldPos;
             v3JointWorldPos.f.x = v3GoaliePos.f.x + ((fCos * x) - (fSin * y));
             v3JointWorldPos.f.y = v3GoaliePos.f.y + ((fCos * y) + (fSin * x));
             v3JointWorldPos.f.z = v3PostPos.f.z;
 
-            float postToJointX = v3PostPos.f.x - v3JointWorldPos.f.x;
-            float postToJointY = v3PostPos.f.y - v3JointWorldPos.f.y;
-            float jointDistSq = (postToJointX * postToJointX) + (postToJointY * postToJointY);
+            nlVector3 v3PostToJoint;
+            nlVec3Sub(v3PostToJoint, v3PostPos, v3JointWorldPos);
+            float jointDistSq = v3PostToJoint.GetLengthSq2D();
             float fMinDist = postRadius + (*pJointRadius);
 
             if (i == 0)
@@ -208,9 +198,7 @@ void PhysicsGoalie::CollideGoalieWithPost()
                 if (jointDistSq < headDistLimitSq)
                 {
                     nlVector3 v3Norm;
-                    v3Norm.f.x = v3JointWorldPos.f.y - v3PrevHeadJointPos.f.y;
-                    v3Norm.f.z = 0.0f;
-                    v3Norm.f.y = v3PrevHeadJointPos.f.x - v3JointWorldPos.f.x;
+                    nlVec3Set(v3Norm, v3JointWorldPos.f.y - v3PrevHeadJointPos.f.y, v3PrevHeadJointPos.f.x - v3JointWorldPos.f.x, 0.0f);
 
                     if ((v3PostPos.f.x * v3Norm.f.x) < 0.0f)
                     {
@@ -227,7 +215,7 @@ void PhysicsGoalie::CollideGoalieWithPost()
                     if (fCurDistAbs < fMinDist)
                     {
                         float fJointDist = nlSqrt(jointDistSq, true);
-                        float fMoveDist = InterpolateRangeClamped(0.0f, fMinDist - fCurDistAbs, onePlusPostRadius, 0.0f, fJointDist);
+                        float fMoveDist = InterpolateRangeClamped(0.0f, fMinDist - fCurDistAbs, 1.0f + postRadius, 0.0f, fJointDist);
 
                         if ((fCurDist > 0.0f) || m_CanCollidedWithGoalLine)
                         {
@@ -245,18 +233,15 @@ void PhysicsGoalie::CollideGoalieWithPost()
             {
                 if (jointDistSq < (fMinDist * fMinDist))
                 {
-                    float fJointDistY = v3JointWorldPos.f.y - v3PostPos.f.y;
-                    float fJointDistX = v3JointWorldPos.f.x - v3PostPos.f.x;
-                    float fJointDistZ = v3JointWorldPos.f.z - v3PostPos.f.z;
+                    nlVector3 v3JointDist;
+                    nlVec3Sub(v3JointDist, v3JointWorldPos, v3PostPos);
 
                     if (jointDistSq > 0.00001f)
                     {
-                        float fJointDist = nlSqrt(jointDistSq, true);
-                        float fScale = (fMinDist - fJointDist) / fJointDist;
+                        float fCurDist = nlSqrt(jointDistSq, true);
+                        float fScale = (fMinDist - fCurDist) / fCurDist;
 
-                        v3GoaliePos.f.z = v3GoaliePos.f.z + (fScale * fJointDistZ);
-                        v3GoaliePos.f.y = v3GoaliePos.f.y + (fScale * fJointDistY);
-                        v3GoaliePos.f.x = v3GoaliePos.f.x + (fScale * fJointDistX);
+                        nlVec3ScaleAdd(v3GoaliePos, fScale, v3JointDist, v3GoaliePos);
                         bMoved = 1;
                     }
                 }

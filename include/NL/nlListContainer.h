@@ -14,6 +14,9 @@
 template <typename T>
 class nlListIterator;
 
+template <typename T>
+class nlListConstIterator;
+
 template <typename T, typename Adapter>
 class ListContainerBase
 {
@@ -120,11 +123,45 @@ public:
     }
 
     nlListIterator<T> Begin();
+    nlListConstIterator<T> Begin() const;
 
     // offsets and sizes are dependent on the adapter
     /* 0x0 */ Adapter m_Allocator;
     ListEntry<T>* m_Head;
     ListEntry<T>* m_Tail;
+};
+
+template <typename T>
+class nlListConstIterator
+{
+public:
+    nlListConstIterator(ListEntry<T>* current)
+        : m_Curr(current)
+    {
+    }
+
+    bool IsValid() const
+    {
+        return m_Curr != NULL;
+    }
+
+    T Current() const
+    {
+        return m_Curr->entry;
+    }
+
+    void Next()
+    {
+        m_Curr = m_Curr->next;
+    }
+
+    ListEntry<T>* CurrentEntry() const
+    {
+        return m_Curr;
+    }
+
+private:
+    /* 0x0 */ ListEntry<T>* m_Curr;
 };
 
 template <typename T>
@@ -164,6 +201,12 @@ template <typename T, typename Adapter>
 inline nlListIterator<T> ListContainerBase<T, Adapter>::Begin()
 {
     return nlListIterator<T>(m_Head);
+}
+
+template <typename T, typename Adapter>
+inline nlListConstIterator<T> ListContainerBase<T, Adapter>::Begin() const
+{
+    return nlListConstIterator<T>(m_Head);
 }
 
 template <typename T, typename Adapter>

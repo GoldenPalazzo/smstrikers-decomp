@@ -134,6 +134,11 @@ inline void nlVec2Sub(nlVector2& result, const nlVector2& a, const nlVector2& b)
     nlVec2Set(result, a.f.x - b.f.x, a.f.y - b.f.y);
 }
 
+inline float nlGetLengthSquared1D(float x)
+{
+    return x * x;
+}
+
 inline float nlGetLengthSquared2D(float x, float y)
 {
     return x * x + y * y;

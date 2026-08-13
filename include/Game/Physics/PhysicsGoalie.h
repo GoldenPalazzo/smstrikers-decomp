@@ -11,7 +11,6 @@ public:
         : PhysicsCharacter(f1, f2)
     {
     }
-    virtual ~PhysicsGoalie() { };
     virtual void PostUpdate();
 
     bool SweepTestForBallContact(const nlVector3&, const nlVector3&, const nlVector3&, float, nlVector3&, nlVector3&) const;
