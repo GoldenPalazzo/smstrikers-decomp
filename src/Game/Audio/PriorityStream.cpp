@@ -52,12 +52,12 @@ void PriorityStream::PLAY_RECORD::Set(
     m_StreamId = StreamId;
     m_OrigStreamId = StreamId;
     m_Volume = Volume;
-    m_Looping = Looping;
-    m_FadeIn = FadeIn;
-    m_ExistingFadeOut = ExistingFadeOut;
+    m_Fades.b.looping = Looping;
+    m_Fades.b.fadeIn = FadeIn;
+    m_Fades.b.fadeOut = ExistingFadeOut;
     m_VolGroup = VolGroup;
-    m_Queue = Queue;
-    m_Active = Active;
+    m_Fades.b.queue = Queue;
+    m_Fades.b.active = Active;
 
     if (StreamParam)
     {
@@ -76,7 +76,7 @@ void PriorityStream::PLAY_RECORD::Play(bool CheckActive, bool GetNextId)
         return;
     }
 
-    if (CheckActive && !m_Active)
+    if (CheckActive && !m_Fades.b.active)
     {
         return;
     }
@@ -86,14 +86,14 @@ void PriorityStream::PLAY_RECORD::Play(bool CheckActive, bool GetNextId)
         m_StreamId = GetNextStreamId(m_OrigStreamId);
     }
 
-    if (m_Queue)
+    if (m_Fades.b.queue)
     {
-        m_Queue = 0;
+        m_Fades.b.queue = 0;
         m_Track.QueueStream(
             m_StreamId,
             m_Volume,
-            (m_Looping & 1),
-            m_FadeIn,
+            (m_Fades.b.looping & 1),
+            m_Fades.b.fadeIn,
             m_StreamParam[0] ? m_StreamParam : (const char*)0,
             (Audio::MasterVolume::VOLUME_GROUP)m_VolGroup);
     }
@@ -102,9 +102,9 @@ void PriorityStream::PLAY_RECORD::Play(bool CheckActive, bool GetNextId)
         m_Track.PlayStream(
             m_StreamId,
             m_Volume,
-            (m_Looping & 1),
-            m_FadeIn,
-            m_ExistingFadeOut,
+            (m_Fades.b.looping & 1),
+            m_Fades.b.fadeIn,
+            m_Fades.b.fadeOut,
             m_StreamParam[0] ? m_StreamParam : (const char*)0,
             (Audio::MasterVolume::VOLUME_GROUP)m_VolGroup);
     }
@@ -254,8 +254,7 @@ void PriorityStream::FakeResume(bool checkActive)
 
 /**
  * Offset/Address/Size: 0x380 | 0x80157E34 | size: 0x1B0
- * TODO: 99.35% match - queued path loads looping flag through r3 instead of r4;
- *   play path extracts FadeIn before loading the track pointer.
+ * TODO: 99.72% match - play-path FadeIn halfword uses r6 instead of r4.
  */
 void PriorityStream::TrackIdleCB()
 {
@@ -270,7 +269,47 @@ void PriorityStream::TrackIdleCB()
 
         if (m_PStream.m_StreamId)
         {
-            m_PStream.Play(true, true);
+            if (!m_PStream.m_StreamId)
+            {
+                return;
+            }
+
+            if (!m_PStream.m_Fades.b.active)
+            {
+                return;
+            }
+
+            m_PStream.m_StreamId = m_PStream.GetNextStreamId(m_PStream.m_OrigStreamId);
+
+            if (m_PStream.m_Fades.b.queue)
+            {
+                m_PStream.m_Fades.b.queue = 0;
+                bool looping;
+                unsigned long dummy;
+                unsigned long fadeIn;
+                AudioStreamTrack::StreamTrack& track = m_PStream.m_Track;
+                looping = (m_PStream.m_Fades.b.looping & 1);
+                dummy = m_PStream.m_StreamId;
+                fadeIn = m_PStream.m_Fades.b.fadeIn;
+                track.QueueStream(
+                    dummy,
+                    m_PStream.m_Volume,
+                    looping,
+                    fadeIn,
+                    m_PStream.m_StreamParam[0] ? m_PStream.m_StreamParam : (const char*)0,
+                    (Audio::MasterVolume::VOLUME_GROUP)m_PStream.m_VolGroup);
+            }
+            else
+            {
+                m_PStream.m_Track.PlayStream(
+                    m_PStream.m_StreamId,
+                    m_PStream.m_Volume,
+                    (m_PStream.m_Fades.b.looping & 1),
+                    (unsigned long)((m_PStream.m_Fades.half & 0xfffe) >> 1),
+                    m_PStream.m_Fades.b.fadeOut,
+                    m_PStream.m_StreamParam[0] ? m_PStream.m_StreamParam : (const char*)0,
+                    (Audio::MasterVolume::VOLUME_GROUP)m_PStream.m_VolGroup);
+            }
             return;
         }
     }

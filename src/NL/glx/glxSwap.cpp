@@ -138,6 +138,22 @@ static inline void PutPixel(
     }
 }
 
+static inline int DecodeLoadingPixel(u16 pixel, int yuv[3])
+{
+    int y = (pixel >> 12) & 0xF;
+    y |= (pixel >> 8) & 0xF0;
+    int u = (pixel >> 8) & 0xF;
+    u |= (pixel & 0x0F00) >> 4;
+    int v = (pixel & 0x00F0) >> 4;
+    v |= v << 4;
+    int a = pixel & 0xF;
+    a |= a << 4;
+    yuv[0] = y;
+    yuv[1] = u;
+    yuv[2] = v;
+    return a;
+}
+
 /**
  * Offset/Address/Size: 0x118 | 0x801BEE68 | size: 0x2D0
  */
@@ -168,13 +184,7 @@ static void BlitImage(int offset_x, int offset_y, float scale_x, float scale_y, 
                 pixel = _ImageData[srcRow][ix];
             }
 
-            int alpha = (pixel & 0xF) | ((pixel & 0xF) << 4);
-            yuv[1] = (pixel >> 8) & 0xF;
-            yuv[0] = (pixel & 0xF000) >> 12;
-            yuv[2] = (((pixel >> 4) & 0xF) << 4);
-            yuv[0] |= (((pixel >> 12) & 0xF) << 4);
-            yuv[2] |= (pixel >> 4) & 0xF;
-            yuv[1] |= (((pixel >> 8) & 0xF) << 4);
+            int alpha = DecodeLoadingPixel(pixel, yuv);
             if (alpha > 0)
             {
                 PutPixel(glx_FrameBuffer[glx_nBuffer ^ glx_nBlitXor], offset_x + x,

@@ -78,24 +78,12 @@ public:
 
     void* operator new(size_t)
     {
-        nlArrayAllocator<TDEVChunkFile>* alloc = s_pAllocator;
-        TDEVChunkFile* ptr = alloc->m_pFree;
-        if (ptr == NULL)
-        {
-            ptr = NULL;
-        }
-        else
-        {
-            alloc->m_pFree = *(TDEVChunkFile**)ptr;
-        }
-        return ptr;
+        return s_pAllocator->Allocate();
     }
 
     void operator delete(void* ptr)
     {
-        nlArrayAllocator<TDEVChunkFile>* alloc = s_pAllocator;
-        *(TDEVChunkFile**)ptr = alloc->m_pFree;
-        alloc->m_pFree = (TDEVChunkFile*)ptr;
+        s_pAllocator->DeleteEntry((TDEVChunkFile*)ptr);
     }
 
     static unsigned int FileSize(_FILE* pFile);
@@ -119,24 +107,12 @@ public:
 
     void* operator new(size_t)
     {
-        nlArrayAllocator<DolphinFile>* alloc = s_pAllocator;
-        DolphinFile* ptr = alloc->m_pFree;
-        if (ptr == NULL)
-        {
-            ptr = NULL;
-        }
-        else
-        {
-            alloc->m_pFree = *(DolphinFile**)ptr;
-        }
-        return ptr;
+        return s_pAllocator->Allocate();
     }
 
     void operator delete(void* ptr)
     {
-        nlArrayAllocator<DolphinFile>* alloc = s_pAllocator;
-        *(DolphinFile**)ptr = alloc->m_pFree;
-        alloc->m_pFree = (DolphinFile*)ptr;
+        s_pAllocator->DeleteEntry((DolphinFile*)ptr);
     }
 
     static GCFile* Open(const char* fileName);

@@ -4,6 +4,20 @@
 #include "Game/Audio/StreamTrack.h"
 #include "NL/nlBind.h"
 
+union PriorityFadeBits
+{
+    unsigned long word;
+    unsigned short half;
+    struct
+    {
+        unsigned long fadeIn : 15;
+        unsigned long fadeOut : 14;
+        unsigned char looping : 1;
+        unsigned char queue : 1;
+        unsigned char active : 1;
+    } b;
+};
+
 class PriorityStream
 {
 public:
@@ -23,11 +37,7 @@ public:
         /* 0x00 */ unsigned long m_StreamId;
         /* 0x04 */ unsigned long m_OrigStreamId;
         /* 0x08 */ float m_Volume;
-        /* 0x0C */ unsigned long m_FadeIn : 15;
-        /* 0x0C */ unsigned long m_ExistingFadeOut : 14;
-        /* 0x0F */ unsigned char m_Looping : 1;
-        /* 0x0F */ unsigned char m_Queue : 1;
-        /* 0x0F */ unsigned char m_Active : 1;
+        /* 0x0C */ PriorityFadeBits m_Fades;
         /* 0x10 */ char m_StreamParam[32];
         /* 0x30 */ AudioStreamTrack::StreamTrack& m_Track;
         /* 0x34 */ Audio::MasterVolume::VOLUME_GROUP m_VolGroup;
