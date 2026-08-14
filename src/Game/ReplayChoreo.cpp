@@ -20,12 +20,24 @@ double fabs(double);
 
 namespace
 {
-char* replayTypeNames[9];
-char* zoneDepthNames[3];
-char* zoneInWidthNames[3];
-char scriptName[128];
-int cameraPick;
+char* replayTypeNames[9] = {
+    "NORMAL_SHOT",
+    "ONE_TIMER",
+    "SHOOT_TO_SCORE",
+    "DEFLECTION",
+    "LOOSE_BALL",
+    "OWN_GOAL",
+    "CAPTAIN_SHOOT_TO_SCORE",
+    "HIGHLIGHT",
+    "HYPER_STRIKE",
+};
+char* zoneDepthNames[3] = { "MID", "CLOSE", "DEEP" };
+char* zoneInWidthNames[3] = { "CENTER", "FRONT", "BACK" };
+char scriptName[128] = "";
+int cameraPick = -1;
 } // namespace
+
+#include "ReplayChoreo_interp.cpp"
 
 /**
  * Offset/Address/Size: 0xFDC | 0x80128648 | size: 0xE8
@@ -34,172 +46,6 @@ ReplayChoreo& ReplayChoreo::Instance()
 {
     static ReplayChoreo instance;
     return instance;
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x801287C0 | size: 0x3B4
- */
-void ReplayChoreo::DoFunctionCall(unsigned int func)
-{
-    switch (func)
-    {
-    case 0:
-    {
-        m_SP--;
-        ReplayCameraFocus arg0 = (ReplayCameraFocus)*m_SP;
-        AddCameraFocus(arg0);
-        break;
-    }
-    case 1:
-    {
-        m_SP--;
-        GameTweaks* tweaks = g_pGame->m_pGameTweaks;
-        f32 duration = *(f32*)m_SP;
-        Audio::FadeFilter(tweaks->unk214, tweaks->unk210, duration, 0.0f);
-        break;
-    }
-    case 2:
-    {
-        m_SP--;
-        GameTweaks* tweaks = g_pGame->m_pGameTweaks;
-        f32 duration = *(f32*)m_SP;
-        Audio::FadeFilter(tweaks->unk210, tweaks->unk214, duration, 0.0f);
-        break;
-    }
-    case 3:
-    {
-        mCamera.mFrozen = true;
-        break;
-    }
-    case 4:
-    {
-        m_SP--;
-        m_SP--;
-        const char* sfxName = (const char*)*m_SP;
-        Audio::PlayWorldSFXbyStr(sfxName, 1.0f, 0.5f, false, true, NULL, NULL, NULL);
-        break;
-    }
-    case 5:
-    {
-        m_SP--;
-        m_SP--;
-        f32 vol = *(f32*)m_SP;
-        m_SP--;
-        const char* sfxName = (const char*)*m_SP;
-        Audio::PlayWorldSFXbyStr(sfxName, vol, 0.5f, false, true, NULL, NULL, NULL);
-        break;
-    }
-    case 6:
-    {
-        m_SP--;
-        f32 timeOffset = *(f32*)m_SP;
-        m_SP--;
-        mReplayManager->SetCurrentTime(timeOffset + mReplay->TimeOfLastOccurence(*m_SP));
-        f32 endTime = mReplayManager->mReplay->EndTime();
-        if (endTime - mReplayManager->mTime > 0.033333f)
-        {
-            mReplayManager->SetCurrentTime(mReplayManager->mReplay->EndTime() - 0.033333f);
-        }
-        break;
-    }
-    case 7:
-    {
-        m_SP--;
-        f32 speed = *(f32*)m_SP;
-        if (mRunningFor)
-        {
-            if (0.0f >= mRunForTimeLeft)
-            {
-                mRunForTimeLeft = 0.0f;
-                mRunningFor = false;
-                break;
-            }
-        }
-        if (!mRunningFor)
-        {
-            mRunForTimeLeft = speed;
-            mRunningFor = true;
-        }
-        StopWithUndo();
-        break;
-    }
-    case 8:
-    {
-        m_SP--;
-        f32 timeOffset = *(f32*)m_SP;
-        m_SP--;
-        u32 eventId = *m_SP;
-        if (!IsFinished())
-        {
-            f32 currentTime = mReplayManager->mTime;
-            f32 lastOccurence = mReplay->TimeOfLastOccurence(eventId);
-            if (currentTime < timeOffset + lastOccurence)
-            {
-                StopWithUndo();
-            }
-        }
-        break;
-    }
-    case 9:
-    {
-        m_SP--;
-        mCamera.CutTo((ReplayCameraPosition)*m_SP);
-        break;
-    }
-    case 10:
-    {
-        m_SP--;
-        mCamera.mFocus = *m_SP;
-        break;
-    }
-    case 11:
-    {
-        m_SP--;
-        f32 fov = *(f32*)m_SP;
-        mCamera.mFov = fov;
-        mCamera.mDeltaFov = 0.0f;
-        break;
-    }
-    case 12:
-    {
-        m_SP--;
-        f32 speed = *(f32*)m_SP;
-        mReplayManager->mSpeed = speed;
-        mReplayManager->mSpeedUp = 0.0f;
-        break;
-    }
-    case 13:
-    {
-        m_SP--;
-        f32 deltaFov = *(f32*)m_SP;
-        mCamera.mDeltaFov = deltaFov;
-        break;
-    }
-    case 14:
-    {
-        m_SP--;
-        f32 speedUp = *(f32*)m_SP;
-        mReplayManager->mSpeedUp = speedUp;
-        break;
-    }
-    case 15:
-    {
-        m_SP--;
-        const char* sfxName = (const char*)*m_SP;
-        Audio::StopWorldSFXbyStr(sfxName);
-        break;
-    }
-    default:
-        nlBreak();
-        break;
-    }
-}
-
-/**
- * Offset/Address/Size: 0x34 | 0x80128764 | size: 0x5C
- */
-inline ReplayCamera::~ReplayCamera()
-{
 }
 
 template <typename StringType, typename T1, typename T2, typename T3, typename T4>
@@ -352,8 +198,8 @@ BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScrip
     int zoneDepth = 0;
     int replayType = mGoalScoredData.uGoalType;
 
+    f32 y = 0.5f * (2.0f * cField::mv3FieldPosition.f.y) + mGoalScoredData.v3ShotPosition.f.y;
     f32 fieldDepth = 2.0f * cField::mv3FieldPosition.f.y;
-    f32 y = 0.5f * fieldDepth + mGoalScoredData.v3ShotPosition.f.y;
 
     if (y > 0.66f * fieldDepth)
     {
@@ -583,7 +429,7 @@ void ReplayChoreo::SaveHighlight(ReplayChoreo::HighlightQuality quality)
 
     if (idx >= 0)
     {
-        if (mReplay->LockReel(0.0f, idx + 1, quality))
+        if (mReplay->LockReel(4.0f, idx + 1, quality))
         {
             char* highlight = (char*)this + idx * sizeof(Highlight);
 

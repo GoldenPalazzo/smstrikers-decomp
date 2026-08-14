@@ -12,12 +12,14 @@ class GLRenderList
 {
 public:
     s32 AttachModel(const glModel*, unsigned long);
+    void AttachPacket(unsigned long, const glModelPacket*);
     void Iterate(eGLView, void (*)(eGLView, unsigned long, const glModelPacket*));
     bool IsEmpty() const;
     void Compact();
     void Clear();
 
     GLRenderList();
+    ~GLRenderList();
 
     /* 0x00 */ u32 m_unk_0x00;
     /* 0x04 */ eGLViewSort m_unk_0x04;

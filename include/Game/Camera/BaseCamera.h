@@ -47,9 +47,4 @@ public:
     /* 0x10 */ nlVector3 mUpVector;
 }; // total size: 0x1C
 
-inline float cBaseCamera::GetFOV() const
-{
-    return 27.0f;
-}
-
 #endif // _BASECAMERA_H_

@@ -36,7 +36,6 @@ public:
     ReplayCamera();
     /* 0x0C */ virtual eCameraType GetType() { return eCameraType_Replay; };
     /* 0x10 */ virtual void Update(float);
-    virtual ~ReplayCamera();
     /* 0x14 */ virtual const nlMatrix4& GetViewMatrix() const;
     /* 0x20 */ virtual const nlVector3& GetTargetPosition() const { return mLookAt; };
     /* 0x24 */ virtual const nlVector3& GetCameraPosition() const { return mPosition; };

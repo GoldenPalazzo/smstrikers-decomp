@@ -140,19 +140,13 @@ void Replay::Record(float time, T& snapshot, unsigned int events)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x50 | 0x8011290C | size: 0x4
-//  */
-// void cBaseCamera::Reactivate()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x48 | 0x80112904 | size: 0x8
-//  */
-// void cBaseCamera::GetFOV() const
-// {
-// }
+/**
+ * Offset/Address/Size: 0x48 | 0x80112904 | size: 0x8
+ */
+float cBaseCamera::GetFOV() const
+{
+    return 27.0f;
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x801128BC | size: 0x48

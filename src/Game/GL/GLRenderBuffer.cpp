@@ -6,6 +6,16 @@ bool GLRenderBuffer::m_bInstance = false;
 
 GLRenderBuffer glRenderBuffer;
 
+GLRenderBuffer::GLRenderBuffer()
+{
+    m_drawableData.m_Head = NULL;
+    m_bInstance = true;
+    m_bEnabled = false;
+    m_bSending = false;
+    m_bExclusive = false;
+    m_uAllocated = 0;
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x801E7FB0 | size: 0x124
  */

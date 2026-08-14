@@ -20,15 +20,7 @@ public:
 class GLRenderBuffer
 {
 public:
-    GLRenderBuffer()
-    {
-        m_drawableData.m_Head = NULL;
-        m_bInstance = true;
-        m_bEnabled = false;
-        m_bSending = false;
-        m_bExclusive = false;
-        m_uAllocated = 0;
-    }
+    GLRenderBuffer();
     ~GLRenderBuffer();
 
     /* 0x0 */ nlDLListContainer<GLDrawableData*> m_drawableData;
