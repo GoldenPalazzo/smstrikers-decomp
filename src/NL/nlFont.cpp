@@ -33,6 +33,14 @@ nlFont::~nlFont()
     }
 }
 
+static inline nlFont::GlyphInfo* AddExtendedGlyph(nlFont* self, nlListSlotPoolHigh<nlFont::GlyphInfo>& GlyphList)
+{
+    ListEntry<nlFont::GlyphInfo>* pEntry = GlyphList.Allocate(nlFont::GlyphInfo());
+    nlListAddStart<ListEntry<nlFont::GlyphInfo> >(&GlyphList.m_Head, pEntry, &GlyphList.m_Tail);
+    self->m_ExtendedGlyphCount++;
+    return &pEntry->entry;
+}
+
 static inline void ParseKernPairs(nlFont* self, nlFont::GlyphInfo* pInfo, char* pToken, unsigned short Base, nlListSlotPoolHigh<nlFont::KernPair>& KernList)
 {
     pInfo->HasKernPairs = 1;
@@ -214,10 +222,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
             }
             else
             {
-                ListEntry<nlFont::GlyphInfo>* pEntry = ExtendedGlyphList.Allocate(nlFont::GlyphInfo());
-                nlListAddStart<ListEntry<nlFont::GlyphInfo> >(&ExtendedGlyphList.m_Head, pEntry, &ExtendedGlyphList.m_Tail);
-                m_ExtendedGlyphCount++;
-                pInfo = &pEntry->entry;
+                pInfo = AddExtendedGlyph(this, ExtendedGlyphList);
             }
 
             pInfo->UnicodeChar = Character;
@@ -569,9 +574,10 @@ void nlFont::DrawString(eGLView View, const FontCharString& Text, const nlVector
                     }
 
                     int FinalAdvance = (int)pGlyph->Advance;
-                    if (pGlyph->HasKernPairs && ((volatile const unsigned short*)pCurrentChar)[1] != 0)
+                    if (pGlyph->HasKernPairs && pCurrentChar[1] != 0)
                     {
-                        KernPair kp = { { pCurrentChar[0], pCurrentChar[1] }, 0 };
+                        unsigned short* pKern = (unsigned short*)pCurrentChar;
+                        KernPair kp = { { pKern[0], pKern[1] }, 0 };
                         KernPair* pValidKp = nlBSearch<KernPair, KernPair>(kp, m_pKernTable, m_KernTableSize);
                         if (pValidKp != 0)
                         {
