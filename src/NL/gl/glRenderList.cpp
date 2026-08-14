@@ -213,16 +213,36 @@ public:
 #include "NL/platvmath.h"
 #include "NL/nlSlotPool.h"
 
+static inline unsigned long PackMatrixDepth(const glModelPacket* pPacket, const nlMatrix4& view, unsigned long seq)
+{
+    nlMatrix4 packetMatrix;
+    nlVector3 out;
+    glGetMatrix(pPacket->state.matrix, packetMatrix);
+    nlMultPosVectorMatrix(out, *(nlVector3*)&packetMatrix.m[3][0], view);
+    return ((unsigned long)(int)(-out.f.z * 100.0f) << 12) | (seq & 0xFFF);
+}
+
+static inline unsigned long PackStreamDepth(const glModelPacket* pPacket, const nlMatrix4& view)
+{
+    nlMatrix4 packetMatrix;
+    nlVector3 out;
+    glGetMatrix(pPacket->state.matrix, packetMatrix);
+    nlMultPosVectorMatrix(out, *(nlVector3*)pPacket->streams->address, view);
+    return (unsigned long)(int)(-out.f.z * 2147483648.0f);
+}
+
 extern GLRenderBuffer glRenderBuffer;
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D92C0 | size: 0x36C
- * TODO: 97.9% match - pModel/layer register swap (r25/r26), pPacket r31 vs r29,
- *       extra mr before rlwimi
  */
 s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
 {
+    unsigned long index;
     glModelPacket* pPacket;
+    glModelPacket* newPacket;
+    DepthPacketPair pair;
+    nlMatrix4 m;
 
     if ((s32)m_unk_0x00 < 0x1A && glRenderBuffer.m_bEnabled && glRenderBuffer.m_bExclusive && !glRenderBuffer.m_bSending)
     {
@@ -235,17 +255,15 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
     {
         if ((s32)gl_ModifyGetNum() > 0)
         {
-            unsigned long numPackets = pModel->numPackets;
-            for (unsigned long index = 0; index < numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
+            for (index = 0; index < pModel->numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
             {
-                glModelPacket* newPacket = gl_Modify(pPacket);
+                newPacket = gl_Modify(pPacket);
                 glplatAttachPacket((eGLView)m_unk_0x00, layer, newPacket == NULL ? pPacket : newPacket);
             }
         }
         else
         {
-            unsigned long numPackets = pModel->numPackets;
-            for (unsigned long index = 0; index < numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
+            for (index = 0; index < pModel->numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
             {
                 glplatAttachPacket((eGLView)m_unk_0x00, layer, pPacket);
             }
@@ -253,43 +271,22 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
     }
     else if (m_unk_0x04 == GLVSort_TransformedDepth || m_unk_0x04 == GLVSort_TransformedMatrixDepth)
     {
-        DepthPacketPair pair;
-        nlMatrix4 m;
-        GLDepthPacketTree* pTree;
-        unsigned int* pCount;
-        unsigned long sortKey;
-        nlVector3 out;
         glGetIdentityMatrix();
         glGetMatrix((unsigned long)glViewGetViewMatrix((eGLView)m_unk_0x00), m);
-        unsigned long numPackets = pModel->numPackets;
-
-        for (unsigned long index = 0; index < numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
+        for (index = 0; index < pModel->numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
         {
             pair.packet = pPacket;
-
             if (m_unk_0x04 == GLVSort_TransformedMatrixDepth)
             {
-                sortKey = uDepthInsertNumber;
-                nlMatrix4 packetMatrix;
-                glGetMatrix(pPacket->state.matrix, packetMatrix);
-                nlMultPosVectorMatrix(out, *(nlVector3*)&packetMatrix.m[3][0], m);
-                sortKey = ((s32)(-out.f.z * 100.0f) << 12) | (sortKey & 0xFFF);
-                pair.sortKey = sortKey;
+                pair.sortKey = PackMatrixDepth(pPacket, m, uDepthInsertNumber);
                 uDepthInsertNumber++;
             }
             else
             {
-                nlMatrix4 packetMatrix2;
-                glGetMatrix(pPacket->state.matrix, packetMatrix2);
-                nlVector3 out2;
-                nlMultPosVectorMatrix(out2, *(nlVector3*)pPacket->streams->address, m);
-                pair.sortKey = (s32)(-out2.f.z * 2147483648.0f);
+                pair.sortKey = PackStreamDepth(pPacket, m);
             }
 
-            pTree = depthPacketTree;
-            const unsigned int& one = 1;
-            pCount = pTree->Add(pair, one);
-
+            unsigned int* pCount = depthPacketTree->Add(pair, 1);
             if (pCount != NULL)
             {
                 *pCount = *pCount + 1;
@@ -298,68 +295,18 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
     }
     else if (m_unk_0x04 == GLVSort_Reverse)
     {
-        GLPacketList* pList;
-        DLListEntry<const glModelPacket*>* p;
-        unsigned long numPackets = pModel->numPackets;
-        for (unsigned long index = 0; index < numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
+        for (index = 0; index < pModel->numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
         {
             glModelPacket* modified = glplatModifyPacket((eGLView)m_unk_0x00, pPacket);
-            pList = packetList;
-            p = NULL;
-
-            if (pList->m_Allocator.m_FreeList == NULL)
-            {
-                SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)pList, 0xC);
-            }
-
-            DLListEntry<const glModelPacket*>* entry = (DLListEntry<const glModelPacket*>*)pList->m_Allocator.m_FreeList;
-            if (entry != NULL)
-            {
-                p = entry;
-                pList->m_Allocator.m_FreeList = (SlotPoolEntry*)entry->m_next;
-            }
-
-            if (p != NULL)
-            {
-                p->m_next = NULL;
-                p->m_prev = NULL;
-                p->entry = modified;
-            }
-
-            nlDLRingAddStart(&pList->m_Head, p);
+            packetList->AddStart(modified);
         }
     }
     else if (m_unk_0x04 == GLVSort_None)
     {
-        GLPacketList* pList;
-        DLListEntry<const glModelPacket*>* p;
-        unsigned long numPackets = pModel->numPackets;
-        for (unsigned long index = 0; index < numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
+        for (index = 0; index < pModel->numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
         {
             glModelPacket* modified = glplatModifyPacket((eGLView)m_unk_0x00, pPacket);
-            pList = packetList;
-            p = NULL;
-
-            if (pList->m_Allocator.m_FreeList == NULL)
-            {
-                SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)pList, 0xC);
-            }
-
-            DLListEntry<const glModelPacket*>* entry = (DLListEntry<const glModelPacket*>*)pList->m_Allocator.m_FreeList;
-            if (entry != NULL)
-            {
-                p = entry;
-                pList->m_Allocator.m_FreeList = (SlotPoolEntry*)entry->m_next;
-            }
-
-            if (p != NULL)
-            {
-                p->m_next = NULL;
-                p->m_prev = NULL;
-                p->entry = modified;
-            }
-
-            nlDLRingAddEnd(&pList->m_Head, p);
+            packetList->AddEnd(modified);
         }
     }
 
