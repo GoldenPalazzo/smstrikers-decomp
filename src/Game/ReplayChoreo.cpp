@@ -347,9 +347,6 @@ void ReplayChoreo::Reset()
 
 /**
  * Offset/Address/Size: 0x698 | 0x80127D04 | size: 0x3E0
- * OPEN: 93.42% - register allocation only; every instruction placement matches.
- * Target coalesces replayType and replayType*4 into r30 once the `format`
- * pointer dies, so it saves r27-r31; we need a sixth web in r26 (stmw r26).
  */
 BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScriptName(ReplayType) const
 {
@@ -608,11 +605,9 @@ void ReplayChoreo::SaveHighlight(ReplayChoreo::HighlightQuality quality)
  */
 int ReplayChoreo::NumHighlights() const
 {
-    ReplayChoreo* self = const_cast<ReplayChoreo*>(this);
-    self->mReplayManager = ReplayManager::Instance();
+    mReplayManager = ReplayManager::Instance();
     int count = 0;
-    ReplayManager* volatile* pMgr = &self->mReplayManager;
-    self->mReplay = (*pMgr)->mReplay;
+    mReplay = mReplayManager->mReplay;
     for (int i = 0; i < 3; i++)
     {
         if (mReplay->IsReelValid(i + 1))

@@ -80,13 +80,13 @@ public:
     ~ReplayChoreo();
 
     int mNumScripts[3][3][9];       // offset 0x24, size 0x144
-    ReplayManager* mReplayManager;  // offset 0x168, size 0x4
-    Replay* mReplay;                // offset 0x16C, size 0x4
+    mutable ReplayManager* mReplayManager; // offset 0x168, size 0x4
+    mutable Replay* mReplay;               // offset 0x16C, size 0x4
     ReplayCamera mCamera;           // offset 0x170, size 0x8C
     float mRunForTimeLeft;          // offset 0x1FC, size 0x4
     bool mRunningFor;               // offset 0x200, size 0x1
     void* mByteCode;                // offset 0x204, size 0x4
-    GoalScoredData mGoalScoredData; // offset 0x208, size 0x24
+    mutable GoalScoredData mGoalScoredData; // offset 0x208, size 0x24
     int mReplayPad;                 // offset 0x22C, size 0x4
     Highlight mHighlights[3];       // offset 0x230, size 0x9C
     int mHighlightIndex;            // offset 0x2CC, size 0x4
