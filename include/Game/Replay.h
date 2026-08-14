@@ -335,4 +335,119 @@ public:
 
 }; // total size: 0x54
 
+/**
+ * Offset/Address/Size: 0x3C | 0x8011294C | size: 0x168
+ */
+template <typename T>
+void Replay::Record(float time, T& snapshot, unsigned int events)
+{
+    for (int interval = 1; interval <= 3; interval++)
+    {
+        if (mTick % interval == 0)
+        {
+            NewFrame();
+
+            SaveFrame frame;
+            char* storage = mFree->mBegin;
+            frame.mInterval = interval;
+            frame.mStream.mCount = 0;
+            frame.mStream.mStorage = storage;
+            Replayable<0>(frame, snapshot);
+
+            int frameSize = frame.mStream.mStorage - mFree->mBegin;
+            if (mActualMaxFrameSize < frameSize)
+            {
+                mActualMaxFrameSize = frameSize;
+            }
+
+            mReels[0].mLast = mFree;
+            mFree->mReelIdx = 0;
+            mFree->mTime = time;
+            mFree->mInterval = interval;
+            mFree->mEvents = events;
+
+            mFree->mNext = new (Frame::mSlotPool.Allocate()) Frame(mFree->mBegin + frameSize, mFree->mSize - frameSize, mFree->mNext);
+            mFree->mSize = frameSize;
+            mFree = mFree->mNext;
+        }
+    }
+
+    mTick++;
+}
+
+/**
+ * Offset/Address/Size: 0x1A4 | 0x80112AB4 | size: 0x1B8
+ */
+template <typename T>
+void Replay::Play(float time, T& previous, T& current, float* blend) const
+{
+    if (time < BeginTime())
+    {
+        time = BeginTime();
+    }
+    if (time > EndTime())
+    {
+        time = EndTime();
+    }
+
+    int interval;
+    Frame* rhs;
+    Frame* lhs;
+    Frame* tryLhs;
+    LoadFrame previousLoadFrame;
+    LoadFrame currentLoadFrame;
+
+    for (interval = 1; interval <= 3; interval++)
+    {
+        rhs = mReels[mReelIdx].mBegin;
+        while (rhs != NULL)
+        {
+            if (rhs->mInterval == interval && rhs->mTime > time)
+            {
+                lhs = NULL;
+                tryLhs = mReels[mReelIdx].mBegin;
+                while (tryLhs != NULL)
+                {
+                    if (tryLhs->mInterval == interval && tryLhs->mTime <= time)
+                    {
+                        lhs = tryLhs;
+                    }
+                    tryLhs = Next(tryLhs, mReelIdx);
+                }
+
+                if (lhs != NULL && rhs != NULL)
+                {
+                    blend[interval - 1] = (time - lhs->mTime) / (rhs->mTime - lhs->mTime);
+
+                    float aheadOfFrame = time - lhs->mTime;
+                    char* lhsBegin = lhs->mBegin;
+                    previousLoadFrame.mInterval = interval;
+                    previousLoadFrame.mStream.mCount = 0;
+                    previousLoadFrame.mStream.mStorage = lhsBegin;
+                    previousLoadFrame.mReplayNonBlendables = REPLAY_NON_BLENDABLES;
+                    previousLoadFrame.mNonBlendableAheadOfFrame = aheadOfFrame;
+                    Replayable<0>(previousLoadFrame, previous);
+
+                    char* rhsBegin = rhs->mBegin;
+                    currentLoadFrame.mInterval = interval;
+                    currentLoadFrame.mStream.mCount = 0;
+                    currentLoadFrame.mStream.mStorage = rhsBegin;
+                    currentLoadFrame.mReplayNonBlendables = DO_NOT_REPLAY_NON_BLENDABLES;
+                    currentLoadFrame.mNonBlendableAheadOfFrame = 0.0f;
+                    Replayable<0>(currentLoadFrame, current);
+
+                    break;
+                }
+            }
+            rhs = Next(rhs, mReelIdx);
+        }
+    }
+}
+
+template <typename T>
+void Blend(const float* blendFactors, const T& lhs, const T& rhs, T& result)
+{
+    result.Blend(blendFactors, lhs, rhs);
+}
+
 #endif // _REPLAY_H_

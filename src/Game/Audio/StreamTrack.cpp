@@ -1080,7 +1080,6 @@ void AudioStreamTrack::StreamTrack::Resume()
 
 /**
  * Offset/Address/Size: 0x0 | 0x80154D58 | size: 0x1B8
- * TODO: 99.82% match - StartVolume load, mask, and insert use r7 instead of r5
  */
 void AudioStreamTrack::StreamTrack::AttachStream(
     GCAudioStreaming::StereoAudioStream* pStream,
@@ -1105,6 +1104,8 @@ void AudioStreamTrack::StreamTrack::AttachStream(
     queuedStream->StreamId = StreamId;
     queuedStream->pStream = pStream;
     queuedStream->FadeIn = FadeIn;
+    Looping = Looping & 1;
+    TrackOwnsStream = TrackOwnsStream & 1;
     queuedStream->StartVolume = (u8)pStream->m_Volume;
     queuedStream->Loop = Looping;
     queuedStream->VolGroup = VolGroup;

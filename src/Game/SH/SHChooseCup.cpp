@@ -734,22 +734,6 @@ void ChooseCupSceneV2::Update(float fDeltaT)
     }
 }
 
-static const char* TROPHY_TEXTURE_FILENAMES[13] = {
-    "fe/trophies/cups_mushroom",
-    "fe/trophies/cups_flower",
-    "fe/trophies/cups_star",
-    "fe/trophies/cups_bowser",
-    "fe/trophies/cups_super_mushroom",
-    "fe/trophies/cups_super_flower",
-    "fe/trophies/cups_super_star",
-    "fe/trophies/cups_super_bowser",
-    "fe/trophies/cups_veteran",
-    "fe/trophies/cups_sniper",
-    "fe/trophies/cups_super_striker",
-    "fe/trophies/cups_super_team",
-    "fe/trophies/cups_lakitu",
-};
-
 static unsigned long CUP_EXPLANATIONS[8] = {
     0x92E00D2D,
     0x4442C1E2,

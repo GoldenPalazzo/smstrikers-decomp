@@ -53,22 +53,6 @@ CupTrophyScene::~CupTrophyScene()
     delete mAsyncTrophy;
 }
 
-static const char* TROPHY_TEXTURE_FILENAMES[13] = {
-    "fe/trophies/cups_mushroom",
-    "fe/trophies/cups_flower",
-    "fe/trophies/cups_star",
-    "fe/trophies/cups_bowser",
-    "fe/trophies/cups_super_mushroom",
-    "fe/trophies/cups_super_flower",
-    "fe/trophies/cups_super_star",
-    "fe/trophies/cups_super_bowser",
-    "fe/trophies/cups_veteran",
-    "fe/trophies/cups_sniper",
-    "fe/trophies/cups_super_striker",
-    "fe/trophies/cups_super_team",
-    "fe/trophies/cups_lakitu",
-};
-
 static const char* CUP_TROPHY_TEXT_NAME = "CUP TITLE";
 static const char* CUP_TROPHY_IMAGE_NAME = "Trophy";
 static const char* CUP_FIRST_TEXT_NAME_LEFT = "FIRST WON TIME";

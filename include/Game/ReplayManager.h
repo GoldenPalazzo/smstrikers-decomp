@@ -6,12 +6,6 @@
 #include "Game/RenderSnapshot.h"
 #include "Game/Replay.h"
 
-template <typename T>
-void Blend(const float* blendFactors, const T& lhs, const T& rhs, T& result)
-{
-    result.Blend(blendFactors, lhs, rhs);
-}
-
 // class RenderSnapshot
 // {
 // public:
@@ -45,6 +39,7 @@ void Blend(const float* blendFactors, const T& lhs, const T& rhs, T& result)
 class ReplayManager
 {
     ReplayManager();
+    void SwapPreviousAndCurrent();
 
 public:
     ~ReplayManager();

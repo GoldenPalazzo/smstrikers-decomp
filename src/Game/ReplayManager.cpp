@@ -1,10 +1,10 @@
+#include "NL/nlConfig.h"
 #include "Game/ReplayManager.h"
 #include "Game/Camera/CameraMan.h"
 #include "Game/FixedUpdateTask.h"
 #include "NL/nlTask.h"
 #include "NL/nlMemory.h"
 #include "NL/globalpad.h"
-#include "NL/nlConfig.h"
 #include "PowerPC_EABI_Support/Runtime/MWCPlusLib.h"
 
 extern float g_fSimulationTick;
@@ -13,125 +13,16 @@ extern bool g_bEnableGamecubePadMonkey;
 extern bool g_bTweaking;
 extern bool g_bProfiling;
 
-static f32 CANT_COLLIDE = *(f32*)__float_max;
+template <>
+bool LexicalCast<bool, bool>(const bool& value);
+template <>
+bool LexicalCast<bool, int>(const int& value);
+template <>
+bool LexicalCast<bool, float>(const float& value);
+template <>
+bool LexicalCast<bool, const char*>(const char* const& value);
 
-#pragma inline_max_size(0)
-#pragma inline_max_total_size(0)
-
-/**
- * Offset/Address/Size: 0x1A4 | 0x80112AB4 | size: 0x1B8
- */
-template <typename T>
-void Replay::Play(float time, T& previous, T& current, float* blend) const
-{
-    if (time < BeginTime())
-    {
-        time = BeginTime();
-    }
-    if (time > EndTime())
-    {
-        time = EndTime();
-    }
-
-    int interval;
-    Frame* rhs;
-    Frame* lhs;
-    Frame* tryLhs;
-    LoadFrame previousLoadFrame;
-    LoadFrame currentLoadFrame;
-
-    for (interval = 1; interval <= 3; interval++)
-    {
-        rhs = mReels[mReelIdx].mBegin;
-        while (rhs != NULL)
-        {
-            if (rhs->mInterval == interval && rhs->mTime > time)
-            {
-                lhs = NULL;
-                tryLhs = mReels[mReelIdx].mBegin;
-                while (tryLhs != NULL)
-                {
-                    if (tryLhs->mInterval == interval && tryLhs->mTime <= time)
-                    {
-                        lhs = tryLhs;
-                    }
-                    tryLhs = Next(tryLhs, mReelIdx);
-                }
-
-                if (lhs != NULL && rhs != NULL)
-                {
-                    blend[interval - 1] = (time - lhs->mTime) / (rhs->mTime - lhs->mTime);
-
-                    float aheadOfFrame = time - lhs->mTime;
-                    char* lhsBegin = lhs->mBegin;
-                    previousLoadFrame.mInterval = interval;
-                    previousLoadFrame.mStream.mCount = 0;
-                    previousLoadFrame.mStream.mStorage = lhsBegin;
-                    previousLoadFrame.mReplayNonBlendables = REPLAY_NON_BLENDABLES;
-                    previousLoadFrame.mNonBlendableAheadOfFrame = aheadOfFrame;
-                    Replayable<0>(previousLoadFrame, previous);
-
-                    char* rhsBegin = rhs->mBegin;
-                    currentLoadFrame.mInterval = interval;
-                    currentLoadFrame.mStream.mCount = 0;
-                    currentLoadFrame.mStream.mStorage = rhsBegin;
-                    currentLoadFrame.mReplayNonBlendables = DO_NOT_REPLAY_NON_BLENDABLES;
-                    currentLoadFrame.mNonBlendableAheadOfFrame = 0.0f;
-                    Replayable<0>(currentLoadFrame, current);
-
-                    break;
-                }
-            }
-            rhs = Next(rhs, mReelIdx);
-        }
-    }
-}
-
-#pragma inline_max_size(256)
-#pragma inline_max_total_size(10000)
-
-/**
- * Offset/Address/Size: 0x3C | 0x8011294C | size: 0x168
- */
-template <typename T>
-void Replay::Record(float time, T& snapshot, unsigned int events)
-{
-    for (int interval = 1; interval <= 3; interval++)
-    {
-        if (mTick % interval == 0)
-        {
-            NewFrame();
-
-            SaveFrame frame;
-            char* storage = mFree->mBegin;
-            frame.mInterval = interval;
-            frame.mStream.mCount = 0;
-            frame.mStream.mStorage = storage;
-            Replayable<0>(frame, snapshot);
-
-            int frameSize = frame.mStream.mStorage - mFree->mBegin;
-            if (mActualMaxFrameSize < frameSize)
-            {
-                mActualMaxFrameSize = frameSize;
-            }
-
-            mReels[0].mLast = mFree;
-            mFree->mReelIdx = 0;
-            mFree->mTime = time;
-            mFree->mInterval = interval;
-            mFree->mEvents = events;
-
-            Frame* newFrame = Frame::mSlotPool.Allocate();
-            newFrame = new (newFrame) Frame(mFree->mBegin + frameSize, mFree->mSize - frameSize, mFree->mNext);
-
-            mFree->mNext = newFrame;
-            mFree->mSize = frameSize;
-            mFree = mFree->mNext;
-        }
-    }
-
-    mTick++;
-}
+static f32 CANT_COLLIDE = HUGE_VALF;
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x80112910 | size: 0x3C
@@ -139,14 +30,6 @@ void Replay::Record(float time, T& snapshot, unsigned int events)
 // void Blend<RenderSnapshot>(const float*, const RenderSnapshot&, const RenderSnapshot&, RenderSnapshot&)
 // {
 // }
-
-/**
- * Offset/Address/Size: 0x48 | 0x80112904 | size: 0x8
- */
-float cBaseCamera::GetFOV() const
-{
-    return 27.0f;
-}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x801128BC | size: 0x48
@@ -176,7 +59,7 @@ float cBaseCamera::GetFOV() const
 // {
 // }
 
-ReplayManager::ReplayManager()
+inline ReplayManager::ReplayManager()
     : mCurrent(mSnapshots)
     , mPrevious(mSnapshots + 1)
     , mRender(NULL)
@@ -250,15 +133,14 @@ void ReplayManager::Uninitialize()
  */
 void ReplayManager::GrabSnapshot()
 {
-    RenderSnapshot* temp = mCurrent;
-    mCurrent = mPrevious;
-    mPrevious = temp;
+    SwapPreviousAndCurrent();
 
     mCurrent->Grab();
 
     if (nlTaskManager::m_pInstance->m_CurrState == 2)
     {
-        mTime = mReplay->EndTime() + g_fSimulationTick;
+        float time = mReplay->EndTime() + g_fSimulationTick;
+        mTime = time;
         mReplay->Record<RenderSnapshot>(mTime, *mCurrent, mEvents);
         mEvents = 0;
     }
@@ -273,6 +155,13 @@ RenderSnapshot& ReplayManager::GetMutableRenderSnapshot()
     return mRender->GetMutable();
 }
 
+inline void ReplayManager::SwapPreviousAndCurrent()
+{
+    RenderSnapshot* tmp = mCurrent;
+    mCurrent = mPrevious;
+    mPrevious = tmp;
+}
+
 /**
  * Offset/Address/Size: 0x5C4 | 0x80112334 | size: 0xF0
  */
@@ -281,25 +170,7 @@ void ReplayManager::Flush()
     delete mReplay;
     mReplay = new (nlMalloc(0x48, 8, false)) Replay((char*)mMemory, 0x1C0000, 0x8000);
 
-    int i;
-    RenderSnapshot* p = mSnapshots;
-    for (i = 0; i < 3; i++, p++)
-    {
-        p->Invalidate();
-    }
-
-    RenderSnapshot* temp = mCurrent;
-    mCurrent = mPrevious;
-    mPrevious = temp;
-
-    mCurrent->Grab();
-
-    if (nlTaskManager::m_pInstance->m_CurrState == 2)
-    {
-        mTime = mReplay->EndTime() + g_fSimulationTick;
-        mReplay->Record<RenderSnapshot>(mTime, *mCurrent, mEvents);
-        mEvents = 0;
-    }
+    ResetSnapshots();
 }
 
 /**
@@ -312,18 +183,7 @@ void ReplayManager::ResetSnapshots()
         mSnapshots[i].Invalidate();
     }
 
-    RenderSnapshot* temp = mCurrent;
-    mCurrent = mPrevious;
-    mPrevious = temp;
-
-    mCurrent->Grab();
-
-    if (nlTaskManager::m_pInstance->m_CurrState == 2)
-    {
-        mTime = mReplay->EndTime() + g_fSimulationTick;
-        mReplay->Record<RenderSnapshot>(mTime, *mCurrent, mEvents);
-        mEvents = 0;
-    }
+    GrabSnapshot();
 }
 
 /**

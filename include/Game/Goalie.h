@@ -152,6 +152,8 @@ public:
     void FindDesiredGoaliePosition(nlVector3&, nlVector3&, nlVector3&, unsigned short&, const nlVector3*);
     bool ShouldReposition();
     inline cPlayer* FindOpenPassTarget();
+    inline unsigned short FindDumpDirection(unsigned short, bool);
+    inline void HandleSTSSwat();
     void HandleSTSContact(cBall*);
     bool InitiatePickup();
     void InitiatePanicGrab(cPlayer*);
@@ -160,6 +162,7 @@ public:
     inline bool IsInsideNetArea(const nlVector3&);
     float CheckForDelflectAwayFromNet();
     bool CheckForLooseBallShotInProgress();
+    inline bool CheckForBallOnHead();
     bool CheckForSTSAttack();
     inline bool IsLooseBallTowardNet();
     bool IsLooseBallClose(float);
@@ -167,6 +170,7 @@ public:
     bool IsOpponentBallCarrierInRange();
     bool IsOpponentInSTS();
     inline float IsSoloBreakaway();
+    inline void MakeExertEvent();
     bool IsPassThreat();
     void MakeSaveEvent(bool);
     void UpdateActionState(float);
@@ -183,6 +187,9 @@ public:
     inline void InitActionLooseBallPursueBouncing(const nlVector3&, float);
     inline void InitActionLooseBallPursueRolling();
     inline void InitActionLooseBallPickup(float, bool);
+    inline void InitActionOffplay(eGoalieOffplayType);
+    inline void InitActionSTSAttackSetup(float);
+    inline void InitActionSnapBall();
     void InitActionMove(bool);
     void InitActionMoveWB();
     void InitActionSaveSetup(bool);
@@ -201,6 +208,8 @@ public:
     bool CanInterceptPass();
     static unsigned char ClampToGoalCone(nlVector3&, float);
     int ChooseRunAnim(short, const nlVector3&, float);
+    inline void CleanSTSRecover();
+    inline void CleanupStun();
     void ChooseSwatAnim(int);
     void DoPassRelease();
     static void EventHandler(Event*, void*);
@@ -213,6 +222,7 @@ public:
     void TacklePlayer(cPlayer*);
     void StealBall(cPlayer*);
     void WhackSTSPlayer(cFielder*);
+    inline void InitGoalieActionData();
     virtual void InitActionPostWhistle();
 
     void ActionLooseBallCatch(float);
@@ -253,6 +263,11 @@ public:
     inline bool IsPositionBeyondGoalLine() const
     {
         return (float)fabs(mv3TargetPosition.f.x) > cField::GetGoalLineX(1U);
+    }
+
+    inline u16 GetActualFacing() const
+    {
+        return m_aActualFacingDirection;
     }
 
     /*

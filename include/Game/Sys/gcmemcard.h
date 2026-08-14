@@ -200,6 +200,15 @@ public:
     /* 0x428 */ unsigned short m_CompanyId;
     /* 0x42A */ unsigned char m_CardWorkArea[41472];
 
+    static MemCard* At(unsigned long off)
+    {
+        return g_MemCards[off >> 2];
+    }
+    static MemCard* At(int off)
+    {
+        return *(MemCard**)((int)g_MemCards + off);
+    }
+
     static bool s_InitDone;
 
     static void CardRemovedCB(long channel, long result) { g_MemCards[channel]->CardRemoved(result); }
