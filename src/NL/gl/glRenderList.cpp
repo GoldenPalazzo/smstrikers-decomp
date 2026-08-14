@@ -513,20 +513,18 @@ struct PacketCallbackManagerLayout
     /* 0x48 */ unsigned long m_LastMaterialSet;
 }; // total size: 0x50
 
-static unsigned long glv_UserDataChanged __attribute__((section(".sdata2"))) = 0x100;
-static unsigned long glv_MaterialChanged __attribute__((section(".sdata2"))) = 0x400;
-static unsigned long glv_UserStateKeyChanged __attribute__((section(".sdata2"))) = 0x200;
-static unsigned long glv_RasterChanged __attribute__((section(".sdata2"))) = 0x08;
-static unsigned long glv_TextureStateChanged __attribute__((section(".sdata2"))) = 0x10;
-static unsigned long glv_MatrixChanged __attribute__((section(".sdata2"))) = 0x20;
-static unsigned long glv_TexConfigChanged __attribute__((section(".sdata2"))) = 0x80;
-static unsigned long glv_TextureChanged __attribute__((section(".sdata2"))) = 0x4;
-static unsigned long glv_StreamsChanged __attribute__((section(".sdata2"))) = 0x40;
+static const unsigned long glv_UserDataChanged = 0x100;
+static const unsigned long glv_MaterialChanged = 0x400;
+static const unsigned long glv_UserStateKeyChanged = 0x200;
+static const unsigned long glv_RasterChanged = 0x08;
+static const unsigned long glv_TextureStateChanged = 0x10;
+static const unsigned long glv_MatrixChanged = 0x20;
+static const unsigned long glv_TexConfigChanged = 0x80;
+static const unsigned long glv_TextureChanged = 0x4;
+static const unsigned long glv_StreamsChanged = 0x40;
 
 /**
  * Offset/Address/Size: 0x748 | 0x801D9A08 | size: 0x298
- * TODO: 98.61% match - register swaps remain in texconfig, texture,
- * and stream update blocks around 0x801D9B1C-0x801D9C50.
  */
 void PacketCallbackManager::DoCallback(const glModelPacket* p, unsigned int count)
 {
@@ -542,36 +540,31 @@ void PacketCallbackManager::DoCallback(const glModelPacket* p, unsigned int coun
     {
         if (m_LastUserdata != 0)
         {
-            unsigned long userDataChanged = glv_UserDataChanged;
             m_LastUserdata = p->userData;
-            flags |= userDataChanged;
+            flags |= glv_UserDataChanged;
         }
     }
     else
     {
-        unsigned long userDataChanged = glv_UserDataChanged;
         m_LastUserdata = p->userData;
-        flags |= userDataChanged;
+        flags |= glv_UserDataChanged;
     }
 
     if (p->materialset != m_LastMaterialSet)
     {
-        unsigned long materialChanged = glv_MaterialChanged;
-        flags |= materialChanged;
+        flags |= glv_MaterialChanged;
     }
 
     if (p->state.userStateKey != m_LastUserStateKey)
     {
-        unsigned long userStateKeyChanged = glv_UserStateKeyChanged;
         m_LastUserStateKey = p->state.userStateKey;
-        flags |= userStateKeyChanged;
+        flags |= glv_UserStateKeyChanged;
     }
 
     if (p->state.raster != m_LastRaster)
     {
-        unsigned long rasterChanged = glv_RasterChanged;
         m_LastRaster = p->state.raster;
-        flags |= rasterChanged;
+        flags |= glv_RasterChanged;
     }
 
     unsigned long textureStateLow = ((const unsigned long*)&p->state.texturestate)[0];
@@ -583,29 +576,24 @@ void PacketCallbackManager::DoCallback(const glModelPacket* p, unsigned int coun
     if ((textureStateDiffHigh | textureStateDiffLow) != 0)
     {
         ((unsigned long*)&m_LastTextureState)[1] = textureStateHigh;
-        unsigned long textureStateChanged = glv_TextureStateChanged;
+        flags |= glv_TextureStateChanged;
         ((unsigned long*)&m_LastTextureState)[0] = textureStateLow;
-        flags |= textureStateChanged;
     }
 
     if (p->state.matrix != m_LastMatrix)
     {
-        unsigned long matrixChanged = glv_MatrixChanged;
         m_LastMatrix = p->state.matrix;
-        flags |= matrixChanged;
+        flags |= glv_MatrixChanged;
     }
 
     if (p->state.texconfig != m_LastTexconfig)
     {
-        unsigned long texConfigChanged = glv_TexConfigChanged;
-        unsigned long textureChanged = glv_TextureChanged;
-        flags |= texConfigChanged;
+        flags |= glv_TexConfigChanged;
         m_LastTexconfig = p->state.texconfig;
-        flags |= textureChanged;
+        flags |= glv_TextureChanged;
     }
 
     {
-        unsigned long textureChanged = glv_TextureChanged;
         unsigned long texture;
         int i;
         for (i = 0; i < 6; i++)
@@ -613,7 +601,7 @@ void PacketCallbackManager::DoCallback(const glModelPacket* p, unsigned int coun
             if (m_LastTexture[i] != (texture = p->state.texture[i]))
             {
                 m_LastTexture[i] = texture;
-                flags |= textureChanged;
+                flags |= glv_TextureChanged;
             }
         }
     }
@@ -638,8 +626,8 @@ void PacketCallbackManager::DoCallback(const glModelPacket* p, unsigned int coun
                 streamChanged = 1;
                 goto stream_compare_done;
             }
-            lastStreams = (glModelStream*)((u8*)lastStreams + 6);
-            streams = (glModelStream*)((u8*)streams + 6);
+            lastStreams++;
+            streams++;
         }
 
         streamChanged = 0;
@@ -650,9 +638,8 @@ stream_compare_done:
     {
         m_LastNumStreams = numStreams;
         glModelStream* streams = p->streams;
-        unsigned long streamsChanged = glv_StreamsChanged;
         m_LastStreams = streams;
-        flags |= streamsChanged;
+        flags |= glv_StreamsChanged;
     }
 
     unsigned int stage = flags | 0x800;
