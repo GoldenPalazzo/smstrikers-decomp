@@ -3,9 +3,9 @@
 
 #include "NL/nlFile.h"
 #include "NL/nlFunction.h"
-#include "dolphin/dvd.h"
-
 #include "NL/nlArrayAllocator.h"
+#include "dolphin/dvd.h"
+#include "FILE_POS.h"
 
 enum GCFileSystem
 {
@@ -44,7 +44,7 @@ public:
         PendingAsync.m_Count = 0;
         m_Position = 0;
     }
-    virtual ~GCFile() { }
+    virtual ~GCFile();
     virtual u32 FileSize(unsigned int*) = 0;
     virtual void Read(void*, unsigned int);
     virtual s32 GetReadStatus() = 0;
@@ -70,11 +70,38 @@ public:
         : m_pFile(fp)
     {
     }
-    virtual ~TDEVChunkFile();
-    virtual u32 FileSize(unsigned int*);
+    virtual ~TDEVChunkFile()
+    {
+        fclose(m_pFile);
+        m_pFile = NULL;
+    }
+
+    static unsigned int FileSize(_FILE* pFile)
+    {
+        unsigned long uPos = ftell(pFile);
+        fseek(pFile, 0, 2);
+        unsigned long uSize = ftell(pFile);
+        fseek(pFile, uPos, 0);
+        return uSize;
+    }
+
+    virtual u32 FileSize(unsigned int* pSize)
+    {
+        unsigned long Size = TDEVChunkFile::FileSize(m_pFile);
+        if (pSize != NULL)
+        {
+            *pSize = Size;
+        }
+        return Size;
+    }
+
     virtual s32 GetReadStatus();
     virtual void ReadAsync(void*, unsigned long, unsigned long);
-    virtual u32 GetDiscPosition();
+
+    virtual u32 GetDiscPosition()
+    {
+        return 0;
+    }
 
     void* operator new(size_t)
     {
@@ -86,8 +113,27 @@ public:
         s_pAllocator->DeleteEntry((TDEVChunkFile*)ptr);
     }
 
-    static unsigned int FileSize(_FILE* pFile);
-    static GCFile* Open(const char* fileName);
+    static GCFile* Open(const char* FileName)
+    {
+        _FILE* pFile = fopen(FileName, "rb");
+
+        if (pFile == NULL)
+        {
+            return NULL;
+        }
+
+        if (FileSize(pFile) == 0xFFFFFFFF)
+        {
+            return NULL;
+        }
+
+        GCFile* pGCFile = new TDEVChunkFile(pFile);
+        while (pFile == NULL)
+        {
+        }
+
+        return pGCFile;
+    }
 
     static nlArrayAllocator<TDEVChunkFile>* s_pAllocator;
 
@@ -95,15 +141,41 @@ public:
     /* 0x10 */ CURRENT_READ m_CurrentRead;
 };
 
+inline GCFile::~GCFile() { }
+
 class DolphinFile : public GCFile
 {
 public:
     DolphinFile(s32 entryNum) { DVDFastOpen(entryNum, &m_fileInfo); }
-    virtual ~DolphinFile();
-    virtual u32 FileSize(unsigned int*);
-    virtual s32 GetReadStatus();
-    virtual void ReadAsync(void*, unsigned long, unsigned long);
-    virtual u32 GetDiscPosition();
+    virtual ~DolphinFile()
+    {
+        DVDClose(&m_fileInfo);
+    }
+
+    virtual u32 FileSize(unsigned int* size)
+    {
+        u32 s = m_fileInfo.length;
+        if (size != NULL)
+        {
+            *size = s;
+        }
+        return s;
+    }
+
+    virtual s32 GetReadStatus()
+    {
+        return DVDGetCommandBlockStatus(&m_fileInfo.cb);
+    }
+
+    virtual void ReadAsync(void* addr, unsigned long length, unsigned long offset)
+    {
+        DVDReadAsyncPrio(&m_fileInfo, addr, (s32)length, (s32)offset, 0, 2);
+    }
+
+    virtual u32 GetDiscPosition()
+    {
+        return m_fileInfo.startAddr;
+    }
 
     void* operator new(size_t)
     {
@@ -115,7 +187,22 @@ public:
         s_pAllocator->DeleteEntry((DolphinFile*)ptr);
     }
 
-    static GCFile* Open(const char* fileName);
+    static GCFile* Open(const char* FileName)
+    {
+        long FileEntrynum = DVDConvertPathToEntrynum(FileName);
+
+        if (FileEntrynum == -1)
+        {
+            return NULL;
+        }
+
+        GCFile* pFile = new DolphinFile(FileEntrynum);
+        while (pFile == NULL)
+        {
+        }
+
+        return pFile;
+    }
 
     static nlArrayAllocator<DolphinFile>* s_pAllocator;
 
