@@ -1080,7 +1080,7 @@ void AudioStreamTrack::StreamTrack::Resume()
 
 /**
  * Offset/Address/Size: 0x0 | 0x80154D58 | size: 0x1B8
- * TODO: 99.41% match - the StartVolume conversion uses r7 instead of r5
+ * TODO: 99.82% match - StartVolume load, mask, and insert use r7 instead of r5
  */
 void AudioStreamTrack::StreamTrack::AttachStream(
     GCAudioStreaming::StereoAudioStream* pStream,
