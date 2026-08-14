@@ -27,6 +27,9 @@ char scriptName[128];
 int cameraPick;
 } // namespace
 
+/**
+ * Offset/Address/Size: 0xFDC | 0x80128648 | size: 0xE8
+ */
 ReplayChoreo& ReplayChoreo::Instance()
 {
     static ReplayChoreo instance;
@@ -198,13 +201,6 @@ void ReplayChoreo::DoFunctionCall(unsigned int func)
 inline ReplayCamera::~ReplayCamera()
 {
 }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80128730 | size: 0x34
-//  */
-// void ReplayChoreo::Highlight::Highlight()
-// {
-// }
 
 template <typename StringType, typename T1, typename T2, typename T3, typename T4>
 void Format(StringType& result, const StringType& format, const T1& value1, const T2& value2, const T3& value3, const T4& value4);
@@ -484,16 +480,16 @@ void ReplayChoreo::FlushHighlights()
 /**
  * Offset/Address/Size: 0x390 | 0x801279FC | size: 0x78
  */
-void ReplayChoreo::Update(float dt)
+void ReplayChoreo::Update(float deltaT)
 {
     if (nlTaskManager::m_pInstance->m_CurrState == 0x10)
     {
         if (mRunningFor)
         {
-            mRunForTimeLeft -= dt;
+            mRunForTimeLeft -= deltaT;
         }
         Run();
-        mCamera.ManualUpdate(dt);
+        mCamera.ManualUpdate(deltaT);
     }
 }
 

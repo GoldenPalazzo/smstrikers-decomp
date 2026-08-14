@@ -14,13 +14,6 @@ GCAudioStreaming::AudioBufferMgr g_BufferMgr;
 nlStaticSortedSlot<GCAudioStreaming::AudioStream*, 7> g_Streams;
 static bool g_StreamingInitd;
 
-GCAudioStreaming::AudioBufferMgr::AudioBufferMgr()
-    : m_MRAMBuffer(NULL)
-{
-    m_BuffersFree = 0;
-    m_BufferCount = 0;
-}
-
 // /**
 //  * Offset/Address/Size: 0x30 | 0x801C778C | size: 0x24
 //  */
@@ -49,15 +42,6 @@ GCAudioStreaming::AudioBufferMgr::AudioBufferMgr()
 // {
 // }
 
-/**
- * Offset/Address/Size: 0x0 | 0x801C7748 | size: 0x14
- */
-GCAudioStreaming::AudioStreamBuffer::AudioStreamBuffer()
-{
-    m_Volume = 0x7F;
-    m_Pan = 0x40;
-}
-
 // /**
 //  * Offset/Address/Size: 0x5B8 | 0x801C767C | size: 0xCC
 //  */
@@ -77,125 +61,50 @@ void PlatAudio::InitStreaming()
     }
 }
 
-/**
- * Offset/Address/Size: 0x208 | 0x801C72CC | size: 0x36C
- * TODO: 97.9% match - initial lookup-offset zero materialization differs.
- */
-void PlatAudio::ShutdownStreaming()
+static inline void StopAllStreamObjs()
 {
     using namespace GCAudioStreaming;
-    typedef nlSortedSlot<AudioStream*, 7>::EntryLookup<AudioStream*> EL;
+    unsigned long stream = 0;
 
-    AudioStream* stream;
-    unsigned long streamIndex = 0;
-    unsigned long lookupOffset = 0;
-    AudioStreamBuffer* buffer;
-    unsigned long zero = 0;
-
-    while (streamIndex < g_Streams.m_EntryCount)
+    while (stream < g_Streams.m_EntryCount)
     {
-        stream = *((EL*)((char*)g_Streams.m_pEntryLookup + lookupOffset))->pEntry;
-        stream->m_Flags &= ~(1 << SF_Play);
-
-        if (stream->m_State == SS_Playing)
-        {
-            volatile unsigned long i = (unsigned long)(buffer = NULL);
-            if (zero < stream->m_BufferCount)
-                buffer = stream->m_Buffers[0];
-
-            while (buffer != NULL)
-            {
-                buffer->m_Volume = 0;
-                sndStreamMixParameterEx(buffer->m_StreamId, buffer->m_Volume, buffer->m_Pan, buffer->m_SurroundPan, 0, 0);
-                sndStreamDeactivate(buffer->m_StreamId);
-
-                stream->m_State = SS_Warm;
-                {
-                    unsigned long next = i + 1;
-                    i = next;
-                    if (next < stream->m_BufferCount)
-                        buffer = stream->m_Buffers[next];
-                    else
-                        buffer = NULL;
-                }
-            }
-
-            stream->m_StreamPos = 0;
-            stream->m_State = SS_Warm;
-        }
-
-        stream->CancelPendingReads();
-        if (stream->m_Flags & (1 << SF_CoolOnStop))
-        {
-            stream->m_Flags &= ~(1 << SF_CoolOnStop);
-            if (stream->m_State > SS_Initd)
-            {
-                unsigned long flags = stream->m_Flags;
-                flags &= ~(1 << SF_SeriousStop);
-                flags |= (1 << SF_SeriousStop);
-                stream->m_Flags = flags;
-
-                volatile unsigned long i = 0;
-                buffer = NULL;
-                if (zero < stream->m_BufferCount)
-                    buffer = stream->m_Buffers[0];
-
-                while (buffer != NULL)
-                {
-                    stream->m_BuffMgr.FreeBuffer(buffer);
-
-                    {
-                        unsigned long idx = i;
-                        stream->m_Buffers[idx] = NULL;
-                        idx = idx + 1;
-                        i = idx;
-                        if (idx < stream->m_BufferCount)
-                            buffer = stream->m_Buffers[idx];
-                        else
-                            buffer = NULL;
-                    }
-                }
-
-                stream->m_State = SS_Initd;
-            }
-        }
-
-        lookupOffset += 8;
-        streamIndex++;
+        (*g_Streams.m_pEntryLookup[stream].pEntry)->Stop();
+        stream++;
     }
+}
 
-    streamIndex = 0;
-    lookupOffset = 0;
-    while (streamIndex < g_Streams.m_EntryCount)
+static inline void PurgeStoppedStreams(unsigned char Block)
+{
+    using namespace GCAudioStreaming;
+    unsigned long stream = 0;
+
+    while (stream < g_Streams.m_EntryCount)
     {
-        AudioStream** pStream;
-
-        stream = *((EL*)((char*)g_Streams.m_pEntryLookup + lookupOffset))->pEntry;
-        stream->SafeToPurge();
-
-        pStream = ((EL*)((char*)g_Streams.m_pEntryLookup + lookupOffset))->pEntry;
+        AudioStream** pStream = g_Streams.m_pEntryLookup[stream].pEntry;
+        AudioStream* obj = *pStream;
+        if (Block)
+        {
+            obj->SafeToPurge();
+        }
+        pStream = g_Streams.m_pEntryLookup[stream].pEntry;
         delete *pStream;
-
         if (pStream != NULL)
         {
             g_Streams.DeleteEntry(pStream);
         }
-
-        lookupOffset += 8;
-        streamIndex++;
+        stream++;
     }
+}
 
-    streamIndex = 0;
-    lookupOffset = 0;
-    while (streamIndex < g_Streams.m_EntryCount)
-    {
-        ((nlSortedSlot<AudioStream*, 7>*)&g_Streams)->FreeEntry(((EL*)((char*)g_Streams.m_pEntryLookup + lookupOffset))->pEntry);
-        lookupOffset += 8;
-        streamIndex++;
-    }
+/**
+ * Offset/Address/Size: 0x208 | 0x801C72CC | size: 0x36C
+ */
+void PlatAudio::ShutdownStreaming()
+{
+    StopAllStreamObjs();
+    PurgeStoppedStreams(true);
 
-    ((nlSortedSlot<AudioStream*, 7>*)&g_Streams)->FreeLookup();
-    g_Streams.m_EntryCount = 0;
+    g_Streams.Clear();
 
     nlFree(g_BufferMgr.m_MRAMBuffer);
     g_BufferMgr.m_MRAMBuffer = NULL;

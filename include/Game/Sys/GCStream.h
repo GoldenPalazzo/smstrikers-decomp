@@ -49,7 +49,11 @@ class AudioStream;
 class AudioStreamBuffer
 {
 public:
-    AudioStreamBuffer();
+    AudioStreamBuffer()
+    {
+        m_Volume = 0x7F;
+        m_Pan = 0x40;
+    }
     unsigned char* GetMRAMBuffer()
     {
         unsigned char* result = m_MRAMBuffer;
@@ -108,7 +112,12 @@ enum BUFFER_ALLOC_STATE
 class AudioBufferMgr
 {
 public:
-    AudioBufferMgr();
+    AudioBufferMgr()
+        : m_MRAMBuffer(NULL)
+    {
+        m_BuffersFree = 0;
+        m_BufferCount = 0;
+    }
     void* GetADPCMHdr();
     void SetBufferState(unsigned long index, BUFFER_ALLOC_STATE state)
     {

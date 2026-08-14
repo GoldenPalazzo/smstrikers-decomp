@@ -768,7 +768,7 @@ config.libs = [
             Object(Matching, "Game/Sys/CallStackDumper.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Core/mtRandom.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
-            Object(NonMatching, "Game/Sys/PlatStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Sys/PlatStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Sys/GCStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Sys/movie.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Sys/THPSimple.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

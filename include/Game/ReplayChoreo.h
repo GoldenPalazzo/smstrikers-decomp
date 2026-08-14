@@ -34,6 +34,9 @@ public:
 
     struct Highlight
     {
+        /**
+         * Offset/Address/Size: 0x0 | 0x80128730 | size: 0x34
+         */
         Highlight()
             : mSideOfInterest(0)
             , mTime(0.0f)
@@ -48,9 +51,6 @@ public:
         int mSavedReplayPad;            // offset 0x30, size 0x4
     }; // total size: 0x34
 
-    /**
-     * Offset/Address/Size: 0xFDC | 0x80128648 | size: 0xE8
-     */
     ReplayChoreo()
         : InterpreterCore(10)
         , mReplayManager(NULL)
@@ -79,18 +79,18 @@ public:
     int NumHighlights() const;
     ~ReplayChoreo();
 
-    int mNumScripts[3][3][9];       // offset 0x24, size 0x144
-    mutable ReplayManager* mReplayManager; // offset 0x168, size 0x4
-    mutable Replay* mReplay;               // offset 0x16C, size 0x4
-    ReplayCamera mCamera;           // offset 0x170, size 0x8C
-    float mRunForTimeLeft;          // offset 0x1FC, size 0x4
-    bool mRunningFor;               // offset 0x200, size 0x1
-    void* mByteCode;                // offset 0x204, size 0x4
+    int mNumScripts[3][3][9];               // offset 0x24, size 0x144
+    mutable ReplayManager* mReplayManager;  // offset 0x168, size 0x4
+    mutable Replay* mReplay;                // offset 0x16C, size 0x4
+    ReplayCamera mCamera;                   // offset 0x170, size 0x8C
+    float mRunForTimeLeft;                  // offset 0x1FC, size 0x4
+    bool mRunningFor;                       // offset 0x200, size 0x1
+    void* mByteCode;                        // offset 0x204, size 0x4
     mutable GoalScoredData mGoalScoredData; // offset 0x208, size 0x24
-    int mReplayPad;                 // offset 0x22C, size 0x4
-    Highlight mHighlights[3];       // offset 0x230, size 0x9C
-    int mHighlightIndex;            // offset 0x2CC, size 0x4
-    int mNumHighlights;             // offset 0x2D0, size 0x4
+    int mReplayPad;                         // offset 0x22C, size 0x4
+    Highlight mHighlights[3];               // offset 0x230, size 0x9C
+    int mHighlightIndex;                    // offset 0x2CC, size 0x4
+    int mNumHighlights;                     // offset 0x2D0, size 0x4
 }; // total size: 0x2D4
 
 #endif // _REPLAYCHOREO_H_
