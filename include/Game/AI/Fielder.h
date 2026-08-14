@@ -171,6 +171,8 @@ public:
     inline bool CanPassTargetAttemptOneTouch(cFielder*);
     bool CanReceivePass();
     void SetMark(cFielder*);
+    cFielder* GetMark() const { return m_pMark; }
+    cFielder* GetMarker() const { return m_pMarker; }
     bool CollideWithShellCallback(ePowerupSize, bool, const nlVector3&, const nlVector3&);
     bool CollideWithFreezeCallback();
     bool CollideWithBananaCallback(const nlVector3&);

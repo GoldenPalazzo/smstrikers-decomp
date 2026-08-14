@@ -15,40 +15,40 @@ void ReplayChoreo::DoFunctionCall(unsigned int func)
     case 1:
     {
         m_SP--;
-        GameTweaks* tweaks = g_pGame->m_pGameTweaks;
         f32 duration = *(f32*)m_SP;
-        Audio::FadeFilter(tweaks->unk214, tweaks->unk210, duration, 0.0f);
+        FilterOn(duration);
         break;
     }
     case 2:
     {
         m_SP--;
-        GameTweaks* tweaks = g_pGame->m_pGameTweaks;
         f32 duration = *(f32*)m_SP;
-        Audio::FadeFilter(tweaks->unk210, tweaks->unk214, duration, 0.0f);
+        FilterOff(duration);
         break;
     }
     case 3:
     {
-        mCamera.mFrozen = true;
+        FreezeCamera();
         break;
     }
     case 4:
     {
         m_SP--;
+        const char* target = (const char*)*m_SP;
         m_SP--;
         const char* sfxName = (const char*)*m_SP;
-        Audio::PlayWorldSFXbyStr(sfxName, 100.0f, -1.0f, false, true, NULL, NULL, NULL);
+        PlayWorldSfx(sfxName, target);
         break;
     }
     case 5:
     {
         m_SP--;
+        const char* target = (const char*)*m_SP;
         m_SP--;
         f32 vol = *(f32*)m_SP;
         m_SP--;
         const char* sfxName = (const char*)*m_SP;
-        Audio::PlayWorldSFXbyStr(sfxName, vol, -1.0f, false, true, NULL, NULL, NULL);
+        PlayWorldSfxWithVol(sfxName, vol, target);
         break;
     }
     case 6:
@@ -56,33 +56,15 @@ void ReplayChoreo::DoFunctionCall(unsigned int func)
         m_SP--;
         f32 timeOffset = *(f32*)m_SP;
         m_SP--;
-        mReplayManager->SetCurrentTime(timeOffset + mReplay->TimeOfLastOccurence(*m_SP));
-        f32 endTime = mReplayManager->mReplay->EndTime();
-        if (endTime - mReplayManager->mTime > 5.0f)
-        {
-            mReplayManager->SetCurrentTime(mReplayManager->mReplay->EndTime() - 5.0f);
-        }
+        ReplayEvent arg0 = (ReplayEvent)*m_SP;
+        Rewind(arg0, timeOffset);
         break;
     }
     case 7:
     {
         m_SP--;
-        f32 speed = *(f32*)m_SP;
-        if (mRunningFor)
-        {
-            if (0.0f >= mRunForTimeLeft)
-            {
-                mRunForTimeLeft = 0.0f;
-                mRunningFor = false;
-                break;
-            }
-        }
-        if (!mRunningFor)
-        {
-            mRunForTimeLeft = speed;
-            mRunningFor = true;
-        }
-        StopWithUndo();
+        f32 time = *(f32*)m_SP;
+        RunFor(time);
         break;
     }
     case 8:
@@ -90,11 +72,11 @@ void ReplayChoreo::DoFunctionCall(unsigned int func)
         m_SP--;
         f32 timeOffset = *(f32*)m_SP;
         m_SP--;
-        u32 eventId = *m_SP;
+        ReplayEvent arg0 = (ReplayEvent)*m_SP;
         if (!IsFinished())
         {
             f32 currentTime = mReplayManager->mTime;
-            f32 lastOccurence = mReplay->TimeOfLastOccurence(eventId);
+            f32 lastOccurence = mReplay->TimeOfLastOccurence(arg0);
             if (currentTime < timeOffset + lastOccurence)
             {
                 StopWithUndo();
@@ -105,50 +87,50 @@ void ReplayChoreo::DoFunctionCall(unsigned int func)
     case 9:
     {
         m_SP--;
-        mCamera.CutTo((ReplayCameraPosition)*m_SP);
+        ReplayCameraPosition position = (ReplayCameraPosition)*m_SP;
+        SetCamera(position);
         break;
     }
     case 10:
     {
         m_SP--;
-        mCamera.mFocus = *m_SP;
+        ReplayCameraFocus arg0 = (ReplayCameraFocus)*m_SP;
+        SetCameraFocus(arg0);
         break;
     }
     case 11:
     {
         m_SP--;
         f32 fov = *(f32*)m_SP;
-        mCamera.mFov = fov;
-        mCamera.mDeltaFov = 0.0f;
+        SetCameraFov(fov);
         break;
     }
     case 12:
     {
         m_SP--;
         f32 speed = *(f32*)m_SP;
-        mReplayManager->mSpeed = speed;
-        mReplayManager->mSpeedUp = 0.0f;
+        Speed(speed);
         break;
     }
     case 13:
     {
         m_SP--;
         f32 deltaFov = *(f32*)m_SP;
-        mCamera.mDeltaFov = deltaFov;
+        StartCameraZoom(deltaFov);
         break;
     }
     case 14:
     {
         m_SP--;
         f32 speedUp = *(f32*)m_SP;
-        mReplayManager->mSpeedUp = speedUp;
+        StartSpeedUp(speedUp);
         break;
     }
     case 15:
     {
         m_SP--;
         const char* sfxName = (const char*)*m_SP;
-        Audio::StopWorldSFXbyStr(sfxName);
+        StopWorldSfx(sfxName);
         break;
     }
     default:

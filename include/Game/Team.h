@@ -83,6 +83,7 @@ public:
     cPlayer* GetControlledPlayer(cGlobalPad*);
     int GetNumAssignedControllers();
     cFielder* GetFielder(int);
+    cFielder* GetBallInterceptFielder(int i) { return m_pBallInterceptOrderedFielders[i]; }
     cPlayer* GetPlayer(int);
     cTeam* GetOtherTeam();
     cNet* GetOtherNet();

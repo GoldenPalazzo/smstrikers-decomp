@@ -48,6 +48,18 @@ ReplayChoreo& ReplayChoreo::Instance()
     return instance;
 }
 
+ReplayChoreo::ReplayChoreo()
+    : InterpreterCore(10)
+    , mReplayManager(NULL)
+    , mRunForTimeLeft(0.0f)
+    , mRunningFor(false)
+    , mByteCode(NULL)
+    , mHighlightIndex(-1)
+    , mNumHighlights(0)
+{
+    LoadScript();
+}
+
 template <typename StringType, typename T1, typename T2, typename T3, typename T4>
 void Format(StringType& result, const StringType& format, const T1& value1, const T2& value2, const T3& value3, const T4& value4);
 
@@ -339,6 +351,66 @@ void ReplayChoreo::Update(float deltaT)
     }
 }
 
+void ReplayChoreo::SetCamera(ReplayCameraPosition position)
+{
+    mCamera.CutTo(position);
+}
+
+void ReplayChoreo::FreezeCamera()
+{
+    mCamera.mFrozen = true;
+}
+
+void ReplayChoreo::SetCameraFov(float fov)
+{
+    mCamera.mFov = fov;
+    mCamera.mDeltaFov = 0.0f;
+}
+
+void ReplayChoreo::SetCameraFocus(ReplayCameraFocus focus)
+{
+    mCamera.mFocus = focus;
+}
+
+void ReplayChoreo::AddCameraFocus(ReplayCameraFocus focus)
+{
+    mCamera.mFocus |= focus;
+}
+
+void ReplayChoreo::Speed(float speed)
+{
+    mReplayManager->mSpeed = speed;
+    mReplayManager->mSpeedUp = 0.0f;
+}
+
+void ReplayChoreo::StartSpeedUp(float deltaSpeed)
+{
+    mReplayManager->mSpeedUp = deltaSpeed;
+}
+
+void ReplayChoreo::Rewind(ReplayEvent event, float timeOffset)
+{
+    mReplayManager->SetCurrentTime(timeOffset + mReplay->TimeOfLastOccurence(event));
+    float endTime = mReplayManager->mReplay->EndTime();
+    if (endTime - mReplayManager->mTime > 5.0f)
+    {
+        mReplayManager->SetCurrentTime(mReplayManager->mReplay->EndTime() - 5.0f);
+    }
+}
+
+void ReplayChoreo::RunTill(ReplayEvent event, float timeOffset)
+{
+    if (!IsFinished())
+    {
+        float currentTime = mReplayManager->mTime;
+        float lastOccurence = mReplay->TimeOfLastOccurence(event);
+        if (currentTime < timeOffset + lastOccurence)
+        {
+            StopWithUndo();
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0x344 | 0x801279B0 | size: 0x4C
  */
@@ -353,6 +425,30 @@ bool ReplayChoreo::Done() const
         }
     }
     return result;
+}
+
+void ReplayChoreo::StartCameraZoom(float deltaFov)
+{
+    mCamera.mDeltaFov = deltaFov;
+}
+
+void ReplayChoreo::RunFor(float time)
+{
+    if (mRunningFor)
+    {
+        if (0.0f >= mRunForTimeLeft)
+        {
+            mRunForTimeLeft = 0.0f;
+            mRunningFor = false;
+            return;
+        }
+    }
+    if (!mRunningFor)
+    {
+        mRunForTimeLeft = time;
+        mRunningFor = true;
+    }
+    StopWithUndo();
 }
 
 /**
@@ -442,6 +538,33 @@ void ReplayChoreo::SaveHighlight(ReplayChoreo::HighlightQuality quality)
     }
 }
 
+void ReplayChoreo::PlayWorldSfx(const char* name, const char* target)
+{
+    Audio::PlayWorldSFXbyStr(name, 100.0f, -1.0f, false, true, NULL, NULL, NULL);
+}
+
+void ReplayChoreo::PlayWorldSfxWithVol(const char* name, float volume, const char* target)
+{
+    Audio::PlayWorldSFXbyStr(name, volume, -1.0f, false, true, NULL, NULL, NULL);
+}
+
+void ReplayChoreo::StopWorldSfx(const char* name)
+{
+    Audio::StopWorldSFXbyStr(name);
+}
+
+void ReplayChoreo::FilterOn(float fadeTime)
+{
+    GameTweaks* tweaks = g_pGame->m_pGameTweaks;
+    Audio::FadeFilter(tweaks->unk214, tweaks->unk210, fadeTime, 0.0f);
+}
+
+void ReplayChoreo::FilterOff(float fadeTime)
+{
+    GameTweaks* tweaks = g_pGame->m_pGameTweaks;
+    Audio::FadeFilter(tweaks->unk210, tweaks->unk214, fadeTime, 0.0f);
+}
+
 /**
  * Offset/Address/Size: 0x8C | 0x801276F8 | size: 0x7C
  */
@@ -460,9 +583,8 @@ int ReplayChoreo::NumHighlights() const
     return count;
 }
 
-/**
- * Offset/Address/Size: 0x0 | 0x8012766C | size: 0x8C
- */
-ReplayChoreo::~ReplayChoreo()
+void ReplayChoreo::Finish()
 {
+    Reset();
+    mReplayManager->mSpeed = 1.0f;
 }

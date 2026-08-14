@@ -19,6 +19,15 @@ enum ReplayCameraFocus
     REPLAY_CAMERA_FOCUS_NUM = 4,
 };
 
+enum ReplayEvent
+{
+    REPLAY_EVENT_BALL_IN_NET = 1,
+    REPLAY_EVENT_SHOT_AT_GOAL = 2,
+    REPLAY_EVENT_RECEIVE_BALL = 4,
+    REPLAY_EVENT_PASS_BALL = 8,
+    REPLAY_EVENT_GOALIE_SAVE = 22,
+};
+
 class ReplayChoreo : public InterpreterCore
 {
 public:
@@ -51,20 +60,9 @@ public:
         int mSavedReplayPad;            // offset 0x30, size 0x4
     }; // total size: 0x34
 
-    ReplayChoreo()
-        : InterpreterCore(10)
-        , mReplayManager(NULL)
-        , mRunForTimeLeft(0.0f)
-        , mRunningFor(false)
-        , mByteCode(NULL)
-        , mHighlightIndex(-1)
-        , mNumHighlights(0)
-    {
-        LoadScript();
-    }
+    ReplayChoreo();
 
     void DoFunctionCall(unsigned int);
-    void AddCameraFocus(ReplayCameraFocus focus) { mCamera.mFocus |= focus; }
     static ReplayChoreo& Instance();
     void LoadScript();
     void EventHandler(Event*);
@@ -74,10 +72,26 @@ public:
     void StartAutoReplay(ReplayType);
     void FlushHighlights();
     void Update(float);
+    void SetCamera(ReplayCameraPosition);
+    void FreezeCamera();
+    void SetCameraFov(float);
+    void SetCameraFocus(ReplayCameraFocus);
+    void AddCameraFocus(ReplayCameraFocus);
+    void Speed(float);
+    void StartSpeedUp(float);
+    void Rewind(ReplayEvent, float);
+    void RunTill(ReplayEvent, float);
     bool Done() const;
+    void StartCameraZoom(float);
+    void RunFor(float);
     void SaveHighlight(ReplayChoreo::HighlightQuality);
+    void PlayWorldSfx(const char*, const char*);
+    void PlayWorldSfxWithVol(const char*, float, const char*);
+    void StopWorldSfx(const char*);
+    void FilterOn(float);
+    void FilterOff(float);
     int NumHighlights() const;
-    ~ReplayChoreo();
+    void Finish();
 
     int mNumScripts[3][3][9];               // offset 0x24, size 0x144
     mutable ReplayManager* mReplayManager;  // offset 0x168, size 0x4

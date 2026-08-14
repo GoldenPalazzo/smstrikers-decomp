@@ -1023,7 +1023,6 @@ int MostDefensivePlayer(const void* a, const void* b)
 
 /**
  * Offset/Address/Size: 0x120 | 0x800644CC | size: 0x3B0
- * TODO: 99.45% match - remaining float register allocation diffs in the scoring loop and marker reassignment tail.
  */
 void cTeam::AssignMarks(bool bForceReMark)
 {
@@ -1056,6 +1055,7 @@ void cTeam::AssignMarks(bool bForceReMark)
                 pOppFielder = pOpponentTeam->GetFielder(j);
 
                 float fDownfieldMax = FGREATER(DownfieldFrom(pMyFielder, pOppFielder), 0.5f);
+                fDownfieldMax = fDownfieldMax;
                 float fInBetween = InBetweenMyNetAnd(pMyFielder, pOppFielder);
                 if (fInBetween >= fDownfieldMax)
                 {
@@ -1104,7 +1104,8 @@ void cTeam::AssignMarks(bool bForceReMark)
                         if (fMax)
                         {
                             bNeedsMark = false;
-                            fConfidence = fDistanceScore * 0.5f + fDownfieldMax * 0.5f;
+                            float fHalf = 0.5f;
+                            fConfidence = fDistanceScore * fHalf + fDownfieldMax * fHalf;
                         }
                         else
                         {
@@ -1127,7 +1128,9 @@ void cTeam::AssignMarks(bool bForceReMark)
 
                 if (bNeedsMark)
                 {
-                    fConfidence = fDistanceScore * 0.7f + fDownfieldMax * 0.3f;
+                    float fA = 0.7f;
+                    float fB = 0.3f;
+                    fConfidence = fDistanceScore * fA + fDownfieldMax * fB;
                 }
 
                 if (Incapacitated(pMyFielder))
@@ -1153,17 +1156,17 @@ void cTeam::AssignMarks(bool bForceReMark)
             pBallOwner = g_pBall->GetOwnerFielder();
             if (pBallOwner->m_pTeam != this)
             {
-                pOppFielder = g_pBall->GetOwnerFielder()->m_pMarker;
+                pOppFielder = g_pBall->GetOwnerFielder()->GetMarker();
                 if (Incapacitated(pOppFielder))
                 {
                     pBallOwner = g_pBall->GetOwnerFielder();
-                    pOppFielder = pBallOwner->m_pMarker;
+                    pOppFielder = pBallOwner->GetMarker();
                     for (int k = 0; k < 4; k++)
                     {
-                        pMyFielder = m_pBallInterceptOrderedFielders[k];
+                        pMyFielder = GetBallInterceptFielder(k);
                         if (pMyFielder != pOppFielder)
                         {
-                            cFielder* pOldMark = pMyFielder->m_pMark;
+                            cFielder* pOldMark = pMyFielder->GetMark();
                             pMyFielder->SetMark(g_pBall->GetOwnerFielder());
                             pOppFielder->SetMark(pOldMark);
                             break;

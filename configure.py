@@ -807,7 +807,7 @@ config.libs = [
             Object(Matching, "Game/Camera/animcam.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             Object(Matching, "Game/Replay.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/ReplayChoreo.cpp", extra_cflags=["-inline auto", "-inline deferred"]),    
+            Object(Matching, "Game/ReplayChoreo.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/ReplayManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/RenderSnapshot.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
