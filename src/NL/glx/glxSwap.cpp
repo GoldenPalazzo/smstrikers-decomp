@@ -140,11 +140,11 @@ static inline void PutPixel(
 
 static inline int DecodeLoadingPixel(u16 pixel, int yuv[3])
 {
-    int y = (pixel >> 12) & 0xF;
-    y |= (pixel >> 8) & 0xF0;
-    int u = (pixel >> 8) & 0xF;
-    u |= (pixel & 0x0F00) >> 4;
+    int y = (pixel & 0xF000) >> 12;
+    y |= y << 4;
+    int u = (pixel & 0x0F00) >> 8;
     int v = (pixel & 0x00F0) >> 4;
+    u |= u << 4;
     v |= v << 4;
     int a = pixel & 0xF;
     a |= a << 4;
@@ -169,7 +169,6 @@ static void BlitImage(int offset_x, int offset_y, float scale_x, float scale_y, 
     for (y = 0, ypos = 0.0f; ypos < limit; y++, ypos += yinc)
     {
         int srcRow = (int)ypos;
-        int dstRow = (offset_y + y) * 0x500;
 
         for (x = 0, xpos = 0.0f; xpos < limit; x++, xpos += xinc)
         {
@@ -208,7 +207,8 @@ static void BlitImage(int offset_x, int offset_y, float scale_x, float scale_y, 
         }
 
         DCStoreRangeNoSync(
-            (u8*)glx_FrameBuffer[glx_nBuffer ^ glx_nBlitXor] + dstRow + (offset_x << 1),
+            (u8*)glx_FrameBuffer[glx_nBuffer ^ glx_nBlitXor] +
+                (offset_y + y) * 0x500 + (offset_x << 1),
             (u32)(x << 1));
     }
 

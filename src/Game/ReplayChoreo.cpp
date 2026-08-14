@@ -211,7 +211,6 @@ void Format(StringType& result, const StringType& format, const T1& value1, cons
 
 /**
  * Offset/Address/Size: 0xCC8 | 0x80128334 | size: 0x314
- * TODO: 98.10% match - remaining register permutation in this/loop cursor allocation
  */
 void ReplayChoreo::LoadScript()
 {
@@ -224,10 +223,10 @@ void ReplayChoreo::LoadScript()
     mByteCode = nlLoadEntireFile("art/presentation/replay_choreo.byte_code", &fileSize, 0x20, (eAllocType)0);
     LoadByteCode(mByteCode);
 
-    int j;
+    int d;
     int w;
     int t;
-    int d;
+    int j;
 
     for (d = 0; d < 3; d++)
     {
@@ -348,15 +347,17 @@ void ReplayChoreo::Reset()
 
 /**
  * Offset/Address/Size: 0x698 | 0x80127D04 | size: 0x3E0
- * TODO: 95.47% match - register allocation: stmw r26 vs r27 (data/replayType share r30 in target).
+ * OPEN: 93.42% - register allocation only; every instruction placement matches.
+ * Target coalesces replayType and replayType*4 into r30 once the `format`
+ * pointer dies, so it saves r27-r31; we need a sixth web in r26 (stmw r26).
  */
 BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScriptName(ReplayType) const
 {
     BasicString<char, Detail::TempStringAllocator> format("{0}_{1}_{2}_{3}");
 
-    int zoneDepth = 0;
     int zoneInWidth = 0;
-    int goalType = mGoalScoredData.uGoalType;
+    int zoneDepth = 0;
+    int replayType = mGoalScoredData.uGoalType;
 
     f32 fieldDepth = 2.0f * cField::mv3FieldPosition.f.y;
     f32 y = 0.5f * fieldDepth + mGoalScoredData.v3ShotPosition.f.y;
@@ -383,26 +384,26 @@ BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScrip
 
     while (true)
     {
-        if (mNumScripts[zoneDepth][zoneInWidth][goalType] > 0)
+        if (mNumScripts[zoneDepth][zoneInWidth][replayType] > 0)
             break;
 
-        if (mNumScripts[zoneDepth][0][goalType] > 0)
+        if (mNumScripts[zoneDepth][0][replayType] > 0)
         {
             zoneInWidth = 0;
             break;
         }
-        if (mNumScripts[0][zoneInWidth][goalType] > 0)
+        if (mNumScripts[0][zoneInWidth][replayType] > 0)
         {
             zoneDepth = 0;
             break;
         }
-        if (mNumScripts[0][0][goalType] > 0)
+        if (mNumScripts[0][0][replayType] > 0)
         {
             zoneInWidth = 0;
             zoneDepth = 0;
             break;
         }
-        goalType = 0;
+        replayType = 0;
     }
 
     if (!mReplay->DidOccurInLastNumSeconds(2, 6.0f))
@@ -410,14 +411,14 @@ BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScrip
         return BasicString<char, Detail::TempStringAllocator>("MID_CENTER_OWN_GOAL_0");
     }
 
-    int pick = nlRandom(mNumScripts[zoneDepth][zoneInWidth][goalType], &nlDefaultSeed);
+    int pick = nlRandom(mNumScripts[zoneDepth][zoneInWidth][replayType], &nlDefaultSeed);
     if (cameraPick > -1)
     {
-        pick = cameraPick % mNumScripts[zoneDepth][zoneInWidth][goalType];
+        pick = cameraPick % mNumScripts[zoneDepth][zoneInWidth][replayType];
     }
 
     return Format<BasicString<char, Detail::TempStringAllocator>, const char*, const char*, const char*, int>(
-        format, zoneDepthNames[zoneDepth], zoneInWidthNames[zoneInWidth], replayTypeNames[goalType], pick);
+        format, zoneDepthNames[zoneDepth], zoneInWidthNames[zoneInWidth], replayTypeNames[replayType], pick);
 }
 
 /**

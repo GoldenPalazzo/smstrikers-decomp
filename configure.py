@@ -1266,7 +1266,7 @@ config.libs = [
             # DB
             Object(NonMatching, "Game/DB/SaveLoad.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/DB/UserOptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/DB/StatsTracker.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/DB/StatsTracker.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/DB/Simmer.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/DB/CustomTournament.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
@@ -1322,7 +1322,7 @@ config.libs = [
             Object(Matching, "NL/utility.cpp", extra_cflags=["-inline auto", "-inline deferred"]),     
 
             # Ext/GL
-            Object(NonMatching, "NL/glx/glxSwap.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "NL/glx/glxSwap.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/glx/glxFont.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/glx/glxMatrix.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/glx/glxMemory.cpp", extra_cflags=["-inline auto"]),
