@@ -122,6 +122,30 @@ TrackManagerBase::StreamFileLookup::StreamFileLookup(
     SlotPoolBase::BaseFreeBlocks(&LookupList.m_Allocator, sizeof(ListEntryT));
 }
 
+void TrackManagerBase::StreamFileLookup::GetFileName(
+    unsigned long StreamId, char* FileName, int MaxLength, const char* Param)
+{
+    const STREAM_FILE_LOOKUP* pLookup =
+        nlBSearch<STREAM_FILE_LOOKUP, unsigned long>(StreamId, m_pLookup, m_StreamCount);
+
+    const char* pPercent = strchr(pLookup->FileName, '%');
+    if (pPercent != NULL)
+    {
+        char* pInsert = FileName;
+        unsigned long InsertIndex = (unsigned long)(pPercent - pLookup->FileName);
+        nlStrNCpy<char>(pInsert, pLookup->FileName, InsertIndex + 1);
+        pInsert += InsertIndex;
+        m_ParamCB(Param, pInsert, MaxLength - InsertIndex);
+        unsigned long InsertLen = nlStrLen(pInsert);
+        nlStrNCpy<char>(pInsert + InsertLen, pPercent + 3, MaxLength - InsertIndex - InsertLen);
+    }
+    else
+    {
+        nlStrNCpy<char>(FileName, pLookup->FileName, MaxLength);
+    }
+}
+
+
 } // namespace AudioStreamTrack
 
 // /**

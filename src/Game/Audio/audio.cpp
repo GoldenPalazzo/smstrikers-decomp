@@ -95,8 +95,6 @@ extern bool gbTestPrintout;
 extern float gfSilenceTimer;
 extern unsigned long uCurrentSFXVolume;
 
-static const nlVector3 sListenerZero = { 0.0f, 0.0f, 0.0f };
-
 /**
  * Offset/Address/Size: 0xF0 | 0x801413B0 | size: 0x28
  */
@@ -119,7 +117,14 @@ void nlListAddStart<FadeAudioData>(FadeAudioData** head, FadeAudioData* entry, F
 namespace Audio
 {
 
-static FadeAudioData* RemoveFadeData(FadeAudioData*);
+static inline FadeAudioData* RemoveFadeData(FadeAudioData* pFadeAudioData)
+{
+    nlListRemoveElement<FadeAudioData>(&g_pFadeList, pFadeAudioData, NULL);
+    FadeAudioData* pNextFadeAudioData = pFadeAudioData->next;
+    delete pFadeAudioData;
+    return pNextFadeAudioData;
+}
+
 static void RemoveFadeData(FadeType, int);
 static bool IsFadeDataInList(FadeType, unsigned long, bool, float);
 static void AddFilterFadeData(float, float, float, float, FadeType, float);
@@ -2304,7 +2309,7 @@ void Update(float fDeltaT)
             cBaseCamera* pCamera = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
             const nlVector3& cameraPos = pCamera->GetCameraPosition();
             vCameraPos = cameraPos;
-            vDir = sListenerZero;
+            nlVec3Set(vDir, 0.0f, 0.0f, 0.0f);
             cCameraManager::GetViewVector(vHeading);
             cCameraManager::GetUpVector(vUp);
 
@@ -2329,6 +2334,70 @@ void Update(float fDeltaT)
     }
 }
 
+static inline void ActivateFilterOnAllCurrentSFXInl(bool bOn)
+{
+    gWorldSFX.ActivateFilterOnAllTrackedSFX(bOn);
+    gPowerupSFX.ActivateFilterOnAllTrackedSFX(bOn);
+    gStadGenSFX.ActivateFilterOnAllTrackedSFX(bOn);
+    gCrowdSFX.ActivateFilterOnAllTrackedSFX(bOn);
+
+    if (g_pGame)
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            cTeam* pTeam = g_pTeams[i];
+            for (int j = 0; j < 5; j++)
+            {
+                cPlayer* pPlayer = pTeam->GetPlayer(j);
+                pPlayer->m_pCharacterSFX->ActivateFilterOnAllTrackedSFX(bOn);
+            }
+        }
+
+        BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->ActivateFilterOnAllTrackedSFX(bOn);
+    }
+
+    CrowdMood::ActivateLPF(bOn);
+    gbFilterOn = bOn;
+}
+
+static inline void SetFilterFreqOnAllCurrentSFXInl(unsigned short freq)
+{
+    gWorldSFX.SetFilterFreqOnAllTrackedSFX(freq);
+    gPowerupSFX.SetFilterFreqOnAllTrackedSFX(freq);
+    gStadGenSFX.SetFilterFreqOnAllTrackedSFX(freq);
+    gCrowdSFX.SetFilterFreqOnAllTrackedSFX(freq);
+
+    if (g_pGame)
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            cTeam* pTeam = g_pTeams[i];
+            for (int j = 0; j < 5; j++)
+            {
+                cPlayer* pPlayer = pTeam->GetPlayer(j);
+                pPlayer->m_pCharacterSFX->SetFilterFreqOnAllTrackedSFX(freq);
+            }
+        }
+
+        BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->SetFilterFreqOnAllTrackedSFX(freq);
+    }
+
+    CrowdMood::SetLPF(freq);
+}
+
+static inline void SetPitchBendOnAllDialogueSFXInl(unsigned short pitch)
+{
+    for (int i = 0; i < 2; i++)
+    {
+        cTeam* pTeam = g_pTeams[i];
+        for (int j = 0; j < 5; j++)
+        {
+            pTeam->GetPlayer(j)->m_pCharacterSFX->SetPitchBendOnAllDialogueSFX(pitch);
+        }
+    }
+    BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->SetPitchBendOnAllDialogueSFX(pitch);
+}
+
 /**
  * Offset/Address/Size: 0x159C | 0x8013DAB0 | size: 0xA34
  * TODO: 99.53% match - remaining filter and pitch loop register differences.
@@ -2337,9 +2406,6 @@ void UpdateFades(float fDeltaT)
 {
     FadeAudioData* pFadeData;
     float newVol;
-    int t;
-    int p;
-    cTeam* team;
 
     pFadeData = g_pFadeList;
     while (pFadeData != NULL)
@@ -2519,30 +2585,7 @@ void UpdateFades(float fDeltaT)
             {
                 if (pFadeData->bTurnFilterOn && !pFadeData->bFilterOn)
                 {
-                    gWorldSFX.ActivateFilterOnAllTrackedSFX(true);
-                    gPowerupSFX.ActivateFilterOnAllTrackedSFX(true);
-                    gStadGenSFX.ActivateFilterOnAllTrackedSFX(true);
-                    gCrowdSFX.ActivateFilterOnAllTrackedSFX(true);
-
-                    if (g_pGame != NULL)
-                    {
-                        int p;
-                        cTeam* team;
-                        int t;
-                        for (t = 0; t < 2; t++)
-                        {
-                            team = g_pTeams[t];
-                            for (p = 0; p < 5; p++)
-                            {
-                                team->GetPlayer(p)->m_pCharacterSFX->ActivateFilterOnAllTrackedSFX(true);
-                            }
-                        }
-                        BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->ActivateFilterOnAllTrackedSFX(
-                            true);
-                    }
-
-                    CrowdMood::ActivateLPF(true);
-                    gbFilterOn = true;
+                    ActivateFilterOnAllCurrentSFXInl(true);
                     pFadeData->bFilterOn = true;
                 }
 
@@ -2574,27 +2617,7 @@ void UpdateFades(float fDeltaT)
                 {
                     targetFreq = 0x3FFF;
                 }
-
-                gWorldSFX.SetFilterFreqOnAllTrackedSFX(targetFreq);
-                gPowerupSFX.SetFilterFreqOnAllTrackedSFX(targetFreq);
-                gStadGenSFX.SetFilterFreqOnAllTrackedSFX(targetFreq);
-                gCrowdSFX.SetFilterFreqOnAllTrackedSFX(targetFreq);
-
-                if (g_pGame != NULL)
-                {
-                    for (t = 0; t < 2; t++)
-                    {
-                        team = g_pTeams[t];
-                        for (p = 0; p < 5; p++)
-                        {
-                            team->GetPlayer(p)->m_pCharacterSFX->SetFilterFreqOnAllTrackedSFX(targetFreq);
-                        }
-                    }
-                    BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->SetFilterFreqOnAllTrackedSFX(
-                        targetFreq);
-                }
-
-                CrowdMood::SetLPF(targetFreq);
+                SetFilterFreqOnAllCurrentSFXInl(targetFreq);
                 pFadeData->currentVol.floatVal = newVal;
             }
 
@@ -2608,51 +2631,11 @@ void UpdateFades(float fDeltaT)
                 {
                     targetFreq = 0x3FFF;
                 }
-
-                gWorldSFX.SetFilterFreqOnAllTrackedSFX(targetFreq);
-                gPowerupSFX.SetFilterFreqOnAllTrackedSFX(targetFreq);
-                gStadGenSFX.SetFilterFreqOnAllTrackedSFX(targetFreq);
-                gCrowdSFX.SetFilterFreqOnAllTrackedSFX(targetFreq);
-
-                if (g_pGame != NULL)
-                {
-                    for (int t = 0; t < 2; t++)
-                    {
-                        team = g_pTeams[t];
-                        for (p = 0; p < 5; p++)
-                        {
-                            team->GetPlayer(p)->m_pCharacterSFX->SetFilterFreqOnAllTrackedSFX(targetFreq);
-                        }
-                    }
-                    BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->SetFilterFreqOnAllTrackedSFX(
-                        targetFreq);
-                }
-
-                CrowdMood::SetLPF(targetFreq);
+                SetFilterFreqOnAllCurrentSFXInl(targetFreq);
 
                 if (pFadeData->bShutDownAfterDuration)
                 {
-                    gWorldSFX.ActivateFilterOnAllTrackedSFX(false);
-                    gPowerupSFX.ActivateFilterOnAllTrackedSFX(false);
-                    gStadGenSFX.ActivateFilterOnAllTrackedSFX(false);
-                    gCrowdSFX.ActivateFilterOnAllTrackedSFX(false);
-
-                    if (g_pGame != NULL)
-                    {
-                        for (t = 0; t < 2; t++)
-                        {
-                            team = g_pTeams[t];
-                            for (p = 0; p < 5; p++)
-                            {
-                                team->GetPlayer(p)->m_pCharacterSFX->ActivateFilterOnAllTrackedSFX(false);
-                            }
-                        }
-                        BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->ActivateFilterOnAllTrackedSFX(
-                            false);
-                    }
-
-                    CrowdMood::ActivateLPF(false);
-                    gbFilterOn = false;
+                    ActivateFilterOnAllCurrentSFXInl(false);
                     pFadeData->bFilterOn = false;
                 }
 
@@ -2703,16 +2686,7 @@ void UpdateFades(float fDeltaT)
 
                 if (game != NULL)
                 {
-                    for (t = 0; t < 2; t++)
-                    {
-                        team = g_pTeams[t];
-                        for (p = 0; p < 5; p++)
-                        {
-                            team->GetPlayer(p)->m_pCharacterSFX->SetPitchBendOnAllDialogueSFX(targetFreq);
-                        }
-                    }
-                    BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->SetPitchBendOnAllDialogueSFX(
-                        targetFreq);
+                    SetPitchBendOnAllDialogueSFXInl(targetFreq);
                 }
 
                 gbPitchBent = targetFreq != 0x2000;
@@ -2726,16 +2700,7 @@ void UpdateFades(float fDeltaT)
                 {
                     if (g_pGame != NULL)
                     {
-                        for (t = 0; t < 2; t++)
-                        {
-                            team = g_pTeams[t];
-                            for (p = 0; p < 5; p++)
-                            {
-                                team->GetPlayer(p)->m_pCharacterSFX->SetPitchBendOnAllDialogueSFX(0x2000);
-                            }
-                        }
-                        BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->SetPitchBendOnAllDialogueSFX(
-                            0x2000);
+                        SetPitchBendOnAllDialogueSFXInl(0x2000);
                     }
                     gbPitchBent = false;
                     pFadeData->bPitchBendApplied = false;
@@ -3192,14 +3157,6 @@ static void RemoveFadeData(FadeType fadeType, int streamIndex)
     }
 }
 
-static FadeAudioData* RemoveFadeData(FadeAudioData* pFadeAudioData)
-{
-    nlListRemoveElement<FadeAudioData>(&g_pFadeList, pFadeAudioData, NULL);
-    FadeAudioData* pNextFadeAudioData = pFadeAudioData->next;
-    delete pFadeAudioData;
-    return pNextFadeAudioData;
-}
-
 /**
  * Offset/Address/Size: 0xCD8 | 0x8013D1EC | size: 0x2C
  */
@@ -3585,7 +3542,8 @@ void PitchBend(float param1, float param2, float param3, float param4)
             {
                 return;
             }
-            u16 pitchBend = (u16)(s32)(16384.0f * g_pGame->m_pGameTweaks->unk220);
+            float pitchScale = 8192.0f * g_pGame->m_pGameTweaks->unk220;
+            u16 pitchBend = (u16)(s32)(pitchScale + pitchScale);
             if (pitchBend > 0x3FFF)
             {
                 pitchBend = 0x3FFF;

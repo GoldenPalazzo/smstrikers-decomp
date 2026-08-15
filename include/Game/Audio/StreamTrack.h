@@ -53,6 +53,8 @@ public:
 
         StreamFileLookup(const char* name,
             const Function<bool(const char*, char*, unsigned long)>& fn);
+        void GetFileName(unsigned long StreamId, char* FileName, int MaxLength,
+            const char* Param);
 
         /* 0x00 */ Function<bool(const char*, char*, unsigned long)> m_ParamCB;
         /* 0x08 */ STREAM_FILE_LOOKUP* m_pLookup;
