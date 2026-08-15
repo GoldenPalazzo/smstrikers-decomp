@@ -119,7 +119,7 @@ TrackManagerBase::StreamFileLookup::StreamFileLookup(
         &nlDefaultQSortComparer<STREAM_FILE_LOOKUP>);
 
     LookupList.Clear();
-    SlotPoolBase::BaseFreeBlocks(&LookupList.m_Allocator, sizeof(ListEntryT));
+    LookupList.m_Allocator.FreeBlocks();
 }
 
 void TrackManagerBase::StreamFileLookup::GetFileName(
@@ -310,7 +310,6 @@ void AudioStreamTrack::TrackManagerBase::FadeManager::AddFade(
     unsigned long endVol, Audio::MasterVolume::VOLUME_GROUP volGroup,
     unsigned long fadeLength, const Function<FnVoidVoid>& callback)
 {
-    FORCE_DONT_INLINE;
     typedef STREAM_FADE_CTRL FadeCtrl;
 
     FadeCtrl* fadeCtrl = m_Fades.AllocateAtEnd(NULL);
@@ -665,7 +664,6 @@ void AudioStreamTrack::StreamTrack::SetIdleState()
  */
 void AudioStreamTrack::StreamTrack::StopHead(unsigned long Fadeout)
 {
-    FORCE_DONT_INLINE;
     DLListEntry<QUEUED_STREAM>* entry = nlDLRingGetStart(m_QueuedStreams.m_Head);
     StreamTrack* pTrack = this;
 
@@ -750,7 +748,6 @@ void AudioStreamTrack::StreamTrack::Stop(unsigned long Fadeout)
 void AudioStreamTrack::StreamTrack::StartQStreamFadeout(
     QUEUED_STREAM* pQS, unsigned long Fadeout, const Function<FnVoidVoid>& callback)
 {
-    FORCE_DONT_INLINE;
     if (!m_TrackMgr.m_FadeMgr.ChangeFade(pQS->pStream, 0, Fadeout, callback))
     {
         GCAudioStreaming::StereoAudioStream* pStream = pQS->pStream;
@@ -774,7 +771,6 @@ void AudioStreamTrack::StreamTrack::StartQStreamFadeout(
  */
 void AudioStreamTrack::StreamTrack::StopQStream(QUEUED_STREAM* pQueuedStream)
 {
-    FORCE_DONT_INLINE;
     unsigned char flags = *((unsigned char*)pQueuedStream + 0xB);
     StopStream(pQueuedStream->pStream, (flags >> 1) & 1);
 
@@ -856,7 +852,6 @@ fade_found:
  */
 void AudioStreamTrack::StreamTrack::FadeOutDone(AudioStreamTrack::StreamTrack::QUEUED_STREAM* qs)
 {
-    FORCE_DONT_INLINE;
     StopQStream(qs);
 }
 

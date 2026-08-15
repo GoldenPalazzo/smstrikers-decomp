@@ -1351,12 +1351,14 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
     bool bDoSeek;
     bool bNeedChange;
     u16 desiredAng;
+    unsigned int nParam;
+    cPN_SingleAxisBlender* pSAB_R;
 
+    pBall = g_pBall;
     eAnimID = m_eAnimID;
     f32 fTime = m_pCurrentAnimController->m_fTime;
-    pBall = g_pBall;
 
-    GetLocalPoint(mv3LocalNavTarget, mv3NavTarget, m_v3Position, m_aActualFacingDirection);
+    GetLocalPoint(mv3LocalNavTarget, mv3NavTarget, m_v3Position, GetActualFacing());
 
     float distSq = mv3LocalNavTarget.f.x * mv3LocalNavTarget.f.x + mv3LocalNavTarget.f.y * mv3LocalNavTarget.f.y;
 
@@ -1793,10 +1795,10 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
     mMoveDirection = GOALIEDIR_IDLE;
 
     cPN_SingleAxisBlender* pSAB_L = CreateSingleAxisBlender(nLeftAnims, 3, 1, MoveWeightCB, 0.1f, 0);
-    cPN_SingleAxisBlender* pSAB_R = CreateSingleAxisBlender(nRightAnims, 3, 1, MoveWeightCB, 0.1f, 0);
+    pSAB_R = CreateSingleAxisBlender(nRightAnims, 3, 1, MoveWeightCB, 0.1f, 0);
 
     cPN_SingleAxisBlender* pSAB = pSAB_L;
-    unsigned int nParam = (unsigned int)this;
+    nParam = (unsigned int)this;
     cPN_SAnimController* pPrevCtrlr = 0;
     int j;
 

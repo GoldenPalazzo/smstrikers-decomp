@@ -91,8 +91,7 @@ public:
         void Clear()
         {
             m_Fades.Clear();
-            SlotPoolBase::BaseFreeBlocks(
-                &m_Fades.m_Allocator, sizeof(DLListEntry<STREAM_FADE_CTRL>));
+            m_Fades.m_Allocator.FreeBlocks();
         }
         ~FadeManager()
         {
@@ -117,7 +116,7 @@ public:
 
     virtual ~TrackManagerBase()
     {
-        SlotPoolBase::BaseFreeBlocks(&m_StreamPool, 0x40);
+        m_StreamPool.FreeBlocks();
     }
     /* 0x0C */ virtual void Update(float);
     /* 0x10 */ virtual StreamTrack* CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP) = 0;
