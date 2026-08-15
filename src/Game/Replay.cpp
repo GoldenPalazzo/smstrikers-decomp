@@ -13,7 +13,7 @@ bool renderMemoryLayout = false;
  * Offset/Address/Size: 0x7C8 | 0x80214074 | size: 0x188
  */
 Replay::Replay(char* memory, int memorySize, int maxFrameSize)
-    : mFree(new (Frame::mSlotPool.Allocate()) Frame(memory, memorySize, nullptr))
+    : mFree(new (Frame::Alloc()) Frame(memory, memorySize, nullptr))
     , mReelIdx(0)
     , mTick(0)
     , mMemorySize(memorySize)

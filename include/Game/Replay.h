@@ -275,6 +275,8 @@ public:
     {
         Frame(char* begin, int size, Frame* next);
 
+        static Frame* Alloc() { return mSlotPool.Allocate(); }
+
         char* End() const { return mBegin + mSize; }
 
         /* 0x00 */ float mTime;
@@ -319,10 +321,10 @@ public:
     void PlayReel(int);
 
     template <typename T>
-    void Record(float time, T& snapshot, unsigned int events);
+    void Play(float time, T& previous, T& current, float* blend) const;
 
     template <typename T>
-    void Play(float time, T& previous, T& current, float* blend) const;
+    void Record(float time, T& snapshot, unsigned int events);
 
     /* 0x00 */ Frame* mFree;
     /* 0x04 */ Reel mReels[4];
@@ -366,7 +368,7 @@ void Replay::Record(float time, T& snapshot, unsigned int events)
             mFree->mInterval = interval;
             mFree->mEvents = events;
 
-            mFree->mNext = new (Frame::mSlotPool.Allocate()) Frame(mFree->mBegin + frameSize, mFree->mSize - frameSize, mFree->mNext);
+            mFree->mNext = new (Frame::Alloc()) Frame(mFree->mBegin + frameSize, mFree->mSize - frameSize, mFree->mNext);
             mFree->mSize = frameSize;
             mFree = mFree->mNext;
         }

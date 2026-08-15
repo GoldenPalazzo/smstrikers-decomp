@@ -24,41 +24,6 @@ bool LexicalCast<bool, const char*>(const char* const& value);
 
 static f32 CANT_COLLIDE = HUGE_VALF;
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80112910 | size: 0x3C
-//  */
-// void Blend<RenderSnapshot>(const float*, const RenderSnapshot&, const RenderSnapshot&, RenderSnapshot&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801128BC | size: 0x48
-//  */
-// cBaseCamera::~cBaseCamera()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80112838 | size: 0x84
-//  */
-// RenderSnapshot::RenderSnapshot()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x5C | 0x801127BC | size: 0x7C
-//  */
-// RenderSnapshot::~RenderSnapshot()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80112760 | size: 0x5C
-//  */
-// cFollowCamera::~cFollowCamera()
-// {
-// }
-
 inline ReplayManager::ReplayManager()
     : mCurrent(mSnapshots)
     , mPrevious(mSnapshots + 1)
