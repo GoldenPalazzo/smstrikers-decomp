@@ -3608,11 +3608,6 @@ void Goalie::InitActionLooseBallCatch()
 
 /**
  * Offset/Address/Size: 0x3BD0 | 0x800466CC | size: 0x1B04
- * TODO: 99.98% match - 7 register-naming rows remain, all of them the
- * facing/pos pair inside the inlined CalcTimeToPlane: retail seats them r27/r26
- * and we seat them r26/r27. Four of the five expansion sites already match, so
- * the fix has to be caller-side. Size, schedule and frame already match retail;
- * see notes 0135.
  */
 void Goalie::InitActionLooseBallSetup()
 {
@@ -5303,8 +5298,8 @@ float Goalie::CalcTimeToPlane()
 
     SetDesiredSaveFacing(g_pBall->m_v3Position);
 
-    const unsigned short desiredFacing = m_aDesiredFacingDirection;
-    nlVector3& pos = m_v3Position;
+    unsigned short desiredFacing = GetDesiredFacing();
+    const nlVector3& pos = GetPosition();
     MakePerpendicularPlane(pos, desiredFacing, plane, 0.2f);
 
     time = FakeBallWorld::GetPredictedPlaneIntersectTime(plane, mv3TargetPosition, localVelocity);

@@ -195,6 +195,11 @@ public:
         return m_v3Velocity;
     }
 
+    inline u16 GetDesiredFacing() const
+    {
+        return m_aDesiredFacingDirection;
+    }
+
     virtual void Update(float);
 
     /* 0x04 */ eCharacterClass m_eCharacterClass;
