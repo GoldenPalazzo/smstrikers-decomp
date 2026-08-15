@@ -118,13 +118,13 @@ public:
         SlotPoolBase::BaseFreeBlocks(&m_StreamPool, 0x40);
     }
     /* 0x0C */ virtual void Update(float);
-    /* 0x10 */ virtual StreamTrack* CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP);
-    /* 0x14 */ virtual void DestroyAllTracks();
+    /* 0x10 */ virtual StreamTrack* CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP) = 0;
+    /* 0x14 */ virtual void DestroyAllTracks() = 0;
     static TrackManagerBase* Get();
 
-    /* 0x18 */ virtual StreamTrack* GetTrack(unsigned long);
-    /* 0x1C */ virtual void StopAllTracks(unsigned long);
-    /* 0x20 */ virtual void OnMasterVolumeChange(Audio::MasterVolume::VOLUME_GROUP);
+    /* 0x18 */ virtual StreamTrack* GetTrack(unsigned long) = 0;
+    /* 0x1C */ virtual void StopAllTracks(unsigned long) = 0;
+    /* 0x20 */ virtual void OnMasterVolumeChange(Audio::MasterVolume::VOLUME_GROUP) = 0;
 
     /* 0x04 */ StreamFileLookup m_FileLookup;
     /* 0x18 */ FadeManager m_FadeMgr;
@@ -253,13 +253,14 @@ public:
 
 inline StreamTrack::StreamTrack(TrackManagerBase& mgr, Audio::MasterVolume::VOLUME_GROUP volumeGroup)
     : m_TrackMgr(mgr)
+    , m_QueuedStreams(0)
+    , m_LPFFreq(32000)
+    , m_LPFOn(false)
+    , m_InFakePause(false)
+    , m_TrackOwnsStreams(true)
+    , m_State(TS_Idle)
+    , m_VolumeGroup(volumeGroup)
 {
-    m_LPFFreq = 32000;
-    m_LPFOn = false;
-    m_InFakePause = false;
-    m_TrackOwnsStreams = true;
-    m_State = TS_Idle;
-    m_VolumeGroup = volumeGroup;
 }
 
 inline TrackManagerBase::TrackManagerBase()
@@ -379,15 +380,10 @@ void TrackManager<N>::DestroyAllTracks()
 
 template <int N>
 StreamTrack* TrackManager<N>::CreateTrack(
-    const char* name, Audio::MasterVolume::VOLUME_GROUP volumeGroup)
+    const char* Name, Audio::MasterVolume::VOLUME_GROUP VolumeGroup)
 {
-    StreamTrack* entry = m_Tracks.AddEntry(nlStringLowerHash(name));
-
-    if (entry != NULL)
-    {
-        new (entry) StreamTrack(*this, volumeGroup);
-    }
-    return entry;
+    unsigned long hash = nlStringLowerHash(Name);
+    return new (m_Tracks.AddEntry(hash)) StreamTrack(*this, VolumeGroup);
 }
 
 inline TrackManagerBase* TrackManagerBase::Get()

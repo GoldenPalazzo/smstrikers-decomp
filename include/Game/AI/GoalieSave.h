@@ -79,6 +79,9 @@ public:
     static void AddSegmentToGrid(SaveData*, SaveData*);
     static void AddChainToGrid(SaveData*, bool);
     static void AddToGrid(SaveData*);
+    static void ClearGrid();
+    static float GridSectionWidth();
+    static float GridSectionHeight();
 
     static float mfCatchAllowDistSq;
     static SaveData* mpSaveTable;

@@ -1,3 +1,10 @@
+// nlAVLTree.h and nlDLListContainer.h are included directly, and ahead of this
+// TU's own header, because that registration order sets the order of the weak
+// template groups this TU emits. GoalieSave.h pulls nlListContainer.h in via
+// nlList.h, so leaving these to be picked up transitively would emit the
+// nlListContainer group first. Do not reorder or drop them.
+#include "NL/nlAVLTree.h"
+#include "NL/nlDLListContainer.h"
 #include "Game/AI/GoalieSave.h"
 #include "Game/AI/AiUtil.h"
 #include "Game/AI/FilteredRandom.h"
@@ -10,13 +17,26 @@
 #include "NL/nlString.h"
 #include "PowerPC_EABI_Support/Runtime/MWCPlusLib.h"
 
-#pragma inline_depth(255)
+float GoalieSave::mfCatchAllowDistSq = 0.25f;
+
+SaveData* GoalieSave::mpSaveTable;
+unsigned char GoalieSave::mbInitialized;
+unsigned int GoalieSave::muNumSaveEntries;
+SavePositionData* GoalieSave::mpPositionTable;
+unsigned int GoalieSave::muNumPositionEntries;
+unsigned int GoalieSave::muSTSGoalIndexStart;
+unsigned int GoalieSave::muSTSGoalCount;
+unsigned int GoalieSave::muSTSMissIndexStart;
+unsigned int GoalieSave::muSTSMissCount;
+unsigned int GoalieSave::muSTSSaveIndexStart;
+unsigned int GoalieSave::muSTSSaveCount;
+unsigned int GoalieSave::muMissChipIndexStart;
+unsigned int GoalieSave::muMissChipCount;
+float GoalieSave::mfCrouchDuration;
 
 static nlAVLTree<int, SaveData*, DefaultKeyCompare<int> > gSaveMap;
-static nlListContainer<SaveData*> gSaveGrid[7][5];
+nlListContainer<SaveData*> gSaveGrid[7][5];
 static float fDefaultMilestoneValues[2] = { 0.4f, 0.7f };
-
-template class nlListContainer<SaveData*>;
 
 struct MyMiniData;
 
@@ -209,21 +229,6 @@ SaveInfo gSaveInfo[70] = {
     { -1, 0, 0, 0x00000000, { -1, -1, -1, -1 }, "Empty" },
 };
 
-typedef ListContainerBase<SaveData*, NewAdapter<ListEntry<SaveData*> > > SaveListBase;
-
-static inline void ClearSaveGrid()
-{
-    for (int i = 0; i < 7; ++i)
-    {
-        for (int j = 0; j < 5; ++j)
-        {
-            nlWalkList(gSaveGrid[i][j].m_Head, (SaveListBase*)&gSaveGrid[i][j], &SaveListBase::DeleteEntry);
-            gSaveGrid[i][j].m_Head = NULL;
-            gSaveGrid[i][j].m_Tail = NULL;
-        }
-    }
-}
-
 /**
  * Offset/Address/Size: 0x2B44 | 0x80055F64 | size: 0xE0
  */
@@ -236,7 +241,7 @@ void GoalieSave::ClearData()
 
     gSaveMap.Clear();
 
-    ClearSaveGrid();
+    ClearGrid();
 
     if (mpSaveTable != NULL)
     {
@@ -330,7 +335,7 @@ void GoalieSave::InitData(Goalie* pGoalie)
         mpPositionTable[count].Init(pGoalie, gPositionAnimID[count]);
     }
 
-    ClearSaveGrid();
+    ClearGrid();
 
     int nBallJointIndex = pGoalie->GetBallJointIndex();
 
@@ -524,7 +529,7 @@ SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3
                 {
                     gridRow[up].dist = testDist;
                     gridRow[up].list = &saveRow[up];
-                    InsertSorted(*(nlDLListContainer<MyMiniData*>*)&mylist, &gridRow[up]);
+                    InsertSorted(mylist, &gridRow[up]);
                 }
             }
         }
@@ -663,7 +668,7 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
                         nlVec3Sub(blendInfo.mv3BlendedSavePos, blendInfo.mv3BlendedSavePos, pCur->mv3TakeoffPos);
                     }
 
-                    if (fDistSq < 0.0025f)
+                    if (fDistSq < 0.05f * 0.05f)
                         break;
                 }
             }
@@ -1308,8 +1313,8 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
         }
     }
 
-    yInc = (float)(0.95 * (cField::GetNet(1.0f)->GetNetWidth() / 7.0f));
-    zInc = (float)(0.95 * (cField::GetNet(1.0f)->GetNetHeight() / 5.0f));
+    yInc = (float)(0.95 * GridSectionWidth());
+    zInc = (float)(0.95 * GridSectionHeight());
 
     pCur = pCurBot;
     v3TopRight = pCurBot->mv3SavePos;
@@ -1423,6 +1428,17 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
             v3CurColPos.f.z += zInc;
         }
         v3CurRowPos.f.y += yInc;
+    }
+}
+
+void GoalieSave::ClearGrid()
+{
+    for (int i = 0; i < 7; ++i)
+    {
+        for (int j = 0; j < 5; ++j)
+        {
+            gSaveGrid[i][j].Clear();
+        }
     }
 }
 
@@ -1581,3 +1597,13 @@ void GoalieSave::AddToGrid(SaveData* pSaveData)
     pSaveData->mv3GroupMaxCoords = pSaveData->mv3SavePos;
 }
 #pragma dont_inline reset
+
+float GoalieSave::GridSectionWidth()
+{
+    return cField::GetNet(1.0f)->GetNetWidth() / 7.0f;
+}
+
+float GoalieSave::GridSectionHeight()
+{
+    return cField::GetNet(1.0f)->GetNetHeight() / 5.0f;
+}

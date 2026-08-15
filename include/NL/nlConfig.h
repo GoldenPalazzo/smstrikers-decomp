@@ -149,30 +149,8 @@ public:
             Set(key, defaultValue);
             return defaultValue;
         }
-
-        T val;
-        if (tvp.type == _BOOL)
-        {
-            val = LexicalCast<T, bool>(tvp.value.b);
-        }
-        else if (tvp.type == _INT)
-        {
-            val = LexicalCast<T, int>(tvp.value.i);
-        }
-        else if (tvp.type == _FLOAT)
-        {
-            val = LexicalCast<T, float>(tvp.value.f);
-        }
-        else if (tvp.type == _STRING)
-        {
-            val = LexicalCast<T, const char*>(tvp.value.s);
-        }
-        else
-        {
-            val = T();
-        }
-        return val;
-    };
+        return tvp.Get<T>();
+    }
 
     // BasicString<char, Detail::TempStringAllocator> TagValuePair::Get<BasicString<char, Detail::TempStringAllocator> >() const
     // {

@@ -15,7 +15,6 @@ extern GCAudioStreaming::AudioBufferMgr g_BufferMgr;
 static void ___blank(const char*, ...);
 static void UpdateTiming(float);
 extern "C" void sndStreamMixParameterEx(unsigned long stid, unsigned char vol, unsigned char pan, unsigned char span, unsigned char auxa, unsigned char auxb);
-extern "C" void sndStreamDeactivate(unsigned long stid);
 
 class SoundStrToIDNode;
 class AudioLoader
@@ -1253,87 +1252,7 @@ void CrowdMood::UnlockStream()
 
     if (pChant != NULL)
     {
-        pChant->m_Flags &= ~(1 << GCAudioStreaming::SF_Play);
-
-        if (pChant->m_State == GCAudioStreaming::SS_Playing)
-        {
-            GCAudioStreaming::AudioStreamBuffer* buf;
-            volatile unsigned long i = (unsigned long)(buf = NULL);
-            unsigned long zero = 0;
-
-            if (pChant->m_BufferCount <= zero)
-            {
-            }
-            else
-            {
-                buf = pChant->m_Buffers[0];
-            }
-
-            while (buf != NULL)
-            {
-                buf->m_Volume = 0;
-                sndStreamMixParameterEx(buf->m_StreamId, buf->m_Volume, buf->m_Pan, buf->m_SurroundPan, 0, 0);
-                sndStreamDeactivate(buf->m_StreamId);
-                pChant->m_State = GCAudioStreaming::SS_Warm;
-
-                unsigned long ci = i + 1;
-                i = ci;
-                if (ci < pChant->m_BufferCount)
-                {
-                    buf = pChant->m_Buffers[ci];
-                }
-                else
-                {
-                    buf = NULL;
-                }
-            }
-
-            pChant->m_StreamPos = 0;
-            pChant->m_State = GCAudioStreaming::SS_Warm;
-        }
-
-        pChant->CancelPendingReads();
-
-        if (pChant->m_Flags & (1 << GCAudioStreaming::SF_CoolOnStop))
-        {
-            pChant->m_Flags &= ~(1 << GCAudioStreaming::SF_CoolOnStop);
-
-            if (pChant->m_State > GCAudioStreaming::SS_Initd)
-            {
-                GCAudioStreaming::AudioStreamBuffer* buf;
-                volatile unsigned long i = (unsigned long)(buf = NULL);
-                pChant->m_Flags = (pChant->m_Flags & ~(1 << GCAudioStreaming::SF_SeriousStop)) | (1 << GCAudioStreaming::SF_SeriousStop);
-                unsigned long zero = 0;
-
-                if (pChant->m_BufferCount <= zero)
-                {
-                }
-                else
-                {
-                    buf = pChant->m_Buffers[0];
-                }
-
-                while (buf != NULL)
-                {
-                    pChant->m_BuffMgr.FreeBuffer(buf);
-                    unsigned long idx = i;
-                    pChant->m_Buffers[idx] = NULL;
-                    idx = idx + 1;
-                    i = idx;
-
-                    if (idx < pChant->m_BufferCount)
-                    {
-                        buf = pChant->m_Buffers[idx];
-                    }
-                    else
-                    {
-                        buf = NULL;
-                    }
-                }
-
-                pChant->m_State = GCAudioStreaming::SS_Initd;
-            }
-        }
+        pChant->Stop();
     }
 
     g_CrowdState.StreamLocked = false;

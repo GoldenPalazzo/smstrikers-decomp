@@ -874,7 +874,7 @@ config.libs = [
             # Audio
             Object(Matching, "Game/Audio/CharacterAudio.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
             Object(Matching, "Game/Audio/GameAudio.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Audio/audio.cpp", extra_cflags=["-inline auto"]),   
+            Object(NonMatching, "Game/Audio/audio.cpp", extra_cflags=["-inline deferred"]),
             Object(Matching, "Game/Audio/SebringSoundDefines.cpp" , extra_cflags=["-inline auto", "-inline deferred"]),   
             Object(Matching, "Game/Audio/SoundEventScript.cpp" , extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Audio/WorldAudio.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
@@ -883,7 +883,7 @@ config.libs = [
             Object(Matching, "Game/Audio/AudioScriptEventMgr.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Audio/AudioStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Audio/CrowdMood.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Audio/StreamTrack.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
+            Object(NonMatching, "Game/Audio/StreamTrack.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Audio/PriorityStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
 
             # Physics
@@ -984,7 +984,7 @@ config.libs = [
             Object(Matching, "Game/AI/FuzzyVariant.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/AI/GoalieActions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/AI/GoalieLooseBall.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/AI/GoalieSave.cpp", extra_cflags=["-inline auto", "-inline deferred", "-msext on"]),
+            Object(Matching, "Game/AI/GoalieSave.cpp", extra_cflags=["-inline auto", "-inline deferred", "-msext on"]),
             Object(Matching, "Game/AI/Scripts/CommonScript.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/AI/SpaceSearch.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/AI/Variant.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

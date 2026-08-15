@@ -204,10 +204,6 @@ public:
     {
         return g_MemCards[off >> 2];
     }
-    static MemCard* At(int off)
-    {
-        return *(MemCard**)((int)g_MemCards + off);
-    }
 
     static bool s_InitDone;
 
