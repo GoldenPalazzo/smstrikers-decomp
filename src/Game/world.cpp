@@ -63,6 +63,101 @@ static unsigned char sbPretendWereNotInGameplayCam;
 static LightObject fxLightObjects[4];
 
 /**
+ * Offset/Address/Size: 0x3DB4 | 0x80198A78 | size: 0x19C
+ */
+World::World(const char* szWorldName)
+    : m_pWorldAnimManager(NULL)
+    , m_Locked(false)
+    , m_pModels(NULL)
+    , m_uNumModels(0)
+    , m_animControllerList(0)
+{
+    m_WorldNameLength = nlStrLen<char>(szWorldName);
+    nlStrNCpy<char>(m_WorldNamePrefix, szWorldName, 0x40);
+
+    m_WorldNamePrefix[m_WorldNameLength++] = '/';
+
+    m_pWorldAnimManager = new (nlMalloc(sizeof(WorldAnimManager), 8, false)) WorldAnimManager();
+
+    m_pPlayerNISLightData = NULL;
+
+    m_LightRampTexA = glGetTexture("global/lightramp");
+    m_LightRampTexB = m_LightRampTexA;
+
+    m_PlayerLightRampTex = glGetTexture("global/playerlightramp");
+    if (glTextureLoad(m_PlayerLightRampTex) == false)
+    {
+        m_PlayerLightRampTex = m_LightRampTexA;
+    }
+
+    m_GlobalLightRampSTSTex = m_LightRampTexA;
+}
+
+/**
+ * Offset/Address/Size: 0x37D4 | 0x80198498 | size: 0x580
+ */
+World::~World()
+{
+    void* iterator;
+
+    {
+        typedef nlAVLTreeIterator<unsigned long, DrawableObject*, DefaultKeyCompare<unsigned long> >
+            DrawableIterator;
+        iterator = NewAdapter<DrawableIterator>().Allocate();
+        iterator = new (iterator) DrawableIterator(m_drawableMap);
+        while (((DrawableIterator*)iterator)->IsValid())
+        {
+            delete ((DrawableIterator*)iterator)->Current()->value;
+            ((DrawableIterator*)iterator)->Next();
+        }
+        m_drawableMap.Clear();
+        m_hyperSTSDrawableMap.Clear();
+        delete (DrawableIterator*)iterator;
+    }
+
+    {
+        typedef nlAVLTreeIterator<unsigned long, LightObject*, DefaultKeyCompare<unsigned long> >
+            LightIterator;
+        iterator = NewAdapter<LightIterator>().Allocate();
+        iterator = new (iterator) LightIterator(m_lightMap);
+        while (((LightIterator*)iterator)->IsValid())
+        {
+            delete ((LightIterator*)iterator)->Current()->value;
+            ((LightIterator*)iterator)->Next();
+        }
+        m_lightMap.Clear();
+        delete (LightIterator*)iterator;
+    }
+
+    {
+        nlDLListIterator<WorldAnimController*> iterator(
+            m_animControllerList.m_Head,
+            nlDLRingGetStart(m_animControllerList.m_Head));
+        while (iterator.hasNext())
+        {
+            delete iterator.m_Curr->entry;
+            iterator.next();
+        }
+    }
+
+    {
+        typedef nlAVLTreeIterator<unsigned long, HelperObject*, DefaultKeyCompare<unsigned long> >
+            HelperIterator;
+        iterator = NewAdapter<HelperIterator>().Allocate();
+        iterator = new (iterator) HelperIterator(m_helperMap);
+        while (((HelperIterator*)iterator)->IsValid())
+        {
+            delete ((HelperIterator*)iterator)->Current()->value;
+            ((HelperIterator*)iterator)->Next();
+        }
+        delete (HelperIterator*)iterator;
+        m_helperMap.Clear();
+    }
+    delete m_pWorldAnimManager;
+    delete m_pPhysicsData;
+}
+
+/**
  * Offset/Address/Size: 0x0 | 0x80194CC4 | size: 0x5C
  */
 int World::CompareNameToGenericName(const char* str1, const char* str2)
@@ -1960,102 +2055,6 @@ bool World::Load(bool forfe)
     }
     m_Locked = 1;
     return ret;
-}
-
-/**
- * Offset/Address/Size: 0x37D4 | 0x80198498 | size: 0x580
- */
-World::~World()
-{
-    {
-        typedef nlAVLTreeIterator<unsigned long, DrawableObject*, DefaultKeyCompare<unsigned long> >
-            DrawableIterator;
-        DrawableIterator* iterator =
-            (DrawableIterator*)nlMalloc(sizeof(DrawableIterator), 8, false);
-        iterator = new (iterator) DrawableIterator(m_drawableMap);
-        while (iterator->IsValid())
-        {
-            delete iterator->Current()->value;
-            iterator->Next();
-        }
-        m_drawableMap.Clear();
-        m_hyperSTSDrawableMap.Clear();
-        delete iterator;
-    }
-
-    {
-        typedef nlAVLTreeIterator<unsigned long, LightObject*, DefaultKeyCompare<unsigned long> >
-            LightIterator;
-        LightIterator* iterator =
-            (LightIterator*)nlMalloc(sizeof(LightIterator), 8, false);
-        iterator = new (iterator) LightIterator(m_lightMap);
-        while (iterator->IsValid())
-        {
-            delete iterator->Current()->value;
-            iterator->Next();
-        }
-        m_lightMap.Clear();
-        delete iterator;
-    }
-
-    {
-        nlDLListIterator<WorldAnimController*> iterator(
-            m_animControllerList.m_Head,
-            nlDLRingGetStart(m_animControllerList.m_Head));
-        while (iterator.hasNext())
-        {
-            delete iterator.m_Curr->entry;
-            iterator.next();
-        }
-    }
-
-    {
-        typedef nlAVLTreeIterator<unsigned long, HelperObject*, DefaultKeyCompare<unsigned long> >
-            HelperIterator;
-        HelperIterator* iterator =
-            (HelperIterator*)nlMalloc(sizeof(HelperIterator), 8, false);
-        iterator = new (iterator) HelperIterator(m_helperMap);
-        while (iterator->IsValid())
-        {
-            delete iterator->Current()->value;
-            iterator->Next();
-        }
-        delete iterator;
-        m_helperMap.Clear();
-    }
-    delete m_pWorldAnimManager;
-    delete m_pPhysicsData;
-}
-
-/**
- * Offset/Address/Size: 0x3DB4 | 0x80198A78 | size: 0x19C
- */
-World::World(const char* szWorldName)
-    : m_pWorldAnimManager(NULL)
-    , m_Locked(false)
-    , m_pModels(NULL)
-    , m_uNumModels(0)
-    , m_animControllerList(0)
-{
-    m_WorldNameLength = nlStrLen<char>(szWorldName);
-    nlStrNCpy<char>(m_WorldNamePrefix, szWorldName, 0x40);
-
-    m_WorldNamePrefix[m_WorldNameLength++] = '/';
-
-    m_pWorldAnimManager = new (nlMalloc(sizeof(WorldAnimManager), 8, false)) WorldAnimManager();
-
-    m_pPlayerNISLightData = NULL;
-
-    m_LightRampTexA = glGetTexture("global/lightramp");
-    m_LightRampTexB = m_LightRampTexA;
-
-    m_PlayerLightRampTex = glGetTexture("global/playerlightramp");
-    if (glTextureLoad(m_PlayerLightRampTex) == false)
-    {
-        m_PlayerLightRampTex = m_LightRampTexA;
-    }
-
-    m_GlobalLightRampSTSTex = m_LightRampTexA;
 }
 
 /**
