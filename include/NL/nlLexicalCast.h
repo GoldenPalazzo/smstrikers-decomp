@@ -4,6 +4,7 @@
 #include "types.h"
 #include "strtold.h"
 #include "NL/nlBasicString.h"
+#include "NL/nlDebug.h"
 #include "NL/nlPrint.h"
 
 namespace Detail
@@ -28,6 +29,12 @@ template <typename To>
 struct LexicalCastImpl<To, const char*>
 {
     static To Do(const char* s);
+};
+
+template <typename To>
+struct LexicalCastImpl<To*, const char*>
+{
+    static To* Do(const char* value);
 };
 
 template <typename Allocator>
@@ -233,6 +240,33 @@ inline To LexicalCastImpl<To, bool>::Do(bool t)
 {
     return t;
 }
+
+template <>
+inline const char* LexicalCastImpl<const char*, bool>::Do(bool value)
+{
+    return value ? "true" : "false";
+}
+
+template <>
+inline const char* LexicalCastImpl<const char*, int>::Do(int)
+{
+    nlBreak();
+    return 0;
+}
+
+template <>
+inline const char* LexicalCastImpl<const char*, float>::Do(float)
+{
+    nlBreak();
+    return 0;
+}
+
+template <typename To>
+inline To* LexicalCastImpl<To*, const char*>::Do(const char* value)
+{
+    return (To*)value;
+}
+
 } // namespace Detail
 
 template <>
@@ -248,14 +282,5 @@ inline WideBasicString LexicalCast<WideBasicString, const unsigned short*>(
 {
     return Detail::LexicalCastImpl<WideBasicString, const unsigned short*>::Do(from);
 }
-
-template <>
-const char* LexicalCast<const char*, const char*>(const char* const& value);
-template <>
-const char* LexicalCast<const char*, int>(const int& value);
-template <>
-const char* LexicalCast<const char*, float>(const float& value);
-template <>
-const char* LexicalCast<const char*, bool>(const bool& value);
 
 #endif // _NLLEXICALCAST_H_

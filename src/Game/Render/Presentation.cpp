@@ -14,6 +14,7 @@
 #include "Game/AI/AIPad.h"
 #include "Game/CharacterTemplate.h"
 #include "Game/Debug/ShapeRender.h"
+#include "Game/EventDataTypes.h"
 #include "Game/FE/feHelpFuncs.h"
 #include "Game/FE/feManager.h"
 #include "Game/GameInfo.h"
@@ -67,57 +68,27 @@ char trophyFileName[0xFF] = "";
 static const char* idleFun = "Idle";
 static bool loopPresentation;
 
-/**
- * Offset/Address/Size: 0x68 | 0x80127308 | size: 0x8
- */
-template <>
-const char* LexicalCast<const char*, const char*>(const char* const& from)
-{
-    FORCE_DONT_INLINE;
-    return from;
-}
+extern unsigned long cupTrophyHash;
 
-/**
- * Offset/Address/Size: 0x2C | 0x801272CC | size: 0x24
- */
-template <>
-const char* LexicalCast<const char*, int>(const int& from)
-{
-    FORCE_DONT_INLINE;
-    nlBreak();
-    return 0;
-}
+static void CupWinStingerDone();
+static void ReadTrophyModel(void*, unsigned long, void*);
+static void ReadTrophyTexture(void*, unsigned long, void*);
 
-/**
- * Offset/Address/Size: 0x8 | 0x801272A8 | size: 0x24
- */
-template <>
-const char* LexicalCast<const char*, float>(const float& from)
+static inline bool IsDuringGamePauseState()
 {
-    FORCE_DONT_INLINE;
-    nlBreak();
-    return 0;
-}
-
-/**
- * Offset/Address/Size: 0x50 | 0x801272F0 | size: 0x18
- */
-template <>
-const char* LexicalCast<const char*, bool>(const bool& from)
-{
-    FORCE_DONT_INLINE;
-    return from ? "true" : "false";
+    return !FrontEnd::m_bGameOver && nlTaskManager::m_pInstance->m_CurrState == 1;
 }
 
 int nlSNPrintf(char*, unsigned long, const char*, ...);
 
-/**
- * Offset/Address/Size: 0x3DC | 0x801272A0 | size: 0x8
- */
-u32 NISData::GetID()
+inline void Presentation::RaiseEvent(const char* type, const char* param)
 {
-    return 0x1a5;
+    NISData* data = new ((u8*)g_pEventManager->CreateValidEvent(0x56, 0x20) + 0x10) NISData();
+    data->Type = type;
+    data->Param = param;
 }
+
+#include "Presentation_interp.cpp"
 
 Presentation::Presentation()
     : InterpreterCore(10)
@@ -140,8 +111,8 @@ Presentation::Presentation()
     mQueuedFunction = NULL;
     mGoalQuality = HIGHLIGHT_QUALITY_EMPTY;
     unsigned long fileSize = 0;
-    void* bc = nlLoadEntireFile("art/presentation/presentation.byte_code", &fileSize, 0x20, AllocateStart);
-    LoadByteCode(bc);
+    void* byteCode = nlLoadEntireFile("art/presentation/presentation.byte_code", &fileSize, 0x20, AllocateStart);
+    LoadByteCode(byteCode);
     nlStrNCpy<char>(mCurrentFunction, idleFun, 64);
     mIsAllowedToSkip[0] = true;
     mIsAllowedToSkip[1] = true;
@@ -163,29 +134,29 @@ unsigned long cupTrophyHash;
 /**
  * Offset/Address/Size: 0x1D18 | 0x801264FC | size: 0x140
  */
-void ReadTrophyTexture(void* data, unsigned long size, void* userData)
+static void ReadTrophyTexture(void* data, unsigned long size, void* userData)
 {
-    Presentation& inst = Presentation::Instance();
-    inst.mTrophyTextureLoaded = true;
+    Presentation& presentation = Presentation::Instance();
+    presentation.mTrophyTextureLoaded = true;
     glEndLoadTextureBundle(data, size);
 }
 
 /**
  * Offset/Address/Size: 0x1CA8 | 0x8012648C | size: 0x70
  */
-void ReadTrophyModel(void* data, unsigned long size, void* userData)
+static void ReadTrophyModel(void* data, unsigned long size, void* userData)
 {
-    unsigned long localVar = 0;
-    glModel* model = glEndLoadModel(data, size, &localVar);
+    unsigned long modelSize = 0;
+    glModel* model = glEndLoadModel(data, size, &modelSize);
 
-    int localVar2 = 0;
-    WorldManager::s_World->LoadGeometry(model, localVar, true, true, &cupTrophyHash, &localVar2, true);
+    int numModelsLoaded = 0;
+    WorldManager::s_World->LoadGeometry(model, modelSize, true, true, &cupTrophyHash, &numModelsLoaded, true);
 
-    DrawableObject* obj = WorldManager::s_World->FindDrawableObject(cupTrophyHash);
-    obj->m_uObjectFlags &= ~1;
+    DrawableObject* trophy = WorldManager::s_World->FindDrawableObject(cupTrophyHash);
+    trophy->m_uObjectFlags &= ~1;
 }
 
-static const char* GetGimmeCupTrophyName()
+static inline const char* GetGimmeCupTrophyName()
 {
     Config& cfg = Config::Global();
     TagValuePair& tvp = cfg.FindTvp("gimme_cup_trophy");
@@ -460,21 +431,9 @@ inline void Presentation::HandleOverlay(float deltaT)
     }
 }
 
-static inline bool IsDuringGamePauseState()
+static inline void SetIdleCallback(AudioStreamTrack::StreamTrack* track, const Function0<void>& callback)
 {
-    return !FrontEnd::m_bGameOver && nlTaskManager::m_pInstance->m_CurrState == 1;
-}
-
-static inline void SetIdleCallback(AudioStreamTrack::StreamTrack* track, const Function0<void>& f0)
-{
-    track->m_IdleCallback = Function<FnVoidVoid>(f0);
-}
-
-inline void Presentation::RaiseEvent(const char* type, const char* param)
-{
-    NISData* data = new ((u8*)g_pEventManager->CreateValidEvent(0x56, 0x20) + 0x10) NISData();
-    data->Type = type;
-    data->Param = param;
+    track->m_IdleCallback = Function<FnVoidVoid>(callback);
 }
 
 inline void Presentation::BeginByPass()
@@ -499,17 +458,6 @@ inline void Presentation::PlayCharacterDirection()
     NisPlayer::Instance()->PlayCharacterDirection();
 }
 
-inline void Presentation::PlayCupOverlay()
-{
-    PlayOverlay("cup", 0.2f, -15.0f);
-    const char* streamName = GetCupStreamName(nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode());
-    AudioLoader::StartFEStream(streamName, false, "Music");
-    AudioStreamTrack::TrackManagerBase* mgr = AudioStreamTrack::TrackManagerBase::Get();
-    AudioStreamTrack::StreamTrack* track = mgr->GetTrack(nlStringLowerHash("Music"));
-    Function0<void> f0(CupWinStingerDone);
-    SetIdleCallback(track, f0);
-}
-
 inline void Presentation::PlayNis()
 {
     if (NisPlayer::Instance()->Play())
@@ -527,16 +475,6 @@ inline void Presentation::PlayNis()
     {
         StopWithUndo();
     }
-}
-
-inline void Presentation::PlaySfx(const char* sfx)
-{
-    Audio::PlayWorldSFXbyStr(sfx, 100.0f, -1.0f, false, true, NULL, NULL, NULL);
-}
-
-inline void Presentation::PlaySfxWithVol(const char* sfx, float fVol)
-{
-    Audio::PlayWorldSFXbyStr(sfx, fVol, -1.0f, false, true, NULL, NULL, NULL);
 }
 
 inline void Presentation::ResetNisPlayer()
@@ -665,8 +603,6 @@ inline void Presentation::Wipe(const char* wipe)
     }
 }
 
-#include "Presentation_interp.cpp"
-
 /**
  * Offset/Address/Size: 0xE70 | 0x80125654 | size: 0x67C
  */
@@ -726,34 +662,7 @@ void Presentation::Update(float deltaT)
 
     Wiper::Instance().Render(IsDuringGamePauseState() ? 0.0f : deltaT);
 
-    if (mLetterBoxEnabled)
-    {
-        mLetterBoxDuration += 0.05f;
-    }
-    else
-    {
-        mLetterBoxDuration -= 0.05f;
-    }
-
-    if (mLetterBoxDuration < 0.0f)
-    {
-        mLetterBoxDuration = 0.0f;
-    }
-
-    if (mLetterBoxDuration > 1.0f)
-    {
-        mLetterBoxDuration = 1.0f;
-    }
-
-    if (!nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mVisualOptions.mIsWidescreen)
-    {
-        if (mLetterBoxDuration > 0.0f)
-        {
-            nlColour black = { { 0x00, 0x00, 0x00, 0xFF } };
-            g_ShapeRenderer.DrawRectangle2D(0.0f, 0.0f, glGetOrthographicWidth(), 38.0f * mLetterBoxDuration, 1.0f, black, GLV_Transitions);
-            g_ShapeRenderer.DrawRectangle2D(0.0f, glGetOrthographicHeight() - 38.0f * mLetterBoxDuration, glGetOrthographicWidth(), 38.0f * mLetterBoxDuration, 1.0f, black, GLV_Transitions);
-        }
-    }
+    UpdateAndRenderLetterBox();
 
     if (IsDuringGamePauseState())
     {
@@ -923,7 +832,6 @@ static inline void TriggerParticleEffects()
         delete stack;
     }
 }
-
 /**
  * Offset/Address/Size: 0x57C | 0x80124D60 | size: 0x774
  */
@@ -1182,6 +1090,63 @@ void Presentation::EventHandler(Event* event)
     }
 }
 
+void Presentation::LoadNis(const char* name, NisTarget target, NisUseStadiumOffset stadiumOffset, NisUseFilter filter, NisWinnerType winnerType)
+{
+    if (mByPassing)
+    {
+        return;
+    }
+    if (nlStrCmp<char>(name, "trophy") == 0 && !Config::Global().Exists("gimme_cup_trophy") && !nlSingleton<StatsTracker>::s_pInstance->mIsUserCupWinner)
+    {
+        return;
+    }
+    NisPlayer::Instance()->Load(name, target, stadiumOffset, filter, winnerType);
+}
+
+void Presentation::PlayAutoReplay(ReplayType type)
+{
+    if (mByPassing)
+    {
+        return;
+    }
+    if (nlTaskManager::m_pInstance->m_CurrState != 0x10 && !IsDuringGamePauseState())
+    {
+        nlTaskManager::SetNextState(0x10);
+    }
+    ReplayChoreo::Instance().StartAutoReplay(type);
+    if (type == REPLAY_TYPE_HIGHLIGHT)
+    {
+        nlSingleton<OverlayManager>::s_pInstance->SetCurrentTextOverlaySlide((OverlaySlideName)7);
+        nlSingleton<OverlayManager>::s_pInstance->SetVisible((SceneList)0x44, false, true);
+        nlSingleton<OverlayManager>::s_pInstance->mIsInHighlights = true;
+        if (mOverlayDisplayed)
+        {
+            nlSingleton<OverlayManager>::s_pInstance->SetVisible(mOverlayToDisplay, false, false);
+        }
+        mOverlayDisplayed = false;
+        mOverlayToDisplay = SCENE_INVALID;
+        mOverlayDisplayLength = 0.0f;
+        mOverlayDelay = 0.0f;
+        PlayOverlay("highlight", 0.5f, 30.0f);
+    }
+    else
+    {
+        nlSingleton<OverlayManager>::s_pInstance->SetCurrentTextOverlaySlide((OverlaySlideName)7);
+        nlSingleton<OverlayManager>::s_pInstance->SetVisible((SceneList)0x44, true, true);
+        nlSingleton<OverlayManager>::s_pInstance->mIsInHighlights = false;
+    }
+}
+
+void Presentation::PlaySfx(const char* sfx)
+{
+    Audio::PlayWorldSFXbyStr(sfx, 100.0f, -1.0f, false, true, NULL, NULL, NULL);
+}
+
+void Presentation::PlaySfxWithVol(const char* sfx, float volume)
+{
+    Audio::PlayWorldSFXbyStr(sfx, volume, -1.0f, false, true, NULL, NULL, NULL);
+}
+
 /**
  * Offset/Address/Size: 0x3D0 | 0x80124BB4 | size: 0x1AC
  */
@@ -1259,18 +1224,93 @@ void Presentation::StopOverlay()
     mOverlayDelay = 0.0f;
 }
 
+void Presentation::PlayHighlights()
+{
+    nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition = NULL;
+    if (ReplayChoreo::Instance().NumHighlights() <= 0)
+    {
+        return;
+    }
+    FixedUpdateTask::mTimeScale = 1.0f;
+    ParticleUpdateTask::SetTimeScale(1.0f);
+    if (nlStrCmp<char>(idleFun, mCurrentFunction) != 0 && nlStrCmp<char>(idleFun, "PlayHighlight") != 0)
+    {
+        mQueuedFunction = "PlayHighlight";
+        return;
+    }
+    nlStrNCpy<char>(mCurrentFunction, "PlayHighlight", 64);
+    mSkipPressed = false;
+    mInsideByPass = false;
+    mByPassing = false;
+    mInterruptWipe = 0;
+    mUseInterruptWipe = 0;
+    mTimeInFunction = 0.0f;
+    NisPlayer::Instance()->SetExtraNameFilter("");
+    CallFunction(nlStringHash("PlayHighlight"));
+}
+
 /**
  * Offset/Address/Size: 0x19C | 0x80124980 | size: 0x1D0
  */
-void CupWinStingerDone()
+static void CupWinStingerDone()
 {
-    AudioStreamTrack::TrackManagerBase* pMgr = g_pTrackManager;
-    AudioStreamTrack::StreamTrack* pTrack = pMgr->GetTrack(nlStringLowerHash("Music"));
+    AudioStreamTrack::TrackManagerBase* trackManager = g_pTrackManager;
+    AudioStreamTrack::StreamTrack* track = trackManager->GetTrack(nlStringLowerHash("Music"));
     {
         Function<FnVoidVoid> emptyCallback;
-        SetIdleCallback(pTrack, emptyCallback);
+        SetIdleCallback(track, emptyCallback);
     }
-    pTrack->PlayStream(nlStringLowerHash("STAD_Intro"), 0.5f, true, 500, 500, "Stadium", Audio::MasterVolume::VG_Special);
+    track->PlayStream(nlStringLowerHash("STAD_Intro"), 0.5f, true, 500, 500, "Stadium", Audio::MasterVolume::VG_Special);
+}
+
+void Presentation::PlayCupOverlay()
+{
+    bool gimmeCup = Config::Global().Exists("gimme_cup_trophy");
+    if (!gimmeCup && !nlSingleton<StatsTracker>::s_pInstance->mIsUserCupWinner)
+    {
+        return;
+    }
+    if (gimmeCup)
+    {
+        return;
+    }
+
+    PlayOverlay("cup", 0.2f, -15.0f);
+    const char* streamName = GetCupStreamName(nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode());
+    AudioLoader::StartFEStream(streamName, false, "Music");
+    AudioStreamTrack::TrackManagerBase* trackManager = AudioStreamTrack::TrackManagerBase::Get();
+    AudioStreamTrack::StreamTrack* track = trackManager->GetTrack(nlStringLowerHash("Music"));
+    Function0<void> callback(CupWinStingerDone);
+    SetIdleCallback(track, callback);
+}
+
+void Presentation::UpdateAndRenderLetterBox()
+{
+    if (mLetterBoxEnabled)
+    {
+        mLetterBoxDuration += 0.05f;
+    }
+    else
+    {
+        mLetterBoxDuration -= 0.05f;
+    }
+
+    if (mLetterBoxDuration < 0.0f)
+    {
+        mLetterBoxDuration = 0.0f;
+    }
+
+    if (mLetterBoxDuration > 1.0f)
+    {
+        mLetterBoxDuration = 1.0f;
+    }
+
+    if (!nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mVisualOptions.mIsWidescreen && mLetterBoxDuration > 0.0f)
+    {
+        nlColour black = { { 0x00, 0x00, 0x00, 0xFF } };
+        g_ShapeRenderer.DrawRectangle2D(0.0f, 0.0f, glGetOrthographicWidth(), 38.0f * mLetterBoxDuration, 1.0f, black, GLV_Transitions);
+        g_ShapeRenderer.DrawRectangle2D(0.0f, glGetOrthographicHeight() - 38.0f * mLetterBoxDuration, glGetOrthographicWidth(), 38.0f * mLetterBoxDuration, 1.0f, black, GLV_Transitions);
+    }
 }
 
 /**

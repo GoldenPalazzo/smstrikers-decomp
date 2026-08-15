@@ -9,6 +9,7 @@
 #include "Game/WorldManager.h"
 #include "Game/Effects/EmissionManager.h"
 #include "Game/Effects/EffectsGroup.h"
+#include "Game/EventDataTypes.h"
 #include "Game/Sys/eventman.h"
 #include "Game/Game.h"
 #include "NL/nlFunction.h"
@@ -19,14 +20,6 @@
 #include "types.h"
 
 #include "NL/nlBind.h"
-
-struct NISData : public EventData
-{
-    virtual u32 GetID();
-
-    /* 0x04 */ const char* Type;
-    /* 0x08 */ const char* Param;
-}; // total size: 0xC
 
 class nlTaskManager
 {

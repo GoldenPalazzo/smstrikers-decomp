@@ -955,7 +955,7 @@ config.libs = [
             Object(Matching, "Game/RumbleActions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Render
-            Object(NonMatching, "Game/Render/Presentation.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Render/Presentation.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Render/CrowdManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Render/NPCLoader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Render/RenderShadow.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

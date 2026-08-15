@@ -32,15 +32,7 @@ void Presentation::DoFunctionCall(unsigned int func)
         NisUseStadiumOffset arg2 = (NisUseStadiumOffset)Pop();
         NisTarget arg1 = (NisTarget)Pop();
         name = (const char*)Pop();
-        if (mByPassing)
-        {
-            break;
-        }
-        if (nlStrCmp<char>(name, "trophy") == 0 && !Config::Global().Exists("gimme_cup_trophy") && !nlSingleton<StatsTracker>::s_pInstance->mIsUserCupWinner)
-        {
-            break;
-        }
-        NisPlayer::Instance()->Load(name, arg1, arg2, arg3, arg4);
+        LoadNis(name, arg1, arg2, arg3, arg4);
         break;
     }
     case 7:
@@ -58,36 +50,7 @@ void Presentation::DoFunctionCall(unsigned int func)
     case 9:
     {
         ReplayType arg0 = (ReplayType)Pop();
-        if (mByPassing)
-        {
-            break;
-        }
-        if (nlTaskManager::m_pInstance->m_CurrState != 0x10 && !IsDuringGamePauseState())
-        {
-            nlTaskManager::SetNextState(0x10);
-        }
-        ReplayChoreo::Instance().StartAutoReplay(arg0);
-        if (arg0 == 7)
-        {
-            nlSingleton<OverlayManager>::s_pInstance->SetCurrentTextOverlaySlide((OverlaySlideName)7);
-            nlSingleton<OverlayManager>::s_pInstance->SetVisible((SceneList)0x44, false, true);
-            nlSingleton<OverlayManager>::s_pInstance->mIsInHighlights = true;
-            if (mOverlayDisplayed)
-            {
-                nlSingleton<OverlayManager>::s_pInstance->SetVisible(mOverlayToDisplay, false, false);
-            }
-            mOverlayDisplayed = false;
-            mOverlayToDisplay = SCENE_INVALID;
-            mOverlayDisplayLength = 0.0f;
-            mOverlayDelay = 0.0f;
-            PlayOverlay("highlight", 0.5f, 30.0f);
-        }
-        else
-        {
-            nlSingleton<OverlayManager>::s_pInstance->SetCurrentTextOverlaySlide((OverlaySlideName)7);
-            nlSingleton<OverlayManager>::s_pInstance->SetVisible((SceneList)0x44, true, true);
-            nlSingleton<OverlayManager>::s_pInstance->mIsInHighlights = false;
-        }
+        PlayAutoReplay(arg0);
         break;
     }
     case 10:
@@ -98,44 +61,11 @@ void Presentation::DoFunctionCall(unsigned int func)
         PlayCharacterDirection();
         break;
     case 11:
-    {
-        bool hasOverride = Config::Global().Exists("gimme_cup_trophy");
-        if (!hasOverride && !nlSingleton<StatsTracker>::s_pInstance->mIsUserCupWinner)
-        {
-            break;
-        }
-        if (hasOverride)
-        {
-            break;
-        }
         PlayCupOverlay();
         break;
-    }
     case 12:
-    {
-        nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition = NULL;
-        if (ReplayChoreo::Instance().NumHighlights() <= 0)
-        {
-            break;
-        }
-        FixedUpdateTask::mTimeScale = 1.0f;
-        ParticleUpdateTask::SetTimeScale(1.0f);
-        if (nlStrCmp<char>(idleFun, mCurrentFunction) != 0 && nlStrCmp<char>(idleFun, "PlayHighlight") != 0)
-        {
-            mQueuedFunction = "PlayHighlight";
-            break;
-        }
-        nlStrNCpy<char>(mCurrentFunction, "PlayHighlight", 64);
-        mSkipPressed = false;
-        mInsideByPass = false;
-        mByPassing = false;
-        mInterruptWipe = 0;
-        mUseInterruptWipe = 0;
-        mTimeInFunction = 0.0f;
-        NisPlayer::Instance()->SetExtraNameFilter("");
-        CallFunction(nlStringHash("PlayHighlight"));
+        PlayHighlights();
         break;
-    }
     case 13:
         PlayJumbotron();
         break;

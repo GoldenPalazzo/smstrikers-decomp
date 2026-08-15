@@ -13,6 +13,14 @@ class cBall;
 class Bowser;
 class ChainChomp;
 
+struct NISData : public EventData
+{
+    virtual u32 GetID() { return 0x1A5; }
+
+    /* 0x04 */ const char* Type;
+    /* 0x08 */ const char* Param;
+}; // total size: 0xC
+
 // CharacterDirectionData has a vtbl but does NOT inherit from EventData per DWARF
 class CharacterDirectionData
 {

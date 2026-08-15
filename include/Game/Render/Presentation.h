@@ -4,17 +4,10 @@
 #include "types.h"
 #include "Game/BaseGameSceneManager.h"
 #include "Game/InterpreterCore.h"
+#include "Game/NisPlayer.h"
+#include "Game/Replay.h"
 #include "Game/Sys/eventman.h"
 #include "Game/OverlayManager.h"
-
-void CupWinStingerDone();
-void ReadTrophyModel(void*, unsigned long, void*);
-void ReadTrophyTexture(void*, unsigned long, void*);
-// void 0x801267BC..0x801272A0 | size: 0xAE4;
-// void LexicalCast<const char*, float>(const float&);
-// void LexicalCast<const char*, int>(const int&);
-// void LexicalCast<const char*, bool>(const bool&);
-// void LexicalCast<const char*, const char*>(const char* const&);
 
 enum HighlightQuality
 {
@@ -30,7 +23,6 @@ class Presentation : public InterpreterCore
 {
 public:
     Presentation();
-    virtual ~Presentation() { };
     virtual void DoFunctionCall(unsigned int);
 
     static Presentation& Instance();
@@ -52,6 +44,10 @@ public:
     void EndByPass();
     void PlayCharacterDirection();
     void PlayCupOverlay();
+    void PlayHighlights();
+    void UpdateAndRenderLetterBox();
+    void PlayAutoReplay(ReplayType);
+    void LoadNis(const char*, NisTarget, NisUseStadiumOffset, NisUseFilter, NisWinnerType);
     void PlayNis();
     void PlaySfx(const char*);
     void PlaySfxWithVol(const char*, float);
@@ -88,12 +84,5 @@ public:
     /* 0x9C */ bool mIsAllowedToSkip[4];
     /* 0xA0 */ HighlightQuality mGoalQuality;
 }; // total size: 0xA4
-
-struct NISData : public EventData
-{
-    /* 0x04 */ const char* Type;
-    /* 0x08 */ const char* Param;
-    virtual u32 GetID();
-}; // total size: 0xC
 
 #endif // _PRESENTATION_H_
