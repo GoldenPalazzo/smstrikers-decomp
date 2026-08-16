@@ -874,7 +874,7 @@ config.libs = [
             # Audio
             Object(Matching, "Game/Audio/CharacterAudio.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
             Object(Matching, "Game/Audio/GameAudio.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Audio/audio.cpp", extra_cflags=["-inline deferred"]),
+            Object(Matching, "Game/Audio/audio.cpp", extra_cflags=["-inline deferred"]),
             Object(Matching, "Game/Audio/SebringSoundDefines.cpp" , extra_cflags=["-inline auto", "-inline deferred"]),   
             Object(Matching, "Game/Audio/SoundEventScript.cpp" , extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Audio/WorldAudio.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   

@@ -282,12 +282,103 @@ class TrackManager : public TrackManagerBase
 public:
     TrackManager(const Function<bool(const char*, char*, unsigned long)>&);
     virtual ~TrackManager() { }
-    virtual StreamTrack* CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP);
-    virtual void DestroyAllTracks();
-    virtual void OnMasterVolumeChange(Audio::MasterVolume::VOLUME_GROUP);
-    virtual StreamTrack* GetTrack(unsigned long Name);
-    virtual void StopAllTracks(unsigned long);
-    virtual void Update(float);
+    virtual StreamTrack* CreateTrack(
+        const char* Name, Audio::MasterVolume::VOLUME_GROUP VolumeGroup)
+    {
+        unsigned long hash = nlStringLowerHash(Name);
+        return new (m_Tracks.AddEntry(hash)) StreamTrack(*this, VolumeGroup);
+    }
+    virtual void DestroyAllTracks()
+    {
+        StreamTrack* track;
+
+        StopAllTracks(0);
+
+        while (m_Tracks.GetEntryCount() != 0)
+        {
+            track = m_Tracks.m_pEntryLookup->pEntry;
+            if (track == NULL)
+                continue;
+
+            if (track)
+            {
+                track->m_InFakePause = 0;
+                track->Stop(0);
+                track->m_IdleCallback.~Function();
+                track->m_QueuedStreams.~DLListContainerBase();
+            }
+
+            if (track == NULL)
+                continue;
+
+            m_Tracks.DeleteEntry(track);
+        }
+    }
+    virtual void Update(float dT)
+    {
+        int trackOffset;
+        unsigned long track;
+
+        m_FadeMgr.Update(dT);
+
+        for (track = 0, trackOffset = 0; track < m_Tracks.GetEntryCount(); track++, trackOffset += 8)
+        {
+            ((typename nlSortedSlot<StreamTrack, N>::template EntryLookup<StreamTrack>*)
+                    ((char*)m_Tracks.m_pEntryLookup + trackOffset))
+                ->pEntry->Update(dT);
+        }
+
+        TrackManagerBase::Update(dT);
+    }
+    virtual void StopAllTracks(unsigned long FadeOut)
+    {
+        for (unsigned long track = 0; track < m_Tracks.GetEntryCount(); track++)
+        {
+            m_Tracks.m_pEntryLookup[track].pEntry->Stop(FadeOut);
+        }
+    }
+    virtual StreamTrack* GetTrack(unsigned long Name)
+    {
+        typedef typename nlSortedSlot<StreamTrack, N>::template EntryLookup<StreamTrack> EntryLookup;
+
+        EntryLookup* result;
+        if (m_Tracks.GetEntryCount() != 0)
+        {
+            result = nlBSearch(Name, m_Tracks.m_pEntryLookup, m_Tracks.GetEntryCount());
+        }
+        else
+        {
+            result = NULL;
+        }
+        if (result != NULL)
+        {
+            return result->pEntry;
+        }
+        return NULL;
+    }
+    virtual void OnMasterVolumeChange(Audio::MasterVolume::VOLUME_GROUP VolumeGroup)
+    {
+        int trackOffset;
+        unsigned long track;
+        float vol = ::gfVolumeGroups[VolumeGroup];
+
+        for (track = 0, trackOffset = 0; track < m_Tracks.GetEntryCount(); trackOffset += 8, track++)
+        {
+            StreamTrack::QUEUED_STREAM* qs
+                = ((typename nlSortedSlot<StreamTrack, N>::template EntryLookup<StreamTrack>*)
+                        ((char*)m_Tracks.m_pEntryLookup + trackOffset))
+                      ->pEntry->m_QueuedStreams.GetHead();
+
+            if (qs != NULL)
+            {
+                if (m_FadeMgr.FindFade(qs->pStream) == NULL
+                    && (Audio::MasterVolume::VOLUME_GROUP)qs->VolGroup == VolumeGroup)
+                {
+                    qs->pStream->SetVolume((unsigned long)(s32)(vol * (float)qs->StartVolume));
+                }
+            }
+        }
+    }
 
     /* 0x6C */ nlStaticSortedSlot<StreamTrack, N> m_Tracks;
 };
@@ -297,94 +388,6 @@ inline TrackManager<N>::TrackManager(const Function<bool(const char*, char*, uns
     : TrackManagerBase(fn)
     , m_Tracks()
 {
-}
-
-template <int N>
-StreamTrack* TrackManager<N>::GetTrack(unsigned long Name)
-{
-    typedef typename nlSortedSlot<StreamTrack, N>::template EntryLookup<StreamTrack> EntryLookup;
-
-    EntryLookup* result;
-    if (m_Tracks.m_EntryCount != 0)
-    {
-        result = nlBSearch(Name, m_Tracks.m_pEntryLookup, m_Tracks.m_EntryCount);
-    }
-    else
-    {
-        result = NULL;
-    }
-    if (result != NULL)
-    {
-        return result->pEntry;
-    }
-    return NULL;
-}
-
-template <int N>
-void TrackManager<N>::StopAllTracks(unsigned long FadeOut)
-{
-    for (unsigned long track = 0; track < m_Tracks.m_EntryCount; track++)
-    {
-        m_Tracks.m_pEntryLookup[track].pEntry->Stop(FadeOut);
-    }
-}
-
-/**
- * Offset/Address/Size: 0x3E4 | 0x800C6728 | size: 0xF0
- */
-template <int N>
-void TrackManager<N>::Update(float dT)
-{
-    int trackOffset;
-    unsigned long track;
-
-    m_FadeMgr.Update(dT);
-
-    for (track = 0, trackOffset = 0; track < m_Tracks.m_EntryCount; track++, trackOffset += 8)
-    {
-        ((typename nlSortedSlot<StreamTrack, N>::template EntryLookup<StreamTrack>*)((char*)m_Tracks.m_pEntryLookup + trackOffset))->pEntry->Update(dT);
-    }
-
-    TrackManagerBase::Update(dT);
-}
-
-/**
- * Offset/Address/Size: 0x390 | 0x80141E64 | size: 0x1D0
- */
-template <int N>
-void TrackManager<N>::DestroyAllTracks()
-{
-    StreamTrack* track;
-
-    StopAllTracks(0);
-
-    while (m_Tracks.m_EntryCount != 0)
-    {
-        track = m_Tracks.m_pEntryLookup->pEntry;
-        if (track == NULL)
-            continue;
-
-        if (track)
-        {
-            track->m_InFakePause = 0;
-            track->Stop(0);
-            track->m_IdleCallback.~Function();
-            track->m_QueuedStreams.~DLListContainerBase();
-        }
-
-        if (track == NULL)
-            continue;
-
-        m_Tracks.DeleteEntry(track);
-    }
-}
-
-template <int N>
-StreamTrack* TrackManager<N>::CreateTrack(
-    const char* Name, Audio::MasterVolume::VOLUME_GROUP VolumeGroup)
-{
-    unsigned long hash = nlStringLowerHash(Name);
-    return new (m_Tracks.AddEntry(hash)) StreamTrack(*this, VolumeGroup);
 }
 
 inline TrackManagerBase* TrackManagerBase::Get()

@@ -127,6 +127,7 @@ public:
         m_EntryCount = 0;
     }
 
+    unsigned long GetEntryCount() const { return m_EntryCount; }
     /* 0x04 */ EntryLookup<T>* m_pEntryLookup;
     /* 0x08 */ unsigned long m_EntryCount;
     /* 0x0C */ unsigned long m_LookupAllocated;

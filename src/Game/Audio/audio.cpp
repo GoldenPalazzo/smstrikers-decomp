@@ -1,14 +1,13 @@
 #include "Game/Sys/audio.h"
 #include "Game/Sys/GCStream.h"
-#include "Game/Audio/AudioStream.h"
 #include "Game/Sys/debug.h"
 #include "Game/Game.h"
 #include "Game/GameAudio.h"
 #include "Game/Audio/WorldAudio.h"
-#include "Game/Audio/AudioLoader.h"
+#include "Game/Audio/AudioLoaderCore.h"
 #include "Game/Camera/CameraMan.h"
 #include "Game/TransitionTask.h"
-#include "Game/BasicStadium.h"
+#include "Game/BasicStadiumCore.h"
 
 #include "NL/nlAlgorithm.h"
 #include "NL/nlList.h"
@@ -20,6 +19,23 @@
 // Include PlatStream.h after plataudio.h to get the PlatAudio class
 // The namespace PlatAudio and class PlatAudio can coexist
 #include "Game/Sys/PlatStream.h"
+
+template <>
+bool LexicalCast<bool, bool>(const bool& value);
+template <>
+bool LexicalCast<bool, int>(const int& value);
+template <>
+bool LexicalCast<bool, float>(const float& value);
+template <>
+bool LexicalCast<bool, const char*>(const char* const& value);
+template <>
+float LexicalCast<float, bool>(const bool& value);
+template <>
+float LexicalCast<float, int>(const int& value);
+template <>
+float LexicalCast<float, float>(const float& value);
+template <>
+float LexicalCast<float, const char*>(const char* const& value);
 
 enum FadeType
 {
@@ -70,14 +86,8 @@ bool g_bAudioInGameLoaded = false;
 bool g_bWorldSFXInitialized = false;
 
 extern const char* AUDIO_DEFAULT_CONFIG_FILE;
-const char* AUDIO_DEFAULT_VOLUMEGROUPS_CONFIG_FILE = "audio/VolumeGroups.ini";
-static float gfSilenceTimer = -1.0f;
-unsigned long uCurrentSFXVolume = 0x7F;
-
 namespace Audio
 {
-unsigned long uSFXVolume = 0x7F;
-bool gbStartingGame = true;
 SND_LISTENER gListener;
 }
 
@@ -88,6 +98,16 @@ static SND_AUX_REVERBHI gDPL2ReverbHiSettings;
 
 Audio::SoundAttributes gDelayedSFX[15];
 static f32 gfVolumeGroups[23];
+#include "Game/Audio/AudioStream.h"
+const char* AUDIO_DEFAULT_VOLUMEGROUPS_CONFIG_FILE = "audio/VolumeGroups.ini";
+static float gfSilenceTimer = -1.0f;
+unsigned long uCurrentSFXVolume = 0x7F;
+
+namespace Audio
+{
+unsigned long uSFXVolume = 0x7F;
+bool gbStartingGame = true;
+}
 static void ReadVolGroupSettings();
 
 extern SoundPropAccessor* gpWORLDSoundPropAccessor;
@@ -99,27 +119,6 @@ namespace AudioScriptEventMgr
 {
 void Update();
 }
-
-static bool gbTestPrintout;
-
-/**
- * Offset/Address/Size: 0xF0 | 0x801413B0 | size: 0x28
- */
-template <>
-void nlListAddStart<FadeAudioData>(FadeAudioData** head, FadeAudioData* entry, FadeAudioData** tail)
-{
-    if (tail != 0)
-    {
-        if (*head == 0)
-        {
-            *tail = entry;
-        }
-    }
-
-    entry->next = *head;
-    *head = entry;
-}
-
 
 namespace Audio
 {
@@ -141,38 +140,9 @@ static void FadeSFXVolume(unsigned long, float*, float, float, bool, float);
 static void SetFilterFreqOnAllCurrentSFX(unsigned short);
 
 float gChantDelayTimer;
+float g_fAudioTimer = 0.0f;
 bool gbGameIsPaused = false;
 bool g_bHomeTeamHasJustScored = false;
-float g_fAudioTimer = 0.0f;
-
-/**
- * Offset/Address/Size: 0x3F8 | 0x80141ABC | size: 0x1EC
- */
-template <>
-void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(Audio::MasterVolume::VOLUME_GROUP VolumeGroup)
-{
-    int trackOffset;
-    unsigned long track;
-    float vol = gfVolumeGroups[VolumeGroup];
-
-    for (track = 0, trackOffset = 0; track < m_Tracks.m_EntryCount; trackOffset += 8, track++)
-    {
-        AudioStreamTrack::StreamTrack::QUEUED_STREAM* qs
-            = ((nlSortedSlot<AudioStreamTrack::StreamTrack, 3>::template EntryLookup<AudioStreamTrack::StreamTrack>*)((
-                   char*)m_Tracks.m_pEntryLookup
-                   + trackOffset))
-                  ->pEntry->m_QueuedStreams.GetHead();
-
-        if (qs != NULL)
-        {
-            if (m_FadeMgr.FindFade(qs->pStream) == NULL
-                && (Audio::MasterVolume::VOLUME_GROUP)qs->VolGroup == VolumeGroup)
-            {
-                qs->pStream->SetVolume((unsigned long)(s32)(vol * (float)qs->StartVolume));
-            }
-        }
-    }
-}
 
 /**
  * Offset/Address/Size: 0x4C18 | 0x8014112C | size: 0x100
@@ -184,13 +154,13 @@ void SoundAttributes::Init()
     mu_SfxID = -1;
     mu_VoiceID = PlatAudio::GetSndIDError();
 
-    mf_Volume = 1.0f;
-    mf_VolReverb = 1.0f;
-    mf_Attenuate = 0.0f;
-    mf_VolAdjustment = 256.0f;
-    mf_Panning = 1.0f;
-    mf_DelayTime = 0.5f;
-    mf_DebugTimer = 256.0f;
+    mf_Volume = 100.0f;
+    mf_VolReverb = 100.0f;
+    mf_Attenuate = 1.0f;
+    mf_VolAdjustment = 0.0f;
+    mf_Panning = 100.0f;
+    mf_DelayTime = -1.0f;
+    mf_DebugTimer = 0.0f;
 
     mb_Is3D = false;
     mb_IsPlaying = false;
@@ -202,19 +172,19 @@ void SoundAttributes::Init()
     mb_UseDoppler = false;
     mf_ReturnEmitterOnPlay = false;
 
-    mf_CutoffTime = 0.5f;
+    mf_CutoffTime = -1.0f;
     mp_OwnerSFX = NULL;
     mp_PhysObj = NULL;
 
     pos.pvPos = NULL;
     dir.pvDir = NULL;
 
-    pos.vPos.f.x = 256.0f;
-    pos.vPos.f.y = 256.0f;
-    pos.vPos.f.z = 256.0f;
-    dir.vDir.f.x = 256.0f;
-    dir.vDir.f.y = 256.0f;
-    dir.vDir.f.z = 256.0f;
+    pos.vPos.f.x = 0.0f;
+    pos.vPos.f.y = 0.0f;
+    pos.vPos.f.z = 0.0f;
+    dir.vDir.f.x = 0.0f;
+    dir.vDir.f.y = 0.0f;
+    dir.vDir.f.z = 0.0f;
 
     posUpdateMethod = NONE;
     ms_EventName = 0;
@@ -345,6 +315,8 @@ bool Initialize(bool bInit)
 }
 
 } // namespace Audio
+
+static bool gbTestPrintout;
 
 /**
  * Offset/Address/Size: 0x3AB0 | 0x8013FFC4 | size: 0xF60
@@ -1811,9 +1783,9 @@ unsigned long PlaySFXbyID(const SoundAttributes& attrs, unsigned long sfxID, flo
 
             SFXStartInfo info;
             info.uSFXID = (unsigned long)-1;
-            info.fVolume = 0.0f;
-            info.fPan = 0.0f;
-            info.fVolReverb = 0.0f;
+            info.fVolume = 100.0f;
+            info.fPan = 100.0f;
+            info.fVolReverb = 100.0f;
             info.uSurroundPan = 0xFF;
             info.uPitchBend = 0x2000;
             info.bActivateFilter = false;
@@ -2227,6 +2199,70 @@ static inline void UpdateDelayedAudio(float fDeltaT)
                 gDelayedSFX[i].mf_DelayTime -= fDeltaT;
             }
         }
+    }
+}
+
+static inline void Update3DSFXListenerPos();
+
+/**
+ * Offset/Address/Size: 0x1FD0 | 0x8013E4E4 | size: 0x354
+ */
+void Update(float fDeltaT)
+{
+    if (::g_bAudioInitialized == false)
+    {
+        return;
+    }
+
+    g_fAudioTimer += fDeltaT;
+    if (uSFXVolume != uCurrentSFXVolume)
+    {
+        sndVolume((u8)uSFXVolume, 0x1F4, 0xFE);
+        uCurrentSFXVolume = uSFXVolume;
+    }
+
+    UpdateFades(fDeltaT);
+    g_pTrackManager->Update(fDeltaT);
+
+    if (g_pGame != NULL)
+    {
+        CrowdMood::Update(fDeltaT);
+        AudioScriptEventMgr::Update();
+    }
+
+    if (::g_bWorldSFXInitialized)
+    {
+        gWorldSFX.UpdateAllTrackedSFX(fDeltaT);
+        gPowerupSFX.UpdateAllTrackedSFX(fDeltaT);
+        gStadGenSFX.UpdateAllTrackedSFX(fDeltaT);
+        gCrowdSFX.UpdateAllTrackedSFX(fDeltaT);
+    }
+
+    if (g_pGame != NULL)
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            cTeam* pTeam = g_pTeams[i];
+            for (int j = 0; j < 5; j++)
+            {
+                pTeam->GetPlayer(j)->m_pCharacterSFX->UpdateAllTrackedSFX(fDeltaT);
+            }
+        }
+
+        BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->UpdateAllTrackedSFX(fDeltaT);
+    }
+
+    if (gfSilenceTimer > 0.0f && g_fAudioTimer > gfSilenceTimer)
+    {
+        PlatAudio::StopAllSound();
+        gfSilenceTimer = -1.0f;
+    }
+
+    if (gbGameIsPaused == false)
+    {
+        UpdateDelayedAudio(fDeltaT);
+        Update3DSFXListenerPos();
+        Update3DSFXEmitters();
     }
 }
 
@@ -2648,68 +2684,6 @@ static inline void Update3DSFXListenerPos()
     }
 
     PlatAudio::Update3DSFXListener(&gListener, vCameraPos, vDir, vHeading, vUp, 1.0f);
-}
-
-/**
- * Offset/Address/Size: 0x1FD0 | 0x8013E4E4 | size: 0x354
- */
-void Update(float fDeltaT)
-{
-    if (::g_bAudioInitialized == false)
-    {
-        return;
-    }
-
-    g_fAudioTimer += fDeltaT;
-    if (uSFXVolume != uCurrentSFXVolume)
-    {
-        sndVolume((u8)uSFXVolume, 0x1F4, 0xFE);
-        uCurrentSFXVolume = uSFXVolume;
-    }
-
-    UpdateFades(fDeltaT);
-    g_pTrackManager->Update(fDeltaT);
-
-    if (g_pGame != NULL)
-    {
-        CrowdMood::Update(fDeltaT);
-        AudioScriptEventMgr::Update();
-    }
-
-    if (::g_bWorldSFXInitialized)
-    {
-        gWorldSFX.UpdateAllTrackedSFX(fDeltaT);
-        gPowerupSFX.UpdateAllTrackedSFX(fDeltaT);
-        gStadGenSFX.UpdateAllTrackedSFX(fDeltaT);
-        gCrowdSFX.UpdateAllTrackedSFX(fDeltaT);
-    }
-
-    if (g_pGame != NULL)
-    {
-        for (int i = 0; i < 2; i++)
-        {
-            cTeam* pTeam = g_pTeams[i];
-            for (int j = 0; j < 5; j++)
-            {
-                pTeam->GetPlayer(j)->m_pCharacterSFX->UpdateAllTrackedSFX(fDeltaT);
-            }
-        }
-
-        BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->UpdateAllTrackedSFX(fDeltaT);
-    }
-
-    if (gfSilenceTimer > 0.0f && g_fAudioTimer > gfSilenceTimer)
-    {
-        PlatAudio::StopAllSound();
-        gfSilenceTimer = -1.0f;
-    }
-
-    if (gbGameIsPaused == false)
-    {
-        UpdateDelayedAudio(fDeltaT);
-        Update3DSFXListenerPos();
-        Update3DSFXEmitters();
-    }
 }
 
 /**
@@ -3579,7 +3553,7 @@ void FadeFilterToFullStrength()
 
     if (!gbPitchBent)
     {
-        f32 t = (f32)gWorldSFX.muGroupPitch / 16383.0f;
+        f32 t = (f32)gWorldSFX.muGroupPitch / 8192.0f;
         GameTweaks* tweaks = g_pGame->m_pGameTweaks;
         PitchBend(t, tweaks->unk220, tweaks->unk208, 0.0f);
     }
@@ -3896,22 +3870,3 @@ float MasterVolume::GetVoiceVolume()
 // }
 
 } // namespace Audio
-
-/**
- * Offset/Address/Size: 0xF0 | 0x801414C8 | size: 0x20
- */
-template bool nlDLRingIsEnd<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL> >(
-    DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*,
-    DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*);
-
-/**
- * Offset/Address/Size: 0x128 | 0x80141500 | size: 0x18
- */
-template DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*
-nlDLRingGetStart(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*);
-
-/**
- * Offset/Address/Size: 0x110 | 0x801414E8 | size: 0x18
- */
-template DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*
-nlDLRingGetStart(DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*);
