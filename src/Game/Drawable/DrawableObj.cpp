@@ -89,11 +89,3 @@ void DrawableObject::GetAABBDimensions(AABBDimensions& dim, bool param) const
 // void DrawableObject::DrawPlanarShadow()
 // {
 // }
-
-// /**
-//  * Offset/Address/Size: 0x4 | 0x8011FE04 | size: 0x8
-//  */
-// bool DrawableObject::IsDrawableModel()
-// {
-//     return false;
-// }

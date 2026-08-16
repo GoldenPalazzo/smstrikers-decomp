@@ -158,176 +158,6 @@ World::~World()
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x80194CC4 | size: 0x5C
- */
-int World::CompareNameToGenericName(const char* str1, const char* str2)
-{
-    size_t sVar1 = strlen(str2);
-    return nlStrNCmp<char>(str1 + *(int*)((u8*)this + 0x120), str2, sVar1);
-}
-
-/**
- * Offset/Address/Size: 0x5C | 0x80194D20 | size: 0x44
- */
-unsigned long World::GetHashIdForGenericName(const char* name) const
-{
-    nlStrNCpy<char>(
-        m_WorldNamePrefix + m_WorldNameLength,
-        name,
-        (unsigned long)(sizeof(m_WorldNamePrefix) - m_WorldNameLength));
-    return nlStringLowerHash(m_WorldNamePrefix);
-}
-
-/**
- * Offset/Address/Size: 0xA0 | 0x80194D64 | size: 0x1F0
- */
-LightObject* World::GetShadowLight(const nlVector3& vPosition, float)
-{
-    u32* pStack;
-    LightObject* pClosest = NULL;
-    float fDistance = 1e30f;
-    AVLTreeEntry<unsigned long, LightObject*>* pNode;
-    LightObject* pLight;
-
-    pStack = (u32*)nlMalloc(8, 8, false);
-    if (pStack != NULL)
-    {
-        u32 numElements = m_lightMap.m_NumElements;
-        pNode = m_lightMap.m_Root;
-        pStack[0] = (u32)nlMalloc((numElements + 1) * 4, 8, false);
-        pStack[1] = 0;
-
-        if (pNode != NULL)
-        {
-            while (pNode->node.left != NULL)
-            {
-                ((AVLTreeEntry<unsigned long, LightObject*>**)pStack[0])[pStack[1]] = pNode;
-                pStack[1]++;
-                pNode = (AVLTreeEntry<unsigned long, LightObject*>*)pNode->node.left;
-            }
-            ((AVLTreeEntry<unsigned long, LightObject*>**)pStack[0])[pStack[1]] = pNode;
-            pStack[1]++;
-        }
-    }
-
-    while (pStack[1] != 0)
-    {
-        pNode = ((AVLTreeEntry<unsigned long, LightObject*>**)pStack[0])[pStack[1] - 1];
-        pLight = pNode->value;
-
-        if (pLight->m_emitFlags & 1)
-        {
-            float dx, dy, dz;
-            dy = vPosition.f.y - pLight->m_worldPosition.f.y;
-            dx = vPosition.f.x - pLight->m_worldPosition.f.x;
-            dz = vPosition.f.z - pLight->m_worldPosition.f.z;
-            float distSq = dx * dx + dy * dy + dz * dz;
-            if (distSq < fDistance)
-            {
-                fDistance = distSq;
-                pClosest = pLight;
-            }
-        }
-
-        pStack[1]--;
-
-        {
-            AVLTreeEntry<unsigned long, LightObject*>* pChild = (AVLTreeEntry<unsigned long, LightObject*>*)((AVLTreeEntry<unsigned long, LightObject*>**)pStack[0])[pStack[1]]->node.right;
-            if (pChild == NULL)
-            {
-                continue;
-            }
-
-            while (pChild->node.left != NULL)
-            {
-                ((AVLTreeEntry<unsigned long, LightObject*>**)pStack[0])[pStack[1]] = pChild;
-                pStack[1]++;
-                pChild = (AVLTreeEntry<unsigned long, LightObject*>*)pChild->node.left;
-            }
-            ((AVLTreeEntry<unsigned long, LightObject*>**)pStack[0])[pStack[1]] = pChild;
-            pStack[1]++;
-        }
-    }
-
-    if (pStack != NULL)
-    {
-        delete[] (u8*)pStack[0];
-        delete (u8*)pStack;
-    }
-    return pClosest;
-}
-
-/**
- * Offset/Address/Size: 0x290 | 0x80194F54 | size: 0x8C
- */
-bool World::AddDrawableObject(unsigned long uHashID, DrawableObject* pDrawableObject)
-{
-    DrawableObject** ppValue = m_drawableMap.Add(uHashID, pDrawableObject);
-
-    if (ppValue == nullptr)
-    {
-        pDrawableObject->m_pWorldContext = this;
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-/**
- * Helper struct for inlining FindGet with bool return to match target assembly.
- * The target uses a bool found flag pattern (li r0,1 / li r0,0 / clrlwi.)
- * which the native AVLTreeBase::FindGet (returning ValueType*) does not produce.
- */
-struct HelperMapFindHelper
-{
-    char pad[0x8];
-    AVLTreeEntry<unsigned long, HelperObject*>* m_Root;
-
-    inline bool FindGet(unsigned long key, HelperObject*** foundValue) const
-    {
-        AVLTreeEntry<unsigned long, HelperObject*>* node = m_Root;
-        while (node != NULL)
-        {
-            int cmpResult;
-            if (key == node->key)
-                cmpResult = 0;
-            else if (key < node->key)
-                cmpResult = -1;
-            else
-                cmpResult = 1;
-            if (cmpResult == 0)
-            {
-                if (foundValue != NULL)
-                    *foundValue = &node->value;
-                return true;
-            }
-            else
-            {
-                if (cmpResult < 0)
-                    node = (AVLTreeEntry<unsigned long, HelperObject*>*)node->node.left;
-                else
-                    node = (AVLTreeEntry<unsigned long, HelperObject*>*)node->node.right;
-            }
-        }
-        return false;
-    }
-};
-
-/**
- * Offset/Address/Size: 0x31C | 0x80194FE0 | size: 0x8C
- */
-HelperObject* World::FindHelperObject(unsigned long uHashID)
-{
-    HelperObject** foundValue;
-    bool found = ((HelperMapFindHelper*)&m_helperMap)->FindGet(uHashID, &foundValue);
-    if (found)
-        return *foundValue;
-    return nullptr;
-}
-
-/**
  * Helper struct for inlining FindGet with bool return to match target assembly.
  * The target uses a bool found flag pattern (li r0,1 / li r0,0 / clrlwi.)
  * which the native AVLTreeBase::FindGet (returning ValueType*) does not produce.
@@ -402,23 +232,1269 @@ struct DrawableMapFindHelper
     }
 };
 
-/**
- * Offset/Address/Size: 0x3A8 | 0x8019506C | size: 0x8C
- */
-DrawableObject* World::FindDrawableObject(unsigned long uHashID)
-{
-    DrawableObject** foundValue;
-    bool found = ((DrawableMapFindHelper*)&m_drawableMap)->FindGet(uHashID, &foundValue);
-    if (found)
-        return *foundValue;
-    return nullptr;
-}
-
 class cGame;
 class cBall;
 extern cGame* g_pGame;
 extern cBall* g_pBall;
 extern unsigned char sSTSLighting__17DrawableCharacter;
+struct WorldObjectChunkData
+{
+    /* 0x00 */ char m_szName[64];
+    /* 0x40 */ char m_szModelName[64];
+    /* 0x80 */ unsigned long m_uHashID;
+    /* 0x84 */ unsigned long m_uModelHashID;
+    /* 0x88 */ unsigned long m_uPhyGeomHashID;
+    /* 0x8C */ unsigned long m_uShadowHashID;
+    /* 0x90 */ unsigned long m_uObjectCreationFlags;
+    /* 0x94 */ unsigned long m_uRenderLayer;
+    /* 0x98 */ float m_fRadius;
+    /* 0x9C */ unsigned long m_uPadding1;
+    /* 0xA0 */ nlMatrix4 m_worldMatrix;
+}; // total size: 0xE0
+
+struct WorldObjectData
+{
+    /* 0x00 */ unsigned long m_uObjectCreationFlags;
+    /* 0x04 */ unsigned long m_uHashID;
+    /* 0x08 */ unsigned long m_uModelID;
+    /* 0x0C */ unsigned long m_uShadowHashID;
+    /* 0x10 */ unsigned long m_uRenderLayer;
+    /* 0x14 */ nlMatrix4 m_worldMatrix;
+    /* 0x54 */ float m_fRadius;
+    /* 0x58 */ nlVector3 m_v3Offset;
+}; // total size: 0x64
+
+static const int LF_NOLIGHT = 4;
+
+struct WorldLightChunkData
+{
+    /* 0x00 */ char m_szName[64];
+    /* 0x40 */ unsigned long m_uHashID;
+    /* 0x44 */ float m_fIntensity;
+    /* 0x48 */ float m_fFarAttenuationStart;
+    /* 0x4C */ float m_fFarAttenuationEnd;
+    /* 0x50 */ nlVector3 m_colour;
+    /* 0x5C */ unsigned long m_emitFlags;
+    /* 0x60 */ nlMatrix4 m_worldMatrix;
+}; // total size: 0xA0
+
+struct WorldEmitterChunkData
+{
+    /* 0x00 */ char m_szName[64];
+    /* 0x40 */ unsigned long m_uHashID;
+    /* 0x44 */ float m_uPadding0;
+    /* 0x48 */ float m_uPadding1;
+    /* 0x4C */ float m_uPadding2;
+    /* 0x50 */ float m_uPadding3;
+    /* 0x54 */ float m_uPadding4;
+    /* 0x58 */ float m_uPadding5;
+    /* 0x5C */ float m_uPadding6;
+    /* 0x60 */ nlMatrix4 m_worldMatrix;
+}; // total size: 0xA0
+
+/**
+ * Offset/Address/Size: 0x191C | 0x801965E0 | size: 0x260
+ */
+class FlareHandler
+{
+public:
+    static FlareHandler instance;
+    void AddHalo(const nlMatrix4&);
+    void AddGlow(const nlMatrix4&);
+
+    char _pad[0x70];
+};
+
+static const unsigned long eOC_SHINY = 0x00000008;
+
+static const unsigned long eOC_ENV_SHINY = 0x00000010;
+
+/**
+ * Offset/Address/Size: 0x376C | 0x80198430 | size: 0x68
+ */
+bool World::Load(bool forfe)
+{
+    bool ret = DoLoad();
+    if (forfe == 0)
+    {
+        ret = DoInitialize();
+    }
+    m_Locked = 1;
+    return ret;
+}
+/**
+ * Offset/Address/Size: 0x3694 | 0x80198358 | size: 0xD8
+ */
+bool World::LoadGeometry(const char* szWorldName, bool bMakeDrawables, bool keepTransform, unsigned long* pDrawableObjectHashes, int* pNumObjectsLoaded)
+{
+    char buffer[256];
+
+    nlSNPrintf(buffer, 0xFF, "%s.glt", szWorldName);
+    tDebugPrintManager::Print(DC_RENDER, "Loading world texture file: %s\n", buffer);
+    glLoadTextureBundle(buffer);
+
+    nlSNPrintf(buffer, 0xFF, "%s.glg", szWorldName);
+    tDebugPrintManager::Print(DC_RENDER, "Loading world geometry file: %s\n", buffer);
+
+    m_pModels = glLoadModel(buffer, &m_uNumModels);
+
+    // return LoadGeometry(m_pModels, m_uNumModels, bMakeDrawables, keepTransform, pNumObjectsLoaded, pDrawableObjectHashes, false);
+    return LoadGeometry(m_pModels, m_uNumModels, bMakeDrawables, keepTransform, pDrawableObjectHashes, pNumObjectsLoaded, false);
+}
+
+static inline float World_SelectBoundingRadius(AABBDimensions& aabb)
+{
+    float dimX = aabb.mDim.f.x;
+    float dimY = aabb.mDim.f.y;
+    if (dimX >= dimY && dimX > aabb.mDim.f.z)
+    {
+        return dimX;
+    }
+    else
+    {
+        dimX = aabb.mDim.f.z;
+        if (dimY >= dimX)
+        {
+            dimX = dimY;
+        }
+        return dimX;
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x3420 | 0x801980E4 | size: 0x274
+ */
+bool World::LoadGeometry(glModel* gModel, unsigned long uNumModels, bool bMakeDrawables, bool keepTransform, unsigned long* pDrawableObjectHashes, int* pNumObjectsLoaded, bool bVar)
+{
+    struct WorldObjectDataLocal
+    {
+        unsigned long m_uObjectCreationFlags;
+        unsigned long m_uHashID;
+        unsigned long m_uModelID;
+        unsigned long m_uShadowHashID;
+        unsigned long m_uRenderLayer;
+        nlMatrix4 m_worldMatrix;
+        float m_fRadius;
+        nlVector3 m_v3Offset;
+    };
+
+    struct glModelPacketMatrixRef
+    {
+        char pad[0x24];
+        unsigned long matrix;
+    };
+
+    struct DrawableModelProxy
+    {
+        char pad[0x9C];
+        glModel* m_pModel;
+    };
+
+    WorldObjectDataLocal data;
+    AABBDimensions aabb;
+    DrawableObject** foundValue;
+    DrawableObject* pObject;
+
+    m_pModels = gModel;
+    m_uNumModels = uNumModels;
+
+    if (bMakeDrawables)
+    {
+        unsigned long* pHash = pDrawableObjectHashes;
+        glModel* pModelStart = m_pModels;
+        nlMatrix4* pWorldMtx = &data.m_worldMatrix;
+        glModel* pModel = pModelStart;
+        bool keep = keepTransform;
+        glModel* pEndModel = pModelStart + m_uNumModels;
+        bool checkEnvShiny = bVar;
+        int count = 0;
+        float radius = 0.0f;
+
+        while (pModel < pEndModel)
+        {
+            nlZeroMemory(&data, sizeof(WorldObjectDataLocal));
+
+            data.m_uHashID = pModel->id;
+            data.m_uModelID = pModel->id;
+            data.m_uShadowHashID = (unsigned long)-1;
+
+            if (keep)
+            {
+                glGetMatrix(((glModelPacketMatrixRef*)pModel->packets)->matrix, *pWorldMtx);
+            }
+            else
+            {
+                pWorldMtx->SetIdentity();
+            }
+
+            data.m_fRadius = radius;
+            HandleObjectCreation((WorldObjectData*)&data);
+
+            if (((DrawableMapFindHelper*)&m_drawableMap)->FindGetEqualFirst(pModel->id, &foundValue))
+            {
+                pObject = *foundValue;
+            }
+            else
+            {
+                pObject = NULL;
+            }
+
+            pObject->m_uObjectFlags |= 0x4;
+
+            if (checkEnvShiny)
+            {
+                DrawableModel* model = pObject->AsDrawableModel();
+                if (model != NULL)
+                {
+                    glModelPacket* pPacket = ((DrawableModelProxy*)model)->m_pModel->packets;
+                    while (pPacket < ((DrawableModelProxy*)model)->m_pModel->packets + ((DrawableModelProxy*)model)->m_pModel->numPackets)
+                    {
+                        if (pPacket->state.texconfig & 0x10)
+                        {
+                            pObject->m_uObjectCreationFlags |= eOC_ENV_SHINY;
+                        }
+                        pPacket++;
+                    }
+                }
+            }
+
+            pObject->GetAABBDimensions(aabb, false);
+
+            pObject->m_fBoundingRadius = World_SelectBoundingRadius(aabb);
+
+            if (pDrawableObjectHashes != NULL)
+            {
+                *pHash = pObject->m_uHashID;
+            }
+
+            pHash++;
+            count++;
+            pModel++;
+        }
+
+        if (pNumObjectsLoaded != NULL)
+        {
+            *pNumObjectsLoaded = count;
+        }
+    }
+
+    return m_pModels != NULL;
+}
+
+/**
+ * Offset/Address/Size: 0x3084 | 0x80197D48 | size: 0x39C
+ */
+u8 World::HandleObjectCreation(WorldObjectData* pObjectData)
+{
+    struct WorldObjectDataLocal
+    {
+        unsigned long m_uObjectCreationFlags;
+        unsigned long m_uHashID;
+        unsigned long m_uModelID;
+        unsigned long m_uShadowHashID;
+        unsigned long m_uRenderLayer;
+        nlMatrix4 m_worldMatrix;
+        float m_fRadius;
+        nlVector3 m_v3Offset;
+    };
+
+    WorldObjectDataLocal* pData = (WorldObjectDataLocal*)pObjectData;
+    DrawableObject* pDrawable = NULL;
+    glModel* pModel = glInventory.GetModel(pData->m_uModelID);
+
+    if (pModel == NULL)
+    {
+        return 1;
+    }
+
+    if ((pData->m_uObjectCreationFlags & 0x10) == 0)
+    {
+        glModelPacket* pPacketEnd;
+        glModelPacket* pPacket = pModel->packets;
+        pPacketEnd = pPacket + pModel->numPackets;
+
+        while (pPacket < pPacketEnd)
+        {
+            if (pPacket->state.texconfig & 0x10)
+            {
+                pData->m_uObjectCreationFlags |= eOC_SHINY;
+                break;
+            }
+            pPacket++;
+        }
+    }
+
+    if (pData->m_uObjectCreationFlags & 0x2)
+    {
+        DrawableSkinModel* pSkin = new (nlMalloc(sizeof(DrawableSkinModel), 8, false)) DrawableSkinModel();
+        pSkin->m_pModel = pModel;
+        pSkin->m_pShadowVolume = glInventory.GetShadowVolume(pData->m_uShadowHashID);
+        pSkin->m_uObjectFlags |= 0x4;
+        pDrawable = pSkin;
+    }
+    else if (pData->m_uObjectCreationFlags & 0x20)
+    {
+        DrawableTmModel* pTm = new (nlMalloc(sizeof(DrawableTmModel), 8, false)) DrawableTmModel();
+        pTm->m_pModel = pModel;
+        pTm->m_pShadowVolume = glInventory.GetShadowVolume(pData->m_uShadowHashID);
+        pTm->m_uObjectFlags |= 0x4;
+        pDrawable = pTm;
+    }
+    else if (pData->m_uObjectCreationFlags & 0x1)
+    {
+        DrawableShadow* pShadow = new (nlMalloc(sizeof(DrawableShadow), 8, false)) DrawableShadow();
+        pShadow->m_pModel = pModel;
+        pShadow->m_uObjectFlags &= ~0x4;
+        pDrawable = pShadow;
+    }
+    else
+    {
+        DrawableModel* pModelDrawable = new (nlMalloc(sizeof(DrawableModel), 8, false)) DrawableModel();
+        pModelDrawable->m_pModel = pModel;
+        pModelDrawable->m_pShadowVolume = glInventory.GetShadowVolume(pData->m_uShadowHashID);
+        pModelDrawable->m_bVertexAnimated = glInventory.GetVertexAnim(pModel->id) ? true : false;
+        pModelDrawable->m_uObjectFlags &= ~0x4;
+        pDrawable = pModelDrawable;
+    }
+
+    if (pDrawable == NULL)
+    {
+        return 0;
+    }
+
+    pDrawable->m_pWorldContext = this;
+    pDrawable->m_uObjectFlags |= 0x1;
+    pDrawable->m_uHashID = pData->m_uHashID;
+    pDrawable->m_uObjectCreationFlags = pData->m_uObjectCreationFlags;
+    pDrawable->m_uRenderLayer = pData->m_uRenderLayer;
+    pDrawable->m_worldMatrix = pData->m_worldMatrix;
+    pDrawable->m_fBoundingRadius = pData->m_fRadius;
+
+    m_drawableMap.Add(pDrawable->m_uHashID, pDrawable);
+    return 1;
+}
+
+/**
+ * Offset/Address/Size: 0x3020 | 0x80197CE4 | size: 0x64
+ */
+void World::AddToHyperSTSDrawables(unsigned long key, DrawableModel* pDrawableModel)
+{
+    m_hyperSTSDrawableMap.Add(key, pDrawableModel);
+}
+
+inline void World::AssignLightBitmasks()
+{
+    typedef nlAVLTreeIterator<unsigned long, LightObject*, DefaultKeyCompare<unsigned long> > LightIterator;
+
+    LightIterator* iterator =
+        new (nlMalloc(sizeof(LightIterator), 8, false))
+            LightIterator(m_lightMap.m_Root, m_lightMap.m_NumElements);
+    unsigned long bit = 1;
+    while (iterator->IsValid())
+    {
+        iterator->Current()->value->m_bit = bit;
+        bit <<= 1;
+        iterator->Next();
+    }
+    delete iterator;
+}
+
+inline void World::CreateWorldObjFromChunk(nlChunk* pChunk)
+{
+    WorldObjectChunkData* pWorldObjectChunkData;
+    WorldObjectData objectData;
+    memset(&objectData, 0, sizeof(WorldObjectData));
+    pWorldObjectChunkData = (WorldObjectChunkData*)pChunk->GetData();
+
+    objectData.m_uObjectCreationFlags = pWorldObjectChunkData->m_uObjectCreationFlags;
+    objectData.m_uHashID = pWorldObjectChunkData->m_uHashID;
+    objectData.m_worldMatrix = pWorldObjectChunkData->m_worldMatrix;
+    objectData.m_uShadowHashID = pWorldObjectChunkData->m_uShadowHashID;
+    objectData.m_uRenderLayer = pWorldObjectChunkData->m_uRenderLayer;
+    objectData.m_uModelID = pWorldObjectChunkData->m_uModelHashID;
+    objectData.m_fRadius = pWorldObjectChunkData->m_fRadius;
+
+    HandleObjectCreation(&objectData);
+}
+
+inline void World::CreateLightObjFromChunk(nlChunk* pChunk)
+{
+    LightObject* pLightObj;
+    WorldLightChunkData* pWorldLightChunkData =
+        (WorldLightChunkData*)pChunk->GetData();
+
+    pLightObj = (LightObject*)nlMalloc(sizeof(LightObject), 8, false);
+    pLightObj->m_uHashID = pWorldLightChunkData->m_uHashID;
+    pLightObj->m_worldPosition = pWorldLightChunkData->m_worldMatrix.GetTranslation();
+    pLightObj->m_fIntensity = pWorldLightChunkData->m_fIntensity;
+    pLightObj->m_fFarAttenuationStart = pWorldLightChunkData->m_fFarAttenuationStart;
+    pLightObj->m_fFarAttenuationEnd = pWorldLightChunkData->m_fFarAttenuationEnd;
+    pLightObj->m_emitFlags = pWorldLightChunkData->m_emitFlags;
+
+    if (pLightObj->m_fIntensity < 0.01f)
+    {
+        pLightObj->m_emitFlags |= LF_NOLIGHT;
+    }
+
+    nlFloatColourSet(
+        pLightObj->m_colour,
+        pWorldLightChunkData->m_colour.f.x,
+        pWorldLightChunkData->m_colour.f.y,
+        pWorldLightChunkData->m_colour.f.z,
+        0.0f);
+    pLightObj->m_bit = 0;
+    m_lightMap.Add(pLightObj->m_uHashID, pLightObj);
+}
+
+static inline void World_CreateEmitterObjFromChunk(World* pWorld, nlChunk* pChunk)
+{
+    WorldEmitterChunkData* wecd;
+    const char* persistentEffectsTag;
+    char fxName[256];
+    int i;
+    EffectsGroup* fx;
+    EmissionController* ec;
+    HelperObject* pHelper;
+
+    wecd = (WorldEmitterChunkData*)pChunk->GetData();
+    persistentEffectsTag = "fx_persistent_";
+    static int persistentLen = nlStrLen<char>(persistentEffectsTag);
+
+    persistentEffectsTag = strstr(wecd->m_szName, persistentEffectsTag);
+    if (persistentEffectsTag != NULL)
+    {
+        nlStrNCpy<char>(fxName, persistentEffectsTag + persistentLen, 256);
+
+        i = strlen(fxName);
+        if (__ctype_map[(unsigned char)fxName[i - 1]] & __digit)
+        {
+            i = strlen(fxName);
+            char* p = fxName + i;
+            while (i > 0)
+            {
+                if (*p == '_')
+                {
+                    fxName[i] = '\0';
+                    break;
+                }
+                p--;
+                i--;
+            }
+        }
+
+        fx = fxGetGroup(fxName);
+        if (fx != NULL)
+        {
+            ec = EmissionManager::Create(fx, 0);
+            ec->SetPosition(wecd->m_worldMatrix.GetTranslation());
+            ec->m_uUserData = 0xDEADBEEF;
+        }
+    }
+    else
+    {
+        pHelper = (HelperObject*)nlMalloc(sizeof(HelperObject), 8, false);
+        pHelper->m_uHashID = wecd->m_uHashID;
+        pHelper->m_worldMatrix = wecd->m_worldMatrix;
+        nlStrNCpy<char>(pHelper->m_szName, wecd->m_szName, 64);
+        pWorld->m_helperMap.Add(pHelper->m_uHashID, pHelper);
+    }
+}
+
+inline bool World::LoadPhysicsPrimitives(nlChunk* pChunk)
+{
+    unsigned long i;
+    nlChunk* pLastChunk = pChunk->GetLastChunk();
+    pChunk = pChunk->GetFirstChunk();
+    while (pChunk != pLastChunk)
+    {
+        switch (pChunk->GetID())
+        {
+        case 0x1D001:
+            m_pPhysicsData =
+                new (nlMalloc(sizeof(CharacterPhysicsData), 8, false)) CharacterPhysicsData();
+            m_pPhysicsData->physicsElementCount = *(unsigned long*)pChunk->GetData();
+            m_pPhysicsData->pPhysicsElements = (CharacterPhysicsElement*)nlMalloc(
+                m_pPhysicsData->physicsElementCount * sizeof(CharacterPhysicsElement), 8, false);
+            break;
+        case 0x1D002:
+        {
+            CharacterPhysicsElement* pPhysicsElements =
+                (CharacterPhysicsElement*)pChunk->GetData();
+            for (i = 0; i < m_pPhysicsData->physicsElementCount; i++)
+            {
+                m_pPhysicsData->pPhysicsElements[i] = pPhysicsElements[i];
+            }
+            break;
+        }
+        }
+        pChunk = pChunk->GetNextChunk();
+    }
+    return true;
+}
+
+/**
+ * Offset/Address/Size: 0x264C | 0x80197310 | size: 0x9D4
+ */
+bool World::LoadObjectData(const char* szWorldName)
+{
+    char szFullFileName[255];
+    nlChunk* pChunk;
+    void* pWorldData;
+
+    nlSNPrintf(szFullFileName, 255, "art/%s.wld", szWorldName);
+    tDebugPrintManager::Print(DC_RENDER, "Loading world object file: %s\n", szFullFileName);
+
+    pWorldData = nlLoadEntireFile(szFullFileName, NULL, 0x20, AllocateEnd);
+    if (pWorldData == NULL)
+    {
+        nlPrintf("Error: Failed to load world object data '%s'\n", szFullFileName);
+        return false;
+    }
+
+    nlChunk* pLastChunk = ((nlChunk*)pWorldData)->GetLastChunk();
+    pChunk = ((nlChunk*)pWorldData)->GetFirstChunk();
+    while (pChunk != pLastChunk)
+    {
+        switch (pChunk->GetID())
+        {
+        case 0x19001:
+            pChunk->GetData();
+            break;
+        case 0x19002:
+            pChunk->GetData();
+            break;
+        case 0x19003:
+            CreateWorldObjFromChunk(pChunk);
+            break;
+        case 0x19004:
+            pChunk->GetData();
+            break;
+        case 0x19005:
+            CreateLightObjFromChunk(pChunk);
+            break;
+        case 0x19100:
+            pChunk->GetData();
+            break;
+        case 0x19101:
+            World_CreateEmitterObjFromChunk(this, pChunk);
+            break;
+        case 0x19200:
+            pChunk->GetData();
+            break;
+        case 0x19201:
+            CreateHelperObjFromChunk(pChunk);
+            break;
+        case (int)0x8001D000:
+            LoadPhysicsPrimitives(pChunk);
+            break;
+        }
+
+        pChunk = pChunk->GetNextChunk();
+    }
+
+    delete pWorldData;
+    AssignLightBitmasks();
+    return true;
+}
+
+static inline nlFloatColour MakeIntensityColour(float r, float g, float b, float a)
+{
+    nlFloatColour colour;
+    nlFloatColourSet(colour, r, g, b, a);
+    return colour;
+}
+
+/**
+ * Offset/Address/Size: 0x1CA8 | 0x8019696C | size: 0x9A4
+ */
+void World::CreateLightUserData()
+{
+    nlListContainer<LightObject*> lightList;
+    nlListContainer<LightObject*> specList;
+    int numLights = 0;
+    int numSpecLights = 0;
+    LightObject* pLight;
+    {
+        typedef nlAVLTreeIterator<unsigned long, LightObject*, DefaultKeyCompare<unsigned long> >
+            LightIterator;
+        LightIterator* iterator = m_lightMap.GetIterator();
+
+        while (iterator->IsValid())
+        {
+            pLight = iterator->CurrentValue();
+            if ((pLight->m_emitFlags & 0x4) == 0)
+            {
+                numLights++;
+                lightList.AddEntry(pLight);
+            }
+
+            if ((pLight->m_emitFlags & 0x2) != 0)
+            {
+                numSpecLights++;
+                specList.AddEntry(pLight);
+            }
+            iterator->Next();
+        }
+
+        delete iterator;
+    }
+
+    pLight = fxLightObjects;
+    int i;
+    int numExtra = 0;
+    {
+        for (i = 0; i < EmissionManager::GetNumLights(); i++)
+        {
+            const EffectsLight* pLight = EmissionManager::GetLight(i);
+
+            fxLightObjects[i].m_worldPosition = pLight->m_v3Position;
+            fxLightObjects[i].m_fIntensity =
+                (2.0f * (f32)pLight->m_Colour.c[3]) / 255.0f;
+            fxLightObjects[i].m_fFarAttenuationStart = 0.0f;
+            fxLightObjects[i].m_fFarAttenuationEnd = pLight->m_fRadius;
+            fxLightObjects[i].m_colour.c[0] =
+                0.003921569f * (f32)pLight->m_Colour.c[0];
+            fxLightObjects[i].m_colour.c[1] =
+                0.003921569f * (f32)pLight->m_Colour.c[1];
+            fxLightObjects[i].m_colour.c[2] =
+                0.003921569f * (f32)pLight->m_Colour.c[2];
+            fxLightObjects[i].m_colour.c[3] =
+                0.003921569f * (f32)pLight->m_Colour.c[3];
+            fxLightObjects[i].m_fRadiusSquared =
+                pLight->m_fRadius * pLight->m_fRadius;
+            numExtra++;
+        }
+    }
+    if (numLights == 0)
+    {
+        m_pLightData = NULL;
+        m_pIntensityPerm = NULL;
+    }
+    else
+    {
+        int totalLights = numLights + numExtra;
+        u32* pIntensityPermData;
+        unsigned long size =
+            totalLights * sizeof(GLLightUserData) + 4;
+        m_pLightData = glUserAlloc(GLUD_Light, size, false);
+
+        u32* p32 = (u32*)glUserGetData(m_pLightData);
+        *p32 = totalLights;
+        GLLightUserData* glLight = (GLLightUserData*)(p32 + 1);
+
+        nlListIterator<LightObject*> lightIterator = lightList.Begin();
+        while (lightIterator.IsValid())
+        {
+            LightObject* pLight = lightIterator.Current();
+            glLight->colour = pLight->m_colour;
+            glLight->worldPosition = pLight->m_worldPosition;
+            glLight->intensity = pLight->m_fIntensity;
+            if (pLight->m_emitFlags & 0x8)
+            {
+                glLight->innerRadius = 0.0f;
+                glLight->outerRadius = 0.0f;
+            }
+            else
+            {
+                glLight->innerRadius = pLight->m_fFarAttenuationStart;
+                glLight->outerRadius = pLight->m_fFarAttenuationEnd;
+            }
+            lightIterator.Next();
+            glLight++;
+        }
+        for (int i = 0; i < numExtra; i++)
+        {
+            glLight->colour = pLight[i].m_colour;
+            glLight->worldPosition = pLight[i].m_worldPosition;
+            glLight->intensity = pLight[i].m_fIntensity;
+            glLight->innerRadius = pLight[i].m_fFarAttenuationStart;
+            glLight->outerRadius = pLight[i].m_fFarAttenuationEnd;
+            glLight++;
+        }
+
+        m_pIntensityPerm = glUserAlloc(GLUD_Light, size, false);
+        p32 = (u32*)glUserGetData(m_pIntensityPerm);
+        *p32 = totalLights;
+        pIntensityPermData = p32;
+        glLight = (GLLightUserData*)(p32 + 1);
+        const float fBlueWeight = 0.11f;
+        const float fRedWeight = 0.3f;
+        const float fGreenWeight = 0.59f;
+        const float fZero = 0.0f;
+        const float fOne = 1.0f;
+
+        nlListIterator<LightObject*> lightIterator2 = lightList.Begin();
+        while (lightIterator2.IsValid())
+        {
+            LightObject* pLight = lightIterator2.Current();
+            glLight->colour = MakeIntensityColour(
+                fBlueWeight * pLight->m_colour.c[2]
+                    + (fRedWeight * pLight->m_colour.c[0]
+                        + fGreenWeight * pLight->m_colour.c[1]),
+                fZero,
+                fZero,
+                fOne);
+            glLight->worldPosition = pLight->m_worldPosition;
+            glLight->intensity = pLight->m_fIntensity;
+            if (pLight->m_emitFlags & 0x8)
+            {
+                glLight->innerRadius = 0.0f;
+                glLight->outerRadius = 0.0f;
+            }
+            else
+            {
+                glLight->innerRadius = pLight->m_fFarAttenuationStart;
+                glLight->outerRadius = pLight->m_fFarAttenuationEnd;
+            }
+            lightIterator2.Next();
+            glLight++;
+        }
+        for (int i = numExtra; i > 0; i--)
+        {
+            glLight->colour = pLight->m_colour;
+            glLight->worldPosition = pLight->m_worldPosition;
+            glLight->intensity = pLight->m_fIntensity;
+            glLight->innerRadius = pLight->m_fFarAttenuationStart;
+            glLight->outerRadius = pLight->m_fFarAttenuationEnd;
+            pLight = (LightObject*)((u8*)pLight + sizeof(LightObject));
+            glLight++;
+        }
+
+        if (m_pPlayerNISLightData == NULL)
+        {
+            size = numLights * sizeof(GLLightUserData) + 4;
+            m_pPlayerNISLightData = glUserAlloc(GLUD_Light, size, true);
+            memcpy(
+                glUserGetData(m_pPlayerNISLightData),
+                pIntensityPermData,
+                size);
+        }
+    }
+
+    if (numSpecLights == 0)
+    {
+        m_pSTSIntensity = NULL;
+    }
+    else
+    {
+        nlVector3 origin = { { 0.0f, 0.0f, 0.0f } };
+        unsigned long size = numLights * sizeof(GLSpecularUserData) + 4;
+        m_pSTSIntensity = glUserAlloc(GLUD_Specular, size, false);
+        u32* p32 = (u32*)glUserGetData(m_pSTSIntensity);
+        *p32 = numSpecLights;
+        GLSpecularUserData* pSpec = (GLSpecularUserData*)(p32 + 1);
+        nlListIterator<LightObject*> specIterator = specList.Begin();
+        while (specIterator.IsValid())
+        {
+            LightObject* pLight = specIterator.Current();
+            pSpec->colour = pLight->m_colour;
+            pSpec->exponent = 64.0f;
+            pSpec->intensity = pLight->m_fIntensity;
+            nlVec3Sub(pSpec->worldDirection, origin, pLight->m_worldPosition);
+            pSpec++;
+            specIterator.Next();
+        }
+    }
+
+    m_pIntensityData = glUserAlloc(GLUD_Light, 0x2C, false);
+    {
+        u32* p32 = (u32*)glUserGetData(m_pIntensityData);
+        *p32 = 1;
+        GLLightUserData* glLight = (GLLightUserData*)(p32 + 1);
+        nlZeroMemory(glLight, sizeof(GLLightUserData));
+        static nlVector3 vLightDirection = { { 0.0f, 0.0f, -1.0f } };
+        glLight->worldPosition = vLightDirection;
+        glLight->colour.c[0] = 1.0f;
+        glLight->colour.c[1] = 1.0f;
+        glLight->colour.c[2] = 1.0f;
+        glLight->colour.c[3] = 1.0f;
+        glLight->intensity = 1.0f;
+        glLight->innerRadius = 0.0f;
+        glLight->outerRadius = 0.0f;
+    }
+}
+
+static inline void* World_GetSTSIntensity(const World* pWorld)
+{
+    return pWorld->m_pSTSIntensity;
+}
+
+/**
+ * Offset/Address/Size: 0x1B7C | 0x80196840 | size: 0x12C
+ */
+void* World::GetCustomSpecularData(glModelPacket* pPacket, bool bPerm)
+{
+    GLSpecularUserData* pCursor;
+    u32* p32;
+    int numLights;
+    void* pSTSIntensity = World_GetSTSIntensity(this);
+
+    u8 glossLevel = (u8)glGetTextureState(pPacket->state.texturestate, GLTS_GlossLevel);
+
+    f32 fGloss = (f32)glossLevel;
+    f32 fNorm = fGloss * 0.015873017f;
+    f32 fInv = 1.0f - fNorm;
+    f32 fExponent = g_fExponentScale * fInv + g_fExponentBase;
+
+    p32 = (u32*)glUserGetData(pSTSIntensity);
+    numLights = *p32;
+    void* pNewData = glUserAlloc(GLUD_Specular, numLights * sizeof(GLSpecularUserData) + 4, bPerm);
+
+    p32 = (u32*)glUserGetData(pNewData);
+    pCursor = (GLSpecularUserData*)((int*)p32 + 1);
+    memcpy(p32, glUserGetData(pSTSIntensity), numLights * sizeof(GLSpecularUserData) + 4);
+
+    for (int i = numLights; i > 0; i--)
+    {
+        pCursor->exponent = fExponent;
+        pCursor++;
+    }
+
+    return pNewData;
+}
+
+void World::CreateHelperObjFromChunk(nlChunk* chunk)
+{
+    static int flareLen;
+    static signed char init;
+
+    HelperObject* pHelper;
+    WorldHelperChunkData* pWorldHelperChunkData;
+    char* substring;
+    const char* flashString;
+    const char* flareTag;
+    char flareName[64];
+
+    u32 chunkFlags = *(u32*)chunk;
+    u32 alignment = chunkFlags & 0x7F000000;
+
+    if ((((u32)(-(s32)alignment) | alignment) >> 31) != 0)
+    {
+        u32 shift = alignment >> 24;
+        u32 alignBytes = 1 << shift;
+        u8* pData = (u8*)chunk;
+        pData = pData + alignBytes;
+        pData = pData + 7;
+        pWorldHelperChunkData = (WorldHelperChunkData*)((u32)pData & ~(alignBytes - 1));
+    }
+    else
+    {
+        pWorldHelperChunkData = (WorldHelperChunkData*)((u8*)chunk + 8);
+    }
+
+    pHelper = (HelperObject*)nlMalloc(sizeof(HelperObject), 8, false);
+    pHelper->m_uHashID = pWorldHelperChunkData->m_uHashID;
+    pHelper->m_worldMatrix = pWorldHelperChunkData->m_worldMatrix;
+
+    substring = nlStrChr<char>(pWorldHelperChunkData->m_szName, '/');
+    flashString = "fx_camera_flash";
+    if (nlStrNICmp<char>(substring + 1, flashString, nlStrLen<char>(flashString)) == 0)
+    {
+        nlStrNCpy<char>(pHelper->m_szName, substring + 1, 0x40);
+    }
+    else
+    {
+        flareTag = "flare_";
+
+        if (!init)
+        {
+            flareLen = nlStrLen<char>(flareTag);
+            init = 1;
+        }
+
+        substring = strstr(pWorldHelperChunkData->m_szName, flareTag);
+        if (substring != NULL)
+        {
+            nlStrNCpy<char>(flareName, substring + flareLen, 0x40);
+
+            substring = strstr(flareName, "_");
+            if (substring != NULL)
+            {
+                *substring = '\0';
+            }
+
+            if (nlToLower<char>(flareName[0]) == 'h')
+            {
+                FlareHandler::instance.AddHalo(pWorldHelperChunkData->m_worldMatrix);
+            }
+            else
+            {
+                FlareHandler::instance.AddGlow(pWorldHelperChunkData->m_worldMatrix);
+            }
+
+            delete pHelper;
+            return;
+        }
+
+        nlStrNCpy<char>(pHelper->m_szName, pWorldHelperChunkData->m_szName, 0x40);
+    }
+
+    m_helperMap.Add(pHelper->m_uHashID, pHelper);
+}
+
+/**
+ * Offset/Address/Size: 0x1884 | 0x80196548 | size: 0x98
+ */
+void World::Update(float fDeltaT)
+{
+    DLListEntry<WorldAnimController*>* start = nlDLRingGetStart(m_animControllerList.m_Head);
+    DLListEntry<WorldAnimController*>* head = m_animControllerList.m_Head;
+    DLListEntry<WorldAnimController*>* current = start;
+
+    while (current != NULL)
+    {
+        current->entry->Update(fDeltaT);
+
+        if ((nlDLRingIsEnd(head, current) != 0) || (current == NULL))
+        {
+            current = NULL;
+        }
+        else
+        {
+            current = current->m_next;
+        }
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x1880 | 0x80196544 | size: 0x4
+ */
+void World::UpdateInReplay(float)
+{
+}
+
+/**
+ * Offset/Address/Size: 0x1428 | 0x801960EC | size: 0x458
+ */
+void World::ExtractFrustumPlanes()
+{
+    nlMatrix4 viewProjection;
+    nlMatrix4 projection = *glViewGetProjectionMatrix(GLV_Unshadowed);
+
+    float m33 = projection.f.m33;
+    float m34 = projection.f.m34;
+    float m43 = projection.f.m43;
+    projection.f.m43 = m34;
+    projection.f.m34 = m43;
+    projection.f.m33 = m33 - 1.0f;
+
+    nlMultMatrices(viewProjection, *glViewGetViewMatrix(GLV_Unshadowed), projection);
+
+    m_frustumPlane[0].f.x = viewProjection.f.m14 - viewProjection.f.m11;
+    m_frustumPlane[0].f.y = viewProjection.f.m24 - viewProjection.f.m21;
+    m_frustumPlane[0].f.z = viewProjection.f.m34 - viewProjection.f.m31;
+    m_frustumPlane[0].f.w = viewProjection.f.m44 - viewProjection.f.m41;
+    {
+        float length = nlSqrt(
+            m_frustumPlane[0].f.x * m_frustumPlane[0].f.x + m_frustumPlane[0].f.y * m_frustumPlane[0].f.y + m_frustumPlane[0].f.z * m_frustumPlane[0].f.z,
+            true);
+        m_frustumPlane[0].f.x /= length;
+        m_frustumPlane[0].f.y /= length;
+        m_frustumPlane[0].f.z /= length;
+        m_frustumPlane[0].f.w /= length;
+    }
+
+    m_frustumPlane[1].f.x = viewProjection.f.m14 + viewProjection.f.m11;
+    m_frustumPlane[1].f.y = viewProjection.f.m24 + viewProjection.f.m21;
+    m_frustumPlane[1].f.z = viewProjection.f.m34 + viewProjection.f.m31;
+    m_frustumPlane[1].f.w = viewProjection.f.m44 + viewProjection.f.m41;
+    {
+        float length = nlSqrt(
+            m_frustumPlane[1].f.x * m_frustumPlane[1].f.x + m_frustumPlane[1].f.y * m_frustumPlane[1].f.y + m_frustumPlane[1].f.z * m_frustumPlane[1].f.z,
+            true);
+        m_frustumPlane[1].f.x /= length;
+        m_frustumPlane[1].f.y /= length;
+        m_frustumPlane[1].f.z /= length;
+        m_frustumPlane[1].f.w /= length;
+    }
+
+    m_frustumPlane[2].f.x = viewProjection.f.m14 + viewProjection.f.m12;
+    m_frustumPlane[2].f.y = viewProjection.f.m24 + viewProjection.f.m22;
+    m_frustumPlane[2].f.z = viewProjection.f.m34 + viewProjection.f.m32;
+    m_frustumPlane[2].f.w = viewProjection.f.m44 + viewProjection.f.m42;
+    {
+        float length = nlSqrt(
+            m_frustumPlane[2].f.x * m_frustumPlane[2].f.x + m_frustumPlane[2].f.y * m_frustumPlane[2].f.y + m_frustumPlane[2].f.z * m_frustumPlane[2].f.z,
+            true);
+        m_frustumPlane[2].f.x /= length;
+        m_frustumPlane[2].f.y /= length;
+        m_frustumPlane[2].f.z /= length;
+        m_frustumPlane[2].f.w /= length;
+    }
+
+    m_frustumPlane[3].f.x = viewProjection.f.m14 - viewProjection.f.m12;
+    m_frustumPlane[3].f.y = viewProjection.f.m24 - viewProjection.f.m22;
+    m_frustumPlane[3].f.z = viewProjection.f.m34 - viewProjection.f.m32;
+    m_frustumPlane[3].f.w = viewProjection.f.m44 - viewProjection.f.m42;
+    {
+        float length = nlSqrt(
+            m_frustumPlane[3].f.x * m_frustumPlane[3].f.x + m_frustumPlane[3].f.y * m_frustumPlane[3].f.y + m_frustumPlane[3].f.z * m_frustumPlane[3].f.z,
+            true);
+        m_frustumPlane[3].f.x /= length;
+        m_frustumPlane[3].f.y /= length;
+        m_frustumPlane[3].f.z /= length;
+        m_frustumPlane[3].f.w /= length;
+    }
+
+    m_frustumPlane[4].f.x = viewProjection.f.m13;
+    m_frustumPlane[4].f.y = viewProjection.f.m23;
+    m_frustumPlane[4].f.z = viewProjection.f.m33;
+    m_frustumPlane[4].f.w = viewProjection.f.m43;
+    {
+        float length = nlSqrt(
+            m_frustumPlane[4].f.x * m_frustumPlane[4].f.x + m_frustumPlane[4].f.y * m_frustumPlane[4].f.y + m_frustumPlane[4].f.z * m_frustumPlane[4].f.z,
+            true);
+        m_frustumPlane[4].f.x /= length;
+        m_frustumPlane[4].f.y /= length;
+        m_frustumPlane[4].f.z /= length;
+        m_frustumPlane[4].f.w /= length;
+    }
+
+    m_frustumPlane[5].f.x = viewProjection.f.m14 - viewProjection.f.m13;
+    m_frustumPlane[5].f.y = viewProjection.f.m24 - viewProjection.f.m23;
+    m_frustumPlane[5].f.z = viewProjection.f.m34 - viewProjection.f.m33;
+    m_frustumPlane[5].f.w = viewProjection.f.m44 - viewProjection.f.m43;
+    {
+        float length = nlSqrt(
+            m_frustumPlane[5].f.x * m_frustumPlane[5].f.x + m_frustumPlane[5].f.y * m_frustumPlane[5].f.y + m_frustumPlane[5].f.z * m_frustumPlane[5].f.z,
+            true);
+        m_frustumPlane[5].f.x /= length;
+        m_frustumPlane[5].f.y /= length;
+        m_frustumPlane[5].f.z /= length;
+        m_frustumPlane[5].f.w /= length;
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x1340 | 0x80196004 | size: 0xE8
+ */
+bool World::IsSphereInFrustum(const nlMatrix4& mat, float radius)
+{
+    nlVector3 v3Position = mat.GetTranslation();
+
+    f32 posX = v3Position.f.x;
+    f32 posY = v3Position.f.y;
+    f32 posZ = v3Position.f.z;
+    f32 negRadius = -radius;
+
+    nlVector4* pPlanes = m_frustumPlane;
+    World* self = this;
+
+    for (int i = 0; i < 6; i++)
+    {
+        f32 dot = posX * pPlanes[i].f.x + posY * pPlanes[i].f.y + posZ * pPlanes[i].f.z + self->m_frustumPlane[i].f.w;
+        if (dot < negRadius)
+            return false;
+    }
+    return true;
+}
+
+/**
+ * Offset/Address/Size: 0x10F4 | 0x80195DB8 | size: 0x24C
+ */
+void DoTranslucency(DrawableObject* pObject)
+{
+    int cameraType = cCameraManager::m_pBeginFrameCameraType;
+
+    if (cameraType == 4)
+    {
+        pObject->m_translucency = 1.0f;
+        if (pObject->m_translucency < 0.0f)
+        {
+            pObject->m_translucency = 0.0f;
+        }
+        if (pObject->m_translucency > 1.0f)
+        {
+            pObject->m_translucency = 1.0f;
+        }
+        return;
+    }
+
+    float fTrans = pObject->m_translucency;
+    bool inGameplayCamera = false;
+    bool transitioningOutOfGameplayCamera = false;
+    bool canBeTransparent = false;
+
+    if ((cameraType == 7) || (cameraType == 10))
+    {
+        inGameplayCamera = true;
+    }
+
+    if (sbPretendWereNotInGameplayCam)
+    {
+        inGameplayCamera = false;
+    }
+
+    if (nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->GetType() == 8)
+    {
+        if (((MatrixEffectCam*)nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack))->mbUseGameplayTransparencyFlags)
+        {
+            transitioningOutOfGameplayCamera = true;
+        }
+    }
+
+    unsigned long objectCreationFlags = pObject->m_uObjectCreationFlags;
+
+    if (objectCreationFlags & 0x2000)
+    {
+        if (inGameplayCamera)
+        {
+            pObject->m_translucency = 0.0f;
+            if (pObject->m_translucency < 0.0f)
+            {
+                pObject->m_translucency = 0.0f;
+            }
+            if (pObject->m_translucency > 1.0f)
+            {
+                pObject->m_translucency = 1.0f;
+            }
+            return;
+        }
+
+        if (transitioningOutOfGameplayCamera)
+        {
+            canBeTransparent = true;
+        }
+    }
+
+    if (objectCreationFlags & 0x8000)
+    {
+        if (inGameplayCamera)
+        {
+            pObject->m_translucency = 0.0f;
+            if (pObject->m_translucency < 0.0f)
+            {
+                pObject->m_translucency = 0.0f;
+            }
+            if (pObject->m_translucency > 1.0f)
+            {
+                pObject->m_translucency = 1.0f;
+            }
+            return;
+        }
+    }
+
+    if (!(objectCreationFlags & 0x1000) && !canBeTransparent && !sbAllObjectsCanBeTransparent)
+    {
+        pObject->m_translucency = 1.0f;
+        if (pObject->m_translucency < 0.0f)
+        {
+            pObject->m_translucency = 0.0f;
+        }
+        if (pObject->m_translucency > 1.0f)
+        {
+            pObject->m_translucency = 1.0f;
+        }
+        return;
+    }
+
+    if (cCameraManager::IsObjectOccludingField(pObject))
+    {
+        fTrans -= g_fTransAdjustOccluded;
+    }
+    else
+    {
+        fTrans += g_fTransAdjustNotOccluded;
+    }
+
+    if (fTrans > 1.0f)
+    {
+        fTrans = 1.0f;
+    }
+
+    if (fTrans < g_fTransMinimum)
+    {
+        fTrans = g_fTransMinimum;
+    }
+
+    pObject->m_translucency = fTrans;
+    if (pObject->m_translucency < 0.0f)
+    {
+        pObject->m_translucency = 0.0f;
+    }
+    if (pObject->m_translucency > 1.0f)
+    {
+        pObject->m_translucency = 1.0f;
+    }
+}
+
+/**
+ * Offset/Address/Size: 0xF54 | 0x80195C18 | size: 0x1A0
+ */
+void World::HandleCameraSwitch()
+{
+    typedef AVLTreeEntry<unsigned long, DrawableObject*> Entry;
+
+    struct NodeStack
+    {
+        Entry** data;
+        u32 count;
+    };
+
+    NodeStack* stack;
+    Entry* node;
+
+    stack = (NodeStack*)nlMalloc(sizeof(NodeStack), 8, false);
+    if (stack != NULL)
+    {
+        u32 numElements = m_drawableMap.m_NumElements;
+        node = m_drawableMap.m_Root;
+        stack->data = (Entry**)nlMalloc((numElements + 1) * sizeof(Entry*), 8, false);
+        stack->count = 0;
+
+        if (node != NULL)
+        {
+            while (node->node.left != NULL)
+            {
+                stack->data[stack->count] = node;
+                stack->count++;
+                node = (Entry*)node->node.left;
+            }
+            stack->data[stack->count] = node;
+            stack->count++;
+        }
+    }
+
+    f32 maxVal = 1.0f;
+    f32 minVal = 0.0f;
+
+    while (stack->count > 0)
+    {
+        DrawableObject* pObject = stack->data[stack->count - 1]->value;
+
+        pObject->m_translucency = maxVal;
+        if (pObject->m_translucency < minVal)
+        {
+            pObject->m_translucency = minVal;
+        }
+        if (pObject->m_translucency > maxVal)
+        {
+            pObject->m_translucency = maxVal;
+        }
+
+        stack->count--;
+
+        Entry* right = (Entry*)stack->data[stack->count]->node.right;
+        if (right != NULL)
+        {
+            while (right->node.left != NULL)
+            {
+                stack->data[stack->count] = right;
+                stack->count++;
+                right = (Entry*)right->node.left;
+            }
+            stack->data[stack->count] = right;
+            stack->count++;
+        }
+    }
+
+    if (stack != NULL)
+    {
+        delete[] stack->data;
+        delete stack;
+    }
+}
+
 void DoTranslucency(DrawableObject* pObject);
 
 static inline u8 World_IsSphereInFrustum(const nlVector4* pPlanes, const nlMatrix4& mWorld, f32 fRadius)
@@ -495,13 +1571,6 @@ static inline void World_DrawCullingInformation(int nNumSubmitted, int nNumDrawn
     glFontPrint((eGLView)0x21, x, y, OtherColour, szBuffer);
     glFontEnd();
     glStateRestore(state);
-}
-
-bool World::IsCaptainShootToScorePresentationOn()
-{
-    if (g_pGame == NULL)
-        return false;
-    return g_pGame->mbCaptainShotToScoreOn;
 }
 
 /**
@@ -796,1277 +1865,198 @@ void World::Render()
     }
 }
 /**
- * Offset/Address/Size: 0xF54 | 0x80195C18 | size: 0x1A0
+ * Offset/Address/Size: 0x3A8 | 0x8019506C | size: 0x8C
  */
-void World::HandleCameraSwitch()
+DrawableObject* World::FindDrawableObject(unsigned long uHashID)
 {
-    typedef AVLTreeEntry<unsigned long, DrawableObject*> Entry;
-
-    struct NodeStack
-    {
-        Entry** data;
-        u32 count;
-    };
-
-    NodeStack* stack;
-    Entry* node;
-
-    stack = (NodeStack*)nlMalloc(sizeof(NodeStack), 8, false);
-    if (stack != NULL)
-    {
-        u32 numElements = m_drawableMap.m_NumElements;
-        node = m_drawableMap.m_Root;
-        stack->data = (Entry**)nlMalloc((numElements + 1) * sizeof(Entry*), 8, false);
-        stack->count = 0;
-
-        if (node != NULL)
-        {
-            while (node->node.left != NULL)
-            {
-                stack->data[stack->count] = node;
-                stack->count++;
-                node = (Entry*)node->node.left;
-            }
-            stack->data[stack->count] = node;
-            stack->count++;
-        }
-    }
-
-    f32 maxVal = 1.0f;
-    f32 minVal = 0.0f;
-
-    while (stack->count > 0)
-    {
-        DrawableObject* pObject = stack->data[stack->count - 1]->value;
-
-        pObject->m_translucency = maxVal;
-        if (pObject->m_translucency < minVal)
-        {
-            pObject->m_translucency = minVal;
-        }
-        if (pObject->m_translucency > maxVal)
-        {
-            pObject->m_translucency = maxVal;
-        }
-
-        stack->count--;
-
-        Entry* right = (Entry*)stack->data[stack->count]->node.right;
-        if (right != NULL)
-        {
-            while (right->node.left != NULL)
-            {
-                stack->data[stack->count] = right;
-                stack->count++;
-                right = (Entry*)right->node.left;
-            }
-            stack->data[stack->count] = right;
-            stack->count++;
-        }
-    }
-
-    if (stack != NULL)
-    {
-        delete[] stack->data;
-        delete stack;
-    }
+    DrawableObject** foundValue;
+    bool found = ((DrawableMapFindHelper*)&m_drawableMap)->FindGet(uHashID, &foundValue);
+    if (found)
+        return *foundValue;
+    return nullptr;
 }
 
 /**
- * Offset/Address/Size: 0x10F4 | 0x80195DB8 | size: 0x24C
+ * Helper struct for inlining FindGet with bool return to match target assembly.
+ * The target uses a bool found flag pattern (li r0,1 / li r0,0 / clrlwi.)
+ * which the native AVLTreeBase::FindGet (returning ValueType*) does not produce.
  */
-void DoTranslucency(DrawableObject* pObject)
+struct HelperMapFindHelper
 {
-    int cameraType = cCameraManager::m_pBeginFrameCameraType;
+    char pad[0x8];
+    AVLTreeEntry<unsigned long, HelperObject*>* m_Root;
 
-    if (cameraType == 4)
+    inline bool FindGet(unsigned long key, HelperObject*** foundValue) const
     {
-        pObject->m_translucency = 1.0f;
-        if (pObject->m_translucency < 0.0f)
+        AVLTreeEntry<unsigned long, HelperObject*>* node = m_Root;
+        while (node != NULL)
         {
-            pObject->m_translucency = 0.0f;
-        }
-        if (pObject->m_translucency > 1.0f)
-        {
-            pObject->m_translucency = 1.0f;
-        }
-        return;
-    }
-
-    float fTrans = pObject->m_translucency;
-    bool inGameplayCamera = false;
-    bool transitioningOutOfGameplayCamera = false;
-    bool canBeTransparent = false;
-
-    if ((cameraType == 7) || (cameraType == 10))
-    {
-        inGameplayCamera = true;
-    }
-
-    if (sbPretendWereNotInGameplayCam)
-    {
-        inGameplayCamera = false;
-    }
-
-    if (nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->GetType() == 8)
-    {
-        if (((MatrixEffectCam*)nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack))->mbUseGameplayTransparencyFlags)
-        {
-            transitioningOutOfGameplayCamera = true;
-        }
-    }
-
-    unsigned long objectCreationFlags = pObject->m_uObjectCreationFlags;
-
-    if (objectCreationFlags & 0x2000)
-    {
-        if (inGameplayCamera)
-        {
-            pObject->m_translucency = 0.0f;
-            if (pObject->m_translucency < 0.0f)
+            int cmpResult;
+            if (key == node->key)
+                cmpResult = 0;
+            else if (key < node->key)
+                cmpResult = -1;
+            else
+                cmpResult = 1;
+            if (cmpResult == 0)
             {
-                pObject->m_translucency = 0.0f;
-            }
-            if (pObject->m_translucency > 1.0f)
-            {
-                pObject->m_translucency = 1.0f;
-            }
-            return;
-        }
-
-        if (transitioningOutOfGameplayCamera)
-        {
-            canBeTransparent = true;
-        }
-    }
-
-    if (objectCreationFlags & 0x8000)
-    {
-        if (inGameplayCamera)
-        {
-            pObject->m_translucency = 0.0f;
-            if (pObject->m_translucency < 0.0f)
-            {
-                pObject->m_translucency = 0.0f;
-            }
-            if (pObject->m_translucency > 1.0f)
-            {
-                pObject->m_translucency = 1.0f;
-            }
-            return;
-        }
-    }
-
-    if (!(objectCreationFlags & 0x1000) && !canBeTransparent && !sbAllObjectsCanBeTransparent)
-    {
-        pObject->m_translucency = 1.0f;
-        if (pObject->m_translucency < 0.0f)
-        {
-            pObject->m_translucency = 0.0f;
-        }
-        if (pObject->m_translucency > 1.0f)
-        {
-            pObject->m_translucency = 1.0f;
-        }
-        return;
-    }
-
-    if (cCameraManager::IsObjectOccludingField(pObject))
-    {
-        fTrans -= g_fTransAdjustOccluded;
-    }
-    else
-    {
-        fTrans += g_fTransAdjustNotOccluded;
-    }
-
-    if (fTrans > 1.0f)
-    {
-        fTrans = 1.0f;
-    }
-
-    if (fTrans < g_fTransMinimum)
-    {
-        fTrans = g_fTransMinimum;
-    }
-
-    pObject->m_translucency = fTrans;
-    if (pObject->m_translucency < 0.0f)
-    {
-        pObject->m_translucency = 0.0f;
-    }
-    if (pObject->m_translucency > 1.0f)
-    {
-        pObject->m_translucency = 1.0f;
-    }
-}
-
-/**
- * Offset/Address/Size: 0x1340 | 0x80196004 | size: 0xE8
- */
-bool World::IsSphereInFrustum(const nlMatrix4& mat, float radius)
-{
-    nlVector3 v3Position = mat.GetTranslation();
-
-    f32 posX = v3Position.f.x;
-    f32 posY = v3Position.f.y;
-    f32 posZ = v3Position.f.z;
-    f32 negRadius = -radius;
-
-    nlVector4* pPlanes = m_frustumPlane;
-    World* self = this;
-
-    for (int i = 0; i < 6; i++)
-    {
-        f32 dot = posX * pPlanes[i].f.x + posY * pPlanes[i].f.y + posZ * pPlanes[i].f.z + self->m_frustumPlane[i].f.w;
-        if (dot < negRadius)
-            return false;
-    }
-    return true;
-}
-
-/**
- * Offset/Address/Size: 0x1428 | 0x801960EC | size: 0x458
- */
-void World::ExtractFrustumPlanes()
-{
-    nlMatrix4 viewProjection;
-    nlMatrix4 projection = *glViewGetProjectionMatrix(GLV_Unshadowed);
-
-    float m33 = projection.f.m33;
-    float m34 = projection.f.m34;
-    float m43 = projection.f.m43;
-    projection.f.m43 = m34;
-    projection.f.m34 = m43;
-    projection.f.m33 = m33 - 1.0f;
-
-    nlMultMatrices(viewProjection, *glViewGetViewMatrix(GLV_Unshadowed), projection);
-
-    m_frustumPlane[0].f.x = viewProjection.f.m14 - viewProjection.f.m11;
-    m_frustumPlane[0].f.y = viewProjection.f.m24 - viewProjection.f.m21;
-    m_frustumPlane[0].f.z = viewProjection.f.m34 - viewProjection.f.m31;
-    m_frustumPlane[0].f.w = viewProjection.f.m44 - viewProjection.f.m41;
-    {
-        float length = nlSqrt(
-            m_frustumPlane[0].f.x * m_frustumPlane[0].f.x + m_frustumPlane[0].f.y * m_frustumPlane[0].f.y + m_frustumPlane[0].f.z * m_frustumPlane[0].f.z,
-            true);
-        m_frustumPlane[0].f.x /= length;
-        m_frustumPlane[0].f.y /= length;
-        m_frustumPlane[0].f.z /= length;
-        m_frustumPlane[0].f.w /= length;
-    }
-
-    m_frustumPlane[1].f.x = viewProjection.f.m14 + viewProjection.f.m11;
-    m_frustumPlane[1].f.y = viewProjection.f.m24 + viewProjection.f.m21;
-    m_frustumPlane[1].f.z = viewProjection.f.m34 + viewProjection.f.m31;
-    m_frustumPlane[1].f.w = viewProjection.f.m44 + viewProjection.f.m41;
-    {
-        float length = nlSqrt(
-            m_frustumPlane[1].f.x * m_frustumPlane[1].f.x + m_frustumPlane[1].f.y * m_frustumPlane[1].f.y + m_frustumPlane[1].f.z * m_frustumPlane[1].f.z,
-            true);
-        m_frustumPlane[1].f.x /= length;
-        m_frustumPlane[1].f.y /= length;
-        m_frustumPlane[1].f.z /= length;
-        m_frustumPlane[1].f.w /= length;
-    }
-
-    m_frustumPlane[2].f.x = viewProjection.f.m14 + viewProjection.f.m12;
-    m_frustumPlane[2].f.y = viewProjection.f.m24 + viewProjection.f.m22;
-    m_frustumPlane[2].f.z = viewProjection.f.m34 + viewProjection.f.m32;
-    m_frustumPlane[2].f.w = viewProjection.f.m44 + viewProjection.f.m42;
-    {
-        float length = nlSqrt(
-            m_frustumPlane[2].f.x * m_frustumPlane[2].f.x + m_frustumPlane[2].f.y * m_frustumPlane[2].f.y + m_frustumPlane[2].f.z * m_frustumPlane[2].f.z,
-            true);
-        m_frustumPlane[2].f.x /= length;
-        m_frustumPlane[2].f.y /= length;
-        m_frustumPlane[2].f.z /= length;
-        m_frustumPlane[2].f.w /= length;
-    }
-
-    m_frustumPlane[3].f.x = viewProjection.f.m14 - viewProjection.f.m12;
-    m_frustumPlane[3].f.y = viewProjection.f.m24 - viewProjection.f.m22;
-    m_frustumPlane[3].f.z = viewProjection.f.m34 - viewProjection.f.m32;
-    m_frustumPlane[3].f.w = viewProjection.f.m44 - viewProjection.f.m42;
-    {
-        float length = nlSqrt(
-            m_frustumPlane[3].f.x * m_frustumPlane[3].f.x + m_frustumPlane[3].f.y * m_frustumPlane[3].f.y + m_frustumPlane[3].f.z * m_frustumPlane[3].f.z,
-            true);
-        m_frustumPlane[3].f.x /= length;
-        m_frustumPlane[3].f.y /= length;
-        m_frustumPlane[3].f.z /= length;
-        m_frustumPlane[3].f.w /= length;
-    }
-
-    m_frustumPlane[4].f.x = viewProjection.f.m13;
-    m_frustumPlane[4].f.y = viewProjection.f.m23;
-    m_frustumPlane[4].f.z = viewProjection.f.m33;
-    m_frustumPlane[4].f.w = viewProjection.f.m43;
-    {
-        float length = nlSqrt(
-            m_frustumPlane[4].f.x * m_frustumPlane[4].f.x + m_frustumPlane[4].f.y * m_frustumPlane[4].f.y + m_frustumPlane[4].f.z * m_frustumPlane[4].f.z,
-            true);
-        m_frustumPlane[4].f.x /= length;
-        m_frustumPlane[4].f.y /= length;
-        m_frustumPlane[4].f.z /= length;
-        m_frustumPlane[4].f.w /= length;
-    }
-
-    m_frustumPlane[5].f.x = viewProjection.f.m14 - viewProjection.f.m13;
-    m_frustumPlane[5].f.y = viewProjection.f.m24 - viewProjection.f.m23;
-    m_frustumPlane[5].f.z = viewProjection.f.m34 - viewProjection.f.m33;
-    m_frustumPlane[5].f.w = viewProjection.f.m44 - viewProjection.f.m43;
-    {
-        float length = nlSqrt(
-            m_frustumPlane[5].f.x * m_frustumPlane[5].f.x + m_frustumPlane[5].f.y * m_frustumPlane[5].f.y + m_frustumPlane[5].f.z * m_frustumPlane[5].f.z,
-            true);
-        m_frustumPlane[5].f.x /= length;
-        m_frustumPlane[5].f.y /= length;
-        m_frustumPlane[5].f.z /= length;
-        m_frustumPlane[5].f.w /= length;
-    }
-}
-
-/**
- * Offset/Address/Size: 0x1880 | 0x80196544 | size: 0x4
- */
-void World::UpdateInReplay(float)
-{
-}
-
-/**
- * Offset/Address/Size: 0x1884 | 0x80196548 | size: 0x98
- */
-void World::Update(float fDeltaT)
-{
-    DLListEntry<WorldAnimController*>* start = nlDLRingGetStart(m_animControllerList.m_Head);
-    DLListEntry<WorldAnimController*>* head = m_animControllerList.m_Head;
-    DLListEntry<WorldAnimController*>* current = start;
-
-    while (current != NULL)
-    {
-        current->entry->Update(fDeltaT);
-
-        if ((nlDLRingIsEnd(head, current) != 0) || (current == NULL))
-        {
-            current = NULL;
-        }
-        else
-        {
-            current = current->m_next;
-        }
-    }
-}
-
-inline void World::AssignLightBitmasks()
-{
-    typedef nlAVLTreeIterator<unsigned long, LightObject*, DefaultKeyCompare<unsigned long> > LightIterator;
-
-    LightIterator* iterator =
-        new (nlMalloc(sizeof(LightIterator), 8, false)) LightIterator(m_lightMap);
-    unsigned long bit = 1;
-    while (iterator->IsValid())
-    {
-        iterator->Current()->value->m_bit = bit;
-        bit <<= 1;
-        iterator->Next();
-    }
-    delete iterator;
-}
-
-struct WorldObjectChunkData
-{
-    /* 0x00 */ char m_szName[64];
-    /* 0x40 */ char m_szModelName[64];
-    /* 0x80 */ unsigned long m_uHashID;
-    /* 0x84 */ unsigned long m_uModelHashID;
-    /* 0x88 */ unsigned long m_uPhyGeomHashID;
-    /* 0x8C */ unsigned long m_uShadowHashID;
-    /* 0x90 */ unsigned long m_uObjectCreationFlags;
-    /* 0x94 */ unsigned long m_uRenderLayer;
-    /* 0x98 */ float m_fRadius;
-    /* 0x9C */ unsigned long m_uPadding1;
-    /* 0xA0 */ nlMatrix4 m_worldMatrix;
-}; // total size: 0xE0
-
-struct WorldObjectData
-{
-    /* 0x00 */ unsigned long m_uObjectCreationFlags;
-    /* 0x04 */ unsigned long m_uHashID;
-    /* 0x08 */ unsigned long m_uModelID;
-    /* 0x0C */ unsigned long m_uShadowHashID;
-    /* 0x10 */ unsigned long m_uRenderLayer;
-    /* 0x14 */ nlMatrix4 m_worldMatrix;
-    /* 0x54 */ float m_fRadius;
-    /* 0x58 */ nlVector3 m_v3Offset;
-}; // total size: 0x64
-
-inline void World::CreateWorldObjFromChunk(nlChunk* pChunk)
-{
-    WorldObjectChunkData* pWorldObjectChunkData;
-    WorldObjectData objectData;
-    memset(&objectData, 0, sizeof(WorldObjectData));
-    pWorldObjectChunkData = (WorldObjectChunkData*)pChunk->GetData();
-
-    objectData.m_uObjectCreationFlags = pWorldObjectChunkData->m_uObjectCreationFlags;
-    objectData.m_uHashID = pWorldObjectChunkData->m_uHashID;
-    objectData.m_worldMatrix = pWorldObjectChunkData->m_worldMatrix;
-    objectData.m_uShadowHashID = pWorldObjectChunkData->m_uShadowHashID;
-    objectData.m_uRenderLayer = pWorldObjectChunkData->m_uRenderLayer;
-    objectData.m_uModelID = pWorldObjectChunkData->m_uModelHashID;
-    objectData.m_fRadius = pWorldObjectChunkData->m_fRadius;
-
-    HandleObjectCreation(&objectData);
-}
-
-static const int LF_NOLIGHT = 4;
-
-struct WorldLightChunkData
-{
-    /* 0x00 */ char m_szName[64];
-    /* 0x40 */ unsigned long m_uHashID;
-    /* 0x44 */ float m_fIntensity;
-    /* 0x48 */ float m_fFarAttenuationStart;
-    /* 0x4C */ float m_fFarAttenuationEnd;
-    /* 0x50 */ nlVector3 m_colour;
-    /* 0x5C */ unsigned long m_emitFlags;
-    /* 0x60 */ nlMatrix4 m_worldMatrix;
-}; // total size: 0xA0
-
-inline void World::CreateLightObjFromChunk(nlChunk* pChunk)
-{
-    LightObject* pLightObj;
-    WorldLightChunkData* pWorldLightChunkData =
-        (WorldLightChunkData*)pChunk->GetData();
-
-    pLightObj = (LightObject*)nlMalloc(sizeof(LightObject), 8, false);
-    pLightObj->m_uHashID = pWorldLightChunkData->m_uHashID;
-    pLightObj->m_worldPosition = pWorldLightChunkData->m_worldMatrix.GetTranslation();
-    pLightObj->m_fIntensity = pWorldLightChunkData->m_fIntensity;
-    pLightObj->m_fFarAttenuationStart = pWorldLightChunkData->m_fFarAttenuationStart;
-    pLightObj->m_fFarAttenuationEnd = pWorldLightChunkData->m_fFarAttenuationEnd;
-    pLightObj->m_emitFlags = pWorldLightChunkData->m_emitFlags;
-
-    if (pLightObj->m_fIntensity < 0.01f)
-    {
-        pLightObj->m_emitFlags |= LF_NOLIGHT;
-    }
-
-    nlFloatColourSet(
-        pLightObj->m_colour,
-        pWorldLightChunkData->m_colour.f.x,
-        pWorldLightChunkData->m_colour.f.y,
-        pWorldLightChunkData->m_colour.f.z,
-        0.0f);
-    pLightObj->m_bit = 0;
-    m_lightMap.Add(pLightObj->m_uHashID, pLightObj);
-}
-
-struct WorldEmitterChunkData
-{
-    /* 0x00 */ char m_szName[64];
-    /* 0x40 */ unsigned long m_uHashID;
-    /* 0x44 */ float m_uPadding0;
-    /* 0x48 */ float m_uPadding1;
-    /* 0x4C */ float m_uPadding2;
-    /* 0x50 */ float m_uPadding3;
-    /* 0x54 */ float m_uPadding4;
-    /* 0x58 */ float m_uPadding5;
-    /* 0x5C */ float m_uPadding6;
-    /* 0x60 */ nlMatrix4 m_worldMatrix;
-}; // total size: 0xA0
-
-/**
- * Offset/Address/Size: 0x191C | 0x801965E0 | size: 0x260
- */
-class FlareHandler
-{
-public:
-    static FlareHandler instance;
-    void AddHalo(const nlMatrix4&);
-    void AddGlow(const nlMatrix4&);
-
-    char _pad[0x70];
-};
-
-void World::CreateHelperObjFromChunk(nlChunk* chunk)
-{
-    static int flareLen;
-    static signed char init;
-
-    HelperObject* pHelper;
-    WorldHelperChunkData* pWorldHelperChunkData;
-    char* substring;
-    const char* flashString;
-    const char* flareTag;
-    char flareName[64];
-
-    u32 chunkFlags = *(u32*)chunk;
-    u32 alignment = chunkFlags & 0x7F000000;
-
-    if ((((u32)(-(s32)alignment) | alignment) >> 31) != 0)
-    {
-        u32 shift = alignment >> 24;
-        u32 alignBytes = 1 << shift;
-        u8* pData = (u8*)chunk;
-        pData = pData + alignBytes;
-        pData = pData + 7;
-        pWorldHelperChunkData = (WorldHelperChunkData*)((u32)pData & ~(alignBytes - 1));
-    }
-    else
-    {
-        pWorldHelperChunkData = (WorldHelperChunkData*)((u8*)chunk + 8);
-    }
-
-    pHelper = (HelperObject*)nlMalloc(sizeof(HelperObject), 8, false);
-    pHelper->m_uHashID = pWorldHelperChunkData->m_uHashID;
-    pHelper->m_worldMatrix = pWorldHelperChunkData->m_worldMatrix;
-
-    substring = nlStrChr<char>(pWorldHelperChunkData->m_szName, '/');
-    flashString = "fx_camera_flash";
-    if (nlStrNICmp<char>(substring + 1, flashString, nlStrLen<char>(flashString)) == 0)
-    {
-        nlStrNCpy<char>(pHelper->m_szName, substring + 1, 0x40);
-    }
-    else
-    {
-        flareTag = "flare_";
-
-        if (!init)
-        {
-            flareLen = nlStrLen<char>(flareTag);
-            init = 1;
-        }
-
-        substring = strstr(pWorldHelperChunkData->m_szName, flareTag);
-        if (substring != NULL)
-        {
-            nlStrNCpy<char>(flareName, substring + flareLen, 0x40);
-
-            substring = strstr(flareName, "_");
-            if (substring != NULL)
-            {
-                *substring = '\0';
-            }
-
-            if (nlToLower<char>(flareName[0]) == 'h')
-            {
-                FlareHandler::instance.AddHalo(pWorldHelperChunkData->m_worldMatrix);
+                if (foundValue != NULL)
+                    *foundValue = &node->value;
+                return true;
             }
             else
             {
-                FlareHandler::instance.AddGlow(pWorldHelperChunkData->m_worldMatrix);
-            }
-
-            delete pHelper;
-            return;
-        }
-
-        nlStrNCpy<char>(pHelper->m_szName, pWorldHelperChunkData->m_szName, 0x40);
-    }
-
-    m_helperMap.Add(pHelper->m_uHashID, pHelper);
-}
-
-static inline void World_CreateEmitterObjFromChunk(World* pWorld, nlChunk* pChunk)
-{
-    WorldEmitterChunkData* wecd;
-    const char* persistentEffectsTag;
-    char fxName[256];
-    int i;
-    EffectsGroup* fx;
-    EmissionController* ec;
-    HelperObject* pHelper;
-
-    wecd = (WorldEmitterChunkData*)pChunk->GetData();
-    persistentEffectsTag = "fx_persistent_";
-    static int persistentLen = nlStrLen<char>(persistentEffectsTag);
-
-    persistentEffectsTag = strstr(wecd->m_szName, persistentEffectsTag);
-    if (persistentEffectsTag != NULL)
-    {
-        nlStrNCpy<char>(fxName, persistentEffectsTag + persistentLen, 256);
-
-        i = strlen(fxName);
-        if (__ctype_map[(unsigned char)fxName[i - 1]] & __digit)
-        {
-            i = strlen(fxName);
-            char* p = fxName + i;
-            while (i > 0)
-            {
-                if (*p == '_')
-                {
-                    fxName[i] = '\0';
-                    break;
-                }
-                p--;
-                i--;
+                if (cmpResult < 0)
+                    node = (AVLTreeEntry<unsigned long, HelperObject*>*)node->node.left;
+                else
+                    node = (AVLTreeEntry<unsigned long, HelperObject*>*)node->node.right;
             }
         }
-
-        fx = fxGetGroup(fxName);
-        if (fx != NULL)
-        {
-            ec = EmissionManager::Create(fx, 0);
-            ec->SetPosition(wecd->m_worldMatrix.GetTranslation());
-            ec->m_uUserData = 0xDEADBEEF;
-        }
-    }
-    else
-    {
-        pHelper = (HelperObject*)nlMalloc(sizeof(HelperObject), 8, false);
-        pHelper->m_uHashID = wecd->m_uHashID;
-        pHelper->m_worldMatrix = wecd->m_worldMatrix;
-        nlStrNCpy<char>(pHelper->m_szName, wecd->m_szName, 64);
-        pWorld->m_helperMap.Add(pHelper->m_uHashID, pHelper);
-    }
-}
-
-static inline nlFloatColour MakeIntensityColour(float r, float g, float b, float a)
-{
-    nlFloatColour colour;
-    nlFloatColourSet(colour, r, g, b, a);
-    return colour;
-}
-
-static inline void* World_GetSTSIntensity(const World* pWorld)
-{
-    return pWorld->m_pSTSIntensity;
-}
-
-/**
- * Offset/Address/Size: 0x1B7C | 0x80196840 | size: 0x12C
- */
-void* World::GetCustomSpecularData(glModelPacket* pPacket, bool bPerm)
-{
-    GLSpecularUserData* pCursor;
-    u32* p32;
-    int numLights;
-    void* pSTSIntensity = World_GetSTSIntensity(this);
-
-    u8 glossLevel = (u8)glGetTextureState(pPacket->state.texturestate, GLTS_GlossLevel);
-
-    f32 fGloss = (f32)glossLevel;
-    f32 fNorm = fGloss * 0.015873017f;
-    f32 fInv = 1.0f - fNorm;
-    f32 fExponent = g_fExponentScale * fInv + g_fExponentBase;
-
-    p32 = (u32*)glUserGetData(pSTSIntensity);
-    numLights = *p32;
-    void* pNewData = glUserAlloc(GLUD_Specular, numLights * sizeof(GLSpecularUserData) + 4, bPerm);
-
-    p32 = (u32*)glUserGetData(pNewData);
-    pCursor = (GLSpecularUserData*)((int*)p32 + 1);
-    memcpy(p32, glUserGetData(pSTSIntensity), numLights * sizeof(GLSpecularUserData) + 4);
-
-    for (int i = numLights; i > 0; i--)
-    {
-        pCursor->exponent = fExponent;
-        pCursor++;
-    }
-
-    return pNewData;
-}
-
-/**
- * Offset/Address/Size: 0x1CA8 | 0x8019696C | size: 0x9A4
- */
-void World::CreateLightUserData()
-{
-    nlListContainer<LightObject*> lightList;
-    nlListContainer<LightObject*> specList;
-    int numLights = 0;
-    int numSpecLights = 0;
-    LightObject* pLight;
-    {
-        typedef nlAVLTreeIterator<unsigned long, LightObject*, DefaultKeyCompare<unsigned long> >
-            LightIterator;
-        LightIterator* const iterator =
-            new (nlMalloc(sizeof(LightIterator), 8, false)) LightIterator(m_lightMap);
-
-        while (iterator->IsValid())
-        {
-            pLight = iterator->Current()->value;
-            if ((pLight->m_emitFlags & 0x4) == 0)
-            {
-                numLights++;
-                lightList.AddEntry(pLight);
-            }
-
-            if ((pLight->m_emitFlags & 0x2) != 0)
-            {
-                numSpecLights++;
-                specList.AddEntry(pLight);
-            }
-            iterator->Next();
-        }
-
-        delete iterator;
-    }
-
-    LightObject* pFXLight = fxLightObjects;
-    pLight = pFXLight;
-    int i;
-    int numExtra = 0;
-    {
-        for (i = 0; i < EmissionManager::GetNumLights(); i++)
-        {
-            const EffectsLight* pEffectLight = EmissionManager::GetLight(i);
-
-            pLight->m_worldPosition = pEffectLight->m_v3Position;
-            pLight->m_fIntensity =
-                (2.0f * (f32)pEffectLight->m_Colour.c[3]) / 255.0f;
-            pLight->m_fFarAttenuationStart = 0.0f;
-            pLight->m_fFarAttenuationEnd = pEffectLight->m_fRadius;
-            pLight->m_colour.c[0] =
-                0.003921569f * (f32)pEffectLight->m_Colour.c[0];
-            pLight->m_colour.c[1] =
-                0.003921569f * (f32)pEffectLight->m_Colour.c[1];
-            pLight->m_colour.c[2] =
-                0.003921569f * (f32)pEffectLight->m_Colour.c[2];
-            pLight->m_colour.c[3] =
-                0.003921569f * (f32)pEffectLight->m_Colour.c[3];
-            pLight->m_fRadiusSquared =
-                pEffectLight->m_fRadius * pEffectLight->m_fRadius;
-            numExtra++;
-            pLight = (LightObject*)((u8*)pLight + sizeof(LightObject));
-        }
-    }
-    pLight = pFXLight;
-
-    if (numLights == 0)
-    {
-        m_pLightData = NULL;
-        m_pIntensityPerm = NULL;
-    }
-    else
-    {
-        int totalLights = numLights + numExtra;
-        u32* pIntensityPermData;
-        unsigned long size = totalLights * sizeof(GLLightUserData) + 4;
-        m_pLightData = glUserAlloc(GLUD_Light, size, false);
-
-        u32* p32 = (u32*)glUserGetData(m_pLightData);
-        *p32 = totalLights;
-        GLLightUserData* glLight = (GLLightUserData*)(p32 + 1);
-
-        nlListIterator<LightObject*> lightIterator = lightList.Begin();
-        while (lightIterator.IsValid())
-        {
-            LightObject* pLight = lightIterator.Current();
-            glLight->colour = pLight->m_colour;
-            glLight->worldPosition = pLight->m_worldPosition;
-            glLight->intensity = pLight->m_fIntensity;
-            if (pLight->m_emitFlags & 0x8)
-            {
-                glLight->innerRadius = 0.0f;
-                glLight->outerRadius = 0.0f;
-            }
-            else
-            {
-                glLight->innerRadius = pLight->m_fFarAttenuationStart;
-                glLight->outerRadius = pLight->m_fFarAttenuationEnd;
-            }
-            lightIterator.Next();
-            glLight++;
-        }
-        LightObject* pLight2 = pLight;
-        for (int i = numExtra; i > 0; i--)
-        {
-            glLight->colour = pLight2->m_colour;
-            glLight->worldPosition = pLight2->m_worldPosition;
-            glLight->intensity = pLight2->m_fIntensity;
-            glLight->innerRadius = pLight2->m_fFarAttenuationStart;
-            glLight->outerRadius = pLight2->m_fFarAttenuationEnd;
-            pLight2 = (LightObject*)((u8*)pLight2 + 0x38);
-            glLight++;
-        }
-
-        m_pIntensityPerm = glUserAlloc(GLUD_Light, size, false);
-        p32 = (u32*)glUserGetData(m_pIntensityPerm);
-        *p32 = totalLights;
-        pIntensityPermData = p32;
-        glLight = (GLLightUserData*)(p32 + 1);
-        const float fBlueWeight = 0.11f;
-        const float fRedWeight = 0.3f;
-        const float fGreenWeight = 0.59f;
-        const float fZero = 0.0f;
-        const float fOne = 1.0f;
-
-        nlListIterator<LightObject*> lightIterator2 = lightList.Begin();
-        while (lightIterator2.IsValid())
-        {
-            LightObject* pLight = lightIterator2.Current();
-            glLight->colour = MakeIntensityColour(
-                fBlueWeight * pLight->m_colour.c[2]
-                    + (fRedWeight * pLight->m_colour.c[0]
-                        + fGreenWeight * pLight->m_colour.c[1]),
-                fZero,
-                fZero,
-                fOne);
-            glLight->worldPosition = pLight->m_worldPosition;
-            glLight->intensity = pLight->m_fIntensity;
-            if (pLight->m_emitFlags & 0x8)
-            {
-                glLight->innerRadius = 0.0f;
-                glLight->outerRadius = 0.0f;
-            }
-            else
-            {
-                glLight->innerRadius = pLight->m_fFarAttenuationStart;
-                glLight->outerRadius = pLight->m_fFarAttenuationEnd;
-            }
-            lightIterator2.Next();
-            glLight++;
-        }
-        for (int i = numExtra; i > 0; i--)
-        {
-            glLight->colour = pLight->m_colour;
-            glLight->worldPosition = pLight->m_worldPosition;
-            glLight->intensity = pLight->m_fIntensity;
-            glLight->innerRadius = pLight->m_fFarAttenuationStart;
-            glLight->outerRadius = pLight->m_fFarAttenuationEnd;
-            pLight = (LightObject*)((u8*)pLight + sizeof(LightObject));
-            glLight++;
-        }
-
-        if (m_pPlayerNISLightData == NULL)
-        {
-            size = numLights * sizeof(GLLightUserData) + 4;
-            m_pPlayerNISLightData = glUserAlloc(GLUD_Light, size, true);
-            void* pPlayerNISData = glUserGetData(m_pPlayerNISLightData);
-            memcpy(pPlayerNISData, pIntensityPermData, size);
-        }
-    }
-
-    if (numSpecLights == 0)
-    {
-        m_pSTSIntensity = NULL;
-    }
-    else
-    {
-        nlVector3 origin = { { 0.0f, 0.0f, 0.0f } };
-        unsigned long size = numLights * sizeof(GLSpecularUserData) + 4;
-        m_pSTSIntensity = glUserAlloc(GLUD_Specular, size, false);
-        u32* p32 = (u32*)glUserGetData(m_pSTSIntensity);
-        *p32 = numSpecLights;
-        GLSpecularUserData* pSpec = (GLSpecularUserData*)(p32 + 1);
-        nlListIterator<LightObject*> specIterator = specList.Begin();
-        while (specIterator.IsValid())
-        {
-            LightObject* pLight = specIterator.Current();
-            pSpec->colour = pLight->m_colour;
-            pSpec->exponent = 64.0f;
-            pSpec->intensity = pLight->m_fIntensity;
-            nlVec3Sub(pSpec->worldDirection, origin, pLight->m_worldPosition);
-            pSpec++;
-            specIterator.Next();
-        }
-    }
-
-    m_pIntensityData = glUserAlloc(GLUD_Light, 0x2C, false);
-    {
-        u32* p32 = (u32*)glUserGetData(m_pIntensityData);
-        *p32 = 1;
-        GLLightUserData* glLight = (GLLightUserData*)(p32 + 1);
-        nlZeroMemory(glLight, sizeof(GLLightUserData));
-        static nlVector3 vLightDirection = { { 0.0f, 0.0f, -1.0f } };
-        glLight->worldPosition = vLightDirection;
-        glLight->colour.c[0] = 1.0f;
-        glLight->colour.c[1] = 1.0f;
-        glLight->colour.c[2] = 1.0f;
-        glLight->colour.c[3] = 1.0f;
-        glLight->intensity = 1.0f;
-        glLight->innerRadius = 0.0f;
-        glLight->outerRadius = 0.0f;
-    }
-}
-
-inline bool World::LoadPhysicsPrimitives(nlChunk* pChunk)
-{
-    unsigned long i;
-    nlChunk* pLastChunk = pChunk->GetLastChunk();
-    pChunk = pChunk->GetFirstChunk();
-    while (pChunk != pLastChunk)
-    {
-        switch (pChunk->GetID())
-        {
-        case 0x1D001:
-            m_pPhysicsData =
-                new (nlMalloc(sizeof(CharacterPhysicsData), 8, false)) CharacterPhysicsData();
-            m_pPhysicsData->physicsElementCount = *(unsigned long*)pChunk->GetData();
-            m_pPhysicsData->pPhysicsElements = (CharacterPhysicsElement*)nlMalloc(
-                m_pPhysicsData->physicsElementCount * sizeof(CharacterPhysicsElement), 8, false);
-            break;
-        case 0x1D002:
-        {
-            CharacterPhysicsElement* pPhysicsElements =
-                (CharacterPhysicsElement*)pChunk->GetData();
-            for (i = 0; i < m_pPhysicsData->physicsElementCount; i++)
-            {
-                m_pPhysicsData->pPhysicsElements[i] = pPhysicsElements[i];
-            }
-            break;
-        }
-        }
-        pChunk = pChunk->GetNextChunk();
-    }
-    return true;
-}
-
-/**
- * Offset/Address/Size: 0x264C | 0x80197310 | size: 0x9D4
- */
-bool World::LoadObjectData(const char* szWorldName)
-{
-    char szFullFileName[255];
-    nlChunk* pChunk;
-    void* pWorldData;
-
-    nlSNPrintf(szFullFileName, 255, "art/%s.wld", szWorldName);
-    tDebugPrintManager::Print(DC_RENDER, "Loading world object file: %s\n", szFullFileName);
-
-    pWorldData = nlLoadEntireFile(szFullFileName, NULL, 0x20, AllocateEnd);
-    if (pWorldData == NULL)
-    {
-        nlPrintf("Error: Failed to load world object data '%s'\n", szFullFileName);
         return false;
     }
+};
 
-    nlChunk* pLastChunk = ((nlChunk*)pWorldData)->GetLastChunk();
-    pChunk = ((nlChunk*)pWorldData)->GetFirstChunk();
-    while (pChunk != pLastChunk)
-    {
-        switch (pChunk->GetID())
-        {
-        case 0x19001:
-            pChunk->GetData();
-            break;
-        case 0x19002:
-            pChunk->GetData();
-            break;
-        case 0x19003:
-            CreateWorldObjFromChunk(pChunk);
-            break;
-        case 0x19004:
-            pChunk->GetData();
-            break;
-        case 0x19005:
-            CreateLightObjFromChunk(pChunk);
-            break;
-        case 0x19100:
-            pChunk->GetData();
-            break;
-        case 0x19101:
-            World_CreateEmitterObjFromChunk(this, pChunk);
-            break;
-        case 0x19200:
-            pChunk->GetData();
-            break;
-        case 0x19201:
-            CreateHelperObjFromChunk(pChunk);
-            break;
-        case (int)0x8001D000:
-            LoadPhysicsPrimitives(pChunk);
-            break;
-        }
-
-        pChunk = pChunk->GetNextChunk();
-    }
-
-    delete pWorldData;
-    AssignLightBitmasks();
-    return true;
+/**
+ * Offset/Address/Size: 0x31C | 0x80194FE0 | size: 0x8C
+ */
+HelperObject* World::FindHelperObject(unsigned long uHashID)
+{
+    HelperObject** foundValue;
+    bool found = ((HelperMapFindHelper*)&m_helperMap)->FindGet(uHashID, &foundValue);
+    if (found)
+        return *foundValue;
+    return nullptr;
 }
 
 /**
- * Offset/Address/Size: 0x3020 | 0x80197CE4 | size: 0x64
+ * Offset/Address/Size: 0x290 | 0x80194F54 | size: 0x8C
  */
-void World::AddToHyperSTSDrawables(unsigned long key, DrawableModel* pDrawableModel)
+bool World::AddDrawableObject(unsigned long uHashID, DrawableObject* pDrawableObject)
 {
-    m_hyperSTSDrawableMap.Add(key, pDrawableModel);
-}
+    DrawableObject** ppValue = m_drawableMap.Add(uHashID, pDrawableObject);
 
-static const unsigned long eOC_SHINY = 0x00000008;
-
-/**
- * Offset/Address/Size: 0x3084 | 0x80197D48 | size: 0x39C
- */
-u8 World::HandleObjectCreation(WorldObjectData* pObjectData)
-{
-    struct WorldObjectDataLocal
+    if (ppValue == nullptr)
     {
-        unsigned long m_uObjectCreationFlags;
-        unsigned long m_uHashID;
-        unsigned long m_uModelID;
-        unsigned long m_uShadowHashID;
-        unsigned long m_uRenderLayer;
-        nlMatrix4 m_worldMatrix;
-        float m_fRadius;
-        nlVector3 m_v3Offset;
-    };
-
-    WorldObjectDataLocal* pData = (WorldObjectDataLocal*)pObjectData;
-    DrawableObject* pDrawable = NULL;
-    glModel* pModel = glInventory.GetModel(pData->m_uModelID);
-
-    if (pModel == NULL)
-    {
-        return 1;
-    }
-
-    if ((pData->m_uObjectCreationFlags & 0x10) == 0)
-    {
-        glModelPacket* pPacketEnd;
-        glModelPacket* pPacket = pModel->packets;
-        pPacketEnd = pPacket + pModel->numPackets;
-
-        while (pPacket < pPacketEnd)
-        {
-            if (pPacket->state.texconfig & 0x10)
-            {
-                pData->m_uObjectCreationFlags |= eOC_SHINY;
-                break;
-            }
-            pPacket++;
-        }
-    }
-
-    if (pData->m_uObjectCreationFlags & 0x2)
-    {
-        DrawableSkinModel* pSkin = new (nlMalloc(sizeof(DrawableSkinModel), 8, false)) DrawableSkinModel();
-        pSkin->m_pModel = pModel;
-        pSkin->m_pShadowVolume = glInventory.GetShadowVolume(pData->m_uShadowHashID);
-        pSkin->m_uObjectFlags |= 0x4;
-        pDrawable = pSkin;
-    }
-    else if (pData->m_uObjectCreationFlags & 0x20)
-    {
-        DrawableTmModel* pTm = new (nlMalloc(sizeof(DrawableTmModel), 8, false)) DrawableTmModel();
-        pTm->m_pModel = pModel;
-        pTm->m_pShadowVolume = glInventory.GetShadowVolume(pData->m_uShadowHashID);
-        pTm->m_uObjectFlags |= 0x4;
-        pDrawable = pTm;
-    }
-    else if (pData->m_uObjectCreationFlags & 0x1)
-    {
-        DrawableShadow* pShadow = new (nlMalloc(sizeof(DrawableShadow), 8, false)) DrawableShadow();
-        pShadow->m_pModel = pModel;
-        pShadow->m_uObjectFlags &= ~0x4;
-        pDrawable = pShadow;
+        pDrawableObject->m_pWorldContext = this;
+        return true;
     }
     else
     {
-        DrawableModel* pModelDrawable = new (nlMalloc(sizeof(DrawableModel), 8, false)) DrawableModel();
-        pModelDrawable->m_pModel = pModel;
-        pModelDrawable->m_pShadowVolume = glInventory.GetShadowVolume(pData->m_uShadowHashID);
-        pModelDrawable->m_bVertexAnimated = glInventory.GetVertexAnim(pModel->id) ? true : false;
-        pModelDrawable->m_uObjectFlags &= ~0x4;
-        pDrawable = pModelDrawable;
-    }
-
-    if (pDrawable == NULL)
-    {
-        return 0;
-    }
-
-    pDrawable->m_pWorldContext = this;
-    pDrawable->m_uObjectFlags |= 0x1;
-    pDrawable->m_uHashID = pData->m_uHashID;
-    pDrawable->m_uObjectCreationFlags = pData->m_uObjectCreationFlags;
-    pDrawable->m_uRenderLayer = pData->m_uRenderLayer;
-    pDrawable->m_worldMatrix = pData->m_worldMatrix;
-    pDrawable->m_fBoundingRadius = pData->m_fRadius;
-
-    m_drawableMap.Add(pDrawable->m_uHashID, pDrawable);
-    return 1;
-}
-
-static const unsigned long eOC_ENV_SHINY = 0x00000010;
-
-static inline float World_SelectBoundingRadius(AABBDimensions& aabb)
-{
-    float dimX = aabb.mDim.f.x;
-    float dimY = aabb.mDim.f.y;
-    if (dimX >= dimY && dimX > aabb.mDim.f.z)
-    {
-        return dimX;
-    }
-    else
-    {
-        dimX = aabb.mDim.f.z;
-        if (dimY >= dimX)
-        {
-            dimX = dimY;
-        }
-        return dimX;
+        return false;
     }
 }
 
 /**
- * Offset/Address/Size: 0x3420 | 0x801980E4 | size: 0x274
+ * Offset/Address/Size: 0xA0 | 0x80194D64 | size: 0x1F0
  */
-bool World::LoadGeometry(glModel* gModel, unsigned long uNumModels, bool bMakeDrawables, bool keepTransform, unsigned long* pDrawableObjectHashes, int* pNumObjectsLoaded, bool bVar)
+LightObject* World::GetShadowLight(const nlVector3& vPosition, float)
 {
-    struct WorldObjectDataLocal
+    u32* pStack;
+    LightObject* pClosest = NULL;
+    float fDistance = 1e30f;
+    AVLTreeEntry<unsigned long, LightObject*>* pNode;
+    LightObject* pLight;
+
+    pStack = (u32*)nlMalloc(8, 8, false);
+    if (pStack != NULL)
     {
-        unsigned long m_uObjectCreationFlags;
-        unsigned long m_uHashID;
-        unsigned long m_uModelID;
-        unsigned long m_uShadowHashID;
-        unsigned long m_uRenderLayer;
-        nlMatrix4 m_worldMatrix;
-        float m_fRadius;
-        nlVector3 m_v3Offset;
-    };
+        u32 numElements = m_lightMap.m_NumElements;
+        pNode = m_lightMap.m_Root;
+        pStack[0] = (u32)nlMalloc((numElements + 1) * 4, 8, false);
+        pStack[1] = 0;
 
-    struct glModelPacketMatrixRef
-    {
-        char pad[0x24];
-        unsigned long matrix;
-    };
-
-    struct DrawableModelProxy
-    {
-        char pad[0x9C];
-        glModel* m_pModel;
-    };
-
-    WorldObjectDataLocal data;
-    AABBDimensions aabb;
-    DrawableObject** foundValue;
-    DrawableObject* pObject;
-
-    m_pModels = gModel;
-    m_uNumModels = uNumModels;
-
-    if (bMakeDrawables)
-    {
-        unsigned long* pHash = pDrawableObjectHashes;
-        glModel* pModelStart = m_pModels;
-        nlMatrix4* pWorldMtx = &data.m_worldMatrix;
-        glModel* pModel = pModelStart;
-        bool keep = keepTransform;
-        glModel* pEndModel = pModelStart + m_uNumModels;
-        bool checkEnvShiny = bVar;
-        int count = 0;
-        float radius = 0.0f;
-
-        while (pModel < pEndModel)
+        if (pNode != NULL)
         {
-            nlZeroMemory(&data, sizeof(WorldObjectDataLocal));
-
-            data.m_uHashID = pModel->id;
-            data.m_uModelID = pModel->id;
-            data.m_uShadowHashID = (unsigned long)-1;
-
-            if (keep)
+            while (pNode->node.left != NULL)
             {
-                glGetMatrix(((glModelPacketMatrixRef*)pModel->packets)->matrix, *pWorldMtx);
+                ((AVLTreeEntry<unsigned long, LightObject*>**)pStack[0])[pStack[1]] = pNode;
+                pStack[1]++;
+                pNode = (AVLTreeEntry<unsigned long, LightObject*>*)pNode->node.left;
             }
-            else
-            {
-                pWorldMtx->SetIdentity();
-            }
-
-            data.m_fRadius = radius;
-            HandleObjectCreation((WorldObjectData*)&data);
-
-            if (((DrawableMapFindHelper*)&m_drawableMap)->FindGetEqualFirst(pModel->id, &foundValue))
-            {
-                pObject = *foundValue;
-            }
-            else
-            {
-                pObject = NULL;
-            }
-
-            pObject->m_uObjectFlags |= 0x4;
-
-            if (checkEnvShiny)
-            {
-                DrawableModel* model = pObject->AsDrawableModel();
-                if (model != NULL)
-                {
-                    glModelPacket* pPacket = ((DrawableModelProxy*)model)->m_pModel->packets;
-                    while (pPacket < ((DrawableModelProxy*)model)->m_pModel->packets + ((DrawableModelProxy*)model)->m_pModel->numPackets)
-                    {
-                        if (pPacket->state.texconfig & 0x10)
-                        {
-                            pObject->m_uObjectCreationFlags |= eOC_ENV_SHINY;
-                        }
-                        pPacket++;
-                    }
-                }
-            }
-
-            pObject->GetAABBDimensions(aabb, false);
-
-            pObject->m_fBoundingRadius = World_SelectBoundingRadius(aabb);
-
-            if (pDrawableObjectHashes != NULL)
-            {
-                *pHash = pObject->m_uHashID;
-            }
-
-            pHash++;
-            count++;
-            pModel++;
-        }
-
-        if (pNumObjectsLoaded != NULL)
-        {
-            *pNumObjectsLoaded = count;
+            ((AVLTreeEntry<unsigned long, LightObject*>**)pStack[0])[pStack[1]] = pNode;
+            pStack[1]++;
         }
     }
 
-    return m_pModels != NULL;
-}
-
-/**
- * Offset/Address/Size: 0x3694 | 0x80198358 | size: 0xD8
- */
-bool World::LoadGeometry(const char* szWorldName, bool bMakeDrawables, bool keepTransform, unsigned long* pDrawableObjectHashes, int* pNumObjectsLoaded)
-{
-    char buffer[256];
-
-    nlSNPrintf(buffer, 0xFF, "%s.glt", szWorldName);
-    tDebugPrintManager::Print(DC_RENDER, "Loading world texture file: %s\n", buffer);
-    glLoadTextureBundle(buffer);
-
-    nlSNPrintf(buffer, 0xFF, "%s.glg", szWorldName);
-    tDebugPrintManager::Print(DC_RENDER, "Loading world geometry file: %s\n", buffer);
-
-    m_pModels = glLoadModel(buffer, &m_uNumModels);
-
-    // return LoadGeometry(m_pModels, m_uNumModels, bMakeDrawables, keepTransform, pNumObjectsLoaded, pDrawableObjectHashes, false);
-    return LoadGeometry(m_pModels, m_uNumModels, bMakeDrawables, keepTransform, pDrawableObjectHashes, pNumObjectsLoaded, false);
-}
-
-/**
- * Offset/Address/Size: 0x376C | 0x80198430 | size: 0x68
- */
-bool World::Load(bool forfe)
-{
-    bool ret = DoLoad();
-    if (forfe == 0)
+    while (pStack[1] != 0)
     {
-        ret = DoInitialize();
+        pNode = ((AVLTreeEntry<unsigned long, LightObject*>**)pStack[0])[pStack[1] - 1];
+        pLight = pNode->value;
+
+        if (pLight->m_emitFlags & 1)
+        {
+            float dx, dy, dz;
+            dy = vPosition.f.y - pLight->m_worldPosition.f.y;
+            dx = vPosition.f.x - pLight->m_worldPosition.f.x;
+            dz = vPosition.f.z - pLight->m_worldPosition.f.z;
+            float distSq = dx * dx + dy * dy + dz * dz;
+            if (distSq < fDistance)
+            {
+                fDistance = distSq;
+                pClosest = pLight;
+            }
+        }
+
+        pStack[1]--;
+
+        {
+            AVLTreeEntry<unsigned long, LightObject*>* pChild = (AVLTreeEntry<unsigned long, LightObject*>*)((AVLTreeEntry<unsigned long, LightObject*>**)pStack[0])[pStack[1]]->node.right;
+            if (pChild == NULL)
+            {
+                continue;
+            }
+
+            while (pChild->node.left != NULL)
+            {
+                ((AVLTreeEntry<unsigned long, LightObject*>**)pStack[0])[pStack[1]] = pChild;
+                pStack[1]++;
+                pChild = (AVLTreeEntry<unsigned long, LightObject*>*)pChild->node.left;
+            }
+            ((AVLTreeEntry<unsigned long, LightObject*>**)pStack[0])[pStack[1]] = pChild;
+            pStack[1]++;
+        }
     }
-    m_Locked = 1;
-    return ret;
+
+    if (pStack != NULL)
+    {
+        delete[] (u8*)pStack[0];
+        delete (u8*)pStack;
+    }
+    return pClosest;
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x80198C14 | size: 0x4
+ * Offset/Address/Size: 0x5C | 0x80194D20 | size: 0x44
  */
-void World::FixedUpdate(float dt)
+unsigned long World::GetHashIdForGenericName(const char* name) const
+{
+    nlStrNCpy<char>(
+        m_WorldNamePrefix + m_WorldNameLength,
+        name,
+        (unsigned long)(sizeof(m_WorldNamePrefix) - m_WorldNameLength));
+    return nlStringLowerHash(m_WorldNamePrefix);
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x80194CC4 | size: 0x5C
+ */
+int World::CompareNameToGenericName(const char* str1, const char* str2)
+{
+    size_t sVar1 = strlen(str2);
+    return nlStrNCmp<char>(str1 + *(int*)((u8*)this + 0x120), str2, sVar1);
+}
+
+inline bool World::IsCaptainShootToScorePresentationOn()
+{
+    if (g_pGame == NULL)
+        return false;
+    return g_pGame->mbCaptainShotToScoreOn;
+}
+
+inline void World::FixedUpdate(float)
 {
 }
 
-/**
- * Offset/Address/Size: 0x4 | 0x80198C18 | size: 0x4
- */
-void World::HandleEvent(Event*, void*)
+inline void World::HandleEvent(Event*, void*)
 {
 }

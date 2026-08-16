@@ -50,7 +50,7 @@ public:
     static bool sbShowPositiveXNetDuringHyperStrike;
 
     World(const char*);
-    static bool IsCaptainShootToScorePresentationOn();
+    static inline bool IsCaptainShootToScorePresentationOn();
     /* 0x04 */ virtual ~World();
 
     /* 0x08 */ virtual eTerrain GetTerrainType(const nlVector3&) const = 0;

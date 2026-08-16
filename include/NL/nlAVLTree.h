@@ -53,6 +53,9 @@ public:
     }
 };
 
+template <typename KeyType, typename ValueType, typename CompareType>
+class nlAVLTreeIterator;
+
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
 class AVLTreeBase : public AVLTreeUntemplated
 {
@@ -76,6 +79,8 @@ public:
     inline bool FindGet(const KeyType& key, ValueType** foundValue) const;
     inline ValueType* Add(const KeyType& key, const ValueType& value);
     inline void Remove(const KeyType& key);
+
+    inline nlAVLTreeIterator<KeyType, ValueType, CompareType>* GetIterator();
 
     typedef void (AVLTreeBase::*ENTRY_DELETE_FUNC)(AVLTreeEntry<KeyType, ValueType>*);
 
@@ -409,6 +414,17 @@ public:
         }
     }
 
+    nlAVLTreeIterator(Entry* node, unsigned int numElements)
+    {
+        m_Stack =
+            (Entry**)nlMalloc((numElements + 1) * sizeof(Entry*), 8, false);
+        m_NumStackEntries = 0;
+        if (node != NULL)
+        {
+            PushLeft(node);
+        }
+    }
+
     ~nlAVLTreeIterator()
     {
         delete[] m_Stack;
@@ -421,16 +437,11 @@ public:
         Entry* right = (Entry*)entry->node.right;
         if (right != NULL)
         {
-            while (right->node.left != NULL)
-            {
-                m_Stack[m_NumStackEntries] = right;
-                m_NumStackEntries++;
-                right = (Entry*)right->node.left;
-            }
-            m_Stack[m_NumStackEntries] = right;
-            m_NumStackEntries++;
+            PushLeft(right);
         }
     }
+
+    inline void PushLeft(Entry* entry);
 
     bool IsValid() const
     {
@@ -442,9 +453,36 @@ public:
         return m_Stack[m_NumStackEntries - 1];
     }
 
+    ValueType& CurrentValue() const
+    {
+        return m_Stack[m_NumStackEntries - 1]->value;
+    }
+
     /* 0x0 */ Entry** m_Stack;
     /* 0x4 */ u32 m_NumStackEntries;
 }; // total size: 0x8
+
+template <typename KeyType, typename ValueType, typename CompareType>
+inline void nlAVLTreeIterator<KeyType, ValueType, CompareType>::PushLeft(
+    AVLTreeEntry<KeyType, ValueType>* entry)
+{
+    while (entry->node.left != NULL)
+    {
+        m_Stack[m_NumStackEntries] = entry;
+        m_NumStackEntries++;
+        entry = (AVLTreeEntry<KeyType, ValueType>*)entry->node.left;
+    }
+    m_Stack[m_NumStackEntries] = entry;
+    m_NumStackEntries++;
+}
+
+template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
+inline nlAVLTreeIterator<KeyType, ValueType, CompareType>*
+AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::GetIterator()
+{
+    typedef nlAVLTreeIterator<KeyType, ValueType, CompareType> Iterator;
+    return new (8, false) Iterator(m_Root, m_NumElements);
+}
 
 
 
