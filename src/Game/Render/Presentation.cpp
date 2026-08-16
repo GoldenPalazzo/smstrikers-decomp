@@ -81,7 +81,7 @@ static inline bool IsDuringGamePauseState()
 
 int nlSNPrintf(char*, unsigned long, const char*, ...);
 
-inline void Presentation::RaiseEvent(const char* type, const char* param)
+void Presentation::RaiseEvent(const char* type, const char* param)
 {
     NISData* data = new ((u8*)g_pEventManager->CreateValidEvent(0x56, 0x20) + 0x10) NISData();
     data->Type = type;
@@ -398,7 +398,7 @@ void Presentation::Finish()
     }
 }
 
-inline void Presentation::HandleOverlay(float deltaT)
+void Presentation::HandleOverlay(float deltaT)
 {
     if (!mOverlayDisplayed)
     {
@@ -436,13 +436,13 @@ static inline void SetIdleCallback(AudioStreamTrack::StreamTrack* track, const F
     track->m_IdleCallback = Function<FnVoidVoid>(callback);
 }
 
-inline void Presentation::BeginByPass()
+void Presentation::BeginByPass()
 {
     mByPassWasSkipped = false;
     mInsideByPass = true;
 }
 
-inline void Presentation::EndByPass()
+void Presentation::EndByPass()
 {
     if (mByPassing)
     {
@@ -452,13 +452,13 @@ inline void Presentation::EndByPass()
     mByPassing = false;
 }
 
-inline void Presentation::PlayCharacterDirection()
+void Presentation::PlayCharacterDirection()
 {
     mWaitingForCharacterDirectionSince = FixedUpdateTask::mSimulationTime;
     NisPlayer::Instance()->PlayCharacterDirection();
 }
 
-inline void Presentation::PlayNis()
+void Presentation::PlayNis()
 {
     if (NisPlayer::Instance()->Play())
     {
@@ -477,17 +477,17 @@ inline void Presentation::PlayNis()
     }
 }
 
-inline void Presentation::ResetNisPlayer()
+void Presentation::ResetNisPlayer()
 {
     NisPlayer::Instance()->Reset();
 }
 
-inline void Presentation::SaveGoalAsHighlight()
+void Presentation::SaveGoalAsHighlight()
 {
     ReplayChoreo::Instance().SaveHighlight((ReplayChoreo::HighlightQuality)mGoalQuality);
 }
 
-inline void Presentation::SetTrophyVisible(bool visible)
+void Presentation::SetTrophyVisible(bool visible)
 {
     if (cupTrophyHash == 0)
     {
@@ -514,12 +514,12 @@ inline void Presentation::SetTrophyVisible(bool visible)
     }
 }
 
-inline void Presentation::StopAllStreams()
+void Presentation::StopAllStreams()
 {
     Audio::StopStreaming();
 }
 
-inline void Presentation::StopJumbotron()
+void Presentation::StopJumbotron()
 {
     if (Jumbotron::instance.m_State == 4)
     {
@@ -527,7 +527,7 @@ inline void Presentation::StopJumbotron()
     }
 }
 
-inline void Presentation::UnloadJumbotron()
+void Presentation::UnloadJumbotron()
 {
     if (Jumbotron::instance.m_State == 4)
     {
@@ -536,13 +536,13 @@ inline void Presentation::UnloadJumbotron()
     Jumbotron::instance.Reset();
 }
 
-inline void Presentation::PlayJumbotron()
+void Presentation::PlayJumbotron()
 {
     Jumbotron::instance.WaitForLoad();
     Jumbotron::instance.BeginPlaying();
 }
 
-inline void Presentation::WaitForAutoReplayCompletion(const char* wipe)
+void Presentation::WaitForAutoReplayCompletion(const char* wipe)
 {
     if (nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition == NULL)
     {
@@ -554,7 +554,7 @@ inline void Presentation::WaitForAutoReplayCompletion(const char* wipe)
     }
 }
 
-inline void Presentation::WaitForCharacterDirection()
+void Presentation::WaitForCharacterDirection()
 {
     if (mWaitingForCharacterDirectionSince > 0.0f)
     {
@@ -565,7 +565,7 @@ inline void Presentation::WaitForCharacterDirection()
     }
 }
 
-inline void Presentation::WaitForNisCompletion(const char* wipe)
+void Presentation::WaitForNisCompletion(const char* wipe)
 {
     float cutTime = 0.0f;
     if (nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition == NULL)
@@ -582,7 +582,7 @@ inline void Presentation::WaitForNisCompletion(const char* wipe)
     }
 }
 
-inline void Presentation::Wipe(const char* wipe)
+void Presentation::Wipe(const char* wipe)
 {
     if (mByPassing)
     {

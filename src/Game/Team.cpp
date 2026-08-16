@@ -435,12 +435,12 @@ void cTeam::Update(float dt)
         else
             mtDefensiveZoneTimer.Countdown(2.0f * dt, 0.0f);
     }
-    UpdateBallInterceptTime();
+    UpdateBallInterceptTime(dt);
     UpdateTeamAI(dt);
     UpdatePlays(dt);
 }
 
-inline void cTeam::UpdatePlays(float dt)
+void cTeam::UpdatePlays(float dt)
 {
     int i;
     for (i = 0; i < 4; i++)
@@ -734,7 +734,7 @@ bool cTeam::CalculateFormationPosition(nlVector3& pos, cFielder* pFielder, bool 
     return m_pFormationManager->CalculateFielderPosition(pos, pFielder, bParam, fParam);
 }
 
-inline void cTeam::CalculateNewBallInterceptTimes()
+void cTeam::CalculateNewBallInterceptTimes()
 {
     nlVector3* pBallPosition;
     cFielder* pPlayer;
@@ -784,7 +784,7 @@ inline void cTeam::CalculateNewBallInterceptTimes()
     }
 }
 
-inline void cTeam::UpdateBallInterceptTime()
+void cTeam::UpdateBallInterceptTime(float dt)
 {
     CalculateNewBallInterceptTimes();
     qsort(m_pBallInterceptOrderedFielders, 4, 4, BestAbleToInterceptBall);
@@ -814,7 +814,7 @@ int BestAbleToInterceptBall(const void* a, const void* b)
     return 1;
 }
 
-inline void cTeam::AbortPlays()
+void cTeam::AbortPlays()
 {
     for (int i = 0; i < 4; i++)
     {
@@ -822,7 +822,7 @@ inline void cTeam::AbortPlays()
     }
 }
 
-inline bool cTeam::AssignSituation()
+bool cTeam::AssignSituation()
 {
     cPlayer* ballOwner = g_pBall->m_pOwner;
     eSituation lastSituation = mpCurrentSituation;

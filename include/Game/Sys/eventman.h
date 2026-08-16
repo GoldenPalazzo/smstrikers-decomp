@@ -60,7 +60,7 @@ public:
     Event* GetFreeEvent();
     Event* CreateValidEvent(unsigned long eventID, unsigned long uSize);
     void DispatchEvents();
-    inline void FlushEventQueue();
+    void FlushEventQueue();
 
     /* 0x00 */ bool m_dispatching;
     /* 0x04 */ EventHandler* m_handlers;

@@ -2450,7 +2450,7 @@ void cFielder::ActionRunningWB(float dt)
     }
 }
 
-inline void cFielder::InitActionRunningWBTurbo()
+void cFielder::InitActionRunningWBTurbo()
 {
     SetAction(ACTION_RUNNING_WB_TURBO);
     InitMovementRunningNoTurn(((FielderTweaks*)m_pTweaks)->fRunningWBTurboAccel, ((FielderTweaks*)m_pTweaks)->fRunningWBTurboDecel);
@@ -2485,7 +2485,7 @@ inline void cFielder::InitActionRunningWBTurbo()
     SetRunTurboAnimState(0x1D, mActionRunningWBTurboVars.bForcedMirrorSwap);
 }
 
-inline void cFielder::InitActionRunningWBTurboTurn()
+void cFielder::InitActionRunningWBTurboTurn()
 {
     SetAction(ACTION_RUNNING_WB_TURBO_TURN);
 
@@ -4402,7 +4402,7 @@ void cFielder::InitActionWait()
     m_aDesiredFacingDirection = m_aActualFacingDirection;
 }
 
-bool cFielder::InitAction(eFielderActionState eAction, FuzzyVariant& vOpt1, FuzzyVariant& vOpt2)
+bool cFielder::InitAction(eFielderActionState eAction, FuzzyVariant vOpt1, FuzzyVariant vOpt2)
 {
     switch (eAction)
     {

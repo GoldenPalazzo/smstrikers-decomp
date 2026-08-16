@@ -85,9 +85,9 @@ public:
     virtual void SetSFX(SoundPropAccessor*);
     void CheckTypeMap(SoundPropAccessor*) const;
     void ResetSFX();
-    inline float GetSFXVol(const Audio::SoundAttributes&) const;
+    float GetSFXVol(const Audio::SoundAttributes&) const;
     float GetSFXVol(unsigned long) const;
-    inline float GetSFXVolReverb(const Audio::SoundAttributes&) const;
+    float GetSFXVolReverb(const Audio::SoundAttributes&) const;
     float GetSFXVolReverb(unsigned long) const;
     int GetVolGroup(unsigned long) const;
     int GetSFXPriority(unsigned long) const;

@@ -20,6 +20,7 @@ public:
     void OpenMessengerNow();
     void OpenMessenger();
     void SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>&);
+    void SetDisplayMessage(const char*);
     void SetMessageFinishedCB(const Function<FnVoidVoid>& cb)
     {
         m_cbFunc = cb;

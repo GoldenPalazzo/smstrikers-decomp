@@ -105,13 +105,13 @@ void FixedUpdateTask::Run(float dt)
     FlickDetection::Update();
 }
 
-inline void FixedUpdateTask::AIUpdateTask(float fDeltaT)
+void FixedUpdateTask::AIUpdateTask(float fDeltaT)
 {
     g_pGame->PreUpdate(fDeltaT);
     g_pGame->Update(fDeltaT);
 }
 
-inline void FixedUpdateTask::PrePhysicsAITask(float fDeltaT)
+void FixedUpdateTask::PrePhysicsAITask(float fDeltaT)
 {
     int i;
     for (i = 0; i < 10; i++)
@@ -120,7 +120,7 @@ inline void FixedUpdateTask::PrePhysicsAITask(float fDeltaT)
     }
 }
 
-inline void FixedUpdateTask::PostPhysicsAITask(float fDeltaT)
+void FixedUpdateTask::PostPhysicsAITask(float fDeltaT)
 {
     int i;
     for (i = 0; i < 10; i++)
@@ -130,7 +130,7 @@ inline void FixedUpdateTask::PostPhysicsAITask(float fDeltaT)
     g_pBall->PostPhysicsUpdate(fDeltaT);
 }
 
-inline void FixedUpdateTask::CallFixedUpdateTasks()
+void FixedUpdateTask::CallFixedUpdateTasks()
 {
     mSimulationTime += g_fSimulationTick;
     AIUpdateTask(g_fSimulationTick);

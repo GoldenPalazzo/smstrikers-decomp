@@ -314,7 +314,7 @@ float cGameSFX::GetSFXVolReverb(unsigned long index) const
     return mpSFX[index].fVolReverb;
 }
 
-inline float cGameSFX::GetSFXVol(const Audio::SoundAttributes& attributes) const
+float cGameSFX::GetSFXVol(const Audio::SoundAttributes& attributes) const
 {
     SoundStrToIDNode sfxInfo = mpSFX[attributes.mu_Type];
     if (attributes.mf_Volume != 100.0f)
@@ -325,7 +325,7 @@ inline float cGameSFX::GetSFXVol(const Audio::SoundAttributes& attributes) const
     return sfxInfo.fVolume;
 }
 
-inline float cGameSFX::GetSFXVolReverb(const Audio::SoundAttributes& attributes) const
+float cGameSFX::GetSFXVolReverb(const Audio::SoundAttributes& attributes) const
 {
     SoundStrToIDNode* sfxEntry = mpSFX + attributes.mu_Type;
     SoundStrToIDNode sfxInfo = *sfxEntry;

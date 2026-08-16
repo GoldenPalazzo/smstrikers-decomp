@@ -50,7 +50,7 @@ struct SaveInfo
     char mszName[16];
 };
 
-inline SaveData* GoalieSave::FindSaveData(int animID)
+SaveData* GoalieSave::FindSaveData(int animID)
 {
     SaveData** ppSaveData;
     if (animID >= 0 && gSaveMap.FindGet(animID, &ppSaveData))
@@ -61,7 +61,7 @@ inline SaveData* GoalieSave::FindSaveData(int animID)
     return NULL;
 }
 
-inline void SaveData::PostInit(const SaveInfo& info)
+void SaveData::PostInit(const SaveInfo& info)
 {
     mpFailAnimData = GoalieSave::FindSaveData(info.mnFailAnimID);
 
@@ -73,7 +73,7 @@ inline void SaveData::PostInit(const SaveInfo& info)
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 
-inline float SaveData::LookupFatigueValue(Goalie* pGoalie, const SaveInfo& info)
+float SaveData::LookupFatigueValue(Goalie* pGoalie, const SaveInfo& info)
 {
     GoalieTweaks* pTweaks = (GoalieTweaks*)pGoalie->m_pTweaks;
     if (info.muSaveType & 0x1)
@@ -112,7 +112,7 @@ inline float SaveData::LookupFatigueValue(Goalie* pGoalie, const SaveInfo& info)
     return pTweaks->fShotFatigueDefault;
 }
 
-inline void SaveData::Init(Goalie* pGoalie, const SaveInfo& info, unsigned int uIndex)
+void SaveData::Init(Goalie* pGoalie, const SaveInfo& info, unsigned int uIndex)
 {
     mnAnimID = info.mnAnimID;
     mnRecoverAnimID = info.mnRecoverAnimID;
@@ -135,7 +135,7 @@ inline void SaveData::Init(Goalie* pGoalie, const SaveInfo& info, unsigned int u
     muIndex = uIndex;
 }
 
-inline void SavePositionData::Init(Goalie* pGoalie, int animID)
+void SavePositionData::Init(Goalie* pGoalie, int animID)
 {
     mnAnimID = animID;
 
@@ -752,7 +752,7 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
     return pClosest;
 }
 
-inline void GoalieSave::FindVerticalBoundingPoints(SaveData* pSaveData, const nlVector3& v3TargetPoint, SaveData** pLoPoint, SaveData** pHiPoint)
+void GoalieSave::FindVerticalBoundingPoints(SaveData* pSaveData, const nlVector3& v3TargetPoint, SaveData** pLoPoint, SaveData** pHiPoint)
 {
     SaveData* pHiSaveData = pSaveData;
     SaveData* pLoSaveData = pSaveData;

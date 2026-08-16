@@ -257,7 +257,7 @@ void cFielder::AbortPendingThoughts()
 
 static inline bool IsGameplayOrOvertime(eGameState state);
 
-inline bool cFielder::HasNoDesire() const
+bool cFielder::HasNoDesire() const
 {
     bool bNoDesire;
     if (m_eFielderDesireState == FIELDERDESIRE_NEED_DESIRE || m_tDesireDuration.m_uPackedTime == 0)
@@ -337,7 +337,7 @@ static inline float GetNormalizedContactTime(const cSAnim* anim, float contactFr
     return contactFrame / (float)anim->m_nNumKeys;
 }
 
-inline bool cFielder::CanPassTargetAttemptOneTouch(cFielder* pPassTarget)
+bool cFielder::CanPassTargetAttemptOneTouch(cFielder* pPassTarget)
 {
     return pPassTarget != NULL
         && pPassTarget != this
@@ -4124,7 +4124,7 @@ void cFielder::RunningSABcallback(unsigned int nParam1, cPN_SingleAxisBlender* p
     pSAB->m_fDesiredWeight = pSAB->m_fSmoothedWeight;
 }
 
-inline void cFielder::SetRunLeanSAB(const int* pSABAnims, int nNumSABAnims, int nPrimaryAnim)
+void cFielder::SetRunLeanSAB(const int* pSABAnims, int nNumSABAnims, int nPrimaryAnim)
 {
     cPN_SingleAxisBlender* pSAB;
     cPN_SAnimController* synchingController;

@@ -128,8 +128,8 @@ public:
     void Set(const char*, float);
     void Set(const char*, bool);
     void Set(const char*, int);
-    char* CopyString(const char*, unsigned char);
-    static u32 Hash(const char*);
+    char* CopyString(const char*, bool);
+    u32 Hash(const char*) const;
 
     template <typename T>
     void Set(const char* key, T value);

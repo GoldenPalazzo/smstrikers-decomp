@@ -933,7 +933,7 @@ bool AvoidController::AvoidSidelines()
     return bHitSideline;
 }
 
-inline void AvoidController::CalcDesiredAndCurrentVelocities(
+void AvoidController::CalcDesiredAndCurrentVelocities(
     nlVector2* vOutDesiredVel, nlVector2* vOutCurrentVel, bool bNormalized)
 {
     if (vOutDesiredVel != NULL)

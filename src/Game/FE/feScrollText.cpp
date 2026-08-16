@@ -256,7 +256,7 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
     Update(0.0f);
 }
 
-inline void FEScrollText::SetMetrics(int pos, int width)
+void FEScrollText::SetMetrics(int pos, int width)
 {
     const gl_ScreenInfo* screenInfo = glGetScreenInfo();
     int boxX = pos + screenInfo->ScreenWidth / 2 - width / 2;

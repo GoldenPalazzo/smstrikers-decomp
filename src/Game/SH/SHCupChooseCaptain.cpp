@@ -154,7 +154,7 @@ CupChooseCaptainSceneV2::~CupChooseCaptainSceneV2()
     }
 }
 
-inline void CupChooseCaptainSceneV2::UpdateImages()
+void CupChooseCaptainSceneV2::UpdateImages()
 {
     char filename[128];
     char filenamebg[128];

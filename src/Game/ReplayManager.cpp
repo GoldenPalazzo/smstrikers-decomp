@@ -120,7 +120,7 @@ RenderSnapshot& ReplayManager::GetMutableRenderSnapshot()
     return mRender->GetMutable();
 }
 
-inline void ReplayManager::SwapPreviousAndCurrent()
+void ReplayManager::SwapPreviousAndCurrent()
 {
     RenderSnapshot* tmp = mCurrent;
     mCurrent = mPrevious;

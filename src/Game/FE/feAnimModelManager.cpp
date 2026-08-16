@@ -79,7 +79,7 @@ void FEAnimModelManager::Initialize()
 {
 }
 
-inline void FEAnimModelManager::CheckTweakModelSwitch()
+void FEAnimModelManager::CheckTweakModelSwitch()
 {
     cGlobalPad* pad = cPadManager::GetPad(1);
     if (pad != NULL)
@@ -102,7 +102,7 @@ inline void FEAnimModelManager::CheckTweakModelSwitch()
     }
 }
 
-inline void FEAnimModelManager::TweakModelPosition()
+void FEAnimModelManager::TweakModelPosition()
 {
     FEBasic3dModel* model = mCurrentTweakModel;
     if (model == NULL)

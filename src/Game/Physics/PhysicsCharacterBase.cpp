@@ -243,7 +243,7 @@ void PhysicsCharacterBase::GetBonePositions(PhysicsBoneID boneID, nlVector3& v3C
     nlVec3Set(v3PrevPos, 0.0f, 0.0f, 0.0f);
 }
 
-inline PhysicsCharacterBase::PhysicsBoneVolume* PhysicsCharacterBase::AddBoneVolume(
+PhysicsCharacterBase::PhysicsBoneVolume* PhysicsCharacterBase::AddBoneVolume(
     PhysicsObject* object, unsigned int boneIndex, unsigned int transformHandle, nlMatrix4& transform, PhysicsBoneID id)
 {
     return new (nlMalloc(sizeof(PhysicsBoneVolume), 8, false))

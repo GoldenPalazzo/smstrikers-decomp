@@ -1,6 +1,12 @@
 #include "Game/FE/feScrollingTicker.h"
 #include "Game/FE/feFinder.h"
 
+#include "NL/nlLocalization.h"
+
+extern void* g_pLocalization;
+extern const unsigned short LocalizationTableNotFound[];
+extern const unsigned short MissingLocString[];
+
 /**
  * Offset/Address/Size: 0xF9C | 0x800A0BF4 | size: 0xB0
  */
@@ -192,6 +198,28 @@ void ScrollingTickerScene::SceneCreated()
 void ScrollingTickerScene::SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>& msg)
 {
     m_textScroller->SetDisplayMessage(msg);
+}
+
+static inline const unsigned short* LookupLocText(const char* locMessage)
+{
+    unsigned long hash = nlStringLowerHash(locMessage);
+    nlLocalization* loc = (nlLocalization*)g_pLocalization;
+    if (loc->m_LookupTable == 0)
+    {
+        return LocalizationTableNotFound;
+    }
+    nlLocalization::StringLookup* lookup = nlBSearch<nlLocalization::StringLookup, unsigned long>(hash, loc->m_LookupTable, loc->m_pFile->StringCount);
+    if (lookup != 0)
+    {
+        return loc->m_FirstString + lookup->StringOffset;
+    }
+    return MissingLocString;
+}
+
+void ScrollingTickerScene::SetDisplayMessage(const char* locMessage)
+{
+    const unsigned short* text = LookupLocText(locMessage);
+    SetDisplayMessage(BasicString<unsigned short, Detail::TempStringAllocator>(text));
 }
 
 /**

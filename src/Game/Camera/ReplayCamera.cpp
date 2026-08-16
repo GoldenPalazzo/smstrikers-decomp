@@ -254,7 +254,7 @@ void ReplayCamera::CutTo(ReplayCameraPosition camPos)
     mFov = GetFov(mCamPos);
 }
 
-inline void ReplayCamera::Dampen(nlVector3& from, const nlVector3& to, float dampFactor)
+void ReplayCamera::Dampen(nlVector3& from, const nlVector3& to, float dampFactor)
 {
     from.f.x = (1.0f - dampFactor) * from.f.x + dampFactor * to.f.x;
     from.f.y = (1.0f - dampFactor) * from.f.y + dampFactor * to.f.y;

@@ -187,7 +187,7 @@ bool BasicStadium::DoLoad()
     return true;
 }
 
-inline void BasicStadium::HyperStrikeModelAddHelper(unsigned long hash)
+void BasicStadium::HyperStrikeModelAddHelper(unsigned long hash)
 {
     DrawableObject* pObject = FindDrawableObject(hash);
     if (pObject != NULL)

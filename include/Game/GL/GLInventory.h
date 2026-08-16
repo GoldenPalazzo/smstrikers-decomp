@@ -204,6 +204,7 @@ public:
     GLMaterialList* GetMaterialList(unsigned long);
     void AddSkinData(unsigned long, nlChunk*);
     GLSkinMesh* MakeSkinMesh(unsigned long);
+    GLSkinMesh* MakeSkinMesh(nlChunk*, glModel*);
     void Update(float);
 
     /* 0x000 */ nlListContainer<void*>* m_pFileData[16];

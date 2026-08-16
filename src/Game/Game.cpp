@@ -443,7 +443,7 @@ float cGame::GetGameTime()
     return m_pGameClock->m_fTimer;
 }
 
-inline void cGame::RandomizePlayerUpdateOrder()
+void cGame::RandomizePlayerUpdateOrder()
 {
     int i;
     for (i = 0; i < 5; i++)
@@ -467,7 +467,7 @@ inline void cGame::RandomizePlayerUpdateOrder()
     }
 }
 
-inline void cGame::ResetCharacters()
+void cGame::ResetCharacters()
 {
     RandomizePlayerUpdateOrder();
 
@@ -478,7 +478,7 @@ inline void cGame::ResetCharacters()
     }
 }
 
-inline void cGame::ResetBall()
+void cGame::ResetBall()
 {
     nlVector3 v3Vel = { 0.0f, 0.0f, 0.0f };
     nlVector3 v3Pos = { 0.0f, 0.0f, 0.18f };
@@ -497,7 +497,7 @@ inline void cGame::ResetBall()
     g_pBall->HandleBuzzerBeater(-1.0f);
 }
 
-inline void cGame::ResetGameClock()
+void cGame::ResetGameClock()
 {
     m_pGameClock->Reset(0.0f, 60000.0f, 1.0f);
     m_pPostGameDoneClock->Reset(0.0f, 1.4f, 1.0f);
@@ -736,7 +736,7 @@ void cGame::CheckForGoal()
     }
 }
 
-inline void cGame::EnterPostGame()
+void cGame::EnterPostGame()
 {
     int homeScore;
     int awayScore;
@@ -934,7 +934,7 @@ void cGame::PreUpdate(float deltaTime)
     }
 }
 
-inline void cGame::UpdatePowerUpObjects(float fDeltaT)
+void cGame::UpdatePowerUpObjects(float fDeltaT)
 {
     for (int i = 0; i < 25; i++)
     {
@@ -1087,7 +1087,7 @@ void cGame::Update(float deltaTime)
     }
 }
 
-inline void cGame::ResetScorerInfo()
+void cGame::ResetScorerInfo()
 {
     m_pScorer = NULL;
     m_pAssister = NULL;

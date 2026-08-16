@@ -567,6 +567,11 @@ void GLInventory::AddSkinData(unsigned long key, nlChunk* skinData)
     tree->Add(key2, skinData2);
 }
 
+GLSkinMesh* GLInventory::MakeSkinMesh(nlChunk* pChunk, glModel* pModel)
+{
+    return glx_MakeSkinMesh(pChunk, pModel);
+}
+
 /**
  * Offset/Address/Size: 0x334 | 0x801E25CC | size: 0x1A0
  */
@@ -696,7 +701,7 @@ GLSkinMesh* GLInventory::MakeSkinMesh(unsigned long hashID)
     nlChunk* pChunk = foundChunk;
     glModel* pModel = ModelHelper::Get(this, hashID);
 
-    return glx_MakeSkinMesh(pChunk, pModel);
+    return MakeSkinMesh(pChunk, pModel);
 }
 
 struct NodeStack

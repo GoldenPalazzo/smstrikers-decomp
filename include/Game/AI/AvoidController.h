@@ -39,7 +39,7 @@ public:
     bool CalcDesiredVelocityToAvoidSideline(nlVector2&, const nlVector2&, const nlVector2&, const nlVector2&, const nlVector2&);
     bool CalcDesiredVelocityToAvoidCorner(nlVector2&, const sCornerSegment&, const nlVector2&, const nlVector2&);
     bool AvoidSidelines();
-    inline void CalcDesiredAndCurrentVelocities(nlVector2*, nlVector2*, bool);
+    void CalcDesiredAndCurrentVelocities(nlVector2*, nlVector2*, bool);
     void ApplyRepulsionVector(nlVector3);
 
     /* 0x00 */ cFielder* m_pFielder;

@@ -870,7 +870,7 @@ void Goalie::RunWeightCB(unsigned int nParam, cPN_SingleAxisBlender* blender)
     blender->m_fDesiredWeight = (float)(clampedDiff + 0x31C4) / 25480.0f;
 }
 
-inline void Goalie::StartRunBlend()
+void Goalie::StartRunBlend()
 {
     int runAnims[] = { 0x21, 0x1F, 0x20 };
 

@@ -178,7 +178,7 @@ static inline bool IsFloatValue(const char* str, float& out)
     return seenPeriod;
 }
 
-inline u32 Config::Hash(const char* str)
+u32 Config::Hash(const char* str) const
 {
     u32 hash = 0x1505;
     while (*str != 0)
@@ -189,7 +189,7 @@ inline u32 Config::Hash(const char* str)
     return hash;
 }
 
-inline char* Config::CopyString(const char* str, unsigned char makeUpperCase)
+char* Config::CopyString(const char* str, bool makeUpperCase)
 {
     const char* ret = mStringEnd;
     while (*str != 0)
@@ -218,7 +218,7 @@ inline char* Config::CopyString(const char* str, unsigned char makeUpperCase)
 
 static inline TagValuePair* FindConfigTvp(Config* config, const char* tag)
 {
-    u32 idx = Config::Hash(tag) & 0x3FF;
+    u32 idx = config->Hash(tag) & 0x3FF;
     while (true)
     {
         u32 offset = idx * 12;
@@ -350,7 +350,7 @@ void Config::Set(const char* tag, float value)
 
 static inline TagValuePair& FindTvpChar(Config* config, const char* tag)
 {
-    unsigned int i = Config::Hash(tag) & 0x3FF;
+    unsigned int i = config->Hash(tag) & 0x3FF;
 
     while (true)
     {

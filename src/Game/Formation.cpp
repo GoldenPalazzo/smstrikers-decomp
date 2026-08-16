@@ -496,7 +496,7 @@ float FormationEval::GetWeight()
     return 0.0f;
 }
 
-inline void FormationEval::FieldLocToAILoc(nlVector3& dest, const nlVector3& field_location, int nTeamID)
+void FormationEval::FieldLocToAILoc(nlVector3& dest, const nlVector3& field_location, int nTeamID)
 {
     if (nTeamID == 0)
     {
@@ -506,7 +506,7 @@ inline void FormationEval::FieldLocToAILoc(nlVector3& dest, const nlVector3& fie
     nlVec3Set(dest, -field_location.f.x, -field_location.f.y, 0.0f);
 }
 
-inline void FormationEval::AILocToFieldLoc(nlVector3& dest, const nlVector3& ai_location, int nTeamID)
+void FormationEval::AILocToFieldLoc(nlVector3& dest, const nlVector3& ai_location, int nTeamID)
 {
     if (nTeamID == 0)
     {
@@ -1450,7 +1450,7 @@ void FormationBallPosition::CalculateDesiredLocation(nlVector3& destPosition, cF
 /**
  * Offset/Address/Size: 0x0 | 0x80038250 | size: 0x2C0
  */
-inline void FormationBallPosition::CalcBallPosition(nlVector2& v2DestAIBallPos)
+void FormationBallPosition::CalcBallPosition(nlVector2& v2DestAIBallPos)
 {
     nlVector3 v3AIBallLoc;
 
@@ -1479,7 +1479,7 @@ inline void FormationBallPosition::CalcBallPosition(nlVector2& v2DestAIBallPos)
     v2DestAIBallPos = *(const nlVector2*)&v3AIBallLoc;
 }
 
-inline float FormationBallPosition::GetBlendFactor()
+float FormationBallPosition::GetBlendFactor()
 {
     float fBlendFactor = 1.0f;
 

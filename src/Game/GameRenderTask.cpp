@@ -123,7 +123,7 @@ static void inline MemoryOnScreen(unsigned int cutoff)
 
 #pragma inline_max_size(0x10000)
 #pragma inline_max_total_size(0x10000)
-inline void GameRenderTask::SetupConstants()
+void GameRenderTask::SetupConstants()
 {
     nlVector4 vMult = { 0.0f, 0.0f, 0.0f, 0.0f };
     Config& cfg = Config::Global();

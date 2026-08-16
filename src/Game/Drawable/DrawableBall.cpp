@@ -114,7 +114,7 @@ inline void DrawableBall::RenderMotionBlur(DrawableObject& obj) const
     obj.m_uObjectCreationFlags = uSavedFlags;
 }
 
-inline void DrawableBall::RenderLighting(DrawableObject& obj) const
+void DrawableBall::RenderLighting(DrawableObject& obj) const
 {
     u8 savedBallShadowDisabled = DrawableModel::GetBallShadowDisabled();
     DrawableModel::SetBallShadowDisabled(1);

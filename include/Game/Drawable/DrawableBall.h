@@ -26,7 +26,7 @@ public:
     void EvaluateFrom(DrawableCharacter&);
     void Blend(const float*, const DrawableBall&, const DrawableBall&);
     inline void RenderMotionBlur(DrawableObject&) const;
-    inline void RenderLighting(DrawableObject&) const;
+    void RenderLighting(DrawableObject&) const;
     void Render() const;
     void Grab();
     DrawableCharacter* IndexToPlayer(int) const;

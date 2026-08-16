@@ -174,13 +174,13 @@ static inline float FormationMax(float current, float value)
         return value;
 }
 
-inline void FormationSpec::SetName(const char* name)
+void FormationSpec::SetName(const char* name)
 {
     nlStrNCpy(m_Name, name, 32);
     m_Name[31] = 0;
 }
 
-inline void FormationSpec::Init(int id, int iKeyIndex, const char* name)
+void FormationSpec::Init(int id, int iKeyIndex, const char* name)
 {
     m_ID = id;
     m_iKeyIndex = iKeyIndex;
@@ -262,7 +262,7 @@ FormationSpec* FormationSet::GetFormationSpecFromID(int formationID) const
     return NULL;
 }
 
-inline void FormationSet::Init(int id, FormationSpec* formationArray, int numFormations, bool bCreateCopy)
+void FormationSet::Init(int id, FormationSpec* formationArray, int numFormations, bool bCreateCopy)
 {
     m_ID = id;
     m_NumFormationDefs = numFormations;

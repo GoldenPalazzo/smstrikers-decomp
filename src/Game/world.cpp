@@ -582,7 +582,7 @@ void World::AddToHyperSTSDrawables(unsigned long key, DrawableModel* pDrawableMo
     m_hyperSTSDrawableMap.Add(key, pDrawableModel);
 }
 
-inline void World::AssignLightBitmasks()
+void World::AssignLightBitmasks()
 {
     typedef nlAVLTreeIterator<unsigned long, LightObject*, DefaultKeyCompare<unsigned long> > LightIterator;
 
@@ -599,7 +599,7 @@ inline void World::AssignLightBitmasks()
     delete iterator;
 }
 
-inline void World::CreateWorldObjFromChunk(nlChunk* pChunk)
+void World::CreateWorldObjFromChunk(nlChunk* pChunk)
 {
     WorldObjectChunkData* pWorldObjectChunkData;
     WorldObjectData objectData;
@@ -617,7 +617,7 @@ inline void World::CreateWorldObjFromChunk(nlChunk* pChunk)
     HandleObjectCreation(&objectData);
 }
 
-inline void World::CreateLightObjFromChunk(nlChunk* pChunk)
+void World::CreateLightObjFromChunk(nlChunk* pChunk)
 {
     LightObject* pLightObj;
     WorldLightChunkData* pWorldLightChunkData =
@@ -700,7 +700,7 @@ static inline void World_CreateEmitterObjFromChunk(World* pWorld, nlChunk* pChun
     }
 }
 
-inline bool World::LoadPhysicsPrimitives(nlChunk* pChunk)
+bool World::LoadPhysicsPrimitives(nlChunk* pChunk)
 {
     unsigned long i;
     nlChunk* pLastChunk = pChunk->GetLastChunk();
@@ -2046,7 +2046,7 @@ int World::CompareNameToGenericName(const char* str1, const char* str2)
     return nlStrNCmp<char>(str1 + *(int*)((u8*)this + 0x120), str2, sVar1);
 }
 
-inline bool World::IsCaptainShootToScorePresentationOn()
+bool World::IsCaptainShootToScorePresentationOn() const
 {
     if (g_pGame == NULL)
         return false;

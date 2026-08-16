@@ -203,7 +203,7 @@ void CupCheaterScene::OnSelectGameplay()
     scene->m_SlideMenu = NULL;
 }
 
-inline void CupCheaterScene::AddMilestoneStats()
+void CupCheaterScene::AddMilestoneStats()
 {
     BasicGameInfo* gameInfo;
     GameInfoManager* gameInfoManagerCup = nlSingleton<GameInfoManager>::s_pInstance;

@@ -255,7 +255,7 @@ void FESceneManager::QueueScenePush(BaseSceneHandler* pSceneHandler, const char*
     nlDLRingAddEnd(&m_pushPopMessageQueue.m_Head, entry);
 }
 
-inline void FESceneManager::LoadScene(
+void FESceneManager::LoadScene(
     const char* szFilename,
     BaseSceneHandler* pHandler)
 {

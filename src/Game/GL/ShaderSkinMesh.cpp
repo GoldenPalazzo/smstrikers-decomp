@@ -224,7 +224,7 @@ static inline void CopySoftwareVerts(ShaderSkinMesh* mesh)
     }
 }
 
-inline void ShaderSkinMesh::CreateMorphBuffer()
+void ShaderSkinMesh::CreateMorphBuffer()
 {
     morphBuffer = sharedMorphBuffer;
     CopySoftwareVerts(this);

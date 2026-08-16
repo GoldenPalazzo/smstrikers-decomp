@@ -309,7 +309,7 @@ static inline gl_StateBitfield* GetTextureStateAndInfo(
     return pInfo;
 }
 
-inline unsigned long glTextureState::GetTextureState(
+unsigned long glTextureState::GetTextureState(
     eGLTextureState state)
 {
     unsigned long out;
@@ -613,7 +613,7 @@ glStateBundle* gl_GetCurrentStateBundle()
     return &_bundle;
 }
 
-inline unsigned long glMaterialState::SetMaterialState(eGLMaterialState state, unsigned long value)
+unsigned long glMaterialState::SetMaterialState(eGLMaterialState state, unsigned long value)
 {
     gl_StateBitfield* p = &packed_materials[state];
     s32 startBit = p->startBit;
@@ -637,7 +637,7 @@ inline unsigned long glMaterialState::SetMaterialState(eGLMaterialState state, u
     return out;
 }
 
-inline unsigned long glRasterState::SetRasterState(eGLState state, unsigned long value)
+unsigned long glRasterState::SetRasterState(eGLState state, unsigned long value)
 {
     gl_StateBitfield* p = &packed_raster[state];
     s32 startBit = p->startBit;
@@ -660,7 +660,7 @@ inline unsigned long glRasterState::SetRasterState(eGLState state, unsigned long
     return out;
 }
 
-inline unsigned long glTextureState::SetTextureState(eGLTextureState state, unsigned long value)
+unsigned long glTextureState::SetTextureState(eGLTextureState state, unsigned long value)
 {
     gl_StateBitfield* p = &packed_texture[state];
     s32 startBit = p->startBit;

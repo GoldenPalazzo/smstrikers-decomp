@@ -35,7 +35,7 @@ ExplosionFragment::~ExplosionFragment()
     Deactivate();
 }
 
-inline void ExplosionFragment::Deactivate()
+void ExplosionFragment::Deactivate()
 {
     if (mbIsActive)
     {
@@ -189,7 +189,7 @@ void SidelineExplodable::Allocate()
 }
 #pragma dont_inline reset
 
-inline void SidelineExplodable::DeAllocate()
+void SidelineExplodable::DeAllocate()
 {
 }
 
@@ -277,7 +277,7 @@ void SidelineExplodable::DestroyAllActiveFragments(bool renewExplodables)
     mfExplodeTime = 0.0f;
 }
 
-inline void SidelineExplodable::InitializePhysicsObject(PhysicsObject* pPhysicsObject, const nlMatrix4& worldMatrix, bool bIsStationary)
+void SidelineExplodable::InitializePhysicsObject(PhysicsObject* pPhysicsObject, const nlMatrix4& worldMatrix, bool bIsStationary)
 {
     unsigned short min;
     unsigned short max;
@@ -532,7 +532,7 @@ bool ExplodableCategoryData::LoadGeometry()
     return true;
 }
 
-inline void SidelineExplodableManager::Initialize()
+void SidelineExplodableManager::Initialize()
 {
     sbIsInitialized = true;
     sFragmentLookupTable = (ExplosionFragment**)nlMalloc(0x50, 8, false);
@@ -542,7 +542,7 @@ inline void SidelineExplodableManager::Initialize()
     }
 }
 
-inline void SidelineExplodableManager::ReturnDrawableFragmentToPool(unsigned short handle)
+void SidelineExplodableManager::ReturnDrawableFragmentToPool(unsigned short handle)
 {
     DrawableFragmentHandleNode* node = DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool.Allocate();
 
@@ -557,7 +557,7 @@ inline void SidelineExplodableManager::ReturnDrawableFragmentToPool(unsigned sho
     sFragmentLookupTable[handle] = NULL;
 }
 
-inline unsigned short SidelineExplodableManager::GetDrawableFragmentFromPool()
+unsigned short SidelineExplodableManager::GetDrawableFragmentFromPool()
 {
     DrawableFragmentHandleNode* node = sUnusedDrawableFragments.m_pStart;
     unsigned short handle;
@@ -668,7 +668,7 @@ void SidelineExplodableManager::SetVisibilityOfUnexplodedModels(bool* visibility
     }
 }
 
-inline SidelineExplodable* SidelineExplodableManager::GetClosestExplodable(const nlVector3& pos)
+SidelineExplodable* SidelineExplodableManager::GetClosestExplodable(const nlVector3& pos)
 {
     SidelineExplodable* closest = NULL;
     float distance = 0.0f;
@@ -733,7 +733,7 @@ void SidelineExplodableManager::DestroyAllActiveFragments(bool renewExplodables)
     }
 }
 
-inline void SidelineExplodableManager::AddSidelineExplodable(SidelineExplodable* pSidelineExplodable)
+void SidelineExplodableManager::AddSidelineExplodable(SidelineExplodable* pSidelineExplodable)
 {
     SidelineExplodableNode* node = NULL;
 
@@ -793,7 +793,7 @@ ExplosionFragment* SidelineExplodableManager::GetFragmentFromHandle(unsigned sho
     return sFragmentLookupTable[handle];
 }
 
-inline void SidelineExplodableManager::RegisterFragment(ExplosionFragment* fragment, unsigned short handle)
+void SidelineExplodableManager::RegisterFragment(ExplosionFragment* fragment, unsigned short handle)
 {
     sFragmentLookupTable[handle] = fragment;
 }

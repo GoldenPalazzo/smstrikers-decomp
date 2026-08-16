@@ -43,7 +43,7 @@ static bool LooseBallCallback(float fTime, float fDuration, unsigned long uEvent
     return true;
 }
 
-inline void LooseBallInfo::InitInstance(cPlayer* pPlayer, int nAnimID, eLooseBallAnimType eAnimType)
+void LooseBallInfo::InitInstance(cPlayer* pPlayer, int nAnimID, eLooseBallAnimType eAnimType)
 {
     mfAnimDuration = 0.0f;
     mfPickupTime = 0.0f;
@@ -134,7 +134,7 @@ const LooseBallInfo* LooseBallAnims::FindLooseBallAnim(const nlVector3& v3LocalB
     return pInfo;
 }
 
-inline LooseBallInfo* LooseBallAnims::GetLooseBallAnim(unsigned int uIndex)
+LooseBallInfo* LooseBallAnims::GetLooseBallAnim(unsigned int uIndex)
 {
     return &mpLooseBallInfo[uIndex];
 }

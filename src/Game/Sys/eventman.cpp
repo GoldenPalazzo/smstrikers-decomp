@@ -62,7 +62,7 @@ EventManager::EventManager(unsigned long uEventCount, unsigned long uEventSize)
     SetupDestArray();
 }
 
-inline void EventManager::FlushEventQueue()
+void EventManager::FlushEventQueue()
 {
     Event* pEvent;
     while (m_keep != NULL && m_keep->m_next->m_nReferenceCount == 0)

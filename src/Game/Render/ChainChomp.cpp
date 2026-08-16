@@ -551,11 +551,11 @@ bool ChainChomp::IsHidden() const
     return meChainChompState == CHAIN_STATE_HIDDEN;
 }
 
-static bool AvoidSidelines(ChainChomp* pChomp)
+bool ChainChomp::AvoidSidelines()
 {
-    nlVector3 v3WallPosition = GetClosestPointOnSidelines(pChomp->mv3Position);
-    float dy = v3WallPosition.f.y - pChomp->mv3Position.f.y;
-    float dx = v3WallPosition.f.x - pChomp->mv3Position.f.x;
+    nlVector3 v3WallPosition = GetClosestPointOnSidelines(mv3Position);
+    float dy = v3WallPosition.f.y - mv3Position.f.y;
+    float dx = v3WallPosition.f.x - mv3Position.f.x;
     float fDist = nlSqrt(dx * dx + dy * dy, true);
     if (fDist < 3.0f)
     {
@@ -621,7 +621,7 @@ void ChainChomp::Move(float fDeltaT)
     }
     else if (meChainChompState != CHAIN_STATE_LEAVE)
     {
-        if (AvoidSidelines(this))
+        if (AvoidSidelines())
         {
             float fHalf = 0.5f;
             fSeekSpeed = 180000.0f;

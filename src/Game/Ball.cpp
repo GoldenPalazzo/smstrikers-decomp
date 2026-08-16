@@ -1825,7 +1825,7 @@ void cBall::WarpTo(const nlVector3& toPos)
     m_v3PrevPosition = toPos;
 }
 
-inline void cBall::SetAngularVelocity(const nlVector3& v3Velocity)
+void cBall::SetAngularVelocity(const nlVector3& v3Velocity)
 {
     m_pPhysicsBall->SetAngularVelocity(v3Velocity);
     m_pPhysicsBall->SetUseAngularVelocity(true);

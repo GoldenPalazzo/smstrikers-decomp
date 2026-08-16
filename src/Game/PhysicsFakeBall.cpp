@@ -63,7 +63,7 @@ void FakeBallWorld::InvalidateBallCache()
     ClearBallCache();
 }
 
-inline BallCacheInfo* FakeBallWorld::AddCacheEntry(PhysicsBall* pPhysicsBall)
+BallCacheInfo* FakeBallWorld::AddCacheEntry(float fTime, PhysicsBall* pPhysicsBall)
 {
     DLListEntry<BallCacheInfo*>* pNewEntry;
     BallCacheInfo* pNewInfo;
@@ -155,7 +155,7 @@ bool FakeBallWorld::GetPredictedBallPosition(float fDeltaTime, nlVector3& v3Posi
             PhysicsUpdate(mpPredictWorld->mpPhysicsWorld, fPhysicsTick);
             mfLastCacheTime += fPhysicsTick;
         }
-        AddCacheEntry((PhysicsBall*)mpPredictWorld->mpPhysicsBall);
+        AddCacheEntry(mfLastCacheTime, (PhysicsBall*)mpPredictWorld->mpPhysicsBall);
     }
 
     DLListEntry<BallCacheInfo*>** pHeadRef = &mBallCacheList.m_Head;
@@ -339,7 +339,7 @@ float FakeBallWorld::GetPredictedPlaneIntersectTime(const nlVector4& v4Plane, nl
         PhysicsUpdate(mpPredictWorld->mpPhysicsWorld, fPhysicsTick);
 
         mfLastCacheTime += fPhysicsTick;
-        BallCacheInfo* pNewInfo = AddCacheEntry((PhysicsBall*)mpPredictWorld->mpPhysicsBall);
+        BallCacheInfo* pNewInfo = AddCacheEntry(mfLastCacheTime, (PhysicsBall*)mpPredictWorld->mpPhysicsBall);
 
         pCurCache = pNewInfo;
 
@@ -456,7 +456,7 @@ float FakeBallWorld::GetPredictedHeightLimitTime(float fHeight, float fMinTime, 
         PhysicsUpdate(mpPredictWorld->mpPhysicsWorld, fPhysicsTick);
         mfLastCacheTime += fPhysicsTick;
 
-        BallCacheInfo* pNewInfo = AddCacheEntry((PhysicsBall*)mpPredictWorld->mpPhysicsBall);
+        BallCacheInfo* pNewInfo = AddCacheEntry(mfLastCacheTime, (PhysicsBall*)mpPredictWorld->mpPhysicsBall);
 
         float zPos = pNewInfo->mv3Position.f.z;
         float zVel = pNewInfo->mv3LinearVelocity.f.z;
@@ -573,7 +573,7 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
         PhysicsUpdate(mpPredictWorld->mpPhysicsWorld, fPhysicsTick);
 
         mfLastCacheTime += fPhysicsTick;
-        BallCacheInfo* pNewInfo = AddCacheEntry((PhysicsBall*)mpPredictWorld->mpPhysicsBall);
+        BallCacheInfo* pNewInfo = AddCacheEntry(mfLastCacheTime, (PhysicsBall*)mpPredictWorld->mpPhysicsBall);
 
         pCurCache = pNewInfo;
 
@@ -691,12 +691,12 @@ void FakeBallWorld::GetNextBallPosition(nlVector3& v3BallPos)
     predictWorld = mpPredictWorld;
     mfLastCacheTime += fPhysicsTick;
 
-    BallCacheInfo* newInfo = AddCacheEntry((PhysicsBall*)predictWorld->mpPhysicsBall);
+    BallCacheInfo* newInfo = AddCacheEntry(mfLastCacheTime, (PhysicsBall*)predictWorld->mpPhysicsBall);
 
     v3BallPos = newInfo->mv3Position;
 }
 
-inline void FakeBallWorld::GetNextBallPosVel(nlVector3& v3BallPos, nlVector3& v3BallVel)
+void FakeBallWorld::GetNextBallPosVel(nlVector3& v3BallPos, nlVector3& v3BallVel)
 {
     nlDLListIterator<BallCacheInfo*>* cacheIter = FakeBallWorld::mpCacheIterator;
 
@@ -721,7 +721,7 @@ inline void FakeBallWorld::GetNextBallPosVel(nlVector3& v3BallPos, nlVector3& v3
     PhysicsUpdate(FakeBallWorld::mpPredictWorld->mpPhysicsWorld, tick);
     FakeBallWorld::mfLastCacheTime += tick;
 
-    BallCacheInfo* newInfo = FakeBallWorld::AddCacheEntry((PhysicsBall*)FakeBallWorld::mpPredictWorld->mpPhysicsBall);
+    BallCacheInfo* newInfo = FakeBallWorld::AddCacheEntry(mfLastCacheTime, (PhysicsBall*)FakeBallWorld::mpPredictWorld->mpPhysicsBall);
 
     v3BallPos = newInfo->mv3Position;
     v3BallVel = newInfo->mv3LinearVelocity;

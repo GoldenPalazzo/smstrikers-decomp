@@ -597,7 +597,7 @@ void IChooseCaptain::FindAliveHumanPlayers()
     }
 }
 
-inline int IChooseCaptain::GetSide(int padid)
+int IChooseCaptain::GetSide(int padid)
 {
     if (mIsSinglePlayerInput)
     {
@@ -623,7 +623,7 @@ inline int IChooseCaptain::GetSide(int padid)
     }
 }
 
-inline void IChooseCaptain::UpdateSinglePlayerState()
+void IChooseCaptain::UpdateSinglePlayerState()
 {
     int numSide1;
     int numSide0;

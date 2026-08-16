@@ -9,7 +9,7 @@
 unsigned char PriorityStream::PLAY_RECORD::s_BowserAttackNext = true;
 unsigned char PriorityStream::PLAY_RECORD::s_SuddenDeathNext = true;
 
-unsigned long PriorityStream::GetNextStreamId(unsigned long SimpleStreamId)
+unsigned long PriorityStream::PLAY_RECORD::GetNextStreamId(unsigned long SimpleStreamId)
 {
     char StreamName[64];
     char* Format;
@@ -83,7 +83,7 @@ void PriorityStream::PLAY_RECORD::Play(bool CheckActive, bool GetNextId)
 
     if (GetNextId)
     {
-        m_StreamId = PriorityStream::GetNextStreamId(m_OrigStreamId);
+        m_StreamId = GetNextStreamId(m_OrigStreamId);
     }
 
     if (m_Queue)
@@ -284,7 +284,7 @@ void PriorityStream::FakeResume(bool checkActive)
         {
             if (!checkActive || m_PStream.m_Active)
             {
-            m_PStream.m_StreamId = GetNextStreamId(m_PStream.m_OrigStreamId);
+            m_PStream.m_StreamId = m_PStream.GetNextStreamId(m_PStream.m_OrigStreamId);
 
                 if (m_PStream.m_Queue)
                 {
@@ -351,7 +351,7 @@ void PriorityStream::TrackIdleCB()
                 return;
             }
 
-            m_PStream.m_StreamId = GetNextStreamId(m_PStream.m_OrigStreamId);
+            m_PStream.m_StreamId = m_PStream.GetNextStreamId(m_PStream.m_OrigStreamId);
 
             if (m_PStream.m_Queue)
             {

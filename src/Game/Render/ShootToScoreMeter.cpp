@@ -67,7 +67,7 @@ static inline float clamp_le(float x, float limit)
         return limit;
 }
 
-inline void ShootToScoreMeter::DrawIndicatorBar(float angle, const nlColour& colour, const nlMatrix4& meterMatrix, float scale)
+void ShootToScoreMeter::DrawIndicatorBar(float angle, const nlColour& colour, const nlMatrix4& meterMatrix, float scale)
 {
     glSetCurrentTexture(WhiteTexture, GLTT_Diffuse);
     glSetTextureState(GLTS_DiffuseWrap, 0);

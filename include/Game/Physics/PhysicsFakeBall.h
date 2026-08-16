@@ -31,7 +31,7 @@ public:
         return mpBall;
     }
 
-    static BallCacheInfo* AddCacheEntry(PhysicsBall*);
+    static BallCacheInfo* AddCacheEntry(float, PhysicsBall*);
     static void GetNextBallPosVel(nlVector3&, nlVector3&);
     void SetHitInfo(dContactGeom*);
     static bool FindBallIntercept(const nlVector3&, float, float, nlVector3&, nlVector3&, float&, float&, float);

@@ -50,7 +50,7 @@ public:
     static bool sbShowPositiveXNetDuringHyperStrike;
 
     World(const char*);
-    static inline bool IsCaptainShootToScorePresentationOn();
+    bool IsCaptainShootToScorePresentationOn() const;
     /* 0x04 */ virtual ~World();
 
     /* 0x08 */ virtual eTerrain GetTerrainType(const nlVector3&) const = 0;
@@ -75,10 +75,10 @@ public:
     void ExtractFrustumPlanes();
     void* GetCustomSpecularData(glModelPacket*, bool);
     void CreateLightUserData();
-    inline void AssignLightBitmasks();
-    inline void CreateWorldObjFromChunk(nlChunk*);
-    inline void CreateLightObjFromChunk(nlChunk*);
-    inline bool LoadPhysicsPrimitives(nlChunk*);
+    void AssignLightBitmasks();
+    void CreateWorldObjFromChunk(nlChunk*);
+    void CreateLightObjFromChunk(nlChunk*);
+    bool LoadPhysicsPrimitives(nlChunk*);
     bool LoadObjectData(const char*);
     void AddToHyperSTSDrawables(unsigned long, DrawableModel*);
     bool LoadGeometry(glModel*, unsigned long, bool, bool, unsigned long*, int*, bool);

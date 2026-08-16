@@ -168,7 +168,7 @@ public:
     bool CanDoCaptainShootToScore();
     bool CanLooseBallShoot();
     bool CanLooseBallPass();
-    inline bool CanPassTargetAttemptOneTouch(cFielder*);
+    bool CanPassTargetAttemptOneTouch(cFielder*);
     bool CanReceivePass();
     void SetMark(cFielder*);
     cFielder* GetMark() const { return m_pMark; }
@@ -261,7 +261,7 @@ public:
     void SetIdleAnimState();
     void SetIdleWBAnimState();
     static void RunningSABcallback(unsigned int, cPN_SingleAxisBlender*);
-    inline void SetRunLeanSAB(const int* pSABAnims, int nNumSABAnims, int nPrimaryAnim);
+    void SetRunLeanSAB(const int* pSABAnims, int nNumSABAnims, int nPrimaryAnim);
     void SetRunningAnimState(float);
     void SetRunningTurboAnimState();
     void SetRunningWBAnimState(float);
@@ -393,7 +393,7 @@ public:
     void asmRunning();
     void asmRunningWB(float);
     void EndAction();
-    bool InitAction(eFielderActionState eAction, FuzzyVariant& vOpt1, FuzzyVariant& vOpt2);
+    bool InitAction(eFielderActionState eAction, FuzzyVariant vOpt1, FuzzyVariant vOpt2);
     void InitActionDeke(ePadActions);
     void ActionDeke(float);
     void InitActionElectrocution(const nlVector3&, const nlVector3&);
@@ -427,9 +427,9 @@ public:
     void ActionRunning(float);
     void InitActionRunningWB(bool);
     void ActionRunningWB(float);
-    inline void InitActionRunningWBTurbo();
+    void InitActionRunningWBTurbo();
     void ActionRunningWBTurbo(float);
-    inline void InitActionRunningWBTurboTurn();
+    void InitActionRunningWBTurboTurn();
     void ActionRunningWBTurboTurn(float);
     void InitActionShot(bool);
     void ActionShot(float);

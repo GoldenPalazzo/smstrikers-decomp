@@ -151,7 +151,7 @@ feVector3& TLInstance::GetAssetScale() const
     return const_cast<feVector3&>(m_overloadedAttributes.v3Scale);
 }
 
-inline feVector3& TLInstance::GetAssetRotation() const
+feVector3& TLInstance::GetAssetRotation() const
 {
     return const_cast<feVector3&>(m_overloadedAttributes.v3Rotation);
 }

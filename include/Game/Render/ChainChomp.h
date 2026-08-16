@@ -34,6 +34,7 @@ public:
     void Fall(cFielder*, cFielder*);
     void Hide(bool);
     bool IsHidden() const;
+    bool AvoidSidelines();
     virtual void Move(float);
     virtual void DrawShadow(const cPoseAccumulator&, const nlMatrix4&);
     void Leave();

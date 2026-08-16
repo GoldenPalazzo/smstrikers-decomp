@@ -69,7 +69,7 @@ void PhysicsBall::ScaleAngularVelocity(float scale)
     }
 }
 
-inline void PhysicsBall::CalcSurfaceVelocity(nlVector3& v3VelocityOut)
+void PhysicsBall::CalcSurfaceVelocity(nlVector3& v3VelocityOut)
 {
     nlVector3 v3AngVelocity;
     GetAngularVelocity(&v3AngVelocity);

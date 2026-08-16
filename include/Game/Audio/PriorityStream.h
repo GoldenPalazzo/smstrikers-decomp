@@ -33,9 +33,9 @@ public:
 
         static unsigned char s_BowserAttackNext;
         static unsigned char s_SuddenDeathNext;
-    }; // total size: 0x38
 
-    static unsigned long GetNextStreamId(unsigned long);
+        unsigned long GetNextStreamId(unsigned long);
+    }; // total size: 0x38
 
     PriorityStream(AudioStreamTrack::StreamTrack&);
     void Reset();

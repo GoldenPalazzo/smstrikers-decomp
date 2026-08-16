@@ -98,7 +98,7 @@ public:
     void UpdateTeamAI(float);
     void UpdatePlays(float);
     void CalculateNewBallInterceptTimes();
-    void UpdateBallInterceptTime();
+    void UpdateBallInterceptTime(float);
     void AssignMarks(bool);
     cFielder* GetCaptain();
     cFielder* GetStriker() const;
