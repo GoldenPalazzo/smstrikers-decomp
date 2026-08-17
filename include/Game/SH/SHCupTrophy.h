@@ -4,7 +4,7 @@
 #include "types.h"
 
 #include "Game/BaseSceneHandler.h"
-#include "Game/TrophyInfo.h"
+#include "Game/TrophyTextures.h"
 #include "Game/FE/feAsyncImage.h"
 #include "Game/FE/feButtonComponent.h"
 

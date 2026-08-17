@@ -7,7 +7,7 @@
 #include "Game/FE/feButtonComponent.h"
 #include "Game/FE/feScrollText.h"
 #include "Game/Team.h"
-#include "Game/TrophyInfo.h"
+#include "Game/TrophyTextures.h"
 
 void continueCup(bool);
 void startNewCup(bool);

@@ -33,22 +33,6 @@ enum eTrophyType
     NUM_TROPHIES = 13,
 };
 
-static const char* TROPHY_TEXTURE_FILENAMES[NUM_TROPHIES] = {
-    "fe/trophies/cups_mushroom",
-    "fe/trophies/cups_flower",
-    "fe/trophies/cups_star",
-    "fe/trophies/cups_bowser",
-    "fe/trophies/cups_super_mushroom",
-    "fe/trophies/cups_super_flower",
-    "fe/trophies/cups_super_star",
-    "fe/trophies/cups_super_bowser",
-    "fe/trophies/cups_veteran",
-    "fe/trophies/cups_sniper",
-    "fe/trophies/cups_super_striker",
-    "fe/trophies/cups_super_team",
-    "fe/trophies/cups_lakitu",
-};
-
 const char* GetThrophyModelName(eTrophyType);
 
 #endif // _TROPHYINFO_H_

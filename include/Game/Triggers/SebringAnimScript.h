@@ -12,7 +12,6 @@ public:
         m_FireTriggers = true;
     }
 
-    virtual ~SebringAnimTagScriptInterpreter() {}
     virtual void DoFunctionCall(unsigned int);
     virtual void TriggerFired(unsigned long);
 
