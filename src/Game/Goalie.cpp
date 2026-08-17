@@ -1336,7 +1336,6 @@ void Goalie::InitActionPursueRecover()
 
 /**
  * Offset/Address/Size: 0x8878 | 0x8004B374 | size: 0xC70
- * TODO: 99.01% match - four register/schedule tie-break clusters remain; see notes spec 0125.
  */
 void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode naviMode)
 {
@@ -1346,16 +1345,18 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
     u16 absBallAngleDiff;
     unsigned int nParam;
     int eAnimID;
+    int nCurrentAnimID;
     int nFinalAnim;
     unsigned int aFinalDir;
     bool bNeedChange;
     u16 desiredAng;
 
     pBall = g_pBall;
-    eAnimID = m_eAnimID;
+    nCurrentAnimID = m_eAnimID;
+    eAnimID = nCurrentAnimID;
     f32 fTime = m_pCurrentAnimController->m_fTime;
 
-    GetLocalPoint(mv3LocalNavTarget, mv3NavTarget, m_v3Position, GetActualFacing());
+    GetLocalPoint(mv3LocalNavTarget, mv3NavTarget, m_v3Position, m_aActualFacingDirection);
 
     float distSq = mv3LocalNavTarget.f.x * mv3LocalNavTarget.f.x + mv3LocalNavTarget.f.y * mv3LocalNavTarget.f.y;
 
@@ -1430,7 +1431,7 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
         int ballDiff = (s16)(desiredAng - (u16)aGoalie2Ball);
         aBaseDir = (desiredAng + m_aActualFacingDirection) & 0xFFFF;
         aFinalDir = aBaseDir;
-        deltaToBall = (u16)abs_s16((s16)ballDiff);
+        deltaToBall = abs_ang16((s16)ballDiff);
         nFinalAnim = 0x26;
 
         if (naviMode == NAVI_FACE_DESIRED && absBallAngleDiff < 0x3FFC)
@@ -1539,7 +1540,7 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
                 m_aDesiredFacingDirection = aFinalDir;
                 if (absFinalDiff < 0x3FFC)
                 {
-                    if ((eAnimID == 0x25 || eAnimID == 0x24) && fTime < mfSwitchTime)
+                    if ((nCurrentAnimID == 0x25 || nCurrentAnimID == 0x24) && fTime < mfSwitchTime)
                         break;
                     eAnimID = 0x26;
                 }
@@ -1834,8 +1835,7 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
         pSAB = pSAB_R;
     }
 
-    cPN_SingleAxisBlender* pDirBlender = AllocateSingleAxisBlender();
-    pDirBlender = new (pDirBlender) cPN_SingleAxisBlender(2, MoveDirectionCB, nParam, 0.1f);
+    cPN_SingleAxisBlender* pDirBlender = new (AllocateSingleAxisBlender()) cPN_SingleAxisBlender(2, MoveDirectionCB, nParam, 0.1f);
 
     pDirBlender->SetChild(0, pSAB_L);
     pDirBlender->SetChild(1, pSAB_R);

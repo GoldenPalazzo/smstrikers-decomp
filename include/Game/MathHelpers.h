@@ -69,4 +69,12 @@ inline float TestDistanceSquaredLessThan(const nlVector3& pos1, const nlVector3&
     return nlGetLengthSquared3D(delta.f.x, delta.f.y, delta.f.z) < (threshold * threshold);
 }
 
+/*
+ * Absolute value of a signed 16-bit angle delta, as an unsigned 16-bit angle
+ */
+static inline u16 abs_ang16(s16 x)
+{
+    return (u16)(x < 0 ? -x : x);
+}
+
 #endif // _MATHHELPERS_H_
