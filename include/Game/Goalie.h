@@ -265,11 +265,6 @@ public:
         return (float)fabs(mv3TargetPosition.f.x) > cField::GetGoalLineX(1U);
     }
 
-    inline u16 GetActualFacing() const
-    {
-        return m_aActualFacingDirection;
-    }
-
     /*
      * Facing direction mirrored onto the near side of the net and clamped to the
      * goal arc, i.e. the direction pass and save decisions are measured against.

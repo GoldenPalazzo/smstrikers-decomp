@@ -200,6 +200,11 @@ public:
         return m_aDesiredFacingDirection;
     }
 
+    inline u16 GetActualFacing() const
+    {
+        return m_aActualFacingDirection;
+    }
+
     virtual void Update(float);
 
     /* 0x04 */ eCharacterClass m_eCharacterClass;
@@ -232,7 +237,7 @@ public:
     /* 0x88 */ cPoseNode* m_pPoseTree;
     /* 0x8C */ cPoseNode** m_pAILayer;
     /* 0x90 */ cPN_SAnimController* m_pCurrentAnimController;
-    /* 0x94 */ s32 m_eAnimID;
+    /* 0x94 */ int m_eAnimID;
     /* 0x98 */ AnimRetargetList* m_pAnimRetargetList;
     /* 0x9C */ cHeadTrack* m_pHeadTrack;
     /* 0xA0 */ s32 m_nHeadJointIndex;
