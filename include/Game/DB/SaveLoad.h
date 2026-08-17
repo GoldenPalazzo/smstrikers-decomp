@@ -106,15 +106,4 @@ struct IconDataCache
 
 extern IconDataCache gIconDataCache;
 
-// class MemCardFunctor
-// {
-// public:
-//     void MCMemberFunctor<LoadCallbacks>::Call(unsigned long, long);
-//     void MCMemberFunctor<SaveCallbacks>::Call(unsigned long, long);
-//     void MCMemberFunctor<DeleteCallbacks>::Call(unsigned long, long);
-//     void MCMemberFunctor<FormatCallbacks>::Call(unsigned long, long);
-//     void MCMemberFunctor<FileExistsCallbacks>::Call(unsigned long, long);
-//     void MCMemberFunctor<MemoryCardIDCallbacks>::Call(unsigned long, long);
-// };
-
 #endif // _SAVELOAD_H_

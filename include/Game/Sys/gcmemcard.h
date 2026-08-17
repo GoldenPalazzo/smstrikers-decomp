@@ -91,26 +91,23 @@ public:
 
         MCMemberFunctor(T* obj, const MemberCB& cb)
         {
-            m_pFunc = ((void**)&cb)[0];
-            m_Slot = ((unsigned long*)&cb)[1];
-            m_pfnCB = ((void**)&cb)[2];
+            m_cb = cb;
             m_pObject = obj;
         }
         MCMemberFunctor(T* obj, const MemberCB& cb, void* pData)
             : MCInternalFunctorBase(pData)
         {
-            m_pFunc = ((void**)&cb)[0];
-            m_Slot = ((unsigned long*)&cb)[1];
-            m_pfnCB = ((void**)&cb)[2];
+            m_cb = cb;
             m_pObject = obj;
         }
         ~MCMemberFunctor();
-        virtual void Call(unsigned long, long);
+        virtual void Call(unsigned long slot, long result)
+        {
+            (m_pObject->*m_cb)(slot, result, m_pData);
+        }
         void Destroy();
 
-        /* 0x08 */ void* m_pFunc;
-        /* 0x0C */ unsigned long m_Slot;
-        /* 0x10 */ void* m_pfnCB;
+        /* 0x08 */ MemberCB m_cb;
         /* 0x14 */ T* m_pObject;
     };
 
@@ -200,9 +197,10 @@ public:
     /* 0x428 */ unsigned short m_CompanyId;
     /* 0x42A */ unsigned char m_CardWorkArea[41472];
 
-    static MemCard* At(unsigned long off)
+    // slotOffset is a byte offset into the g_MemCards table (slot * sizeof(MemCard*)).
+    static MemCard* At(unsigned long slotOffset)
     {
-        return g_MemCards[off >> 2];
+        return *(MemCard**)((unsigned char*)g_MemCards + slotOffset);
     }
 
     static bool s_InitDone;

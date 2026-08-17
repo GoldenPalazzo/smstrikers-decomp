@@ -1264,7 +1264,7 @@ config.libs = [
             Object(Matching, "Game/Effects/PhotoFlashEffect.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # DB
-            Object(NonMatching, "Game/DB/SaveLoad.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/DB/SaveLoad.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/DB/UserOptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/DB/StatsTracker.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/DB/Simmer.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

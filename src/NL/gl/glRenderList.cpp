@@ -180,6 +180,11 @@ typedef WalkHelper<const glModelPacket*, DLListEntry<const glModelPacket*>, Pack
 typedef void (GLRenderPacketWalkHelper::*GLRenderPacketWalkCallback)(DLListEntry<const glModelPacket*>*);
 typedef void (PacketCallbackManager::*GLRenderPacketListCallback)(const glModelPacket**);
 
+/**
+ * Dead in retail: MarioSoccerZ.MAP lists this body as UNUSED (0x50 bytes) and its
+ * dwarf.txt DIE is Erased, so nothing referenced it. DoCallback compares the streams
+ * itself. Keep the definition: the dead body is part of the object's .text layout.
+ */
 static unsigned char StreamsDiffer(const glModelPacket* packet, unsigned long num_prev, const glModelStream* prev)
 {
     int num = packet->numStreams;
@@ -335,17 +340,10 @@ void PacketCallbackManager::DoCallback(const glModelPacket* p, unsigned int coun
         flags |= glv_RasterChanged;
     }
 
-    unsigned long textureStateLow = ((const unsigned long*)&p->state.texturestate)[0];
-    unsigned long lastTextureStateLow = ((const unsigned long*)&m_LastTextureState)[0];
-    unsigned long textureStateHigh = ((const unsigned long*)&p->state.texturestate)[1];
-    unsigned long lastTextureStateHigh = ((const unsigned long*)&m_LastTextureState)[1];
-    unsigned long textureStateDiffLow = textureStateLow ^ lastTextureStateLow;
-    unsigned long textureStateDiffHigh = textureStateHigh ^ lastTextureStateHigh;
-    if ((textureStateDiffHigh | textureStateDiffLow) != 0)
+    if (p->state.texturestate != m_LastTextureState)
     {
-        ((unsigned long*)&m_LastTextureState)[1] = textureStateHigh;
+        m_LastTextureState = p->state.texturestate;
         flags |= glv_TextureStateChanged;
-        ((unsigned long*)&m_LastTextureState)[0] = textureStateLow;
     }
 
     if (p->state.matrix != m_LastMatrix)
@@ -361,27 +359,23 @@ void PacketCallbackManager::DoCallback(const glModelPacket* p, unsigned int coun
         flags |= glv_TextureChanged;
     }
 
+    for (int i = 0; i < 6; i++)
     {
-        unsigned long texture;
-        int i;
-        for (i = 0; i < 6; i++)
+        if (m_LastTexture[i] != p->state.texture[i])
         {
-            if (m_LastTexture[i] != (texture = p->state.texture[i]))
-            {
-                m_LastTexture[i] = texture;
-                flags |= glv_TextureChanged;
-            }
+            m_LastTexture[i] = p->state.texture[i];
+            flags |= glv_TextureChanged;
         }
     }
 
     glModelStream* lastStreams = m_LastStreams;
     glModelStream* streams;
     int numStreams;
-    unsigned int streamChanged;
+    unsigned char streamsChanged;
 
     if (m_LastNumStreams != (numStreams = p->numStreams))
     {
-        streamChanged = 1;
+        streamsChanged = 1;
     }
     else
     {
@@ -391,22 +385,21 @@ void PacketCallbackManager::DoCallback(const glModelPacket* p, unsigned int coun
         {
             if (streams->address != lastStreams->address)
             {
-                streamChanged = 1;
+                streamsChanged = 1;
                 goto stream_compare_done;
             }
             lastStreams++;
             streams++;
         }
 
-        streamChanged = 0;
+        streamsChanged = 0;
     }
 
 stream_compare_done:
-    if ((streamChanged & 0xFF) != 0)
+    if (streamsChanged)
     {
         m_LastNumStreams = numStreams;
-        glModelStream* streams = p->streams;
-        m_LastStreams = streams;
+        m_LastStreams = p->streams;
         flags |= glv_StreamsChanged;
     }
 
