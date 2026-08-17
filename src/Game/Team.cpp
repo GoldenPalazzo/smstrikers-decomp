@@ -530,113 +530,82 @@ void cTeam::UpdateControllers()
 
 /**
  * Offset/Address/Size: 0x3DC | 0x80065044 | size: 0x468
- * TODO: 97.85% match - register allocation still differs in controller assignment,
- * facing direction, and kickoff setup blocks.
  */
 void cTeam::ResetCharacters()
 {
-    unsigned short aNewFacingDirection;
-    u16 j;
-    int nAssignedControllers;
+    int i;
     int nAssignmentOrder[5];
-    const unsigned short* pFacingDirectionTable;
-    const unsigned short* pNewFacingDirectionTable;
-    const FormationSpec* pFormation;
-    unsigned char bFlipPositions;
-    int* pOrder;
 
-    for (int i = 0; i < 5; i++)
+    for (i = 0; i < 5; i++)
     {
         m_pPlayers[i]->SetAIPad(NULL);
     }
 
     UpdateControllers();
 
-    nAssignmentOrder[0] = nAssignedControllers = 0;
-    nAssignmentOrder[1] = 1;
-    nAssignmentOrder[2] = 2;
-    nAssignmentOrder[3] = 3;
-    nAssignmentOrder[4] = 4;
-
-    j = nAssignedControllers;
-    pOrder = nAssignmentOrder;
-
-    while ((u16)j < 4)
+    for (i = 0; i < 5; i++)
     {
-        int nSide = m_nSide;
-        if ((s16)nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide(j) == nSide)
-        {
-            nAssignedControllers++;
-        }
-        j++;
+        nAssignmentOrder[i] = i;
     }
 
-    if (nAssignedControllers > 0)
+    if (GetNumAssignedControllers() > 0 && m_pPlayers[nAssignmentOrder[0]]->m_pController == NULL)
     {
-        if (m_pPlayers[pOrder[0]]->m_pController == NULL)
+        for (i = 0; i <= 4; i++)
         {
-            int swapIndex;
-            for (swapIndex = 0; swapIndex <= 4; swapIndex++)
+            if (m_pPlayers[nAssignmentOrder[i]]->m_pController != NULL)
             {
-                if (m_pPlayers[pOrder[swapIndex]]->m_pController != NULL)
-                {
-                    break;
-                }
+                break;
             }
-            nAssignmentOrder[0] = swapIndex;
-            nAssignmentOrder[swapIndex] = 0;
         }
+        nAssignmentOrder[0] = i;
+        nAssignmentOrder[i] = 0;
     }
 
+    const unsigned short* pFacingDirectionTable;
+    const FormationSpec* pFormation;
     if (g_pGame->m_nLastTeamToScore == g_pTeams[m_nSide == 0 ? 1 : 0]->m_nSide)
     {
-        pNewFacingDirectionTable = g_aAdvantagePlayerFacingDirections;
+        pFacingDirectionTable = g_aAdvantagePlayerFacingDirections;
         pFormation = FormationManager::GetFormationSpec(FORMATION_OFF_DEF_KICKOFF_ADVANTAGE);
     }
     else
     {
-        pNewFacingDirectionTable = g_aNeutralPlayerFacingDirections;
+        pFacingDirectionTable = g_aNeutralPlayerFacingDirections;
         pFormation = FormationManager::GetFormationSpec(FORMATION_OFF_DEF_KICKOFF_NEUTRAL);
     }
 
-    bFlipPositions = 0;
+    unsigned char bFlipPositions = 0;
     if (g_pTeams[m_nSide == 0 ? 1 : 0]->m_pNet->m_baseLocation.f.x < 0.0f)
     {
         bFlipPositions = 1;
     }
 
-    pFacingDirectionTable = pNewFacingDirectionTable;
-
-    for (int i = 0; i < 5; i++)
+    for (i = 0; i < 5; i++)
     {
-        aNewFacingDirection = *pFacingDirectionTable;
-        cFielder* pFielder = m_pPlayers[*pOrder];
+        cFielder* pFielder = GetFielder(nAssignmentOrder[i]);
         nlVector3 v3NewPosition;
+        const unsigned short aOriginalFacingDirection = pFacingDirectionTable[i];
+        unsigned short aNewFacingDirection;
 
         if (i < 4)
         {
             nlVector2 v2Position;
             pFormation->m_Positions[i].GetLocationForTeam(v2Position, pFielder->m_pTeam->m_nSide);
-            v3NewPosition.f.x = v2Position.f.x;
-            v3NewPosition.f.y = v2Position.f.y;
-            v3NewPosition.f.z = 0.0f;
+            nlVec3Set(v3NewPosition, v2Position.f.x, v2Position.f.y, 0.0f);
         }
         else
         {
-            if (bFlipPositions)
-                v3NewPosition.f.x = 18.0f;
-            else
-                v3NewPosition.f.x = -18.0f;
-            v3NewPosition.f.y = 0.0f;
-            v3NewPosition.f.z = 0.0f;
+            nlVec3Set(v3NewPosition, bFlipPositions ? 18.0f : -18.0f, 0.0f, 0.0f);
         }
 
         if (bFlipPositions)
         {
-            aNewFacingDirection += ((s16)(0x4000 - aNewFacingDirection)) * 2;
+            aNewFacingDirection = aOriginalFacingDirection
+                + ((s16)(0x4000 - aOriginalFacingDirection)) * 2;
         }
         else
         {
+            aNewFacingDirection = aOriginalFacingDirection;
             v3NewPosition.f.y = -v3NewPosition.f.y;
         }
 
@@ -677,8 +646,6 @@ void cTeam::ResetCharacters()
             }
         }
 
-        pOrder++;
-        pFacingDirectionTable++;
     }
 
     StopGameplayEffectsAndSounds();
