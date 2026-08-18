@@ -10,9 +10,9 @@ public:
     class PLAY_RECORD
     {
     public:
-        PLAY_RECORD(AudioStreamTrack::StreamTrack& t)
+        PLAY_RECORD(AudioStreamTrack::StreamTrack& track)
             : m_StreamId(0)
-            , m_Track(t)
+            , m_Track(track)
         {
         }
 
@@ -24,9 +24,9 @@ public:
         /* 0x08 */ float m_Volume;
         /* 0x0C */ unsigned long m_FadeIn : 15;
         /* 0x0C */ unsigned long m_ExistingFadeOut : 14;
-        /* 0x0F */ unsigned char m_Looping : 1;
-        /* 0x0F */ unsigned char m_Queue : 1;
-        /* 0x0F */ unsigned char m_Active : 1;
+        /* 0x0F */ bool m_Looping : 1;
+        /* 0x0F */ bool m_Queue : 1;
+        /* 0x0F */ bool m_Active : 1;
         /* 0x10 */ char m_StreamParam[32];
         /* 0x30 */ AudioStreamTrack::StreamTrack& m_Track;
         /* 0x34 */ Audio::MasterVolume::VOLUME_GROUP m_VolGroup;

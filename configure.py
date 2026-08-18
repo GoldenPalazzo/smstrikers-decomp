@@ -884,7 +884,7 @@ config.libs = [
             Object(Matching, "Game/Audio/AudioStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Audio/CrowdMood.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Audio/StreamTrack.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Audio/PriorityStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
+            Object(Matching, "Game/Audio/PriorityStream.cpp", mw_version="GC/2.6", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Physics
             Object(Matching, "Game/Physics.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
