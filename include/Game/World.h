@@ -48,6 +48,8 @@ public:
     static u32 m_uCurrentFrameCount;
     static bool sbIsHyperShootToScoreRenderingEnabled;
     static bool sbShowPositiveXNetDuringHyperStrike;
+    static bool sbSkyboxRenderingDisabled;
+    static bool sbStadiumRenderingDisabled;
 
     World(const char*);
     bool IsCaptainShootToScorePresentationOn() const;
@@ -67,6 +69,7 @@ public:
     int CompareNameToGenericName(const char*, const char*);
     unsigned long GetHashIdForGenericName(const char*) const;
     LightObject* GetShadowLight(const nlVector3&, float);
+    unsigned char RemoveDrawableObject(DrawableObject* pObject);
     bool AddDrawableObject(unsigned long, DrawableObject*);
     HelperObject* FindHelperObject(unsigned long uHashId);
     DrawableObject* FindDrawableObject(unsigned long);
@@ -78,12 +81,15 @@ public:
     void AssignLightBitmasks();
     void CreateWorldObjFromChunk(nlChunk*);
     void CreateLightObjFromChunk(nlChunk*);
+    void CreateEmitterObjFromChunk(nlChunk*);
     bool LoadPhysicsPrimitives(nlChunk*);
     bool LoadObjectData(const char*);
     void AddToHyperSTSDrawables(unsigned long, DrawableModel*);
     bool LoadGeometry(glModel*, unsigned long, bool, bool, unsigned long*, int*, bool);
     bool LoadGeometry(const char*, bool, bool, unsigned long*, int*);
     bool Load(bool forfe);
+    void DrawCullingInformation(int nNumSubmitted, int nNumDrawn);
+    void DrawAdditionalBalls(DrawableObject* pObject);
 
     /* 0x004 */ WorldAnimManager* m_pWorldAnimManager;
     /* 0x008 */ nlAVLTree<unsigned long, LightObject*, DefaultKeyCompare<unsigned long> > m_lightMap;
@@ -109,6 +115,14 @@ public:
     /* 0x134 */ CharacterPhysicsData* m_pPhysicsData;
     /* 0x138 */ const LightObject* m_pShadowLight;
 }; // total size: 0x13C
+
+inline void World::FixedUpdate(float)
+{
+}
+
+inline void World::HandleEvent(Event*, void*)
+{
+}
 
 // class nlAVLTree<unsigned long, LightObject*, DefaultKeyCompare<unsigned long>>
 // {

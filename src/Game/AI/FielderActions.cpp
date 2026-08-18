@@ -104,8 +104,6 @@ static cRumbleFilter rumbleFilter;
 
 extern cCharacter* g_pCurrentlyUpdatingCharacter;
 extern float g_fFixedUpdateTick;
-extern unsigned char sSTSLighting__17DrawableCharacter;
-extern unsigned char sbShowPositiveXNetDuringHyperStrike__5World;
 class PhotoFlash
 {
 public:
@@ -3627,7 +3625,7 @@ void cFielder::ActionShootToScore(float)
                     }
                 }
 
-                sSTSLighting__17DrawableCharacter = 1;
+                DrawableCharacter::sSTSLighting = true;
             }
         }
 
@@ -3651,7 +3649,7 @@ void cFielder::ActionShootToScore(float)
                     {
                         bool bShowPositiveXNet = pBallPos->f.x > 0.0f;
                         World::sbIsHyperShootToScoreRenderingEnabled = 1;
-                        sbShowPositiveXNetDuringHyperStrike__5World = bShowPositiveXNet;
+                        World::sbShowPositiveXNetDuringHyperStrike = bShowPositiveXNet;
                     }
 
                     FixedUpdateTask::mTimeScale = sfMatrixCamTimeScale;
@@ -3700,7 +3698,7 @@ void cFielder::ActionShootToScore(float)
         {
             if (m_pCurrentAnimController->TestTrigger(lightOffTime))
             {
-                sSTSLighting__17DrawableCharacter = 0;
+                DrawableCharacter::sSTSLighting = false;
             }
         }
 
@@ -3724,7 +3722,7 @@ void cFielder::ActionShootToScore(float)
                 EmitBallShot(this, (eBallShotEffectType)1, NULL, false);
 
                 bShotNISCaptainS2S = true;
-                sSTSLighting__17DrawableCharacter = 0;
+                DrawableCharacter::sSTSLighting = false;
                 g_pBall->m_pDrawableBall->m_uObjectFlags &= ~0x40;
             }
         }
@@ -3760,7 +3758,7 @@ void cFielder::ActionShootToScore(float)
         {
             g_pBall->InitiateBallBlur((eBallShotEffectType)1, this);
             DrawableCharacter::RenderAllCharacters();
-            sSTSLighting__17DrawableCharacter = 0;
+            DrawableCharacter::sSTSLighting = false;
         }
         else
         {
