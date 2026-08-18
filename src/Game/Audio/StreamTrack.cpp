@@ -615,7 +615,7 @@ void AudioStreamTrack::StreamTrack::StopQStream(QUEUED_STREAM* pQueuedStream)
 
     nlDLRingIsEnd(m_QueuedStreams.m_Head, entry);
     nlDLRingRemove(&m_QueuedStreams.m_Head, entry);
-    m_QueuedStreams.DeleteEntry(entry);
+    m_QueuedStreams.Deallocate(entry, NULL);
 
     if (m_QueuedStreams.m_Head == NULL)
     {

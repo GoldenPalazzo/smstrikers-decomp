@@ -2,6 +2,7 @@
 #define _GCSTREAM_H_
 
 #include "NL/nlArrayAllocator.h"
+#include "NL/nlWare.h"
 #include "NL/nlFile.h"
 #include "NL/nlFileGC.h"
 #include "musyx/musyx.h"
@@ -10,7 +11,6 @@
 // Declarations needed by the inline (weak) AudioStream methods defined below,
 // so this header compiles standalone in every includer.
 void nlServiceFileSystem();
-extern int nlPrintf(const char*, ...);
 extern "C" void sndStreamLPFParameter(unsigned long, bool, unsigned long);
 
 struct sDSPADPCM
@@ -486,8 +486,6 @@ public:
         }
     }
 
-    inline void WarnDestructorTimeout();
-
     void Destructor()
     {
         SetFlag(SF_SeriousStop, true);
@@ -508,7 +506,7 @@ public:
             long long elapsed = OSGetTime() - startTime;
             if (OSTicksToMilliseconds(elapsed) > 250)
             {
-                WarnDestructorTimeout();
+                nlPrintf("WARNING! Breaking out of audio stream d'tor early!\n");
                 break;
             }
         }
@@ -685,6 +683,39 @@ public:
     /* 0x38 */ nlFile* m_pFile;
     /* 0x3C */ unsigned long m_Interleave;
 }; // total size: 0x40
+
+inline void AudioStream::Purge()
+{
+    m_State = SS_New;
+}
+
+inline AudioStream::~AudioStream()
+{
+}
+
+inline void AudioStream::WarmReadDone(AudioStreamBuffer* pBuffer)
+{
+    if (m_Buffers[m_BufferCount - 1] != pBuffer)
+    {
+        return;
+    }
+
+    m_State = SS_Warm;
+
+    if (!(m_Flags & (1 << SF_Play)))
+    {
+        return;
+    }
+
+    if (pBuffer != m_Buffers[m_BufferCount - 1])
+    {
+        return;
+    }
+
+    m_Flags &= ~(1 << SF_Play);
+    ActivateBuffers();
+    m_State = SS_Playing;
+}
 
 } // namespace GCAudioStreaming
 

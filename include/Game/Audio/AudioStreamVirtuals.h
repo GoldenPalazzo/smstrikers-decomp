@@ -6,37 +6,14 @@
 namespace GCAudioStreaming
 {
 
-inline void AudioStream::Purge()
+inline bool StereoAudioStream::SafeToPurge()
 {
-    m_State = SS_New;
-}
-
-inline AudioStream::~AudioStream()
-{
-}
-
-inline void AudioStream::WarmReadDone(AudioStreamBuffer* pBuffer)
-{
-    if (m_Buffers[m_BufferCount - 1] != pBuffer)
+    bool result = false;
+    if (m_State <= SS_Initd && !nlAsyncReadsPending(m_pFile))
     {
-        return;
+        result = true;
     }
-
-    m_State = SS_Warm;
-
-    if (!(m_Flags & (1 << SF_Play)))
-    {
-        return;
-    }
-
-    if (pBuffer != m_Buffers[m_BufferCount - 1])
-    {
-        return;
-    }
-
-    m_Flags &= ~(1 << SF_Play);
-    ActivateBuffers();
-    m_State = SS_Playing;
+    return result;
 }
 
 inline MonoAudioStream::~MonoAudioStream()
@@ -58,16 +35,6 @@ inline void MonoAudioStream::Purge()
 {
     m_State = SS_New;
     nlClose(m_pFile);
-}
-
-inline bool StereoAudioStream::SafeToPurge()
-{
-    bool result = false;
-    if (m_State <= SS_Initd && !nlAsyncReadsPending(m_pFile))
-    {
-        result = true;
-    }
-    return result;
 }
 
 inline void StereoAudioStream::Purge()

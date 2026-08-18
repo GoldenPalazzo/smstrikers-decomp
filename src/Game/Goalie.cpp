@@ -2584,7 +2584,7 @@ bool Goalie::IsInsideNetArea(const nlVector3& v3Target)
 }
 
 /**
- * Offset/Address/Size: 0x6FF0 | 0x80049AE4 | size: 0x268
+ * Offset/Address/Size: 0x6FE8 | 0x80049AE4 | size: 0x268
  */
 float Goalie::CheckForDelflectAwayFromNet()
 {

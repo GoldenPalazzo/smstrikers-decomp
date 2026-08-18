@@ -6,16 +6,6 @@
 #include "Game/Audio/AudioStreamVirtuals.h"
 #include "Game/Audio/PriorityStream.h"
 
-namespace GCAudioStreaming
-{
-
-inline void AudioStream::WarnDestructorTimeout()
-{
-    nlPrintf("WARNING! Breaking out of audio stream d'tor early!\n");
-}
-
-} // namespace GCAudioStreaming
-
 namespace Audio
 {
 

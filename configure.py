@@ -517,7 +517,6 @@ def GameLib(lib_name: str, objects: Objects) -> Library:
             "-DMUSY_VERSION_MAJOR=2",
             "-DMUSY_VERSION_MINOR=0",
             "-DMUSY_VERSION_PATCH=3",
-            # '-pragma "supress_warnings on"',
         ],
         category="game",
     )
@@ -819,7 +818,7 @@ config.libs = [
             Object(Matching, "Game/Goalie.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/GoalieFatigue.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
-            Object(NonMatching, "Game/Team.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Team.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Formation.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/FormationDefines.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/TweaksBase.cpp", extra_cflags=["-inline auto"]),
@@ -880,7 +879,7 @@ config.libs = [
             Object(Matching, "Game/Audio/AudioScriptEventMgr.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Audio/AudioStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Audio/CrowdMood.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Audio/StreamTrack.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Audio/StreamTrack.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Audio/PriorityStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Physics

@@ -7,7 +7,6 @@
 #include "NL/globalpad.h"
 
 #include "Game/GameTweaks.h"
-// #include "Game/AI/Fielder.h"
 
 class cFielder;
 
@@ -108,8 +107,7 @@ public:
     cFielder* GetRearMostFielder();
 
     /* 0x00 */ int m_nSide;
-    /* 0x04 */ cFielder* m_pPlayers[5];
-    // /* 0x14 */ Goalie* m_pGoalie;
+    /* 0x04 */ cPlayer* m_pPlayers[5];
     /* 0x18 */ cFielder* m_pAIOrderedFielders[4];
     /* 0x28 */ cFielder* m_pBallInterceptOrderedFielders[4];
     /* 0x38 */ cNet* m_pNet;
