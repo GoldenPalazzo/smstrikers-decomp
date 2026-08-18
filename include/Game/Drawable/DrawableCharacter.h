@@ -6,8 +6,6 @@
 #include "Game/CharacterEffects.h"
 #include "Game/Render/Bowser.h"
 
-void DrawableCharacterHeadTrackCallback(unsigned int, unsigned int, cPoseAccumulator*, unsigned int, int);
-
 class cCharacter;
 class cPoseNode;
 class SkinAnimatedMovableNPC;
@@ -61,17 +59,12 @@ public:
     /* 0x54 */ unsigned char mDirt;                 // offset 0x54, size 0x1
 
     static bool sCameraRelativeLighting;
+    static unsigned char sShadowRenderingDisabled;
     static bool sSTSLighting;
     static cCharacter* spRenderOnlyThisCharacter;
     static bool sbRenderOpposingGoalieToo;
 
 }; // total size: 0x58
-
-template <>
-void DrawableCharacter::Replay<SaveFrame>(SaveFrame&);
-
-template <>
-void DrawableCharacter::Replay<LoadFrame>(LoadFrame&);
 
 // class cPoseAccumulator
 // {

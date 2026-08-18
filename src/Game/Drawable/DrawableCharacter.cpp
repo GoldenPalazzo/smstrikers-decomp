@@ -12,57 +12,63 @@
 template <int N>
 void Replayable(SaveFrame& frame, char typeId, cPoseNode*& poseNode)
 {
-    if (typeId < 0 || typeId > 3)
-        nlBreak();
+    if (N == 0 || frame.mInterval == N)
+    {
+        if (typeId < 0 || typeId > 3)
+            nlBreak();
 
-    if (typeId == 0)
-    {
-        ((cPN_Blender*)poseNode)->Replay(frame);
-    }
-    else if (typeId == 1)
-    {
-        ((cPN_Feather*)poseNode)->Replay(frame);
-    }
-    else if (typeId == 2)
-    {
-        ((cPN_SAnimController*)poseNode)->Replay(frame);
-    }
-    else if (typeId == 3)
-    {
-        ((cPN_SingleAxisBlender*)poseNode)->Replay(frame);
+        if (typeId == 0)
+        {
+            ((cPN_Blender*)poseNode)->Replay(frame);
+        }
+        else if (typeId == 1)
+        {
+            ((cPN_Feather*)poseNode)->Replay(frame);
+        }
+        else if (typeId == 2)
+        {
+            ((cPN_SAnimController*)poseNode)->Replay(frame);
+        }
+        else if (typeId == 3)
+        {
+            ((cPN_SingleAxisBlender*)poseNode)->Replay(frame);
+        }
     }
 }
 
 template <int N>
 void Replayable(LoadFrame& frame, char typeId, cPoseNode*& poseNode)
 {
-    if (typeId == 0)
+    if (N == 0 || frame.mInterval == N)
     {
-        cPN_Blender* blender = AllocateBlender();
-        new ((u8*)blender) cPN_Blender();
-        blender->Replay(frame);
-        poseNode = blender;
-    }
-    else if (typeId == 1)
-    {
-        cPN_Feather* feather = AllocateFeather();
-        new ((u8*)feather) cPN_Feather();
-        feather->Replay(frame);
-        poseNode = feather;
-    }
-    else if (typeId == 2)
-    {
-        cPN_SAnimController* controller = AllocateSAnimController();
-        new ((u8*)controller) cPN_SAnimController();
-        controller->Replay(frame);
-        poseNode = controller;
-    }
-    else if (typeId == 3)
-    {
-        cPN_SingleAxisBlender* singleAxis = AllocateSingleAxisBlender();
-        new ((u8*)singleAxis) cPN_SingleAxisBlender();
-        singleAxis->Replay(frame);
-        poseNode = singleAxis;
+        if (typeId == 0)
+        {
+            cPN_Blender* blender = AllocateBlender();
+            new ((u8*)blender) cPN_Blender();
+            blender->Replay(frame);
+            poseNode = blender;
+        }
+        else if (typeId == 1)
+        {
+            cPN_Feather* feather = AllocateFeather();
+            new ((u8*)feather) cPN_Feather();
+            feather->Replay(frame);
+            poseNode = feather;
+        }
+        else if (typeId == 2)
+        {
+            cPN_SAnimController* controller = AllocateSAnimController();
+            new ((u8*)controller) cPN_SAnimController();
+            controller->Replay(frame);
+            poseNode = controller;
+        }
+        else if (typeId == 3)
+        {
+            cPN_SingleAxisBlender* singleAxis = AllocateSingleAxisBlender();
+            new ((u8*)singleAxis) cPN_SingleAxisBlender();
+            singleAxis->Replay(frame);
+            poseNode = singleAxis;
+        }
     }
 }
 
@@ -76,14 +82,14 @@ void Replayable<1>(SaveFrame& frame, char typeId, cPoseNode*& poseNode)
 
         if (typeId == 0)
         {
-            cPN_Blender* blender = (cPN_Blender*)poseNode;
-            Replayable<0>(frame, (cPoseNode&)*blender);
+            cPN_Blender* pn = (cPN_Blender*)poseNode;
+            Replayable<0>(frame, (cPoseNode&)*pn);
 
             struct FloatProxy7
             {
                 float* mF;
             } proxy7;
-            proxy7.mF = &blender->m_fBlendTime;
+            proxy7.mF = &pn->m_fBlendTime;
             Replayable<0>(frame, (const FloatCompressor<0, 1, 7>&)proxy7);
         }
         else if (typeId == 1)
@@ -92,34 +98,34 @@ void Replayable<1>(SaveFrame& frame, char typeId, cPoseNode*& poseNode)
         }
         else if (typeId == 2)
         {
-            cPN_SAnimController* controller = (cPN_SAnimController*)poseNode;
-            Replayable<0>(frame, (cPoseNode&)*controller);
+            cPN_SAnimController* pn = (cPN_SAnimController*)poseNode;
+            Replayable<0>(frame, (cPoseNode&)*pn);
 
             struct FloatProxy15
             {
                 float* mF;
             } proxy15;
-            proxy15.mF = &controller->m_fTime;
+            proxy15.mF = &pn->m_fTime;
             Replayable<0>(frame, (const FloatCompressor<0, 1, 15>&)proxy15);
 
             unsigned int animPtr = 0;
-            animPtr = (unsigned int)controller->m_pSAnim;
-            if (controller->m_bMirror)
+            animPtr = (unsigned int)pn->m_pSAnim;
+            if (pn->m_bMirror)
                 animPtr |= 1;
 
             Replayable<0>(frame, animPtr);
-            Replayable<0>(frame, (unsigned int&)controller->m_pAnimRetarget);
+            Replayable<0>(frame, (unsigned int&)pn->m_pAnimRetarget);
         }
         else if (typeId == 3)
         {
-            cPN_SingleAxisBlender* singleAxis = (cPN_SingleAxisBlender*)poseNode;
-            Replayable<0>(frame, (cPoseNode&)*singleAxis);
+            cPN_SingleAxisBlender* pn = (cPN_SingleAxisBlender*)poseNode;
+            Replayable<0>(frame, (cPoseNode&)*pn);
 
             struct FloatProxy7b
             {
                 float* mF;
             } proxy7b;
-            proxy7b.mF = &singleAxis->m_fSmoothedWeight;
+            proxy7b.mF = &pn->m_fSmoothedWeight;
             Replayable<0>(frame, (const FloatCompressor<0, 1, 7>&)proxy7b);
         }
     }
@@ -191,6 +197,7 @@ void Replayable<1>(LoadFrame& frame, char typeId, cPoseNode*& poseNode)
 }
 
 #include "Game/Render/RenderShadow.h"
+#include "Game/Debug/ShapeRender.h"
 #include "Game/GameObjectLighting.h"
 #include "Game/WorldManager.h"
 #include "Game/BasicStadium.h"
@@ -215,7 +222,7 @@ static unsigned long BlackTexture = glGetTexture("global/black");
 static unsigned long WhiteTexture = glGetTexture("global/white");
 static int g_nShowBones;
 
-unsigned char sShadowRenderingDisabled__17DrawableCharacter;
+unsigned char DrawableCharacter::sShadowRenderingDisabled;
 cCharacter* DrawableCharacter::spRenderOnlyThisCharacter = nullptr;
 bool DrawableCharacter::sbRenderOpposingGoalieToo = false;
 bool DrawableCharacter::sSTSLighting = false;
@@ -271,93 +278,6 @@ int charSizes[] = {
 static float g_fRadiusScale = 1.175f;
 static unsigned char g_bSloppyBounds = 1;
 
-/**
- * Offset/Address/Size: 0x2C0 | 0x8011C5EC | size: 0x178
- */
-template <>
-void DrawableCharacter::Replay<SaveFrame>(SaveFrame& frame)
-{
-    Replayable<1>(frame, (unsigned char&)mDirt);
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mPosition.f.x));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mPosition.f.y));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mPosition.f.z));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mBip01Position.f.x));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mBip01Position.f.y));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mBip01Position.f.z));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mHeadPosition.f.x));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mHeadPosition.f.y));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mHeadPosition.f.z));
-    Replayable<1>(frame, FloatCompressor<-512, 512, 8>(mVelocity.f.x));
-    Replayable<1>(frame, FloatCompressor<-512, 512, 8>(mVelocity.f.y));
-    Replayable<1>(frame, FloatCompressor<-512, 512, 8>(mVelocity.f.z));
-    Replayable<1>(frame, mVisible);
-    Replayable<1>(frame, mFacingDirection);
-    Replayable<1>(frame, mHeadSpin);
-    Replayable<1>(frame, mHeadTilt);
-    Replayable<1>(frame, (unsigned long&)mEffectsTexturing);
-    ReplayablePolymorphic<1>(frame, mPoseTree);
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x8011C32C | size: 0x2C0
- */
-template <>
-void DrawableCharacter::Replay<LoadFrame>(LoadFrame& frame)
-{
-    Replayable<1>(frame, (unsigned char&)mDirt);
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mPosition.f.x));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mPosition.f.y));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mPosition.f.z));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mBip01Position.f.x));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mBip01Position.f.y));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mBip01Position.f.z));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mHeadPosition.f.x));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mHeadPosition.f.y));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mHeadPosition.f.z));
-    Replayable<1>(frame, FloatCompressor<-512, 512, 8>(mVelocity.f.x));
-    Replayable<1>(frame, FloatCompressor<-512, 512, 8>(mVelocity.f.y));
-    Replayable<1>(frame, FloatCompressor<-512, 512, 8>(mVelocity.f.z));
-    Replayable<1>(frame, mVisible);
-    Replayable<1>(frame, mFacingDirection);
-    Replayable<1>(frame, mHeadSpin);
-    Replayable<1>(frame, mHeadTilt);
-    Replayable<1>(frame, (unsigned long&)mEffectsTexturing);
-    ReplayablePolymorphic<1>(frame, mPoseTree);
-
-    if (frame.mInterval == 1)
-    {
-        mPoseAccumulator->InitAccumulators();
-        mPoseTree->Evaluate(1.0f, mPoseAccumulator);
-
-        nlMatrix4 worldMatrix;
-        float angle = 0.0000958738f * (float)mFacingDirection;
-        nlMakeRotationMatrixZ(worldMatrix, angle);
-        worldMatrix.SetRow_(3, mPosition);
-
-        if (mCharacter != nullptr)
-        {
-            mPoseAccumulator->SetBuildNodeMatrixCallback(mCharacter->m_nHeadJointIndex, DrawableCharacterHeadTrackCallback, (unsigned int)this, 0);
-        }
-        else if (mBowser != nullptr)
-        {
-            mPoseAccumulator->SetBuildNodeMatrixCallback(mBowser->mnHeadJointIndex, DrawableBowserHeadTrackCallback, (unsigned int)this, 0);
-        }
-
-        mPoseAccumulator->BuildNodeMatrices(worldMatrix);
-
-        if (mCharacter != nullptr)
-        {
-            mPoseAccumulator->SetBuildNodeMatrixCallback(mCharacter->m_nHeadJointIndex, nullptr, 0, 0);
-        }
-        else if (mBowser != nullptr)
-        {
-            mPoseAccumulator->SetBuildNodeMatrixCallback(mBowser->mnHeadJointIndex, nullptr, 0, 0);
-        }
-
-        delete mPoseTree;
-        mPoseTree = nullptr;
-    }
-}
 
 /**
  * Offset/Address/Size: 0x2D50 | 0x8011BC00 | size: 0x4C
@@ -449,7 +369,7 @@ void DrawableCharacter::Grab(cCharacter& character)
 /**
  * Offset/Address/Size: 0x29F0 | 0x8011B8A0 | size: 0x2C
  */
-void DrawableCharacterHeadTrackCallback(unsigned int ctx, unsigned int, cPoseAccumulator* poseAccumulator, unsigned int headNodeIndex, int unused)
+static void DrawableCharacterHeadTrackCallback(unsigned int ctx, unsigned int, cPoseAccumulator* poseAccumulator, unsigned int headNodeIndex, int unused)
 {
     DrawableCharacter* pDrawableCharacter = (DrawableCharacter*)ctx;
     CalcHeadTrackMatrix(pDrawableCharacter->mHeadSpin, pDrawableCharacter->mHeadTilt, poseAccumulator, headNodeIndex);
@@ -542,6 +462,47 @@ void DrawableCharacter::Render(cCharacter& character) const
     }
 
     SendToGl(character);
+}
+
+static void DrawSphere(const nlVector3& vCentre, float fRadius, const nlColour& colour)
+{
+    extern GLInventory glInventory;
+    extern unsigned long ResolvedWhiteTexture;
+
+    glModel* pSphereModel = glModelDup(glInventory.GetModel(nlStringHash("debug/sphere")), true);
+
+    nlMatrix4 sphereWorldMatrix;
+    sphereWorldMatrix.SetIdentity();
+    sphereWorldMatrix.f.m41 = vCentre.f.x;
+    sphereWorldMatrix.f.m42 = vCentre.f.y;
+    sphereWorldMatrix.f.m43 = vCentre.f.z;
+    sphereWorldMatrix.f.m44 = 1.0f;
+    sphereWorldMatrix.f.m11 = fRadius;
+    sphereWorldMatrix.f.m22 = fRadius;
+    sphereWorldMatrix.f.m33 = fRadius;
+
+    unsigned long matrix = glAllocMatrix();
+    if (matrix != 0xFFFFFFFF)
+    {
+        glSetMatrix(matrix, sphereWorldMatrix);
+    }
+
+    void* pConstantColour = glUserAlloc(GLUD_ConstantColour, 4, false);
+    nlColour* pDebugColour = (nlColour*)glUserGetData(pConstantColour);
+    u8 alpha = colour.c[3];
+    *pDebugColour = colour;
+    for (glModelPacket* pSpherePacket = pSphereModel->packets; pSpherePacket < pSphereModel->packets + pSphereModel->numPackets; pSpherePacket++)
+    {
+        pSpherePacket->state.matrix = matrix;
+        pSpherePacket->state.texture[GLTT_Diffuse] = ResolvedWhiteTexture;
+        if (alpha != 0xFF)
+        {
+            glSetRasterState(pSpherePacket->state.raster, GLS_AlphaBlend, GLB_Standard);
+        }
+        glUserAttach(pConstantColour, pSpherePacket, false);
+    }
+
+    glViewAttachModel(GLV_Characters, 6, pSphereModel);
 }
 
 static const float kBigFloat = 1e30f;
@@ -679,6 +640,22 @@ static inline void RenderCharacterBoundingSphere(nlMatrix4& sphereWorldMatrix, c
     }
 
     glViewAttachModel(GLV_Characters, 6, pSphereModel);
+}
+
+static void FindBoundingSphereSloppy(const nlVector3& vCenter, float* pOutRadius, int numVertices, const nlVector3* pVertices)
+{
+    float maxDistSq = 0.0f;
+
+    for (int i = 0; i < numVertices; i++)
+    {
+        float distSq = nlGetLengthSquared3D(
+            pVertices[i].f.x - vCenter.f.x,
+            pVertices[i].f.y - vCenter.f.y,
+            pVertices[i].f.z - vCenter.f.z);
+        maxDistSq = (maxDistSq >= distSq) ? maxDistSq : distSq;
+    }
+
+    *pOutRadius = nlSqrt(maxDistSq, false);
 }
 
 /**
@@ -941,7 +918,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
         }
     }
 
-    if (sShadowRenderingDisabled__17DrawableCharacter == 0)
+    if (sShadowRenderingDisabled == 0)
     {
         const LightObject* pLight = ((BasicStadium*)WorldManager::s_World)->m_pShadowLight;
         if (pLight != nullptr)
@@ -1262,3 +1239,64 @@ cCharacter* DrawableCharacter::OnlyRenderingOneCharacter()
 {
     return spRenderOnlyThisCharacter;
 }
+
+template <typename T>
+void DrawableCharacter::Replay(T& frame)
+{
+    Replayable<1>(frame, mDirt);
+    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mPosition.f.x));
+    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mPosition.f.y));
+    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mPosition.f.z));
+    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mBip01Position.f.x));
+    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mBip01Position.f.y));
+    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mBip01Position.f.z));
+    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mHeadPosition.f.x));
+    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mHeadPosition.f.y));
+    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mHeadPosition.f.z));
+    Replayable<1>(frame, FloatCompressor<-512, 512, 8>(mVelocity.f.x));
+    Replayable<1>(frame, FloatCompressor<-512, 512, 8>(mVelocity.f.y));
+    Replayable<1>(frame, FloatCompressor<-512, 512, 8>(mVelocity.f.z));
+    Replayable<1>(frame, mVisible);
+    Replayable<1>(frame, mFacingDirection);
+    Replayable<1>(frame, mHeadSpin);
+    Replayable<1>(frame, mHeadTilt);
+    Replayable<1>(frame, (unsigned long&)mEffectsTexturing);
+    ReplayablePolymorphic<1>(frame, mPoseTree);
+
+    if (ReplayFrameTraits<T>::IsLoadFrame && frame.mInterval == 1)
+    {
+        mPoseAccumulator->InitAccumulators();
+        mPoseTree->Evaluate(1.0f, mPoseAccumulator);
+
+        nlMatrix4 worldMatrix;
+        float angle = 0.0000958738f * (float)mFacingDirection;
+        nlMakeRotationMatrixZ(worldMatrix, angle);
+        worldMatrix.SetRow_(3, mPosition);
+
+        if (mCharacter != nullptr)
+        {
+            mPoseAccumulator->SetBuildNodeMatrixCallback(mCharacter->m_nHeadJointIndex, DrawableCharacterHeadTrackCallback, (unsigned int)this, 0);
+        }
+        else if (mBowser != nullptr)
+        {
+            mPoseAccumulator->SetBuildNodeMatrixCallback(mBowser->mnHeadJointIndex, DrawableBowserHeadTrackCallback, (unsigned int)this, 0);
+        }
+
+        mPoseAccumulator->BuildNodeMatrices(worldMatrix);
+
+        if (mCharacter != nullptr)
+        {
+            mPoseAccumulator->SetBuildNodeMatrixCallback(mCharacter->m_nHeadJointIndex, nullptr, 0, 0);
+        }
+        else if (mBowser != nullptr)
+        {
+            mPoseAccumulator->SetBuildNodeMatrixCallback(mBowser->mnHeadJointIndex, nullptr, 0, 0);
+        }
+
+        delete mPoseTree;
+        mPoseTree = nullptr;
+    }
+}
+
+template void DrawableCharacter::Replay<SaveFrame>(SaveFrame&);
+template void DrawableCharacter::Replay<LoadFrame>(LoadFrame&);

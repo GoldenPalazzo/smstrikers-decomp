@@ -61,7 +61,7 @@ public:
             mData[i] = *string++;
         }
     }
-    Vector(const Vector& other, const char* name)
+    Vector(const Vector& other, const char* name = NULL)
     {
         mData = Allocator::New<T>(other.mSize, name);
         mSize = other.mSize;
@@ -82,6 +82,23 @@ public:
         }
     }
     ~Vector();
+    Vector& operator=(const Vector& other)
+    {
+        if (mSize >= other.mSize)
+        {
+            for (int i = 0; i < other.mSize; i++)
+            {
+                mData[i] = other.mData[i];
+            }
+            mSize = other.mSize;
+        }
+        else
+        {
+            Vector tmp(other);
+            Swap(tmp);
+        }
+        return *this;
+    }
     void Swap(Vector& other);
     void push_back(const T& value)
     {

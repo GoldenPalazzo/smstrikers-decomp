@@ -60,9 +60,6 @@ inline void LoadFrame::Replayable(T& current, NotReplayablePod)
     }
 }
 
-template <int N>
-void Replayable(LoadFrame& frame, char typeId, cPoseNode*& poseNode);
-
 template <int N, typename T>
 void LoadFrame::ReplayablePolymorphicPtr(T*& current)
 {

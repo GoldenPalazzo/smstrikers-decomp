@@ -25,7 +25,7 @@ public:
     /* 0x24 */ virtual void BlendRootRot(unsigned short*, float, float*);
 
     template <typename T>
-    void Replay(T& frame);
+    void Replay(T&);
 
     void ClearNodeWeights();
     void SetNodeWeight(int, float, float);

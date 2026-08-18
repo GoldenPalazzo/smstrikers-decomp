@@ -197,9 +197,6 @@ inline void SaveFrame::Replayable(T& current, NotReplayablePod)
 template <int N, typename FrameType, typename T>
 void Replayable(FrameType& frame, T& current);
 
-template <int N>
-void Replayable(SaveFrame& frame, char typeId, cPoseNode*& poseNode);
-
 #include "Game/LoadFrame.h"
 
 template <int N, typename T>
