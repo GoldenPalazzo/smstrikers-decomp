@@ -198,4 +198,6 @@ void nlWalkList(EntryT* list, ContainerT* cbClass, void (ContainerT::*cb)(EntryT
 // header (linkonce grouping is keyed by the body's file).
 #include "NL/nlListContainer.h"
 
+#include "NL/WalkHelper.h"
+
 #endif

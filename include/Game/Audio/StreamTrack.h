@@ -66,6 +66,8 @@ public:
     typedef BasicSlotPool<StreamDeleteEntry> StreamDeleteAllocator;
     typedef DLListContainerBase<GCAudioStreaming::StereoAudioStream*, StreamDeleteAllocator> StreamDeleteList;
 
+    void AddDeleteEntry(StreamDeleteEntry*);
+
     class FadeManager
     {
     public:
@@ -118,6 +120,44 @@ public:
     {
         m_StreamPool.FreeBlocks();
     }
+
+    void PurgeStreams()
+    {
+        StreamDeleteEntry** headAddr;
+        StreamDeleteEntry* entry;
+        StreamDeleteEntry* head;
+        StreamDeleteEntry* toRemove;
+        StreamDeleteEntry* toFree;
+        GCAudioStreaming::StereoAudioStream* pStream;
+
+        StreamDeleteEntry* start = nlDLRingGetStart(m_StreamDeleteList.m_Head);
+        head = m_StreamDeleteList.m_Head;
+        headAddr = &m_StreamDeleteList.m_Head;
+        entry = start;
+
+        while (entry != NULL)
+        {
+            pStream = entry->entry;
+            pStream->~StereoAudioStream();
+            m_StreamPool.Free(pStream);
+
+            toRemove = entry;
+            toFree = entry;
+
+            if (nlDLRingIsEnd(head, entry) || entry == NULL)
+            {
+                entry = NULL;
+            }
+            else
+            {
+                entry = entry->m_next;
+            }
+
+            nlDLRingRemove(headAddr, toRemove);
+            m_StreamDeleteList.Deallocate(toFree, NULL);
+        }
+    }
+
     /* 0x0C */ virtual void Update(float);
     /* 0x10 */ virtual StreamTrack* CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP) = 0;
     /* 0x14 */ virtual void DestroyAllTracks() = 0;
@@ -132,6 +172,11 @@ public:
     /* 0x38 */ SlotPool<GCAudioStreaming::StereoAudioStream> m_StreamPool;
     /* 0x50 */ nlDLListSlotPool<GCAudioStreaming::StereoAudioStream*> m_StreamDeleteList;
 }; // total size: 0x6C
+
+inline void TrackManagerBase::AddDeleteEntry(StreamDeleteEntry* entry)
+{
+    nlDLRingAddEnd(&m_StreamDeleteList.m_Head, entry);
+}
 
 inline TrackManagerBase::FadeManager::STREAM_FADE_CTRL*
 TrackManagerBase::FadeManager::FindFade(
@@ -215,8 +260,8 @@ public:
         /* 0x8 */ unsigned long FadeIn : 16;
         /* 0x8 */ unsigned long StartVolume : 10;
         /* 0x8 */ unsigned long VolGroup : 3;
-        /* 0xB */ unsigned char Loop : 1;
-        /* 0xB */ unsigned char TrackOwnsStream : 1;
+        /* 0xB */ bool Loop : 1;
+        /* 0xB */ bool TrackOwnsStream : 1;
     }; // total size: 0xC
 
     StreamTrack(TrackManagerBase& mgr, Audio::MasterVolume::VOLUME_GROUP volumeGroup);
@@ -244,9 +289,9 @@ public:
     /* 0x00 */ TrackManagerBase& m_TrackMgr;
     /* 0x04 */ DLListContainerBase<QUEUED_STREAM, nlStaticArrayAllocator<DLListEntry<QUEUED_STREAM>, MAX_QUEUED_STREAMS> > m_QueuedStreams;
     /* 0x5C */ unsigned long m_LPFFreq;
-    /* 0x60 */ unsigned char m_LPFOn : 1;
-    /* 0x60 */ unsigned char m_InFakePause : 1;
-    /* 0x60 */ unsigned char m_TrackOwnsStreams : 1;
+    /* 0x60 */ bool m_LPFOn : 1;
+    /* 0x60 */ bool m_InFakePause : 1;
+    /* 0x60 */ bool m_TrackOwnsStreams : 1;
     /* 0x64 */ TRACK_STATE m_State;
     /* 0x68 */ Audio::MasterVolume::VOLUME_GROUP m_VolumeGroup;
     /* 0x6C */ Function<FnVoidVoid> m_IdleCallback;
@@ -323,8 +368,7 @@ public:
 
         for (track = 0, trackOffset = 0; track < m_Tracks.GetEntryCount(); track++, trackOffset += 8)
         {
-            ((typename nlSortedSlot<StreamTrack, N>::template EntryLookup<StreamTrack>*)
-                    ((char*)m_Tracks.m_pEntryLookup + trackOffset))
+            ((typename nlSortedSlot<StreamTrack, N>::template EntryLookup<StreamTrack>*)((char*)m_Tracks.m_pEntryLookup + trackOffset))
                 ->pEntry->Update(dT);
         }
 
@@ -365,8 +409,7 @@ public:
         for (track = 0, trackOffset = 0; track < m_Tracks.GetEntryCount(); trackOffset += 8, track++)
         {
             StreamTrack::QUEUED_STREAM* qs
-                = ((typename nlSortedSlot<StreamTrack, N>::template EntryLookup<StreamTrack>*)
-                        ((char*)m_Tracks.m_pEntryLookup + trackOffset))
+                = ((typename nlSortedSlot<StreamTrack, N>::template EntryLookup<StreamTrack>*)((char*)m_Tracks.m_pEntryLookup + trackOffset))
                       ->pEntry->m_QueuedStreams.GetHead();
 
             if (qs != NULL)

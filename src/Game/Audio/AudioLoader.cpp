@@ -23,14 +23,6 @@ static int gLoadedHomeSidekickGroup = -1;
 static int gLoadedAwaySidekickGroup = -1;
 static int gLoadedSurfaceGroup = -1;
 
-typedef DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>
-    FadeDLListEntry;
-typedef DLListContainerBase<
-    AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL,
-    BasicSlotPool<FadeDLListEntry> >
-    FadeDLListContainer;
-typedef DLListEntry<GCAudioStreaming::StereoAudioStream*> StreamDLListEntry;
-
 class GameSceneManager;
 
 AudioLoader TheAudioLoader;
@@ -420,49 +412,10 @@ state_change:
     AudioStreamTrack::TrackManagerBase* pTM = g_pTrackManager;
     pTM->StopAllTracks(0);
 
-    GCAudioStreaming::StereoAudioStream* pStream;
-    StreamDLListEntry* pFree;
-    StreamDLListEntry* pRemove;
-    StreamDLListEntry* pHead;
-    StreamDLListEntry* pCur;
-    StreamDLListEntry** ppHead;
-
-    pTM->m_FadeMgr.m_Fades.Clear();
-    SlotPoolBase::BaseFreeBlocks(
-        &pTM->m_FadeMgr.m_Fades.m_Allocator,
-        sizeof(FadeDLListEntry));
-
-    StreamDLListEntry* tmp = nlDLRingGetStart(pTM->m_StreamDeleteList.m_Head);
-    pHead = pTM->m_StreamDeleteList.m_Head;
-    ppHead = &pTM->m_StreamDeleteList.m_Head;
-    pCur = tmp;
-
-    while (pCur != NULL)
-    {
-        pStream = pCur->entry;
-        pStream->~StereoAudioStream();
-        pTM->m_StreamPool.Free(pStream);
-
-        pRemove = pCur;
-        pFree = pCur;
-
-        if (nlDLRingIsEnd(pHead, pCur) || pCur == NULL)
-        {
-            pCur = NULL;
-        }
-        else
-        {
-            pCur = pCur->m_next;
-        }
-
-        nlDLRingRemove(ppHead, pRemove);
-
-        pTM->m_StreamDeleteList.Deallocate(pFree, NULL);
-    }
-
-    SlotPoolBase::BaseFreeBlocks(&pTM->m_StreamPool, 0x40);
-    SlotPoolBase::BaseFreeBlocks(
-        &pTM->m_StreamDeleteList.m_Allocator, 0x0C);
+    pTM->m_FadeMgr.Clear();
+    pTM->PurgeStreams();
+    pTM->m_StreamPool.FreeBlocks();
+    pTM->m_StreamDeleteList.m_Allocator.FreeBlocks();
     PlatAudio::ShutdownStreaming();
     Audio::Silence();
     Audio::UnloadWorldSFX();
@@ -1445,49 +1398,10 @@ void AudioLoader::UnloadInGame()
     AudioStreamTrack::TrackManagerBase* pTM = g_pTrackManager;
     pTM->StopAllTracks(0);
 
-    GCAudioStreaming::StereoAudioStream* pStream;
-    StreamDLListEntry* pFree;
-    StreamDLListEntry* pRemove;
-    StreamDLListEntry* pHead;
-    StreamDLListEntry* pCur;
-    StreamDLListEntry** ppHead;
-
-    pTM->m_FadeMgr.m_Fades.Clear();
-    SlotPoolBase::BaseFreeBlocks(
-        &pTM->m_FadeMgr.m_Fades.m_Allocator,
-        sizeof(FadeDLListEntry));
-
-    StreamDLListEntry* tmp = nlDLRingGetStart(pTM->m_StreamDeleteList.m_Head);
-    pHead = pTM->m_StreamDeleteList.m_Head;
-    ppHead = &pTM->m_StreamDeleteList.m_Head;
-    pCur = tmp;
-
-    while (pCur != NULL)
-    {
-        pStream = pCur->entry;
-        pStream->~StereoAudioStream();
-        pTM->m_StreamPool.Free(pStream);
-
-        pRemove = pCur;
-        pFree = pCur;
-
-        if (nlDLRingIsEnd(pHead, pCur) || pCur == NULL)
-        {
-            pCur = NULL;
-        }
-        else
-        {
-            pCur = pCur->m_next;
-        }
-
-        nlDLRingRemove(ppHead, pRemove);
-
-        pTM->m_StreamDeleteList.Deallocate(pFree, NULL);
-    }
-
-    SlotPoolBase::BaseFreeBlocks(&pTM->m_StreamPool, 0x40);
-    SlotPoolBase::BaseFreeBlocks(
-        &pTM->m_StreamDeleteList.m_Allocator, 0x0C);
+    pTM->m_FadeMgr.Clear();
+    pTM->PurgeStreams();
+    pTM->m_StreamPool.FreeBlocks();
+    pTM->m_StreamDeleteList.m_Allocator.FreeBlocks();
 
     UnloadInGameAudioData();
 

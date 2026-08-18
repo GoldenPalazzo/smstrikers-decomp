@@ -504,10 +504,7 @@ def GameLib(lib_name: str, objects: Objects) -> Library:
         system_includes=[
             *system_includes_base,
         ],
-        mw_version="GC/2.5",
-        # mw_version="GC/2.0",
-        # mw_version="GC/1.3.2",
-        # mw_version="GC/1.2.5n",
+        mw_version="GC/2.6",
         cflags=[
             *cflags_base,
             "-pool off",
@@ -815,7 +812,7 @@ config.libs = [
             Object(Matching, "Game/Net.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Field.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Character.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/CharacterTemplate.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/CharacterTemplate.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/CharacterEffects.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/Player.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
@@ -884,7 +881,7 @@ config.libs = [
             Object(Matching, "Game/Audio/AudioStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Audio/CrowdMood.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Audio/StreamTrack.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(Matching, "Game/Audio/PriorityStream.cpp", mw_version="GC/2.6", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Audio/PriorityStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Physics
             Object(Matching, "Game/Physics.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

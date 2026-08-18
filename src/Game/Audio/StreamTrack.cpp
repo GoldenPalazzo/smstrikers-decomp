@@ -23,10 +23,10 @@ void AudioStreamTrack::TrackManagerBase::Update(float)
     Entry* entry;
     Entry** headAddr;
 
-    Entry* tmp = nlDLRingGetStart(m_StreamDeleteList.m_Head);
+    Entry* start = nlDLRingGetStart(m_StreamDeleteList.m_Head);
     head = m_StreamDeleteList.m_Head;
     headAddr = &m_StreamDeleteList.m_Head;
-    entry = tmp;
+    entry = start;
 
     while (entry != NULL)
     {
@@ -49,7 +49,7 @@ void AudioStreamTrack::TrackManagerBase::Update(float)
             }
 
             nlDLRingRemove(headAddr, toRemove);
-            m_StreamDeleteList.m_Allocator.Free(toFree);
+            m_StreamDeleteList.Deallocate(toFree, NULL);
         }
         else
         {
@@ -115,8 +115,7 @@ TrackManagerBase::StreamFileLookup::StreamFileLookup(
     }
 
     nlQSort<STREAM_FILE_LOOKUP>(
-        m_pLookup, (int)m_StreamCount,
-        &nlDefaultQSortComparer<STREAM_FILE_LOOKUP>);
+        m_pLookup, (int)m_StreamCount, &nlDefaultQSortComparer<STREAM_FILE_LOOKUP>);
 
     LookupList.Clear();
     LookupList.m_Allocator.FreeBlocks();
@@ -125,8 +124,7 @@ TrackManagerBase::StreamFileLookup::StreamFileLookup(
 void TrackManagerBase::StreamFileLookup::GetFileName(
     unsigned long StreamId, char* FileName, int MaxLength, const char* Param)
 {
-    const STREAM_FILE_LOOKUP* pLookup =
-        nlBSearch<STREAM_FILE_LOOKUP, unsigned long>(StreamId, m_pLookup, m_StreamCount);
+    const STREAM_FILE_LOOKUP* pLookup = nlBSearch<STREAM_FILE_LOOKUP, unsigned long>(StreamId, m_pLookup, m_StreamCount);
 
     const char* pPercent = strchr(pLookup->FileName, '%');
     if (pPercent != NULL)
@@ -145,162 +143,7 @@ void TrackManagerBase::StreamFileLookup::GetFileName(
     }
 }
 
-
 } // namespace AudioStreamTrack
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80157A98 | size: 0x1C
-//  */
-// void MemFun<AudioStreamTrack::StreamTrack, void, AudioStreamTrack::StreamTrack::QUEUED_STREAM*>(void (AudioStreamTrack::StreamTrack::*)(AudioStreamTrack::StreamTrack::QUEUED_STREAM*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80157A58 | size: 0x40
-//  */
-// void Bind<void, Detail::MemFunImpl<void, void (AudioStreamTrack::StreamTrack::*)(AudioStreamTrack::StreamTrack::QUEUED_STREAM*)>, AudioStreamTrack::StreamTrack*, AudioStreamTrack::StreamTrack::QUEUED_STREAM*>(Detail::MemFunImpl<void, void (AudioStreamTrack::StreamTrack::*)(AudioStreamTrack::StreamTrack::QUEUED_STREAM*)>, AudioStreamTrack::StreamTrack* const&, AudioStreamTrack::StreamTrack::QUEUED_STREAM* const&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x238 | 0x80157A20 | size: 0x38
-//  */
-// void nlDLRingAddStart<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM> >(DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>**, DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x200 | 0x801579E8 | size: 0x38
-//  */
-// void nlDLRingAddStart<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL> >(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>**, DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x1C8 | 0x801579B0 | size: 0x38
-//  */
-// void nlDLRingAddStart<DLListEntry<GCAudioStreaming::StereoAudioStream*> >(DLListEntry<GCAudioStreaming::StereoAudioStream*>**, DLListEntry<GCAudioStreaming::StereoAudioStream*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x18C | 0x80157974 | size: 0x3C
-//  */
-// void nlDLRingAddEnd<DLListEntry<GCAudioStreaming::StereoAudioStream*> >(DLListEntry<GCAudioStreaming::StereoAudioStream*>**, DLListEntry<GCAudioStreaming::StereoAudioStream*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x150 | 0x80157938 | size: 0x3C
-//  */
-// void nlDLRingAddEnd<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL> >(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>**, DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x114 | 0x801578FC | size: 0x3C
-//  */
-// void nlDLRingAddEnd<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM> >(DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>**, DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xD0 | 0x801578B8 | size: 0x44
-//  */
-// void nlDLRingRemove<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL> >(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>**, DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x8C | 0x80157874 | size: 0x44
-//  */
-// void nlDLRingRemove<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM> >(DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>**, DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x6C | 0x80157854 | size: 0x20
-//  */
-// void nlDLRingIsEnd<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM> >(DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*, DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x34 | 0x8015781C | size: 0x38
-//  */
-// void nlDLRingRemoveStart<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM> >(DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>**)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801577E8 | size: 0x34
-//  */
-// void nlDLRingRemoveEnd<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM> >(DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>**)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x68 | 0x801577BC | size: 0x2C
-//  */
-// void nlListAddEnd<ListEntry<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP> >(ListEntry<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP>**, ListEntry<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP>**, ListEntry<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80157754 | size: 0x68
-//  */
-// void nlWalkList<ListEntry<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP>, ListContainerBase<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP, BasicSlotPoolHigh<ListEntry<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP> > > >(ListEntry<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP>*, ListContainerBase<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP, BasicSlotPoolHigh<ListEntry<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP> > >*, void (ListContainerBase<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP, BasicSlotPoolHigh<ListEntry<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP> > >::*)(ListEntry<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x54 | 0x801576C8 | size: 0x8C
-//  */
-// void nlBSearch<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP, unsigned long>(const unsigned long&, AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP*, int)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x28 | 0x8015769C | size: 0x2C
-//  */
-// void nlDefaultQSortComparer<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP>(const AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP*, const AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80157674 | size: 0x28
-//  */
-// void nlQSort<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP>(AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP*, int, int (*)(const AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP*, const AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x20 | 0x8015764C | size: 0x28
-//  */
-// void BasicSlotPoolHigh<ListEntry<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP> >::allocFN(unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8015762C | size: 0x20
-//  */
-// void BasicSlotPoolHigh<ListEntry<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP> >::freeFN(void*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8015761C | size: 0x10
-//  */
-// void ListContainerBase<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP, BasicSlotPoolHigh<ListEntry<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP> > >::DeleteEntry(ListEntry<AudioStreamTrack::TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8015744C | size: 0x1D0
-//  */
-// void DLListContainerBase<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL, BasicSlotPool<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL> > >::AllocateAtEnd(unsigned long*)
-// {
-// }
 
 /**
  * Offset/Address/Size: 0x2038 | 0x80156D90 | size: 0x104
@@ -376,8 +219,7 @@ bool AudioStreamTrack::TrackManagerBase::FadeManager::ChangeFade(
     unsigned long startVol = fadeCtrl->StartVol;
     unsigned long curEndVol = fadeCtrl->EndVol;
     int diff = (int)curEndVol - (int)startVol;
-    float curVol =
-        fadeCtrl->Interp * (float)diff + (float)startVol;
+    float curVol = fadeCtrl->Interp * (float)diff + (float)startVol;
 
     if (endVol == (unsigned char)curVol)
     {
@@ -522,8 +364,7 @@ void AudioStreamTrack::StreamTrack::PlayStream(
 
     QUEUED_STREAM* pHead = &m_QueuedStreams.Begin().m_Curr->entry;
 
-    StartQStreamFadeout(pHead, ExistingFadeOut, Function<FnVoidVoid>(Bind<void>(
-        MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDoneStartNext), this, pHead)));
+    StartQStreamFadeout(pHead, ExistingFadeOut, Function<FnVoidVoid>(Bind<void>(MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDoneStartNext), this, pHead)));
 }
 
 inline GCAudioStreaming::AudioStream::AudioStream(GCAudioStreaming::AudioBufferMgr& mgr,
@@ -567,16 +408,14 @@ void AudioStreamTrack::StreamTrack::QueueStream(
     queuedStream->StreamId = StreamId;
 
     TrackManagerBase& mgr = m_TrackMgr;
-    GCAudioStreaming::StereoAudioStream* pStream =
-        mgr.m_StreamPool.Allocate();
+    GCAudioStreaming::StereoAudioStream* pStream = mgr.m_StreamPool.Allocate();
     new (pStream) GCAudioStreaming::StereoAudioStream(g_BufferMgr);
 
     queuedStream->pStream = pStream;
     queuedStream->FadeIn = FadeIn;
     queuedStream->StartVolume = (int)(127.0f * Volume);
 
-    queuedStream->VolGroup =
-        OverrideVolGroup == 0 ? m_VolumeGroup : OverrideVolGroup;
+    queuedStream->VolGroup = OverrideVolGroup == 0 ? m_VolumeGroup : OverrideVolGroup;
     queuedStream->Loop = Looping;
     queuedStream->TrackOwnsStream = m_TrackOwnsStreams;
 
@@ -682,7 +521,6 @@ void AudioStreamTrack::StreamTrack::StopHead(unsigned long Fadeout)
 
 /**
  * Offset/Address/Size: 0xA28 | 0x80155780 | size: 0x268
- * TODO: 98.50% match - post-fade list head uses r29 vs r28 and curQs uses r30 vs r29
  */
 void AudioStreamTrack::StreamTrack::Stop(unsigned long Fadeout)
 {
@@ -706,8 +544,7 @@ void AudioStreamTrack::StreamTrack::Stop(unsigned long Fadeout)
     entry = nlDLRingGetStart(m_QueuedStreams.m_Head);
     QUEUED_STREAM* qs = &entry->entry;
 
-    StartQStreamFadeout(&entry->entry, Fadeout, Function<FnVoidVoid>(Bind<void>(
-        MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDone), this, &entry->entry)));
+    StartQStreamFadeout(&entry->entry, Fadeout, Function<FnVoidVoid>(Bind<void>(MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDone), this, &entry->entry)));
 
     QUEUED_STREAM* curQs;
     DLListEntry<QUEUED_STREAM>* iter = nlDLRingGetStart(m_QueuedStreams.m_Head);
@@ -778,8 +615,7 @@ void AudioStreamTrack::StreamTrack::StopQStream(QUEUED_STREAM* pQueuedStream)
 
     nlDLRingIsEnd(m_QueuedStreams.m_Head, entry);
     nlDLRingRemove(&m_QueuedStreams.m_Head, entry);
-    entry->m_next = m_QueuedStreams.m_Allocator.m_pFree;
-    m_QueuedStreams.m_Allocator.m_pFree = entry;
+    m_QueuedStreams.DeleteEntry(entry);
 
     if (m_QueuedStreams.m_Head == NULL)
     {
@@ -843,7 +679,7 @@ fade_found:
             entry->m_prev = NULL;
             entry->entry = pStream;
         }
-        nlDLRingAddEnd(&delMgr->m_StreamDeleteList.m_Head, entry);
+        delMgr->AddDeleteEntry(entry);
     }
 }
 
@@ -916,16 +752,6 @@ void AudioStreamTrack::StreamTrack::Resume()
 
 /**
  * Offset/Address/Size: 0x0 | 0x80154D58 | size: 0x1B8
- *
- * TODO: the two normalizations below are KNOWN MATCH-ONLY SCAFFOLDING, not
- * retail source. Both parameters are already built-in bool, so `x = x & 1` is a
- * semantic identity; it exists only because it opens a second value-web
- * definition in the parameter's own home register, which moves the StartVolume
- * temp from r7 to r5. Removing them leaves the function at 99.818184% with
- * exactly three real rows (lwz/clrlwi/rlwimi on the StartVolume trio).
- * The authentic source form is still OPEN and needs further investigation --
- * see notes 0097 for the confirmed rank law, the harness, and ~1600 graded
- * candidates. Do not treat this as solved and do not copy this idiom.
  */
 void AudioStreamTrack::StreamTrack::AttachStream(
     GCAudioStreaming::StereoAudioStream* pStream,
@@ -950,8 +776,6 @@ void AudioStreamTrack::StreamTrack::AttachStream(
     queuedStream->StreamId = StreamId;
     queuedStream->pStream = pStream;
     queuedStream->FadeIn = FadeIn;
-    Looping = Looping & 1;
-    TrackOwnsStream = TrackOwnsStream & 1;
     queuedStream->StartVolume = (u8)pStream->m_Volume;
     queuedStream->Loop = Looping;
     queuedStream->VolGroup = VolGroup;
