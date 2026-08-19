@@ -10,21 +10,21 @@ float cNet::m_fNetPostOffsetFromGoalLine = 0.0f;
 /**
  * Offset/Address/Size: 0xE4 | 0x80057518 | size: 0x38
  */
-cNet::cNet(int side)
+cNet::cNet(int nIndex)
 {
-    m_side = side;
+    m_nIndex = nIndex;
 
-    m_baseLocation.f.y = 0.0f;
-    m_baseLocation.f.z = 0.0f;
-    m_baseLocation.f.x = 0.0f;
+    m_v3NetLocation.f.y = 0.0f;
+    m_v3NetLocation.f.z = 0.0f;
+    m_v3NetLocation.f.x = 0.0f;
 
-    if (m_side == 0)
+    if (m_nIndex == 0)
     {
-        m_sideSign = -1.0f;
+        m_fDirection = -1.0f;
     }
     else
     {
-        m_sideSign = +1.0f;
+        m_fDirection = +1.0f;
     }
 }
 
@@ -40,39 +40,41 @@ cNet::~cNet()
  */
 float cNet::GetGoalLineX() const
 {
-    return cField::GetGoalLineX((float)m_sideSign);
+    return cField::GetGoalLineX(m_fDirection);
 }
 
 /**
  * Offset/Address/Size: 0x14 | 0x80057448 | size: 0x70
  */
-void cNet::GetPostLocation(nlVector3& location, unsigned int side, float arg2) const
+void cNet::GetPostLocation(nlVector3& v3PostPosition, unsigned int uPostNum, float fYAdjust) const
 {
-    f32 yOffset;
-    f32 sideSign;
+    f32 fAdjust;
 
-    location = m_baseLocation;
-    sideSign = m_sideSign;
-    location.f.x = -((m_fNetPostRadius * sideSign) - location.f.x);
-    location.f.x += m_fNetPostOffsetFromGoalLine * sideSign;
-    yOffset = (0.5f * m_fNetWidth) + arg2;
+    v3PostPosition = m_v3NetLocation;
+    v3PostPosition.f.x = -((m_fNetPostRadius * m_fDirection) - v3PostPosition.f.x);
+    v3PostPosition.f.x += m_fNetPostOffsetFromGoalLine * m_fDirection;
+    fAdjust = (0.5f * m_fNetWidth) + fYAdjust;
 
-    if (side == 0)
+    if (uPostNum == 0)
     {
-        location.f.y -= yOffset;
+        v3PostPosition.f.y -= fAdjust;
         return;
     }
 
-    location.f.y += yOffset;
+    v3PostPosition.f.y += fAdjust;
 }
 
 /**
  * Offset/Address/Size: 0x0 | 0x80057434 | size: 0x14
  */
-void cNet::SetNetDimensions(float width, float height, float postRadius, float postOffsetFromGoalLine)
+void cNet::SetNetDimensions(float fWidth, float fHeight, float fPostRadius, float fPostOffsetFromGoalLine)
 {
-    m_fNetWidth = width;
-    m_fNetHeight = height;
-    m_fNetPostRadius = postRadius;
-    m_fNetPostOffsetFromGoalLine = postOffsetFromGoalLine;
+    m_fNetWidth = fWidth;
+    m_fNetHeight = fHeight;
+    m_fNetPostRadius = fPostRadius;
+    m_fNetPostOffsetFromGoalLine = fPostOffsetFromGoalLine;
+}
+
+void cNet::ShowNets()
+{
 }

@@ -7,16 +7,9 @@ void glxInitSwap(void*, void*);
 void glxSwapWaitDrawDone();
 void glxLoadRestoreState();
 void glxLoadSaveState();
-void glxSwapLoading(bool bLoadingIndicator, bool bLoadOtherPosition);
+void glxSwapLoading(bool bBegin, bool bOtherPosition);
 void* glxGetBackBuffer();
 void* glxGetDisplayedBuffer();
 void glxSwapSetBlack(bool);
-
-// class Config
-// {
-// public:
-//     void Get<BasicString<char, Detail::TempStringAllocator>>(const char*, BasicString<char, Detail::TempStringAllocator>);
-//     void TagValuePair::Get<BasicString<char, Detail::TempStringAllocator>>() const;
-// };
 
 #endif // _GLXSWAP_H_

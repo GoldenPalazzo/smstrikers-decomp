@@ -1016,7 +1016,7 @@ bool cBall::GetInNet(int& nSide)
         int i;
         for (i = 0; i < 2; i++)
         {
-            if (m_v3Position.f.x * pTeams[i]->m_pNet->m_sideSign > 1.0f)
+            if (m_v3Position.f.x * pTeams[i]->m_pNet->m_fDirection > 1.0f)
             {
                 nSide = i;
             }

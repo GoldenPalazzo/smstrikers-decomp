@@ -10,6 +10,7 @@
 #include "dolphin/os/OSThread.h"
 #include "dolphin/PPCArch.h"
 #include "NL/glx/glxGX.h"
+#include "NL/glx/glxTexture.h"
 #include "NL/gl/glPlat.h"
 #include "NL/gl/glConstant.h"
 #include "Game/ResetTask.h"
@@ -29,7 +30,14 @@ static void* glx_FrameBuffer[2];
 static int glx_nBuffer;
 static int nFirstFrame;
 u8 bInRetrace;
-int glx_SwapMode;
+
+enum GLXSwapMode
+{
+    GLSwap_Simple = 0,
+    GLSwap_Hitz = 1,
+    GLSwap_Num = 2,
+};
+GLXSwapMode glx_SwapMode;
 static int glx_nLoadFrame;
 static int glx_nLoadWaitFrames;
 static int loadCounter;
@@ -68,51 +76,54 @@ static void glx_ScreenCapture(bool);
 static void DrawLoadingIndicator()
 {
     u32 targetFPS = glx_GetTargetFPS();
-    int counterLimit;
-    int xPos;
-    int yPos;
-    float scale;
-    int yPosTemp;
+    int num_ticks;
+    int offset_x;
+    int offset_y;
+    float scale_x;
+    float scale_y;
+    int y;
 
     if (targetFPS == 50)
     {
-        xPos = 0x120;
-        yPosTemp = 0x1B4;
+        offset_x = 0x120;
+        y = 0x1B4;
         if (glx_bLoadOtherPosition)
         {
-            yPosTemp = 0x1A2;
+            y = 0x1A2;
         }
-        scale = 1.0f;
-        yPos = yPosTemp;
-        counterLimit = 0x10;
+        scale_x = 1.0f;
+        scale_y = 1.0f;
+        offset_y = y;
+        num_ticks = 0x10;
     }
     else
     {
-        xPos = 0x120;
-        yPosTemp = 0x17E;
+        offset_x = 0x120;
+        y = 0x17E;
         if (glx_bLoadOtherPosition)
         {
-            yPosTemp = 0x16E;
+            y = 0x16E;
         }
-        scale = 1.0f;
-        yPos = yPosTemp;
-        counterLimit = 0x13;
+        scale_x = 1.0f;
+        scale_y = 1.0f;
+        offset_y = y;
+        num_ticks = 0x13;
     }
 
-    int spacing = (int)(24.0f * scale);
-    if (spacing & 1)
+    int width = (int)(24.0f * scale_x);
+    if (width & 1)
     {
-        spacing++;
+        width++;
     }
 
     for (int i = 0; i < 3; i++)
     {
-        BlitImage(xPos, yPos, scale, scale, !(nSelected - i));
-        xPos += spacing;
+        BlitImage(offset_x, offset_y, scale_x, scale_y, !(nSelected - i));
+        offset_x += width;
     }
 
     loadCounter++;
-    if (loadCounter >= counterLimit)
+    if (loadCounter >= num_ticks)
     {
         loadCounter = 0;
         nSelected++;
@@ -123,7 +134,7 @@ static void DrawLoadingIndicator()
     }
 }
 
-static inline void PutPixel(
+static inline void StorePixel(
     void* fb, int x, int y, const int yuv[3], const int yuv_p[3], const int yuv_pp[3])
 {
     u8* fbyte = (u8*)fb + y * 0x500 + (x << 1);
@@ -131,10 +142,8 @@ static inline void PutPixel(
 
     if ((x & 1) != 0)
     {
-        fbyte[-1] =
-            (u8)(0.25f * (float)yuv_pp[1] + 0.5f * (float)yuv_p[1] + 0.25f * (float)yuv[1]);
-        fbyte[1] =
-            (u8)(0.25f * (float)yuv_pp[2] + 0.5f * (float)yuv_p[2] + 0.25f * (float)yuv[2]);
+        fbyte[-1] = (u8)(0.25f * (float)yuv_pp[1] + 0.5f * (float)yuv_p[1] + 0.25f * (float)yuv[1]);
+        fbyte[1] = (u8)(0.25f * (float)yuv_pp[2] + 0.5f * (float)yuv_p[2] + 0.25f * (float)yuv[2]);
     }
 }
 
@@ -186,8 +195,7 @@ static void BlitImage(int offset_x, int offset_y, float scale_x, float scale_y, 
             int alpha = DecodeLoadingPixel(pixel, yuv);
             if (alpha > 0)
             {
-                PutPixel(glx_FrameBuffer[glx_nBuffer ^ glx_nBlitXor], offset_x + x,
-                    offset_y + y, yuv, yuv_p, yuv_pp);
+                StorePixel(glx_FrameBuffer[glx_nBuffer ^ glx_nBlitXor], offset_x + x, offset_y + y, yuv, yuv_p, yuv_pp);
             }
 
             if (x == 0)
@@ -203,34 +211,88 @@ static void BlitImage(int offset_x, int offset_y, float scale_x, float scale_y, 
             }
             yuv_pp[2] = yuv_p[2];
             yuv_p[2] = yuv[2];
-
         }
 
         DCStoreRangeNoSync(
-            (u8*)glx_FrameBuffer[glx_nBuffer ^ glx_nBlitXor] +
-                (offset_y + y) * 0x500 + (offset_x << 1),
+            (u8*)glx_FrameBuffer[glx_nBuffer ^ glx_nBlitXor] + (offset_y + y) * 0x500 + (offset_x << 1),
             (u32)(x << 1));
     }
 
     PPCSync();
 }
 
+static void PutPixel(void* fb, int x, int y, const int yuv[3], const int yuv_p[3], const int yuv_pp[3])
+{
+    u8* fbyte = (u8*)fb + y * 0x500 + (x << 1);
+    fbyte[0] = (u8)yuv[0];
+
+    if ((x & 1) != 0)
+    {
+        fbyte[-1] = (u8)(0.25f * (float)yuv_pp[1] + 0.5f * (float)yuv_p[1] + 0.25f * (float)yuv[1]);
+        fbyte[1] = (u8)(0.25f * (float)yuv_pp[2] + 0.5f * (float)yuv_p[2] + 0.25f * (float)yuv[2]);
+    }
+}
+
+static u16 GetPixelFromTexture(PlatTexture* pTex, int x, int y)
+{
+    u16* pData = (u16*)pTex->m_SwizzledData;
+    return pData[((y / 4) * (pTex->m_Width >> 2) + (x / 4)) * 16 + ((y & 3) << 2) + (x & 3)];
+}
+
+static void RGB5A32RGB32(u8* pRGB, u16 rgb16)
+{
+    if (rgb16 & 0x8000)
+    {
+        pRGB[0] = ((rgb16 >> 10) & 0x1F) * 255 / 31;
+        pRGB[1] = ((rgb16 >> 5) & 0x1F) * 255 / 31;
+        pRGB[2] = (rgb16 & 0x1F) * 255 / 31;
+        pRGB[3] = 0xFF;
+    }
+    else
+    {
+        pRGB[3] = ((rgb16 >> 12) & 0x7) * 255u / 7;
+        pRGB[0] = ((rgb16 >> 8) & 0xF) * 255u / 15;
+        pRGB[1] = ((rgb16 >> 4) & 0xF) * 255u / 15;
+        pRGB[2] = (rgb16 & 0xF) * 255u / 15;
+    }
+}
+
+static void RGB2YUV(u8* pYUV, const u8* pRGB)
+{
+    float r = pRGB[0];
+    float g = pRGB[1];
+    float b = pRGB[2];
+    float y = 0.299 * r + 0.587 * g + 0.114 * b;
+    float u = 128.0 - 0.169 * r - 0.331 * g + 0.5f * b;
+    float v = 128.0 + 0.5f * r - 0.419 * g - 0.081 * b;
+    int iy = (int)(y + 0.5f);
+    int iu = (int)(u + 0.5f);
+    int iv = (int)(v + 0.5f);
+
+    iy = iy < 0 ? 0 : (iy > 255 ? 255 : iy);
+    iu = iu < 0 ? 0 : (iu > 255 ? 255 : iu);
+    iv = iv < 0 ? 0 : (iv > 255 ? 255 : iv);
+
+    pYUV[0] = iy;
+    pYUV[1] = iu;
+    pYUV[2] = iv;
+}
+
 /**
  * Offset/Address/Size: 0x3E8 | 0x801BF138 | size: 0xC0
  */
-static void hitz_Post(bool arg0)
+static void hitz_Post(bool bSend)
 {
-    FORCE_DONT_INLINE;
-    if ((u8)glx_ResetCaptureFrame != 0)
+    if (glx_ResetCaptureFrame != 0)
     {
         _shotno = 0;
     }
-    if ((u8)glx_ScreenShot != 0)
+    if (glx_ScreenShot != 0)
     {
         glx_ScreenCapture(false);
         glx_ScreenShot = 0;
     }
-    if ((u8)glx_MovieOutput != 0)
+    if (glx_MovieOutput != 0)
     {
         glx_ScreenCapture(true);
     }
@@ -251,7 +313,6 @@ static void hitz_Post(bool arg0)
  */
 static void hitz_Pre(bool)
 {
-    FORCE_DONT_INLINE;
     GXWaitDrawDone();
     u32 retraceCount = VIGetRetraceCount();
     float value = glConstantGet("glxswap/vwait").f.x;
@@ -320,9 +381,8 @@ static void hitz_AdvanceFrame()
 /**
  * Offset/Address/Size: 0x5E0 | 0x801BF330 | size: 0xA0
  */
-static void simple_Post(bool arg0)
+static void simple_Post(bool bSend)
 {
-    FORCE_DONT_INLINE;
     gxSetZMode(true, GX_LEQUAL, true);
     gxSetColourUpdate(true);
     gxSetAlphaUpdate(true);
@@ -347,7 +407,6 @@ static void simple_Post(bool arg0)
  */
 static void simple_Pre(bool)
 {
-    FORCE_DONT_INLINE;
 }
 
 /**
@@ -357,12 +416,12 @@ void glxSwapPost(bool bSend)
 {
     if (glx_bLoadingIndicator == false)
     {
-        switch ((s32)glx_SwapMode)
+        switch (glx_SwapMode)
         {
-        case 0:
+        case GLSwap_Simple:
             simple_Post(bSend);
             return;
-        case 1:
+        case GLSwap_Hitz:
             hitz_Post(bSend);
             return;
         default:
@@ -379,12 +438,12 @@ void glxSwapPre(bool bSend)
 {
     if (glx_bLoadingIndicator == false)
     {
-        switch ((s32)glx_SwapMode)
+        switch (glx_SwapMode)
         {
-        case 0:
+        case GLSwap_Simple:
             simple_Pre(bSend);
             return;
-        case 1:
+        case GLSwap_Hitz:
             hitz_Pre(bSend);
             return;
         default:
@@ -407,16 +466,16 @@ void glxInitSwap(void* fb0, void* fb1)
 
     TempString swapString = Config::Global().Get<TempString>("swapmode", TempString("hitz"));
 
-    glx_SwapMode = (swapString == "simple") ? 0 : 1;
+    glx_SwapMode = (swapString == "simple") ? GLSwap_Simple : GLSwap_Hitz;
     switch (glx_SwapMode)
     {
-    case 1:
+    case GLSwap_Hitz:
         GXSetDrawDone();
         GXFlush();
         VISetPreRetraceCallback(vi_pre_cb);
         VISetPostRetraceCallback(vi_post_cb);
         break;
-    case 0:
+    case GLSwap_Simple:
         break;
     default:
         nlBreak();
@@ -491,8 +550,8 @@ static void loading_indicator()
 void glxLoadRestoreState()
 {
     bSaved = 0;
-    glx_bLoadingIndicator = *(u8*)&bSavedState;
-    if (bSavedState)
+    glx_bLoadingIndicator = bSavedState;
+    if (glx_bLoadingIndicator)
     {
         glxSwapLoading(true, false);
         glx_ClearXFB(glx_FrameBuffer[0]);
@@ -516,14 +575,14 @@ void glxLoadSaveState()
 /**
  * Offset/Address/Size: 0xB34 | 0x801BF884 | size: 0x4C
  */
-void glxSwapLoading(bool arg0, bool arg1)
+void glxSwapLoading(bool bBegin, bool bOtherPosition)
 {
     u32 loadWaitFrames;
     u32 targetFPS;
     u32 lws;
 
-    glx_bLoadOtherPosition = arg1;
-    glx_bLoadingIndicator = arg0;
+    glx_bLoadOtherPosition = bOtherPosition;
+    glx_bLoadingIndicator = bBegin;
     glx_nLoadFrame = 0;
     targetFPS = glx_GetTargetFPS();
     lws = LoadWaitSeconds;
@@ -532,6 +591,11 @@ void glxSwapLoading(bool arg0, bool arg1)
     nSelected = 0;
     LoadWaitSeconds = 0;
     glx_nLoadWaitFrames = loadWaitFrames;
+}
+
+static u8 glxSwapAllowDrawSync()
+{
+    return glx_bAllowDrawSync;
 }
 
 /**
@@ -657,17 +721,3 @@ void glxSwapSetBlack(bool black)
         nFirstFrame = 0;
     }
 }
-
-/**
- * Offset/Address/Size: 0x0 | 0x801BFAF4 | size: 0xA8
- */
-// void Config::Get<BasicString<char, Detail::TempStringAllocator>>(const char*, BasicString<char, Detail::TempStringAllocator>)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0xA8 | 0x801BFB9C | size: 0x84
- */
-// void Config::TagValuePair::Get<BasicString<char, Detail::TempStringAllocator>>() const
-// {
-// }

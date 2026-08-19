@@ -575,7 +575,7 @@ void cTeam::ResetCharacters()
     }
 
     unsigned char bFlipPositions = 0;
-    if (g_pTeams[m_nSide == 0 ? 1 : 0]->m_pNet->m_baseLocation.f.x < 0.0f)
+    if (g_pTeams[m_nSide == 0 ? 1 : 0]->m_pNet->m_v3NetLocation.f.x < 0.0f)
     {
         bFlipPositions = 1;
     }

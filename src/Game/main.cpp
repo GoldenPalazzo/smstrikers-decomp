@@ -146,6 +146,8 @@ ResetTask resetTask;
 static void Initialize();
 static void SetupViews();
 static void AddTasks();
+static void PreInitFS();
+static void DoMemCheck();
 
 int GetRegion()
 {
@@ -153,8 +155,12 @@ int GetRegion()
     return (int)&g_Region;
 }
 
+static void PreInitFS()
+{
+}
+
 /**
- * Offset/Address/Size: 0x3DC | 0x80173864 | size: 0x1858
+ * Offset/Address/Size: 0x354 | 0x80173864 | size: 0x1858
  */
 static void Initialize()
 {
@@ -399,7 +405,6 @@ static void AddTasks()
 
 static void SetupViews()
 {
-    FORCE_DONT_INLINE;
     static eGLView sort_none[] = {
         GLV_Shadow0, GLV_Shadow1, GLV_UnsortedPerspective, GLV_InvisiblePlane, GLV_ElectricFence, GLV_UnsortedOrtho, GLV_ShadowBlend0, GLV_ShadowBlend1, GLV_Debug, GLV_Transitions, GLV_CoPlanar0, GLV_CoPlanar
     };
@@ -426,7 +431,9 @@ static void SetupViews()
         glViewSetEnable(disabled_views[j], false);
     }
 
-    if (!glTextureLoad(glGetTexture("target/warble")))
+    u32 uWarbleTexture = glGetTexture("target/warble");
+    bool bWarbleLoaded = glTextureLoad(uWarbleTexture);
+    if (!bWarbleLoaded)
     {
         glViewSetEnable(GLV_Warble, false);
         glViewSetEnable(GLV_WarbleBlend, false);
@@ -442,6 +449,10 @@ static void SetupViews()
     ParticleSystem::AddView(GLV_Particles);
 
     ModeledScreenTransition::s_3DView = GLV_Transitions3D;
+}
+
+static void DoMemCheck()
+{
 }
 
 int main(void)

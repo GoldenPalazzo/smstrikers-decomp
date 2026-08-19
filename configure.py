@@ -1318,7 +1318,7 @@ config.libs = [
             Object(Matching, "NL/utility.cpp", extra_cflags=["-inline auto", "-inline deferred"]),     
 
             # Ext/GL
-            Object(Matching, "NL/glx/glxSwap.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "NL/glx/glxSwap.cpp", extra_cflags=["-inline noauto"]),
             Object(Matching, "NL/glx/glxFont.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/glx/glxMatrix.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/glx/glxMemory.cpp", extra_cflags=["-inline auto"]),

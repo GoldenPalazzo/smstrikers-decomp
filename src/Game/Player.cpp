@@ -1677,7 +1677,7 @@ bool cPlayer::CanPickupBallFromPass(cBall* pBall)
  */
 nlVector3 cPlayer::GetAIOffNetLocation(const nlVector3* v3ReferencePos)
 {
-    nlVector3 v3NetLocation = m_pTeam->GetOtherNet()->m_baseLocation;
+    nlVector3 v3NetLocation = m_pTeam->GetOtherNet()->m_v3NetLocation;
     float yCoord = (v3ReferencePos != NULL) ? v3ReferencePos->f.y : m_v3Position.f.y;
 
     float fNetWidth = 0.5f * cNet::m_fNetWidth;
@@ -1701,7 +1701,7 @@ nlVector3 cPlayer::GetAIOffNetLocation(const nlVector3* v3ReferencePos)
  */
 nlVector3 cPlayer::GetAIDefNetLocation(const nlVector3* v3ReferencePos)
 {
-    nlVector3 v3NetLocation = m_pTeam->m_pNet->m_baseLocation;
+    nlVector3 v3NetLocation = m_pTeam->m_pNet->m_v3NetLocation;
     float yCoord = (v3ReferencePos != NULL) ? v3ReferencePos->f.y : m_v3Position.f.y;
 
     float fNetWidth = 0.5f * cNet::m_fNetWidth;

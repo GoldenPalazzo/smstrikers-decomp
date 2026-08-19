@@ -220,7 +220,7 @@ PhysicsNet::PhysicsNet(CollisionSpace* space, bool positive_x)
     }
 
     mpNet = g_pTeams[0]->m_pNet;
-    const float sign = mpNet->m_sideSign;
+    const float sign = mpNet->m_fDirection;
     if (((sign < 0.0f) && (positive_x != 0)) || ((sign > 0.0f) && (positive_x == 0)))
     {
         mpNet = g_pTeams[1]->m_pNet;

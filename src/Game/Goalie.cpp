@@ -1890,7 +1890,7 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
     nlVector3 desiredPos;
     float goalY = 0.0f;
 
-    goalX = 0.5f * pNet->m_sideSign + pNet->GetGoalLineX();
+    goalX = 0.5f * pNet->m_fDirection + pNet->GetGoalLineX();
 
     if (pThreatPos == NULL)
     {
@@ -1971,7 +1971,7 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
         fNetY = 0.5f * cNet::m_fNetWidth - 1.0f;
         desiredPos.f.y = nlMaxEquals(desiredPos.f.y, -fNetY);
         desiredPos.f.y = nlMinEquals(desiredPos.f.y, fNetY);
-        desiredPos.f.x = goalLine * pNet->m_sideSign;
+        desiredPos.f.x = goalLine * pNet->m_fDirection;
         nlVec3Sub(desiredVec, desiredPos, m_v3Position);
     }
 
@@ -2228,7 +2228,7 @@ void Goalie::HandleSTSContact(cBall* pBall)
             if (m_eAnimID == 0x6C)
             {
                 cNet* pNet = m_pTeam->m_pNet;
-                if (pNet->m_baseLocation.f.x > 0.0f)
+                if (pNet->m_v3NetLocation.f.x > 0.0f)
                 {
                     Goalie::mbPosGoalieNetCheck = true;
                 }
@@ -2594,7 +2594,7 @@ float Goalie::CheckForDelflectAwayFromNet()
         nlVector4 plane;
         nlVector3 localVelocity;
 
-        float netX = m_pTeam->m_pNet->m_baseLocation.f.x;
+        float netX = m_pTeam->m_pNet->m_v3NetLocation.f.x;
 
         if (netX < 0.0f)
         {
@@ -2672,8 +2672,8 @@ bool Goalie::CheckForLooseBallShotInProgress()
     {
         cNet* pNet = m_pTeam->m_pNet;
         f32 looseBallShotDistance = ((GoalieTweaks*)m_pTweaks)->fLooseBallShotDistance;
-        f32 dx = pBall->m_v3Position.f.x - pNet->m_baseLocation.f.x;
-        f32 dy = pBall->m_v3Position.f.y - pNet->m_baseLocation.f.y;
+        f32 dx = pBall->m_v3Position.f.x - pNet->m_v3NetLocation.f.x;
+        f32 dy = pBall->m_v3Position.f.y - pNet->m_v3NetLocation.f.y;
         f32 distSq = nlGetLengthSquared2D(dx, dy);
 
         if (distSq < nlGetLengthSquared1D(looseBallShotDistance))
@@ -2819,7 +2819,7 @@ bool Goalie::CheckForSTSAttack()
 
                 bInNetZone = IsInsideNetArea(pOppFielder->m_v3Position);
 
-                nlVector3 v3GoalPos = m_pTeam->m_pNet->m_baseLocation;
+                nlVector3 v3GoalPos = m_pTeam->m_pNet->m_v3NetLocation;
 
                 f32 halfWidth = 0.5f * cNet::m_fNetWidth;
                 f32 clampedY = nlMaxEquals(pOppFielder->m_v3Position.f.y, -halfWidth);
@@ -2909,7 +2909,7 @@ bool Goalie::IsLooseBallClose(float fDistFromBox)
     pBall = g_pBall;
     if ((pBall->m_pOwner == NULL) && bBallIsLoose)
     {
-        float sideSign = m_pTeam->m_pNet->m_baseLocation.f.x;
+        float sideSign = m_pTeam->m_pNet->m_v3NetLocation.f.x;
         if (sideSign * pBall->m_v3Position.f.x < 0.0f)
         {
             return false;
@@ -2955,7 +2955,7 @@ bool Goalie::IsLooseBallClose(float fDistFromBox)
             return true;
         }
 
-        float netSideSign = m_pTeam->m_pNet->m_sideSign;
+        float netSideSign = m_pTeam->m_pNet->m_fDirection;
         cBall* pBallVel = g_pBall;
         float unclampedXLimit = cField::GetPenaltyBoxX(1U) - fDistFromBox;
         float penaltyBoxXLimit = nlMaxEquals(0.0f, unclampedXLimit);
@@ -3182,7 +3182,7 @@ float Goalie::IsSoloBreakaway()
                     cNet* pNet = m_pTeam->m_pNet;
                     const nlVector3& v3BuddyPos = pBuddy->m_v3Position;
                     float fAbsX = (float)fabs(v3BuddyPos.f.x);
-                    if (pBuddy->m_v3Position.f.x * pNet->m_baseLocation.f.x > 0.0 && fAbsX > 2.0f)
+                    if (pBuddy->m_v3Position.f.x * pNet->m_v3NetLocation.f.x > 0.0 && fAbsX > 2.0f)
                     {
                         float fFactor = 1.0f - 0.5f * (fAbsX - 2.0f) / 10.0f;
                         fFactor = nlMaxEquals(0.0f, fFactor);
@@ -3879,7 +3879,7 @@ void Goalie::InitActionLooseBallSetup()
     const nlVector3* pBallVelocity = &g_pBall->m_v3Velocity;
 
     v3BallPosition = g_pBall->m_v3Position;
-    const nlVector3& v3NetBase = m_pTeam->m_pNet->m_baseLocation;
+    const nlVector3& v3NetBase = m_pTeam->m_pNet->m_v3NetLocation;
     muBallChangeCount = g_pBall->m_bBallPathChangeCount;
     muBallDeflectCount = g_pBall->m_bBallDeflectCount;
 
@@ -4827,7 +4827,7 @@ void Goalie::InitActionSTS()
 
             pBall = g_pBall;
             float fFinalXPos = cField::GetGoalLineX(1U) + 1.5f;
-            if (m_pTeam->m_pNet->m_baseLocation.f.x < 0.0f)
+            if (m_pTeam->m_pNet->m_v3NetLocation.f.x < 0.0f)
             {
                 fFinalXPos = -fFinalXPos;
             }
@@ -6093,7 +6093,7 @@ void Goalie::SetDesiredSaveFacing(const nlVector3& v3BallPosition)
     if (fBallOffMagSq < 1.44f)
     {
         nlVector3 v3BallToGoal;
-        nlVec3Sub(v3BallToGoal, v3BallPosition, m_pTeam->m_pNet->m_baseLocation);
+        nlVec3Sub(v3BallToGoal, v3BallPosition, m_pTeam->m_pNet->m_v3NetLocation);
         float fLengthSq = nlVec3LengthSquared(v3Facing);
 
         float fRecip = nlRecipSqrt(fLengthSq, true);

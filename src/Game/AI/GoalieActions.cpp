@@ -1831,7 +1831,7 @@ void Goalie::ActionPass(float deltaTime)
         }
         else
         {
-            if (m_pTeam->m_pNet->m_baseLocation.f.x > 0.0f)
+            if (m_pTeam->m_pNet->m_v3NetLocation.f.x > 0.0f)
             {
                 m_aDesiredFacingDirection = 0x8000;
             }

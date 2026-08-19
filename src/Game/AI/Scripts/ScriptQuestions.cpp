@@ -1466,7 +1466,7 @@ float LikelyToScoreFromPosition(const nlVector3& v3Position, const nlVector3& v3
     float fGoalieDeltaY;
     float fGoalieDeltaX;
 
-    float fSideSign = pNet->m_sideSign;
+    float fSideSign = pNet->m_fDirection;
     float fOpenAngle = 65536.0f;
     fOpenAngle *= g_pGame->m_pGameTweaks->unk2D4;
     fNetHalfWidth = 0.5f * cNet::m_fNetWidth;
@@ -1536,7 +1536,7 @@ float PlayerShotDistance(cFielder* pFielder)
     cNet* pOtherNet = pFielder->m_pTeam->GetOtherNet();
 
     nlVector3 v;
-    nlVec3Set(v, pFielder->m_v3Position.f.x - pOtherNet->m_baseLocation.f.x, pFielder->m_v3Position.f.y - pOtherNet->m_baseLocation.f.y, pFielder->m_v3Position.f.z - pOtherNet->m_baseLocation.f.z);
+    nlVec3Set(v, pFielder->m_v3Position.f.x - pOtherNet->m_v3NetLocation.f.x, pFielder->m_v3Position.f.y - pOtherNet->m_v3NetLocation.f.y, pFielder->m_v3Position.f.z - pOtherNet->m_v3NetLocation.f.z);
 
     return NormalizeVal(nlSqrt((v.f.x * v.f.x) + (v.f.y * v.f.y) + (v.f.z * v.f.z), true), g_pGame->m_pFuzzyTweaks->vPlayerShotDistance);
 }
@@ -1581,7 +1581,7 @@ float GoalieOutOfPosition(cFielder* pFielder)
     pGoalie = pFielder->m_pTeam->GetOtherTeam()->GetGoalie();
     float halfNetWidth = 0.5f * cNet::m_fNetWidth;
     goalieNetPos = pGoalie->m_v3Position;
-    goalieNetPos.f.x = pGoalie->m_pTeam->m_pNet->m_baseLocation.f.x;
+    goalieNetPos.f.x = pGoalie->m_pTeam->m_pNet->m_v3NetLocation.f.x;
 
     float goalieY = goalieNetPos.f.y;
     if (goalieY < -halfNetWidth)
@@ -1624,10 +1624,10 @@ float PositionIsInFrontOfNet(const nlVector3& position, const cNet* pNet)
     float sideSign;
     nlVector3 diff;
     nlVec3Set(diff,
-        position.f.x - pNet->m_baseLocation.f.x,
-        position.f.y - pNet->m_baseLocation.f.y,
-        position.f.z - pNet->m_baseLocation.f.z);
-    sideSign = pNet->m_sideSign;
+        position.f.x - pNet->m_v3NetLocation.f.x,
+        position.f.y - pNet->m_v3NetLocation.f.y,
+        position.f.z - pNet->m_v3NetLocation.f.z);
+    sideSign = pNet->m_fDirection;
     nlVec3Scale(diff, diff, sideSign);
 
     nlPolar polar;
@@ -1669,11 +1669,11 @@ float InFrontOfTheirNet(cFielder* pFielder)
 
     nlVector3 diff;
     nlVec3Set(diff,
-        pFielder->m_v3Position.f.x - pNet->m_baseLocation.f.x,
-        pFielder->m_v3Position.f.y - pNet->m_baseLocation.f.y,
-        pFielder->m_v3Position.f.z - pNet->m_baseLocation.f.z);
+        pFielder->m_v3Position.f.x - pNet->m_v3NetLocation.f.x,
+        pFielder->m_v3Position.f.y - pNet->m_v3NetLocation.f.y,
+        pFielder->m_v3Position.f.z - pNet->m_v3NetLocation.f.z);
 
-    float sideSign = pNet->m_sideSign;
+    float sideSign = pNet->m_fDirection;
     nlVec3Scale(diff, diff, sideSign);
 
     nlPolar polar;
@@ -1739,7 +1739,7 @@ float OnBreakaway(cFielder* pFielder)
             nlVector3 v3MyPos = pFielder->m_v3Position;
             v3OppPos = pOpponent->m_v3Position;
             cNet* pOtherNet = pFielder->m_pTeam->GetOtherNet();
-            float sign = AIsgn(pOtherNet->m_baseLocation.f.x);
+            float sign = AIsgn(pOtherNet->m_v3NetLocation.f.x);
             float upfieldDist = v3MyPos.f.x - v3OppPos.f.x;
             fUpfieldScore = NormalizeVal(upfieldDist * sign, 0.0f, g_pGame->m_pFuzzyTweaks->fUpfieldMaxDistance);
         }
@@ -1757,7 +1757,7 @@ float OnBreakaway(cFielder* pFielder)
             const nlVector3* pOppPos = &pOpponent->m_v3Position;
             const nlVector3* pMyPos = &pFielder->m_v3Position;
             cNet* pOppNet = pOpponent->m_pTeam->m_pNet;
-            const nlVector3* pNetPos = &pOppNet->m_baseLocation;
+            const nlVector3* pNetPos = &pOppNet->m_v3NetLocation;
             fInterceptScore = InBetween(*pNetPos, *pMyPos, *pOppPos);
         }
         float fProximityScore;
@@ -2365,7 +2365,7 @@ float InBetweenMyNetAnd(cFielder* pFielder1, cFielder* pFielder2)
     cNet* pNet = pFielder1->m_pTeam->m_pNet;
     nlVector3* fielderPos = &pFielder1->m_v3Position;
     nlVector3* targetPos = &pFielder2->m_v3Position;
-    nlVector3* netPos = &pNet->m_baseLocation;
+    nlVector3* netPos = &pNet->m_v3NetLocation;
 
     return InBetween(*netPos, *targetPos, *fielderPos);
 }
@@ -2387,7 +2387,7 @@ float InBetweenMyNetAnd(cFielder* pFielder, cBall* pBall)
     cNet* pNet = pFielder->m_pTeam->m_pNet;
     nlVector3* fielderPos = &pFielder->m_v3Position;
     nlVector3* ballPos = &pBall->m_v3Position;
-    nlVector3* netPos = &pNet->m_baseLocation;
+    nlVector3* netPos = &pNet->m_v3NetLocation;
 
     return InBetween(*netPos, *ballPos, *fielderPos);
 }
@@ -3013,7 +3013,7 @@ float UpfieldFrom(cPlayer* pPlayer1, cPlayer* pPlayer2)
     nlVector3 v3FromPos = pPlayer1->m_v3Position;
     nlVector3 v3DownfieldPos = pPlayer2->m_v3Position;
     float delta = v3FromPos.f.x - v3DownfieldPos.f.x;
-    float score = delta * AIsgn(pPlayer1->m_pTeam->GetOtherNet()->m_baseLocation.f.x);
+    float score = delta * AIsgn(pPlayer1->m_pTeam->GetOtherNet()->m_v3NetLocation.f.x);
 
     return NormalizeVal(score, 0.0f, g_pGame->m_pFuzzyTweaks->fUpfieldMaxDistance);
 }
@@ -3036,7 +3036,7 @@ float DownfieldFrom(cPlayer* pPlayer1, cPlayer* pPlayer2)
     nlVector3 v3FromPos = pPlayer1->m_v3Position;
     nlVector3 v3DownfieldPos = pPlayer2->m_v3Position;
     float delta = v3DownfieldPos.f.x - v3FromPos.f.x;
-    float score = delta * AIsgn(pPlayer1->m_pTeam->GetOtherNet()->m_baseLocation.f.x);
+    float score = delta * AIsgn(pPlayer1->m_pTeam->GetOtherNet()->m_v3NetLocation.f.x);
 
     return NormalizeVal(score, 0.0f, g_pGame->m_pFuzzyTweaks->fDownfieldMaxDistance);
 }

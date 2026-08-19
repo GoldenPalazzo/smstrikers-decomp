@@ -35,7 +35,7 @@ void ShotMeter::Update(float fDeltaT, bool bHoldTime)
             if (pPrevOwner != NULL)
             {
                 cNet* pOtherNet = pPrevOwner->m_pTeam->GetOtherNet();
-                fNetDirection = g_pBall->m_pOwner->m_v3Position.f.x * pOtherNet->m_baseLocation.f.x;
+                fNetDirection = g_pBall->m_pOwner->m_v3Position.f.x * pOtherNet->m_v3NetLocation.f.x;
             }
             if (fNetDirection > 0.0f)
             {

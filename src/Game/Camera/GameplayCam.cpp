@@ -398,7 +398,7 @@ static inline void CalcCurrentKnotTable(GameplayCameraZoomLevel* self, bool forc
 
     if (pBallOwner != NULL && !forceNeutral)
     {
-        if (pBallOwner->m_pTeam->GetOtherNet()->m_baseLocation.f.x > 0.0f)
+        if (pBallOwner->m_pTeam->GetOtherNet()->m_v3NetLocation.f.x > 0.0f)
         {
             nNewKnotTable = 1;
         }

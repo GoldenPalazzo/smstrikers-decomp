@@ -22,7 +22,7 @@ class SpaceSearch
 public:
     SpaceSearch(cPlayer* pPlayer)
     {
-        m_fNetDirection = pPlayer->m_pTeam->m_pNet->m_sideSign;
+        m_fNetDirection = pPlayer->m_pTeam->m_pNet->m_fDirection;
         m_bDebugOn = false;
         m_bDrawSearchSpace = false;
     }
@@ -67,7 +67,7 @@ class SSearchIdealShot : public SpaceSearch
 {
 public:
     SSearchIdealShot(cPlayer* pBallOwner)
-        : SpaceSearch(pBallOwner->m_pTeam->m_pNet->m_sideSign)
+        : SpaceSearch(pBallOwner->m_pTeam->m_pNet->m_fDirection)
         , m_SSearchOpenLane(pBallOwner, NULL)
     {
         m_pGoalie = pBallOwner->m_pTeam->GetOtherTeam()->GetGoalie();

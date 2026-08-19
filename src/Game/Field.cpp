@@ -33,8 +33,8 @@ void cField::Init(cNet* net0, cNet* net1)
 {
     mpNet[0] = net0;
     mpNet[1] = net1;
-    net0->m_baseLocation.f.x = -mv3FieldPosition.f.x;
-    net1->m_baseLocation.f.x = mv3FieldPosition.f.x;
+    net0->m_v3NetLocation.f.x = -mv3FieldPosition.f.x;
+    net1->m_v3NetLocation.f.x = mv3FieldPosition.f.x;
 }
 
 /**
@@ -147,6 +147,6 @@ void cField::FixOutOfBoundsPosition(nlVector3& v, float fMinDistanceFromWall)
  */
 void cField::SetFieldDimensions(float, float, float)
 {
-    mpNet[0]->m_baseLocation.f.x = -mv3FieldPosition.f.x;
-    mpNet[1]->m_baseLocation.f.x = mv3FieldPosition.f.x;
+    mpNet[0]->m_v3NetLocation.f.x = -mv3FieldPosition.f.x;
+    mpNet[1]->m_v3NetLocation.f.x = mv3FieldPosition.f.x;
 }

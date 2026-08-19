@@ -23,7 +23,11 @@ public:
     /* 0x24 */ virtual void BlendRootRot(unsigned short*, float, float*);
 
     template <typename T>
-    void Replay(T&);
+    void Replay(T& frame)
+    {
+        Replayable<0>(frame, (cPoseNode&)*this);
+        Replayable<0>(frame, FloatCompressor<0, 1, 7>(m_fSmoothedWeight));
+    }
 
     /* 0x14 */ float m_fSmoothedWeight;
     /* 0x18 */ void (*m_fWeightCallback)(unsigned int, class cPN_SingleAxisBlender*);
@@ -43,11 +47,5 @@ inline cPN_SingleAxisBlender* AllocateSingleAxisBlender()
     return pSAB;
 }
 
-template <typename T>
-void cPN_SingleAxisBlender::Replay(T& frame)
-{
-    Replayable<0>(frame, (cPoseNode&)*this);
-    Replayable<0>(frame, FloatCompressor<0, 1, 7>(m_fSmoothedWeight));
-}
 
 #endif // _PNSINGLEAXISBLENDER_H_

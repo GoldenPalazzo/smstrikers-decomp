@@ -25,7 +25,15 @@ public:
     /* 0x24 */ virtual void BlendRootRot(unsigned short*, float, float*);
 
     template <typename T>
-    void Replay(T&);
+    void Replay(T& frame)
+    {
+        Replayable<0>(frame, (cPoseNode&)*this);
+        if (ReplayFrameTraits<T>::IsLoadFrame)
+        {
+            m_fBlendTime = 0.0f;
+            m_pFeatherWeights = NULL;
+        }
+    }
 
     void ClearNodeWeights();
     void SetNodeWeight(int, float, float);
@@ -62,15 +70,5 @@ inline cPN_Feather* AllocateFeather()
     return feather;
 }
 
-template <typename T>
-void cPN_Feather::Replay(T& frame)
-{
-    Replayable<0>(frame, (cPoseNode&)*this);
-    if (ReplayFrameTraits<T>::IsLoadFrame)
-    {
-        m_fBlendTime = 0.0f;
-        m_pFeatherWeights = NULL;
-    }
-}
 
 #endif // _PNFEATHER_H_

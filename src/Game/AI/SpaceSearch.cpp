@@ -173,7 +173,7 @@ float SpaceSearch::FindBestPosition(nlVector3& v3Dest, const nlVector3& v3Center
  * Offset/Address/Size: 0x117C | 0x80063ACC | size: 0x108
  */
 SSearchOpenLane::SSearchOpenLane(cPlayer* pPlayer1, cPlayer* pPlayer2)
-    : SpaceSearch(pPlayer1 != NULL ? pPlayer1->m_pTeam->m_pNet->m_sideSign : pPlayer2->m_pTeam->m_pNet->m_sideSign)
+    : SpaceSearch(pPlayer1 != NULL ? pPlayer1->m_pTeam->m_pNet->m_fDirection : pPlayer2->m_pTeam->m_pNet->m_fDirection)
 {
     if (pPlayer2 != NULL)
     {
@@ -281,7 +281,7 @@ float SSearchIdealShot::EvaluatePosition(const nlVector3& position, const nlVect
  * Offset/Address/Size: 0xCEC | 0x8006363C | size: 0x22C
  */
 SSearchBestPass::SSearchBestPass(cPlayer* pBallOwner, cPlayer* pPassTarget, bool bAllowLeadPass, bool bIsPerfectPass)
-    : SpaceSearch(pBallOwner != NULL ? pBallOwner->m_pTeam->m_pNet->m_sideSign : pPassTarget->m_pTeam->m_pNet->m_sideSign)
+    : SpaceSearch(pBallOwner != NULL ? pBallOwner->m_pTeam->m_pNet->m_fDirection : pPassTarget->m_pTeam->m_pNet->m_fDirection)
     , m_SSearchIdealShot(pPassTarget)
     , m_SSearchOpenLane(pBallOwner, pPassTarget)
 {
@@ -521,7 +521,7 @@ float SSearchBestPass::EvaluatePosition(const nlVector3& position, const nlVecto
  * Offset/Address/Size: 0x380 | 0x80062CD0 | size: 0x130
  */
 SSearchRunToNet::SSearchRunToNet(cPlayer* pPlayer)
-    : SpaceSearch(pPlayer->m_pTeam->m_pNet->m_sideSign)
+    : SpaceSearch(pPlayer->m_pTeam->m_pNet->m_fDirection)
     , m_SSearchIdealShot(pPlayer)
 {
 }
@@ -586,7 +586,7 @@ float SSearchRunToNet::EvaluatePosition(const nlVector3& v3TestPosition, const n
  * Offset/Address/Size: 0x158 | 0x80062AA8 | size: 0x3C
  */
 SSearchCutAndBreak::SSearchCutAndBreak(cPlayer* pPlayer)
-    : SpaceSearch(pPlayer->m_pTeam->m_pNet->m_sideSign)
+    : SpaceSearch(pPlayer->m_pTeam->m_pNet->m_fDirection)
 {
     m_pPlayer = pPlayer;
 }

@@ -34,7 +34,26 @@ public:
     /* 0x24 */ virtual void BlendRootRot(unsigned short*, float, float*);
 
     template <typename T>
-    void Replay(T&);
+    void Replay(T& frame)
+    {
+        Replayable<0>(frame, (cPoseNode&)*this);
+        Replayable<0>(frame, FloatCompressor<0, 1, 15>(m_fTime));
+
+        unsigned int animPtr = 0;
+        if (!ReplayFrameTraits<T>::IsLoadFrame)
+        {
+            animPtr = (unsigned int)m_pSAnim;
+            if (m_bMirror)
+                animPtr |= 1;
+        }
+        Replayable<0>(frame, animPtr);
+        if (ReplayFrameTraits<T>::IsLoadFrame)
+        {
+            m_bMirror = animPtr & 1;
+            m_pSAnim = (cSAnim*)(animPtr & ~1);
+        }
+        Replayable<0>(frame, (unsigned int&)m_pAnimRetarget);
+    }
 
     void UpdateSynchronized(float);
     void SetTime(float time)
@@ -84,26 +103,5 @@ inline cPN_SAnimController* AllocateSAnimController()
     return controller;
 }
 
-template <typename T>
-void cPN_SAnimController::Replay(T& frame)
-{
-    Replayable<0>(frame, (cPoseNode&)*this);
-    Replayable<0>(frame, FloatCompressor<0, 1, 15>(m_fTime));
-
-    unsigned int animPtr = 0;
-    if (!ReplayFrameTraits<T>::IsLoadFrame)
-    {
-        animPtr = (unsigned int)m_pSAnim;
-        if (m_bMirror)
-            animPtr |= 1;
-    }
-    Replayable<0>(frame, animPtr);
-    if (ReplayFrameTraits<T>::IsLoadFrame)
-    {
-        m_bMirror = animPtr & 1;
-        m_pSAnim = (cSAnim*)(animPtr & ~1);
-    }
-    Replayable<0>(frame, (unsigned int&)m_pAnimRetarget);
-}
 
 #endif // _PNSANIMCONTROLLER_H_

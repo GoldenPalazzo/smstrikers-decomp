@@ -1,4 +1,7 @@
 #include "Game/SH/SHCredits.h"
+#include "Game/Audio/AudioLoaderCore.h"
+#include "Game/SH/SHMoviePlayer.h"
+#include "Game/TrophyTextures.h"
 #include "Game/FE/tlComponentInstance.h"
 #include "Game/FE/feInput.h"
 #include "Game/FE/tlImageInstance.h"
@@ -19,12 +22,6 @@ static char* CREDITS_LINE_NAMES[] = {
 
 SceneList CreditScene::mNextScene = SCENE_MAIN_MENU;
 
-class AudioLoader
-{
-public:
-    static void StartFEStream(const char*, bool, const char*);
-};
-
 /**
  * Offset/Address/Size: 0xBCC | 0x8010FD28 | size: 0xDC
  */
@@ -32,8 +29,9 @@ CreditScene::CreditScene()
     : mAreCreditsOver(false)
     , mFinalMessageDisplayed(false)
     , mFadeStarted(false)
+    , mPhase(0)
 {
-    *(f32*)&mCreditParser.mFileSize = 0.0f;
+    mTimeElapsed = 0.0f;
 
     for (int i = 0; i < 10; i++)
     {
@@ -47,15 +45,6 @@ CreditScene::CreditScene()
  */
 CreditScene::~CreditScene()
 {
-    if (&mCreditParser.mActualSize != NULL)
-    {
-        char** data = (char**)&mCreditParser.mActualSize;
-        if (data[1] != NULL)
-        {
-            nlFree(data[1]);
-            data[1] = NULL;
-        }
-    }
 }
 
 /**
@@ -69,26 +58,40 @@ void CreditScene::SceneCreated()
 /**
  * Offset/Address/Size: 0xA80 | 0x8010FBDC | size: 0xA0
  */
-void CreditScene::Update(float dt)
+void CreditScene::Update(float fDeltaT)
 {
-    BaseSceneHandler::Update(dt);
-    switch ((s32)mCreditParser.mFileData)
+    BaseSceneHandler::Update(fDeltaT);
+    switch (mPhase)
     {
     case 2:
-        UpdateForCredits(dt);
+        UpdateForCredits(fDeltaT);
         break;
     case 3:
-        UpdateForCopyrightMessage(dt);
+        UpdateForCopyrightMessage(fDeltaT);
         break;
     case 1:
-        UpdateForNintendoLogo(dt);
+        UpdateForNintendoLogo(fDeltaT);
         break;
     case 0:
-        UpdateForNLGMovie(dt);
+        UpdateForNLGMovie(fDeltaT);
         break;
     default:
         break;
     }
+}
+
+void CreditScene::DisplayFinalMessage()
+{
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+
+    TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+        presentation,
+        InlineHasher(nlStringLowerHash("CREDITS")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Final Message")));
+    pText->m_bVisible = true;
+
+    mFinalMessageDisplayed = true;
 }
 
 /**
@@ -96,11 +99,10 @@ void CreditScene::Update(float dt)
  */
 void CreditScene::SetupForPhase()
 {
-    FORCE_DONT_INLINE;
     mFadeStarted = 0;
-    *(f32*)&mCreditParser.mFileSize = 0.0f;
+    mTimeElapsed = 0.0f;
 
-    switch ((s32)mCreditParser.mFileData)
+    switch (mPhase)
     {
     case 0:
         SetupForNLGMovie();
@@ -118,7 +120,7 @@ void CreditScene::SetupForPhase()
         break;
     case 4:
     {
-        nlSingleton<GameSceneManager>::s_pInstance->Push(mNextScene, SCREEN_NOTHING, true);
+        GameSceneManager::GetInstance()->Push(mNextScene, SCREEN_NOTHING, true);
         if (mNextScene == SCENE_OPTIONS)
         {
             FEMusic::StartStreamIfDifferent(7);
@@ -138,9 +140,14 @@ void CreditScene::SetupForPhase()
  */
 void CreditScene::GotoNextPhase()
 {
-    FORCE_DONT_INLINE;
-    mCreditParser.mFileData++;
+    mPhase++;
     SetupForPhase();
+}
+
+void CreditScene::SetupForCopyrightMessage()
+{
+    m_pFEPresentation->SetActiveSlide("COPYRIGHTS");
+    m_pFEPresentation->m_currentSlide->Update(0.0f);
 }
 
 /**
@@ -148,7 +155,6 @@ void CreditScene::GotoNextPhase()
  */
 void CreditScene::SetupForCredits()
 {
-    FORCE_DONT_INLINE;
     m_pFEPresentation->SetActiveSlide("CREDITS");
     m_pFEPresentation->m_currentSlide->Update(0.0f);
 
@@ -162,10 +168,10 @@ void CreditScene::SetupForCredits()
         InlineHasher(nlStringLowerHash("Final Message")));
     pFinalText->m_bVisible = false;
 
-    mCreditParser.mActualData = (char*)nlLoadEntireFile("credits.txt", &mCreditParser.mActualSize, 0x20, (eAllocType)1);
-    mCreditParser.mParser.StartParsing(mCreditParser.mActualData, mCreditParser.mActualSize, false);
+    mCreditParser.mFileData = (char*)nlLoadEntireFile("credits.txt", &mCreditParser.mFileSize, 0x20, (eAllocType)1);
+    mCreditParser.mParser.StartParsing(mCreditParser.mFileData, mCreditParser.mFileSize, false);
 
-    nlVector2 boxSize = { 1280.0f, 480.0f };
+    nlVector2 boxsize = { 1280.0f, 480.0f };
 
     s32 i;
     for (i = 0, yOffset = 0; i < 10; i++, yOffset += 46)
@@ -183,27 +189,20 @@ void CreditScene::SetupForCredits()
         pText->m_DrawOptions |= 0x10;
 
         pText = m_pTextLines[i];
-        pText->m_OverloadedAttributes.BoxSize = boxSize;
+        pText->m_OverloadedAttributes.BoxSize = boxsize;
         pText->m_OverloadFlags |= 0x4;
 
-        feVector3 pos = m_pTextLines[i]->GetAssetPosition();
-        m_pTextLines[i]->SetAssetPosition(pos.f.x, (f32)(-230 - yOffset), pos.f.z);
+        feVector3 position = m_pTextLines[i]->GetAssetPosition();
+        m_pTextLines[i]->SetAssetPosition(position.f.x, (f32)(-230 - yOffset), position.f.z);
     }
 
     AudioLoader::StartFEStream("FE_Credits", true, "FE");
 }
 
-/**
- * Stub only for .data layout; unreferenced so the linker drops it.
- * Forces the "NINTENDO" string literal to be allocated between
- * SetupForNLGMovie's and SetupForCredits' literals so the .data
- * symbol order matches the original binary. SetupForPhase reuses
- * the pooled literal.
- */
-void SHCredits_stub()
+void CreditScene::SetupForNintendoLogo()
 {
-    const char* volatile forceNintendoString = "NINTENDO";
-    (void)forceNintendoString;
+    m_pFEPresentation->SetActiveSlide("NINTENDO");
+    m_pFEPresentation->m_currentSlide->Update(0.0f);
 }
 
 /**
@@ -211,10 +210,10 @@ void SHCredits_stub()
  */
 void CreditScene::SetupForNLGMovie()
 {
-    BaseSceneHandler* pScene = nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_NLG_MOVIE, SCREEN_NOTHING, false);
-    ((u8*)pScene)[0xAA] = 0;
+    MoviePlayerScene* pScene = (MoviePlayerScene*)GameSceneManager::GetInstance()->Push(SCENE_NLG_MOVIE, SCREEN_NOTHING, false);
+    pScene->mPushWithPop = false;
 
-    nlSingleton<FESceneManager>::s_pInstance->ForceImmediateStackProcessing();
+    FESceneManager::GetInstance()->ForceImmediateStackProcessing();
 
     m_pFEPresentation->SetActiveSlide("NLG");
 
@@ -228,13 +227,12 @@ void CreditScene::SetupForNLGMovie()
 /**
  * Offset/Address/Size: 0x554 | 0x8010F6B0 | size: 0xB8
  */
-void CreditScene::UpdateForCopyrightMessage(float dt)
+void CreditScene::UpdateForCopyrightMessage(float fDeltaT)
 {
-    FORCE_DONT_INLINE;
     TLComponentInstance* pWhiteFade = GetWhiteFadeComponent();
-    f32 timeElapsed = *(f32*)&mCreditParser.mFileSize;
-    timeElapsed += dt;
-    *(f32*)&mCreditParser.mFileSize = timeElapsed;
+    f32 timeElapsed = mTimeElapsed;
+    timeElapsed += fDeltaT;
+    mTimeElapsed = timeElapsed;
     if (timeElapsed < 3.0f)
     {
         return;
@@ -288,17 +286,17 @@ static inline void CopyCreditLine(CreditScene& scene, s32 i, const char* pToken)
 /**
  * Offset/Address/Size: 0x1BC | 0x8010F318 | size: 0x398
  */
-void CreditScene::UpdateForCredits(float dt)
+void CreditScene::UpdateForCredits(float fDeltaT)
 {
-    s32 yDelta = (s32)(460.0f * (dt / 5.0f));
+    s32 movement = (s32)(460.0f * (fDeltaT / 5.0f));
     f32 resetY = -230.0f;
-    s32 lineCount = 0;
+    s32 numonscreen = 0;
 
     for (s32 i = 0; i < 10; i++)
     {
-        feVector3 pos = m_pTextLines[i]->GetAssetPosition();
+        feVector3 position = m_pTextLines[i]->GetAssetPosition();
 
-        if (pos.f.y >= resetY && !mLineOnScreen[i])
+        if (position.f.y >= resetY && !mLineOnScreen[i])
         {
             bool hasToken;
             const char* pToken = mCreditParser.mParser.NextToken(false);
@@ -319,47 +317,47 @@ void CreditScene::UpdateForCredits(float dt)
             {
                 m_pTextLines[i]->SetString(mStrings[i]);
                 mLineOnScreen[i] = true;
-                pos.f.y += (float)yDelta;
-                m_pTextLines[i]->SetAssetPosition(pos.f.x, pos.f.y, pos.f.z);
+                position.f.y += (float)movement;
+                m_pTextLines[i]->SetAssetPosition(position.f.x, position.f.y, position.f.z);
             }
         }
         else
         {
-            if (pos.f.y >= 230.0f && mLineOnScreen[i] == true)
+            if (position.f.y >= 230.0f && mLineOnScreen[i] == true)
             {
                 mLineOnScreen[i] = false;
-                pos.f.y = resetY;
-                m_pTextLines[i]->SetAssetPosition(pos.f.x, pos.f.y, pos.f.z);
+                position.f.y = resetY;
+                m_pTextLines[i]->SetAssetPosition(position.f.x, position.f.y, position.f.z);
             }
             else
             {
-                pos.f.y += (float)yDelta;
-                m_pTextLines[i]->SetAssetPosition(pos.f.x, pos.f.y, pos.f.z);
+                position.f.y += (float)movement;
+                m_pTextLines[i]->SetAssetPosition(position.f.x, position.f.y, position.f.z);
             }
         }
 
         if (mLineOnScreen[i])
         {
-            lineCount++;
+            numonscreen++;
         }
     }
 
-    if (lineCount == 0)
+    if (numonscreen == 0)
     {
         mAreCreditsOver = true;
     }
 
     if (!mFadeStarted)
     {
-        bool shouldFade = false;
+        bool quitcredits = false;
 
         if (mAreCreditsOver == true)
         {
-            *(f32*)&mCreditParser.mFileSize += dt;
+            mTimeElapsed += fDeltaT;
 
-            if (*(f32*)&mCreditParser.mFileSize >= 0.0 && !mFinalMessageDisplayed)
+            if (mTimeElapsed >= 0.0 && !mFinalMessageDisplayed)
             {
-                shouldFade = true;
+                quitcredits = true;
             }
         }
         else
@@ -367,11 +365,11 @@ void CreditScene::UpdateForCredits(float dt)
             if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x24, true, NULL)
                 || g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
             {
-                shouldFade = true;
+                quitcredits = true;
             }
         }
 
-        if (shouldFade)
+        if (quitcredits)
         {
             mFadeStarted = 1;
 
@@ -388,10 +386,10 @@ void CreditScene::UpdateForCredits(float dt)
 
         if (pWhiteFade->GetActiveSlide()->m_time >= slideEnd)
         {
-            if (mCreditParser.mActualData != NULL)
+            if (mCreditParser.mFileData != NULL)
             {
-                nlFree(mCreditParser.mActualData);
-                mCreditParser.mActualData = NULL;
+                nlFree(mCreditParser.mFileData);
+                mCreditParser.mFileData = NULL;
             }
 
             GotoNextPhase();
@@ -402,13 +400,12 @@ void CreditScene::UpdateForCredits(float dt)
 /**
  * Offset/Address/Size: 0x104 | 0x8010F260 | size: 0xB8
  */
-void CreditScene::UpdateForNintendoLogo(float dt)
+void CreditScene::UpdateForNintendoLogo(float fDeltaT)
 {
-    FORCE_DONT_INLINE;
     TLComponentInstance* pWhiteFade = GetWhiteFadeComponent();
-    f32 timeElapsed = *(f32*)&mCreditParser.mFileSize;
-    timeElapsed += dt;
-    *(f32*)&mCreditParser.mFileSize = timeElapsed;
+    f32 timeElapsed = mTimeElapsed;
+    timeElapsed += fDeltaT;
+    mTimeElapsed = timeElapsed;
     if (timeElapsed < 3.0f)
     {
         return;
@@ -435,7 +432,6 @@ void CreditScene::UpdateForNintendoLogo(float dt)
  */
 void CreditScene::UpdateForNLGMovie(float)
 {
-    FORCE_DONT_INLINE;
     if (FESceneManager::GetInstance()->AreAllScenesValid())
     {
         GameSceneManager* pGameSceneMgr = GameSceneManager::GetInstance();
@@ -460,7 +456,6 @@ void CreditScene::UpdateForNLGMovie(float)
  */
 TLComponentInstance* CreditScene::GetWhiteFadeComponent()
 {
-    FORCE_DONT_INLINE;
 
     return FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,

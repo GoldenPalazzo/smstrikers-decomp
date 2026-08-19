@@ -517,7 +517,7 @@ void Bowser::Update(float fDeltaT)
         nlVector3 v3TargetPos;
         if (bIsSTS)
         {
-            v3TargetPos = g_pBall->GetOwnerFielder()->m_pTeam->m_pNet->m_baseLocation;
+            v3TargetPos = g_pBall->GetOwnerFielder()->m_pTeam->m_pNet->m_v3NetLocation;
         }
         else if (mpTarget != NULL)
         {

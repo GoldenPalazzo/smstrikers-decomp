@@ -849,7 +849,7 @@ void cFielder::asmRunningWB(float fDeltaT)
         case 0x57:
         {
             cNet* pOtherNet = m_pTeam->GetOtherNet();
-            float fAngle = nlATan2f(pOtherNet->m_baseLocation.f.y - m_v3Position.f.y, pOtherNet->m_baseLocation.f.x - m_v3Position.f.x);
+            float fAngle = nlATan2f(pOtherNet->m_v3NetLocation.f.y - m_v3Position.f.y, pOtherNet->m_v3NetLocation.f.x - m_v3Position.f.x);
             m_aDesiredFacingDirection = (u16)(s32)(10430.378f * fAngle);
 
             u16 aNewFacingDirection = SeekDirection(
@@ -1799,7 +1799,7 @@ void cFielder::InitActionLateOneTimerFromVolley()
         0x51,
     };
 
-    s16 facingDelta = GetFacingDeltaToPosition(m_pTeam->GetOtherNet()->m_baseLocation);
+    s16 facingDelta = GetFacingDeltaToPosition(m_pTeam->GetOtherNet()->m_v3NetLocation);
     SetAnimState(LateOneTimerFromVolleyAnims[(u16)(facingDelta + 0x2000) >> 14], true, 0.2f, false, false);
 
     InitMovementFromAnim(0, v3Zero, 0.0f, false);
@@ -1931,7 +1931,7 @@ void cFielder::DoCommonInitActionLooseBall(const nlVector3& rv3OneTimerTarget)
     float fMaxGoalX = cField::GetGoalLineX(1U) - 0.5f;
     float fNetWidth = cNet::m_fNetWidth;
     float fMaxGoalY = (0.5f * fNetWidth) + 1.5f;
-    float fMinGoalY = ((0.5f * fNetWidth) - cNet::GetPostRadius()) - fPhysicsRadius;
+    float fMinGoalY = ((0.5f * fNetWidth) - m_pTeam->m_pNet->GetPostRadius()) - fPhysicsRadius;
 
     float fAbsX = (float)fabs(v3SimulatedBallPos.f.x);
     if ((fAbsX < fMaxGoalX)
@@ -2003,7 +2003,7 @@ void cFielder::InitActionLooseBallShot(bool bIsChipShot)
 
     mActionLooseBallShotVars.bIsChipShot = bIsChipShot;
 
-    DoCommonInitActionLooseBall(m_pTeam->GetOtherNet()->m_baseLocation);
+    DoCommonInitActionLooseBall(m_pTeam->GetOtherNet()->m_v3NetLocation);
 
     SetNoPickUpTime(3.0f);
     DoResetShotMeter(0.0f);
@@ -2804,7 +2804,7 @@ void cFielder::InitActionShot(bool bIsChipShot)
     }
     default:
     {
-        if (GetFacingDeltaToPosition(m_pTeam->GetOtherNet()->m_baseLocation) < 0)
+        if (GetFacingDeltaToPosition(m_pTeam->GetOtherNet()->m_v3NetLocation) < 0)
         {
             if (!(m_pShotMeter->m_fSpeedValue >= 0.99f))
             {
@@ -2836,7 +2836,7 @@ void cFielder::InitActionShot(bool bIsChipShot)
 
     InitMovementNone(shootingSeekSpeed, shootingSeekFalloff);
 
-    nlVector3 pos = m_pTeam->GetOtherNet()->m_baseLocation;
+    nlVector3 pos = m_pTeam->GetOtherNet()->m_v3NetLocation;
     m_aDesiredFacingDirection = 10430.378f * nlATan2f(pos.f.y - m_v3Position.f.y, pos.f.x - m_v3Position.f.x);
 }
 
@@ -2966,7 +2966,7 @@ void cFielder::InitActionShootToScore()
         SetAnimState(0x5E, true, 0.2f, false, false);
     }
 
-    nlVector3 v3NetLocation = m_pTeam->GetOtherNet()->m_baseLocation;
+    nlVector3 v3NetLocation = m_pTeam->GetOtherNet()->m_v3NetLocation;
     f32 fAngleRad = nlATan2f(v3NetLocation.f.y - m_v3Position.f.y, v3NetLocation.f.x - m_v3Position.f.x);
     u16 nAngleUnits = (u16)(s32)(10430.378f * fAngleRad);
     s16 nTurnAdjust = CalcAnimTurnAdjust(m_aActualFacingDirection, nAngleUnits, m_eAnimID);
@@ -3677,7 +3677,7 @@ void cFielder::ActionShootToScore(float)
                     pMatrixCam2->mbFollowBall = true;
 
                     cTeam* pOtherTeam = m_pTeam->GetOtherTeam();
-                    nlVector3* pGoalPos = &pOtherTeam->m_pNet->m_baseLocation;
+                    nlVector3* pGoalPos = &pOtherTeam->m_pNet->m_v3NetLocation;
                     pMatrixCam2->Reset(cameraPos, *pBallPos, *pGoalPos);
 
                     pMatrixCam2->SetInitialDistance(sfMatrixCamInitialDistanceFromTarget);

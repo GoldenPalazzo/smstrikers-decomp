@@ -661,7 +661,7 @@ void cGame::CheckForGoal()
 
             if (m_pScorer != g_pBall->m_pLastTouch && g_pBall->m_pLastTouch->m_eClassType != GOALIE)
             {
-                float fDirection = g_pBall->m_pLastTouch->m_pTeam->m_pNet->m_baseLocation.f.x * g_pBall->m_v3Position.f.x;
+                float fDirection = g_pBall->m_pLastTouch->m_pTeam->m_pNet->m_v3NetLocation.f.x * g_pBall->m_v3Position.f.x;
                 if (fDirection >= 0.0f)
                 {
                     g_pBall->m_uGoalType = 5;

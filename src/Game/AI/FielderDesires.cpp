@@ -936,7 +936,7 @@ void cFielder::DesireMark(float fDeltaT)
         m_DesireCommonVars.tMiscTimer.SetSeconds(
             fTimeDelay + (nlRandomf(fTimeDelayRange, &nlDefaultSeed) - (0.5f * fTimeDelayRange)));
 
-        v3NetPosition = m_pTeam->m_pNet->m_baseLocation;
+        v3NetPosition = m_pTeam->m_pNet->m_v3NetLocation;
 
         nlVector3 v3MarkPosition;
         nlVec3ScaleAdd(v3MarkPosition, 0.1f, m_pMark->m_v3Velocity, m_pMark->m_v3Position);
@@ -1365,7 +1365,7 @@ bool cFielder::InitDesireOneTimerFromIdle(bool bVolleyPass, bool bIsChipShot)
     const LooseBallContactAnimInfo* pBestBallContactAnimInfo = GetOneTimerBallContactAnimInfo(
         m_aActualFacingDirection,
         m_v3Position,
-        m_pTeam->GetOtherNet()->m_baseLocation,
+        m_pTeam->GetOtherNet()->m_v3NetLocation,
         false,
         bVolleyPass);
 
@@ -1420,7 +1420,7 @@ bool cFielder::InitDesireOneTimerFromRun(unsigned short aFutureFacingDirection, 
     float fBallContactTime;
 
     const LooseBallContactAnimInfo* pBestBallContactAnimInfo = GetOneTimerBallContactAnimInfo(
-        aFutureFacingDirection, v3FuturePosition, m_pTeam->GetOtherNet()->m_baseLocation, true, bVolleyPassReceive);
+        aFutureFacingDirection, v3FuturePosition, m_pTeam->GetOtherNet()->m_v3NetLocation, true, bVolleyPassReceive);
 
     m_DesireOneTimerVars.nOneTimerAnim = pBestBallContactAnimInfo->nAnimID;
 
@@ -2615,7 +2615,7 @@ void cFielder::DesireRunUpField(float fDeltaT)
     else
     {
         float fUpFieldDistance = InterpolateRangeClamped(g_vUpFieldMaxDistance.f.x, g_vUpFieldMaxDistance.f.y, g_vUpFieldRange.f.x, g_vUpFieldRange.f.y, m_v3AIPosition.f.x);
-        float fSign = AIsgn(m_pTeam->GetOtherNet()->m_baseLocation.f.x);
+        float fSign = AIsgn(m_pTeam->GetOtherNet()->m_v3NetLocation.f.x);
         v3DesiredPosition.f.x = v3DesiredPosition.f.x + (fUpFieldDistance * fSign);
         float dx = v3DesiredPosition.f.x - m_v3Position.f.x;
         float dy = v3DesiredPosition.f.y - m_v3Position.f.y;
@@ -2655,7 +2655,7 @@ void cFielder::DesireRunDownField(float fDeltaT)
         {
             fUpFieldDistance *= 2.0f;
         }
-        float fSign = AIsgn(m_pTeam->m_pNet->m_baseLocation.f.x);
+        float fSign = AIsgn(m_pTeam->m_pNet->m_v3NetLocation.f.x);
         v3DesiredPosition.f.x = v3DesiredPosition.f.x + (fUpFieldDistance * fSign);
         float dx = v3DesiredPosition.f.x - m_v3Position.f.x;
         float dy = v3DesiredPosition.f.y - m_v3Position.f.y;
