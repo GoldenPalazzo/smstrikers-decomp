@@ -1423,7 +1423,7 @@ s16 cCharacter::CalcAnimTurnAdjust(unsigned short aFacingDirection, unsigned sho
     cSAnim* const pAnim = m_pAnimInventory->GetAnim(nAnimID);
     cPN_SAnimController* pAnimController = AllocateSAnimController();
 
-    pAnimController = new (&*pAnimController) cPN_SAnimController(
+    pAnimController = ::new (&*pAnimController) cPN_SAnimController(
         pAnim,
         GetCharacterAnimRetarget(this, pAnim),
         m_pAnimInventory->GetPlayMode(nAnimID),
@@ -1869,7 +1869,7 @@ cPN_SAnimController* cCharacter::NewAnimController(int animID, bool bRestartCycl
     cPN_SAnimController* controller = AllocateSAnimController();
 
     const AnimRetarget* retarget;
-    controller = new (&*controller) cPN_SAnimController(
+    controller = ::new (&*controller) cPN_SAnimController(
         anim,
         (retarget = NULL, m_pAnimRetargetList != NULL && (retarget = m_pAnimRetargetList->GetAnimRetargetWithSignature(anim), true), retarget),
         m_pAnimInventory->GetPlayMode(animID),
@@ -2044,7 +2044,7 @@ void cCharacter::SetAnimState(int animID, bool useBlendTime, float fNonDefaultBl
 
     if (m_pAILayer[0] != nullptr && finalBlendTime != 0.0f)
     {
-        blender = new (AllocateBlender()) cPN_Blender(m_pAILayer[0], newController, finalBlendTime);
+        blender = ::new (AllocateBlender()) cPN_Blender(m_pAILayer[0], newController, finalBlendTime);
     }
     else
     {

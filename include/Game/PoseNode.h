@@ -22,6 +22,7 @@ public:
     void GetRootRot(unsigned short*);
     void GetRootTrans(nlVector3*, unsigned short);
     void SetChild(int, cPoseNode*);
+    int GetNumChildren() const;
     cPoseNode** GetChildPtr(int);
     cPoseNode* GetChild(int) const;
     cPoseNode* GetChild(int);
@@ -29,6 +30,13 @@ public:
     template <typename T>
     void Replay(T& frame);
 
+    template <typename T>
+    void ReplayNumChildren(T& frame);
+
+private:
+    cPoseNode*& GetChildRef(int);
+
+public:
     /* 0x4 */ cPoseNode* m_children[3];
     /* 0x10 */ int m_numChildren;
 }; // total size: 0x14
@@ -36,12 +44,22 @@ public:
 template <typename T>
 inline void cPoseNode::Replay(T& frame)
 {
-    // FORCE_DONT_INLINE;
-    Replayable<0>(frame, m_numChildren);
+    ReplayNumChildren(frame);
     for (int i = 0; i < m_numChildren; i++)
     {
-        ReplayablePolymorphic<0>(frame, m_children[i]);
+        ReplayablePolymorphic<0>(frame, GetChildRef(i));
     }
+}
+
+template <typename T>
+inline void cPoseNode::ReplayNumChildren(T& frame)
+{
+    Replayable<0>(frame, m_numChildren);
+}
+
+inline cPoseNode*& cPoseNode::GetChildRef(int i)
+{
+    return m_children[i];
 }
 
 #endif // _POSENODE_H_

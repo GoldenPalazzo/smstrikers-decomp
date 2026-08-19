@@ -225,6 +225,12 @@ inline void SaveFrame::ReplayablePolymorphicPtr(T*& ptr)
 
 #include "Game/Compressor.h"
 
+template <int N, typename FrameType, typename T>
+void ReplayablePolymorphic(FrameType& frame, T*& ptr)
+{
+    frame.template ReplayablePolymorphicPtr<N>(ptr);
+}
+
 // Proxy generic for FloatCompressor-style types (Read/Transfer/Apply).
 template <int N, typename FrameType, typename T>
 void Replayable(FrameType& frame, const T& proxy)
@@ -240,12 +246,6 @@ void Replayable(FrameType& frame, const T& proxy)
             proxy.template ReplayInterval<N>(frame);
         }
     }
-}
-
-template <int N, typename FrameType, typename T>
-void ReplayablePolymorphic(FrameType& frame, T*& ptr)
-{
-    frame.template ReplayablePolymorphicPtr<N>(ptr);
 }
 
 template <int N, typename FrameType, typename T>

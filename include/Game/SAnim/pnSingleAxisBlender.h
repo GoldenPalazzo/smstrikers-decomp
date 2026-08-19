@@ -11,6 +11,12 @@ public:
     cPN_SingleAxisBlender() { }
     cPN_SingleAxisBlender(int, void (*)(unsigned int, cPN_SingleAxisBlender*), unsigned int, float);
     /* 0x08 */ virtual ~cPN_SingleAxisBlender() { };
+    static void* operator new(unsigned long)
+    {
+        cPN_SingleAxisBlender* result = NULL;
+        m_SingleAxisBlenderSlotPool.Allocate(result);
+        return result;
+    }
     static void operator delete(void* ptr)
     {
         m_SingleAxisBlenderSlotPool.Free((cPN_SingleAxisBlender*)ptr);

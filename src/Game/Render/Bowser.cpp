@@ -77,7 +77,7 @@ Bowser::Bowser(cSHierarchy& rSHierarchy, int nTeam, PhysicsNPC& rPhysNPC, cInven
     mnHeadJointIndex = pHierarchy->GetNodeIndexByID(nlStringLowerHash("bip01 head"));
     mLastHeadMatrix.SetIdentity();
 
-    mpFeatherBlender = new (AllocateFeather()) cPN_Feather(mpPoseAccumulator->m_BaseSHierarchy, NULL, 0);
+    mpFeatherBlender = ::new (AllocateFeather()) cPN_Feather(mpPoseAccumulator->m_BaseSHierarchy, NULL, 0);
     if (mpPoseTree != NULL)
     {
         mpFeatherBlender->SetChild(0, mpPoseTree);
@@ -878,7 +878,7 @@ void Bowser::ActionThrow()
 
     mpFeatherController = NULL;
     cPN_SAnimController* controller = AllocateSAnimController();
-    controller = new (&*controller) cPN_SAnimController(
+    controller = ::new (&*controller) cPN_SAnimController(
         mpAnim[BOWSER_ANIM_THROW],
         (const AnimRetarget*)0,
         PM_HOLD,
@@ -934,7 +934,7 @@ void Bowser::ActionStomp()
     nlVector3 vel;
     mAnimID = 1;
     cPN_SAnimController* controller = AllocateSAnimController();
-    controller = new (controller) cPN_SAnimController(mpAnim[1], (const AnimRetarget*)0, PM_HOLD, (void (*)(unsigned int, cPN_SAnimController*))0, (unsigned int)0, (bool)0);
+    controller = ::new (controller) cPN_SAnimController(mpAnim[1], (const AnimRetarget*)0, PM_HOLD, (void (*)(unsigned int, cPN_SAnimController*))0, (unsigned int)0, (bool)0);
     if (mpFeatherBlender->GetChild(0) != NULL)
     {
         delete mpFeatherBlender->GetChild(0);
@@ -1010,7 +1010,7 @@ void Bowser::ActionFall()
     mtActiveTimer.SetSeconds(timerSeconds);
     mAnimID = BOWSER_ANIM_LAND;
 
-    cPN_SAnimController* controller = new (AllocateSAnimController()) cPN_SAnimController(
+    cPN_SAnimController* controller = ::new (AllocateSAnimController()) cPN_SAnimController(
         mpAnim[BOWSER_ANIM_LAND], (const AnimRetarget*)0, PM_HOLD, (void (*)(unsigned int, cPN_SAnimController*))0, (unsigned int)0, (bool)0);
 
     if (mpFeatherBlender->GetChild(0) != NULL)
@@ -1659,7 +1659,7 @@ void Bowser::PlaySFX(Audio::eCharSFX type, PosUpdateMethod posUpdateMethod, floa
 
 void Bowser::SetBowserAnimState(eBowserAnim anim, ePlayMode playMode, float fBlendTime)
 {
-    cPN_SAnimController* controller = new (AllocateSAnimController()) cPN_SAnimController(mpAnim[anim], (const AnimRetarget*)0, playMode, (void (*)(unsigned int, cPN_SAnimController*))0, (unsigned int)0, (bool)0);
+    cPN_SAnimController* controller = ::new (AllocateSAnimController()) cPN_SAnimController(mpAnim[anim], (const AnimRetarget*)0, playMode, (void (*)(unsigned int, cPN_SAnimController*))0, (unsigned int)0, (bool)0);
 
     cPoseNode* pNewPoseTree;
 
@@ -1667,7 +1667,7 @@ void Bowser::SetBowserAnimState(eBowserAnim anim, ePlayMode playMode, float fBle
     {
         if (fBlendTime > 0.0f)
         {
-            pNewPoseTree = new (AllocateBlender()) cPN_Blender(*mpFeatherBlender->GetChildPtr(0), controller, fBlendTime);
+            pNewPoseTree = ::new (AllocateBlender()) cPN_Blender(*mpFeatherBlender->GetChildPtr(0), controller, fBlendTime);
         }
         else
         {
@@ -1692,7 +1692,7 @@ void Bowser::SetBowserFeatherAnimState(eBowserAnim anim, float fBlendTime)
         mpFeatherBlender->SetChild(1, NULL);
     }
 
-    mpFeatherController = new (AllocateSAnimController()) cPN_SAnimController(
+    mpFeatherController = ::new (AllocateSAnimController()) cPN_SAnimController(
         mpAnim[anim], (const AnimRetarget*)0, PM_HOLD, (void (*)(unsigned int, cPN_SAnimController*))0, (unsigned int)0, (bool)0);
     mpFeatherBlender->ClearNodeWeights();
     mpFeatherBlender->SetNodeWeight(0xE, 1.0f, 0.2f);

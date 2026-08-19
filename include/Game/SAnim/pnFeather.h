@@ -17,6 +17,12 @@ public:
     cPN_Feather() { }
     cPN_Feather(cSHierarchy*, void (*)(unsigned int, cPN_Feather*), unsigned int);
     /* 0x08 */ virtual ~cPN_Feather();
+    static void* operator new(unsigned long)
+    {
+        cPN_Feather* result = NULL;
+        m_FeatherSlotPool.Allocate(result);
+        return result;
+    }
     /* 0x14 */ virtual void Evaluate(int, float, cPoseAccumulator*) const;
     /* 0x10 */ virtual void Evaluate(float, cPoseAccumulator*) const;
     /* 0x18 */ virtual cPoseNode* Update(float);

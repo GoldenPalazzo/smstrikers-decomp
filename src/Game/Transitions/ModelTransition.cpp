@@ -598,7 +598,7 @@ void ModeledScreenTransition::Reset()
     if (m_pPoseTree == NULL && m_pAnim != NULL)
     {
         controller = AllocateSAnimController();
-        controller = new (controller) cPN_SAnimController(m_pAnim, NULL, PM_HOLD, NULL, 0, false);
+        controller = ::new (controller) cPN_SAnimController(m_pAnim, NULL, PM_HOLD, NULL, 0, false);
         m_pPoseTree = controller;
     }
 

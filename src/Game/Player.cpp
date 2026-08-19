@@ -234,7 +234,7 @@ cPlayer::cPlayer(
     baseHierarchy = m_pPoseAccumulator->m_BaseSHierarchy;
     m_nRightHandJointIndex = baseHierarchy->GetNodeIndexByID(nlStringLowerHash("bip01 r hand"));
 
-    cPN_Feather* receivePassLayer = new (AllocateFeather()) cPN_Feather(m_pPoseAccumulator->m_BaseSHierarchy, NULL, 0);
+    cPN_Feather* receivePassLayer = ::new (AllocateFeather()) cPN_Feather(m_pPoseAccumulator->m_BaseSHierarchy, NULL, 0);
     m_pReceivePassLayer = receivePassLayer;
 
     baseHierarchy = m_pPoseAccumulator->m_BaseSHierarchy;
@@ -243,7 +243,7 @@ cPlayer::cPlayer(
     m_pReceivePassLayer->SetNodeWeight(m_nBallJointIndex, 1.0f);
     m_pAILayer = m_pReceivePassLayer->GetChildPtr(0);
 
-    cPN_Feather* powerupLayer = new (AllocateFeather()) cPN_Feather(m_pPoseAccumulator->m_BaseSHierarchy, NULL, 0);
+    cPN_Feather* powerupLayer = ::new (AllocateFeather()) cPN_Feather(m_pPoseAccumulator->m_BaseSHierarchy, NULL, 0);
     m_pPowerupLayer = powerupLayer;
     m_pPowerupLayer->SetChild(0, m_pReceivePassLayer);
     m_pPoseTree = m_pPowerupLayer;
@@ -1459,7 +1459,7 @@ cPN_SingleAxisBlender* cPlayer::CreateSingleAxisBlender(
     cPN_SAnimController* pNewCurrentAnimController;
     pNewCurrentAnimController = NULL;
 
-    cPN_SingleAxisBlender* pSAB = new (AllocateSingleAxisBlender()) cPN_SingleAxisBlender(nNumSABAnims, fWeightCB, (unsigned int)this, fWeightSeek);
+    cPN_SingleAxisBlender* pSAB = ::new (AllocateSingleAxisBlender()) cPN_SingleAxisBlender(nNumSABAnims, fWeightCB, (unsigned int)this, fWeightSeek);
 
     const int* pAnims = pSABAnims;
     for (int i = 0; i < nNumSABAnims; i++)

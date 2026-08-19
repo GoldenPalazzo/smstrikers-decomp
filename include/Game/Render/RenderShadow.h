@@ -29,7 +29,7 @@ void RenderProjectedShadow(const ProjectedShadowParams&);
 void SetCharacterShadowUpdated(int, bool);
 void RenderCharacterIntoTexture(const ProjectedShadowParams&);
 u8 ShouldShadowBeUpdated(const ProjectedShadowParams&);
-void GetShadowPartitionIndex();
+int GetShadowPartitionIndex();
 void RenderShadowModel(unsigned long, glModel*, unsigned long);
 void ShadowStartup();
 

@@ -22,6 +22,12 @@ public:
     }
     cPN_SAnimController(cSAnim*, const AnimRetarget*, ePlayMode, void (*)(unsigned int, cPN_SAnimController*), unsigned int, bool);
     /* 0x08 */ virtual ~cPN_SAnimController() { };
+    static void* operator new(unsigned long)
+    {
+        cPN_SAnimController* result = NULL;
+        m_SAnimControllerSlotPool.Allocate(result);
+        return result;
+    }
     static void operator delete(void* ptr)
     {
         m_SAnimControllerSlotPool.Free((cPN_SAnimController*)ptr);

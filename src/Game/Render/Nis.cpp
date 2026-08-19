@@ -90,7 +90,7 @@ Nis::Nis(NisHeader& header, char* data, int size)
             if (i < 10)
             {
                 mBallId[i] = numAnimations;
-                cPN_SAnimController* controller = new (AllocateSAnimController()) cPN_SAnimController(anim, NULL, PM_HOLD, NULL, 0, false);
+                cPN_SAnimController* controller = ::new (AllocateSAnimController()) cPN_SAnimController(anim, NULL, PM_HOLD, NULL, 0, false);
                 mCharacterControllers[i] = controller;
                 if (mAudioCharacterIndex < 0)
                 {

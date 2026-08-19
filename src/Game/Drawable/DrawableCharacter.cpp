@@ -1,3 +1,7 @@
+#include "Game/SAnim/pnSingleAxisBlender.h"
+#include "Game/SAnim/pnSAnimController.h"
+#include "Game/SAnim/pnFeather.h"
+#include "Game/SAnim/pnBlender.h"
 #include "Game/Drawable/DrawableCharacter.h"
 #include "Game/Character.h"
 #include "Game/Player.h"
@@ -12,29 +16,25 @@ void Replayable(LoadFrame& frame, char typeId, cPoseNode*& poseNode)
     {
         if (typeId == 0)
         {
-            cPN_Blender* blender = AllocateBlender();
-            new ((u8*)blender) cPN_Blender();
+            cPN_Blender* blender = new cPN_Blender;
             blender->Replay(frame);
             poseNode = blender;
         }
         else if (typeId == 1)
         {
-            cPN_Feather* feather = AllocateFeather();
-            new ((u8*)feather) cPN_Feather();
+            cPN_Feather* feather = new cPN_Feather;
             feather->Replay(frame);
             poseNode = feather;
         }
         else if (typeId == 2)
         {
-            cPN_SAnimController* controller = AllocateSAnimController();
-            new ((u8*)controller) cPN_SAnimController();
+            cPN_SAnimController* controller = new cPN_SAnimController;
             controller->Replay(frame);
             poseNode = controller;
         }
         else if (typeId == 3)
         {
-            cPN_SingleAxisBlender* singleAxis = AllocateSingleAxisBlender();
-            new ((u8*)singleAxis) cPN_SingleAxisBlender();
+            cPN_SingleAxisBlender* singleAxis = new cPN_SingleAxisBlender;
             singleAxis->Replay(frame);
             poseNode = singleAxis;
         }
@@ -51,28 +51,26 @@ void Replayable(SaveFrame& frame, char typeId, cPoseNode*& poseNode)
 
         if (typeId == 0)
         {
-            ((cPN_Blender*)poseNode)->Replay(frame);
+            cPN_Blender* pn = (cPN_Blender*)poseNode;
+            pn->Replay(frame);
         }
         else if (typeId == 1)
         {
-            ((cPN_Feather*)poseNode)->Replay(frame);
+            cPN_Feather* pn = (cPN_Feather*)poseNode;
+            pn->Replay(frame);
         }
         else if (typeId == 2)
         {
-            ((cPN_SAnimController*)poseNode)->Replay(frame);
+            cPN_SAnimController* pn = (cPN_SAnimController*)poseNode;
+            pn->Replay(frame);
         }
         else if (typeId == 3)
         {
-            ((cPN_SingleAxisBlender*)poseNode)->Replay(frame);
+            cPN_SingleAxisBlender* pn = (cPN_SingleAxisBlender*)poseNode;
+            pn->Replay(frame);
         }
     }
 }
-
-#include "Game/SAnim/pnSingleAxisBlender.h"
-#include "Game/SAnim/pnSAnimController.h"
-#include "Game/SAnim/pnFeather.h"
-#include "Game/SAnim/pnBlender.h"
-
 
 #include "Game/Render/RenderShadow.h"
 #include "Game/Debug/ShapeRender.h"
@@ -156,7 +154,6 @@ int charSizes[] = {
 static float g_fRadiusScale = 1.175f;
 static unsigned char g_bSloppyBounds = 1;
 
-
 /**
  * Offset/Address/Size: 0x2D50 | 0x8011BC00 | size: 0x4C
  */
@@ -187,6 +184,27 @@ DrawableCharacter::DrawableCharacter()
 DrawableCharacter::~DrawableCharacter()
 {
     delete mPoseAccumulator;
+}
+
+DrawableCharacter& DrawableCharacter::operator=(const DrawableCharacter& other)
+{
+    if (this != &other)
+    {
+        mVisible = other.mVisible;
+        mPosition = other.mPosition;
+        mHeight = other.mHeight;
+        mVelocity = other.mVelocity;
+        mFacingDirection = other.mFacingDirection;
+        mHeadSpin = other.mHeadSpin;
+        mHeadTilt = other.mHeadTilt;
+        mPoseTree = NULL;
+        *mPoseAccumulator = *other.mPoseAccumulator;
+        mEffectsTexturing = other.mEffectsTexturing;
+        mCharacter = other.mCharacter;
+        mBowser = other.mBowser;
+        mDirt = other.mDirt;
+    }
+    return *this;
 }
 
 /**
@@ -247,21 +265,21 @@ void DrawableCharacter::Grab(cCharacter& character)
 /**
  * Offset/Address/Size: 0x29F0 | 0x8011B8A0 | size: 0x2C
  */
-static void DrawableCharacterHeadTrackCallback(unsigned int ctx, unsigned int, cPoseAccumulator* poseAccumulator, unsigned int headNodeIndex, int unused)
+static void DrawableCharacterHeadTrackCallback(unsigned int ctx, unsigned int, cPoseAccumulator* poseAccumulator, unsigned int currentNodeIndex, int)
 {
-    DrawableCharacter* pDrawableCharacter = (DrawableCharacter*)ctx;
-    CalcHeadTrackMatrix(pDrawableCharacter->mHeadSpin, pDrawableCharacter->mHeadTilt, poseAccumulator, headNodeIndex);
+    DrawableCharacter* drawableChar = (DrawableCharacter*)ctx;
+    CalcHeadTrackMatrix(drawableChar->mHeadSpin, drawableChar->mHeadTilt, poseAccumulator, currentNodeIndex);
 }
 
 /**
  * Offset/Address/Size: 0x290C | 0x8011B7BC | size: 0xE4
  */
-void DrawableCharacter::DrawableBowserHeadTrackCallback(unsigned int ctx, unsigned int, cPoseAccumulator* poseAccumulator, unsigned int headNodeIndex, int)
+void DrawableCharacter::DrawableBowserHeadTrackCallback(unsigned int ctx, unsigned int, cPoseAccumulator* poseAccumulator, unsigned int currentNodeIndex, int)
 {
-    DrawableCharacter* pDrawableCharacter = (DrawableCharacter*)ctx;
-    nlMatrix4& nodeMatrix = poseAccumulator->GetNodeMatrix(headNodeIndex);
-    pDrawableCharacter->mBowser->mLastHeadMatrix = nodeMatrix;
-    CalcHeadTrackMatrix(pDrawableCharacter->mHeadSpin, pDrawableCharacter->mHeadTilt, poseAccumulator, headNodeIndex);
+    DrawableCharacter* drawableChar = (DrawableCharacter*)ctx;
+    nlMatrix4& nodeMatrix = poseAccumulator->GetNodeMatrix(currentNodeIndex);
+    drawableChar->mBowser->mLastHeadMatrix = nodeMatrix;
+    CalcHeadTrackMatrix(drawableChar->mHeadSpin, drawableChar->mHeadTilt, poseAccumulator, currentNodeIndex);
 }
 
 /**
@@ -321,8 +339,8 @@ void DrawableCharacter::Render(cCharacter& character) const
 
     if (mCharacter->m_pPropModel != NULL)
     {
-        nlMatrix4& nodeMatrix = mPoseAccumulator->GetNodeMatrix(character.m_nPropJointIndex);
-        mCharacter->m_pPropModel->m_worldMatrix = nodeMatrix;
+        nlMatrix4& propWorldMatrix = mPoseAccumulator->GetNodeMatrix(character.m_nPropJointIndex);
+        mCharacter->m_pPropModel->m_worldMatrix = propWorldMatrix;
     }
 
     cCharacter* renderOnly = spRenderOnlyThisCharacter;
@@ -340,6 +358,28 @@ void DrawableCharacter::Render(cCharacter& character) const
     }
 
     SendToGl(character);
+}
+
+static bool IsVisible(const nlVector3& worldPosition, eCharacterClass cc)
+{
+    if (nlTaskManager::m_pInstance->m_CurrState == 0x100)
+        return 1;
+    if (WorldManager::s_World != nullptr)
+    {
+        float fRadius;
+        if (cc == DONKEYKONG)
+            fRadius = 3.5f;
+        else
+            fRadius = 2.5f;
+        nlMatrix4 mWorld;
+        mWorld.SetIdentity();
+        mWorld.f.m41 = worldPosition.f.x;
+        mWorld.f.m42 = worldPosition.f.y;
+        mWorld.f.m43 = worldPosition.f.z;
+        mWorld.f.m44 = 1.0f;
+        return WorldManager::s_World->IsSphereInFrustum(mWorld, fRadius);
+    }
+    return 1;
 }
 
 static void DrawSphere(const nlVector3& vCentre, float fRadius, const nlColour& colour)
@@ -723,24 +763,8 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
 
     if (g_nShowBones > 0)
     {
-        static u32 tDiff;
-        {
-            static s8 init;
-            if (!init)
-            {
-                tDiff = 0;
-                init = 1;
-            }
-        }
-        static u32 counter;
-        {
-            static s8 init;
-            if (!init)
-            {
-                counter = 0;
-                init = 1;
-            }
-        }
+        static u32 tDiff = 0;
+        static u32 counter = 0;
 
         bool endpointBounds = (g_nShowBones == 1);
         PhysicsCharacterBase* pPhysicsCharacter = character.m_pPhysicsCharacter;
@@ -801,15 +825,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
         const LightObject* pLight = ((BasicStadium*)WorldManager::s_World)->m_pShadowLight;
         if (pLight != nullptr)
         {
-            static float s_fHeightFudge;
-            {
-                static s8 init;
-                if (!init)
-                {
-                    s_fHeightFudge = 1.125f;
-                    init = 1;
-                }
-            }
+            static float s_fHeightFudge = 1.125f;
 
             params.fScalar = 1.0f;
             float fRadius;
@@ -839,7 +855,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
             params.fHeight = s_fHeightFudge * fHeight;
             params.fWidth = params.fHeight;
             params.pModel = pModel;
-            params.nPartitionIndex = ((int (*)())GetShadowPartitionIndex)();
+            params.nPartitionIndex = GetShadowPartitionIndex();
             params.nVisibleInterval = g_nOnscreenUpdate[characterSizeIndex];
             params.nInvisibleInterval = g_nOffscreenUpdate[characterSizeIndex];
 
@@ -853,53 +869,47 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
         }
     }
 }
-// /**
-//  * Offset/Address/Size: 0xA6C | 0x8011991C | size: 0x1078
-//  */
-// void cPoseAccumulator::operator=(const cPoseAccumulator&)
-// {
-// }
 
 /**
  * Offset/Address/Size: 0x924 | 0x801197D4 | size: 0x148
  */
-void DrawableCharacter::Grab(SkinAnimatedMovableNPC& character)
+void DrawableCharacter::Grab(SkinAnimatedMovableNPC& npc)
 {
     mCharacter = nullptr;
 
-    if (static_cast<SkinAnimatedNPC&>(character).GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
+    if (static_cast<SkinAnimatedNPC&>(npc).GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
     {
-        mBowser = (Bowser*)&character;
+        mBowser = (Bowser*)&npc;
     }
 
-    mPosition = character.mv3Position;
+    mPosition = npc.mv3Position;
 
-    nlMatrix4& nodeMatrix = character.mpPoseAccumulator->GetNodeMatrix(0);
+    nlMatrix4& nodeMatrix = npc.mpPoseAccumulator->GetNodeMatrix(0);
     mHeight = nodeMatrix.f.m43;
 
     mVelocity.f.x = 0.0f;
     mVelocity.f.y = 0.0f;
     mVelocity.f.z = 0.0f;
 
-    mFacingDirection = character.maFacingDirection;
+    mFacingDirection = npc.maFacingDirection;
 
-    float headSpin = character.GetHeadSpin();
+    float headSpin = npc.GetHeadSpin();
     mHeadSpin = (unsigned short)(int)headSpin;
 
-    float headTilt = character.GetHeadTilt();
+    float headTilt = npc.GetHeadTilt();
     mHeadTilt = (unsigned short)(int)headTilt;
 
-    mPoseTree = character.mpPoseTree;
-    mVisible = character.mbIsVisible;
+    mPoseTree = npc.mpPoseTree;
+    mVisible = npc.mbIsVisible;
     mDirt = false;
 
     if (mPoseAccumulator == nullptr)
     {
-        mPoseAccumulator = (cPoseAccumulator*)new (nlMalloc(0x58, 8, false)) cPoseAccumulator(*character.mpPoseAccumulator);
+        mPoseAccumulator = new (nlMalloc(sizeof(cPoseAccumulator), 8, false)) cPoseAccumulator(*npc.mpPoseAccumulator);
     }
     else
     {
-        *mPoseAccumulator = *character.mpPoseAccumulator;
+        *mPoseAccumulator = *npc.mpPoseAccumulator;
     }
 
     mEffectsTexturing = nullptr;
@@ -908,21 +918,21 @@ void DrawableCharacter::Grab(SkinAnimatedMovableNPC& character)
 /**
  * Offset/Address/Size: 0x87C | 0x8011972C | size: 0xA8
  */
-void DrawableCharacter::Render(SkinAnimatedMovableNPC& character) const
+void DrawableCharacter::Render(SkinAnimatedMovableNPC& npc) const
 {
     if (!mVisible)
     {
         return;
     }
 
-    nlMatrix4 rotMatrix;
+    nlMatrix4 worldMatrix;
     float angle = 0.0000958738f * (float)mFacingDirection;
-    nlMakeRotationMatrixZ(rotMatrix, angle);
+    nlMakeRotationMatrixZ(worldMatrix, angle);
 
-    rotMatrix.SetRow_(3, mPosition);
+    worldMatrix.SetRow_(3, mPosition);
 
-    character.mbIsVisible = mVisible;
-    character.RenderFromReplay(*mPoseAccumulator, &rotMatrix);
+    npc.mbIsVisible = mVisible;
+    npc.RenderFromReplay(*mPoseAccumulator, &worldMatrix);
 }
 
 /**
@@ -1010,15 +1020,15 @@ void DrawableCharacter::Blend(const float* blendFactors, const DrawableCharacter
 /**
  * Offset/Address/Size: 0xD8 | 0x80118F88 | size: 0x1E0
  */
-void DrawableCharacter::EvaluateFrom(const cPoseNode& poseNode, const nlVector3& position, unsigned short facingDirection)
+void DrawableCharacter::EvaluateFrom(const cPoseNode& poseNode, const nlVector3& offset, unsigned short facingAngle)
 {
-    mPosition = position;
+    mPosition = offset;
 
     mVelocity.f.x = 0.0f;
     mVelocity.f.y = 0.0f;
     mVelocity.f.z = 0.0f;
 
-    mFacingDirection = facingDirection;
+    mFacingDirection = facingAngle;
     mHeadSpin = 0;
     mHeadTilt = 0;
     mHeight = 0.0f;
@@ -1087,9 +1097,9 @@ nlVector3 DrawableCharacter::GetBallPosition() const
  */
 nlQuaternion DrawableCharacter::GetBallOrientation() const
 {
-    nlQuaternion quat;
-    nlMatrixToQuat(quat, mPoseAccumulator->GetNodeMatrix(((cPlayer*)mCharacter)->m_nBallJointIndex));
-    return quat;
+    nlQuaternion ret;
+    nlMatrixToQuat(ret, mPoseAccumulator->GetNodeMatrix(((cPlayer*)mCharacter)->m_nBallJointIndex));
+    return ret;
 }
 
 /**
@@ -1146,30 +1156,7 @@ void DrawableCharacter::Replay(T& frame)
         mPoseAccumulator->InitAccumulators();
         mPoseTree->Evaluate(1.0f, mPoseAccumulator);
 
-        nlMatrix4 worldMatrix;
-        float angle = 0.0000958738f * (float)mFacingDirection;
-        nlMakeRotationMatrixZ(worldMatrix, angle);
-        worldMatrix.SetRow_(3, mPosition);
-
-        if (mCharacter != nullptr)
-        {
-            mPoseAccumulator->SetBuildNodeMatrixCallback(mCharacter->m_nHeadJointIndex, DrawableCharacterHeadTrackCallback, (unsigned int)this, 0);
-        }
-        else if (mBowser != nullptr)
-        {
-            mPoseAccumulator->SetBuildNodeMatrixCallback(mBowser->mnHeadJointIndex, DrawableBowserHeadTrackCallback, (unsigned int)this, 0);
-        }
-
-        mPoseAccumulator->BuildNodeMatrices(worldMatrix);
-
-        if (mCharacter != nullptr)
-        {
-            mPoseAccumulator->SetBuildNodeMatrixCallback(mCharacter->m_nHeadJointIndex, nullptr, 0, 0);
-        }
-        else if (mBowser != nullptr)
-        {
-            mPoseAccumulator->SetBuildNodeMatrixCallback(mBowser->mnHeadJointIndex, nullptr, 0, 0);
-        }
+        BuildNodeMatrices();
 
         delete mPoseTree;
         mPoseTree = nullptr;

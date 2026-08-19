@@ -1094,7 +1094,7 @@ config.libs = [
             # GFX
             Object(Matching, "Game/Drawable/DrawableModel.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Drawable/DrawableNetMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Drawable/DrawableCharacter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Drawable/DrawableCharacter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Drawable/DrawableBall.cpp", extra_cflags=["-inline auto", "-msext on"]),
             Object(Matching, "Game/Drawable/DrawablePowerup.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Drawable/DrawableExplosionFragment.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

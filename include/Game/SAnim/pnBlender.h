@@ -15,6 +15,12 @@ public:
     cPN_Blender() { }
     cPN_Blender(cPoseNode*, cPoseNode*, float);
     /* 0x08 */ virtual ~cPN_Blender() { };
+    static void* operator new(unsigned long)
+    {
+        cPN_Blender* result = NULL;
+        m_BlenderSlotPool.Allocate(result);
+        return result;
+    }
     /* 0x10 */ virtual void Evaluate(float, cPoseAccumulator*) const;
     /* 0x14 */ virtual void Evaluate(int, float, cPoseAccumulator*) const;
     /* 0x18 */ virtual cPoseNode* Update(float);
@@ -51,7 +57,7 @@ inline cPN_Blender* CreateAndAssignBlender(const cPoseNode* child0, const cPoseN
     cPN_Blender* blender = nullptr;
 
     cPN_Blender::m_BlenderSlotPool.Allocate(blender);
-    return new ((u8*)blender) cPN_Blender((cPoseNode*)child0, (cPoseNode*)child1, blendDuration);
+    return ::new ((u8*)blender) cPN_Blender((cPoseNode*)child0, (cPoseNode*)child1, blendDuration);
 }
 
 

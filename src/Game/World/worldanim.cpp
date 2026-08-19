@@ -139,7 +139,7 @@ void WorldAnimController::SetAnimation(const char* szAnimationName, ePlayMode pl
     }
 
     cPN_SAnimController* newController = AllocateSAnimController();
-    newController = new (newController) cPN_SAnimController(anim, NULL, playMode, NULL, 0, false);
+    newController = ::new (newController) cPN_SAnimController(anim, NULL, playMode, NULL, 0, false);
     m_pPoseTree = newController;
 }
 

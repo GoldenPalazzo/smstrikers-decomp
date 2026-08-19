@@ -23,6 +23,7 @@ public:
 
     DrawableCharacter();
     ~DrawableCharacter();
+    DrawableCharacter& operator=(const DrawableCharacter&);
 
     void Free();
     cPN_SAnimController& GetAnimController() const;
@@ -31,8 +32,8 @@ public:
     void BuildNodeMatrices();
     void Render(cCharacter&) const;
     void SendToGl(const cCharacter&) const;
-    void Grab(SkinAnimatedMovableNPC& character);
-    void Render(SkinAnimatedMovableNPC& character) const;
+    void Grab(SkinAnimatedMovableNPC& npc);
+    void Render(SkinAnimatedMovableNPC& npc) const;
     void Blend(const float*, const DrawableCharacter&, const DrawableCharacter&);
     void EvaluateFrom(const cPoseNode&, const nlVector3&, unsigned short);
     nlVector3 GetBallPosition() const;
@@ -42,21 +43,21 @@ public:
     static void RenderAllCharacters();
     static cCharacter* OnlyRenderingOneCharacter();
 
-    /* 0x0, */ bool mVisible;                       // offset 0x0, size 0x1
-    /* 0x4, */ nlVector3 mPosition;                 // offset 0x4, size 0xC
-    /* 0x10 */ nlVector3 mBip01Position;            // offset 0x10, size 0xC
-    /* 0x1C */ nlVector3 mHeadPosition;             // offset 0x1C, size 0xC
-    /* 0x28 */ float mHeight;                       // offset 0x28, size 0x4
-    /* 0x2C */ nlVector3 mVelocity;                 // offset 0x2C, size 0xC
-    /* 0x38 */ unsigned short mFacingDirection;     // offset 0x38, size 0x2
-    /* 0x3A */ unsigned short mHeadSpin;            // offset 0x3A, size 0x2
-    /* 0x3C */ unsigned short mHeadTilt;            // offset 0x3C, size 0x2
-    /* 0x40 */ cPoseNode* mPoseTree;                // offset 0x40, size 0x4
-    /* 0x44 */ cPoseAccumulator* mPoseAccumulator;  // offset 0x44, size 0x4
-    /* 0x48 */ EffectsTexturing* mEffectsTexturing; // offset 0x48, size 0x4
-    /* 0x4C */ cCharacter* mCharacter;              // offset 0x4C, size 0x4
-    /* 0x50 */ Bowser* mBowser;                     // offset 0x50, size 0x4
-    /* 0x54 */ unsigned char mDirt;                 // offset 0x54, size 0x1
+    /* 0x00 */ bool mVisible;
+    /* 0x04 */ nlVector3 mPosition;
+    /* 0x10 */ nlVector3 mBip01Position;
+    /* 0x1C */ nlVector3 mHeadPosition;
+    /* 0x28 */ float mHeight;
+    /* 0x2C */ nlVector3 mVelocity;
+    /* 0x38 */ unsigned short mFacingDirection;
+    /* 0x3A */ unsigned short mHeadSpin;
+    /* 0x3C */ unsigned short mHeadTilt;
+    /* 0x40 */ cPoseNode* mPoseTree;
+    /* 0x44 */ cPoseAccumulator* mPoseAccumulator;
+    /* 0x48 */ EffectsTexturing* mEffectsTexturing;
+    /* 0x4C */ cCharacter* mCharacter;
+    /* 0x50 */ Bowser* mBowser;
+    /* 0x54 */ unsigned char mDirt;
 
     static bool sCameraRelativeLighting;
     static unsigned char sShadowRenderingDisabled;
@@ -65,78 +66,5 @@ public:
     static bool sbRenderOpposingGoalieToo;
 
 }; // total size: 0x58
-
-// class cPoseAccumulator
-// {
-// public:
-//     void operator=(const cPoseAccumulator&);
-//     cPoseAccumulator(const cPoseAccumulator&);
-// };
-
-// class cBuildNodeMatrixCallbackInfo
-// {
-// public:
-//     cBuildNodeMatrixCallbackInfo();
-// };
-
-// class SkinAnimatedMovableNPC
-// {
-// public:
-//     void GetHeadTilt() const;
-//     void GetHeadSpin() const;
-// };
-
-// class SkinAnimatedNPC
-// {
-// public:
-//     void GetSkinAnimatedNPC_Type() const;
-// };
-
-// class LoadFrame
-// {
-// public:
-//     void ReplayablePolymorphicPtr<1, cPoseNode>(cPoseNode*&);
-//     void ReplayablePolymorphicPtr<0, cPoseNode>(cPoseNode*&);
-// };
-
-// class cPN_SingleAxisBlender
-// {
-// public:
-//     void Replay<LoadFrame>(LoadFrame&);
-//     void Replay<SaveFrame>(SaveFrame&);
-// };
-
-// class cPN_SAnimController
-// {
-// public:
-//     void Replay<LoadFrame>(LoadFrame&);
-//     void Replay<SaveFrame>(SaveFrame&);
-// };
-
-// class cPN_Feather
-// {
-// public:
-//     void Replay<LoadFrame>(LoadFrame&);
-//     void Replay<SaveFrame>(SaveFrame&);
-// };
-
-// class cPN_Blender
-// {
-// public:
-//     void Replay<LoadFrame>(LoadFrame&);
-//     void Replay<SaveFrame>(SaveFrame&);
-// };
-
-// class FloatCompressor<0, 1, 15>
-// {
-// public:
-//     void FloatCompressor(float&);
-// };
-
-// class FloatCompressor<0, 1, 7>
-// {
-// public:
-//     void FloatCompressor(float&);
-// };
 
 #endif // _DRAWABLECHARACTER_H_

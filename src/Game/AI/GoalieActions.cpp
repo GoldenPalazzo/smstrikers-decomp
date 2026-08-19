@@ -892,7 +892,7 @@ void Goalie::StartRunBlend()
         pPrevCtrlr = pCtrlr;
     }
 
-    *m_pAILayer = new (AllocateBlender()) cPN_Blender(*m_pAILayer, pRunSAB, 0.1f);
+    *m_pAILayer = ::new (AllocateBlender()) cPN_Blender(*m_pAILayer, pRunSAB, 0.1f);
     InitMovementFromAnimSeek(60000.0f, 4000.0f);
 }
 

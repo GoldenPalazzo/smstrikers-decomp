@@ -111,19 +111,21 @@ void RenderShadowModel(unsigned long flags, glModel* model, unsigned long matrix
 /**
  * Offset/Address/Size: 0x14DC | 0x80124510 | size: 0x7C
  */
-void GetShadowPartitionIndex()
+int GetShadowPartitionIndex()
 {
-    static s32 index = 0;
-    static s32 prevFrame = 0;
+    static int index = 0;
+    static unsigned long prevFrame = 0;
 
-    s32 currentFrame = glGetCurrentFrame();
-    if ((u32)prevFrame != (u32)currentFrame)
+    unsigned long frame = glGetCurrentFrame();
+    if (prevFrame != frame)
     {
-        prevFrame = currentFrame;
+        prevFrame = frame;
         index = 0;
     }
 
+    int rval = index;
     index++;
+    return rval;
 }
 
 /**

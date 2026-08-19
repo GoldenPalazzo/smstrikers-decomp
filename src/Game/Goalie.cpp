@@ -1859,7 +1859,7 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
         pSAB = pSAB_R;
     }
 
-    cPN_SingleAxisBlender* pDirBlender = new (AllocateSingleAxisBlender()) cPN_SingleAxisBlender(2, MoveDirectionCB, nParam, 0.1f);
+    cPN_SingleAxisBlender* pDirBlender = ::new (AllocateSingleAxisBlender()) cPN_SingleAxisBlender(2, MoveDirectionCB, nParam, 0.1f);
 
     pDirBlender->SetChild(0, pSAB_L);
     pDirBlender->SetChild(1, pSAB_R);
@@ -1868,7 +1868,7 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
     MoveWeightCB(nParam, pSAB_R);
     MoveDirectionCB(nParam, pDirBlender);
 
-    cPN_Blender* pBlender = new (AllocateBlender()) cPN_Blender(*m_pAILayer, pDirBlender, 0.1f);
+    cPN_Blender* pBlender = ::new (AllocateBlender()) cPN_Blender(*m_pAILayer, pDirBlender, 0.1f);
 
     *m_pAILayer = (cPoseNode*)pBlender;
     InitMovementFromAnim(0, v3Zero, 1.0f, true);
@@ -3438,7 +3438,7 @@ cPoseNode* Goalie::SetupBlender(bool bPrimary, const float* fStartPercent, int n
             pSaveController2->m_bIgnoreTriggers = true;
         }
 
-        cPN_SingleAxisBlender* pPoseNode = new (AllocateSingleAxisBlender()) cPN_SingleAxisBlender(2, NULL, 0, 0.1f);
+        cPN_SingleAxisBlender* pPoseNode = ::new (AllocateSingleAxisBlender()) cPN_SingleAxisBlender(2, NULL, 0, 0.1f);
         pPoseNode->m_fDesiredWeight = fBlend;
         pPoseNode->m_fSmoothedWeight = fBlend;
         pPoseNode->SetChild(0, pSaveController1);
@@ -3582,7 +3582,7 @@ void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
         if (mBlendInfo.mfSaveBlendComposite >= 0.001f)
         {
             pNode2 = SetupBlender(false, fStartPercent, nMainAnimID, milestone);
-            cPN_SingleAxisBlender* pBlend = new (AllocateSingleAxisBlender()) cPN_SingleAxisBlender(2, NULL, 0, 0.1f);
+            cPN_SingleAxisBlender* pBlend = ::new (AllocateSingleAxisBlender()) cPN_SingleAxisBlender(2, NULL, 0, 0.1f);
 
             pBlend->m_fDesiredWeight = mBlendInfo.mfSaveBlendComposite;
             pBlend->m_fSmoothedWeight = mBlendInfo.mfSaveBlendComposite;
@@ -3592,7 +3592,7 @@ void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
             pMainNode = pBlend;
         }
 
-        cPN_Blender* pBlender = new (AllocateBlender()) cPN_Blender(m_pAILayer[0], pMainNode, 0.1f);
+        cPN_Blender* pBlender = ::new (AllocateBlender()) cPN_Blender(m_pAILayer[0], pMainNode, 0.1f);
 
         m_pAILayer[0] = pBlender;
         SetAnimID(nMainAnimID);

@@ -139,7 +139,7 @@ void SavePositionData::Init(Goalie* pGoalie, int animID)
 {
     mnAnimID = animID;
 
-    cPN_SAnimController* pController = new (AllocateSAnimController()) cPN_SAnimController(
+    cPN_SAnimController* pController = ::new (AllocateSAnimController()) cPN_SAnimController(
         pGoalie->GetAnimInventory()->GetAnim(animID), NULL, PM_HOLD, NULL, 0, pGoalie->GetAnimInventory()->GetMirrored(animID));
 
     pController->m_fPrevTime = pController->m_fTime;

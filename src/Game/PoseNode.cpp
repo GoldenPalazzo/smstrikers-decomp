@@ -59,6 +59,11 @@ cPoseNode** cPoseNode::GetChildPtr(int idx)
     return &m_children[idx];
 }
 
+int cPoseNode::GetNumChildren() const
+{
+    return m_numChildren;
+}
+
 /**
  * Offset/Address/Size: 0xF0 | 0x801E90F0 | size: 0x10
  */

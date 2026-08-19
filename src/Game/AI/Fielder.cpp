@@ -4147,7 +4147,7 @@ void cFielder::SetRunLeanSAB(const int* pSABAnims, int nNumSABAnims, int nPrimar
         }
     }
 
-    *m_pAILayer = new (AllocateBlender()) cPN_Blender(*m_pAILayer, pSAB, 0.1f);
+    *m_pAILayer = ::new (AllocateBlender()) cPN_Blender(*m_pAILayer, pSAB, 0.1f);
 }
 
 /**
