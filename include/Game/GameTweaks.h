@@ -288,8 +288,8 @@ public:
     /* 0x1F4 */ float fBackAudibleSurrDist;
     /* 0x1F8 */ float fSpeedOfSoundForDoppler;
     /* 0x1FC */ float fEmitterDistFromListenerMaxVol;
-    /* 0x200 */ float unk200;
-    /* 0x204 */ float unk204;
+    /* 0x200 */ float fMaxAudibleEmitterDistance;
+    /* 0x204 */ float fEmitterVolToDistanceValue;
     /* 0x208 */ float fFadeFilterSlowMoInTime;
     /* 0x20C */ float fFadeFilterSlowMoOutTime;
     /* 0x210 */ float fFadeFilterFreqMin;

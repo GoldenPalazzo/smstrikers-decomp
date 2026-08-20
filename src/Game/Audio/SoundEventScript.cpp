@@ -67,7 +67,7 @@ static inline void PlayStream(unsigned long TrackName, unsigned long StreamId, f
 
 static inline void PlayRandomBooBig(float delay, float fVol, int priority)
 {
-    if (Audio::gCrowdSFX.mbInited)
+    if (Audio::gCrowdSFX.IsInited())
     {
         if (fVol >= 0.0f)
         {
@@ -82,7 +82,7 @@ static inline void PlayRandomBooBig(float delay, float fVol, int priority)
 
 static inline void PlayRandomBooSmall(float delay, float fVol, int priority)
 {
-    if (Audio::gCrowdSFX.mbInited)
+    if (Audio::gCrowdSFX.IsInited())
     {
         if (fVol >= 0.0f)
         {
@@ -97,7 +97,7 @@ static inline void PlayRandomBooSmall(float delay, float fVol, int priority)
 
 static inline void PlayRandomYeahSmall(float delay, float fVol, int priority)
 {
-    if (Audio::gCrowdSFX.mbInited)
+    if (Audio::gCrowdSFX.IsInited())
     {
         if (fVol >= 0.0f)
         {
@@ -112,7 +112,7 @@ static inline void PlayRandomYeahSmall(float delay, float fVol, int priority)
 
 static inline void PlayRandomOhSmall(float delay, float fVol, int priority)
 {
-    if (Audio::gCrowdSFX.mbInited)
+    if (Audio::gCrowdSFX.IsInited())
     {
         if (fVol >= 0.0f)
         {
@@ -127,7 +127,7 @@ static inline void PlayRandomOhSmall(float delay, float fVol, int priority)
 
 static inline void PlayRandomOhBig(float delay, float fVol, int priority)
 {
-    if (Audio::gCrowdSFX.mbInited)
+    if (Audio::gCrowdSFX.IsInited())
     {
         if (fVol >= 0.0f)
         {

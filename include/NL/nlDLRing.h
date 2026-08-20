@@ -257,7 +257,7 @@ class nlDLListIterator
 public:
     typedef T ValueType;
     typedef DLListEntry<T>* Pointer;
-    typedef DLListEntry<T>& Reference;
+    typedef T& Reference;
 
     nlDLListIterator() { }
 
@@ -272,6 +272,10 @@ public:
         m_Curr = current;
         m_Head = head;
     }
+
+    Reference operator*() const { return m_Curr->entry; }
+
+    Pointer CurrentEntry() const { return m_Curr; }
 
     bool hasNext() const { return m_Curr != 0; }
 

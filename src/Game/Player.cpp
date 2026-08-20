@@ -768,28 +768,27 @@ void cPlayer::PlayAttackReactionSounds(float fScale)
         pSFX->Stop(Audio::CHARSFX_HIT_BODY_BONE, cGameSFX::SFX_STOP_FIRST);
     }
 
-    Audio::SoundAttributes attrs;
-    attrs.Init();
+    Audio::SoundAttributes soundAttr;
+    soundAttr.Init();
 
     if (fScale >= g_pGame->m_pGameTweaks->unk240 && m_eClassType != GOALIE)
     {
-        attrs.SetSoundType(Audio::CHARSFX_HIT_BODY_BONE, true);
+        soundAttr.SetSoundType(Audio::CHARSFX_HIT_BODY_BONE, true);
     }
     else
     {
-        attrs.SetSoundType(Audio::CHARSFX_HIT_BODY, true);
+        soundAttr.SetSoundType(Audio::CHARSFX_HIT_BODY, true);
     }
 
-    attrs.UseStationaryPosVector(m_v3Position);
+    soundAttr.UseStationaryPosVector(m_v3Position);
 
-    attrs.mf_Volume = fScale;
+    soundAttr.mf_Volume = fScale;
     if (100.0f != fScale)
     {
-        SoundStrToIDNode& node = m_pCharacterSFX->mpSFX[attrs.mu_Type];
-        attrs.mf_Volume *= node.fVolume;
+        soundAttr.mf_Volume *= m_pCharacterSFX->GetSFXInfo(soundAttr.mu_Type).fVolume;
     }
 
-    PlaySFX(attrs);
+    PlaySFX(soundAttr);
 
     if (!pSFX->IsPlayingRandomCharDialogue(CHAR_DIALOGUE_ELECTROCUTE))
     {

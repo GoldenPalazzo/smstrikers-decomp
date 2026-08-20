@@ -513,7 +513,6 @@ SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3
     if (bDoNearSearch && pSaveData == NULL)
     {
         nlDLListContainer<MyMiniData*> mylist;
-        mylist.m_Head = NULL;
 
         for (across = 0; across < 7; across++)
         {

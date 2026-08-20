@@ -8,7 +8,6 @@ GLRenderBuffer glRenderBuffer;
 
 GLRenderBuffer::GLRenderBuffer()
 {
-    m_drawableData.m_Head = NULL;
     m_bInstance = true;
     m_bEnabled = false;
     m_bSending = false;

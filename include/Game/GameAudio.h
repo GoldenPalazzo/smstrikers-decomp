@@ -23,14 +23,6 @@ namespace Audio
 struct SoundAttributes;
 }
 
-// void TrackedSFXPriorityCallback(SFXPlaySet*, unsigned long, cGameSFX*);
-// void TrackedSFXFilterFreqTypeCheckCallback(unsigned long, cGameSFX*);
-// void TrackedSFXPitchFreqTypeCheckCallback(unsigned long, cGameSFX*);
-// void nlDLRingIsEnd<DLListEntry<SFXPlaySet*>>(DLListEntry<SFXPlaySet*>*, DLListEntry<SFXPlaySet*>*);
-// void nlDLRingGetStart<DLListEntry<SFXPlaySet*>>(DLListEntry<SFXPlaySet*>*);
-// void nlDLRingRemove<DLListEntry<SFXPlaySet*>>(DLListEntry<SFXPlaySet*>**, DLListEntry<SFXPlaySet*>*);
-// void nlDLRingAddStart<DLListEntry<SFXPlaySet*>>(DLListEntry<SFXPlaySet*>**, DLListEntry<SFXPlaySet*>*);
-
 struct SFXPlaySet
 {
     /* 0x00 */ unsigned long type;
@@ -82,48 +74,53 @@ public:
     virtual void DeInit();
     void SetupPlaySet();
     void ShutdownPlaySet();
-    virtual void SetSFX(SoundPropAccessor*);
-    void CheckTypeMap(SoundPropAccessor*) const;
+    virtual void SetSFX(SoundPropAccessor* pSoundPropAccessor);
+    void CheckTypeMap(SoundPropAccessor* pSoundPropAccessor) const;
     void ResetSFX();
-    float GetSFXVol(const Audio::SoundAttributes&) const;
-    float GetSFXVol(unsigned long) const;
-    float GetSFXVolReverb(const Audio::SoundAttributes&) const;
-    float GetSFXVolReverb(unsigned long) const;
-    int GetVolGroup(unsigned long) const;
-    int GetSFXPriority(unsigned long) const;
-    bool IsKeepingTrackOf(unsigned long, SFXPlaySet**);
+    float GetSFXVol(const Audio::SoundAttributes& sfxData) const;
+    float GetSFXVol(unsigned long type) const;
+    float GetSFXVolReverb(const Audio::SoundAttributes& sfxData) const;
+    float GetSFXVolReverb(unsigned long type) const;
+    int GetVolGroup(unsigned long type) const;
+    int GetSFXPriority(unsigned long type) const;
+    bool IsKeepingTrackOf(unsigned long type, SFXPlaySet** pGrabTrackedSFX);
     bool InitiateCallbackOnAllTrackedSFX(
-        bool (*)(SFXPlaySet*, unsigned long, cGameSFX*),
-        unsigned long,
-        bool (*)(unsigned long, cGameSFX*));
-    bool ActivateFilterOnAllTrackedSFX(bool);
-    bool SetFilterFreqOnAllTrackedSFX(unsigned short);
-    bool SetPitchBendOnAllDialogueSFX(unsigned short);
-    bool CheckForHigherPrioritySFX(int);
-    bool KillLowerPrioritySFX(int);
-    virtual unsigned long Play(Audio::SoundAttributes&);
+        bool (*pTrackedSFXCallback)(SFXPlaySet*, unsigned long, cGameSFX*),
+        unsigned long param,
+        bool (*pTrackedSFXTypeCallback)(unsigned long, cGameSFX*));
+    bool ActivateFilterOnAllTrackedSFX(bool bOn);
+    bool SetFilterFreqOnAllTrackedSFX(unsigned short freq);
+    bool SetPitchBendOnAllDialogueSFX(unsigned short pitch);
+    bool CheckForHigherPrioritySFX(int priority);
+    bool KillLowerPrioritySFX(int priority);
+    virtual unsigned long Play(Audio::SoundAttributes& sfxData);
     virtual eClassType GetClassType() const { return meClassType; }
-    SFXPlaySet* KeepTrack(SFXEmitter*, const Audio::SoundAttributes&, unsigned long);
-    void Stop(unsigned long, cGameSFX::StopFlag);
-    void StopEmitter(SFXEmitter*, unsigned long);
-    bool StopTrackedSFX(SFXPlaySet*);
-    bool StopTrackedSFX(nlDLListIterator<SFXPlaySet*>*);
+    SFXPlaySet* KeepTrack(SFXEmitter* pSFXEmitter, const Audio::SoundAttributes& sfxData, unsigned long uVoiceID);
+    void Stop(unsigned long type, cGameSFX::StopFlag stopFlag);
+    void StopEmitter(SFXEmitter* pSFXEmitter, unsigned long type);
+    bool StopTrackedSFX(SFXPlaySet* pSFXPlaySet);
+    bool StopTrackedSFX(nlDLListIterator<SFXPlaySet*>* pIter);
     void StopPlayingAllTrackedSFX();
-    void UpdateGroupFilterStatusOnSFX(SFXPlaySet*);
-    void UpdateGroupPitchStatusOnSFX(SFXPlaySet*);
-    void UpdateAllTrackedSFX(float);
-    SFXPlaySet* RemoveTrackedSFX(unsigned long);
-    SFXPlaySet* RemoveTrackedSFX(nlDLListIterator<SFXPlaySet*>*);
-    unsigned long GetSFXID(unsigned long) const;
-    void SetSFXInfo(unsigned long, unsigned long, float, float, int, int);
-    SoundPropAccessor* GetSoundPropAccessor(unsigned long);
+    void UpdateGroupFilterStatusOnSFX(SFXPlaySet* pTrackedSFX);
+    void UpdateGroupPitchStatusOnSFX(SFXPlaySet* pTrackedSFX);
+    void UpdateAllTrackedSFX(float fDeltaT);
+    SFXPlaySet* RemoveTrackedSFX(unsigned long position);
+    SFXPlaySet* RemoveTrackedSFX(nlDLListIterator<SFXPlaySet*>* pIter);
+    unsigned long GetSFXID(unsigned long type) const;
+    void SetSFXInfo(unsigned long type, unsigned long ID, float fVol, float fVolReverb, int volGroup, int sfxPriority);
+    SoundPropAccessor* GetSoundPropAccessor(unsigned long type);
+    const SoundStrToIDNode& GetSFXInfo(unsigned long type) const { return mpSFX[type]; }
+    bool IsInited() const { return mbInited; }
+    unsigned short GetGroupFilterFreq() const { return muGroupFilterFreq; }
+    unsigned short GetGroupPitch() const { return muGroupPitch; }
 
+protected:
     /* 0x04 */ bool mbInited;
     /* 0x08 */ unsigned long mNumSFX;
     /* 0x0C */ unsigned long mNumSFXTypes;
     /* 0x10 */ SoundStrToIDNode* mpSFX;
     /* 0x14 */ nlDLListContainer<SFXPlaySet*> mpCurPlaySet;
-    /* 0x1C */ bool mbCurPlaySetIsValid;
+    /* 0x1C */ bool bCurPlaySetIsValid;
     /* 0x20 */ float mfTrackedSFXCheckInterval;
     /* 0x24 */ const char** mpSoundStrTable;
     /* 0x28 */ eClassType meClassType;
@@ -131,33 +128,5 @@ public:
     /* 0x2E */ unsigned short muGroupFilterFreq;
     /* 0x30 */ unsigned short muGroupPitch;
 }; // total size: 0x34
-
-// class DLListContainerBase<SFXPlaySet*, NewAdapter<DLListEntry<SFXPlaySet*>>>
-// {
-// public:
-//     void DeleteEntry(DLListEntry<SFXPlaySet*>*);
-// };
-
-// class nlWalkDLRing<DLListEntry<SFXPlaySet*>, DLListContainerBase<SFXPlaySet*,
-// NewAdapter<DLListEntry<SFXPlaySet*>>>>(DLListEntry<SFXPlaySet*>*, DLListContainerBase<SFXPlaySet*,
-// NewAdapter<DLListEntry<SFXPlaySet*>>>*, void (DLListContainerBase<SFXPlaySet*, NewAdapter<DLListEntry<SFXPlaySet*>>>
-// {
-// public:
-//     void *)(DLListEntry<SFXPlaySet*>*));
-// };
-
-// class nlWalkRing<DLListEntry<SFXPlaySet*>, DLListContainerBase<SFXPlaySet*,
-// NewAdapter<DLListEntry<SFXPlaySet*>>>>(DLListEntry<SFXPlaySet*>*, DLListContainerBase<SFXPlaySet*,
-// NewAdapter<DLListEntry<SFXPlaySet*>>>*, void (DLListContainerBase<SFXPlaySet*, NewAdapter<DLListEntry<SFXPlaySet*>>>
-// {
-// public:
-//     void *)(DLListEntry<SFXPlaySet*>*));
-// };
-
-// class SlotPool<SFXPlaySet>
-// {
-// public:
-//     void ~SlotPool();
-// };
 
 #endif // _GAMEAUDIO_H_

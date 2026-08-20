@@ -203,11 +203,11 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         float fSpreadsheetVol;
         if (len < maxDist)
         {
-            fSpreadsheetVol = Audio::gStadGenSFX.mpSFX[0xC5].fVolume;
+            fSpreadsheetVol = Audio::gStadGenSFX.GetSFXInfo(0xC5).fVolume;
         }
         else
         {
-            fSpreadsheetVol = Audio::gStadGenSFX.mpSFX[0xC4].fVolume;
+            fSpreadsheetVol = Audio::gStadGenSFX.GetSFXInfo(0xC4).fVolume;
         }
         vol *= fSpreadsheetVol;
 
@@ -277,7 +277,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         if (speed < minSpeed)
             break;
         float vol = fabsf(speed) / maxSpeed;
-        vol *= Audio::gStadGenSFX.mpSFX[0xC7].fVolume;
+        vol *= Audio::gStadGenSFX.GetSFXInfo(0xC7).fVolume;
 
         static float fTimer;
         static signed char init;

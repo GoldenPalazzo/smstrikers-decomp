@@ -502,7 +502,6 @@ static EffectsGroup* parse_group(SimpleParser* parser)
     EffectsSpec specs[64];
     unsigned long specCount;
     EffectsSpecRaw spec;
-    nlDLListContainer<UserEffectSpec*> userSpecs;
     EffectsTerrainSpec* pTerrainSpec;
     int i;
     EffectsSpec* pSpecs;
@@ -529,7 +528,7 @@ static EffectsGroup* parse_group(SimpleParser* parser)
     spec.m_vLocalOffset.z = 0.0f;
 
     pTerrainSpec = nullptr;
-    userSpecs.m_Head = nullptr;
+    nlDLListContainer<UserEffectSpec*> userSpecs;
 
     token = parser->NextToken(true);
     if (token == nullptr)

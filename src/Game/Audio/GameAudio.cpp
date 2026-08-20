@@ -12,183 +12,33 @@ SlotPool<SFXPlaySet> SFXPlaySet::m_TrackedSFXSlotPool(0x32, 0x10);
 
 static const nlVector3 kZeroVector = { 0.0f, 0.0f, 0.0f };
 
-static bool TrackedSFXPitchFreqTypeCheckCallback(unsigned long sfxID, cGameSFX* pGameSFX);
-static bool TrackedSFXFilterFreqTypeCheckCallback(unsigned long sfxID, cGameSFX* pGameSFX);
+static bool TrackedSFXPitchFreqTypeCheckCallback(unsigned long type, cGameSFX* pGameSFX);
+static bool TrackedSFXFilterFreqTypeCheckCallback(unsigned long type, cGameSFX* pGameSFX);
 static bool TrackedSFXPriorityCallback(SFXPlaySet* pSFXPlaySet, unsigned long param, cGameSFX* pGameSFX);
 
 inline bool IsVolGrpInRange(unsigned long sfxID, cGameSFX* pGameSFX)
 {
-    const int volGrp = pGameSFX->mpSFX[sfxID].volGrp;
+    const int volGrp = pGameSFX->GetVolGroup(sfxID);
     return (volGrp >= 5 && volGrp <= 19);
-}
-
-static inline bool IsGroupPitchType(unsigned long type, cGameSFX* pGameSFX)
-{
-    const int volGrp = pGameSFX->mpSFX[type].volGrp;
-    return (volGrp >= 5 && volGrp <= 19);
-}
-
-static inline bool ShouldApplyGroupFilter(unsigned long type, cGameSFX* pGameSFX)
-{
-    if (pGameSFX->GetClassType() == WORLD && type == 0xBB)
-    {
-        return false;
-    }
-
-    if (IsGroupPitchType(type, pGameSFX))
-    {
-        return false;
-    }
-
-    return true;
-}
-
-static inline void ResetTrackedPlaySet(SFXPlaySet* pPlaySet)
-{
-    pPlaySet->type = (unsigned long)-1;
-    pPlaySet->voiceID = Audio::GetSndIDError();
-    pPlaySet->bIs3D = false;
-    pPlaySet->emitter = NULL;
-    pPlaySet->delay = -1.0f;
-    pPlaySet->timeStamp = -1.0f;
-    pPlaySet->sfxPriority = 0;
-    pPlaySet->groupPriority = -1;
-    pPlaySet->filterFreq = 0;
-    pPlaySet->pitch = 0x2000;
-
-    SlotPoolEntry* pFreeEntry = (SlotPoolEntry*)pPlaySet;
-    pFreeEntry->next = SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList;
-    SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList = pFreeEntry;
-}
-
-static inline SFXPlaySet* RemoveFromTrackedList(DLListEntry<SFXPlaySet*>** pHeadPtr, DLListEntry<SFXPlaySet*>* head, DLListEntry<SFXPlaySet*>* pEntry)
-{
-    SFXPlaySet* pPlaySet = pEntry->entry;
-    nlDLRingIsEnd(head, pEntry);
-    nlDLRingRemove(pHeadPtr, pEntry);
-    delete pEntry;
-    ResetTrackedPlaySet(pPlaySet);
-    return pPlaySet;
-}
-
-static inline void UpdateGroupFilterStatusOnSFX(cGameSFX* pGameSFX, SFXPlaySet* pTrackedSFX)
-{
-    bool bResult = ShouldApplyGroupFilter(pTrackedSFX->type, pGameSFX);
-
-    if (!bResult)
-    {
-        return;
-    }
-
-    if (pGameSFX->mbGroupFilterOn)
-    {
-        if (pTrackedSFX->bIs3D)
-        {
-            if (Audio::IsEmitterActive(pTrackedSFX->emitter))
-            {
-                pTrackedSFX->voiceID = Audio::GetEmitterVoiceID(pTrackedSFX->emitter);
-            }
-        }
-
-        Audio::ActivateFilterOnSFX(pTrackedSFX->voiceID, true);
-
-        if (pTrackedSFX->filterFreq != pGameSFX->muGroupFilterFreq)
-        {
-            bResult = Audio::SetFilterFreqOnSFX(pTrackedSFX->voiceID, pGameSFX->muGroupFilterFreq);
-            if (!bResult)
-            {
-                tDebugPrintManager::Print(
-                    DC_SOUND,
-                    "SetFilterFreqOnSFX() returned false on type %d, voice ID %d, with frequency %d.\n",
-                    pTrackedSFX->type,
-                    pTrackedSFX->voiceID,
-                    pGameSFX->muGroupFilterFreq);
-            }
-            pTrackedSFX->filterFreq = pGameSFX->muGroupFilterFreq;
-        }
-    }
-    else
-    {
-        pGameSFX->muGroupFilterFreq = 0;
-        Audio::ActivateFilterOnSFX(pTrackedSFX->voiceID, false);
-        Audio::SetFilterFreqOnSFX(pTrackedSFX->voiceID, pGameSFX->muGroupFilterFreq);
-        pTrackedSFX->filterFreq = pGameSFX->muGroupFilterFreq;
-    }
-}
-
-static inline void UpdateGroupPitchStatusOnSFX(cGameSFX* pGameSFX, SFXPlaySet* pTrackedSFX)
-{
-    bool bResult = IsGroupPitchType(pTrackedSFX->type, pGameSFX);
-
-    if (!bResult)
-    {
-        return;
-    }
-
-    bResult = Audio::SetPitchBendOnSFX(pTrackedSFX->voiceID, pGameSFX->muGroupPitch);
-    if (!bResult)
-    {
-        tDebugPrintManager::Print(
-            DC_SOUND,
-            "SetPitchBendOnSFX() returned false on type %d, voice ID %d, with pitch %d.\n",
-            pTrackedSFX->type,
-            pTrackedSFX->voiceID,
-            pGameSFX->muGroupPitch);
-    }
-
-    pTrackedSFX->pitch = pGameSFX->muGroupPitch;
-}
-
-static inline void ResetTrackedEmitter(SFXEmitter* pSFXEmitter)
-{
-    pSFXEmitter->bKeepTrack = true;
-    pSFXEmitter->soundType = (unsigned long)-1;
-    pSFXEmitter->fTimeStamp = -1.0f;
-    pSFXEmitter->bIsStopping = false;
-    pSFXEmitter->bInUse = false;
-    pSFXEmitter->bIsFilterOn = false;
-    pSFXEmitter->m_unk_0x5F = false;
-    pSFXEmitter->pPhysObj = NULL;
-    pSFXEmitter->pOwner = NULL;
-    pSFXEmitter->pos.pvPos = NULL;
-    pSFXEmitter->dir.pvDir = NULL;
-    pSFXEmitter->pos.vPos.x = 0.0f;
-    pSFXEmitter->pos.vPos.y = 0.0f;
-    pSFXEmitter->pos.vPos.z = 0.0f;
-    pSFXEmitter->dir.vDir.x = 0.0f;
-    pSFXEmitter->dir.vDir.y = 0.0f;
-    pSFXEmitter->dir.vDir.z = 0.0f;
-    pSFXEmitter->posUpdateMethod = NONE;
-
-    if (pSFXEmitter->pMIDIControllerInfo != NULL)
-    {
-        if (pSFXEmitter->pMIDIControllerInfo->paraArray != NULL)
-        {
-            delete[] pSFXEmitter->pMIDIControllerInfo->paraArray;
-        }
-        delete pSFXEmitter->pMIDIControllerInfo;
-    }
-
-    pSFXEmitter->pMIDIControllerInfo = NULL;
 }
 
 /**
  * Offset/Address/Size: 0x2660 | 0x80153BA4 | size: 0x4C
  */
 cGameSFX::cGameSFX()
+    : mbInited(false)
+    , mNumSFX(0)
+    , mNumSFXTypes(0)
+    , mpSFX(NULL)
+    , mpCurPlaySet()
+    , bCurPlaySetIsValid(false)
+    , mfTrackedSFXCheckInterval(0.0f)
+    , mpSoundStrTable(NULL)
+    , meClassType(GAME)
+    , mbGroupFilterOn(false)
+    , muGroupFilterFreq(0)
+    , muGroupPitch(0x2000)
 {
-    mbInited = false;
-    mNumSFX = 0;
-    mNumSFXTypes = 0;
-    mpSFX = NULL;
-    mpCurPlaySet.m_Head = NULL;
-    mbCurPlaySetIsValid = false;
-    mfTrackedSFXCheckInterval = 0.0f;
-    mpSoundStrTable = NULL;
-    meClassType = GAME;
-    mbGroupFilterOn = false;
-    muGroupFilterFreq = 0;
-    muGroupPitch = 0x2000;
 }
 
 /**
@@ -205,7 +55,7 @@ cGameSFX::~cGameSFX()
 void cGameSFX::Init()
 {
     mbInited = true;
-    mbCurPlaySetIsValid = true;
+    bCurPlaySetIsValid = true;
 }
 
 /**
@@ -222,13 +72,18 @@ void cGameSFX::DeInit()
     mbInited = false;
 }
 
+void cGameSFX::SetupPlaySet()
+{
+    bCurPlaySetIsValid = true;
+}
+
 /**
  * Offset/Address/Size: 0x24E8 | 0x80153A2C | size: 0x6C
  */
 void cGameSFX::ShutdownPlaySet()
 {
     FORCE_DONT_INLINE;
-    mbCurPlaySetIsValid = false;
+    bCurPlaySetIsValid = false;
     StopPlayingAllTrackedSFX();
 
     mpCurPlaySet.Clear();
@@ -298,43 +153,98 @@ void cGameSFX::SetSFX(SoundPropAccessor* pSoundPropAccessor)
     }
 }
 
+void cGameSFX::CheckTypeMap(SoundPropAccessor* pSoundPropAccessor) const
+{
+    for (int i = 0; i < pSoundPropAccessor->GetNumSFX(); i++)
+    {
+        const SoundProperties* pProp = pSoundPropAccessor->GetSoundProperty(i);
+        int j;
+        for (j = 1; j < mNumSFXTypes; j++)
+        {
+            if (nlStrCmp(mpSoundStrTable[j], pProp->typeStr) == 0)
+            {
+                eClassType classType = GetClassType();
+                if (classType == WORLD)
+                {
+                    AudioLoader::GetWorldSFXTypeFromStr(pProp->typeStr);
+                }
+                else if (classType == CHAR)
+                {
+                    AudioLoader::GetCharSFXTypeFromStr(pProp->typeStr);
+                }
+                break;
+            }
+        }
+
+        if (j == mNumSFXTypes)
+        {
+            return;
+        }
+    }
+}
+
+void cGameSFX::ResetSFX()
+{
+    mNumSFX = 0;
+
+    for (int i = 0; i < mNumSFXTypes; i++)
+    {
+        mpSFX[i].musyxID = (unsigned long)-1;
+        mpSFX[i].fVolume = 100.0f;
+        mpSFX[i].fDelay = -1.0f;
+        mpSFX[i].fVolReverb = 100.0f;
+        mpSFX[i].volGrp = -1;
+        mpSFX[i].sfxPriority = 0;
+    }
+}
+
 /**
  * Offset/Address/Size: 0x22BC | 0x80153800 | size: 0x14
  */
-float cGameSFX::GetSFXVol(unsigned long index) const
+float cGameSFX::GetSFXVol(unsigned long type) const
 {
-    return mpSFX[index].fVolume;
+    return mpSFX[type].fVolume;
 }
 
 /**
  * Offset/Address/Size: 0x22A8 | 0x801537EC | size: 0x14
  */
-float cGameSFX::GetSFXVolReverb(unsigned long index) const
+float cGameSFX::GetSFXVolReverb(unsigned long type) const
 {
-    return mpSFX[index].fVolReverb;
+    return mpSFX[type].fVolReverb;
 }
 
-float cGameSFX::GetSFXVol(const Audio::SoundAttributes& attributes) const
+float cGameSFX::GetSFXVol(const Audio::SoundAttributes& sfxData) const
 {
-    SoundStrToIDNode sfxInfo = mpSFX[attributes.mu_Type];
-    if (attributes.mf_Volume != 100.0f)
+    SoundStrToIDNode sfxInfo = mpSFX[sfxData.mu_Type];
+    if (sfxData.mf_Volume != 100.0f)
     {
-        return attributes.mf_Volume;
+        return sfxData.mf_Volume;
     }
 
     return sfxInfo.fVolume;
 }
 
-float cGameSFX::GetSFXVolReverb(const Audio::SoundAttributes& attributes) const
+float cGameSFX::GetSFXVolReverb(const Audio::SoundAttributes& sfxData) const
 {
-    SoundStrToIDNode* sfxEntry = mpSFX + attributes.mu_Type;
+    SoundStrToIDNode* sfxEntry = mpSFX + sfxData.mu_Type;
     SoundStrToIDNode sfxInfo = *sfxEntry;
-    if (attributes.mf_VolReverb != 100.0f)
+    if (sfxData.mf_VolReverb != 100.0f)
     {
-        return attributes.mf_VolReverb;
+        return sfxData.mf_VolReverb;
     }
 
     return sfxInfo.fVolReverb;
+}
+
+int cGameSFX::GetVolGroup(unsigned long type) const
+{
+    return mpSFX[type].volGrp;
+}
+
+int cGameSFX::GetSFXPriority(unsigned long type) const
+{
+    return mpSFX[type].sfxPriority;
 }
 
 /**
@@ -347,18 +257,16 @@ bool cGameSFX::IsKeepingTrackOf(unsigned long type, SFXPlaySet** pGrabTrackedSFX
         *pGrabTrackedSFX = NULL;
     }
 
-    if (!mbCurPlaySetIsValid)
+    if (!bCurPlaySetIsValid)
     {
         return false;
     }
 
-    DLListEntry<SFXPlaySet*>* head = mpCurPlaySet.m_Head;
-    DLListEntry<SFXPlaySet*>* current = nlDLRingGetStart(head);
-    head = mpCurPlaySet.m_Head;
+    nlDLListIterator<SFXPlaySet*> iterator = mpCurPlaySet.Begin();
 
-    while (current != NULL)
+    while (iterator.hasNext())
     {
-        SFXPlaySet* pTrackedSFX = current->entry;
+        SFXPlaySet* pTrackedSFX = *iterator;
 
         if (pTrackedSFX->type == type)
         {
@@ -386,39 +294,154 @@ bool cGameSFX::IsKeepingTrackOf(unsigned long type, SFXPlaySet** pGrabTrackedSFX
             }
         }
 
-        if (nlDLRingIsEnd(head, current) || current == NULL)
-        {
-            current = NULL;
-        }
-        else
-        {
-            current = current->m_next;
-        }
+        iterator.next();
     }
 
     return false;
 }
 
+bool cGameSFX::InitiateCallbackOnAllTrackedSFX(
+    bool (*pTrackedSFXCallback)(SFXPlaySet*, unsigned long, cGameSFX*),
+    unsigned long param,
+    bool (*pTrackedSFXTypeCallback)(unsigned long, cGameSFX*))
+{
+    if (!bCurPlaySetIsValid)
+    {
+        return true;
+    }
+
+    nlDLListIterator<SFXPlaySet*> iterator = mpCurPlaySet.Begin();
+
+    while (iterator.hasNext())
+    {
+        SFXPlaySet* pTrackedSFX = *iterator;
+        iterator.next();
+
+        if (pTrackedSFX->type == (unsigned long)-1)
+        {
+            continue;
+        }
+
+        if (pTrackedSFXTypeCallback != NULL && !pTrackedSFXTypeCallback(pTrackedSFX->type, this))
+        {
+            continue;
+        }
+
+        pTrackedSFXCallback(pTrackedSFX, param, this);
+    }
+
+    return true;
+}
+
+static bool TrackedSFXFilterActivateCallback(SFXPlaySet* pSFXPlaySet, unsigned long param, cGameSFX*)
+{
+    bool bOn = false;
+    if ((unsigned char)param == true)
+    {
+        bOn = true;
+    }
+    bool bResult = true;
+
+    if (pSFXPlaySet->bIs3D)
+    {
+        if (!Audio::IsEmitterActive(pSFXPlaySet->emitter))
+        {
+            return bResult;
+        }
+        pSFXPlaySet->voiceID = Audio::GetEmitterVoiceID(pSFXPlaySet->emitter);
+    }
+
+    if (pSFXPlaySet->voiceID != Audio::GetSndIDError())
+    {
+        if (Audio::IsSFXPlaying(pSFXPlaySet->voiceID))
+        {
+            return Audio::ActivateFilterOnSFX(pSFXPlaySet->voiceID, bOn);
+        }
+    }
+
+    return bResult;
+}
+
+static bool TrackedSFXFilterFreqCallback(SFXPlaySet* pSFXPlaySet, unsigned long param, cGameSFX*)
+{
+    if (pSFXPlaySet->bIs3D)
+    {
+        if (!Audio::IsEmitterActive(pSFXPlaySet->emitter))
+        {
+            return true;
+        }
+        pSFXPlaySet->voiceID = Audio::GetEmitterVoiceID(pSFXPlaySet->emitter);
+    }
+
+    if (pSFXPlaySet->voiceID == Audio::GetSndIDError())
+    {
+        return true;
+    }
+
+    if (!Audio::IsSFXPlaying(pSFXPlaySet->voiceID))
+    {
+        return true;
+    }
+
+    if (pSFXPlaySet->filterFreq != (unsigned short)param)
+    {
+        pSFXPlaySet->filterFreq = (unsigned short)param;
+        Audio::SetFilterFreqOnSFX(pSFXPlaySet->voiceID, (unsigned short)param);
+    }
+
+    return true;
+}
+
+static bool TrackedSFXPitchFreqCallback(SFXPlaySet* pSFXPlaySet, unsigned long param, cGameSFX*)
+{
+    if (pSFXPlaySet->bIs3D)
+    {
+        if (!Audio::IsEmitterActive(pSFXPlaySet->emitter))
+        {
+            return true;
+        }
+        pSFXPlaySet->voiceID = Audio::GetEmitterVoiceID(pSFXPlaySet->emitter);
+    }
+
+    if (pSFXPlaySet->voiceID == Audio::GetSndIDError())
+    {
+        return true;
+    }
+
+    if (!Audio::IsSFXPlaying(pSFXPlaySet->voiceID))
+    {
+        return true;
+    }
+
+    if (pSFXPlaySet->pitch != (unsigned short)param)
+    {
+        pSFXPlaySet->pitch = (unsigned short)param;
+        Audio::SetPitchBendOnSFX(pSFXPlaySet->voiceID, (unsigned short)param);
+    }
+
+    return true;
+}
+
 /**
  * Offset/Address/Size: 0x2128 | 0x8015366C | size: 0x30
  */
-static bool TrackedSFXPitchFreqTypeCheckCallback(unsigned long sfxID, cGameSFX* pGameSFX)
+static bool TrackedSFXPitchFreqTypeCheckCallback(unsigned long type, cGameSFX* pGameSFX)
 {
-    const int volGrp = pGameSFX->mpSFX[sfxID].volGrp;
+    const int volGrp = pGameSFX->GetVolGroup(type);
     return (bool)(volGrp >= 5 && volGrp <= 19);
 }
 
 /**
  * Offset/Address/Size: 0x208C | 0x801535D0 | size: 0x9C
  */
-static bool TrackedSFXFilterFreqTypeCheckCallback(unsigned long sfxID, cGameSFX* pGameSFX)
+static bool TrackedSFXFilterFreqTypeCheckCallback(unsigned long type, cGameSFX* pGameSFX)
 {
-    if (pGameSFX->GetClassType() == WORLD && sfxID == 0xBB)
+    if (pGameSFX->GetClassType() == WORLD && type == 0xBB)
     {
         return false;
     }
 
-    if (IsVolGrpInRange(sfxID, pGameSFX))
+    if (IsVolGrpInRange(type, pGameSFX))
     {
         return false;
     }
@@ -428,76 +451,11 @@ static bool TrackedSFXFilterFreqTypeCheckCallback(unsigned long sfxID, cGameSFX*
 /**
  * Offset/Address/Size: 0x1F60 | 0x801534A4 | size: 0x12C
  */
-bool cGameSFX::ActivateFilterOnAllTrackedSFX(bool bActivate)
+bool cGameSFX::ActivateFilterOnAllTrackedSFX(bool bOn)
 {
-    bool bParam = bActivate;
-    u8 bActivateU8 = (u8)bActivate;
-    u32 bNeg = (u32)(-(s32)bActivateU8);
-    u32 bOr = bNeg | bActivateU8;
-    u32 bNorm = bOr >> 31;
-    bool result;
-
-    if (!mbCurPlaySetIsValid)
-    {
-        result = true;
-        goto epilogue;
-    }
-
-    {
-        SFXPlaySet* pPlaySet;
-        bool filterActive;
-        DLListEntry<SFXPlaySet*>* start = nlDLRingGetStart(mpCurPlaySet.m_Head);
-        DLListEntry<SFXPlaySet*>* head = mpCurPlaySet.m_Head;
-        DLListEntry<SFXPlaySet*>* current = start;
-
-        while (current != NULL)
-        {
-            pPlaySet = current->entry;
-
-            if (nlDLRingIsEnd(head, current) || current == NULL)
-            {
-                current = NULL;
-            }
-            else
-            {
-                current = current->m_next;
-            }
-
-            if (pPlaySet->type == (unsigned long)-1)
-            {
-                continue;
-            }
-
-            filterActive = false;
-            if (bNorm == 1)
-            {
-                filterActive = true;
-            }
-
-            if (pPlaySet->bIs3D)
-            {
-                if (!Audio::IsEmitterActive(pPlaySet->emitter))
-                {
-                    continue;
-                }
-                pPlaySet->voiceID = Audio::GetEmitterVoiceID(pPlaySet->emitter);
-            }
-
-            unsigned long sndIDError = Audio::GetSndIDError();
-            if (pPlaySet->voiceID != sndIDError)
-            {
-                if (Audio::IsSFXPlaying(pPlaySet->voiceID))
-                {
-                    Audio::ActivateFilterOnSFX(pPlaySet->voiceID, filterActive);
-                }
-            }
-        }
-    }
-
-    result = true;
-
-epilogue:
-    if (bParam)
+    unsigned long param = (bool)bOn;
+    bool bResult = InitiateCallbackOnAllTrackedSFX(TrackedSFXFilterActivateCallback, param, NULL);
+    if (bOn)
     {
         mbGroupFilterOn = true;
     }
@@ -505,8 +463,7 @@ epilogue:
     {
         mbGroupFilterOn = false;
     }
-
-    return result;
+    return bResult;
 }
 
 /**
@@ -514,104 +471,12 @@ epilogue:
  */
 bool cGameSFX::SetFilterFreqOnAllTrackedSFX(unsigned short freq)
 {
-    bool result;
-
     if (freq > 0x3FFF)
     {
         freq = 0x3FFF;
     }
 
-    if (!mbCurPlaySetIsValid)
-    {
-        result = true;
-        goto epilogue;
-    }
-
-    {
-        SFXPlaySet* pPlaySet;
-        DLListEntry<SFXPlaySet*>* start = nlDLRingGetStart(mpCurPlaySet.m_Head);
-        DLListEntry<SFXPlaySet*>* head = mpCurPlaySet.m_Head;
-        DLListEntry<SFXPlaySet*>* current = start;
-        unsigned short clampedFreq = (unsigned short)freq;
-        unsigned long sfxType;
-
-        while (current != NULL)
-        {
-            pPlaySet = current->entry;
-
-            if (nlDLRingIsEnd(head, current) || current == NULL)
-            {
-                current = NULL;
-            }
-            else
-            {
-                current = current->m_next;
-            }
-
-            sfxType = pPlaySet->type;
-            if (sfxType == (unsigned long)-1)
-            {
-                continue;
-            }
-
-            if (TrackedSFXFilterFreqTypeCheckCallback != NULL)
-            {
-                bool shouldApply;
-                eClassType classType = GetClassType();
-                if (classType == WORLD && sfxType == 0xBB)
-                {
-                    shouldApply = false;
-                }
-                else
-                {
-                    bool isInRange = IsVolGrpInRange(sfxType, this);
-                    if (isInRange)
-                    {
-                        shouldApply = false;
-                    }
-                    else
-                    {
-                        shouldApply = true;
-                    }
-                }
-                if (!shouldApply)
-                {
-                    continue;
-                }
-            }
-
-            if (pPlaySet->bIs3D)
-            {
-                if (!Audio::IsEmitterActive(pPlaySet->emitter))
-                {
-                    continue;
-                }
-                pPlaySet->voiceID = Audio::GetEmitterVoiceID(pPlaySet->emitter);
-            }
-
-            if (pPlaySet->voiceID == Audio::GetSndIDError())
-            {
-                continue;
-            }
-
-            if (!Audio::IsSFXPlaying(pPlaySet->voiceID))
-            {
-                continue;
-            }
-
-            if (pPlaySet->filterFreq == clampedFreq)
-            {
-                continue;
-            }
-
-            pPlaySet->filterFreq = clampedFreq;
-            Audio::SetFilterFreqOnSFX(pPlaySet->voiceID, clampedFreq);
-        }
-    }
-
-    result = true;
-
-epilogue:
+    bool result = InitiateCallbackOnAllTrackedSFX(TrackedSFXFilterFreqCallback, freq, TrackedSFXFilterFreqTypeCheckCallback);
     muGroupFilterFreq = freq;
     return result;
 }
@@ -621,86 +486,50 @@ epilogue:
  */
 bool cGameSFX::SetPitchBendOnAllDialogueSFX(unsigned short pitch)
 {
-    bool result;
-
     if (pitch > 0x3FFF)
     {
         pitch = 0x3FFF;
     }
 
-    if (!mbCurPlaySetIsValid)
-    {
-        result = true;
-        goto epilogue;
-    }
-
-    {
-        SFXPlaySet* pPlaySet;
-        DLListEntry<SFXPlaySet*>* start = nlDLRingGetStart(mpCurPlaySet.m_Head);
-        DLListEntry<SFXPlaySet*>* head = mpCurPlaySet.m_Head;
-        DLListEntry<SFXPlaySet*>* current = start;
-        unsigned short clampedPitch = (unsigned short)pitch;
-
-        while (current != NULL)
-        {
-            pPlaySet = current->entry;
-
-            if (nlDLRingIsEnd(head, current) || current == NULL)
-            {
-                current = NULL;
-            }
-            else
-            {
-                current = current->m_next;
-            }
-
-            if (pPlaySet->type == (unsigned long)-1)
-            {
-                continue;
-            }
-
-            if (TrackedSFXPitchFreqTypeCheckCallback != NULL)
-            {
-                if (!TrackedSFXPitchFreqTypeCheckCallback(pPlaySet->type, this))
-                {
-                    continue;
-                }
-            }
-
-            if (pPlaySet->bIs3D)
-            {
-                if (!Audio::IsEmitterActive(pPlaySet->emitter))
-                {
-                    continue;
-                }
-                pPlaySet->voiceID = Audio::GetEmitterVoiceID(pPlaySet->emitter);
-            }
-
-            if (pPlaySet->voiceID == Audio::GetSndIDError())
-            {
-                continue;
-            }
-
-            if (!Audio::IsSFXPlaying(pPlaySet->voiceID))
-            {
-                continue;
-            }
-
-            if (pPlaySet->pitch == clampedPitch)
-            {
-                continue;
-            }
-
-            pPlaySet->pitch = clampedPitch;
-            Audio::SetPitchBendOnSFX(pPlaySet->voiceID, clampedPitch);
-        }
-    }
-
-    result = true;
-
-epilogue:
+    bool result = InitiateCallbackOnAllTrackedSFX(TrackedSFXPitchFreqCallback, pitch, TrackedSFXPitchFreqTypeCheckCallback);
     muGroupPitch = pitch;
     return result;
+}
+
+bool cGameSFX::CheckForHigherPrioritySFX(int priority)
+{
+    if (!bCurPlaySetIsValid)
+    {
+        return false;
+    }
+
+    nlDLListIterator<SFXPlaySet*> iterator = mpCurPlaySet.Begin();
+    while (iterator.hasNext())
+    {
+        SFXPlaySet* pTrackedSFX = *iterator;
+        if (pTrackedSFX->type != (unsigned long)-1)
+        {
+            int trackedPriority = GetSFXPriority(pTrackedSFX->type);
+            if (trackedPriority > 0 && trackedPriority < priority)
+            {
+                if (pTrackedSFX->bIs3D)
+                {
+                    if (pTrackedSFX->emitter != NULL && Audio::IsEmitterActive(pTrackedSFX->emitter))
+                    {
+                        pTrackedSFX->voiceID = Audio::GetEmitterVoiceID(pTrackedSFX->emitter);
+                        return true;
+                    }
+                }
+                else if (Audio::IsSFXPlaying(pTrackedSFX->voiceID))
+                {
+                    return true;
+                }
+            }
+        }
+        iterator.next();
+    }
+
+    return false;
 }
 
 #pragma dont_inline on
@@ -727,146 +556,15 @@ static bool TrackedSFXPriorityCallback(SFXPlaySet* pSFXPlaySet, unsigned long pa
 }
 #pragma dont_inline reset
 
-static inline bool CheckForHigherPrioritySFX(cGameSFX* pGameSFX, int priority)
+bool cGameSFX::KillLowerPrioritySFX(int priority)
 {
-    if (!pGameSFX->mbCurPlaySetIsValid)
-    {
-        return false;
-    }
-
-    DLListEntry<SFXPlaySet*>* current = nlDLRingGetStart(pGameSFX->mpCurPlaySet.m_Head);
-    DLListEntry<SFXPlaySet*>* head = pGameSFX->mpCurPlaySet.m_Head;
-    while (current != NULL)
-    {
-        SFXPlaySet* tracked = current->entry;
-        if (tracked->type != (unsigned long)-1)
-        {
-            int trackedPriority = pGameSFX->mpSFX[tracked->type].sfxPriority;
-            if (trackedPriority > 0 && trackedPriority < priority)
-            {
-                if (tracked->bIs3D)
-                {
-                    if (tracked->emitter != NULL && Audio::IsEmitterActive(tracked->emitter))
-                    {
-                        tracked->voiceID = Audio::GetEmitterVoiceID(tracked->emitter);
-                        return true;
-                    }
-                }
-                else if (Audio::IsSFXPlaying(tracked->voiceID))
-                {
-                    return true;
-                }
-            }
-        }
-
-        if (nlDLRingIsEnd(head, current) || current == NULL)
-        {
-            current = NULL;
-        }
-        else
-        {
-            current = current->m_next;
-        }
-    }
-
-    return false;
-}
-
-static inline void KillLowerPrioritySFX(cGameSFX* pGameSFX, int priority)
-{
-    if (!pGameSFX->mbCurPlaySetIsValid)
-    {
-        return;
-    }
-
-    DLListEntry<SFXPlaySet*>* start = nlDLRingGetStart(pGameSFX->mpCurPlaySet.m_Head);
-    DLListEntry<SFXPlaySet*>* current = start;
-    DLListEntry<SFXPlaySet*>* head = pGameSFX->mpCurPlaySet.m_Head;
-    while (current != NULL)
-    {
-        SFXPlaySet* tracked = current->entry;
-
-        if (nlDLRingIsEnd(head, current) || current == NULL)
-        {
-            current = NULL;
-        }
-        else
-        {
-            current = current->m_next;
-        }
-
-        if (tracked->type == (unsigned long)-1)
-        {
-            continue;
-        }
-
-        TrackedSFXPriorityCallback(tracked, (unsigned long)priority, pGameSFX);
-    }
-}
-
-static inline bool FindRepeatTrackedSFX(cGameSFX* self, unsigned long type, SFXPlaySet** pGrabTrackedSFX)
-{
-    if (pGrabTrackedSFX != NULL)
-    {
-        *pGrabTrackedSFX = NULL;
-    }
-
-    if (!self->mbCurPlaySetIsValid)
-    {
-        return false;
-    }
-
-    DLListEntry<SFXPlaySet*>* head = self->mpCurPlaySet.m_Head;
-    DLListEntry<SFXPlaySet*>* current = nlDLRingGetStart(head);
-    head = self->mpCurPlaySet.m_Head;
-
-    while (current != NULL)
-    {
-        SFXPlaySet* pTrackedSFX = current->entry;
-
-        if (pTrackedSFX->type == type)
-        {
-            if (pTrackedSFX->bIs3D && pTrackedSFX->emitter != NULL && Audio::IsEmitterActive(pTrackedSFX->emitter))
-            {
-                pTrackedSFX->voiceID = Audio::GetEmitterVoiceID(pTrackedSFX->emitter);
-            }
-
-            if ((pTrackedSFX->delay < 0.0f && pTrackedSFX->bIs3D && pTrackedSFX->voiceID == (unsigned long)Audio::GetSndIDError()) || Audio::IsSFXPlaying(pTrackedSFX->voiceID))
-            {
-                if (pGrabTrackedSFX != NULL)
-                {
-                    *pGrabTrackedSFX = pTrackedSFX;
-                }
-                return true;
-            }
-
-            if (pTrackedSFX->delay >= 0.0f)
-            {
-                if (pGrabTrackedSFX != NULL)
-                {
-                    *pGrabTrackedSFX = pTrackedSFX;
-                }
-                return true;
-            }
-        }
-
-        if (nlDLRingIsEnd(head, current) || current == NULL)
-        {
-            current = NULL;
-        }
-        else
-        {
-            current = current->m_next;
-        }
-    }
-
-    return false;
+    return InitiateCallbackOnAllTrackedSFX(TrackedSFXPriorityCallback, priority, NULL);
 }
 
 /**
  * Offset/Address/Size: 0x1104 | 0x80152648 | size: 0xACC
  */
-unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
+unsigned long cGameSFX::Play(Audio::SoundAttributes& sfxData)
 {
     unsigned long voiceID;
     SFXEmitter* pSFXEmitter;
@@ -885,24 +583,24 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
         return Audio::GetSndIDError();
     }
 
-    unsigned long sfxID = this->mpSFX[attributes.mu_Type].musyxID;
+    unsigned long sfxID = GetSFXID(sfxData.mu_Type);
 
-    if (!attributes.m_unk_0x7B && g_pGame != NULL && g_pGame->mbCaptainShotToScoreOn && nlTaskManager::m_pInstance->m_CurrState != 1)
+    if (!sfxData.m_unk_0x7B && g_pGame != NULL && g_pGame->mbCaptainShotToScoreOn && nlTaskManager::m_pInstance->m_CurrState != 1)
     {
-        if (attributes.me_ClassType == WORLD)
+        if (sfxData.me_ClassType == WORLD)
         {
-            if (attributes.mu_Type != 0xB5 && attributes.mu_Type != 0xBC && attributes.mu_Type != 0xBD && attributes.mu_Type != 0x94
-                && attributes.mu_Type != 0x95 && attributes.mu_Type != 0x96 && attributes.mu_Type != 0x92 && attributes.mu_Type != 0x93
-                && attributes.mu_Type != 0xCA && attributes.mu_Type != 0x1C)
+            if (sfxData.mu_Type != 0xB5 && sfxData.mu_Type != 0xBC && sfxData.mu_Type != 0xBD && sfxData.mu_Type != 0x94
+                && sfxData.mu_Type != 0x95 && sfxData.mu_Type != 0x96 && sfxData.mu_Type != 0x92 && sfxData.mu_Type != 0x93
+                && sfxData.mu_Type != 0xCA && sfxData.mu_Type != 0x1C)
             {
                 return Audio::GetSndIDError();
             }
         }
-        else if (attributes.me_ClassType == CHAR)
+        else if (sfxData.me_ClassType == CHAR)
         {
-            if (attributes.mu_Type != 0x4F && attributes.mu_Type != 0x4E && attributes.mu_Type != 0x4F && attributes.mu_Type != 0x50
-                && attributes.mu_Type != 0x3B && attributes.mu_Type != 0x3A && attributes.mu_Type != 0x3C && attributes.mu_Type != 0x62
-                && attributes.mu_Type != 0x5D)
+            if (sfxData.mu_Type != 0x4F && sfxData.mu_Type != 0x4E && sfxData.mu_Type != 0x4F && sfxData.mu_Type != 0x50
+                && sfxData.mu_Type != 0x3B && sfxData.mu_Type != 0x3A && sfxData.mu_Type != 0x3C && sfxData.mu_Type != 0x62
+                && sfxData.mu_Type != 0x5D)
             {
                 return Audio::GetSndIDError();
             }
@@ -911,87 +609,86 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
 
     pTrackedSFX = NULL;
 
-    if (attributes.mb_NoPhasingFilter)
+    if (sfxData.mb_NoPhasingFilter)
     {
-        cGameSFX* const repeatOwner = this;
-        if (FindRepeatTrackedSFX(repeatOwner, attributes.mu_Type, &pTrackedSFX))
+        if (IsKeepingTrackOf(sfxData.mu_Type, &pTrackedSFX))
         {
             currTime = Audio::GetAudioTimer();
 
             float repeatThreshold = 0.01f;
-            if (currTime - pTrackedSFX->timeStamp < repeatThreshold && attributes.mf_DelayTime == pTrackedSFX->delay)
+            if (currTime - pTrackedSFX->timeStamp < repeatThreshold && sfxData.mf_DelayTime == pTrackedSFX->delay)
             {
-                tDebugPrintManager::Print(DC_SOUND, "SFX Repeat Filter prevented a duplicate instance of type %d playing at %0.2f\n", attributes.mu_Type, currTime);
+                tDebugPrintManager::Print(DC_SOUND, "SFX Repeat Filter prevented a duplicate instance of type %d playing at %0.2f\n", sfxData.mu_Type, currTime);
                 tDebugPrintManager::Print(
-                    DC_SOUND, "Last instance of type %d played at %0.2f. Threshold time is %0.2f\n", attributes.mu_Type, pTrackedSFX->timeStamp, repeatThreshold);
+                    DC_SOUND, "Last instance of type %d played at %0.2f. Threshold time is %0.2f\n", sfxData.mu_Type, pTrackedSFX->timeStamp, repeatThreshold);
                 return Audio::GetSndIDError();
             }
         }
     }
 
     {
-        fVolume = this->GetSFXVol(attributes);
-        fVolReverb = this->GetSFXVolReverb(attributes);
+        fVolume = this->GetSFXVol(sfxData);
+        fVolReverb = this->GetSFXVolReverb(sfxData);
 
         if (fVolReverb == 0.0f)
         {
             fVolReverb = 100.0f;
         }
 
-        fVolume += attributes.mf_VolAdjustment;
+        fVolume += sfxData.mf_VolAdjustment;
 
-        volGrp = this->mpSFX[attributes.mu_Type].volGrp;
+        volGrp = GetVolGroup(sfxData.mu_Type);
         if (volGrp > -1)
         {
             Audio::SetSFXVolumeGroup(sfxID, volGrp);
         }
 
-        if (attributes.mi_GroupPriority >= 0)
+        if (sfxData.mi_GroupPriority >= 0)
         {
-            if (::CheckForHigherPrioritySFX(this, attributes.mi_GroupPriority))
+            if (CheckForHigherPrioritySFX(sfxData.mi_GroupPriority))
             {
                 return Audio::GetSndIDError();
             }
 
-            ::KillLowerPrioritySFX(this, attributes.mi_GroupPriority);
+            KillLowerPrioritySFX(sfxData.mi_GroupPriority);
         }
 
-        attributes.mi_SFXPriority = this->mpSFX[attributes.mu_Type].sfxPriority;
+        sfxData.mi_SFXPriority = GetSFXPriority(sfxData.mu_Type);
     }
 
-    if (attributes.mi_SFXPriority > 0 && attributes.mf_DelayTime < 0.0f)
+    if (sfxData.mi_SFXPriority > 0 && sfxData.mf_DelayTime < 0.0f)
     {
-        if (::CheckForHigherPrioritySFX(this, attributes.mi_SFXPriority))
+        if (CheckForHigherPrioritySFX(sfxData.mi_SFXPriority))
         {
             return Audio::GetSndIDError();
         }
 
-        ::KillLowerPrioritySFX(this, attributes.mi_SFXPriority);
+        KillLowerPrioritySFX(sfxData.mi_SFXPriority);
     }
 
-    attributes.mp_OwnerSFX = this;
+    sfxData.mp_OwnerSFX = this;
     {
         bool bInRange = (volGrp >= 5 && volGrp <= 19);
         if (bInRange)
         {
-            attributes.mu_Pitch = 0x2000;
+            sfxData.mu_Pitch = 0x2000;
         }
         else
         {
-            attributes.mb_FilterOn = false;
-            attributes.mu_FilterFreq = 0;
+            sfxData.mb_FilterOn = false;
+            sfxData.mu_FilterFreq = 0;
         }
     }
 
-    if (attributes.mf_DelayTime != -1.0f)
+    if (sfxData.mf_DelayTime != -1.0f)
     {
-        return Audio::AddDelayedSFX(attributes, sfxID, fVolume, fVolReverb, this);
+        return Audio::AddDelayedSFX(sfxData, sfxID, fVolume, fVolReverb, this);
     }
 
-    if (!attributes.mb_Is3D)
+    if (!sfxData.mb_Is3D)
     {
-        voiceID = Audio::PlaySFXbyID(attributes, sfxID, fVolume, fVolReverb, volGrp);
-        this->mpSFX[attributes.mu_Type].lastVoiceID = voiceID;
+        voiceID = Audio::PlaySFXbyID(sfxData, sfxID, fVolume, fVolReverb, volGrp);
+        this->mpSFX[sfxData.mu_Type].lastVoiceID = voiceID;
         return voiceID;
     }
 
@@ -1000,20 +697,20 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
 
     vDir = kZeroVector;
 
-    if (attributes.posUpdateMethod == PHYSOBJ)
+    if (sfxData.posUpdateMethod == PHYSOBJ)
     {
-        attributes.mp_PhysObj->GetPosition(&vPos);
+        sfxData.mp_PhysObj->GetPosition(&vPos);
     }
-    else if (attributes.posUpdateMethod == PTRS_TO_VECTORS)
+    else if (sfxData.posUpdateMethod == PTRS_TO_VECTORS)
     {
-        vPos = *attributes.pos.pvPos;
+        vPos = *sfxData.pos.pvPos;
     }
-    else if (attributes.posUpdateMethod == VECTORS)
+    else if (sfxData.posUpdateMethod == VECTORS)
     {
-        vPos = attributes.pos.vPos;
+        vPos = sfxData.pos.vPos;
     }
 
-    if (attributes.mb_Update3DContinuously)
+    if (sfxData.mb_Update3DContinuously)
     {
         pSFXEmitter = Audio::GetFreeEmitter(emitterIndex);
         if (pSFXEmitter == NULL)
@@ -1021,29 +718,29 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
             return Audio::GetSndIDError();
         }
 
-        if (attributes.posUpdateMethod == PHYSOBJ)
+        if (sfxData.posUpdateMethod == PHYSOBJ)
         {
-            if (attributes.mp_PhysObj->m_bodyID != NULL)
+            if (sfxData.mp_PhysObj->m_bodyID != NULL)
             {
-                attributes.mp_PhysObj->GetLinearVelocity(&vDir);
+                sfxData.mp_PhysObj->GetLinearVelocity(&vDir);
             }
-            pSFXEmitter->pPhysObj = attributes.mp_PhysObj;
+            pSFXEmitter->pPhysObj = sfxData.mp_PhysObj;
         }
-        else if (attributes.posUpdateMethod == PTRS_TO_VECTORS)
+        else if (sfxData.posUpdateMethod == PTRS_TO_VECTORS)
         {
-            vDir = *attributes.dir.pvDir;
-            pSFXEmitter->pos.pvPos = attributes.pos.pvPos;
-            pSFXEmitter->dir.pvDir = attributes.dir.pvDir;
+            vDir = *sfxData.dir.pvDir;
+            pSFXEmitter->pos.pvPos = sfxData.pos.pvPos;
+            pSFXEmitter->dir.pvDir = sfxData.dir.pvDir;
         }
-        else if (attributes.posUpdateMethod == VECTORS)
+        else if (sfxData.posUpdateMethod == VECTORS)
         {
-            vDir = attributes.dir.vDir;
+            vDir = sfxData.dir.vDir;
             pSFXEmitter->pos.vPos = vPos;
             pSFXEmitter->dir.vDir = vDir;
         }
 
-        pSFXEmitter->posUpdateMethod = attributes.posUpdateMethod;
-        pSFXEmitter->soundType = attributes.mu_Type;
+        pSFXEmitter->posUpdateMethod = sfxData.posUpdateMethod;
+        pSFXEmitter->soundType = sfxData.mu_Type;
         pSFXEmitter->pOwner = this;
     }
 
@@ -1070,19 +767,19 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
     info.filterFreq = 0;
     info.pitch = 0x2000;
 
-    SFXEmitter* pInfoEmitter = attributes.mb_Update3DContinuously ? pSFXEmitter : NULL;
+    SFXEmitter* pInfoEmitter = sfxData.mb_Update3DContinuously ? pSFXEmitter : NULL;
     info.pSFXEmitter = pInfoEmitter;
     info.uSFXID = sfxID;
-    info.groupID = attributes.mi_EmitterGroup;
+    info.groupID = sfxData.mi_EmitterGroup;
     info.position = vPos;
     info.direction = vDir;
-    info.maxDist = g_pGame->m_pGameTweaks->unk200;
-    info.comp = g_pGame->m_pGameTweaks->unk204;
+    info.maxDist = g_pGame->m_pGameTweaks->fMaxAudibleEmitterDistance;
+    info.comp = g_pGame->m_pGameTweaks->fEmitterVolToDistanceValue;
     info.minVol = 0.0f;
     info.maxVol = fVolume;
     info.fVolReverb = fVolReverb;
-    info.bContinuous = attributes.mb_Update3DContinuously ? 1 : 0;
-    info.bHardStart = attributes.m_unk_0x7C;
+    info.bContinuous = sfxData.mb_Update3DContinuously ? 1 : 0;
+    info.bHardStart = sfxData.m_unk_0x7C;
 
     {
         bool bInRange = (volGrp >= 5 && volGrp <= 19);
@@ -1099,21 +796,21 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
 
     voiceID = Audio::Add3DSFXEmitter(info);
 
-    if (attributes.mb_Update3DContinuously)
+    if (sfxData.mb_Update3DContinuously)
     {
         pSFXEmitter->fTimeStamp = Audio::GetAudioTimer();
     }
 
-    this->mpSFX[attributes.mu_Type].pLastEmitter = pSFXEmitter;
+    this->mpSFX[sfxData.mu_Type].pLastEmitter = pSFXEmitter;
 
-    if (attributes.mf_ReturnEmitterOnPlay)
+    if (sfxData.mf_ReturnEmitterOnPlay)
     {
         voiceID = (unsigned long)pSFXEmitter;
     }
 
-    if (attributes.mb_KeepTrack)
+    if (sfxData.mb_KeepTrack)
     {
-        this->KeepTrack(pSFXEmitter, attributes, voiceID);
+        this->KeepTrack(pSFXEmitter, sfxData, voiceID);
     }
 
     return voiceID;
@@ -1122,14 +819,14 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
 /**
  * Offset/Address/Size: 0xF00 | 0x80152444 | size: 0x204
  */
-SFXPlaySet* cGameSFX::KeepTrack(SFXEmitter* pEmitter, const Audio::SoundAttributes& attrs, unsigned long sndID)
+SFXPlaySet* cGameSFX::KeepTrack(SFXEmitter* pSFXEmitter, const Audio::SoundAttributes& sfxData, unsigned long uVoiceID)
 {
-    if (!mbCurPlaySetIsValid)
+    if (!bCurPlaySetIsValid)
     {
         return NULL;
     }
 
-    if (attrs.mb_Is3D && !attrs.mb_Update3DContinuously)
+    if (sfxData.mb_Is3D && !sfxData.mb_Update3DContinuously)
     {
         return NULL;
     }
@@ -1148,14 +845,14 @@ SFXPlaySet* cGameSFX::KeepTrack(SFXEmitter* pEmitter, const Audio::SoundAttribut
     slot->groupPriority = -1;
     slot->filterFreq = 0;
     slot->pitch = 0x2000;
-    slot->type = attrs.mu_Type;
-    if (!attrs.mf_ReturnEmitterOnPlay)
+    slot->type = sfxData.mu_Type;
+    if (!sfxData.mf_ReturnEmitterOnPlay)
     {
-        slot->voiceID = sndID;
+        slot->voiceID = uVoiceID;
     }
 
-    slot->delay = attrs.mf_DelayTime;
-    if (attrs.mb_Is3D)
+    slot->delay = sfxData.mf_DelayTime;
+    if (sfxData.mb_Is3D)
     {
         slot->bIs3D = 1;
     }
@@ -1166,34 +863,27 @@ SFXPlaySet* cGameSFX::KeepTrack(SFXEmitter* pEmitter, const Audio::SoundAttribut
 
     slot->timeStamp = Audio::GetAudioTimer();
 
-    if (attrs.mb_Is3D && attrs.mb_Update3DContinuously && -1.0f == attrs.mf_DelayTime)
+    if (sfxData.mb_Is3D && sfxData.mb_Update3DContinuously && -1.0f == sfxData.mf_DelayTime)
     {
-        slot->emitter = pEmitter;
-        pEmitter->bKeepTrack = true;
-        if (attrs.posUpdateMethod == PHYSOBJ)
+        slot->emitter = pSFXEmitter;
+        pSFXEmitter->bKeepTrack = true;
+        if (sfxData.posUpdateMethod == PHYSOBJ)
         {
-            pEmitter->pPhysObj = attrs.mp_PhysObj;
+            pSFXEmitter->pPhysObj = sfxData.mp_PhysObj;
         }
-        else if (attrs.posUpdateMethod == PTRS_TO_VECTORS)
+        else if (sfxData.posUpdateMethod == PTRS_TO_VECTORS)
         {
-            pEmitter->pos.pvPos = attrs.pos.pvPos;
-            pEmitter->dir.pvDir = attrs.dir.pvDir;
+            pSFXEmitter->pos.pvPos = sfxData.pos.pvPos;
+            pSFXEmitter->dir.pvDir = sfxData.dir.pvDir;
         }
-        else if (attrs.posUpdateMethod == VECTORS)
+        else if (sfxData.posUpdateMethod == VECTORS)
         {
-            pEmitter->pos.vPos = attrs.pos.vPos;
-            pEmitter->dir.vDir = attrs.dir.vDir;
+            pSFXEmitter->pos.vPos = sfxData.pos.vPos;
+            pSFXEmitter->dir.vDir = sfxData.dir.vDir;
         }
     }
 
-    DLListEntry<SFXPlaySet*>* entry = (DLListEntry<SFXPlaySet*>*)nlMalloc(sizeof(DLListEntry<SFXPlaySet*>), 8, false);
-    if (entry != NULL)
-    {
-        entry->m_next = NULL;
-        entry->m_prev = NULL;
-        entry->entry = slot;
-    }
-    nlDLRingAddStart(&mpCurPlaySet.m_Head, entry);
+    mpCurPlaySet.AddStart(slot);
 
     return slot;
 }
@@ -1201,69 +891,41 @@ SFXPlaySet* cGameSFX::KeepTrack(SFXEmitter* pEmitter, const Audio::SoundAttribut
 /**
  * Offset/Address/Size: 0xDD4 | 0x80152318 | size: 0x12C
  */
-void cGameSFX::Stop(unsigned long soundID, cGameSFX::StopFlag stopFlag)
+void cGameSFX::Stop(unsigned long type, cGameSFX::StopFlag stopFlag)
 {
-    if (!mbCurPlaySetIsValid)
+    if (!bCurPlaySetIsValid)
     {
         return;
     }
 
-    f32 oldestTimeStamp = -1.0f;
+    f32 fOldestTimeStamp = -1.0f;
 
-    struct
+    nlDLListIterator<SFXPlaySet*> iterToOldestSFX = mpCurPlaySet.Begin();
+    nlDLListIterator<SFXPlaySet*> iterator = mpCurPlaySet.Begin();
+
+    while (iterator.hasNext())
     {
-        DLListEntry<SFXPlaySet*>* m_head;
-        DLListEntry<SFXPlaySet*>* m_current;
-    } bestIter;
+        SFXPlaySet* pTrackedSFX = *iterator;
+        nlDLListIterator<SFXPlaySet*> iterToCurrentItem = iterator;
+        iterator.next();
 
-    DLListEntry<SFXPlaySet*>* start1 = nlDLRingGetStart(mpCurPlaySet.m_Head);
-    bestIter.m_head = mpCurPlaySet.m_Head;
-    bestIter.m_current = start1;
-
-    struct
-    {
-        DLListEntry<SFXPlaySet*>* m_head;
-        DLListEntry<SFXPlaySet*>* m_current;
-    } iter;
-
-    DLListEntry<SFXPlaySet*>* start2 = nlDLRingGetStart(bestIter.m_head);
-    DLListEntry<SFXPlaySet*>* loopHead = mpCurPlaySet.m_Head;
-    DLListEntry<SFXPlaySet*>* current = start2;
-
-    while (current != NULL)
-    {
-        SFXPlaySet* playSet = current->entry;
-
-        iter.m_head = loopHead;
-        iter.m_current = current;
-
-        if (nlDLRingIsEnd(loopHead, current) || current == NULL)
-        {
-            current = NULL;
-        }
-        else
-        {
-            current = current->m_next;
-        }
-
-        if (playSet->type != soundID)
+        if (pTrackedSFX->type != type)
         {
             continue;
         }
 
         if (stopFlag == SFX_STOP_OLDEST)
         {
-            if (oldestTimeStamp != -1.0f && !(playSet->timeStamp < oldestTimeStamp))
+            if (fOldestTimeStamp != -1.0f && !(pTrackedSFX->timeStamp < fOldestTimeStamp))
             {
                 continue;
             }
-            oldestTimeStamp = playSet->timeStamp;
-            bestIter.m_head = iter.m_head;
-            bestIter.m_current = iter.m_current;
+            fOldestTimeStamp = pTrackedSFX->timeStamp;
+            iterToOldestSFX = iterToCurrentItem;
             continue;
         }
 
-        StopTrackedSFX(reinterpret_cast<nlDLListIterator<SFXPlaySet*>*>(&iter));
+        StopTrackedSFX(&iterToCurrentItem);
 
         if (stopFlag != SFX_STOP_ALL)
         {
@@ -1271,9 +933,9 @@ void cGameSFX::Stop(unsigned long soundID, cGameSFX::StopFlag stopFlag)
         }
     }
 
-    if (stopFlag == SFX_STOP_OLDEST && oldestTimeStamp != -1.0f)
+    if (stopFlag == SFX_STOP_OLDEST && fOldestTimeStamp != -1.0f)
     {
-        StopTrackedSFX(reinterpret_cast<nlDLListIterator<SFXPlaySet*>*>(&bestIter));
+        StopTrackedSFX(&iterToOldestSFX);
     }
 }
 
@@ -1301,7 +963,6 @@ void cGameSFX::StopEmitter(SFXEmitter* pSFXEmitter, unsigned long type)
             return;
         }
 
-        // Match found
         pSFXEmitter->bIsStopping = true;
         unsigned char bResult = Audio::Remove3DSFXEmitter(pSFXEmitter);
         if (!bResult)
@@ -1310,16 +971,7 @@ void cGameSFX::StopEmitter(SFXEmitter* pSFXEmitter, unsigned long type)
         }
 
         pSFXEmitter->bKeepTrack = true;
-        pSFXEmitter->soundType = (unsigned long)-1;
-        pSFXEmitter->fTimeStamp = -1.0f;
-        pSFXEmitter->bIsStopping = false;
-        pSFXEmitter->bInUse = false;
-        pSFXEmitter->bIsFilterOn = false;
-        pSFXEmitter->m_unk_0x5F = false;
-        pSFXEmitter->pPhysObj = NULL;
-        pSFXEmitter->pOwner = NULL;
-        pSFXEmitter->pos.pvPos = NULL;
-        pSFXEmitter->dir.pvDir = NULL;
+        pSFXEmitter->Init();
         pSFXEmitter->pos.vPos.x = 0.0f;
         pSFXEmitter->pos.vPos.y = 0.0f;
         pSFXEmitter->pos.vPos.z = 0.0f;
@@ -1344,38 +996,20 @@ void cGameSFX::StopEmitter(SFXEmitter* pSFXEmitter, unsigned long type)
 /**
  * Offset/Address/Size: 0xBC0 | 0x80152104 | size: 0xC4
  */
-bool cGameSFX::StopTrackedSFX(SFXPlaySet* pPlaySet)
+bool cGameSFX::StopTrackedSFX(SFXPlaySet* pSFXPlaySet)
 {
     FORCE_DONT_INLINE;
-    if (!mbCurPlaySetIsValid)
+    if (!bCurPlaySetIsValid)
     {
         return true;
     }
 
-    struct
+    nlDLListIterator<SFXPlaySet*> iter = mpCurPlaySet.Begin();
+    for (; iter.hasNext(); iter.next())
     {
-        DLListEntry<SFXPlaySet*>* m_head;
-        DLListEntry<SFXPlaySet*>* m_current;
-    } iter;
-
-    DLListEntry<SFXPlaySet*>* start = nlDLRingGetStart(mpCurPlaySet.m_Head);
-    iter.m_head = mpCurPlaySet.m_Head;
-    iter.m_current = start;
-
-    while (iter.m_current != NULL)
-    {
-        if (pPlaySet == iter.m_current->entry)
+        if (pSFXPlaySet == *iter)
         {
-            return StopTrackedSFX(reinterpret_cast<nlDLListIterator<SFXPlaySet*>*>(&iter));
-        }
-
-        if (nlDLRingIsEnd(iter.m_head, iter.m_current) || iter.m_current == NULL)
-        {
-            iter.m_current = NULL;
-        }
-        else
-        {
-            iter.m_current = iter.m_current->m_next;
+            return StopTrackedSFX(&iter);
         }
     }
 
@@ -1385,122 +1019,72 @@ bool cGameSFX::StopTrackedSFX(SFXPlaySet* pPlaySet)
 /**
  * Offset/Address/Size: 0x974 | 0x80151EB8 | size: 0x24C
  */
-bool cGameSFX::StopTrackedSFX(nlDLListIterator<SFXPlaySet*>* pIterator)
+bool cGameSFX::StopTrackedSFX(nlDLListIterator<SFXPlaySet*>* pIter)
 {
-    struct EntryIterator
-    {
-        DLListEntry<SFXPlaySet*>* m_head;
-        DLListEntry<SFXPlaySet*>* m_current;
-    };
-    EntryIterator* pIter = reinterpret_cast<EntryIterator*>(pIterator);
+    SFXPlaySet* pTrackedSFX = **pIter;
+    SFXEmitter* pSFXEmitter;
 
-    SFXEmitter* pEmitter;
-    SFXPlaySet* pPlaySet = pIter->m_current->entry;
-
-    if (pPlaySet->delay >= 0.0f)
+    if (pTrackedSFX->delay >= 0.0f)
     {
-        int delayedIndex = Audio::IsDelayedCharSFX(pPlaySet->type, this);
-        if (delayedIndex == -1)
+        int index = Audio::IsDelayedCharSFX(pTrackedSFX->type, this);
+        if (index != -1)
         {
-            goto cleanup_list;
+            Audio::RemoveDelayedSFX(index);
+            return true;
         }
-
-        Audio::RemoveDelayedSFX(delayedIndex);
-        return true;
-    }
-
-    if (pPlaySet->bIs3D != 0)
-    {
-        pEmitter = pPlaySet->emitter;
-        if (pEmitter != NULL && pEmitter->soundType == pPlaySet->type && pEmitter->pOwner == this)
-        {
-            bool removed = Audio::Remove3DSFXEmitter(pEmitter);
-            pEmitter->bIsStopping = true;
-
-            if (!removed)
-            {
-                goto cleanup_list;
-            }
-
-            if (Audio::IsEmitterActive(pEmitter))
-            {
-                goto cleanup_list;
-            }
-
-            pEmitter->bKeepTrack = true;
-            pEmitter->soundType = (unsigned long)-1;
-            pEmitter->fTimeStamp = -1.0f;
-            pEmitter->bIsStopping = false;
-            pEmitter->bInUse = false;
-            pEmitter->bIsFilterOn = false;
-            pEmitter->m_unk_0x5F = false;
-            pEmitter->pPhysObj = NULL;
-            pEmitter->pOwner = NULL;
-            pEmitter->pos.pvPos = NULL;
-            pEmitter->dir.pvDir = NULL;
-            pEmitter->pos.vPos.x = 0.0f;
-            pEmitter->pos.vPos.y = 0.0f;
-            pEmitter->pos.vPos.z = 0.0f;
-            pEmitter->dir.vDir.x = 0.0f;
-            pEmitter->dir.vDir.y = 0.0f;
-            pEmitter->dir.vDir.z = 0.0f;
-            pEmitter->posUpdateMethod = NONE;
-
-            if (pEmitter->pMIDIControllerInfo != NULL)
-            {
-                if (pEmitter->pMIDIControllerInfo->paraArray != NULL)
-                {
-                    delete[] pEmitter->pMIDIControllerInfo->paraArray;
-                }
-                delete pEmitter->pMIDIControllerInfo;
-            }
-            pEmitter->pMIDIControllerInfo = NULL;
-            goto cleanup_list;
-        }
-
-        if (pPlaySet->voiceID != Audio::GetSndIDError())
-        {
-            Audio::StopSFX(pPlaySet->voiceID);
-            goto cleanup_list;
-        }
-
-        nlPrintf("Stopping stop sound type %d\n which no longer has a valid emitter.\n", pPlaySet->type);
-        goto cleanup_list;
-    }
-
-    Audio::StopSFX(pPlaySet->voiceID);
-
-cleanup_list:
-    DLListEntry<SFXPlaySet*>* pNextEntry = pIter->m_current;
-    pPlaySet = pNextEntry->entry;
-
-    if (nlDLRingIsEnd(pIter->m_head, pNextEntry) || pIter->m_current == NULL)
-    {
-        pIter->m_current = NULL;
     }
     else
     {
-        pIter->m_current = pIter->m_current->m_next;
+        if (pTrackedSFX->bIs3D != 0)
+        {
+            pSFXEmitter = pTrackedSFX->emitter;
+            if (pSFXEmitter != NULL && pSFXEmitter->soundType == pTrackedSFX->type && pSFXEmitter->pOwner == this)
+            {
+                bool bResult = Audio::Remove3DSFXEmitter(pSFXEmitter);
+                pSFXEmitter->bIsStopping = true;
+
+                if (bResult)
+                {
+                    if (!Audio::IsEmitterActive(pSFXEmitter))
+                    {
+                        pSFXEmitter->bKeepTrack = true;
+                        pSFXEmitter->Init();
+                        pSFXEmitter->pos.vPos.x = 0.0f;
+                        pSFXEmitter->pos.vPos.y = 0.0f;
+                        pSFXEmitter->pos.vPos.z = 0.0f;
+                        pSFXEmitter->dir.vDir.x = 0.0f;
+                        pSFXEmitter->dir.vDir.y = 0.0f;
+                        pSFXEmitter->dir.vDir.z = 0.0f;
+                        pSFXEmitter->posUpdateMethod = NONE;
+
+                        if (pSFXEmitter->pMIDIControllerInfo != NULL)
+                        {
+                            if (pSFXEmitter->pMIDIControllerInfo->paraArray != NULL)
+                            {
+                                delete[] pSFXEmitter->pMIDIControllerInfo->paraArray;
+                            }
+                            delete pSFXEmitter->pMIDIControllerInfo;
+                        }
+                        pSFXEmitter->pMIDIControllerInfo = NULL;
+                    }
+                }
+            }
+            else if (pTrackedSFX->voiceID != Audio::GetSndIDError())
+            {
+                Audio::StopSFX(pTrackedSFX->voiceID);
+            }
+            else
+            {
+                nlPrintf("Stopping stop sound type %d\n which no longer has a valid emitter.\n", pTrackedSFX->type);
+            }
+        }
+        else
+        {
+            Audio::StopSFX(pTrackedSFX->voiceID);
+        }
     }
 
-    nlDLRingRemove(&mpCurPlaySet.m_Head, pNextEntry);
-    delete pNextEntry;
-
-    pPlaySet->type = (unsigned long)-1;
-    pPlaySet->voiceID = Audio::GetSndIDError();
-    pPlaySet->bIs3D = false;
-    pPlaySet->emitter = NULL;
-    pPlaySet->delay = -1.0f;
-    pPlaySet->timeStamp = -1.0f;
-    pPlaySet->sfxPriority = 0;
-    pPlaySet->groupPriority = -1;
-    pPlaySet->filterFreq = 0;
-    pPlaySet->pitch = 0x2000;
-
-    SlotPoolEntry* pFreeEntry = (SlotPoolEntry*)pPlaySet;
-    pFreeEntry->next = SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList;
-    SFXPlaySet::m_TrackedSFXSlotPool.m_FreeList = pFreeEntry;
-
+    RemoveTrackedSFX(pIter);
     return true;
 }
 
@@ -1510,93 +1094,110 @@ cleanup_list:
 void cGameSFX::StopPlayingAllTrackedSFX()
 {
     FORCE_DONT_INLINE;
-    if (!mbCurPlaySetIsValid)
+    if (!bCurPlaySetIsValid)
     {
         return;
     }
 
-    DLListEntry<SFXPlaySet*>* start = nlDLRingGetStart(mpCurPlaySet.m_Head);
-    DLListEntry<SFXPlaySet*>* head = mpCurPlaySet.m_Head;
-    DLListEntry<SFXPlaySet*>* current = start;
-
-    while (current != NULL)
+    for (nlDLListIterator<SFXPlaySet*> iterator = mpCurPlaySet.Begin(); iterator.hasNext();)
     {
-        struct
-        {
-            DLListEntry<SFXPlaySet*>* m_head;
-            DLListEntry<SFXPlaySet*>* m_current;
-        } iter;
-
-        iter.m_head = head;
-        iter.m_current = current;
-
-        if (nlDLRingIsEnd(head, current) || current == NULL)
-        {
-            current = NULL;
-        }
-        else
-        {
-            current = current->m_next;
-        }
-
-        StopTrackedSFX(reinterpret_cast<nlDLListIterator<SFXPlaySet*>*>(&iter));
+        nlDLListIterator<SFXPlaySet*> iterToCurrentItem = iterator;
+        iterator.next();
+        StopTrackedSFX(&iterToCurrentItem);
     }
 }
 
-SFXPlaySet* cGameSFX::RemoveTrackedSFX(nlDLListIterator<SFXPlaySet*>* pIterator)
+void cGameSFX::UpdateGroupFilterStatusOnSFX(SFXPlaySet* pTrackedSFX)
 {
-    DLListEntry<SFXPlaySet*>* pEntry = pIterator->m_Curr;
-    SFXPlaySet* pTrackedSFX = pEntry->entry;
-    nlDLRingRemove(&mpCurPlaySet.m_Head, pEntry);
-    mpCurPlaySet.DeleteEntry(pEntry);
-    ResetTrackedPlaySet(pTrackedSFX);
-    return pTrackedSFX;
+    bool bResult = TrackedSFXFilterFreqTypeCheckCallback(pTrackedSFX->type, this);
+
+    if (!bResult)
+    {
+        return;
+    }
+
+    if (mbGroupFilterOn)
+    {
+        if (pTrackedSFX->bIs3D)
+        {
+            if (Audio::IsEmitterActive(pTrackedSFX->emitter))
+            {
+                pTrackedSFX->voiceID = Audio::GetEmitterVoiceID(pTrackedSFX->emitter);
+            }
+        }
+
+        Audio::ActivateFilterOnSFX(pTrackedSFX->voiceID, true);
+
+        if (pTrackedSFX->filterFreq != muGroupFilterFreq)
+        {
+            bResult = Audio::SetFilterFreqOnSFX(pTrackedSFX->voiceID, muGroupFilterFreq);
+            if (!bResult)
+            {
+                tDebugPrintManager::Print(
+                    DC_SOUND,
+                    "SetFilterFreqOnSFX() returned false on type %d, voice ID %d, with frequency %d.\n",
+                    pTrackedSFX->type,
+                    pTrackedSFX->voiceID,
+                    muGroupFilterFreq);
+            }
+            pTrackedSFX->filterFreq = muGroupFilterFreq;
+        }
+    }
+    else
+    {
+        muGroupFilterFreq = 0;
+        Audio::ActivateFilterOnSFX(pTrackedSFX->voiceID, false);
+        Audio::SetFilterFreqOnSFX(pTrackedSFX->voiceID, muGroupFilterFreq);
+        pTrackedSFX->filterFreq = muGroupFilterFreq;
+    }
+}
+
+void cGameSFX::UpdateGroupPitchStatusOnSFX(SFXPlaySet* pTrackedSFX)
+{
+    bool bResult = TrackedSFXPitchFreqTypeCheckCallback(pTrackedSFX->type, this);
+
+    if (!bResult)
+    {
+        return;
+    }
+
+    bResult = Audio::SetPitchBendOnSFX(pTrackedSFX->voiceID, muGroupPitch);
+    if (!bResult)
+    {
+        tDebugPrintManager::Print(
+            DC_SOUND,
+            "SetPitchBendOnSFX() returned false on type %d, voice ID %d, with pitch %d.\n",
+            pTrackedSFX->type,
+            pTrackedSFX->voiceID,
+            muGroupPitch);
+    }
+
+    pTrackedSFX->pitch = muGroupPitch;
 }
 
 /**
  * Offset/Address/Size: 0x0 | 0x80151544 | size: 0x8D8
  */
-void cGameSFX::UpdateAllTrackedSFX(float)
+void cGameSFX::UpdateAllTrackedSFX(float fDeltaT)
 {
-    DLListEntry<SFXPlaySet*>* start;
-    DLListEntry<SFXPlaySet*>* head;
-    struct
-    {
-        DLListEntry<SFXPlaySet*>* m_head;
-    } headRef;
-    DLListEntry<SFXPlaySet*>* current;
-    DLListEntry<SFXPlaySet*>* iter;
-    DLListEntry<SFXPlaySet*>** pHeadPtr;
     float currTime;
 
-    if (!mbCurPlaySetIsValid)
+    if (!bCurPlaySetIsValid)
     {
         return;
     }
 
-    start = nlDLRingGetStart(mpCurPlaySet.m_Head);
-    head = mpCurPlaySet.m_Head;
-    current = start;
-    pHeadPtr = &mpCurPlaySet.m_Head;
-    headRef.m_head = mpCurPlaySet.m_Head;
+    nlDLListIterator<SFXPlaySet*> iterator = mpCurPlaySet.Begin();
 
-    while (current != NULL)
+    while (iterator.hasNext())
     {
-        iter = current;
-        SFXPlaySet* pTrackedSFX = current->entry;
-
-        if (nlDLRingIsEnd(headRef.m_head, current) || current == NULL)
-        {
-            current = NULL;
-        }
-        else
-        {
-            current = current->m_next;
-        }
+        SFXPlaySet* pTrackedSFX = *iterator;
+        nlDLListIterator<SFXPlaySet*> iterToCurrentItem = iterator;
+        iterator.next();
 
         if (pTrackedSFX->type == (unsigned long)-1)
         {
-            RemoveFromTrackedList(pHeadPtr, head, iter);
+            RemoveTrackedSFX(&iterToCurrentItem);
             continue;
         }
 
@@ -1606,7 +1207,7 @@ void cGameSFX::UpdateAllTrackedSFX(float)
         {
             if (currTime > pTrackedSFX->timeStamp + pTrackedSFX->delay + 15.0f)
             {
-                RemoveFromTrackedList(pHeadPtr, head, iter);
+                RemoveTrackedSFX(&iterToCurrentItem);
             }
             continue;
         }
@@ -1617,7 +1218,7 @@ void cGameSFX::UpdateAllTrackedSFX(float)
             {
                 if (pTrackedSFX->type != pTrackedSFX->emitter->soundType || pTrackedSFX->emitter->pOwner != this)
                 {
-                    RemoveFromTrackedList(pHeadPtr, head, iter);
+                    RemoveTrackedSFX(&iterToCurrentItem);
                     continue;
                 }
 
@@ -1630,8 +1231,8 @@ void cGameSFX::UpdateAllTrackedSFX(float)
                         if (g_pGame != NULL)
                         {
                             pTrackedSFX->voiceID = Audio::GetEmitterVoiceID(pTrackedSFX->emitter);
-                            ::UpdateGroupFilterStatusOnSFX(this, pTrackedSFX);
-                            ::UpdateGroupPitchStatusOnSFX(this, pTrackedSFX);
+                            UpdateGroupFilterStatusOnSFX(pTrackedSFX);
+                            UpdateGroupPitchStatusOnSFX(pTrackedSFX);
                         }
                         continue;
                     }
@@ -1639,11 +1240,30 @@ void cGameSFX::UpdateAllTrackedSFX(float)
 
                 if (!Audio::IsEmitterActive(pTrackedSFX->emitter) && pTrackedSFX->timeStamp > -1.0f && currTime > pTrackedSFX->timeStamp + 0.1f)
                 {
-                    ::UpdateGroupFilterStatusOnSFX(this, pTrackedSFX);
-                    ::UpdateGroupPitchStatusOnSFX(this, pTrackedSFX);
+                    UpdateGroupFilterStatusOnSFX(pTrackedSFX);
+                    UpdateGroupPitchStatusOnSFX(pTrackedSFX);
 
-                    ResetTrackedEmitter(pTrackedSFX->emitter);
-                    RemoveFromTrackedList(pHeadPtr, head, iter);
+                    SFXEmitter* pSFXEmitter = pTrackedSFX->emitter;
+                    pSFXEmitter->bKeepTrack = true;
+                    pSFXEmitter->Init();
+                    pSFXEmitter->pos.vPos.x = 0.0f;
+                    pSFXEmitter->pos.vPos.y = 0.0f;
+                    pSFXEmitter->pos.vPos.z = 0.0f;
+                    pSFXEmitter->dir.vDir.x = 0.0f;
+                    pSFXEmitter->dir.vDir.y = 0.0f;
+                    pSFXEmitter->dir.vDir.z = 0.0f;
+                    pSFXEmitter->posUpdateMethod = NONE;
+
+                    if (pSFXEmitter->pMIDIControllerInfo != NULL)
+                    {
+                        if (pSFXEmitter->pMIDIControllerInfo->paraArray != NULL)
+                        {
+                            delete[] pSFXEmitter->pMIDIControllerInfo->paraArray;
+                        }
+                        delete pSFXEmitter->pMIDIControllerInfo;
+                    }
+                    pSFXEmitter->pMIDIControllerInfo = NULL;
+                    RemoveTrackedSFX(&iterToCurrentItem);
                 }
 
                 continue;
@@ -1653,7 +1273,7 @@ void cGameSFX::UpdateAllTrackedSFX(float)
             {
                 if (!Audio::IsSFXPlaying(pTrackedSFX->voiceID))
                 {
-                    RemoveFromTrackedList(pHeadPtr, head, iter);
+                    RemoveTrackedSFX(&iterToCurrentItem);
                 }
                 continue;
             }
@@ -1666,64 +1286,80 @@ void cGameSFX::UpdateAllTrackedSFX(float)
         {
             if (!Audio::IsSFXPlaying(pTrackedSFX->voiceID))
             {
-                RemoveFromTrackedList(pHeadPtr, head, iter);
+                RemoveTrackedSFX(&iterToCurrentItem);
             }
             continue;
         }
 
-        RemoveFromTrackedList(pHeadPtr, head, iter);
+        RemoveTrackedSFX(&iterToCurrentItem);
         nlPrintf("Could not get valid emitter or voice ID to check sound type %d\n", pTrackedSFX->type);
     }
 }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80153BF0 | size: 0x24
-//  */
-// void DLListContainerBase<SFXPlaySet*, NewAdapter<DLListEntry<SFXPlaySet*>>>::DeleteEntry(DLListEntry<SFXPlaySet*>*)
-// {
-// }
+SFXPlaySet* cGameSFX::RemoveTrackedSFX(unsigned long position)
+{
+    nlDLListIterator<SFXPlaySet*> iterator = mpCurPlaySet.Begin();
+    while (position != 0 && iterator.hasNext())
+    {
+        iterator.next();
+        position--;
+    }
 
-// /**
-//  * Offset/Address/Size: 0x3C | 0x80153C50 | size: 0x20
-//  */
-// void nlDLRingIsEnd<DLListEntry<SFXPlaySet*>>(DLListEntry<SFXPlaySet*>*, DLListEntry<SFXPlaySet*>*)
-// {
-// }
+    SFXPlaySet* pTrackedSFX = mpCurPlaySet.RemoveEntry(iterator.CurrentEntry());
+    pTrackedSFX->type = (unsigned long)-1;
+    pTrackedSFX->voiceID = Audio::GetSndIDError();
+    pTrackedSFX->bIs3D = false;
+    pTrackedSFX->emitter = NULL;
+    pTrackedSFX->delay = -1.0f;
+    pTrackedSFX->timeStamp = -1.0f;
+    pTrackedSFX->sfxPriority = 0;
+    pTrackedSFX->groupPriority = -1;
+    pTrackedSFX->filterFreq = 0;
+    pTrackedSFX->pitch = 0x2000;
+    SFXPlaySet::m_TrackedSFXSlotPool.Free(pTrackedSFX);
+    return pTrackedSFX;
+}
 
-// /**
-//  * Offset/Address/Size: 0x5C | 0x80153C70 | size: 0x18
-//  */
-// void nlDLRingGetStart<DLListEntry<SFXPlaySet*>>(DLListEntry<SFXPlaySet*>*)
-// {
-// }
+SFXPlaySet* cGameSFX::RemoveTrackedSFX(nlDLListIterator<SFXPlaySet*>* pIter)
+{
+    SFXPlaySet* pTrackedSFX = **pIter;
+    SFXPlaySet* pNextTrackedSFX = NULL;
+    mpCurPlaySet.Remove(pIter);
+    if (pIter->hasNext())
+    {
+        pNextTrackedSFX = **pIter;
+    }
+    pTrackedSFX->type = (unsigned long)-1;
+    pTrackedSFX->voiceID = Audio::GetSndIDError();
+    pTrackedSFX->bIs3D = false;
+    pTrackedSFX->emitter = NULL;
+    pTrackedSFX->delay = -1.0f;
+    pTrackedSFX->timeStamp = -1.0f;
+    pTrackedSFX->sfxPriority = 0;
+    pTrackedSFX->groupPriority = -1;
+    pTrackedSFX->filterFreq = 0;
+    pTrackedSFX->pitch = 0x2000;
+    SFXPlaySet::m_TrackedSFXSlotPool.Free(pTrackedSFX);
+    return pNextTrackedSFX;
+}
 
-// /**
-//  * Offset/Address/Size: 0x74 | 0x80153C88 | size: 0x44
-//  */
-// void nlDLRingRemove<DLListEntry<SFXPlaySet*>>(DLListEntry<SFXPlaySet*>**, DLListEntry<SFXPlaySet*>*)
-// {
-// }
+unsigned long cGameSFX::GetSFXID(unsigned long type) const
+{
+    return mpSFX[type].musyxID;
+}
 
-// /**
-//  * Offset/Address/Size: 0xB8 | 0x80153CCC | size: 0x38
-//  */
-// void nlDLRingAddStart<DLListEntry<SFXPlaySet*>>(DLListEntry<SFXPlaySet*>**, DLListEntry<SFXPlaySet*>*)
-// {
-// }
+void cGameSFX::SetSFXInfo(unsigned long type, unsigned long ID, float fVol, float fVolReverb, int volGroup, int sfxPriority)
+{
+    mpSFX[type].typeID = type;
+    mpSFX[type].musyxID = ID;
+    mpSFX[type].fVolume = fVol;
+    mpSFX[type].fVolReverb = fVolReverb;
+    mpSFX[type].volGrp = volGroup;
+    mpSFX[type].sfxPriority = sfxPriority;
+    mpSFX[type].pOwner = this;
+}
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80153D04 | size: 0x60
-//  */
-// void nlWalkRing<DLListEntry<SFXPlaySet*>, DLListContainerBase<SFXPlaySet*,
-// NewAdapter<DLListEntry<SFXPlaySet*>>>>(DLListEntry<SFXPlaySet*>*, DLListContainerBase<SFXPlaySet*,
-// NewAdapter<DLListEntry<SFXPlaySet*>>>*, void (DLListContainerBase<SFXPlaySet*,
-// NewAdapter<DLListEntry<SFXPlaySet*>>>::*)(DLListEntry<SFXPlaySet*>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x68 | 0x80153DCC | size: 0x64
-//  */
-// void SlotPool<SFXPlaySet>::~SlotPool()
-// {
-// }
+SoundPropAccessor* cGameSFX::GetSoundPropAccessor(unsigned long type)
+{
+    return mpSFX[type].pSoundPropAccessor;
+}

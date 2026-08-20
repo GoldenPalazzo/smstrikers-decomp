@@ -3558,7 +3558,7 @@ void FadeFilterToFullStrength()
 
     if (!gbPitchBent)
     {
-        f32 t = (f32)gWorldSFX.muGroupPitch / 8192.0f;
+        f32 t = (f32)gWorldSFX.GetGroupPitch() / 8192.0f;
         GameTweaks* tweaks = g_pGame->m_pGameTweaks;
         PitchBend(t, tweaks->fFadePitchMin, tweaks->fFadeFilterSlowMoInTime, 0.0f);
     }
@@ -3571,7 +3571,7 @@ void FadeFilterFromCurrentToZero()
 {
     FadeAudioData* node;
 
-    f32 t = (f32)gWorldSFX.muGroupFilterFreq / 16383.0f;
+    f32 t = (f32)gWorldSFX.GetGroupFilterFreq() / 16383.0f;
     if (t > 0.0f)
     {
         node = g_pFadeList;
@@ -3597,7 +3597,7 @@ void FadeFilterFromCurrentToZero()
 
     if (gbPitchBent)
     {
-        t = (f32)gWorldSFX.muGroupPitch / 8192.0f;
+        t = (f32)gWorldSFX.GetGroupPitch() / 8192.0f;
         node = g_pFadeList;
         while (node != NULL)
         {

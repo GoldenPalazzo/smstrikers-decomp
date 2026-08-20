@@ -547,7 +547,7 @@ void CharacterTriggerHandler(unsigned int uParam)
         break;
 
     case 0x9F338B11:
-        if (Audio::gStadGenSFX.mbInited)
+        if (Audio::gStadGenSFX.IsInited())
         {
             Audio::SoundAttributes attrs;
             attrs.Init();

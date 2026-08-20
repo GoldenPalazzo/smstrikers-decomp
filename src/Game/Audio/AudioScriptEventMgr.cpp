@@ -493,7 +493,7 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
         static float fTimer;
         static signed char init;
 
-        intensity = intensity * Audio::gStadGenSFX.mpSFX[Audio::STADSFX_GEN_FIREWORKS_FLOOR].fVolume;
+        intensity = intensity * Audio::gStadGenSFX.GetSFXInfo(Audio::STADSFX_GEN_FIREWORKS_FLOOR).fVolume;
         if (!init)
         {
             init = true;

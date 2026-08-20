@@ -11,6 +11,7 @@ class DLListContainerBase
 {
 public:
     DLListContainerBase()
+        : m_Head(NULL)
     {
     }
 
@@ -71,6 +72,21 @@ public:
             *outData = entry->entry;
         }
         m_Allocator.DeleteEntry(entry);
+    }
+
+    void Remove(nlDLListIterator<T>* position)
+    {
+        DLListEntry<T>* entry = position->next();
+        nlDLRingRemove(&m_Head, entry);
+        m_Allocator.DeleteEntry(entry);
+    }
+
+    T RemoveEntry(DLListEntry<T>* entry)
+    {
+        T data = entry->entry;
+        nlDLRingRemove(&m_Head, entry);
+        m_Allocator.DeleteEntry(entry);
+        return data;
     }
 
     nlDLListIterator<T> Begin() const

@@ -17,7 +17,6 @@
 PhysicsCompositeObject::PhysicsCompositeObject(PhysicsWorld* physicsWorld)
     : PhysicsObject(physicsWorld)
 {
-    m_Components.m_Head = NULL;
     numComponents = 0;
     dBodySetData(m_bodyID, this);
 }

@@ -203,8 +203,8 @@ void GameTweaks::Init()
     fBackAudibleSurrDist = cfg.Get<float>("Back Audible Surr Dist", 100.0f);
     fSpeedOfSoundForDoppler = cfg.Get<float>("Speed Of Sound For Doppler", 200.0f);
     fEmitterDistFromListenerMaxVol = cfg.Get<float>("Emitter Dist From Listener Max Vol", 0.0f);
-    unk200 = cfg.Get<float>("Max Aubible Emitter Distance", 100.0f);
-    unk204 = cfg.Get<float>("Emitter Vol To Distance Value", 0.0f);
+    fMaxAudibleEmitterDistance = cfg.Get<float>("Max Aubible Emitter Distance", 100.0f);
+    fEmitterVolToDistanceValue = cfg.Get<float>("Emitter Vol To Distance Value", 0.0f);
     fFadeFilterSlowMoInTime = cfg.Get<float>("Slow Mo Filter Fade In Time", 0.3f);
     fFadeFilterSlowMoOutTime = cfg.Get<float>("Slow Mo Filter Fade Out Time", 0.2f);
     fFadeFilterFreqMin = cfg.Get<float>("Filter Min Freq Pct", 0.0f);
