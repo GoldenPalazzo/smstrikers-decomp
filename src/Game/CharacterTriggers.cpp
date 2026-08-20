@@ -75,9 +75,9 @@ void UpdateEmitterFromCharacterIdxWithCoordSys(EmissionController& ec, int chara
         nlMatrix4 mRot;
         nlMakeRotationMatrixZ(mRot, 0.0000958738f * (f32)pChar->mFacingDirection);
         nlVector3 forward;
-        forward.f.x = mRot.m[0][0];
-        forward.f.y = mRot.m[0][1];
-        forward.f.z = mRot.m[0][2];
+        forward.x = mRot.e2[0][0];
+        forward.y = mRot.e2[0][1];
+        forward.z = mRot.e2[0][2];
         ec.SetDirection(forward);
         ec.SetPosition(pChar->mPosition);
         ec.SetVelocity(pChar->mVelocity);
@@ -470,7 +470,7 @@ void CharacterTriggerHandler(unsigned int uParam)
         if (!g_pCurrentlyUpdatingCharacter->IsPlayingEffect(fxGetGroup("shoot_to_score_windup")))
             break;
         nlMatrix4& nodeMatrix = g_pCurrentlyUpdatingCharacter->m_pPoseAccumulator->GetNodeMatrix(g_pCurrentlyUpdatingCharacter->GetHeadJointIndex());
-        nlVector3 nodePos = *(nlVector3*)&nodeMatrix.m[3][0];
+        nlVector3 nodePos = *(nlVector3*)&nodeMatrix.e2[3][0];
         Audio::SoundAttributes attrs;
         attrs.Init();
         attrs.SetSoundType(0x4E, true);
@@ -488,7 +488,7 @@ void CharacterTriggerHandler(unsigned int uParam)
     {
         pCharacter->StopSFX((Audio::eCharSFX)0x4E);
         nlMatrix4& nodeMatrix = g_pCurrentlyUpdatingCharacter->m_pPoseAccumulator->GetNodeMatrix(g_pCurrentlyUpdatingCharacter->GetHeadJointIndex());
-        nlVector3 nodePos = *(nlVector3*)&nodeMatrix.m[3][0];
+        nlVector3 nodePos = *(nlVector3*)&nodeMatrix.e2[3][0];
         Audio::SoundAttributes attrs;
         attrs.Init();
         if (((cFielder*)g_pCurrentlyUpdatingCharacter)->meS2SResult == S2S_SUPER_SHOT && ((cPlayer*)g_pCurrentlyUpdatingCharacter)->IsCaptain())
@@ -735,9 +735,9 @@ void CharacterTriggerHandler(unsigned int uParam)
 
             pEventData->position = g_pBall->m_v3Position;
 
-            pEventData->normal.f.x = 0.0f;
-            pEventData->normal.f.y = 0.0f;
-            pEventData->normal.f.z = 1.0f;
+            pEventData->normal.x = 0.0f;
+            pEventData->normal.y = 0.0f;
+            pEventData->normal.z = 1.0f;
 
             f32 speed = pInfo->m_fIntensity;
             if (speed <= 100.0f)

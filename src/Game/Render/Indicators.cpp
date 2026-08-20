@@ -141,7 +141,7 @@ static void UpdateAndRenderOffScreenIndicators(float dt)
 
         {
             float h = ((cPlayer*)g_pCharacters[i])->m_pTweaks->fPhysCapsuleHeight;
-            worldPos.f.z += h * half;
+            worldPos.z += h * half;
         }
 
         glViewProjectPoint((eGLView)7, worldPos, projectedPos);
@@ -157,9 +157,9 @@ static void UpdateAndRenderOffScreenIndicators(float dt)
             fOne = 1.0f;
             onScreenFlags[0] = onScreenFlags[1];
 
-            if ((float)__fabs(screenPos.f.x) <= fOne)
+            if ((float)__fabs(screenPos.x) <= fOne)
             {
-                if ((float)__fabs(screenPos.f.y) <= fOne)
+                if ((float)__fabs(screenPos.y) <= fOne)
                 {
                     onScreenFlags[0] = 1;
                 }
@@ -167,7 +167,7 @@ static void UpdateAndRenderOffScreenIndicators(float dt)
 
             if (onScreenFlags[0] != 0)
             {
-                if ((float)__fabs(screenPos.f.z) <= fOne)
+                if ((float)__fabs(screenPos.z) <= fOne)
                 {
                     onScreenFlags[1] = 1;
                 }
@@ -192,8 +192,8 @@ static inline void DrawOffscreenIndicator(const nlVector3& v3NormalizedScreenPos
     float screenPosY;
     float scale;
 
-    screenPosY = v3NormalizedScreenPos.f.y * 240.0f;
-    screenPosX = v3NormalizedScreenPos.f.x * 320.0f;
+    screenPosY = v3NormalizedScreenPos.y * 240.0f;
+    screenPosX = v3NormalizedScreenPos.x * 320.0f;
 
     if (screenPosX < -288.0f)
         screenPosX = -288.0f;
@@ -208,7 +208,7 @@ static inline void DrawOffscreenIndicator(const nlVector3& v3NormalizedScreenPos
     screenPosX += 320.0f;
     screenPosY += 240.0f;
 
-    scale = (float)fabs(1.0f - max_float((float)fabs(v3NormalizedScreenPos.f.y), (float)fabs(v3NormalizedScreenPos.f.x)));
+    scale = (float)fabs(1.0f - max_float((float)fabs(v3NormalizedScreenPos.y), (float)fabs(v3NormalizedScreenPos.x)));
     scale = InterpolateRangeClamped(1.0f, 0.5f, 0.0f, 2.0f, scale);
     DrawIndicator((int)screenPosX, (int)screenPosY, 64.0f * scale, 64.0f * scale, pInfo->m_fOpacity, GetCharacterTexID(pCharacter), 0.0f, 1);
 }
@@ -309,12 +309,12 @@ static void UpdateAndRenderPlayerIndicators(float)
 
         pTweaks = (GameTweaksOverlay*)((cGameOverlay*)g_pGame)->mGameTweaks;
         switchScale = pTweaks->mProjectionYOffset;
-        v3Position.f.z += pTweaks->mVerticalOffset;
+        v3Position.z += pTweaks->mVerticalOffset;
 
         glViewProjectPoint((eGLView)7, v3Position, v3ScreenPosition);
 
-        fX = 320.0f * v3ScreenPosition.f.x + 320.0f;
-        fY = 240.0f * v3ScreenPosition.f.y + 240.0f;
+        fX = 320.0f * v3ScreenPosition.x + 320.0f;
+        fY = 240.0f * v3ScreenPosition.y + 240.0f;
         fY -= switchScale;
 
         if (((cPlayerIndicatorState*)g_pCharacters[i])->mSwitchScale < 0.5f)

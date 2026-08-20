@@ -158,26 +158,26 @@ inline void FetchTriangle(dxTriMesh* TriMesh, int Index, const dVector3 Position
 
 // Creates an OPCODE matrix from an ODE matrix
 inline Matrix4x4& MakeMatrix(const dVector3 Position, const dMatrix3 Rotation, Matrix4x4& Out){
-	Out.m[0][0] = Rotation[0];
-	Out.m[1][0] = Rotation[1];
-	Out.m[2][0] = Rotation[2];
+	Out.e2[0][0] = Rotation[0];
+	Out.e2[1][0] = Rotation[1];
+	Out.e2[2][0] = Rotation[2];
 
-	Out.m[0][1] = Rotation[4];
-	Out.m[1][1] = Rotation[5];
-	Out.m[2][1] = Rotation[6];
+	Out.e2[0][1] = Rotation[4];
+	Out.e2[1][1] = Rotation[5];
+	Out.e2[2][1] = Rotation[6];
 
-	Out.m[0][2] = Rotation[8];
-	Out.m[1][2] = Rotation[9];
-	Out.m[2][2] = Rotation[10];
+	Out.e2[0][2] = Rotation[8];
+	Out.e2[1][2] = Rotation[9];
+	Out.e2[2][2] = Rotation[10];
 
-	Out.m[3][0] = Position[0];
-	Out.m[3][1] = Position[1];
-	Out.m[3][2] = Position[2];
+	Out.e2[3][0] = Position[0];
+	Out.e2[3][1] = Position[1];
+	Out.e2[3][2] = Position[2];
 
-	Out.m[0][3] = 0.0f;
-	Out.m[1][3] = 0.0f;
-	Out.m[2][3] = 0.0f;
-	Out.m[3][3] = 1.0f;
+	Out.e2[0][3] = 0.0f;
+	Out.e2[1][3] = 0.0f;
+	Out.e2[2][3] = 0.0f;
+	Out.e2[3][3] = 1.0f;
 
 	return Out;
 }

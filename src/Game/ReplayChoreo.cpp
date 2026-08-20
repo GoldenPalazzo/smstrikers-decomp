@@ -210,8 +210,8 @@ BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScrip
     int zoneDepth = 0;
     int replayType = mGoalScoredData.uGoalType;
 
-    f32 y = 0.5f * (2.0f * cField::mv3FieldPosition.f.y) + mGoalScoredData.v3ShotPosition.f.y;
-    f32 fieldDepth = 2.0f * cField::mv3FieldPosition.f.y;
+    f32 y = 0.5f * (2.0f * cField::mv3FieldPosition.y) + mGoalScoredData.v3ShotPosition.y;
+    f32 fieldDepth = 2.0f * cField::mv3FieldPosition.y;
 
     if (y > 0.66f * fieldDepth)
     {
@@ -224,11 +224,11 @@ BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScrip
 
     f32 negGoalLineX = -cField::GetGoalLineX((unsigned int)mGoalScoredData.uTeamIndex);
 
-    if ((f32)fabs(negGoalLineX - mGoalScoredData.v3ShotPosition.f.x) < 0.33f * (f32)fabs(negGoalLineX))
+    if ((f32)fabs(negGoalLineX - mGoalScoredData.v3ShotPosition.x) < 0.33f * (f32)fabs(negGoalLineX))
     {
         zoneDepth = 1;
     }
-    if ((f32)fabs(negGoalLineX - mGoalScoredData.v3ShotPosition.f.x) > 0.66f * (f32)fabs(negGoalLineX))
+    if ((f32)fabs(negGoalLineX - mGoalScoredData.v3ShotPosition.x) > 0.66f * (f32)fabs(negGoalLineX))
     {
         zoneDepth = 2;
     }

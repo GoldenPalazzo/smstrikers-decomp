@@ -39,8 +39,8 @@ void DepthOfFieldManager::TurnOff()
 void DepthOfFieldManager::Update()
 {
     nlVector4 vRange = { 0, 0, 0, 0 };
-    vRange.f.x = m_fDistanceFromCamera;
-    vRange.f.y = (m_bOn != 0) ? 1.0f : 0.0f;
+    vRange.x = m_fDistanceFromCamera;
+    vRange.y = (m_bOn != 0) ? 1.0f : 0.0f;
     glConstantSet("dof/range", vRange);
 
     if (m_bOn == 0)
@@ -92,7 +92,7 @@ void DepthOfFieldManager::Update()
     glSetCurrentTextureState(glHandleizeTextureState());
 
     glPoly2 p;
-    p.SetupRectangle(0.0f, 0.0f, 640.0f, 480.0f, v4Depth.f.x);
+    p.SetupRectangle(0.0f, 0.0f, 640.0f, 480.0f, v4Depth.x);
     p.SetColour(c);
     p.Attach(GLV_DepthOfField, 0, 0, (unsigned long)-1);
 }

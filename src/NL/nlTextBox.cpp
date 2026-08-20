@@ -15,8 +15,8 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
     {
         yDir = -1;
     }
-    float yWithOffset = CurrentPos.f.y + (float)(yDir * DrawInfo.YOffset);
-    CurrentPos.f.y = yWithOffset;
+    float yWithOffset = CurrentPos.y + (float)(yDir * DrawInfo.YOffset);
+    CurrentPos.y = yWithOffset;
 
     int ascentAdj;
     if (DrawInfo.DrawOptions & 0x200)
@@ -36,13 +36,13 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
     unsigned long hMatrix;
 
     unsigned long row = 0;
-    CurrentPos.f.y = yWithOffset + (float)vertOffset;
+    CurrentPos.y = yWithOffset + (float)vertOffset;
     overridecolour.c[3] = 0;
 
     while (row < DrawInfo.RowCount)
     {
         const Row& CurrentRow = *(Row*)(pIter + 0x14);
-        CurrentPos.f.x = DrawAt.f.x + (float)CurrentRow.XOffset;
+        CurrentPos.x = DrawAt.x + (float)CurrentRow.XOffset;
 
         if (pMatrix)
         {
@@ -73,7 +73,7 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
 
         pIter += 4;
         row++;
-        CurrentPos.f.y += (float)(yDir * pFont->m_Metrics.Height);
+        CurrentPos.y += (float)(yDir * pFont->m_Metrics.Height);
     }
 }
 
@@ -110,7 +110,7 @@ void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont
             }
             else if (esc.m_Type == ESC_PARAGRAPH)
             {
-                CharWidth = (unsigned long)(1.0f + BoxSize.f.x);
+                CharWidth = (unsigned long)(1.0f + BoxSize.x);
                 WidthAtLastSpace = CurrentRowWidth;
                 IsNewParagraph = 1;
                 pLastSpace = esc.m_pEnd - 1;
@@ -135,7 +135,7 @@ void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont
 
         FirstChar = 0;
 
-        if ((float)(CurrentRowWidth + CharWidth) > BoxSize.f.x)
+        if ((float)(CurrentRowWidth + CharWidth) > BoxSize.x)
         {
             if (!(DrawOptions & 0x400) && pLastSpace != 0)
             {
@@ -148,7 +148,7 @@ void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont
             int xOffset;
             if (DrawOptions & 0x3)
             {
-                int remaining = (int)(BoxSize.f.x - (float)CurrentRowWidth);
+                int remaining = (int)(BoxSize.x - (float)CurrentRowWidth);
                 xOffset = remaining >> ((DrawOptions & 0x1) ? 1u : 0u);
             }
             else
@@ -187,7 +187,7 @@ void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont
     int xOffset;
     if (DrawOptions & 0x3)
     {
-        int remaining = (int)(BoxSize.f.x - (float)CurrentRowWidth);
+        int remaining = (int)(BoxSize.x - (float)CurrentRowWidth);
         xOffset = remaining >> ((DrawOptions & 0x1) ? 1u : 0u);
     }
     else
@@ -205,17 +205,17 @@ void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont
     if (DrawOptions & 0x30)
     {
         int totalHeight = (int)DrawInfo.RowCount * (int)pFont->m_Metrics.Height;
-        if ((float)totalHeight > BoxSize.f.y)
+        if ((float)totalHeight > BoxSize.y)
         {
             DrawInfo.YOffset = 0;
         }
         else if (DrawOptions & 0x10)
         {
-            DrawInfo.YOffset = (signed short)((int)(BoxSize.f.y / 2.0f) - (totalHeight >> 1));
+            DrawInfo.YOffset = (signed short)((int)(BoxSize.y / 2.0f) - (totalHeight >> 1));
         }
         else
         {
-            DrawInfo.YOffset = (signed short)((int)BoxSize.f.y - totalHeight);
+            DrawInfo.YOffset = (signed short)((int)BoxSize.y - totalHeight);
         }
     }
     else

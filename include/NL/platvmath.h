@@ -12,7 +12,6 @@ void nlMakeRotationMatrixX(nlMatrix4& result, float angleX);
 void nlMultDirVectorMatrix(nlVector3& result, const nlVector3& direction, const nlMatrix4& transformMatrix);
 void nlMultVectorMatrix(nlVector4& result, const nlVector4& inputVector, const nlMatrix4& transformMatrix);
 void nlMultPosVectorMatrix(nlVector3& result, const nlVector3& position, const nlMatrix4& transformMatrix);
-// void nlMultVectorMatrix(nlVector2& result, const nlVector2& inputVector, const nlMatrix4& transformMatrix);
 void nlMultVectorMatrix(nlVector2& result, const nlVector2& inputVector, const nlMatrix3& transformMatrix);
 void nlInvertMatrix(nlMatrix4& result, const nlMatrix4& inputMatrix);
 void nlTransposeMatrix(nlMatrix4& result, const nlMatrix4& inputMatrix);

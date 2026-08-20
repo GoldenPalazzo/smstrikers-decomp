@@ -37,15 +37,15 @@ void TopDownCamera::Update(float)
 
     m_Fov = 90.0f;
 
-    nlVec3Set(m_Position, m_Target.f.x, m_Target.f.y - 1.0f, sfCameraHeight);
+    nlVec3Set(m_Position, m_Target.x, m_Target.y - 1.0f, sfCameraHeight);
 
     float gx = cField::GetGoalLineX((unsigned int)1);
-    if (m_Position.f.x > gx)
-        m_Position.f.x = gx;
+    if (m_Position.x > gx)
+        m_Position.x = gx;
 
     float ng = -gx;
-    if (m_Position.f.x < ng)
-        m_Position.f.x = ng;
+    if (m_Position.x < ng)
+        m_Position.x = ng;
 }
 
 /**

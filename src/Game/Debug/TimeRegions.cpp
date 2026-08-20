@@ -46,7 +46,7 @@ static bool CentreOfField()
 {
     const nlVector3& targetPosition = (*nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)).GetTargetPosition();
     bool isCenter = false;
-    if ((nlTaskManager::m_pInstance->m_CurrState == 0x2) && ((float)fabs(targetPosition.f.x) < 5.7f))
+    if ((nlTaskManager::m_pInstance->m_CurrState == 0x2) && ((float)fabs(targetPosition.x) < 5.7f))
     {
         isCenter = true;
     }
@@ -58,7 +58,7 @@ inline bool IsInCenterZone()
     const nlVector3& v = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->GetTargetPosition();
     unsigned long curState = nlTaskManager::m_pInstance->m_CurrState;
 
-    return curState == 2 && fabsf(v.f.x) < 5.7f;
+    return curState == 2 && fabsf(v.x) < 5.7f;
 }
 
 /**
@@ -69,7 +69,7 @@ static bool LeftSideOfField()
     const nlVector3& v = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->GetTargetPosition();
     unsigned long curState = nlTaskManager::m_pInstance->m_CurrState;
 
-    return curState == 2 && !IsInCenterZone() && v.f.x < 0.0f;
+    return curState == 2 && !IsInCenterZone() && v.x < 0.0f;
 }
 
 /**
@@ -80,7 +80,7 @@ static bool RightSideOfField()
     const nlVector3& v = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->GetTargetPosition();
     unsigned long curState = nlTaskManager::m_pInstance->m_CurrState;
 
-    return curState == 2 && !IsInCenterZone() && v.f.x > 0.0f;
+    return curState == 2 && !IsInCenterZone() && v.x > 0.0f;
 }
 
 /**

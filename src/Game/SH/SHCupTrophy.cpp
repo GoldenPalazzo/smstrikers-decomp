@@ -494,8 +494,8 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find(pComp->GetActiveSlide(), nlStringLowerHash(TROPHY_RECORD_ROW_NAMES[i]));
 
         nlVector2 boxSize;
-        boxSize.f.x = 999.9f;
-        boxSize.f.y = pText->m_OverloadedAttributes.BoxSize.f.y;
+        boxSize.x = 999.9f;
+        boxSize.y = pText->m_OverloadedAttributes.BoxSize.y;
         pText->m_OverloadedAttributes.BoxSize = boxSize;
         pText->m_OverloadFlags |= 0x4;
 

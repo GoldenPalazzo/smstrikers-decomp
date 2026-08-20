@@ -83,37 +83,37 @@ void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
             x1 = 0.5f * (ring1 * nlSin((u16)angle));
             y1 = 0.5f * (ring1 * nlSin((u16)angle90));
 
-            vNormal.f.x = x0;
-            vNormal.f.y = y0;
-            vNormal.f.z = z0;
+            vNormal.x = x0;
+            vNormal.y = y0;
+            vNormal.z = z0;
 
             lengthSquared = vNormal.GetLengthSq3D();
             invLen = nlRecipSqrt(lengthSquared, true);
 
-            pdst->f.x = x0;
+            pdst->x = x0;
             nlVec3Scale(vNormal, invLen);
-            pdst->f.y = y0;
-            pdst->f.z = z0;
+            pdst->y = y0;
+            pdst->z = z0;
             *ndst = vNormal;
 
-            tdst->f.x = (float)nSegment / 15.0f;
-            tdst->f.y = (float)nRing / 5.0f;
+            tdst->x = (float)nSegment / 15.0f;
+            tdst->y = (float)nRing / 5.0f;
 
-            vNormal.f.x = x1;
-            vNormal.f.y = y1;
-            vNormal.f.z = z1;
+            vNormal.x = x1;
+            vNormal.y = y1;
+            vNormal.z = z1;
 
             lengthSquared = vNormal.GetLengthSq3D();
             invLen = nlRecipSqrt(lengthSquared, true);
 
-            pdst[1].f.x = x1;
+            pdst[1].x = x1;
             nlVec3Scale(vNormal, invLen);
-            pdst[1].f.y = y1;
-            pdst[1].f.z = z1;
+            pdst[1].y = y1;
+            pdst[1].z = z1;
             ndst[1] = vNormal;
 
-            tdst[1].f.x = (float)nSegment / 15.0f;
-            tdst[1].f.y = (float)(nRing + 1) / 5.0f;
+            tdst[1].x = (float)nSegment / 15.0f;
+            tdst[1].y = (float)(nRing + 1) / 5.0f;
 
             pdst += 2;
             ndst += 2;
@@ -174,35 +174,35 @@ void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
         x1 = half * (z0 * nlSin((u16)angle));
         y1 = half * (z0 * nlSin((u16)angle90));
 
-        vNormal.f.x = x0;
-        vNormal.f.y = y0;
-        vNormal.f.z = z0;
+        vNormal.x = x0;
+        vNormal.y = y0;
+        vNormal.z = z0;
 
         invLen = nlRecipSqrt(vNormal.GetLengthSq3D(), true);
 
-        pdst->f.x = x0;
+        pdst->x = x0;
         nlVec3Scale(vNormal, invLen);
-        pdst->f.y = y0;
-        pdst->f.z = z0;
+        pdst->y = y0;
+        pdst->z = z0;
         *ndst = vNormal;
 
-        tdst->f.x = (float)nSegment / texDenom;
-        tdst->f.y = z0;
+        tdst->x = (float)nSegment / texDenom;
+        tdst->y = z0;
 
-        vNormal.f.x = x1;
-        vNormal.f.y = y1;
-        vNormal.f.z = z0;
+        vNormal.x = x1;
+        vNormal.y = y1;
+        vNormal.z = z0;
 
         invLen = nlRecipSqrt(vNormal.GetLengthSq3D(), true);
 
-        pdst[1].f.x = x1;
-        pdst[1].f.y = y1;
-        pdst[1].f.z = z0;
+        pdst[1].x = x1;
+        pdst[1].y = y1;
+        pdst[1].z = z0;
         nlVec3Scale(vNormal, invLen);
         ndst[1] = vNormal;
 
-        tdst[1].f.x = (float)nSegment / texDenom;
-        tdst[1].f.y = one;
+        tdst[1].x = (float)nSegment / texDenom;
+        tdst[1].y = one;
 
         pdst += 2;
         ndst += 2;
@@ -264,35 +264,35 @@ void ShapeRender::CreateCylinderGeometry(PrimitiveShape& prim)
             x1 = 0.5f * nlSin((u16)angle);
             y1 = 0.5f * nlSin((u16)angle90);
 
-            vNormal.f.x = x0;
-            vNormal.f.y = y0;
-            vNormal.f.z = z0;
+            vNormal.x = x0;
+            vNormal.y = y0;
+            vNormal.z = z0;
 
             invLen = nlRecipSqrt(nlVec3LengthSquared(vNormal), true);
 
-            pdst->f.x = x0;
+            pdst->x = x0;
             nlVec3Scale(vNormal, invLen);
-            pdst->f.y = y0;
-            pdst->f.z = z0;
+            pdst->y = y0;
+            pdst->z = z0;
             *ndst = vNormal;
 
-            tdst->f.x = (float)nSegment / 15.0f;
-            tdst->f.y = (float)nRing / 2.0f;
+            tdst->x = (float)nSegment / 15.0f;
+            tdst->y = (float)nRing / 2.0f;
 
-            vNormal.f.x = x1;
-            vNormal.f.y = y1;
-            vNormal.f.z = z1;
+            vNormal.x = x1;
+            vNormal.y = y1;
+            vNormal.z = z1;
 
             invLen = nlRecipSqrt(nlVec3LengthSquared(vNormal), true);
 
-            pdst[1].f.x = x1;
+            pdst[1].x = x1;
             nlVec3Scale(vNormal, invLen);
-            pdst[1].f.y = y1;
-            pdst[1].f.z = z1;
+            pdst[1].y = y1;
+            pdst[1].z = z1;
             ndst[1] = vNormal;
 
-            tdst[1].f.x = (float)nSegment / 15.0f;
-            tdst[1].f.y = (float)(nRing + 1) / 2.0f;
+            tdst[1].x = (float)nSegment / 15.0f;
+            tdst[1].y = (float)(nRing + 1) / 2.0f;
 
             pdst += 2;
             ndst += 2;
@@ -506,14 +506,14 @@ void ShapeRender::DrawLine3D(const nlVector3& p0, const nlVector3& p1, const nlC
         nlVector2 uv1;
 
         writer.Colour(colour);
-        uv0.f.x = 0.0f;
-        uv0.f.y = 0.0f;
+        uv0.x = 0.0f;
+        uv0.y = 0.0f;
         ((GLMeshWriterCore*)&writer)->Texcoord(uv0);
         writer.Vertex(p0);
 
         writer.Colour(colour);
-        uv1.f.x = 0.0f;
-        uv1.f.y = 0.0f;
+        uv1.x = 0.0f;
+        uv1.y = 0.0f;
         ((GLMeshWriterCore*)&writer)->Texcoord(uv1);
         writer.Vertex(p1);
 
@@ -545,15 +545,15 @@ void ShapeRender::DrawEllipse2D(const nlVector3& p0, float fRadius, float fScale
         nlVector3 v3point;
         nlVector2 uv0;
 
-        v3point.f.z = p0.f.z;
-        v3point.f.x = p0.f.x;
-        v3point.f.y = p0.f.y;
+        v3point.z = p0.z;
+        v3point.x = p0.x;
+        v3point.y = p0.y;
 
         float fRadians = 0.0f;
 
         mesh.Colour(colour);
-        uv0.f.x = 0.0f;
-        uv0.f.y = 0.0f;
+        uv0.x = 0.0f;
+        uv0.y = 0.0f;
         ((GLMeshWriterCore*)&mesh)->Texcoord(uv0);
         mesh.Vertex(v3point);
 
@@ -565,13 +565,13 @@ void ShapeRender::DrawEllipse2D(const nlVector3& p0, float fRadius, float fScale
 
         while (i < 30)
         {
-            nlSinCos(&v3point.f.x, &v3point.f.y, (unsigned short)(int)(angleScale * fRadians));
-            v3point.f.x = p0.f.x + fScaleX * (v3point.f.x * fRadius);
-            v3point.f.y = p0.f.y + fScaleY * (v3point.f.y * fRadius);
+            nlSinCos(&v3point.x, &v3point.y, (unsigned short)(int)(angleScale * fRadians));
+            v3point.x = p0.x + fScaleX * (v3point.x * fRadius);
+            v3point.y = p0.y + fScaleY * (v3point.y * fRadius);
 
             mesh.Colour(colour);
-            uv1.f.x = uvZero;
-            uv1.f.y = uvZero;
+            uv1.x = uvZero;
+            uv1.y = uvZero;
             ((GLMeshWriterCore*)&mesh)->Texcoord(uv1);
             mesh.Vertex(v3point);
 
@@ -612,17 +612,17 @@ void ShapeRender::DrawRectangle2D(float x, float y, float w, float h, float z, c
     float bottom = x + w;
 
     glPoly2 poly;
-    poly.m_pos[0].f.x = x;
-    poly.m_pos[0].f.y = y;
+    poly.m_pos[0].x = x;
+    poly.m_pos[0].y = y;
 
     glPoly2* pPoly = &poly;
 
-    poly.m_pos[1].f.x = x;
-    poly.m_pos[1].f.y = right;
-    poly.m_pos[2].f.x = bottom;
-    poly.m_pos[2].f.y = right;
-    poly.m_pos[3].f.x = bottom;
-    poly.m_pos[3].f.y = y;
+    poly.m_pos[1].x = x;
+    poly.m_pos[1].y = right;
+    poly.m_pos[2].x = bottom;
+    poly.m_pos[2].y = right;
+    poly.m_pos[3].x = bottom;
+    poly.m_pos[3].y = y;
 
     poly.m_colour[3] = colour;
     poly.m_colour[2] = colour;
@@ -694,9 +694,9 @@ static inline void* CreateLightData()
     *p32++ = 1;
     GLLightUserData* pLight = (GLLightUserData*)(p32);
 
-    pLight->worldPosition.f.x = 0.5f;
-    pLight->worldPosition.f.y = 0.5f;
-    pLight->worldPosition.f.z = 10.0f;
+    pLight->worldPosition.x = 0.5f;
+    pLight->worldPosition.y = 0.5f;
+    pLight->worldPosition.z = 10.0f;
     pLight->colour.c[0] = 0.5f;
     pLight->colour.c[1] = 0.5f;
     pLight->colour.c[2] = 1.0f;

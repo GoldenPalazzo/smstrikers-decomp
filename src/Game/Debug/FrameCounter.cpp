@@ -185,15 +185,15 @@ static void DrawCircle(nlVector3 p0, float fRadius, float fScaleX, nlColour colo
         nlVector3 v3point;
         nlVector2 uv0;
 
-        v3point.f.z = p0.f.z;
-        v3point.f.x = p0.f.x;
-        v3point.f.y = p0.f.y;
+        v3point.z = p0.z;
+        v3point.x = p0.x;
+        v3point.y = p0.y;
 
         float fRadians = 0.0f;
 
         mesh.Colour(colour);
-        uv0.f.x = 0.0f;
-        uv0.f.y = 0.0f;
+        uv0.x = 0.0f;
+        uv0.y = 0.0f;
         ((GLMeshWriterCore*)&mesh)->Texcoord(uv0);
         mesh.Vertex(v3point);
 
@@ -205,13 +205,13 @@ static void DrawCircle(nlVector3 p0, float fRadius, float fScaleX, nlColour colo
 
         while (i < 30)
         {
-            nlSinCos(&v3point.f.x, &v3point.f.y, (unsigned short)(int)(angleScale * fRadians));
-            v3point.f.x = p0.f.x + fScaleX * (v3point.f.x * fRadius);
-            v3point.f.y = p0.f.y + v3point.f.y * fRadius;
+            nlSinCos(&v3point.x, &v3point.y, (unsigned short)(int)(angleScale * fRadians));
+            v3point.x = p0.x + fScaleX * (v3point.x * fRadius);
+            v3point.y = p0.y + v3point.y * fRadius;
 
             mesh.Colour(colour);
-            uv1.f.x = uvZero;
-            uv1.f.y = uvZero;
+            uv1.x = uvZero;
+            uv1.y = uvZero;
             ((GLMeshWriterCore*)&mesh)->Texcoord(uv1);
             mesh.Vertex(v3point);
 
@@ -251,39 +251,39 @@ static void DrawSmile(nlVector3 p0, float fRadius, float fScaleX, nlColour colou
         nlVector2 uv1;
 
         float fRadians = -((3.1415927f * (0.5f * degrees)) / 180.0f);
-        v3point.f.z = p0.f.z;
-        nlSinCos(&v3point.f.x, &v3point.f.y, (u16)(int)(10430.378f * fRadians));
+        v3point.z = p0.z;
+        nlSinCos(&v3point.x, &v3point.y, (u16)(int)(10430.378f * fRadians));
 
-        float fXFromAngle = v3point.f.x * fRadius;
-        v3point.f.x = (fScaleX * fXFromAngle) + p0.f.x;
-        v3point.f.y = (v3point.f.y * fRadius) + p0.f.y;
-        float fYFromAngle = v3point.f.y;
-        float fYTop = p0.f.y + fRadius;
+        float fXFromAngle = v3point.x * fRadius;
+        v3point.x = (fScaleX * fXFromAngle) + p0.x;
+        v3point.y = (v3point.y * fRadius) + p0.y;
+        float fYFromAngle = v3point.y;
+        float fYTop = p0.y + fRadius;
         float middleY = 0.5f * (fYFromAngle + fYTop);
 
         int i = 0;
         while (i < 10)
         {
-            nlSinCos(&v3point.f.x, &v3point.f.y, (u16)(int)(10430.378f * fRadians));
+            nlSinCos(&v3point.x, &v3point.y, (u16)(int)(10430.378f * fRadians));
 
-            v3point.f.x = p0.f.x + fScaleX * (v3point.f.x * fRadius);
-            v3point.f.y = p0.f.y + v3point.f.y * fRadius;
+            v3point.x = p0.x + fScaleX * (v3point.x * fRadius);
+            v3point.y = p0.y + v3point.y * fRadius;
 
-            v3point.f.y = v3point.f.y - middleY;
-            v3point.f.y = v3point.f.y * yScale;
-            v3point.f.y = v3point.f.y + middleY;
+            v3point.y = v3point.y - middleY;
+            v3point.y = v3point.y * yScale;
+            v3point.y = v3point.y + middleY;
 
             mesh.Colour(colour);
-            uv0.f.x = 0.0f;
-            uv0.f.y = 0.0f;
+            uv0.x = 0.0f;
+            uv0.y = 0.0f;
             ((GLMeshWriterCore*)&mesh)->Texcoord(uv0);
             mesh.Vertex(v3point);
 
-            v3point.f.y += fLineThickness;
+            v3point.y += fLineThickness;
 
             mesh.Colour(colour);
-            uv1.f.x = 0.0f;
-            uv1.f.y = 0.0f;
+            uv1.x = 0.0f;
+            uv1.y = 0.0f;
             ((GLMeshWriterCore*)&mesh)->Texcoord(uv1);
             mesh.Vertex(v3point);
 
@@ -324,10 +324,10 @@ static void DrawBrow(const nlVector3& leftEyeCentre, const nlVector3& rightEyeCe
         p1 = leftEyeCentre;
         p2 = leftEyeCentre;
 
-        p1.f.x = p1.f.x - width;
-        p2.f.x = p2.f.x + width;
-        p1.f.y = p1.f.y + upper;
-        p2.f.y = p2.f.y + lower;
+        p1.x = p1.x - width;
+        p2.x = p2.x + width;
+        p1.y = p1.y + upper;
+        p2.y = p2.y + lower;
 
         nlColour c0;
         c0.c[0] = 0;
@@ -337,9 +337,9 @@ static void DrawBrow(const nlVector3& leftEyeCentre, const nlVector3& rightEyeCe
         ((GLMeshWriterCore*)&m0)->Colour(c0);
 
         nlVector3 v0;
-        v0.f.x = p1.f.x;
-        v0.f.y = p1.f.y;
-        v0.f.z = p1.f.z;
+        v0.x = p1.x;
+        v0.y = p1.y;
+        v0.z = p1.z;
         ((GLMeshWriterCore*)&m0)->Vertex(v0);
 
         nlColour c1;
@@ -350,18 +350,18 @@ static void DrawBrow(const nlVector3& leftEyeCentre, const nlVector3& rightEyeCe
         ((GLMeshWriterCore*)&m0)->Colour(c1);
 
         nlVector3 v1;
-        v1.f.x = p2.f.x;
-        v1.f.y = p2.f.y;
-        v1.f.z = p2.f.z;
+        v1.x = p2.x;
+        v1.y = p2.y;
+        v1.z = p2.z;
         ((GLMeshWriterCore*)&m0)->Vertex(v1);
 
         p1 = rightEyeCentre;
         p2 = rightEyeCentre;
 
-        p1.f.x = p1.f.x + width;
-        p2.f.x = p2.f.x - width;
-        p1.f.y = p1.f.y + upper;
-        p2.f.y = p2.f.y + lower;
+        p1.x = p1.x + width;
+        p2.x = p2.x - width;
+        p1.y = p1.y + upper;
+        p2.y = p2.y + lower;
 
         nlColour c2;
         c2.c[0] = 0;
@@ -371,9 +371,9 @@ static void DrawBrow(const nlVector3& leftEyeCentre, const nlVector3& rightEyeCe
         ((GLMeshWriterCore*)&m0)->Colour(c2);
 
         nlVector3 v2;
-        v2.f.x = p1.f.x;
-        v2.f.y = p1.f.y;
-        v2.f.z = p1.f.z;
+        v2.x = p1.x;
+        v2.y = p1.y;
+        v2.z = p1.z;
         ((GLMeshWriterCore*)&m0)->Vertex(v2);
 
         nlColour c3;
@@ -384,9 +384,9 @@ static void DrawBrow(const nlVector3& leftEyeCentre, const nlVector3& rightEyeCe
         ((GLMeshWriterCore*)&m0)->Colour(c3);
 
         nlVector3 v3;
-        v3.f.x = p2.f.x;
-        v3.f.y = p2.f.y;
-        v3.f.z = p2.f.z;
+        v3.x = p2.x;
+        v3.y = p2.y;
+        v3.z = p2.z;
         ((GLMeshWriterCore*)&m0)->Vertex(v3);
 
         if (m0.End())
@@ -423,8 +423,8 @@ void FrameCounter::DisplayFrameSmiler()
     float eyeRadius = sfEyeRadius * sfSmileyRadius;
 
     nlVector3 circleCentre = { 0, 0, 0 };
-    circleCentre.f.x = 2.0f * sfSmileyRadius;
-    circleCentre.f.y = 480.0f - 3.0f * sfSmileyRadius;
+    circleCentre.x = 2.0f * sfSmileyRadius;
+    circleCentre.y = 480.0f - 3.0f * sfSmileyRadius;
 
     nlColour black = { 0, 0, 0, 255 };
 
@@ -451,11 +451,11 @@ void FrameCounter::DisplayFrameSmiler()
     nlVector3 leftEyeCentre = { 0, 0, 0 };
     nlVector3 rightEyeCentre = { 0, 0, 0 };
 
-    leftEyeCentre.f.x = -circleRadius * sfEyeSeparation;
-    leftEyeCentre.f.y = -circleRadius * sfEyeHeight;
+    leftEyeCentre.x = -circleRadius * sfEyeSeparation;
+    leftEyeCentre.y = -circleRadius * sfEyeHeight;
 
-    rightEyeCentre.f.x = circleRadius * sfEyeSeparation;
-    rightEyeCentre.f.y = -circleRadius * sfEyeHeight;
+    rightEyeCentre.x = circleRadius * sfEyeSeparation;
+    rightEyeCentre.y = -circleRadius * sfEyeHeight;
 
     nlVec3Add(leftEyeCentre, leftEyeCentre, circleCentre);
     nlVec3Add(rightEyeCentre, rightEyeCentre, circleCentre);

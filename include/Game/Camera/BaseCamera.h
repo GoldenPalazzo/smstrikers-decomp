@@ -28,9 +28,9 @@ public:
     cBaseCamera()
     {
         m_pFilter = nullptr;
-        mUpVector.f.x = 0.0f;
-        mUpVector.f.y = 0.0f;
-        mUpVector.f.z = 1.0f;
+        mUpVector.x = 0.0f;
+        mUpVector.y = 0.0f;
+        mUpVector.z = 1.0f;
     };
     /* 0x08 */ virtual ~cBaseCamera() { };
     /* 0x0C */ virtual eCameraType GetType() = 0;

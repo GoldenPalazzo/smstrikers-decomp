@@ -1,4 +1,5 @@
 #include "Game/Effects/ParticleSystem.h"
+#include "NL/vmath.h"
 #include "Game/Effects/EmissionManager.h"
 #include "Game/GL/GLInventory.h"
 #include "Game/GL/gluMeshWriter.h"
@@ -40,9 +41,9 @@ ParticleSystem::ParticleSystem(EffectsTemplate* pTemplate, EffectsSpec* pSpec)
 {
     m_NumInstances++;
 
-    m_Mirror.f.x = 1.0f;
-    m_Mirror.f.y = 1.0f;
-    m_Mirror.f.z = 1.0f;
+    m_Mirror.x = 1.0f;
+    m_Mirror.y = 1.0f;
+    m_Mirror.z = 1.0f;
 
     m_pTemplate = pTemplate;
     m_pSpec = pSpec;
@@ -52,21 +53,21 @@ ParticleSystem::ParticleSystem(EffectsTemplate* pTemplate, EffectsSpec* pSpec)
     m_fDelay = 0.0f;
     m_uLayer = 0;
 
-    m_vVelocity.f.x = 0.0f;
-    m_vVelocity.f.y = 0.0f;
-    m_vVelocity.f.z = 0.0f;
+    m_vVelocity.x = 0.0f;
+    m_vVelocity.y = 0.0f;
+    m_vVelocity.z = 0.0f;
 
-    m_vPosition.f.x = 0.0f;
-    m_vPosition.f.y = 0.0f;
-    m_vPosition.f.z = 0.0f;
+    m_vPosition.x = 0.0f;
+    m_vPosition.y = 0.0f;
+    m_vPosition.z = 0.0f;
 
-    m_vForward.f.x = 0.0f;
-    m_vForward.f.y = 1.0f;
-    m_vForward.f.z = 0.0f;
+    m_vForward.x = 0.0f;
+    m_vForward.y = 1.0f;
+    m_vForward.z = 0.0f;
 
-    m_vSourcePosition.f.x = 0.0f;
-    m_vSourcePosition.f.y = 0.0f;
-    m_vSourcePosition.f.z = 0.0f;
+    m_vSourcePosition.x = 0.0f;
+    m_vSourcePosition.y = 0.0f;
+    m_vSourcePosition.z = 0.0f;
 
     m_aFacing = 0;
     m_bAmDying = false;
@@ -124,9 +125,9 @@ void ParticleSystem::UpdateCoordSys(nlMatrix4& mCoordSys)
 
     nlVector3 grav;
     nlVec3Scale(grav, m_vForward, rsqrt);
-    grav.f.x *= m_Mirror.f.x;
-    grav.f.y *= m_Mirror.f.y;
-    grav.f.z *= m_Mirror.f.z;
+    grav.x *= m_Mirror.x;
+    grav.y *= m_Mirror.y;
+    grav.z *= m_Mirror.z;
 
     nlVector3 ref;
     nlVec3Set(ref, 0.0f, 0.0f, 1.0f);
@@ -137,7 +138,7 @@ void ParticleSystem::UpdateCoordSys(nlMatrix4& mCoordSys)
         nlVec3Set(ref, 0.0f, 1.0f, 0.0f);
     }
 
-    float negGravX = -grav.f.x;
+    float negGravX = -grav.x;
 
     nlVector3 right;
     nlVec3CrossProduct(right, grav, ref);
@@ -150,8 +151,8 @@ void ParticleSystem::UpdateCoordSys(nlMatrix4& mCoordSys)
     mCoordSys.SetRow_(0, right);
     mCoordSys.SetRow_(1, up);
     mCoordSys.e[8] = negGravX;
-    mCoordSys.e[9] = -grav.f.y;
-    mCoordSys.e[10] = -grav.f.z;
+    mCoordSys.e[9] = -grav.y;
+    mCoordSys.e[10] = -grav.z;
     mCoordSys.SetTranslation(m_vPosition);
     mCoordSys.e[11] = 0.0f;
     mCoordSys.e[7] = 0.0f;
@@ -172,16 +173,16 @@ void EmitCircularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTe
     float radius = RandomizedValue(pTemplate->m_rRadius.base, pTemplate->m_rRadius.range);
 
     nlVector3 localPos;
-    localPos.f.x = cosVal * radius;
-    localPos.f.y = -sinVal * radius;
-    localPos.f.z = 0.0f;
+    localPos.x = cosVal * radius;
+    localPos.y = -sinVal * radius;
+    localPos.z = 0.0f;
 
     if (pSpec != nullptr)
     {
         nlVec3Set(localPos,
-            localPos.f.x + pSpec->m_vLocalOffset.f.x,
-            localPos.f.y + pSpec->m_vLocalOffset.f.y,
-            localPos.f.z + pSpec->m_vLocalOffset.f.z);
+            localPos.x + pSpec->m_vLocalOffset.x,
+            localPos.y + pSpec->m_vLocalOffset.y,
+            localPos.z + pSpec->m_vLocalOffset.z);
     }
 
     if (pTemplate->m_bLocalSpace)
@@ -218,14 +219,14 @@ void EmitSphericalPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsT
     float radius = RandomizedValue(pTemplate->m_rRadius.base, pTemplate->m_rRadius.range);
 
     nlVec3Set(localDir, x, y, z);
-    nlVec3Set(localPos, radius * localDir.f.x, radius * localDir.f.y, radius * localDir.f.z);
+    nlVec3Set(localPos, radius * localDir.x, radius * localDir.y, radius * localDir.z);
 
     if (pSpec != nullptr)
     {
         nlVec3Set(localPos,
-            localPos.f.x + pSpec->m_vLocalOffset.f.x,
-            localPos.f.y + pSpec->m_vLocalOffset.f.y,
-            localPos.f.z + pSpec->m_vLocalOffset.f.z);
+            localPos.x + pSpec->m_vLocalOffset.x,
+            localPos.y + pSpec->m_vLocalOffset.y,
+            localPos.z + pSpec->m_vLocalOffset.z);
     }
 
     if (pTemplate->m_bLocalSpace)
@@ -264,14 +265,14 @@ void EmitHemisphericalPosition(nlVector3& vPosition, nlVector3& vDirection, Effe
     float radius = RandomizedValue(pTemplate->m_rRadius.base, pTemplate->m_rRadius.range);
 
     nlVec3Set(localDir, x, y, z);
-    nlVec3Set(localPos, radius * localDir.f.x, radius * localDir.f.y, radius * localDir.f.z);
+    nlVec3Set(localPos, radius * localDir.x, radius * localDir.y, radius * localDir.z);
 
     if (pSpec != nullptr)
     {
         nlVec3Set(localPos,
-            localPos.f.x + pSpec->m_vLocalOffset.f.x,
-            localPos.f.y + pSpec->m_vLocalOffset.f.y,
-            localPos.f.z + pSpec->m_vLocalOffset.f.z);
+            localPos.x + pSpec->m_vLocalOffset.x,
+            localPos.y + pSpec->m_vLocalOffset.y,
+            localPos.z + pSpec->m_vLocalOffset.z);
     }
 
     if (pTemplate->m_bLocalSpace)
@@ -290,16 +291,16 @@ static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, E
 
 static inline void RotateXZInPlace(nlVector3& v, float sn, float cs)
 {
-    float x = (v.f.x * cs) + (v.f.z * sn);
-    float z = (-v.f.x * sn) + (v.f.z * cs);
-    nlVec3Set(v, x, v.f.y, z);
+    float x = (v.x * cs) + (v.z * sn);
+    float z = (-v.x * sn) + (v.z * cs);
+    nlVec3Set(v, x, v.y, z);
 }
 
 static inline void RotateXYInPlace(nlVector3& v, float sn, float cs)
 {
-    float x = (v.f.x * cs) + (-v.f.y * sn);
-    float y = (v.f.x * sn) + (v.f.y * cs);
-    nlVec3Set(v, x, y, v.f.z);
+    float x = (v.x * cs) + (-v.y * sn);
+    float y = (v.x * sn) + (v.y * cs);
+    nlVec3Set(v, x, y, v.z);
 }
 
 /**
@@ -317,9 +318,9 @@ static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, E
 
     float radius = RandomizedValue(pTemplate->m_rRadius.base, pTemplate->m_rRadius.range);
 
-    localPos.f.x = cos * radius;
-    localPos.f.y = -sin * radius;
-    localPos.f.z = 0.0f;
+    localPos.x = cos * radius;
+    localPos.y = -sin * radius;
+    localPos.z = 0.0f;
 
     float tilt = RandomizedValue(pTemplate->m_rAngle.base, pTemplate->m_rAngle.range);
     if (tilt <= -90.0f)
@@ -331,17 +332,17 @@ static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, E
         tilt = 89.9f;
     }
 
-    localDir.f.z = nlTan((unsigned short)(((int)(-tilt * 65536.0f)) / 360));
-    localDir.f.x = cos;
-    localDir.f.y = -sin;
+    localDir.z = nlTan((unsigned short)(((int)(-tilt * 65536.0f)) / 360));
+    localDir.x = cos;
+    localDir.y = -sin;
 
     float lengthSq = nlVec3LengthSquared(localDir);
     float length = nlRecipSqrt(lengthSq, false);
 
     nlVec3Set(localDir,
-        length * localDir.f.x,
-        length * localDir.f.y,
-        length * localDir.f.z);
+        length * localDir.x,
+        length * localDir.y,
+        length * localDir.z);
 
     float tiltRotation = RandomizedValue(pTemplate->m_rTilt.base, pTemplate->m_rTilt.range);
     tiltRotation = -tiltRotation * 3.14159265f / 180.0f;
@@ -357,9 +358,9 @@ static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, E
     if (pSpec != nullptr)
     {
         nlVec3Set(localPos,
-            localPos.f.x + pSpec->m_vLocalOffset.f.x,
-            localPos.f.y + pSpec->m_vLocalOffset.f.y,
-            localPos.f.z + pSpec->m_vLocalOffset.f.z);
+            localPos.x + pSpec->m_vLocalOffset.x,
+            localPos.y + pSpec->m_vLocalOffset.y,
+            localPos.z + pSpec->m_vLocalOffset.z);
     }
 
     if (pTemplate->m_bLocalSpace)
@@ -381,9 +382,9 @@ static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, E
         }
 
         nlVec3Set(vPosition,
-            vPosition.f.x + mLocalToWorld.m[3][0],
-            vPosition.f.y + mLocalToWorld.m[3][1],
-            vPosition.f.z + mLocalToWorld.m[3][2]);
+            vPosition.x + mLocalToWorld.e2[3][0],
+            vPosition.y + mLocalToWorld.e2[3][1],
+            vPosition.z + mLocalToWorld.e2[3][2]);
     }
 }
 
@@ -442,9 +443,9 @@ void ParticleSystem::CreateNewParticles(int numParticles)
         m_Particles.Insert(pPart);
         dir = baseDir;
         emit(pPart->position, dir, m_pTemplate, m_pSpec, mCoordSys);
-        pPart->position.f.x += m_vSourcePosition.f.x;
-        pPart->position.f.y += m_vSourcePosition.f.y;
-        pPart->position.f.z += m_vSourcePosition.f.z;
+        pPart->position.x += m_vSourcePosition.x;
+        pPart->position.y += m_vSourcePosition.y;
+        pPart->position.z += m_vSourcePosition.z;
         pPart->lifeSpan = RandomizedValue(m_pTemplate->m_rParticleLife.base, m_pTemplate->m_rParticleLife.range);
         oneOverLife = 1.0f / pPart->lifeSpan;
         pPart->dRot = RandomizedValue(m_pTemplate->m_rRotation.base, m_pTemplate->m_rRotation.range);
@@ -504,9 +505,9 @@ void ParticleSystem::UpdateParticle(ParticleReturn* pReturn, Particle* pPart, Ef
 
     float posY;
     float posZ;
-    float posX = (d * pPart->velDir.f.x) + pPart->position.f.x;
-    posZ = (d * pPart->velDir.f.z) + pPart->position.f.z;
-    posY = (d * pPart->velDir.f.y) + pPart->position.f.y;
+    float posX = (d * pPart->velDir.x) + pPart->position.x;
+    posZ = (d * pPart->velDir.z) + pPart->position.z;
+    posY = (d * pPart->velDir.y) + pPart->position.y;
     float rot = (pPart->dRot * pPart->timeElapsed) + pPart->rot;
 
     nlVector3 position;
@@ -517,13 +518,13 @@ void ParticleSystem::UpdateParticle(ParticleReturn* pReturn, Particle* pPart, Ef
         nlMultPosVectorMatrix(position, position, *pCoordSys);
     }
 
-    position.f.z = (pPart->mass * ((-9.81f * pPart->timeElapsed) * pPart->timeElapsed)) + position.f.z;
+    position.z = (pPart->mass * ((-9.81f * pPart->timeElapsed) * pPart->timeElapsed)) + position.z;
 
     if (pTemplate->m_uModelID != 0xFFFFFFFF)
     {
         pReturn->position[0] = position;
-        pReturn->position[1].f.x = size;
-        pReturn->position[1].f.y = rot;
+        pReturn->position[1].x = size;
+        pReturn->position[1].y = rot;
         return;
     }
 
@@ -547,33 +548,33 @@ void ParticleSystem::UpdateParticle(ParticleReturn* pReturn, Particle* pPart, Ef
 
     sn = sn * s2;
     cs = cs * s2;
-    float x0 = (cs * viewRight.f.x) + (sn * viewUp.f.x);
-    float y0 = (cs * viewRight.f.y) + (sn * viewUp.f.y);
-    float z0 = (cs * viewRight.f.z) + (sn * viewUp.f.z);
-    float x1 = ((-sn) * viewRight.f.x) + (cs * viewUp.f.x);
-    float y1 = ((-sn) * viewRight.f.y) + (cs * viewUp.f.y);
-    float z1 = ((-sn) * viewRight.f.z) + (cs * viewUp.f.z);
+    float x0 = (cs * viewRight.x) + (sn * viewUp.x);
+    float y0 = (cs * viewRight.y) + (sn * viewUp.y);
+    float z0 = (cs * viewRight.z) + (sn * viewUp.z);
+    float x1 = ((-sn) * viewRight.x) + (cs * viewUp.x);
+    float y1 = ((-sn) * viewRight.y) + (cs * viewUp.y);
+    float z1 = ((-sn) * viewRight.z) + (cs * viewUp.z);
 
-    pReturn->position[0].f.x = (position.f.x + x0) + x1;
-    pReturn->position[0].f.y = (position.f.y + y0) + y1;
-    pReturn->position[0].f.z = (position.f.z + z0) + z1;
+    pReturn->position[0].x = (position.x + x0) + x1;
+    pReturn->position[0].y = (position.y + y0) + y1;
+    pReturn->position[0].z = (position.z + z0) + z1;
 
-    pReturn->position[1].f.x = (position.f.x - x0) + x1;
-    pReturn->position[1].f.y = (position.f.y - y0) + y1;
-    pReturn->position[1].f.z = (position.f.z - z0) + z1;
+    pReturn->position[1].x = (position.x - x0) + x1;
+    pReturn->position[1].y = (position.y - y0) + y1;
+    pReturn->position[1].z = (position.z - z0) + z1;
 
-    pReturn->position[2].f.x = (position.f.x - x0) - x1;
-    pReturn->position[2].f.y = (position.f.y - y0) - y1;
-    pReturn->position[2].f.z = (position.f.z - z0) - z1;
+    pReturn->position[2].x = (position.x - x0) - x1;
+    pReturn->position[2].y = (position.y - y0) - y1;
+    pReturn->position[2].z = (position.z - z0) - z1;
 
-    pReturn->position[3].f.x = (position.f.x + x0) - x1;
-    pReturn->position[3].f.y = (position.f.y + y0) - y1;
-    pReturn->position[3].f.z = (position.f.z + z0) - z1;
+    pReturn->position[3].x = (position.x + x0) - x1;
+    pReturn->position[3].y = (position.y + y0) - y1;
+    pReturn->position[3].z = (position.z + z0) - z1;
 }
 
 static inline void RenderLightOnField(const EffectsLight& light)
 {
-    float heightFrac = 1.0f - (light.m_v3Position.f.z / light.m_fRadius);
+    float heightFrac = 1.0f - (light.m_v3Position.z / light.m_fRadius);
     if (!(heightFrac <= 0.0f))
     {
         if (heightFrac > 1.0f)
@@ -596,7 +597,7 @@ static inline void RenderLightOnField(const EffectsLight& light)
         for (int i = 0; i < 4; i++)
         {
             nlVec3Add(q.m_pos[i], q.m_pos[i], light.m_v3Position);
-            q.m_pos[i].f.z = 0.03125f;
+            q.m_pos[i].z = 0.03125f;
             q.m_colour[i].c[3] = (unsigned char)((int)q.m_colour[i].c[3] / 3);
         }
 
@@ -641,22 +642,22 @@ void ParticleSystem::RenderAllParticles(eGLView view)
     }
     else if (m_pTemplate->m_eBillboard == EfBill_Groundboard)
     {
-        viewRight.f.x = 1.0f;
-        viewRight.f.y = 0.0f;
-        viewRight.f.z = 0.0f;
-        viewUp.f.x = 0.0f;
-        viewUp.f.y = 1.0f;
-        viewUp.f.z = 0.0f;
+        viewRight.x = 1.0f;
+        viewRight.y = 0.0f;
+        viewRight.z = 0.0f;
+        viewUp.x = 0.0f;
+        viewUp.y = 1.0f;
+        viewUp.z = 0.0f;
     }
     else if (m_pTemplate->m_eBillboard == EfBill_SoftwareControlled)
     {
         nlMatrix4 rot;
-        viewUp.f.x = 0.0f;
-        viewUp.f.y = 0.0f;
-        viewUp.f.z = 1.0f;
-        viewRight.f.x = 1.0f;
-        viewRight.f.y = 0.0f;
-        viewRight.f.z = 0.0f;
+        viewUp.x = 0.0f;
+        viewUp.y = 0.0f;
+        viewUp.z = 1.0f;
+        viewRight.x = 1.0f;
+        viewRight.y = 0.0f;
+        viewRight.z = 0.0f;
         cullBackFaces = false;
         nlMakeRotationMatrixZ(rot, 0.0000958738f * (float)(unsigned short)(m_aFacing + 0x4000));
         nlMultDirVectorMatrix(viewRight, viewRight, rot);
@@ -710,14 +711,14 @@ void ParticleSystem::RenderAllParticles(eGLView view)
             float d = pPart->timeElapsed * (((0.5f * pPart->acceleration) * pPart->timeElapsed) + pPart->velocity);
             nlVector3 position;
             nlVec3Set(position,
-                (d * pPart->velDir.f.x) + pPart->position.f.x,
-                (d * pPart->velDir.f.y) + pPart->position.f.y,
-                (d * pPart->velDir.f.z) + pPart->position.f.z);
+                (d * pPart->velDir.x) + pPart->position.x,
+                (d * pPart->velDir.y) + pPart->position.y,
+                (d * pPart->velDir.z) + pPart->position.z);
             if (pCoord != nullptr)
             {
                 nlMultPosVectorMatrix(position, position, *pCoord);
             }
-            position.f.z += pPart->mass * ((-9.81f * pPart->timeElapsed) * pPart->timeElapsed);
+            position.z += pPart->mass * ((-9.81f * pPart->timeElapsed) * pPart->timeElapsed);
 
             light.m_v3Position = position;
             EmissionManager::AddEffectsLight(light);
@@ -762,8 +763,8 @@ void ParticleSystem::RenderAllParticles(eGLView view)
 
             UpdateParticle(&ret, pPart, m_pTemplate, viewRight, viewUp, pCoord);
 
-            float rotRad = 3.1415927f * ret.position[1].f.y / 180.0f;
-            float size = ret.position[1].f.x;
+            float rotRad = 3.1415927f * ret.position[1].y / 180.0f;
+            float size = ret.position[1].x;
             if (m_pTemplate->m_eBillboard == EfBill_Billboard)
             {
                 float facingRot = 0.0000958738f * (float)(unsigned short)(m_aFacing + 0x8000);
@@ -775,9 +776,9 @@ void ParticleSystem::RenderAllParticles(eGLView view)
             nlMultMatrices(mScale, mScale, mRot);
 
             nlMultMatrices(m, mCoord, mScale);
-            m.e[12] = ret.position[0].f.x;
-            m.e[13] = ret.position[0].f.y;
-            m.e[14] = ret.position[0].f.z;
+            m.e[12] = ret.position[0].x;
+            m.e[13] = ret.position[0].y;
+            m.e[14] = ret.position[0].z;
 
             void* pUserData = glUserAlloc(GLUD_ConstantColour, 4, false);
             if (pUserData != nullptr)

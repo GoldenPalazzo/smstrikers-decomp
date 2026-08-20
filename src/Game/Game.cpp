@@ -661,7 +661,7 @@ void cGame::CheckForGoal()
 
             if (m_pScorer != g_pBall->m_pLastTouch && g_pBall->m_pLastTouch->m_eClassType != GOALIE)
             {
-                float fDirection = g_pBall->m_pLastTouch->m_pTeam->m_pNet->m_v3NetLocation.f.x * g_pBall->m_v3Position.f.x;
+                float fDirection = g_pBall->m_pLastTouch->m_pTeam->m_pNet->m_v3NetLocation.x * g_pBall->m_v3Position.x;
                 if (fDirection >= 0.0f)
                 {
                     g_pBall->m_uGoalType = 5;
@@ -761,8 +761,8 @@ void cGame::BlowUpPowerups(const nlVector3& v3ExplosionPosition, float fExplosio
 {
     float posY, posZ;
     fExplosionRadius *= fExplosionRadius;
-    posZ = v3ExplosionPosition.f.z;
-    posY = v3ExplosionPosition.f.y;
+    posZ = v3ExplosionPosition.z;
+    posY = v3ExplosionPosition.y;
 
     for (int i = 0; i < 25; i++)
     {
@@ -770,9 +770,9 @@ void cGame::BlowUpPowerups(const nlVector3& v3ExplosionPosition, float fExplosio
         if (pPowerup != nullptr)
         {
             float dx, dy, dz;
-            dy = posY - pPowerup->m_v3Position.f.y;
-            dz = posZ - pPowerup->m_v3Position.f.z;
-            dx = v3ExplosionPosition.f.x - pPowerup->m_v3Position.f.x;
+            dy = posY - pPowerup->m_v3Position.y;
+            dz = posZ - pPowerup->m_v3Position.z;
+            dx = v3ExplosionPosition.x - pPowerup->m_v3Position.x;
 
             if (dx * dx + dy * dy + dz * dz < fExplosionRadius)
             {
@@ -795,15 +795,15 @@ void cGame::BlowUpPlayers(cFielder* pShooter, float fExplosionRadius)
                 float fMaxSqDistToShooter = fExplosionRadius;
                 fMaxSqDistToShooter *= fMaxSqDistToShooter;
                 if (nlGetLengthSquared2D(
-                        pFielder->m_v3Position.f.x - pShooter->m_v3Position.f.x,
-                        pFielder->m_v3Position.f.y - pShooter->m_v3Position.f.y)
+                        pFielder->m_v3Position.x - pShooter->m_v3Position.x,
+                        pFielder->m_v3Position.y - pShooter->m_v3Position.y)
                     < fMaxSqDistToShooter)
                 {
                     if (pFielder->InitActionHitReact(
                             pShooter,
                             (unsigned short)(10430.378f * nlATan2f(
-                                                         pFielder->m_v3Position.f.y - pShooter->m_v3Position.f.y,
-                                                         pFielder->m_v3Position.f.x - pShooter->m_v3Position.f.x)),
+                                                         pFielder->m_v3Position.y - pShooter->m_v3Position.y,
+                                                         pFielder->m_v3Position.x - pShooter->m_v3Position.x)),
                             false))
                     {
                         pFielder->PlayAttackReactionSounds(100.0f);

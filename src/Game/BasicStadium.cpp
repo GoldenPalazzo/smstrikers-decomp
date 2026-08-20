@@ -403,7 +403,7 @@ bool BasicStadium::DoInitialize()
     HelperObject* pFieldHelper = FindHelperObject(uFieldHelperHashID);
     if (pFieldHelper != NULL)
     {
-        cField::SetFieldDimensions(pFieldHelper->m_worldMatrix.f.m41, pFieldHelper->m_worldMatrix.f.m42, 0.0f);
+        cField::SetFieldDimensions(pFieldHelper->m_worldMatrix.m41, pFieldHelper->m_worldMatrix.m42, 0.0f);
     }
 
     // Stadium.ini Config
@@ -470,8 +470,8 @@ bool BasicStadium::DoInitialize()
     HelperObject* pPenBoxHelper = FindHelperObject(uPenaltyHelperHashID);
     if (pPenBoxHelper != NULL)
     {
-        float fy = pPenBoxHelper->m_worldMatrix.f.m42;
-        cField::mfPenaltyBoxX = pPenBoxHelper->m_worldMatrix.f.m41;
+        float fy = pPenBoxHelper->m_worldMatrix.m42;
+        cField::mfPenaltyBoxX = pPenBoxHelper->m_worldMatrix.m41;
         cField::mfPenaltyBoxY = fy;
     }
 
@@ -501,7 +501,7 @@ bool BasicStadium::DoInitialize()
         pHelper = iterator->m_Stack[iterator->m_NumStackEntries - 1]->value;
         if (nlStrNICmp<char>(pHelper->m_szName, flashString, nlStrLen<char>(flashString)) == 0)
         {
-            m_CameraFlashPositions[m_NumCameraFlashPositions] = *(nlVector3*)&pHelper->m_worldMatrix.f.m41;
+            m_CameraFlashPositions[m_NumCameraFlashPositions] = *(nlVector3*)&pHelper->m_worldMatrix.m41;
             m_NumCameraFlashPositions++;
         }
         iterator->Next();

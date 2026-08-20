@@ -129,7 +129,7 @@ bool FakeBallWorld::GetPredictedBallPosition(float fDeltaTime, nlVector3& v3Posi
                         pCur = pLast;
                     }
                 }
-                float distSq = nlGetLengthSquared3D(pCur->mv3Position.f.x - mpPredictWorld->mpBall->m_v3Position.f.x, pCur->mv3Position.f.y - mpPredictWorld->mpBall->m_v3Position.f.y, pCur->mv3Position.f.z - mpPredictWorld->mpBall->m_v3Position.f.z);
+                float distSq = nlGetLengthSquared3D(pCur->mv3Position.x - mpPredictWorld->mpBall->m_v3Position.x, pCur->mv3Position.y - mpPredictWorld->mpBall->m_v3Position.y, pCur->mv3Position.z - mpPredictWorld->mpBall->m_v3Position.z);
                 if (!(distSq > 0.0025f))
                 {
                     break;
@@ -230,19 +230,19 @@ float FakeBallWorld::GetPredictedPlaneIntersectTime(const nlVector4& v4Plane, nl
 {
     cBall* pBall = mpPredictWorld->mpBall;
 
-    float fDist = pBall->m_v3Position.f.x * v4Plane.f.x
-                + pBall->m_v3Position.f.y * v4Plane.f.y
-                + pBall->m_v3Position.f.z * v4Plane.f.z
-                - v4Plane.f.w;
+    float fDist = pBall->m_v3Position.x * v4Plane.x
+                + pBall->m_v3Position.y * v4Plane.y
+                + pBall->m_v3Position.z * v4Plane.z
+                - v4Plane.w;
 
     if (fDist < 0.0f)
     {
         return -1.0f;
     }
 
-    float fVelDot = pBall->m_v3Velocity.f.x * v4Plane.f.x
-                  + pBall->m_v3Velocity.f.y * v4Plane.f.y
-                  + pBall->m_v3Velocity.f.z * v4Plane.f.z;
+    float fVelDot = pBall->m_v3Velocity.x * v4Plane.x
+                  + pBall->m_v3Velocity.y * v4Plane.y
+                  + pBall->m_v3Velocity.z * v4Plane.z;
 
     if (fVelDot >= 0.0f)
     {
@@ -270,10 +270,10 @@ float FakeBallWorld::GetPredictedPlaneIntersectTime(const nlVector4& v4Plane, nl
         BallCacheInfo* pPrev;
         BallCacheInfo* pNext = pEntry->entry;
 
-        fDistanceNext = pNext->mv3Position.f.x * v4Plane.f.x
-                      + pNext->mv3Position.f.y * v4Plane.f.y
-                      + pNext->mv3Position.f.z * v4Plane.f.z
-                      - v4Plane.f.w;
+        fDistanceNext = pNext->mv3Position.x * v4Plane.x
+                      + pNext->mv3Position.y * v4Plane.y
+                      + pNext->mv3Position.z * v4Plane.z
+                      - v4Plane.w;
 
         while (!nlDLRingIsEnd(pHeadRef, pListEntry))
         {
@@ -290,10 +290,10 @@ float FakeBallWorld::GetPredictedPlaneIntersectTime(const nlVector4& v4Plane, nl
             pNext = pListEntry->entry;
             float fDistancePrev = fDistanceNext;
 
-            float fDistanceNew = pNext->mv3Position.f.x * v4Plane.f.x
-                               + pNext->mv3Position.f.y * v4Plane.f.y
-                               + pNext->mv3Position.f.z * v4Plane.f.z
-                               - v4Plane.f.w;
+            float fDistanceNew = pNext->mv3Position.x * v4Plane.x
+                               + pNext->mv3Position.y * v4Plane.y
+                               + pNext->mv3Position.z * v4Plane.z
+                               - v4Plane.w;
             fDistanceNext = fDistanceNew;
 
             if (fDistanceNew < 0.0f)
@@ -302,12 +302,12 @@ float FakeBallWorld::GetPredictedPlaneIntersectTime(const nlVector4& v4Plane, nl
                 float fTime = Interpolate(pPrev->mfTime, pNext->mfTime, fPercent) - fSimulationTime;
 
                 float fInvPercent = 1.0f - fPercent;
-                v3ContactPoint.f.x = fInvPercent * pPrev->mv3Position.f.x + fPercent * pNext->mv3Position.f.x;
-                v3ContactPoint.f.y = fInvPercent * pPrev->mv3Position.f.y + fPercent * pNext->mv3Position.f.y;
-                v3ContactPoint.f.z = fInvPercent * pPrev->mv3Position.f.z + fPercent * pNext->mv3Position.f.z;
-                v3ContactVelocity.f.x = fInvPercent * pPrev->mv3LinearVelocity.f.x + fPercent * pNext->mv3LinearVelocity.f.x;
-                v3ContactVelocity.f.y = fInvPercent * pPrev->mv3LinearVelocity.f.y + fPercent * pNext->mv3LinearVelocity.f.y;
-                v3ContactVelocity.f.z = fInvPercent * pPrev->mv3LinearVelocity.f.z + fPercent * pNext->mv3LinearVelocity.f.z;
+                v3ContactPoint.x = fInvPercent * pPrev->mv3Position.x + fPercent * pNext->mv3Position.x;
+                v3ContactPoint.y = fInvPercent * pPrev->mv3Position.y + fPercent * pNext->mv3Position.y;
+                v3ContactPoint.z = fInvPercent * pPrev->mv3Position.z + fPercent * pNext->mv3Position.z;
+                v3ContactVelocity.x = fInvPercent * pPrev->mv3LinearVelocity.x + fPercent * pNext->mv3LinearVelocity.x;
+                v3ContactVelocity.y = fInvPercent * pPrev->mv3LinearVelocity.y + fPercent * pNext->mv3LinearVelocity.y;
+                v3ContactVelocity.z = fInvPercent * pPrev->mv3LinearVelocity.z + fPercent * pNext->mv3LinearVelocity.z;
 
                 return fTime;
             }
@@ -324,10 +324,10 @@ float FakeBallWorld::GetPredictedPlaneIntersectTime(const nlVector4& v4Plane, nl
     DLListEntry<BallCacheInfo*>* pLastEntry = nlDLRingGetEnd(*ppHead);
     BallCacheInfo* pCurCache = pLastEntry->entry;
 
-    float fDistanceCur = pCurCache->mv3Position.f.x * v4Plane.f.x
-                       + pCurCache->mv3Position.f.y * v4Plane.f.y
-                       + pCurCache->mv3Position.f.z * v4Plane.f.z
-                       - v4Plane.f.w;
+    float fDistanceCur = pCurCache->mv3Position.x * v4Plane.x
+                       + pCurCache->mv3Position.y * v4Plane.y
+                       + pCurCache->mv3Position.z * v4Plane.z
+                       - v4Plane.w;
 
     fMaxTime = 6.0f + fSimulationTime;
 
@@ -343,10 +343,10 @@ float FakeBallWorld::GetPredictedPlaneIntersectTime(const nlVector4& v4Plane, nl
 
         pCurCache = pNewInfo;
 
-        float fDistanceNewCache = pNewInfo->mv3Position.f.x * v4Plane.f.x
-                                + pNewInfo->mv3Position.f.y * v4Plane.f.y
-                                + pNewInfo->mv3Position.f.z * v4Plane.f.z
-                                - v4Plane.f.w;
+        float fDistanceNewCache = pNewInfo->mv3Position.x * v4Plane.x
+                                + pNewInfo->mv3Position.y * v4Plane.y
+                                + pNewInfo->mv3Position.z * v4Plane.z
+                                - v4Plane.w;
         fDistanceCur = fDistanceNewCache;
 
         if (fDistanceNewCache < 0.0f)
@@ -355,12 +355,12 @@ float FakeBallWorld::GetPredictedPlaneIntersectTime(const nlVector4& v4Plane, nl
             float fTime = Interpolate(pLastCache->mfTime, pNewInfo->mfTime, fPercent) - fSimulationTime;
 
             float fInvPercent = 1.0f - fPercent;
-            v3ContactPoint.f.x = fInvPercent * pLastCache->mv3Position.f.x + fPercent * pNewInfo->mv3Position.f.x;
-            v3ContactPoint.f.y = fInvPercent * pLastCache->mv3Position.f.y + fPercent * pNewInfo->mv3Position.f.y;
-            v3ContactPoint.f.z = fInvPercent * pLastCache->mv3Position.f.z + fPercent * pNewInfo->mv3Position.f.z;
-            v3ContactVelocity.f.x = fInvPercent * pLastCache->mv3LinearVelocity.f.x + fPercent * pNewInfo->mv3LinearVelocity.f.x;
-            v3ContactVelocity.f.y = fInvPercent * pLastCache->mv3LinearVelocity.f.y + fPercent * pNewInfo->mv3LinearVelocity.f.y;
-            v3ContactVelocity.f.z = fInvPercent * pLastCache->mv3LinearVelocity.f.z + fPercent * pNewInfo->mv3LinearVelocity.f.z;
+            v3ContactPoint.x = fInvPercent * pLastCache->mv3Position.x + fPercent * pNewInfo->mv3Position.x;
+            v3ContactPoint.y = fInvPercent * pLastCache->mv3Position.y + fPercent * pNewInfo->mv3Position.y;
+            v3ContactPoint.z = fInvPercent * pLastCache->mv3Position.z + fPercent * pNewInfo->mv3Position.z;
+            v3ContactVelocity.x = fInvPercent * pLastCache->mv3LinearVelocity.x + fPercent * pNewInfo->mv3LinearVelocity.x;
+            v3ContactVelocity.y = fInvPercent * pLastCache->mv3LinearVelocity.y + fPercent * pNewInfo->mv3LinearVelocity.y;
+            v3ContactVelocity.z = fInvPercent * pLastCache->mv3LinearVelocity.z + fPercent * pNewInfo->mv3LinearVelocity.z;
 
             return fTime;
         }
@@ -385,9 +385,9 @@ float FakeBallWorld::GetPredictedHeightLimitTime(float fHeight, float fMinTime, 
 {
     cBall* pBall = mpPredictWorld->mpBall;
 
-    float speedSq = pBall->m_v3Velocity.f.x * pBall->m_v3Velocity.f.x
-                  + pBall->m_v3Velocity.f.y * pBall->m_v3Velocity.f.y
-                  + pBall->m_v3Velocity.f.z * pBall->m_v3Velocity.f.z;
+    float speedSq = pBall->m_v3Velocity.x * pBall->m_v3Velocity.x
+                  + pBall->m_v3Velocity.y * pBall->m_v3Velocity.y
+                  + pBall->m_v3Velocity.z * pBall->m_v3Velocity.z;
 
     if (speedSq < 0.0001f)
     {
@@ -397,9 +397,9 @@ float FakeBallWorld::GetPredictedHeightLimitTime(float fHeight, float fMinTime, 
     }
 
     bool freeball = GetPredictedBallPosition(fMinTime, v3ContactPoint, v3ContactVelocity);
-    if (v3ContactPoint.f.z <= fHeight)
+    if (v3ContactPoint.z <= fHeight)
     {
-        if (!bDownOnly || v3ContactVelocity.f.z <= 0.0f)
+        if (!bDownOnly || v3ContactVelocity.z <= 0.0f)
         {
             return fMinTime;
         }
@@ -426,8 +426,8 @@ float FakeBallWorld::GetPredictedHeightLimitTime(float fHeight, float fMinTime, 
 
         if (pCur->mfTime >= fTestTime)
         {
-            float zPos = pCur->mv3Position.f.z;
-            float zVel = pCur->mv3LinearVelocity.f.z;
+            float zPos = pCur->mv3Position.z;
+            float zVel = pCur->mv3LinearVelocity.z;
 
             if ((zPos <= fHeight && (!bDownOnly || zVel <= 0.0f)) || (fLastZVel < 0.0f && zVel > 0.0f))
             {
@@ -437,7 +437,7 @@ float FakeBallWorld::GetPredictedHeightLimitTime(float fHeight, float fMinTime, 
             }
         }
 
-        fLastZVel = pCur->mv3LinearVelocity.f.z;
+        fLastZVel = pCur->mv3LinearVelocity.z;
 
         if (nlDLRingIsEnd(pHeadRef, pListEntry) || pListEntry == NULL)
         {
@@ -458,8 +458,8 @@ float FakeBallWorld::GetPredictedHeightLimitTime(float fHeight, float fMinTime, 
 
         BallCacheInfo* pNewInfo = AddCacheEntry(mfLastCacheTime, (PhysicsBall*)mpPredictWorld->mpPhysicsBall);
 
-        float zPos = pNewInfo->mv3Position.f.z;
-        float zVel = pNewInfo->mv3LinearVelocity.f.z;
+        float zPos = pNewInfo->mv3Position.z;
+        float zVel = pNewInfo->mv3LinearVelocity.z;
 
         if ((zPos <= fHeight && (!bDownOnly || zVel <= 0.0f)) || (fLastZVel < 0.0f && zVel > 0.0f))
         {
@@ -481,9 +481,9 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
 {
     cBall* pBall = mpPredictWorld->GetBall();
 
-    float speedSq = pBall->m_v3Velocity.f.x * pBall->m_v3Velocity.f.x
-                  + pBall->m_v3Velocity.f.y * pBall->m_v3Velocity.f.y
-                  + pBall->m_v3Velocity.f.z * pBall->m_v3Velocity.f.z;
+    float speedSq = pBall->m_v3Velocity.x * pBall->m_v3Velocity.x
+                  + pBall->m_v3Velocity.y * pBall->m_v3Velocity.y
+                  + pBall->m_v3Velocity.z * pBall->m_v3Velocity.z;
 
     if (speedSq < 0.0001f)
     {
@@ -516,7 +516,7 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
         BallCacheInfo* pPrev;
         BallCacheInfo* pNext = pListEntry->entry;
 
-        float fDistanceNextSq = nlGetLengthSquared3D(pNext->mv3Position.f.x - pBall->m_v3Position.f.x, pNext->mv3Position.f.y - pBall->m_v3Position.f.y, pNext->mv3Position.f.z - pBall->m_v3Position.f.z);
+        float fDistanceNextSq = nlGetLengthSquared3D(pNext->mv3Position.x - pBall->m_v3Position.x, pNext->mv3Position.y - pBall->m_v3Position.y, pNext->mv3Position.z - pBall->m_v3Position.z);
 
         while (!nlDLRingIsEnd(pHeadRef, pListEntry))
         {
@@ -529,7 +529,7 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
             pNext = pListEntry->entry;
             float fDistancePrevSq = fDistanceNextSq;
 
-            fDistanceNextSq = nlGetLengthSquared3D(pNext->mv3Position.f.x - pBall->m_v3Position.f.x, pNext->mv3Position.f.y - pBall->m_v3Position.f.y, pNext->mv3Position.f.z - pBall->m_v3Position.f.z);
+            fDistanceNextSq = nlGetLengthSquared3D(pNext->mv3Position.x - pBall->m_v3Position.x, pNext->mv3Position.y - pBall->m_v3Position.y, pNext->mv3Position.z - pBall->m_v3Position.z);
 
             if (fDistanceNextSq > fDistanceTargetSq)
             {
@@ -539,12 +539,12 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
                 float fTime = Interpolate(pPrev->mfTime, pNext->mfTime, fPercent) - fSimulationTime;
 
                 float fInvPercent = 1.0f - fPercent;
-                v3Position.f.x = fInvPercent * pPrev->mv3Position.f.x + fPercent * pNext->mv3Position.f.x;
-                v3Position.f.y = fInvPercent * pPrev->mv3Position.f.y + fPercent * pNext->mv3Position.f.y;
-                v3Position.f.z = fInvPercent * pPrev->mv3Position.f.z + fPercent * pNext->mv3Position.f.z;
-                v3Velocity.f.x = fInvPercent * pPrev->mv3LinearVelocity.f.x + fPercent * pNext->mv3LinearVelocity.f.x;
-                v3Velocity.f.y = fInvPercent * pPrev->mv3LinearVelocity.f.y + fPercent * pNext->mv3LinearVelocity.f.y;
-                v3Velocity.f.z = fInvPercent * pPrev->mv3LinearVelocity.f.z + fPercent * pNext->mv3LinearVelocity.f.z;
+                v3Position.x = fInvPercent * pPrev->mv3Position.x + fPercent * pNext->mv3Position.x;
+                v3Position.y = fInvPercent * pPrev->mv3Position.y + fPercent * pNext->mv3Position.y;
+                v3Position.z = fInvPercent * pPrev->mv3Position.z + fPercent * pNext->mv3Position.z;
+                v3Velocity.x = fInvPercent * pPrev->mv3LinearVelocity.x + fPercent * pNext->mv3LinearVelocity.x;
+                v3Velocity.y = fInvPercent * pPrev->mv3LinearVelocity.y + fPercent * pNext->mv3LinearVelocity.y;
+                v3Velocity.z = fInvPercent * pPrev->mv3LinearVelocity.z + fPercent * pNext->mv3LinearVelocity.z;
 
                 return fTime;
             }
@@ -561,7 +561,7 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
     DLListEntry<BallCacheInfo*>* pLastEntry = nlDLRingGetEnd(*ppHead);
     BallCacheInfo* pCurCache = pLastEntry->entry;
 
-    float fDistanceCurSq = nlGetLengthSquared3D(pCurCache->mv3Position.f.x - pBall->m_v3Position.f.x, pCurCache->mv3Position.f.y - pBall->m_v3Position.f.y, pCurCache->mv3Position.f.z - pBall->m_v3Position.f.z);
+    float fDistanceCurSq = nlGetLengthSquared3D(pCurCache->mv3Position.x - pBall->m_v3Position.x, pCurCache->mv3Position.y - pBall->m_v3Position.y, pCurCache->mv3Position.z - pBall->m_v3Position.z);
 
     fMaxTime = 6.0f + fSimulationTime;
 
@@ -577,7 +577,7 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
 
         pCurCache = pNewInfo;
 
-        fDistanceCurSq = nlGetLengthSquared3D(pNewInfo->mv3Position.f.x - pBall->m_v3Position.f.x, pNewInfo->mv3Position.f.y - pBall->m_v3Position.f.y, pNewInfo->mv3Position.f.z - pBall->m_v3Position.f.z);
+        fDistanceCurSq = nlGetLengthSquared3D(pNewInfo->mv3Position.x - pBall->m_v3Position.x, pNewInfo->mv3Position.y - pBall->m_v3Position.y, pNewInfo->mv3Position.z - pBall->m_v3Position.z);
 
         if (fDistanceCurSq > fDistanceTargetSq)
         {
@@ -587,12 +587,12 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
             float fTime = Interpolate(pLastCache->mfTime, pNewInfo->mfTime, fPercent) - fSimulationTime;
 
             float fInvPercent = 1.0f - fPercent;
-            v3Position.f.x = fInvPercent * pLastCache->mv3Position.f.x + fPercent * pNewInfo->mv3Position.f.x;
-            v3Position.f.y = fInvPercent * pLastCache->mv3Position.f.y + fPercent * pNewInfo->mv3Position.f.y;
-            v3Position.f.z = fInvPercent * pLastCache->mv3Position.f.z + fPercent * pNewInfo->mv3Position.f.z;
-            v3Velocity.f.x = fInvPercent * pLastCache->mv3LinearVelocity.f.x + fPercent * pNewInfo->mv3LinearVelocity.f.x;
-            v3Velocity.f.y = fInvPercent * pLastCache->mv3LinearVelocity.f.y + fPercent * pNewInfo->mv3LinearVelocity.f.y;
-            v3Velocity.f.z = fInvPercent * pLastCache->mv3LinearVelocity.f.z + fPercent * pNewInfo->mv3LinearVelocity.f.z;
+            v3Position.x = fInvPercent * pLastCache->mv3Position.x + fPercent * pNewInfo->mv3Position.x;
+            v3Position.y = fInvPercent * pLastCache->mv3Position.y + fPercent * pNewInfo->mv3Position.y;
+            v3Position.z = fInvPercent * pLastCache->mv3Position.z + fPercent * pNewInfo->mv3Position.z;
+            v3Velocity.x = fInvPercent * pLastCache->mv3LinearVelocity.x + fPercent * pNewInfo->mv3LinearVelocity.x;
+            v3Velocity.y = fInvPercent * pLastCache->mv3LinearVelocity.y + fPercent * pNewInfo->mv3LinearVelocity.y;
+            v3Velocity.z = fInvPercent * pLastCache->mv3LinearVelocity.z + fPercent * pNewInfo->mv3LinearVelocity.z;
 
             return fTime;
         }
@@ -753,8 +753,8 @@ bool FakeBallWorld::FindBallIntercept(const nlVector3& v3PlayerPos, float fPlaye
 
         fPlayerDistanceFromStartingPoint += fPlayerDistPerTick;
 
-        float dx = v3NewBallPos.f.x - v3PlayerPos.f.x;
-        float dy = v3NewBallPos.f.y - v3PlayerPos.f.y;
+        float dx = v3NewBallPos.x - v3PlayerPos.x;
+        float dy = v3NewBallPos.y - v3PlayerPos.y;
         float dist = nlSqrt(dx * dx + dy * dy, true);
         float adjustedDist = fabsf(dist - fPlayerDistanceFromStartingPoint);
 
@@ -821,7 +821,7 @@ ContactType FakePhysicsBall::Contact(PhysicsObject* object, dContact* contact, i
 }
 
 PhysicsGoaliePlane::PhysicsGoaliePlane(const nlVector4& plane, FakeBallWorld& fakeBallWorld)
-    : PhysicsPlane(fakeBallWorld.mpCollisionSpace, plane.f.x, plane.f.y, plane.f.z, plane.f.w)
+    : PhysicsPlane(fakeBallWorld.mpCollisionSpace, plane.x, plane.y, plane.z, plane.w)
     , mWorld(fakeBallWorld)
 {
 }

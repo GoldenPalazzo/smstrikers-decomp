@@ -104,7 +104,7 @@ ContactType PhysicsCharacter::Contact(PhysicsObject* pOther, dContact* contacts,
         m_pPlayerPlayerColumn->GetRadius(&radius);
         float netWidth = cNet::m_fNetWidth;
         float half = 0.5f;
-        if (fabsf(pos.f.y) < netWidth * half - radius)
+        if (fabsf(pos.y) < netWidth * half - radius)
             return NO_CONTACT;
     }
     if (objectType == 0x19 || objectType == 0x5)
@@ -232,7 +232,7 @@ void PhysicsCharacter::PreCollide()
     m_HasCollidedWithBall = 0;
 
     nlVector3 force = { 0.f, 0.0f, 0.0f };
-    force.f.y = -sfBallStuckHackShoveMagnitude;
+    force.y = -sfBallStuckHackShoveMagnitude;
 
     if (sbDoDKBallStuckHack && m_nDKBallStuckHackCounter > 5)
     {
@@ -402,7 +402,7 @@ void PhysicsCharacter::PostUpdate()
                 cFielder* pFldr = (cFielder*)pCharacter;
                 nlVector3 v3PrevOwnerToBall;
                 nlVec3Sub(v3PrevOwnerToBall, pBall->m_v3Position, pBall->m_pPrevOwner->m_v3Position);
-                u16 angle = RadToAng16(nlATan2f(v3PrevOwnerToBall.f.y, v3PrevOwnerToBall.f.x));
+                u16 angle = RadToAng16(nlATan2f(v3PrevOwnerToBall.y, v3PrevOwnerToBall.x));
 
                 if (!pFldr->IsInvincible())
                 {
@@ -497,8 +497,8 @@ void PhysicsCharacter::PostUpdate()
                     nlVec3Scale(v3BallVel, pBall->GetVelocity(), 0.1f);
                 }
 
-                v3BallVel.f.z += 4.0f + nlRandomf(3.0f, &nlDefaultSeed);
-                v3BallVel.f.y += -4.0f + nlRandomf(8.0f, &nlDefaultSeed);
+                v3BallVel.z += 4.0f + nlRandomf(3.0f, &nlDefaultSeed);
+                v3BallVel.y += -4.0f + nlRandomf(8.0f, &nlDefaultSeed);
 
                 nlVector3 v3BallSpin;
                 pBall->m_pPhysicsBall->GetAngularVelocity(&v3BallSpin);
@@ -522,9 +522,9 @@ void PhysicsCharacter::PostUpdate()
  */
 void PhysicsCharacter::GetCharacterPositionXY(nlVector3* pos)
 {
-    float z = pos->f.z;
+    float z = pos->z;
     GetPosition(pos);
-    pos->f.z = z;
+    pos->z = z;
 }
 
 /**
@@ -533,9 +533,9 @@ void PhysicsCharacter::GetCharacterPositionXY(nlVector3* pos)
 void PhysicsCharacter::SetCharacterPositionXY(const nlVector3& pos)
 {
     nlVector3 v;
-    v.f.x = pos.f.x;
-    v.f.y = pos.f.y;
-    v.f.z = 0.0f;
+    v.x = pos.x;
+    v.y = pos.y;
+    v.z = 0.0f;
     SetCharacterPosition(v);
 }
 
@@ -544,9 +544,9 @@ void PhysicsCharacter::SetCharacterPositionXY(const nlVector3& pos)
  */
 void PhysicsCharacter::GetCharacterVelocityXY(nlVector3* vel)
 {
-    float z = vel->f.z;
+    float z = vel->z;
     GetLinearVelocity(vel);
-    vel->f.z = z;
+    vel->z = z;
 }
 
 /**
@@ -555,8 +555,8 @@ void PhysicsCharacter::GetCharacterVelocityXY(nlVector3* vel)
 void PhysicsCharacter::SetCharacterVelocityXY(const nlVector3& vel)
 {
     nlVector3 v;
-    v.f.x = vel.f.x;
-    v.f.y = vel.f.y;
-    v.f.z = 0.0f;
+    v.x = vel.x;
+    v.y = vel.y;
+    v.z = 0.0f;
     SetLinearVelocity(v);
 }

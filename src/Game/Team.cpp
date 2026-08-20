@@ -575,7 +575,7 @@ void cTeam::ResetCharacters()
     }
 
     unsigned char bFlipPositions = 0;
-    if (g_pTeams[m_nSide == 0 ? 1 : 0]->m_pNet->m_v3NetLocation.f.x < 0.0f)
+    if (g_pTeams[m_nSide == 0 ? 1 : 0]->m_pNet->m_v3NetLocation.x < 0.0f)
     {
         bFlipPositions = 1;
     }
@@ -591,7 +591,7 @@ void cTeam::ResetCharacters()
         {
             nlVector2 v2Position;
             pFormation->m_Positions[i].GetLocationForTeam(v2Position, pFielder->m_pTeam->m_nSide);
-            nlVec3Set(v3NewPosition, v2Position.f.x, v2Position.f.y, 0.0f);
+            nlVec3Set(v3NewPosition, v2Position.x, v2Position.y, 0.0f);
         }
         else
         {
@@ -606,7 +606,7 @@ void cTeam::ResetCharacters()
         else
         {
             aNewFacingDirection = aOriginalFacingDirection;
-            v3NewPosition.f.y = -v3NewPosition.f.y;
+            v3NewPosition.y = -v3NewPosition.y;
         }
 
         pFielder->SetPosition(v3NewPosition);
@@ -719,8 +719,8 @@ void cTeam::CalculateNewBallInterceptTimes()
 
         if (landingTime > 0.0f)
         {
-            float dx = v3PredictedLandingSpot.f.x - pPlayer->m_v3Position.f.x;
-            interceptTime = nlSqrt(nlGetLengthSquared2D(dx, v3PredictedLandingSpot.f.y - pPlayer->m_v3Position.f.y), true) / speed;
+            float dx = v3PredictedLandingSpot.x - pPlayer->m_v3Position.x;
+            interceptTime = nlSqrt(nlGetLengthSquared2D(dx, v3PredictedLandingSpot.y - pPlayer->m_v3Position.y), true) / speed;
         }
         else
         {
@@ -910,8 +910,8 @@ int MostOffensiveThreat(const void* a, const void* b)
 
     const nlVector3& offNetLocA = p1->GetAIOffNetLocation(NULL);
 
-    float dxA = offNetLocA.f.x - p1->m_v3Position.f.x;
-    float dyA = offNetLocA.f.y - p1->m_v3Position.f.y;
+    float dxA = offNetLocA.x - p1->m_v3Position.x;
+    float dyA = offNetLocA.y - p1->m_v3Position.y;
     float fP1TotalDistance = nlSqrt(dxA * dxA + dyA * dyA, true);
 
     if (p1->IsCaptain())
@@ -928,8 +928,8 @@ int MostOffensiveThreat(const void* a, const void* b)
 
     const nlVector3& offNetLocB = p2->GetAIOffNetLocation(NULL);
 
-    float dxB = offNetLocB.f.x - p2->m_v3Position.f.x;
-    float dyB = offNetLocB.f.y - p2->m_v3Position.f.y;
+    float dxB = offNetLocB.x - p2->m_v3Position.x;
+    float dyB = offNetLocB.y - p2->m_v3Position.y;
     float fP2TotalDistance = nlSqrt(dxB * dxB + dyB * dyB, true);
 
     if (p2->IsCaptain())
@@ -965,13 +965,13 @@ int MostDefensivePlayer(const void* a, const void* b)
     cPlayer* p2 = *(cPlayer**)b;
 
     const nlVector3& netLocA = p1->GetAIDefNetLocation(NULL);
-    float dxA = netLocA.f.x - p1->m_v3Position.f.x;
-    float dyA = netLocA.f.y - p1->m_v3Position.f.y;
+    float dxA = netLocA.x - p1->m_v3Position.x;
+    float dyA = netLocA.y - p1->m_v3Position.y;
     float distSqA = dxA * dxA + dyA * dyA;
 
     const nlVector3& netLocB = p2->GetAIDefNetLocation(NULL);
-    float dxB = netLocB.f.x - p2->m_v3Position.f.x;
-    float dyB = netLocB.f.y - p2->m_v3Position.f.y;
+    float dxB = netLocB.x - p2->m_v3Position.x;
+    float dyB = netLocB.y - p2->m_v3Position.y;
     float distSqB = dxB * dxB + dyB * dyB;
 
     if (distSqA == distSqB)
@@ -1028,8 +1028,8 @@ void cTeam::AssignMarks(bool bForceReMark)
                     fDownfieldMax = fInBetween;
                 }
 
-                float dx = pMyFielder->m_v3Position.f.x - pOppFielder->m_v3Position.f.x;
-                float dy = pMyFielder->m_v3Position.f.y - pOppFielder->m_v3Position.f.y;
+                float dx = pMyFielder->m_v3Position.x - pOppFielder->m_v3Position.x;
+                float dy = pMyFielder->m_v3Position.y - pOppFielder->m_v3Position.y;
                 float fDist = nlSqrt(dx * dx + dy * dy, true);
                 fDistanceScore = NormalizeVal(fDist, g_vMarkDistanceConfidence);
 
@@ -1189,7 +1189,7 @@ cFielder* cTeam::GetFrontMostFielder()
     for (int i_fielder = 0; i_fielder < 4; i_fielder++)
     {
         pFielder = (cFielder*)m_pPlayers[i_fielder];
-        if ((pFrontMostFielder == NULL) || (pFielder->m_v3AIPosition.f.x > pFrontMostFielder->m_v3AIPosition.f.x))
+        if ((pFrontMostFielder == NULL) || (pFielder->m_v3AIPosition.x > pFrontMostFielder->m_v3AIPosition.x))
         {
             pFrontMostFielder = pFielder;
         }
@@ -1209,7 +1209,7 @@ cFielder* cTeam::GetRearMostFielder()
     for (int i_fielder = 0; i_fielder < 4; i_fielder++)
     {
         pFielder = (cFielder*)m_pPlayers[i_fielder];
-        if ((pRearMostFielder == NULL) || (pFielder->m_v3AIPosition.f.x < pRearMostFielder->m_v3AIPosition.f.x))
+        if ((pRearMostFielder == NULL) || (pFielder->m_v3AIPosition.x < pRearMostFielder->m_v3AIPosition.x))
         {
             pRearMostFielder = pFielder;
         }

@@ -10,12 +10,12 @@ float SweepSpheres(float rp, const nlVector3& p1, const nlVector3& p2, float rq,
     const nlVector3& q1, const nlVector3& q2)
 {
     nlVector3 d, v;
-    d.f.x = p1.f.x - q1.f.x;
-    d.f.y = p1.f.y - q1.f.y;
-    d.f.z = p1.f.z - q1.f.z;
-    v.f.x = (p2.f.x - p1.f.x) - (q2.f.x - q1.f.x);
-    v.f.y = (p2.f.y - p1.f.y) - (q2.f.y - q1.f.y);
-    v.f.z = (p2.f.z - p1.f.z) - (q2.f.z - q1.f.z);
+    d.x = p1.x - q1.x;
+    d.y = p1.y - q1.y;
+    d.z = p1.z - q1.z;
+    v.x = (p2.x - p1.x) - (q2.x - q1.x);
+    v.y = (p2.y - p1.y) - (q2.y - q1.y);
+    v.z = (p2.z - p1.z) - (q2.z - q1.z);
 
     float dsq = d.GetLengthSq3D();
     float a = v.GetLengthSq3D();
@@ -25,7 +25,7 @@ float SweepSpheres(float rp, const nlVector3& p1, const nlVector3& p2, float rq,
         return CANT_COLLIDE;
     }
 
-    float dot = d.f.x * v.f.x + d.f.y * v.f.y + d.f.z * v.f.z;
+    float dot = d.x * v.x + d.y * v.y + d.z * v.z;
     float r = rp + rq;
     float rsq = r * r;
 

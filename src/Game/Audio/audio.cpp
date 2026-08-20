@@ -179,12 +179,12 @@ void SoundAttributes::Init()
     pos.pvPos = NULL;
     dir.pvDir = NULL;
 
-    pos.vPos.f.x = 0.0f;
-    pos.vPos.f.y = 0.0f;
-    pos.vPos.f.z = 0.0f;
-    dir.vDir.f.x = 0.0f;
-    dir.vDir.f.y = 0.0f;
-    dir.vDir.f.z = 0.0f;
+    pos.vPos.x = 0.0f;
+    pos.vPos.y = 0.0f;
+    pos.vPos.z = 0.0f;
+    dir.vDir.x = 0.0f;
+    dir.vDir.y = 0.0f;
+    dir.vDir.z = 0.0f;
 
     posUpdateMethod = NONE;
     ms_EventName = 0;
@@ -2681,15 +2681,15 @@ static inline void Update3DSFXListenerPos()
     if (::gbTestPrintout)
     {
         nlPrintf("Listener Pos: %0.2f,%0.2f,%0.2f Heading: %0.2f,%0.2f,%0.2f Up: %0.2f,%0.2f,%0.2f\n",
-            vCameraPos.f.x,
-            vCameraPos.f.y,
-            vCameraPos.f.z,
-            vHeading.f.x,
-            vHeading.f.y,
-            vHeading.f.z,
-            vUp.f.x,
-            vUp.f.y,
-            vUp.f.z);
+            vCameraPos.x,
+            vCameraPos.y,
+            vCameraPos.z,
+            vHeading.x,
+            vHeading.y,
+            vHeading.z,
+            vUp.x,
+            vUp.y,
+            vUp.z);
     }
 
     PlatAudio::Update3DSFXListener(&gListener, vCameraPos, vDir, vHeading, vUp, 1.0f);
@@ -2753,9 +2753,9 @@ void Update3DSFXEmitters()
                 {
                     nlPrintf("3D Sound Type: %d, Pos: %0.2f,%0.2f,%0.2f Heading: %0.2f,%0.2f,%0.2f Up: %0.2f,%0.2f,%0.2f\n",
                         emitter->soundType,
-                        emitter->pos.pvPos->f.x,
-                        emitter->pos.pvPos->f.y,
-                        emitter->pos.pvPos->f.z);
+                        emitter->pos.pvPos->x,
+                        emitter->pos.pvPos->y,
+                        emitter->pos.pvPos->z);
                 }
             }
             else if (emitter->posUpdateMethod == VECTORS)

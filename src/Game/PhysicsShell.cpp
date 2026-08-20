@@ -240,7 +240,7 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
         {
             for (int i = 0; i < numContacts; i++)
             {
-                if (info[i].geom.pos[2] <= myPos.f.z && info[i].geom.normal[2] > 0.9f)
+                if (info[i].geom.pos[2] <= myPos.z && info[i].geom.normal[2] > 0.9f)
                 {
                     if (!m_bIsSupportedByGround)
                     {
@@ -251,12 +251,12 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
                     {
                         nlVector3 v3IncidentVel;
                         GetLinearVelocity(&v3IncidentVel);
-                        if (v3IncidentVel.f.z < -1.0f)
+                        if (v3IncidentVel.z < -1.0f)
                         {
                             Event* event = g_pEventManager->CreateValidEvent(0x22, 0x2C);
                             CollisionPowerupGroundData* eventData = new (&event->m_data) CollisionPowerupGroundData();
                             GetPosition(&eventData->position);
-                            eventData->fVecZComponent = v3IncidentVel.f.z;
+                            eventData->fVecZComponent = v3IncidentVel.z;
                             eventData->eType = m_pPowerupObject->m_eType;
                         }
                     }
@@ -272,7 +272,7 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
         if (mbIsInNet)
         {
             float fNetWidth = cNet::m_fNetWidth;
-            double fAbsPowerupY = __fabs(v3PowerupPosition.f.y);
+            double fAbsPowerupY = __fabs(v3PowerupPosition.y);
             float fNetLimitY = 0.5f * fNetWidth - fPowerupRadius;
             if ((float)fAbsPowerupY > fNetLimitY)
             {
@@ -281,10 +281,10 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
             }
 
             float fMaxX;
-            if (v3PowerupPosition.f.x > 0.0f)
+            if (v3PowerupPosition.x > 0.0f)
             {
                 NetMesh* pMesh = NetMesh::spPositiveXNetMesh;
-                if (v3PowerupPosition.f.x > 0.0f)
+                if (v3PowerupPosition.x > 0.0f)
                 {
                     fMaxX = pMesh->mfMaxX;
                 }
@@ -296,7 +296,7 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
             else
             {
                 NetMesh* pMesh = NetMesh::spNegativeXNetMesh;
-                if (v3PowerupPosition.f.x > 0.0f)
+                if (v3PowerupPosition.x > 0.0f)
                 {
                     fMaxX = pMesh->mfMaxX;
                 }
@@ -306,13 +306,13 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
                 }
             }
 
-            if ((float)fabs(v3PowerupPosition.f.x) > (float)fabs(fMaxX) - 2.0f * fPowerupRadius)
+            if ((float)fabs(v3PowerupPosition.x) > (float)fabs(fMaxX) - 2.0f * fPowerupRadius)
             {
                 m_pPowerupObject->m_bShouldDestroy = true;
                 return NO_CONTACT;
             }
 
-            double fPowerupZ = v3PowerupPosition.f.z;
+            double fPowerupZ = v3PowerupPosition.z;
             float fNetHeight = cNet::m_fNetHeight;
             double fAbsPowerupZ = __fabs(fPowerupZ);
             float fNetLimit = fNetHeight - fPowerupRadius;
@@ -324,13 +324,13 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
         }
 
         float fNetWidth = cNet::m_fNetWidth;
-        double fAbsPowerupY = __fabs(v3PowerupPosition.f.y);
+        double fAbsPowerupY = __fabs(v3PowerupPosition.y);
         float fNetLimitY = 0.5f * fNetWidth - fPowerupRadius;
         if ((float)fAbsPowerupY < fNetLimitY)
         {
-            if ((float)fabs(v3PowerupPosition.f.x) > cField::GetGoalLineX(1u) - fPowerupRadius)
+            if ((float)fabs(v3PowerupPosition.x) > cField::GetGoalLineX(1u) - fPowerupRadius)
             {
-                double fPowerupZ = v3PowerupPosition.f.z;
+                double fPowerupZ = v3PowerupPosition.z;
                 float fNetHeight = cNet::m_fNetHeight;
                 double fAbsPowerupZ = __fabs(fPowerupZ);
                 float fNetLimit = fNetHeight - fPowerupRadius;
@@ -405,9 +405,9 @@ void PhysicsShell::PostUpdate()
     GetLinearVelocity(&velocity);
 
     nlVector3& pos = GetPosition();
-    if (pos.f.z > 20.0f && velocity.f.z > 0.0f)
+    if (pos.z > 20.0f && velocity.z > 0.0f)
     {
-        velocity.f.z *= 0.9f;
+        velocity.z *= 0.9f;
         SetLinearVelocity(velocity);
     }
 }

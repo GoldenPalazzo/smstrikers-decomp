@@ -37,11 +37,11 @@ void GLMeshWriter::Normal(const nlVector3& n)
     if (gl_stream_stride[GLStream_Normal] == 3)
     {
         s8* p = (s8*)(stream[GLStream_Normal].address + (currentIndex * 3));
-        const float len = nlRecipSqrt((n.f.x * n.f.x) + (n.f.y * n.f.y) + (n.f.z * n.f.z), false);
+        const float len = nlRecipSqrt((n.x * n.x) + (n.y * n.y) + (n.z * n.z), false);
 
-        float nx = len * n.f.x;
-        float ny = len * n.f.y;
-        float nz = len * n.f.z;
+        float nx = len * n.x;
+        float ny = len * n.y;
+        float nz = len * n.z;
 
         p[0] = (s8)(64.0f * nx);
         p[1] = (s8)(64.0f * ny);
@@ -63,8 +63,8 @@ void GLMeshWriter::Texcoord(const nlVector2& uv)
     unsigned long offset = (unsigned long)currentIndex << 2;
 
     short* p = (short*)((unsigned char*)base + offset);
-    p[0] = 1024.0f * uv.f.x;
-    p[1] = 1024.0f * uv.f.y;
+    p[0] = 1024.0f * uv.x;
+    p[1] = 1024.0f * uv.y;
 
     elementCount++;
 }

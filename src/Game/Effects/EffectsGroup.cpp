@@ -202,9 +202,9 @@ EffectsSpec::EffectsSpec()
     m_pTerrainSpec = nullptr;
     m_fLingerStart = -1.0f;
     m_fLingerEnd = -1.0f;
-    m_vLocalOffset.f.x = 0.0f;
-    m_vLocalOffset.f.y = 0.0f;
-    m_vLocalOffset.f.z = 0.0f;
+    m_vLocalOffset.x = 0.0f;
+    m_vLocalOffset.y = 0.0f;
+    m_vLocalOffset.z = 0.0f;
 }
 
 struct EffectsSpecShadow
@@ -238,9 +238,9 @@ bool parse_spec(SimpleParser* parser, EffectsSpec& spec)
     EffectsSpecShadow init;
     EffectsSpecShadow* initAlias = &init;
 
-    init.m_vLocalOffset.f.x = 0.0f;
-    init.m_vLocalOffset.f.y = 0.0f;
-    init.m_vLocalOffset.f.z = 0.0f;
+    init.m_vLocalOffset.x = 0.0f;
+    init.m_vLocalOffset.y = 0.0f;
+    init.m_vLocalOffset.z = 0.0f;
 
     spec.m_uHashID = 0;
     spec.m_pTemplate = nullptr;
@@ -410,19 +410,19 @@ bool parse_spec(SimpleParser* parser, EffectsSpec& spec)
 
         if (nlStrCmp<char>(token, "offsetx") == 0)
         {
-            spec.m_vLocalOffset.f.x = atof(parser->NextTokenOnLine(true));
+            spec.m_vLocalOffset.x = atof(parser->NextTokenOnLine(true));
             continue;
         }
 
         if (nlStrCmp<char>(token, "offsety") == 0)
         {
-            spec.m_vLocalOffset.f.y = atof(parser->NextTokenOnLine(true));
+            spec.m_vLocalOffset.y = atof(parser->NextTokenOnLine(true));
             continue;
         }
 
         if (nlStrCmp<char>(token, "offsetz") == 0)
         {
-            spec.m_vLocalOffset.f.z = atof(parser->NextTokenOnLine(true));
+            spec.m_vLocalOffset.z = atof(parser->NextTokenOnLine(true));
             continue;
         }
 
@@ -430,7 +430,7 @@ bool parse_spec(SimpleParser* parser, EffectsSpec& spec)
         {
             for (s32 i = 0; i < 3; i++)
             {
-                (&spec.m_vLocalOffset.f.x)[i] = atof(parser->NextTokenOnLine(true));
+                (&spec.m_vLocalOffset.x)[i] = atof(parser->NextTokenOnLine(true));
             }
             continue;
         }
@@ -524,9 +524,9 @@ static EffectsGroup* parse_group(SimpleParser* parser)
     spec.m_pTerrainSpec = nullptr;
     spec.m_fLingerStart = -1.0f;
     spec.m_fLingerEnd = -1.0f;
-    spec.m_vLocalOffset.f.x = 0.0f;
-    spec.m_vLocalOffset.f.y = 0.0f;
-    spec.m_vLocalOffset.f.z = 0.0f;
+    spec.m_vLocalOffset.x = 0.0f;
+    spec.m_vLocalOffset.y = 0.0f;
+    spec.m_vLocalOffset.z = 0.0f;
 
     pTerrainSpec = nullptr;
     userSpecs.m_Head = nullptr;

@@ -80,8 +80,8 @@ void DrawableNetMesh::RenderInvisiblePlanes() const
     nlVector2 netDimensions;
 
     goalLineX = cField::GetGoalLineX(1U);
-    netDimensions.f.x = cNet::m_fNetHeight;
-    netDimensions.f.y = cNet::m_fNetWidth;
+    netDimensions.x = cNet::m_fNetHeight;
+    netDimensions.y = cNet::m_fNetWidth;
 
     glSetDefaultState(true);
     glSetRasterState(GLS_DepthWrite, 1);
@@ -104,38 +104,38 @@ void DrawableNetMesh::RenderInvisiblePlanes() const
     glQuad3 quad;
 
     netPlaneX = goalLineX - 0.05f;
-    matrix.m[3][0] = netPlaneX;
-    matrix.m[3][1] = 0.0f;
-    matrix.m[3][2] = 0.5f * netDimensions.f.x;
-    matrix.m[3][3] = 1.0f;
-    quad.SetupRotatedRectangle(netDimensions.f.x, netDimensions.f.y, matrix, false, false);
+    matrix.e2[3][0] = netPlaneX;
+    matrix.e2[3][1] = 0.0f;
+    matrix.e2[3][2] = 0.5f * netDimensions.x;
+    matrix.e2[3][3] = 1.0f;
+    quad.SetupRotatedRectangle(netDimensions.x, netDimensions.y, matrix, false, false);
     quad.SetColour(c);
     glAttachQuad3(GLV_InvisiblePlane, 1, &quad, true);
 
     netPlaneX = 0.05f + goalLineX;
-    matrix.m[3][0] = netPlaneX;
-    matrix.m[3][1] = 0.0f;
-    matrix.m[3][2] = 0.5f * netDimensions.f.x;
-    matrix.m[3][3] = 1.0f;
-    quad.SetupRotatedRectangle(netDimensions.f.x, netDimensions.f.y, matrix, false, false);
+    matrix.e2[3][0] = netPlaneX;
+    matrix.e2[3][1] = 0.0f;
+    matrix.e2[3][2] = 0.5f * netDimensions.x;
+    matrix.e2[3][3] = 1.0f;
+    quad.SetupRotatedRectangle(netDimensions.x, netDimensions.y, matrix, false, false);
     quad.SetColour(c);
     glAttachQuad3(GLV_InvisiblePlane, 1, &quad, true);
 
     netPlaneX = -goalLineX - 0.05f;
-    matrix.m[3][0] = netPlaneX;
-    matrix.m[3][1] = 0.0f;
-    matrix.m[3][2] = 0.5f * netDimensions.f.x;
-    matrix.m[3][3] = 1.0f;
-    quad.SetupRotatedRectangle(netDimensions.f.x, netDimensions.f.y, matrix, false, false);
+    matrix.e2[3][0] = netPlaneX;
+    matrix.e2[3][1] = 0.0f;
+    matrix.e2[3][2] = 0.5f * netDimensions.x;
+    matrix.e2[3][3] = 1.0f;
+    quad.SetupRotatedRectangle(netDimensions.x, netDimensions.y, matrix, false, false);
     quad.SetColour(c);
     glAttachQuad3(GLV_InvisiblePlane, 1, &quad, true);
 
     netPlaneX = 0.05f - goalLineX;
-    matrix.m[3][0] = netPlaneX;
-    matrix.m[3][1] = 0.0f;
-    matrix.m[3][2] = 0.5f * netDimensions.f.x;
-    matrix.m[3][3] = 1.0f;
-    quad.SetupRotatedRectangle(netDimensions.f.x, netDimensions.f.y, matrix, false, false);
+    matrix.e2[3][0] = netPlaneX;
+    matrix.e2[3][1] = 0.0f;
+    matrix.e2[3][2] = 0.5f * netDimensions.x;
+    matrix.e2[3][3] = 1.0f;
+    quad.SetupRotatedRectangle(netDimensions.x, netDimensions.y, matrix, false, false);
     quad.SetColour(c);
     glAttachQuad3(GLV_InvisiblePlane, 1, &quad, true);
 
@@ -389,26 +389,26 @@ void DrawableNetMesh::Blend(float blendFactor, const DrawableNetMesh& lhs, const
     {
         pSrc = (nlVector3*)((char*)((const volatile DrawableNetMesh*)&lhs)->mpPosition + offset);
         pDst = (nlVector3*)((char*)((volatile DrawableNetMesh*)this)->mpPosition + offset);
-        float x = oneMinusBlend * pSrc->f.x;
-        float y = pSrc->f.y;
-        float z = pSrc->f.z;
+        float x = oneMinusBlend * pSrc->x;
+        float y = pSrc->y;
+        float z = pSrc->z;
         y = oneMinusBlend * y;
         z = oneMinusBlend * z;
-        pDst->f.x = x;
-        pDst->f.y = y;
-        pDst->f.z = z;
+        pDst->x = x;
+        pDst->y = y;
+        pDst->z = z;
     }
 
     for (int i = 0; i < mJolt; i++)
     {
         pDst = &((volatile DrawableNetMesh*)this)->mpPosition[i];
         pSrc = (nlVector3*)&((const volatile DrawableNetMesh*)&rhs)->mpPosition[i];
-        float x = pDst->f.x + blendFactor * pSrc->f.x;
-        float z = pDst->f.z + blendFactor * pSrc->f.z;
-        float y = pDst->f.y + blendFactor * pSrc->f.y;
-        pDst->f.x = x;
-        pDst->f.y = y;
-        pDst->f.z = z;
+        float x = pDst->x + blendFactor * pSrc->x;
+        float z = pDst->z + blendFactor * pSrc->z;
+        float y = pDst->y + blendFactor * pSrc->y;
+        pDst->x = x;
+        pDst->y = y;
+        pDst->z = z;
     }
 }
 

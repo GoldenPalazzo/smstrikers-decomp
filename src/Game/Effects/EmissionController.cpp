@@ -1,4 +1,5 @@
 #include "Game/Effects/EmissionController.h"
+#include "NL/vmath.h"
 #include "Game/Effects/ParticleSystem.h"
 #include "Game/Effects/EmissionManager.h"
 #include "Game/SAnim/pnSAnimController.h"
@@ -31,26 +32,26 @@ EmissionController::EmissionController(EffectsGroup* pEffectsGroup, unsigned sho
     m_Id = id;
     m_bPoseErrorDisplayed = false;
     m_pGroup = pEffectsGroup;
-    m_Mirror.f.x = 1.0f;
-    m_Mirror.f.y = 1.0f;
-    m_Mirror.f.z = 1.0f;
+    m_Mirror.x = 1.0f;
+    m_Mirror.y = 1.0f;
+    m_Mirror.z = 1.0f;
     m_uUserData = 0;
 
     InitializeSystemsFromGroup();
 
     m_fGround = 0.015625f;
     m_aFacing = 0;
-    m_vPosition.f.x = 0.0f;
-    m_vPosition.f.y = 0.0f;
-    m_vPosition.f.z = 0.0f;
+    m_vPosition.x = 0.0f;
+    m_vPosition.y = 0.0f;
+    m_vPosition.z = 0.0f;
 
-    m_vDirection.f.x = 0.0f;
-    m_vDirection.f.y = 0.0f;
-    m_vDirection.f.z = 1.0f;
+    m_vDirection.x = 0.0f;
+    m_vDirection.y = 0.0f;
+    m_vDirection.z = 1.0f;
 
-    m_vVelocity.f.x = 0.0f;
-    m_vVelocity.f.y = 0.0f;
-    m_vVelocity.f.z = 0.0f;
+    m_vVelocity.x = 0.0f;
+    m_vVelocity.y = 0.0f;
+    m_vVelocity.z = 0.0f;
     m_pPose = nullptr;
     m_pAnimController = nullptr;
     m_uJointIDOverride = 0;
@@ -109,15 +110,15 @@ void EmissionController::InitializeSystemsFromGroup()
 
     m_fGround = 0.015625f;
     m_aFacing = 0;
-    m_vPosition.f.x = 0.0f;
-    m_vPosition.f.y = 0.0f;
-    m_vPosition.f.z = 0.0f;
-    m_vDirection.f.x = 0.0f;
-    m_vDirection.f.y = 0.0f;
-    m_vDirection.f.z = 1.0f;
-    m_vVelocity.f.x = 0.0f;
-    m_vVelocity.f.y = 0.0f;
-    m_vVelocity.f.z = 0.0f;
+    m_vPosition.x = 0.0f;
+    m_vPosition.y = 0.0f;
+    m_vPosition.z = 0.0f;
+    m_vDirection.x = 0.0f;
+    m_vDirection.y = 0.0f;
+    m_vDirection.z = 1.0f;
+    m_vVelocity.x = 0.0f;
+    m_vVelocity.y = 0.0f;
+    m_vVelocity.z = 0.0f;
     m_pPose = NULL;
     m_pAnimController = NULL;
     m_pUserEffects = NULL;
@@ -291,9 +292,9 @@ static inline void ComputeAscendingJointPosition(nlVector3& out, const EmissionC
         const nlMatrix4& jointMat = pPose->GetNodeMatrix(jointIndex);
         const nlMatrix4& parentMat = pPose->GetNodeMatrix(parentIndex);
 
-        float dy = parentMat.m[3][1] - jointMat.m[3][1];
-        float dz = parentMat.m[3][2] - jointMat.m[3][2];
-        float dx = parentMat.m[3][0] - jointMat.m[3][0];
+        float dy = parentMat.e2[3][1] - jointMat.e2[3][1];
+        float dz = parentMat.e2[3][2] - jointMat.e2[3][2];
+        float dx = parentMat.e2[3][0] - jointMat.e2[3][0];
         float dist = nlSqrt(dx * dx + dy * dy + dz * dz, true);
 
         if (dist >= fsetDistance)
@@ -301,12 +302,12 @@ static inline void ComputeAscendingJointPosition(nlVector3& out, const EmissionC
             float invRatio;
             float ratio = fsetDistance / dist;
             invRatio = 1.0f - ratio;
-            float x = ratio * parentMat.m[3][0];
-            float y = ratio * parentMat.m[3][1];
-            float z = ratio * parentMat.m[3][2];
-            out.f.x = invRatio * jointMat.m[3][0] + x;
-            out.f.y = invRatio * jointMat.m[3][1] + y;
-            out.f.z = invRatio * jointMat.m[3][2] + z;
+            float x = ratio * parentMat.e2[3][0];
+            float y = ratio * parentMat.e2[3][1];
+            float z = ratio * parentMat.e2[3][2];
+            out.x = invRatio * jointMat.e2[3][0] + x;
+            out.y = invRatio * jointMat.e2[3][1] + y;
+            out.z = invRatio * jointMat.e2[3][2] + z;
             break;
         }
 
@@ -396,10 +397,10 @@ bool EmissionController::Update(float dt)
                 u32 jointID = m_uJointIDOverride;
                 float fJointVelocity;
                 float fAge = m_Age;
-                vel.f.x = 0.0f;
+                vel.x = 0.0f;
                 fJointVelocity = pSpec->m_fJointVelocity;
-                vel.f.y = 0.0f;
-                vel.f.z = 0.0f;
+                vel.y = 0.0f;
+                vel.z = 0.0f;
 
                 if (jointID == 0)
                 {
@@ -440,10 +441,10 @@ bool EmissionController::Update(float dt)
 
         if (pSpec->m_bGround)
         {
-            pos.f.z = m_fGround;
+            pos.z = m_fGround;
         }
 
-        pos.f.z += pSpec->m_fOffset;
+        pos.z += pSpec->m_fOffset;
 
         pSys->m_vPosition = pos;
         pSys->m_vVelocity = vel;

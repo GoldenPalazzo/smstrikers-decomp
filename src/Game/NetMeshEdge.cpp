@@ -29,9 +29,9 @@ void NetMeshModelLoader::NetMeshVertex::GetNormal(nlVector3& normal) const
     s8 normalY = (base + stride * mIndex)[1];
     s8 normalZ = (base + stride * mIndex)[2];
 
-    normal.f.x = (float)normalX * f;
-    normal.f.y = (float)normalY * f;
-    normal.f.z = (float)normalZ * f;
+    normal.x = (float)normalX * f;
+    normal.y = (float)normalY * f;
+    normal.z = (float)normalZ * f;
 }
 
 /**
@@ -51,6 +51,6 @@ void NetMeshModelLoader::NetMeshVertex::GetTextureCoord(nlVector2& txtCoord) con
 
     float f = 0.0009765625f;
 
-    txtCoord.f.x = (float)texCoordX * f;
-    txtCoord.f.y = (float)texCoordY * f;
+    txtCoord.x = (float)texCoordX * f;
+    txtCoord.y = (float)texCoordY * f;
 }

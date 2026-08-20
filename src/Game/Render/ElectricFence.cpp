@@ -174,15 +174,15 @@ static inline void RenderElectricFenceFlat(const nlVector3& position, const nlVe
     nlMatrix4 matrix;
     nlMakeRotationMatrixX(matrix, 1.5707964f);
 
-    float angle = nlATan2f(normal.f.y, normal.f.x);
+    float angle = nlATan2f(normal.y, normal.x);
     nlMatrix4 matrix2;
     nlMakeRotationMatrixZ(matrix2, 0.0000958738f * (float)(u16)(s32)(10430.378f * angle));
     nlMultMatrices(matrix, matrix, matrix2);
 
-    matrix.f.m41 = position.f.x;
-    matrix.f.m42 = position.f.y;
-    matrix.f.m43 = position.f.z;
-    matrix.f.m44 = 1.0f;
+    matrix.m41 = position.x;
+    matrix.m42 = position.y;
+    matrix.m43 = position.z;
+    matrix.m44 = 1.0f;
 
     glQuad3 quad;
     quad.SetupRotatedRectangle(sfGridTextureSize, sfGridTextureSize, matrix, false, false);
@@ -318,16 +318,16 @@ void EmitElectricFenceBallEffect(const nlVector3& pos, const nlVector3& dir, uns
     ((unsigned long*)&clampedPos)[2] = ((unsigned long*)&pos)[2];
 
     float goalLineX = cField::GetGoalLineX(1U);
-    float absPosX = (float)__fabs(clampedPos.f.x);
+    float absPosX = (float)__fabs(clampedPos.x);
     if ((float)__fabs(absPosX - goalLineX) < 0.2f)
     {
-        if (clampedPos.f.x > 0.0f)
+        if (clampedPos.x > 0.0f)
         {
-            clampedPos.f.x = goalLineX;
+            clampedPos.x = goalLineX;
         }
         else
         {
-            clampedPos.f.x = -goalLineX;
+            clampedPos.x = -goalLineX;
         }
     }
 
@@ -339,7 +339,7 @@ void EmitElectricFenceBallEffect(const nlVector3& pos, const nlVector3& dir, uns
         controller->m_uUserData = emitterID;
         controller->SetPosition(clampedPos);
 
-        float angle = nlATan2f(dir.f.y, dir.f.x);
+        float angle = nlATan2f(dir.y, dir.x);
         controller->m_aFacing = (u16)(10430.378f * angle);
 
         data = ElectricFenceData::sElectricFenceDataPool.Allocate();
@@ -365,7 +365,7 @@ void EmitElectricFenceCharacterEffect(const nlVector3& pos, const nlVector3& dir
         controller->m_uUserData = emitterID;
         controller->SetPosition(pos);
 
-        float angle = nlATan2f(dir.f.y, dir.f.x);
+        float angle = nlATan2f(dir.y, dir.x);
         controller->m_aFacing = (u16)(10430.378f * angle);
 
         ElectricFenceData* data = ElectricFenceData::sElectricFenceDataPool.Allocate();
@@ -424,8 +424,8 @@ static inline void CreateElectricFenceGeometry(ElectricFenceGeometry& prim, cons
     float startOffset = 0.5f * -sfGridTextureSize;
     float endOffset = 0.5f * sfGridTextureSize;
     float fDeltaSegmentOffset = (endOffset - startOffset) / 15.0f;
-    float z0 = impactPosition.f.z + startOffset;
-    float z1 = impactPosition.f.z + endOffset;
+    float z0 = impactPosition.z + startOffset;
+    float z1 = impactPosition.z + endOffset;
 
     for (int nSegment = 0; nSegment < 16;)
     {
@@ -433,22 +433,22 @@ static inline void CreateElectricFenceGeometry(ElectricFenceGeometry& prim, cons
         GetWallPoint(impactPosition, (((float)nSegment) * fDeltaSegmentOffset) + startOffset, 0.0f, wallPoint);
 
         int segment = nSegment;
-        float wallY = wallPoint.f.y;
-        float wallX = wallPoint.f.x;
+        float wallY = wallPoint.y;
+        float wallX = wallPoint.x;
 
-        pdst[0].f.x = wallX;
-        pdst[0].f.y = wallY;
-        pdst[0].f.z = z0;
-        tdst[0].f.x = (float)segment / 15.0f;
-        tdst[0].f.y = 0.0f;
+        pdst[0].x = wallX;
+        pdst[0].y = wallY;
+        pdst[0].z = z0;
+        tdst[0].x = (float)segment / 15.0f;
+        tdst[0].y = 0.0f;
 
-        float wY2 = wallPoint.f.y;
-        float wX2 = wallPoint.f.x;
-        pdst[1].f.x = wX2;
-        pdst[1].f.y = wY2;
-        pdst[1].f.z = z1;
-        tdst[1].f.x = (float)segment / 15.0f;
-        tdst[1].f.y = 1.0f;
+        float wY2 = wallPoint.y;
+        float wX2 = wallPoint.x;
+        pdst[1].x = wX2;
+        pdst[1].y = wY2;
+        pdst[1].z = z1;
+        tdst[1].x = (float)segment / 15.0f;
+        tdst[1].y = 1.0f;
         nSegment++;
 
         pdst += 2;
@@ -475,11 +475,11 @@ ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
 
     mPosition = pEmissionController->GetPosition();
 
-    f64 absY = __fabs(mPosition.f.y);
+    f64 absY = __fabs(mPosition.y);
     f64 diffY = __fabs((f32)absY - cField::GetSidelineY(1U));
     f32 distanceFromSideline = (f32)diffY;
 
-    f64 absX = __fabs(mPosition.f.x);
+    f64 absX = __fabs(mPosition.x);
     f64 diffX = __fabs((f32)absX - cField::GetGoalLineX(1U));
     f32 distanceFromGoal = (f32)diffX;
 
@@ -490,7 +490,7 @@ ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
 
         if (distanceFromGoal < distanceFromSideline)
         {
-            u8 isXPositive = mPosition.f.x > 0.0f;
+            u8 isXPositive = mPosition.x > 0.0f;
             if (isXPositive)
             {
                 f32 goalX;
@@ -498,30 +498,30 @@ ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
                     goalX = cField::GetGoalLineX(1U);
                 else
                     goalX = -cField::GetGoalLineX(1U);
-                mPosition.f.x = goalX;
+                mPosition.x = goalX;
             }
 
-            mNormal.f.x = 0.0f;
-            mNormal.f.y = 1.0f;
-            mNormal.f.z = 0.0f;
+            mNormal.x = 0.0f;
+            mNormal.y = 1.0f;
+            mNormal.z = 0.0f;
 
             float increment = sfGridTextureSize / sfNumGridSquares;
             u8 neg = false;
-            if (mPosition.f.y < 0.0f)
+            if (mPosition.y < 0.0f)
             {
-                mPosition.f.y = -mPosition.f.y;
+                mPosition.y = -mPosition.y;
                 neg = true;
             }
 
-            mPosition.f.y = (increment * (float)floor(mPosition.f.y / increment)) + sfAlignmentOffset1;
+            mPosition.y = (increment * (float)floor(mPosition.y / increment)) + sfAlignmentOffset1;
             if (neg)
-                mPosition.f.y = -mPosition.f.y;
+                mPosition.y = -mPosition.y;
 
-            mPosition.f.z = increment * (float)floor(mPosition.f.z / increment);
+            mPosition.z = increment * (float)floor(mPosition.z / increment);
         }
         else
         {
-            u8 isYPositive = mPosition.f.y > 0.0f;
+            u8 isYPositive = mPosition.y > 0.0f;
             if (isYPositive)
             {
                 f32 sideY;
@@ -529,16 +529,16 @@ ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
                     sideY = cField::GetSidelineY(1U);
                 else
                     sideY = -cField::GetSidelineY(1U);
-                mPosition.f.y = sideY;
+                mPosition.y = sideY;
             }
 
-            mNormal.f.x = 1.0f;
-            mNormal.f.y = 0.0f;
-            mNormal.f.z = 0.0f;
+            mNormal.x = 1.0f;
+            mNormal.y = 0.0f;
+            mNormal.z = 0.0f;
 
             float increment = sfGridTextureSize / sfNumGridSquares;
-            mPosition.f.x = increment * (float)floor(mPosition.f.x / increment);
-            mPosition.f.z = increment * (float)floor(mPosition.f.z / increment);
+            mPosition.x = increment * (float)floor(mPosition.x / increment);
+            mPosition.z = increment * (float)floor(mPosition.z / increment);
         }
     }
     else
@@ -546,7 +546,7 @@ ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
         mbIsFlat = false;
 
         float increment = sfGridTextureSize / sfNumGridSquares;
-        mPosition.f.z = increment * (float)floor(mPosition.f.z / increment);
+        mPosition.z = increment * (float)floor(mPosition.z / increment);
 
         ElectricFenceGeometry* geom = NULL;
 
@@ -567,9 +567,9 @@ ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
 
         cField::GetCornerRadius();
         cField::GetGoalLineX(1U);
-        AIsgn(impactPosition.f.x);
+        AIsgn(impactPosition.x);
         cField::GetSidelineY(1U);
-        AIsgn(impactPosition.f.y);
+        AIsgn(impactPosition.y);
 
         CreateElectricFenceGeometry(*activeGeom, impactPosition);
         return;
@@ -627,26 +627,26 @@ void UpdateElectricFence(float fDeltaT)
         nlVector3 pos = { 0.0f, 0.0f, 0.0f };
         nlVector3 normal;
         u16 sinArg = (u16)(s32)(10430.378f * (3.1415927f * (sfElectricFenceDisplayAngle + randomAngleOffset) / 180.0f));
-        pos.f.x = nlSin(sinArg);
+        pos.x = nlSin(sinArg);
         sinArg = (u16)(s32)(10430.378f * (3.1415927f * (sfElectricFenceDisplayAngle + randomAngleOffset) / 180.0f));
-        pos.f.y = nlSin((u16)(sinArg + 0x4000));
+        pos.y = nlSin((u16)(sinArg + 0x4000));
         float scale;
-        if (pos.f.x == 0.0f)
+        if (pos.x == 0.0f)
         {
             scale = sideLineY;
-            normal.f.x = 0.0f;
-            normal.f.y = 1.0f;
+            normal.x = 0.0f;
+            normal.y = 1.0f;
         }
-        else if ((float)pos.f.y == 0.0f)
+        else if ((float)pos.y == 0.0f)
         {
             scale = goalLineX;
-            normal.f.x = 1.0f;
-            normal.f.y = 0.0f;
+            normal.x = 1.0f;
+            normal.y = 0.0f;
         }
         else
         {
-            float goalLineScale = goalLineX / pos.f.x;
-            float sideLineScale = sideLineY / pos.f.y;
+            float goalLineScale = goalLineX / pos.x;
+            float sideLineScale = sideLineY / pos.y;
             if (goalLineScale < 0.0f)
                 goalLineScale = -goalLineScale;
             if (sideLineScale < 0.0f)
@@ -654,29 +654,29 @@ void UpdateElectricFence(float fDeltaT)
             if (goalLineScale < sideLineScale)
             {
                 scale = goalLineScale;
-                normal.f.x = 1.0f;
-                normal.f.y = 0.0f;
+                normal.x = 1.0f;
+                normal.y = 0.0f;
             }
             else
             {
                 scale = sideLineScale;
-                normal.f.x = 0.0f;
-                normal.f.y = 1.0f;
+                normal.x = 0.0f;
+                normal.y = 1.0f;
             }
         }
         nlVec3Scale(pos, pos, scale);
-        pos.f.z = nlRandomf(0.0f, 5.0f, &nlDefaultSeed);
+        pos.z = nlRandomf(0.0f, 5.0f, &nlDefaultSeed);
         if ((counter & 1) == 0)
         {
-            pos.f.x = -pos.f.x;
+            pos.x = -pos.x;
         }
         float netWidth = cNet::m_fNetWidth;
         float netHeight = cNet::m_fNetHeight;
-        if ((float)__fabs(pos.f.x - goalLineX) < 0.01)
+        if ((float)__fabs(pos.x - goalLineX) < 0.01)
         {
-            if ((float)__fabs(pos.f.y) < netWidth)
+            if ((float)__fabs(pos.y) < netWidth)
             {
-                pos.f.z = nlRandomf(netHeight, 5.0f, &nlDefaultSeed);
+                pos.z = nlRandomf(netHeight, 5.0f, &nlDefaultSeed);
             }
         }
         EmitElectricFenceBallEffect(pos, normal, counter++, !sbUseSparksDuringElectricFenceFlyBy);

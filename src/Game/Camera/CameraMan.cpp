@@ -1,4 +1,5 @@
 #include "Game/Camera/CameraMan.h"
+#include "NL/vmath.h"
 
 #include "NL/nlDLRing.h"
 #include "NL/nlConfig.h"
@@ -166,10 +167,10 @@ handle_ease_in:
         oneMinusT = 1.0f - smoothT;
 
         nlQuatToMatrix(m_matView, qSlerped);
-        m_matView.f.m41 = oneMinusT * v3TransFrom.f.x + smoothT * v3TransTo.f.x;
-        m_matView.f.m42 = oneMinusT * v3TransFrom.f.y + smoothT * v3TransTo.f.y;
-        m_matView.f.m43 = oneMinusT * v3TransFrom.f.z + smoothT * v3TransTo.f.z;
-        m_matView.f.m44 = 1.0f;
+        m_matView.m41 = oneMinusT * v3TransFrom.x + smoothT * v3TransTo.x;
+        m_matView.m42 = oneMinusT * v3TransFrom.y + smoothT * v3TransTo.y;
+        m_matView.m43 = oneMinusT * v3TransFrom.z + smoothT * v3TransTo.z;
+        m_matView.m44 = 1.0f;
 
         m_fFOV = Interpolate(m_fPrevFOV, pCamera->GetFOV(), smoothT);
         if (m_fFOV < 1.0f)
@@ -206,7 +207,7 @@ handle_none:
 }
 
 handle_end:
-    m_aJoystickRemap = (u16)(int)(nlATan2f(m_matView.f.m23, m_matView.f.m13) * 10430.378f);
+    m_aJoystickRemap = (u16)(int)(nlATan2f(m_matView.m23, m_matView.m13) * 10430.378f);
     m_aJoystickRemap += 0x8000;
 }
 
@@ -495,7 +496,7 @@ void cCameraManager::PushCameraWithTransition(cBaseCamera* pCamera, float fDurat
     {
         nlVector2 diff_pos;
         nlVec2Sub(diff_pos, cCameraManager::PeekCamera()->m_pFilter->v2Pos0, cCameraManager::PeekCamera()->m_pFilter->v2Pos1);
-        if (nlSqrt((diff_pos.f.x * diff_pos.f.x) + (diff_pos.f.y * diff_pos.f.y), 1) > 0.0f)
+        if (nlSqrt((diff_pos.x * diff_pos.x) + (diff_pos.y * diff_pos.y), 1) > 0.0f)
         {
             g_pEventManager->CreateValidEvent(0x58, 0x14);
         }
@@ -539,17 +540,17 @@ cBaseCamera* cCameraManager::PopCameraWithTransition(float fDuration, eCameraTra
 static void DrawBoundingSphere(const DrawableObject* drawable)
 {
     const nlMatrix4& worldMatrix = drawable->GetWorldMatrix();
-    nlVector3 centre = *(const nlVector3*)&worldMatrix.f.m41;
+    nlVector3 centre = *(const nlVector3*)&worldMatrix.m41;
     const nlColour yellow = { 0xFF, 0xFF, 0, 0 };
     const nlColour blue = { 0, 0, 0xFF, 0 };
 
     nlMatrix4 viewMatrix = cCameraManager::PeekCamera()->GetViewMatrix();
     nlVector4 xVector;
     nlVector4 yVector;
-    nlVec4Set(xVector, viewMatrix.f.m11, viewMatrix.f.m12, viewMatrix.f.m13, 0.0f);
-    nlVec4Set(yVector, viewMatrix.f.m21, viewMatrix.f.m22, viewMatrix.f.m23, 0.0f);
+    nlVec4Set(xVector, viewMatrix.m11, viewMatrix.m12, viewMatrix.m13, 0.0f);
+    nlVec4Set(yVector, viewMatrix.m21, viewMatrix.m22, viewMatrix.m23, 0.0f);
 
-    u16 startAngle = (u16)(s32)(10430.378f * nlATan2f(xVector.f.y, xVector.f.x));
+    u16 startAngle = (u16)(s32)(10430.378f * nlATan2f(xVector.y, xVector.x));
     nlVector3 lastPoint;
     nlVector3 firstPoint;
     int i;
@@ -557,11 +558,11 @@ static void DrawBoundingSphere(const DrawableObject* drawable)
     {
         nlVector3 p;
         nlVector3 v;
-        nlSinCos(&v.f.x, &v.f.y, (u16)(startAngle + (i << 12)));
-        v.f.z = 0.0f;
-        p.f.x = centre.f.x + drawable->m_fBoundingRadius * (xVector.f.x * v.f.x + yVector.f.x * v.f.y);
-        p.f.y = centre.f.y + drawable->m_fBoundingRadius * (xVector.f.y * v.f.x + yVector.f.y * v.f.y);
-        p.f.z = centre.f.z + drawable->m_fBoundingRadius * (xVector.f.z * v.f.x + yVector.f.z * v.f.y);
+        nlSinCos(&v.x, &v.y, (u16)(startAngle + (i << 12)));
+        v.z = 0.0f;
+        p.x = centre.x + drawable->m_fBoundingRadius * (xVector.x * v.x + yVector.x * v.y);
+        p.y = centre.y + drawable->m_fBoundingRadius * (xVector.y * v.x + yVector.y * v.y);
+        p.z = centre.z + drawable->m_fBoundingRadius * (xVector.z * v.x + yVector.z * v.y);
 
         if (i == 0)
         {
@@ -584,7 +585,7 @@ static void DrawBoundingSphere(const DrawableObject* drawable)
 unsigned char cCameraManager::IsObjectOccludingField(const DrawableObject* drawable)
 {
     const nlMatrix4& worldMatrix = drawable->GetWorldMatrix();
-    nlVector3 boundingSphereCentre = *(const nlVector3*)&worldMatrix.f.m41;
+    nlVector3 boundingSphereCentre = *(const nlVector3*)&worldMatrix.m41;
     const nlVector3& cameraPosition = m_cameraPosition;
 
     float objectRadius = drawable->m_fBoundingRadius;
@@ -593,16 +594,16 @@ unsigned char cCameraManager::IsObjectOccludingField(const DrawableObject* drawa
     goalLineXPlusNetDepth = goalLineXPlusNetDepth + netDepth;
     float sideLineY = cField::GetSidelineY(1U);
 
-    if ((cameraPosition.f.x > -goalLineXPlusNetDepth)
-        && (cameraPosition.f.x < goalLineXPlusNetDepth)
-        && (cameraPosition.f.y > -sideLineY)
-        && (cameraPosition.f.y < sideLineY))
+    if ((cameraPosition.x > -goalLineXPlusNetDepth)
+        && (cameraPosition.x < goalLineXPlusNetDepth)
+        && (cameraPosition.y > -sideLineY)
+        && (cameraPosition.y < sideLineY))
     {
         bool objectInBounds = false;
-        if ((boundingSphereCentre.f.x > -goalLineXPlusNetDepth)
-            && (boundingSphereCentre.f.x < goalLineXPlusNetDepth)
-            && (boundingSphereCentre.f.y > -sideLineY)
-            && (boundingSphereCentre.f.y < sideLineY))
+        if ((boundingSphereCentre.x > -goalLineXPlusNetDepth)
+            && (boundingSphereCentre.x < goalLineXPlusNetDepth)
+            && (boundingSphereCentre.y > -sideLineY)
+            && (boundingSphereCentre.y < sideLineY))
         {
             objectInBounds = true;
         }
@@ -613,35 +614,35 @@ unsigned char cCameraManager::IsObjectOccludingField(const DrawableObject* drawa
         }
     }
 
-    if ((cameraPosition.f.x < -goalLineXPlusNetDepth) && (boundingSphereCentre.f.x > goalLineXPlusNetDepth))
+    if ((cameraPosition.x < -goalLineXPlusNetDepth) && (boundingSphereCentre.x > goalLineXPlusNetDepth))
         return false;
-    if ((cameraPosition.f.x > goalLineXPlusNetDepth) && (boundingSphereCentre.f.x < -goalLineXPlusNetDepth))
+    if ((cameraPosition.x > goalLineXPlusNetDepth) && (boundingSphereCentre.x < -goalLineXPlusNetDepth))
         return false;
-    if ((cameraPosition.f.y < -sideLineY) && (boundingSphereCentre.f.y > sideLineY))
+    if ((cameraPosition.y < -sideLineY) && (boundingSphereCentre.y > sideLineY))
         return false;
-    if ((cameraPosition.f.y > sideLineY) && (boundingSphereCentre.f.y < -sideLineY))
+    if ((cameraPosition.y > sideLineY) && (boundingSphereCentre.y < -sideLineY))
         return false;
 
-    if ((boundingSphereCentre.f.z - objectRadius) < 0.0f)
+    if ((boundingSphereCentre.z - objectRadius) < 0.0f)
     {
-        boundingSphereCentre.f.z += objectRadius - boundingSphereCentre.f.z;
+        boundingSphereCentre.z += objectRadius - boundingSphereCentre.z;
     }
 
     nlVector3 fieldCorners[4];
     nlVector3 planeNormals[4];
 
-    fieldCorners[0].f.x = -goalLineXPlusNetDepth;
-    fieldCorners[0].f.y = -sideLineY;
-    fieldCorners[0].f.z = 0.0f;
-    fieldCorners[1].f.x = -goalLineXPlusNetDepth;
-    fieldCorners[1].f.y = sideLineY;
-    fieldCorners[1].f.z = 0.0f;
-    fieldCorners[2].f.x = goalLineXPlusNetDepth;
-    fieldCorners[2].f.y = sideLineY;
-    fieldCorners[2].f.z = 0.0f;
-    fieldCorners[3].f.x = goalLineXPlusNetDepth;
-    fieldCorners[3].f.y = -sideLineY;
-    fieldCorners[3].f.z = 0.0f;
+    fieldCorners[0].x = -goalLineXPlusNetDepth;
+    fieldCorners[0].y = -sideLineY;
+    fieldCorners[0].z = 0.0f;
+    fieldCorners[1].x = -goalLineXPlusNetDepth;
+    fieldCorners[1].y = sideLineY;
+    fieldCorners[1].z = 0.0f;
+    fieldCorners[2].x = goalLineXPlusNetDepth;
+    fieldCorners[2].y = sideLineY;
+    fieldCorners[2].z = 0.0f;
+    fieldCorners[3].x = goalLineXPlusNetDepth;
+    fieldCorners[3].y = -sideLineY;
+    fieldCorners[3].z = 0.0f;
 
     int i;
     for (i = 0; i < 4; i++)
@@ -675,11 +676,11 @@ float cCameraManager::GetDistanceFromCameraToObject(const nlVector3& objectPosit
 {
     nlVector3 diff;
     nlVec3Set(diff,
-        objectPosition.f.x - cCameraManager::m_cameraPosition.f.x,
-        objectPosition.f.y - cCameraManager::m_cameraPosition.f.y,
-        objectPosition.f.z - cCameraManager::m_cameraPosition.f.z);
+        objectPosition.x - cCameraManager::m_cameraPosition.x,
+        objectPosition.y - cCameraManager::m_cameraPosition.y,
+        objectPosition.z - cCameraManager::m_cameraPosition.z);
 
-    return nlSqrt(((diff.f.x) * (diff.f.x)) + ((diff.f.y) * (diff.f.y)) + ((diff.f.z) * (diff.f.z)), 1);
+    return nlSqrt(((diff.x) * (diff.x)) + ((diff.y) * (diff.y)) + ((diff.z) * (diff.z)), 1);
 }
 
 /**
@@ -688,9 +689,9 @@ float cCameraManager::GetDistanceFromCameraToObject(const nlVector3& objectPosit
 void cCameraManager::GetViewVector(nlVector3& viewVector)
 {
     nlVec3Set(viewVector,
-        -cCameraManager::m_matView.f.m13,
-        -cCameraManager::m_matView.f.m23,
-        -cCameraManager::m_matView.f.m33);
+        -cCameraManager::m_matView.m13,
+        -cCameraManager::m_matView.m23,
+        -cCameraManager::m_matView.m33);
 }
 
 /**
@@ -699,9 +700,9 @@ void cCameraManager::GetViewVector(nlVector3& viewVector)
 void cCameraManager::GetUpVector(nlVector3& upVector)
 {
     nlVec3Set(upVector,
-        cCameraManager::m_matView.f.m12,
-        cCameraManager::m_matView.f.m22,
-        cCameraManager::m_matView.f.m32);
+        cCameraManager::m_matView.m12,
+        cCameraManager::m_matView.m22,
+        cCameraManager::m_matView.m32);
 }
 
 /**
@@ -716,18 +717,18 @@ void cCameraManager::SetWorldUpVectorTilt(float fXAxisTilt, float fYAxisTilt)
 
     nlVector3* const pUp = &m_UpVectorStack[0];
 
-    pUp->f.x = 0.0f;
-    pUp->f.y = fSin;
-    pUp->f.z = fCos;
+    pUp->x = 0.0f;
+    pUp->y = fSin;
+    pUp->z = fCos;
 
     nlSinCos(&fSin, &fCos, ((s32)(65536.0f * fYAxisTilt)) / 360);
 
-    pUp->f.x = fSin;
-    pUp->f.z = pUp->f.z * fCos;
+    pUp->x = fSin;
+    pUp->z = pUp->z * fCos;
 
-    float xx = pUp->f.x * pUp->f.x;
-    float yy = pUp->f.y * pUp->f.y;
-    float zz = pUp->f.z * pUp->f.z;
+    float xx = pUp->x * pUp->x;
+    float yy = pUp->y * pUp->y;
+    float zz = pUp->z * pUp->z;
     float temp_f1 = nlRecipSqrt(xx + yy + zz, true);
     nlVec3Scale(*pUp, temp_f1);
 }
@@ -740,8 +741,8 @@ void cCameraManager::StopCurrentCamRumbleFilterSFXLoop()
         {
             cRumbleFilter* pFilter1 = nlDLRingGetStart<cBaseCamera>(m_cameraStack)->m_pFilter;
             cRumbleFilter* pFilter2 = nlDLRingGetStart<cBaseCamera>(m_cameraStack)->m_pFilter;
-            float dy = pFilter2->v2Pos0.f.y - pFilter1->v2Pos1.f.y;
-            float dx = pFilter2->v2Pos0.f.x - pFilter1->v2Pos1.f.x;
+            float dy = pFilter2->v2Pos0.y - pFilter1->v2Pos1.y;
+            float dx = pFilter2->v2Pos0.x - pFilter1->v2Pos1.x;
             if (nlSqrt(dx * dx + dy * dy, true) > 0.0f)
             {
                 g_pEventManager->CreateValidEvent(0x58, 0x14);

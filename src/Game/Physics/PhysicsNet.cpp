@@ -208,11 +208,11 @@ PhysicsNet::PhysicsNet(CollisionSpace* space, bool positive_x)
         nlVec3Set(postPosition, (positive_x) ? goalLineX : -goalLineX, 0.5f * temp_f30, 0.5f * temp_f31);
         mpSideGoalPost1->SetPosition(postPosition, (PhysicsObject::CoordinateType)0);
 
-        postPosition.f.y = -0.5f * temp_f30;
+        postPosition.y = -0.5f * temp_f30;
         mpSideGoalPost2->SetPosition(postPosition, (PhysicsObject::CoordinateType)0);
 
-        postPosition.f.y = 0.0f;
-        postPosition.f.z = temp_f31;
+        postPosition.y = 0.0f;
+        postPosition.z = temp_f31;
         mpTopGoalPost->SetPosition(postPosition, (PhysicsObject::CoordinateType)0);
 
         nlMakeRotationMatrixX(rotation, 1.5707964f);
@@ -303,15 +303,15 @@ bool PhysicsNet::SweepTestForBallContact(const nlVector3& startPos, const nlVect
     mpNet->GetPostLocation(leftPostPos, 0, 0.0f);
     mpNet->GetPostLocation(rightPostPos, 1, 0.0f);
 
-    if ((float)fabs(endPos.f.x) < ((float)fabs(leftPostPos.f.x) - (netPostRadius + ballRadius)))
+    if ((float)fabs(endPos.x) < ((float)fabs(leftPostPos.x) - (netPostRadius + ballRadius)))
     {
         return false;
     }
 
     goalPost0Location = leftPostPos;
-    goalPost0Location.f.z = startPos.f.z;
+    goalPost0Location.z = startPos.z;
     goalPost1Location = leftPostPos;
-    goalPost1Location.f.z = endPos.f.z;
+    goalPost1Location.z = endPos.z;
 
     float sweepResult = SweepSpheres(ballRadius, startPos, endPos, netPostRadius, goalPost0Location, goalPost1Location);
     if (sweepResult >= 0.0f && sweepResult <= 1.0f)
@@ -322,9 +322,9 @@ bool PhysicsNet::SweepTestForBallContact(const nlVector3& startPos, const nlVect
     if ((sweepResult < 0.0f) || (sweepResult > 1.0f))
     {
         goalPost0Location = rightPostPos;
-        goalPost0Location.f.z = startPos.f.z;
+        goalPost0Location.z = startPos.z;
         goalPost1Location = rightPostPos;
-        goalPost1Location.f.z = endPos.f.z;
+        goalPost1Location.z = endPos.z;
 
         sweepResult = SweepSpheres(ballRadius, startPos, endPos, netPostRadius, goalPost0Location, goalPost1Location);
         if (sweepResult >= 0.0f && sweepResult <= 1.0f)
@@ -340,11 +340,11 @@ bool PhysicsNet::SweepTestForBallContact(const nlVector3& startPos, const nlVect
     }
 
     goalPost0Location = rightPostPos;
-    goalPost0Location.f.y = startPos.f.y;
-    goalPost0Location.f.z = horizontalPostHeight;
+    goalPost0Location.y = startPos.y;
+    goalPost0Location.z = horizontalPostHeight;
     goalPost1Location = rightPostPos;
-    goalPost1Location.f.y = endPos.f.y;
-    goalPost1Location.f.z = horizontalPostHeight;
+    goalPost1Location.y = endPos.y;
+    goalPost1Location.z = horizontalPostHeight;
 
     float sweepResult3 = SweepSpheres(ballRadius, startPos, endPos, netPostRadius, goalPost0Location, goalPost1Location);
     if (sweepResult3 >= 0.0f && sweepResult3 <= 1.0f)
@@ -383,28 +383,28 @@ bool PhysicsNet::SweepTestForBallContact(const nlVector3& startPos, const nlVect
         if (hitLeftVerticalGoalpost != 0)
         {
             goalPost0Location = leftPostPos;
-            goalPost0Location.f.z = startPos.f.z;
+            goalPost0Location.z = startPos.z;
 
             goalPost1Location = leftPostPos;
-            goalPost1Location.f.z = endPos.f.z;
+            goalPost1Location.z = endPos.z;
         }
         else if (hitRightVerticalGoalpost != 0)
         {
             goalPost0Location = rightPostPos;
-            goalPost0Location.f.z = startPos.f.z;
+            goalPost0Location.z = startPos.z;
 
             goalPost1Location = rightPostPos;
-            goalPost1Location.f.z = endPos.f.z;
+            goalPost1Location.z = endPos.z;
         }
         else if (hitHorizontalGoalpost != 0)
         {
             goalPost0Location = rightPostPos;
-            goalPost0Location.f.y = startPos.f.y;
-            goalPost0Location.f.z = cNet::m_fNetHeight;
+            goalPost0Location.y = startPos.y;
+            goalPost0Location.z = cNet::m_fNetHeight;
 
             goalPost1Location = rightPostPos;
-            goalPost1Location.f.y = endPos.f.y;
-            goalPost1Location.f.z = cNet::m_fNetHeight;
+            goalPost1Location.y = endPos.y;
+            goalPost1Location.z = cNet::m_fNetHeight;
         }
 
         nlVec3Sub(goalPostSpherePos0, endPos, startPos);
@@ -412,19 +412,19 @@ bool PhysicsNet::SweepTestForBallContact(const nlVector3& startPos, const nlVect
 
         if (hitHorizontalGoalpost != 0)
         {
-            goalPost0Location.f.y = contactPos.f.y;
+            goalPost0Location.y = contactPos.y;
         }
         else
         {
-            goalPost0Location.f.z = contactPos.f.z;
+            goalPost0Location.z = contactPos.z;
         }
 
-        nlVec3Set(contactNormal, contactPos.f.x - goalPost0Location.f.x, contactPos.f.y - goalPost0Location.f.y, contactPos.f.z - goalPost0Location.f.z);
+        nlVec3Set(contactNormal, contactPos.x - goalPost0Location.x, contactPos.y - goalPost0Location.y, contactPos.z - goalPost0Location.z);
 
-        float normalLength = nlRecipSqrt(contactNormal.f.x * contactNormal.f.x + contactNormal.f.y * contactNormal.f.y + contactNormal.f.z * contactNormal.f.z, true);
+        float normalLength = nlRecipSqrt(contactNormal.x * contactNormal.x + contactNormal.y * contactNormal.y + contactNormal.z * contactNormal.z, true);
 
         nlVec3Scale(contactNormal, normalLength);
-        if (nlGetLengthSquared3D(contactPos.f.x - goalPost0Location.f.x, contactPos.f.y - goalPost0Location.f.y, contactPos.f.z - goalPost0Location.f.z) < ((ballRadius + netPostRadius) * (ballRadius + netPostRadius)))
+        if (nlGetLengthSquared3D(contactPos.x - goalPost0Location.x, contactPos.y - goalPost0Location.y, contactPos.z - goalPost0Location.z) < ((ballRadius + netPostRadius) * (ballRadius + netPostRadius)))
         {
             nlVec3ScaleAdd(contactPos, ballRadius + netPostRadius, contactNormal, goalPost0Location);
         }
@@ -435,7 +435,7 @@ bool PhysicsNet::SweepTestForBallContact(const nlVector3& startPos, const nlVect
 
         nlVector3 ballLinearVelocity = g_pBall->m_pPhysicsBall->GetLinearVelocity();
 
-        float velocitySquared = ballLinearVelocity.f.x * ballLinearVelocity.f.x + ballLinearVelocity.f.y * ballLinearVelocity.f.y + ballLinearVelocity.f.z * ballLinearVelocity.f.z;
+        float velocitySquared = ballLinearVelocity.x * ballLinearVelocity.x + ballLinearVelocity.y * ballLinearVelocity.y + ballLinearVelocity.z * ballLinearVelocity.z;
 
         if (velocitySquared > 25.0f)
         {
@@ -444,7 +444,7 @@ bool PhysicsNet::SweepTestForBallContact(const nlVector3& startPos, const nlVect
 
             pEventData->v3CollisionVelocity = ballLinearVelocity;
             pEventData->v3CollisionPosition = contactPos;
-            pEventData->uTeamIndex = (g_pBall->m_v3Position.f.x < 0.0f) ? 0 : 1;
+            pEventData->uTeamIndex = (g_pBall->m_v3Position.x < 0.0f) ? 0 : 1;
         }
         return true;
     }

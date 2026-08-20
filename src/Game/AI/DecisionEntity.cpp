@@ -298,8 +298,8 @@ ScriptAction* cDecisionEntity::FindDesireAction(int eDesireType, FuzzyVariant pa
     signed short fvShort = fvRef.mData.s;
     int fvInt = fvRef.mData.i;
     float fvFloat = fvRef.mData.f;
-    float fvVecY = fvRef.mData.vector.f.y;
-    float fvVecZ = fvRef.mData.vector.f.z;
+    float fvVecY = fvRef.mData.vector.y;
+    float fvVecZ = fvRef.mData.vector.z;
 
     while (pAction != NULL)
     {

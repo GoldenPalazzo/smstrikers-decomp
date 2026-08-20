@@ -24,8 +24,8 @@ cRumbleFilter::cRumbleFilter()
 void cRumbleFilter::Filter(const nlMatrix4& matViewIn, nlMatrix4& matViewOut)
 {
     matViewOut = matViewIn;
-    matViewOut.f.m41 += v2Pos1.f.x;
-    matViewOut.f.m42 += v2Pos1.f.y;
+    matViewOut.m41 += v2Pos1.x;
+    matViewOut.m42 += v2Pos1.y;
 }
 
 /**
@@ -69,15 +69,15 @@ void cRumbleFilter::Update(float dt)
 
     float step = dt <= 0.02f ? dt : 0.02f;
 
-    dy = v2Pos0.f.y - v2Pos1.f.y;
-    dx = v2Pos0.f.x - v2Pos1.f.x;
+    dy = v2Pos0.y - v2Pos1.y;
+    dx = v2Pos0.x - v2Pos1.x;
     const float len = nlSqrt(dx * dx + dy * dy, true);
     fHTerm = len * Ks;
 
     nlVector2 _dv;
-    _dv.f.y = v2Vel0.f.y - v2Vel1.f.y;
-    _dv.f.x = v2Vel0.f.x - v2Vel1.f.x;
-    float proj = (_dv.f.x * dx) + (_dv.f.y * dy);
+    _dv.y = v2Vel0.y - v2Vel1.y;
+    _dv.x = v2Vel0.x - v2Vel1.x;
+    float proj = (_dv.x * dx) + (_dv.y * dy);
     if (len == 0.0f)
     {
         fDTerm = 0.0f;
@@ -90,8 +90,8 @@ void cRumbleFilter::Update(float dt)
     nlVector2 unit;
     if (len == 0.f)
     {
-        unit.f.x = 0.0f;
-        unit.f.y = 0.0f;
+        unit.x = 0.0f;
+        unit.y = 0.0f;
     }
     else
     {
@@ -111,35 +111,35 @@ void cRumbleFilter::Update(float dt)
         }
 
         float invLen = 1.0f / len;
-        unit.f.x = invLen * dx;
-        unit.f.y = invLen * dy;
+        unit.x = invLen * dx;
+        unit.y = invLen * dy;
     }
 
     nlVec2Set(v2Force0, 0.f, 0.f);
     nlVec2Set(v2Force1, 0.f, 0.f);
 
     float total = -(fHTerm + fDTerm);
-    nlVec2Set(unit, total * unit.f.x, total * unit.f.y);
+    nlVec2Set(unit, total * unit.x, total * unit.y);
     nlVec2Set(v2Force0,
-        unit.f.x + v2Force0.f.x,
-        unit.f.y + v2Force0.f.y);
+        unit.x + v2Force0.x,
+        unit.y + v2Force0.y);
     nlVec2Set(v2Force1,
-        v2Force1.f.x - unit.f.x,
-        v2Force1.f.y - unit.f.y);
+        v2Force1.x - unit.x,
+        v2Force1.y - unit.y);
 
     float factor0 = 0.f;
     nlVec2Set(v2Vel0,
-        v2Vel0.f.x + (step * (factor0 * v2Force0.f.x)),
-        v2Vel0.f.y + (step * (factor0 * v2Force0.f.y)));
+        v2Vel0.x + (step * (factor0 * v2Force0.x)),
+        v2Vel0.y + (step * (factor0 * v2Force0.y)));
     nlVec2Set(v2Pos0,
-        v2Pos0.f.x + (step * v2Vel0.f.x),
-        v2Pos0.f.y + (step * v2Vel0.f.y));
+        v2Pos0.x + (step * v2Vel0.x),
+        v2Pos0.y + (step * v2Vel0.y));
 
     float factor1 = 1.f;
     nlVec2Set(v2Vel1,
-        v2Vel1.f.x + (step * (factor1 * v2Force1.f.x)),
-        v2Vel1.f.y + (step * (factor1 * v2Force1.f.y)));
+        v2Vel1.x + (step * (factor1 * v2Force1.x)),
+        v2Vel1.y + (step * (factor1 * v2Force1.y)));
     nlVec2Set(v2Pos1,
-        v2Pos1.f.x + (step * v2Vel1.f.x),
-        v2Pos1.f.y + (step * v2Vel1.f.y));
+        v2Pos1.x + (step * v2Vel1.x),
+        v2Pos1.y + (step * v2Vel1.y));
 }

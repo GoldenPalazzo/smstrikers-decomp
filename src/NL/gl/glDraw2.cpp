@@ -64,13 +64,13 @@ bool glPoly2::Attach(eGLView view, int layer, unsigned long* pMatrixHandle, unsi
             {
                 writer.Texcoord(m_uv[index]);
             }
-            float fx = m_pos[index].f.x;
-            float fy = m_pos[index].f.y;
+            float fx = m_pos[index].x;
+            float fy = m_pos[index].y;
             float fz = depth;
             nlVector3 pos;
-            pos.f.x = fx;
-            pos.f.y = fy;
-            pos.f.z = fz;
+            pos.x = fx;
+            pos.y = fy;
+            pos.z = fz;
             writer.Position(pos);
         }
         if (!writer.End())
@@ -140,7 +140,7 @@ bool glAttachPoly2(eGLView view, unsigned long numPolys, glPoly2* pPolys, unsign
                     writer.Texcoord(pPoly->m_uv[k]);
 
                     nlVector3 pos;
-                    nlVec3Set(pos, pPoly->m_pos[k].f.x, pPoly->m_pos[k].f.y, pPoly->depth);
+                    nlVec3Set(pos, pPoly->m_pos[k].x, pPoly->m_pos[k].y, pPoly->depth);
                     writer.Position(pos);
 
                     j++;
@@ -272,21 +272,21 @@ void glPoly2::SetupRotatedRectangle(float cx, float cy, float w, float h, float 
     temp_f31 = -h * f3;
     nlVec2Set(v, temp_f26, temp_f31);
     nlMultVectorMatrix(v, v, m);
-    nlVec2Set(m_pos[0], v.f.x + cx, v.f.y + cy);
+    nlVec2Set(m_pos[0], v.x + cx, v.y + cy);
 
     temp_f25 = h * f3;
     nlVec2Set(v, temp_f26, temp_f25);
     nlMultVectorMatrix(v, v, m);
-    nlVec2Set(m_pos[1], v.f.x + cx, v.f.y + cy);
+    nlVec2Set(m_pos[1], v.x + cx, v.y + cy);
 
     temp_f29 = w * f3;
     nlVec2Set(v, temp_f29, temp_f25);
     nlMultVectorMatrix(v, v, m);
-    nlVec2Set(m_pos[2], v.f.x + cx, v.f.y + cy);
+    nlVec2Set(m_pos[2], v.x + cx, v.y + cy);
 
     nlVec2Set(v, temp_f29, temp_f31);
     nlMultVectorMatrix(v, v, m);
-    nlVec2Set(m_pos[3], v.f.x + cx, v.f.y + cy);
+    nlVec2Set(m_pos[3], v.x + cx, v.y + cy);
 
     nlVec2Set(m_uv[0], 0.0f, 0.0f);
     nlVec2Set(m_uv[1], 0.0f, 1.0f);

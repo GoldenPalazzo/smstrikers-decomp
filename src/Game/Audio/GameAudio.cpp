@@ -152,12 +152,12 @@ static inline void ResetTrackedEmitter(SFXEmitter* pSFXEmitter)
     pSFXEmitter->pOwner = NULL;
     pSFXEmitter->pos.pvPos = NULL;
     pSFXEmitter->dir.pvDir = NULL;
-    pSFXEmitter->pos.vPos.f.x = 0.0f;
-    pSFXEmitter->pos.vPos.f.y = 0.0f;
-    pSFXEmitter->pos.vPos.f.z = 0.0f;
-    pSFXEmitter->dir.vDir.f.x = 0.0f;
-    pSFXEmitter->dir.vDir.f.y = 0.0f;
-    pSFXEmitter->dir.vDir.f.z = 0.0f;
+    pSFXEmitter->pos.vPos.x = 0.0f;
+    pSFXEmitter->pos.vPos.y = 0.0f;
+    pSFXEmitter->pos.vPos.z = 0.0f;
+    pSFXEmitter->dir.vDir.x = 0.0f;
+    pSFXEmitter->dir.vDir.y = 0.0f;
+    pSFXEmitter->dir.vDir.z = 0.0f;
     pSFXEmitter->posUpdateMethod = NONE;
 
     if (pSFXEmitter->pMIDIControllerInfo != NULL)
@@ -1050,12 +1050,12 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
     info.pSFXEmitter = NULL;
     info.uSFXID = (unsigned long)-1;
     info.groupID = 0;
-    info.position.f.x = 0.0f;
-    info.position.f.y = 0.0f;
-    info.position.f.z = 0.0f;
-    info.direction.f.x = 0.0f;
-    info.direction.f.y = 0.0f;
-    info.direction.f.z = 0.0f;
+    info.position.x = 0.0f;
+    info.position.y = 0.0f;
+    info.position.z = 0.0f;
+    info.direction.x = 0.0f;
+    info.direction.y = 0.0f;
+    info.direction.z = 0.0f;
     info.maxDist = 100.0f;
     info.comp = 0.0f;
     info.minVol = 0.0f;
@@ -1320,12 +1320,12 @@ void cGameSFX::StopEmitter(SFXEmitter* pSFXEmitter, unsigned long type)
         pSFXEmitter->pOwner = NULL;
         pSFXEmitter->pos.pvPos = NULL;
         pSFXEmitter->dir.pvDir = NULL;
-        pSFXEmitter->pos.vPos.f.x = 0.0f;
-        pSFXEmitter->pos.vPos.f.y = 0.0f;
-        pSFXEmitter->pos.vPos.f.z = 0.0f;
-        pSFXEmitter->dir.vDir.f.x = 0.0f;
-        pSFXEmitter->dir.vDir.f.y = 0.0f;
-        pSFXEmitter->dir.vDir.f.z = 0.0f;
+        pSFXEmitter->pos.vPos.x = 0.0f;
+        pSFXEmitter->pos.vPos.y = 0.0f;
+        pSFXEmitter->pos.vPos.z = 0.0f;
+        pSFXEmitter->dir.vDir.x = 0.0f;
+        pSFXEmitter->dir.vDir.y = 0.0f;
+        pSFXEmitter->dir.vDir.z = 0.0f;
         pSFXEmitter->posUpdateMethod = (PosUpdateMethod)0;
 
         if (pSFXEmitter->pMIDIControllerInfo != NULL)
@@ -1438,12 +1438,12 @@ bool cGameSFX::StopTrackedSFX(nlDLListIterator<SFXPlaySet*>* pIterator)
             pEmitter->pOwner = NULL;
             pEmitter->pos.pvPos = NULL;
             pEmitter->dir.pvDir = NULL;
-            pEmitter->pos.vPos.f.x = 0.0f;
-            pEmitter->pos.vPos.f.y = 0.0f;
-            pEmitter->pos.vPos.f.z = 0.0f;
-            pEmitter->dir.vDir.f.x = 0.0f;
-            pEmitter->dir.vDir.f.y = 0.0f;
-            pEmitter->dir.vDir.f.z = 0.0f;
+            pEmitter->pos.vPos.x = 0.0f;
+            pEmitter->pos.vPos.y = 0.0f;
+            pEmitter->pos.vPos.z = 0.0f;
+            pEmitter->dir.vDir.x = 0.0f;
+            pEmitter->dir.vDir.y = 0.0f;
+            pEmitter->dir.vDir.z = 0.0f;
             pEmitter->posUpdateMethod = NONE;
 
             if (pEmitter->pMIDIControllerInfo != NULL)

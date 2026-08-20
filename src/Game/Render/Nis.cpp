@@ -1,4 +1,5 @@
 #include "Game/Render/Nis.h"
+#include "NL/vmath.h"
 #include "Game/ReplayManager.h"
 #include "Game/NisPlayer.h"
 #include "Game/Sys/audio.h"
@@ -253,7 +254,7 @@ void Nis::Render()
         if (mMirrored)
         {
             mCharacterControllers[i]->m_bMirror = true;
-            rootTrans.f.x *= -1.0f;
+            rootTrans.x *= -1.0f;
             angle = angle + (0x4000 - angle) * 2;
         }
 
@@ -320,7 +321,7 @@ static inline bool EffectNeedsValidCoordSys(EffectsGroup* pGroup)
 
     for (int i = pGroup->m_numSpecs; i > 0; i--, pSpec++)
     {
-        if (pSpec->m_vLocalOffset.f.x != 0.0f || pSpec->m_vLocalOffset.f.y != 0.0f || pSpec->m_vLocalOffset.f.z != 0.0f)
+        if (pSpec->m_vLocalOffset.x != 0.0f || pSpec->m_vLocalOffset.y != 0.0f || pSpec->m_vLocalOffset.z != 0.0f)
             return true;
     }
     return false;
@@ -438,7 +439,7 @@ void Nis::Trigger::Fire(Nis& nis) const
                 if (helper == NULL)
                     return;
                 static const nlVector3 zeroDirection = { 0.0f, 0.0f, 0.0f };
-                index = Audio::PlayWorldSFXbyStr(name, volume, -1.0f, true, false, (const nlVector3*)&helper->m_worldMatrix.m[3][0], &zeroDirection, &soundType);
+                index = Audio::PlayWorldSFXbyStr(name, volume, -1.0f, true, false, (const nlVector3*)&helper->m_worldMatrix.e2[3][0], &zeroDirection, &soundType);
                 isEmitter = true;
             }
             else
@@ -585,12 +586,12 @@ inline Nis::NisAudioData* Nis::StopNisAudio(NisAudioData* pNisAudioData, bool bN
                         pSFXEmitter->pOwner = NULL;
                         pSFXEmitter->pos.pvPos = NULL;
                         pSFXEmitter->dir.pvDir = NULL;
-                        pSFXEmitter->pos.vPos.f.x = 0.0f;
-                        pSFXEmitter->pos.vPos.f.y = 0.0f;
-                        pSFXEmitter->pos.vPos.f.z = 0.0f;
-                        pSFXEmitter->dir.vDir.f.x = 0.0f;
-                        pSFXEmitter->dir.vDir.f.y = 0.0f;
-                        pSFXEmitter->dir.vDir.f.z = 0.0f;
+                        pSFXEmitter->pos.vPos.x = 0.0f;
+                        pSFXEmitter->pos.vPos.y = 0.0f;
+                        pSFXEmitter->pos.vPos.z = 0.0f;
+                        pSFXEmitter->dir.vDir.x = 0.0f;
+                        pSFXEmitter->dir.vDir.y = 0.0f;
+                        pSFXEmitter->dir.vDir.z = 0.0f;
                         pSFXEmitter->posUpdateMethod = NONE;
                         if (pSFXEmitter->pMIDIControllerInfo != NULL)
                         {

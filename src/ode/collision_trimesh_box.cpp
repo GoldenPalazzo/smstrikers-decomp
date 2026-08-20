@@ -1142,17 +1142,17 @@ int dCollideBTL(dxGeom* g1, dxGeom* BoxGeom, int Flags, dContactGeom* Contacts, 
   Box.mExtents.y = vBoxHalfSize[1];
   Box.mExtents.z = vBoxHalfSize[2];
 
-  Box.mRot.m[0][0] = mRotBox[0];
-  Box.mRot.m[1][0] = mRotBox[1];
-  Box.mRot.m[2][0] = mRotBox[2];
+  Box.mRot.e2[0][0] = mRotBox[0];
+  Box.mRot.e2[1][0] = mRotBox[1];
+  Box.mRot.e2[2][0] = mRotBox[2];
 
-  Box.mRot.m[0][1] = mRotBox[4];
-  Box.mRot.m[1][1] = mRotBox[5];
-  Box.mRot.m[2][1] = mRotBox[6];
+  Box.mRot.e2[0][1] = mRotBox[4];
+  Box.mRot.e2[1][1] = mRotBox[5];
+  Box.mRot.e2[2][1] = mRotBox[6];
 
-  Box.mRot.m[0][2] = mRotBox[8];
-  Box.mRot.m[1][2] = mRotBox[9];
-  Box.mRot.m[2][2] = mRotBox[10];
+  Box.mRot.e2[0][2] = mRotBox[8];
+  Box.mRot.e2[1][2] = mRotBox[9];
+  Box.mRot.e2[2][2] = mRotBox[10];
 
   Matrix4x4 amatrix;
   Matrix4x4 BoxMatrix = MakeMatrix(vPosBox, mRotBox, amatrix);

@@ -51,12 +51,12 @@ void GameTweaks::Init()
 
     fBlockPassLightAttackSpeed = cfg.Get<float>("Block Ball with LAttack under this Speed", 5.0f);
     fFielderAttributeWeight = cfg.Get<float>("Fielder Attributes Weight", 0.2f);
-    vGetInPositionKeyFielderDist.f.x = cfg.Get<float>("GetInPosition KeyFielder Min Distance", 2.0f);
-    vGetInPositionKeyFielderDist.f.y = cfg.Get<float>("GetInPosition KeyFielder Max Distance", 12.0f);
-    vGetInPositionInRadius.f.x = cfg.Get<float>("At Target Position Min Radius", 0.3f);
-    vGetInPositionInRadius.f.y = cfg.Get<float>("At Target Position Max Radius", 0.6f);
-    vGetInPositionOutRadius.f.x = cfg.Get<float>("At Target Remain At Position Min Radius", 1.0f);
-    vGetInPositionOutRadius.f.y = cfg.Get<float>("At Target Remain At Position Max Radius", 4.5f);
+    vGetInPositionKeyFielderDist.x = cfg.Get<float>("GetInPosition KeyFielder Min Distance", 2.0f);
+    vGetInPositionKeyFielderDist.y = cfg.Get<float>("GetInPosition KeyFielder Max Distance", 12.0f);
+    vGetInPositionInRadius.x = cfg.Get<float>("At Target Position Min Radius", 0.3f);
+    vGetInPositionInRadius.y = cfg.Get<float>("At Target Position Max Radius", 0.6f);
+    vGetInPositionOutRadius.x = cfg.Get<float>("At Target Remain At Position Min Radius", 1.0f);
+    vGetInPositionOutRadius.y = cfg.Get<float>("At Target Remain At Position Max Radius", 4.5f);
     nStrafeToRunInDirectionDelta = (s16)cfg.Get<int>("Run To Strafe Angle", 0x2CEC);
     nBackwardsToStrafeRunInDirectionDelta = (s16)cfg.Get<int>("Backwards To Strafe Angle", 0x59D8);
     nStrafeToRunOutDirectionDelta = (s16)cfg.Get<int>("Strafe To Run Angle", 0x2328);

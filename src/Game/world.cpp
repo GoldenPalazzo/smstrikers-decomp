@@ -1,4 +1,5 @@
 #include "NL/nlString.h"
+#include "NL/vmath.h"
 #include "Game/World.h"
 #include "Game/LightObject.h"
 #include "Game/Camera/CameraMan.h"
@@ -338,15 +339,15 @@ bool World::LoadGeometry(const char* szWorldName, bool bMakeDrawables, bool keep
 
 static inline float World_SelectBoundingRadius(AABBDimensions& aabb)
 {
-    float dimX = aabb.mDim.f.x;
-    float dimY = aabb.mDim.f.y;
-    if (dimX >= dimY && dimX > aabb.mDim.f.z)
+    float dimX = aabb.mDim.x;
+    float dimY = aabb.mDim.y;
+    if (dimX >= dimY && dimX > aabb.mDim.z)
     {
         return dimX;
     }
     else
     {
-        dimX = aabb.mDim.f.z;
+        dimX = aabb.mDim.z;
         if (dimY >= dimX)
         {
             dimX = dimY;
@@ -1090,9 +1091,9 @@ void World::CreateLightObjFromChunk(nlChunk* pChunk)
 
     nlFloatColourSet(
         pLightObj->m_colour,
-        pWorldLightChunkData->m_colour.f.x,
-        pWorldLightChunkData->m_colour.f.y,
-        pWorldLightChunkData->m_colour.f.z,
+        pWorldLightChunkData->m_colour.x,
+        pWorldLightChunkData->m_colour.y,
+        pWorldLightChunkData->m_colour.z,
         0.0f);
     pLightObj->m_bit = 0;
     m_lightMap.Add(pLightObj->m_uHashID, pLightObj);
@@ -1155,97 +1156,97 @@ void World::ExtractFrustumPlanes()
     nlMatrix4 viewProjection;
     nlMatrix4 projection = *glViewGetProjectionMatrix(GLV_Unshadowed);
 
-    float m33 = projection.f.m33;
-    float m34 = projection.f.m34;
-    float m43 = projection.f.m43;
-    projection.f.m43 = m34;
-    projection.f.m34 = m43;
-    projection.f.m33 = m33 - 1.0f;
+    float m33 = projection.m33;
+    float m34 = projection.m34;
+    float m43 = projection.m43;
+    projection.m43 = m34;
+    projection.m34 = m43;
+    projection.m33 = m33 - 1.0f;
 
     nlMultMatrices(viewProjection, *glViewGetViewMatrix(GLV_Unshadowed), projection);
 
-    m_frustumPlane[0].f.x = viewProjection.f.m14 - viewProjection.f.m11;
-    m_frustumPlane[0].f.y = viewProjection.f.m24 - viewProjection.f.m21;
-    m_frustumPlane[0].f.z = viewProjection.f.m34 - viewProjection.f.m31;
-    m_frustumPlane[0].f.w = viewProjection.f.m44 - viewProjection.f.m41;
+    m_frustumPlane[0].x = viewProjection.m14 - viewProjection.m11;
+    m_frustumPlane[0].y = viewProjection.m24 - viewProjection.m21;
+    m_frustumPlane[0].z = viewProjection.m34 - viewProjection.m31;
+    m_frustumPlane[0].w = viewProjection.m44 - viewProjection.m41;
     {
         float length = nlSqrt(
-            m_frustumPlane[0].f.x * m_frustumPlane[0].f.x + m_frustumPlane[0].f.y * m_frustumPlane[0].f.y + m_frustumPlane[0].f.z * m_frustumPlane[0].f.z,
+            m_frustumPlane[0].x * m_frustumPlane[0].x + m_frustumPlane[0].y * m_frustumPlane[0].y + m_frustumPlane[0].z * m_frustumPlane[0].z,
             true);
-        m_frustumPlane[0].f.x /= length;
-        m_frustumPlane[0].f.y /= length;
-        m_frustumPlane[0].f.z /= length;
-        m_frustumPlane[0].f.w /= length;
+        m_frustumPlane[0].x /= length;
+        m_frustumPlane[0].y /= length;
+        m_frustumPlane[0].z /= length;
+        m_frustumPlane[0].w /= length;
     }
 
-    m_frustumPlane[1].f.x = viewProjection.f.m14 + viewProjection.f.m11;
-    m_frustumPlane[1].f.y = viewProjection.f.m24 + viewProjection.f.m21;
-    m_frustumPlane[1].f.z = viewProjection.f.m34 + viewProjection.f.m31;
-    m_frustumPlane[1].f.w = viewProjection.f.m44 + viewProjection.f.m41;
+    m_frustumPlane[1].x = viewProjection.m14 + viewProjection.m11;
+    m_frustumPlane[1].y = viewProjection.m24 + viewProjection.m21;
+    m_frustumPlane[1].z = viewProjection.m34 + viewProjection.m31;
+    m_frustumPlane[1].w = viewProjection.m44 + viewProjection.m41;
     {
         float length = nlSqrt(
-            m_frustumPlane[1].f.x * m_frustumPlane[1].f.x + m_frustumPlane[1].f.y * m_frustumPlane[1].f.y + m_frustumPlane[1].f.z * m_frustumPlane[1].f.z,
+            m_frustumPlane[1].x * m_frustumPlane[1].x + m_frustumPlane[1].y * m_frustumPlane[1].y + m_frustumPlane[1].z * m_frustumPlane[1].z,
             true);
-        m_frustumPlane[1].f.x /= length;
-        m_frustumPlane[1].f.y /= length;
-        m_frustumPlane[1].f.z /= length;
-        m_frustumPlane[1].f.w /= length;
+        m_frustumPlane[1].x /= length;
+        m_frustumPlane[1].y /= length;
+        m_frustumPlane[1].z /= length;
+        m_frustumPlane[1].w /= length;
     }
 
-    m_frustumPlane[2].f.x = viewProjection.f.m14 + viewProjection.f.m12;
-    m_frustumPlane[2].f.y = viewProjection.f.m24 + viewProjection.f.m22;
-    m_frustumPlane[2].f.z = viewProjection.f.m34 + viewProjection.f.m32;
-    m_frustumPlane[2].f.w = viewProjection.f.m44 + viewProjection.f.m42;
+    m_frustumPlane[2].x = viewProjection.m14 + viewProjection.m12;
+    m_frustumPlane[2].y = viewProjection.m24 + viewProjection.m22;
+    m_frustumPlane[2].z = viewProjection.m34 + viewProjection.m32;
+    m_frustumPlane[2].w = viewProjection.m44 + viewProjection.m42;
     {
         float length = nlSqrt(
-            m_frustumPlane[2].f.x * m_frustumPlane[2].f.x + m_frustumPlane[2].f.y * m_frustumPlane[2].f.y + m_frustumPlane[2].f.z * m_frustumPlane[2].f.z,
+            m_frustumPlane[2].x * m_frustumPlane[2].x + m_frustumPlane[2].y * m_frustumPlane[2].y + m_frustumPlane[2].z * m_frustumPlane[2].z,
             true);
-        m_frustumPlane[2].f.x /= length;
-        m_frustumPlane[2].f.y /= length;
-        m_frustumPlane[2].f.z /= length;
-        m_frustumPlane[2].f.w /= length;
+        m_frustumPlane[2].x /= length;
+        m_frustumPlane[2].y /= length;
+        m_frustumPlane[2].z /= length;
+        m_frustumPlane[2].w /= length;
     }
 
-    m_frustumPlane[3].f.x = viewProjection.f.m14 - viewProjection.f.m12;
-    m_frustumPlane[3].f.y = viewProjection.f.m24 - viewProjection.f.m22;
-    m_frustumPlane[3].f.z = viewProjection.f.m34 - viewProjection.f.m32;
-    m_frustumPlane[3].f.w = viewProjection.f.m44 - viewProjection.f.m42;
+    m_frustumPlane[3].x = viewProjection.m14 - viewProjection.m12;
+    m_frustumPlane[3].y = viewProjection.m24 - viewProjection.m22;
+    m_frustumPlane[3].z = viewProjection.m34 - viewProjection.m32;
+    m_frustumPlane[3].w = viewProjection.m44 - viewProjection.m42;
     {
         float length = nlSqrt(
-            m_frustumPlane[3].f.x * m_frustumPlane[3].f.x + m_frustumPlane[3].f.y * m_frustumPlane[3].f.y + m_frustumPlane[3].f.z * m_frustumPlane[3].f.z,
+            m_frustumPlane[3].x * m_frustumPlane[3].x + m_frustumPlane[3].y * m_frustumPlane[3].y + m_frustumPlane[3].z * m_frustumPlane[3].z,
             true);
-        m_frustumPlane[3].f.x /= length;
-        m_frustumPlane[3].f.y /= length;
-        m_frustumPlane[3].f.z /= length;
-        m_frustumPlane[3].f.w /= length;
+        m_frustumPlane[3].x /= length;
+        m_frustumPlane[3].y /= length;
+        m_frustumPlane[3].z /= length;
+        m_frustumPlane[3].w /= length;
     }
 
-    m_frustumPlane[4].f.x = viewProjection.f.m13;
-    m_frustumPlane[4].f.y = viewProjection.f.m23;
-    m_frustumPlane[4].f.z = viewProjection.f.m33;
-    m_frustumPlane[4].f.w = viewProjection.f.m43;
+    m_frustumPlane[4].x = viewProjection.m13;
+    m_frustumPlane[4].y = viewProjection.m23;
+    m_frustumPlane[4].z = viewProjection.m33;
+    m_frustumPlane[4].w = viewProjection.m43;
     {
         float length = nlSqrt(
-            m_frustumPlane[4].f.x * m_frustumPlane[4].f.x + m_frustumPlane[4].f.y * m_frustumPlane[4].f.y + m_frustumPlane[4].f.z * m_frustumPlane[4].f.z,
+            m_frustumPlane[4].x * m_frustumPlane[4].x + m_frustumPlane[4].y * m_frustumPlane[4].y + m_frustumPlane[4].z * m_frustumPlane[4].z,
             true);
-        m_frustumPlane[4].f.x /= length;
-        m_frustumPlane[4].f.y /= length;
-        m_frustumPlane[4].f.z /= length;
-        m_frustumPlane[4].f.w /= length;
+        m_frustumPlane[4].x /= length;
+        m_frustumPlane[4].y /= length;
+        m_frustumPlane[4].z /= length;
+        m_frustumPlane[4].w /= length;
     }
 
-    m_frustumPlane[5].f.x = viewProjection.f.m14 - viewProjection.f.m13;
-    m_frustumPlane[5].f.y = viewProjection.f.m24 - viewProjection.f.m23;
-    m_frustumPlane[5].f.z = viewProjection.f.m34 - viewProjection.f.m33;
-    m_frustumPlane[5].f.w = viewProjection.f.m44 - viewProjection.f.m43;
+    m_frustumPlane[5].x = viewProjection.m14 - viewProjection.m13;
+    m_frustumPlane[5].y = viewProjection.m24 - viewProjection.m23;
+    m_frustumPlane[5].z = viewProjection.m34 - viewProjection.m33;
+    m_frustumPlane[5].w = viewProjection.m44 - viewProjection.m43;
     {
         float length = nlSqrt(
-            m_frustumPlane[5].f.x * m_frustumPlane[5].f.x + m_frustumPlane[5].f.y * m_frustumPlane[5].f.y + m_frustumPlane[5].f.z * m_frustumPlane[5].f.z,
+            m_frustumPlane[5].x * m_frustumPlane[5].x + m_frustumPlane[5].y * m_frustumPlane[5].y + m_frustumPlane[5].z * m_frustumPlane[5].z,
             true);
-        m_frustumPlane[5].f.x /= length;
-        m_frustumPlane[5].f.y /= length;
-        m_frustumPlane[5].f.z /= length;
-        m_frustumPlane[5].f.w /= length;
+        m_frustumPlane[5].x /= length;
+        m_frustumPlane[5].y /= length;
+        m_frustumPlane[5].z /= length;
+        m_frustumPlane[5].w /= length;
     }
 }
 
@@ -1256,9 +1257,9 @@ bool World::IsSphereInFrustum(const nlMatrix4& mat, float radius)
 {
     nlVector3 v3Position = mat.GetTranslation();
 
-    f32 posX = v3Position.f.x;
-    f32 posY = v3Position.f.y;
-    f32 posZ = v3Position.f.z;
+    f32 posX = v3Position.x;
+    f32 posY = v3Position.y;
+    f32 posZ = v3Position.z;
     f32 negRadius = -radius;
 
     nlVector4* pPlanes = m_frustumPlane;
@@ -1266,7 +1267,7 @@ bool World::IsSphereInFrustum(const nlMatrix4& mat, float radius)
 
     for (int i = 0; i < 6; i++)
     {
-        f32 dot = posX * pPlanes[i].f.x + posY * pPlanes[i].f.y + posZ * pPlanes[i].f.z + self->m_frustumPlane[i].f.w;
+        f32 dot = posX * pPlanes[i].x + posY * pPlanes[i].y + posZ * pPlanes[i].z + self->m_frustumPlane[i].w;
         if (dot < negRadius)
             return false;
     }
@@ -1497,17 +1498,17 @@ static inline u8 World_IsSphereInFrustumInline(World* pWorld, const nlMatrix4& m
 {
     nlVector3 v3Position = mat.GetTranslation();
 
-    f32 posX = v3Position.f.x;
+    f32 posX = v3Position.x;
     f32 negRadius = -radius;
-    f32 posZ = v3Position.f.z;
-    f32 posY = v3Position.f.y;
+    f32 posZ = v3Position.z;
+    f32 posY = v3Position.y;
 
     nlVector4* pPlanes = pWorld->m_frustumPlane;
     World* self = pWorld;
 
     for (int i = 0; i < 6; i++)
     {
-        f32 dot = posX * pPlanes[i].f.x + posY * pPlanes[i].f.y + posZ * pPlanes[i].f.z + self->m_frustumPlane[i].f.w;
+        f32 dot = posX * pPlanes[i].x + posY * pPlanes[i].y + posZ * pPlanes[i].z + self->m_frustumPlane[i].w;
         if (dot < negRadius)
             return false;
     }
@@ -1598,13 +1599,13 @@ void World::Render()
             if (sbIsHyperShootToScoreRenderingEnabled)
             {
                 const nlMatrix4& mat = pObject->GetWorldMatrix();
-                if (mat.m[3][0] < 0.0f)
+                if (mat.e2[3][0] < 0.0f)
                 {
                     if (sbShowPositiveXNetDuringHyperStrike)
                         goto hyperCull;
                 }
                 const nlMatrix4& mat2 = pObject->GetWorldMatrix();
-                if (mat2.m[3][0] > 0.0f)
+                if (mat2.e2[3][0] > 0.0f)
                 {
                     if (!sbShowPositiveXNetDuringHyperStrike)
                         goto hyperCull;
@@ -1814,13 +1815,13 @@ static void RenderBoundingSphere(const nlMatrix4& matWorld, f32 fRadius)
     glModel* pNewModel = glModelDup(pSphere, true);
     nlMatrix4 m;
     m.SetIdentity();
-    m.m[3][0] = matWorld.m[3][0];
-    m.m[3][1] = matWorld.m[3][1];
-    m.m[3][2] = matWorld.m[3][2];
-    m.m[3][3] = 1.0f;
-    m.m[0][0] = fRadius;
-    m.m[1][1] = fRadius;
-    m.m[2][2] = fRadius;
+    m.e2[3][0] = matWorld.e2[3][0];
+    m.e2[3][1] = matWorld.e2[3][1];
+    m.e2[3][2] = matWorld.e2[3][2];
+    m.e2[3][3] = 1.0f;
+    m.e2[0][0] = fRadius;
+    m.e2[1][1] = fRadius;
+    m.e2[2][2] = fRadius;
     glModelPacket* pPacket = pNewModel->packets;
     while (pPacket < (glModelPacket*)((u8*)pNewModel->packets + pNewModel->numPackets * 0x4A))
     {
@@ -1973,9 +1974,9 @@ LightObject* World::GetShadowLight(const nlVector3& vPosition, float)
         if (pLight->m_emitFlags & 1)
         {
             float dx, dy, dz;
-            dy = vPosition.f.y - pLight->m_worldPosition.f.y;
-            dx = vPosition.f.x - pLight->m_worldPosition.f.x;
-            dz = vPosition.f.z - pLight->m_worldPosition.f.z;
+            dy = vPosition.y - pLight->m_worldPosition.y;
+            dx = vPosition.x - pLight->m_worldPosition.x;
+            dz = vPosition.z - pLight->m_worldPosition.z;
             float distSq = dx * dx + dy * dy + dz * dz;
             if (distSq < fDistance)
             {

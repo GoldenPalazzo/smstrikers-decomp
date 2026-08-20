@@ -115,12 +115,12 @@ void PlatAudio::InitEmitter(unsigned long index)
     gEmitters[index].pOwner = NULL;
     gEmitters[index].pos.pvPos = NULL;
     gEmitters[index].dir.pvDir = NULL;
-    gEmitters[index].pos.vPos.f.x = 0.0f;
-    gEmitters[index].pos.vPos.f.y = 0.0f;
-    gEmitters[index].pos.vPos.f.z = 0.0f;
-    gEmitters[index].dir.vDir.f.x = 0.0f;
-    gEmitters[index].dir.vDir.f.y = 0.0f;
-    gEmitters[index].dir.vDir.f.z = 0.0f;
+    gEmitters[index].pos.vPos.x = 0.0f;
+    gEmitters[index].pos.vPos.y = 0.0f;
+    gEmitters[index].pos.vPos.z = 0.0f;
+    gEmitters[index].dir.vDir.x = 0.0f;
+    gEmitters[index].dir.vDir.y = 0.0f;
+    gEmitters[index].dir.vDir.z = 0.0f;
     gEmitters[index].posUpdateMethod = NONE;
     if (gEmitters[index].pMIDIControllerInfo != NULL)
     {
@@ -229,14 +229,14 @@ void Update3DSFXEmitter(SFXEmitter* pSFXEmitter, const nlVector3& position, cons
     float rounded = 127.0f * maxVol;
 
     SND_FVECTOR svPos;
-    svPos.x = position.f.x;
-    svPos.y = position.f.y;
-    svPos.z = position.f.z;
+    svPos.x = position.x;
+    svPos.y = position.y;
+    svPos.z = position.z;
 
     SND_FVECTOR svDir;
-    svDir.x = direction.f.x;
-    svDir.y = direction.f.y;
-    svDir.z = direction.f.z;
+    svDir.x = direction.x;
+    svDir.y = direction.y;
+    svDir.z = direction.z;
 
     if (rounded < 0.0f)
     {
@@ -266,13 +266,13 @@ unsigned long Add3DSFXEmitter(const EmitterStartInfo& info)
     SND_PARAMETER_INFO tempParaInfo;
     SND_PARAMETER tempParaArray[4];
 
-    svPos.x = info.position.f.x;
-    svPos.y = info.position.f.y;
-    svPos.z = info.position.f.z;
+    svPos.x = info.position.x;
+    svPos.y = info.position.y;
+    svPos.z = info.position.z;
 
-    svDir.x = info.direction.f.x;
-    svDir.y = info.direction.f.y;
-    svDir.z = info.direction.f.z;
+    svDir.x = info.direction.x;
+    svDir.y = info.direction.y;
+    svDir.z = info.direction.z;
 
     pSFXEmitter = info.pSFXEmitter;
     flags = 0;
@@ -452,24 +452,24 @@ void Remove3DSFXListener(SND_LISTENER* pListener)
 void Update3DSFXListener(SND_LISTENER* pListener, const nlVector3& position, const nlVector3& direction, const nlVector3& heading, const nlVector3& up, float overallEmitterVol)
 {
     SND_FVECTOR svPos;
-    svPos.x = position.f.x;
-    svPos.y = position.f.y;
-    svPos.z = position.f.z;
+    svPos.x = position.x;
+    svPos.y = position.y;
+    svPos.z = position.z;
 
     SND_FVECTOR svDir;
-    svDir.x = direction.f.x;
-    svDir.y = direction.f.y;
-    svDir.z = direction.f.z;
+    svDir.x = direction.x;
+    svDir.y = direction.y;
+    svDir.z = direction.z;
 
     SND_FVECTOR svHeading;
-    svHeading.x = heading.f.x;
-    svHeading.y = heading.f.y;
-    svHeading.z = heading.f.z;
+    svHeading.x = heading.x;
+    svHeading.y = heading.y;
+    svHeading.z = heading.z;
 
     SND_FVECTOR svUp;
-    svUp.x = up.f.x;
-    svUp.y = up.f.y;
-    svUp.z = up.f.z;
+    svUp.x = up.x;
+    svUp.y = up.y;
+    svUp.z = up.z;
 
     f32 rounded = 127.0f * overallEmitterVol;
     f32 adj;
@@ -492,24 +492,24 @@ void Update3DSFXListener(SND_LISTENER* pListener, const nlVector3& position, con
 void Add3DSFXListener(SND_LISTENER* pListener, const nlVector3& position, const nlVector3& direction, const nlVector3& heading, const nlVector3& up, float frontAudibleDist, float backAudibleDist, float overallEmitterVol, float volPosOffset, bool bUseDoppler, float fSpeedOfSound)
 {
     SND_FVECTOR svPos;
-    svPos.x = position.f.x;
-    svPos.y = position.f.y;
-    svPos.z = position.f.z;
+    svPos.x = position.x;
+    svPos.y = position.y;
+    svPos.z = position.z;
 
     SND_FVECTOR svDir;
-    svDir.x = direction.f.x;
-    svDir.y = direction.f.y;
-    svDir.z = direction.f.z;
+    svDir.x = direction.x;
+    svDir.y = direction.y;
+    svDir.z = direction.z;
 
     SND_FVECTOR svHeading;
-    svHeading.x = heading.f.x;
-    svHeading.y = heading.f.y;
-    svHeading.z = heading.f.z;
+    svHeading.x = heading.x;
+    svHeading.y = heading.y;
+    svHeading.z = heading.z;
 
     SND_FVECTOR svUp;
-    svUp.x = up.f.x;
-    svUp.y = up.f.y;
-    svUp.z = up.f.z;
+    svUp.x = up.x;
+    svUp.y = up.y;
+    svUp.z = up.z;
 
     f32 rounded = 127.0f * overallEmitterVol;
     f32 adj;

@@ -194,9 +194,9 @@ static inline void GetRootTransDelta(cPN_SAnimController* pController, nlVector3
     pController->m_pSAnim->GetRootTrans(fEndTime, pRootTrans);
     pController->m_pSAnim->GetRootTrans(fStartTime, &v3LastFrame);
 
-    pRootTrans->f.x = pRootTrans->f.x - v3LastFrame.f.x;
-    pRootTrans->f.y = pRootTrans->f.y - v3LastFrame.f.y;
-    pRootTrans->f.z = pRootTrans->f.z - v3LastFrame.f.z;
+    pRootTrans->x = pRootTrans->x - v3LastFrame.x;
+    pRootTrans->y = pRootTrans->y - v3LastFrame.y;
+    pRootTrans->z = pRootTrans->z - v3LastFrame.z;
 }
 
 /**
@@ -220,9 +220,9 @@ void cPN_SAnimController::BlendRootTrans(nlVector3* pRootTrans, float fNodeWeigh
         GetRootTransDelta(this, &v3RootTrans, m_fPrevTime, 1.0f);
         GetRootTransDelta(this, &v3Extra, 0.0f, m_fTime);
 
-        v3RootTrans.f.x = v3RootTrans.f.x + v3Extra.f.x;
-        v3RootTrans.f.y = v3RootTrans.f.y + v3Extra.f.y;
-        v3RootTrans.f.z = v3RootTrans.f.z + v3Extra.f.z;
+        v3RootTrans.x = v3RootTrans.x + v3Extra.x;
+        v3RootTrans.y = v3RootTrans.y + v3Extra.y;
+        v3RootTrans.z = v3RootTrans.z + v3Extra.z;
     }
     else
     {
@@ -233,7 +233,7 @@ void cPN_SAnimController::BlendRootTrans(nlVector3* pRootTrans, float fNodeWeigh
 
     if (m_bMirror != 0)
     {
-        aMirrorAdjust = (unsigned short)((aLastFrameFacing - (unsigned short)(int)(10430.378f * nlATan2f(v3RootTrans.f.y, v3RootTrans.f.x))) << 1);
+        aMirrorAdjust = (unsigned short)((aLastFrameFacing - (unsigned short)(int)(10430.378f * nlATan2f(v3RootTrans.y, v3RootTrans.x))) << 1);
     }
 
     {
@@ -242,18 +242,18 @@ void cPN_SAnimController::BlendRootTrans(nlVector3* pRootTrans, float fNodeWeigh
 
         nlSinCos(&fSin, &fCos, aMirrorAdjust - aLastFrameFacing);
 
-        pV3RootTransLocal->f.x = v3RootTrans.f.x * fCos - v3RootTrans.f.y * fSin;
-        pV3RootTransLocal->f.y = v3RootTrans.f.y * fCos + v3RootTrans.f.x * fSin;
-        pV3RootTransLocal->f.z = v3RootTrans.f.z;
+        pV3RootTransLocal->x = v3RootTrans.x * fCos - v3RootTrans.y * fSin;
+        pV3RootTransLocal->y = v3RootTrans.y * fCos + v3RootTrans.x * fSin;
+        pV3RootTransLocal->z = v3RootTrans.z;
         *fAccumulatedWeight += fNodeWeight;
     }
 
     if (*fAccumulatedWeight != 0.0f)
     {
         fBlendPercent = fNodeWeight / *fAccumulatedWeight;
-        pRootTrans->f.x = (1.0f - fBlendPercent) * pRootTrans->f.x + fBlendPercent * pV3RootTransLocal->f.x;
-        pRootTrans->f.y = (1.0f - fBlendPercent) * pRootTrans->f.y + fBlendPercent * pV3RootTransLocal->f.y;
-        pRootTrans->f.z = (1.0f - fBlendPercent) * pRootTrans->f.z + fBlendPercent * pV3RootTransLocal->f.z;
+        pRootTrans->x = (1.0f - fBlendPercent) * pRootTrans->x + fBlendPercent * pV3RootTransLocal->x;
+        pRootTrans->y = (1.0f - fBlendPercent) * pRootTrans->y + fBlendPercent * pV3RootTransLocal->y;
+        pRootTrans->z = (1.0f - fBlendPercent) * pRootTrans->z + fBlendPercent * pV3RootTransLocal->z;
     }
 }
 

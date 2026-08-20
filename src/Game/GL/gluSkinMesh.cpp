@@ -133,9 +133,9 @@ void ShaderSkinMesh::AttachSkinData(unsigned long program, const nlMatrix4* pRef
                     const signed char* packed = softwareVertices[index].packed_normal;
                     float invNormalScale = 0.015625f;
                     nlVector3 inNormal;
-                    inNormal.f.x = (float)packed[0] * invNormalScale;
-                    inNormal.f.y = (float)packed[1] * invNormalScale;
-                    inNormal.f.z = (float)packed[2] * invNormalScale;
+                    inNormal.x = (float)packed[0] * invNormalScale;
+                    inNormal.y = (float)packed[1] * invNormalScale;
+                    inNormal.z = (float)packed[2] * invNormalScale;
 
                     register const nlVector3* pInN = &inNormal;
                     register nlVector3& outVertex = outVertices[index];

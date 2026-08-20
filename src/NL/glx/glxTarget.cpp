@@ -186,7 +186,7 @@ void glx_ShadowTextureGrab()
         constantname[22] = tens;
         constantname[23] = ones;
 
-        if (glConstantGet(constantname).f.x == 1.0f)
+        if (glConstantGet(constantname).x == 1.0f)
         {
             if ((u8)glx_SharedLock != 0)
             {

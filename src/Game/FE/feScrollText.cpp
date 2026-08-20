@@ -39,12 +39,12 @@ extern const unsigned short MissingLocString[];
 void FEScrollText::ApplyNewTextInstancePointer(TLTextInstance* controltext, float boxwidth, float boxheight)
 {
     nlVector2 boxSize;
-    boxSize.f.y = boxheight;
+    boxSize.y = boxheight;
 
     this->m_controlText = controltext;
     TLTextInstance* text = this->m_controlText;
 
-    boxSize.f.x = boxwidth;
+    boxSize.x = boxwidth;
 
     text->m_OverloadedAttributes.BoxSize = boxSize;
     text->m_OverloadFlags |= 0x4;
@@ -279,9 +279,9 @@ FEScrollText::FEScrollText(TLTextInstance* controlText, int pos, int width)
     , m_textFont(NULL)
 {
     nlVector2 boxSize;
-    boxSize.f.x = 8000.0f;
+    boxSize.x = 8000.0f;
 
-    boxSize.f.y = 100.0f;
+    boxSize.y = 100.0f;
 
     TLTextInstance* text = m_controlText;
     text->m_OverloadedAttributes.BoxSize = boxSize;

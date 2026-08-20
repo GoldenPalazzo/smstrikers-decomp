@@ -24,9 +24,9 @@ inline void GLMeshWriterCore::Position(const nlVector3& v)
 inline void GLMeshWriterCore::Position(float x, float y, float z)
 {
     nlVector3 v;
-    v.f.x = x;
-    v.f.y = y;
-    v.f.z = z;
+    v.x = x;
+    v.y = y;
+    v.z = z;
     Vertex(v);
 }
 

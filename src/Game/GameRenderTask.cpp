@@ -127,31 +127,31 @@ void GameRenderTask::SetupConstants()
 {
     nlVector4 vMult = { 0.0f, 0.0f, 0.0f, 0.0f };
     Config& cfg = Config::Global();
-    vMult.f.x = GetConfigFloat(cfg, "shadow_volumes/colour_r", 255.0f) / 255.0f;
+    vMult.x = GetConfigFloat(cfg, "shadow_volumes/colour_r", 255.0f) / 255.0f;
 
     Config& cfg2 = Config::Global();
-    vMult.f.y = GetConfigFloat(cfg2, "shadow_volumes/colour_g", 255.0f) / 255.0f;
+    vMult.y = GetConfigFloat(cfg2, "shadow_volumes/colour_g", 255.0f) / 255.0f;
 
     Config& cfg3 = Config::Global();
-    vMult.f.z = GetConfigFloat(cfg3, "shadow_volumes/colour_b", 255.0f) / 255.0f;
+    vMult.z = GetConfigFloat(cfg3, "shadow_volumes/colour_b", 255.0f) / 255.0f;
 
     Config& cfg4 = Config::Global();
-    vMult.f.w = GetConfigFloat(cfg4, "shadow_volumes/colour_a", 64.0f) / 255.0f;
+    vMult.w = GetConfigFloat(cfg4, "shadow_volumes/colour_a", 64.0f) / 255.0f;
 
     glConstantSet("shadow/pass0_colour", vMult);
     glConstantSet("shadow/pass1_colour", vMult);
     glConstantSet("lighting/ambient_colour", world_ambient);
 
     nlVector4 svolColour = { 0.0f, 0.0f, 0.0f, 0.0f };
-    svolColour.f.x = (float)g_LightMult;
+    svolColour.x = (float)g_LightMult;
     glConstantSet("lighting/range", svolColour);
 
     nlVector4 vWarble = { 0.0f, 0.0f, 0.0f, 0.0f };
-    vWarble.f.x = g_WarbleDivisor;
+    vWarble.x = g_WarbleDivisor;
     glConstantSet("warble/divisor", vWarble);
 
     nlVector4 vTexel = { 0.0f, 0.0f, 0.0f, 0.0f };
-    vTexel.f.x = g_bTexelDensity ? 1.0f : 0.0f;
+    vTexel.x = g_bTexelDensity ? 1.0f : 0.0f;
     glConstantSet("texture/density", vTexel);
 }
 

@@ -1427,15 +1427,15 @@ void AudioLoader::SetupInGameListener()
         float dz;
         float dy;
         float dx;
-        dy = vCameraTarg.f.y - vCameraPos.f.y;
-        dx = vCameraTarg.f.x - vCameraPos.f.x;
-        dz = vCameraTarg.f.z - vCameraPos.f.z;
+        dy = vCameraTarg.y - vCameraPos.y;
+        dx = vCameraTarg.x - vCameraPos.x;
+        dz = vCameraTarg.z - vCameraPos.z;
 
         float recipLen = nlRecipSqrt(dx * dx + dy * dy + dz * dz, true);
 
-        vNormHeading.f.x = recipLen * dx;
-        vNormHeading.f.y = recipLen * dy;
-        vNormHeading.f.z = recipLen * dz;
+        vNormHeading.x = recipLen * dx;
+        vNormHeading.y = recipLen * dy;
+        vNormHeading.z = recipLen * dz;
 
         static const nlVector3 kUpVec = { { 0.0f, 0.0f, 0.0f } };
         vNormUp = kUpVec;

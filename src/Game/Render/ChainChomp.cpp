@@ -1,4 +1,5 @@
 #include "Game/Render/ChainChomp.h"
+#include "NL/vmath.h"
 
 #include "Game/Game.h"
 #include "Game/Player.h"
@@ -109,7 +110,7 @@ void ChainChomp::Update(float fDeltaT)
 
         if (mpTarget != NULL)
         {
-            maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(mpTarget->m_v3Position.f.y - mv3Position.f.y, mpTarget->m_v3Position.f.x - mv3Position.f.x));
+            maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(mpTarget->m_v3Position.y - mv3Position.y, mpTarget->m_v3Position.x - mv3Position.x));
         }
 
         Move(fDeltaT);
@@ -120,7 +121,7 @@ void ChainChomp::Update(float fDeltaT)
             SetAnimState(*mpRecoverAnim, 0.0f, PM_HOLD);
 
             v3FallPosition = mv3Position;
-            v3FallPosition.f.z = 0.0f;
+            v3FallPosition.z = 0.0f;
             SetPosition(v3FallPosition);
             mv3Velocity = v3Zero;
 
@@ -134,7 +135,7 @@ void ChainChomp::Update(float fDeltaT)
         if (mpAnimController->m_fTime < 0.625)
         {
             v3RecoverPosition = mpTarget->m_v3Position;
-            v3RecoverPosition.f.z = 0.0f;
+            v3RecoverPosition.z = 0.0f;
             SetPosition(v3RecoverPosition);
         }
 
@@ -179,7 +180,7 @@ void ChainChomp::Update(float fDeltaT)
 
         if (mpTarget != NULL)
         {
-            maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(mpTarget->m_v3Position.f.y - mv3Position.f.y, mpTarget->m_v3Position.f.x - mv3Position.f.x));
+            maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(mpTarget->m_v3Position.y - mv3Position.y, mpTarget->m_v3Position.x - mv3Position.x));
         }
 
         Move(fDeltaT);
@@ -245,7 +246,7 @@ void ChainChomp::Update(float fDeltaT)
             }
         }
 
-        if (fabsf(mv3Position.f.x) > 22.5f)
+        if (fabsf(mv3Position.x) > 22.5f)
         {
             Event* pEvent = g_pEventManager->CreateValidEvent(0x34, 0x1C);
             ShotAtGoalData* pData = new ((u8*)pEvent + 0x10) ShotAtGoalData();
@@ -278,9 +279,9 @@ void ChainChomp::Update(float fDeltaT)
     }
 
     {
-        v3UpdatedPosition.f.x = mv3Position.f.x + fDeltaT * mv3Velocity.f.x;
-        v3UpdatedPosition.f.y = mv3Position.f.y + fDeltaT * mv3Velocity.f.y;
-        v3UpdatedPosition.f.z = mv3Position.f.z + fDeltaT * mv3Velocity.f.z;
+        v3UpdatedPosition.x = mv3Position.x + fDeltaT * mv3Velocity.x;
+        v3UpdatedPosition.y = mv3Position.y + fDeltaT * mv3Velocity.y;
+        v3UpdatedPosition.z = mv3Position.z + fDeltaT * mv3Velocity.z;
         SetPosition(v3UpdatedPosition);
     }
 
@@ -396,8 +397,8 @@ static inline void ChainChompTargetScore(ChainChomp* pChomp, cFielder* pCandidat
     float dy;
     float dx;
 
-    dy = pCandidate->m_v3Position.f.y - pChomp->mv3Position.f.y;
-    dx = pCandidate->m_v3Position.f.x - pChomp->mv3Position.f.x;
+    dy = pCandidate->m_v3Position.y - pChomp->mv3Position.y;
+    dx = pCandidate->m_v3Position.x - pChomp->mv3Position.x;
     float fDist = nlSqrt(dx * dx + dy * dy, true);
     float fConverted = 10430.378f * nlATan2f(dy, dx);
     s16 angleDiff = (s16)(pChomp->maFacingDirection - (u16)(s32)fConverted);
@@ -490,7 +491,7 @@ void ChainChomp::Fall(cFielder* pThrower, cFielder* pTarget)
     meChainChompState = CHAIN_STATE_FALL;
 
     v3StartPosition = mpTarget->m_v3Position;
-    v3StartPosition.f.z = 100.0f;
+    v3StartPosition.z = 100.0f;
     SetPosition(v3StartPosition);
 
     nlVec3Set(v3FallVelocity, 0.0f, 0.0f, -(75.0f / g_pGame->m_pGameTweaks->fChainChompFallTime));
@@ -554,8 +555,8 @@ bool ChainChomp::IsHidden() const
 bool ChainChomp::AvoidSidelines()
 {
     nlVector3 v3WallPosition = GetClosestPointOnSidelines(mv3Position);
-    float dy = v3WallPosition.f.y - mv3Position.f.y;
-    float dx = v3WallPosition.f.x - mv3Position.f.x;
+    float dy = v3WallPosition.y - mv3Position.y;
+    float dx = v3WallPosition.x - mv3Position.x;
     float fDist = nlSqrt(dx * dx + dy * dy, true);
     if (fDist < 3.0f)
     {
@@ -572,7 +573,7 @@ void ChainChomp::Leave()
 
     meChainChompState = CHAIN_STATE_LEAVE;
 
-    if ((0.5f * g_pBall->m_v3Velocity.f.x + g_pBall->m_v3Position.f.x) < 0.0f)
+    if ((0.5f * g_pBall->m_v3Velocity.x + g_pBall->m_v3Position.x) < 0.0f)
     {
         fTargetX = 40.0f;
     }
@@ -581,7 +582,7 @@ void ChainChomp::Leave()
         fTargetX = -40.0f;
     }
 
-    fY = mv3Position.f.y;
+    fY = mv3Position.y;
 
     if (fY < 0.0f)
     {
@@ -592,7 +593,7 @@ void ChainChomp::Leave()
         fTargetY = 8.0f;
     }
 
-    float fAngle = nlATan2f(fTargetY - fY, fTargetX - mv3Position.f.x);
+    float fAngle = nlATan2f(fTargetY - fY, fTargetX - mv3Position.x);
     maDesiredFacingDirection = (u16)(s32)(10430.378f * fAngle);
     mfDesiredSpeed = g_pGame->m_pGameTweaks->fChainChompSpeed;
 }
@@ -644,8 +645,8 @@ after_speed:
 
     maFacingDirection = SeekDirection(aChainSpeed.a, maDesiredFacingDirection, fSeekSpeed, 3000.0f, fDeltaT);
 
-    nlPolarToCartesian(v3NewVelocity.f.x, v3NewVelocity.f.y, maFacingDirection, fNewSpeed);
-    v3NewVelocity.f.z = mv3Velocity.f.z;
+    nlPolarToCartesian(v3NewVelocity.x, v3NewVelocity.y, maFacingDirection, fNewSpeed);
+    v3NewVelocity.z = mv3Velocity.z;
     mv3Velocity = v3NewVelocity;
 }
 
@@ -663,9 +664,9 @@ void ChainChomp::DrawShadow(const cPoseAccumulator& pa, const nlMatrix4& worldMa
     nlMatrix4& nodeMatrix = pa.GetNodeMatrix(3);
 
     nlVector3 v3ModelPosition = nodeMatrix.GetTranslation();
-    float y = v3ModelPosition.f.y;
+    float y = v3ModelPosition.y;
 
-    float frac = (mv3Position.f.z - 25.0f) / 75.0f;
+    float frac = (mv3Position.z - 25.0f) / 75.0f;
     if (frac < 0.0f)
         frac = 0.0f;
     if (frac > 1.0f)
@@ -688,27 +689,27 @@ void ChainChomp::DrawShadow(const cPoseAccumulator& pa, const nlMatrix4& worldMa
     c.c[3] = (unsigned char)alpha;
 
     glQuad3 quad;
-    quad.m_pos[0].f.x = v3ModelPosition.f.x - half_dim;
-    quad.m_pos[0].f.y = y - half_dim;
-    quad.m_pos[0].f.z = 0.015625f;
-    quad.m_pos[1].f.x = v3ModelPosition.f.x - half_dim;
-    quad.m_pos[1].f.y = y + half_dim;
-    quad.m_pos[1].f.z = 0.015625f;
-    quad.m_pos[2].f.x = v3ModelPosition.f.x + half_dim;
-    quad.m_pos[2].f.y = y + half_dim;
-    quad.m_pos[2].f.z = 0.015625f;
-    quad.m_pos[3].f.x = v3ModelPosition.f.x + half_dim;
-    quad.m_pos[3].f.y = y - half_dim;
-    quad.m_pos[3].f.z = 0.015625f;
+    quad.m_pos[0].x = v3ModelPosition.x - half_dim;
+    quad.m_pos[0].y = y - half_dim;
+    quad.m_pos[0].z = 0.015625f;
+    quad.m_pos[1].x = v3ModelPosition.x - half_dim;
+    quad.m_pos[1].y = y + half_dim;
+    quad.m_pos[1].z = 0.015625f;
+    quad.m_pos[2].x = v3ModelPosition.x + half_dim;
+    quad.m_pos[2].y = y + half_dim;
+    quad.m_pos[2].z = 0.015625f;
+    quad.m_pos[3].x = v3ModelPosition.x + half_dim;
+    quad.m_pos[3].y = y - half_dim;
+    quad.m_pos[3].z = 0.015625f;
 
-    quad.m_uv[0].f.x = 1.0f;
-    quad.m_uv[0].f.y = 1.0f;
-    quad.m_uv[1].f.x = 0.0f;
-    quad.m_uv[1].f.y = 1.0f;
-    quad.m_uv[2].f.x = 0.0f;
-    quad.m_uv[2].f.y = 0.0f;
-    quad.m_uv[3].f.x = 1.0f;
-    quad.m_uv[3].f.y = 0.0f;
+    quad.m_uv[0].x = 1.0f;
+    quad.m_uv[0].y = 1.0f;
+    quad.m_uv[1].x = 0.0f;
+    quad.m_uv[1].y = 1.0f;
+    quad.m_uv[2].x = 0.0f;
+    quad.m_uv[2].y = 0.0f;
+    quad.m_uv[3].x = 1.0f;
+    quad.m_uv[3].y = 0.0f;
 
     quad.m_colour[3] = c;
     quad.m_colour[2] = c;

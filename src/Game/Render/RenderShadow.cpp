@@ -49,7 +49,7 @@ void ShadowStartup()
     pCylinder = glInventory.GetModel(nlStringHash("debug/cylinder"));
     pBox = glInventory.GetModel(nlStringHash("debug/box"));
     const nlVector4& result = glConstantGet("target/pshadow_num");
-    MaxProjectedShadows = (int)result.f.x;
+    MaxProjectedShadows = (int)result.x;
 }
 
 /**
@@ -136,11 +136,11 @@ u8 ShouldShadowBeUpdated(const ProjectedShadowParams& params)
     float fRadius = 2.0f * params.fRadius;
     nlMatrix4 mWorld;
     mWorld.SetIdentity();
-    mWorld.f.m41 = params.vPosition.f.x;
-    mWorld.f.m42 = params.vPosition.f.y;
-    mWorld.f.m43 = params.vPosition.f.z;
-    mWorld.f.m44 = 1.0f;
-    mWorld.f.m43 += 0.625f * params.fHeight;
+    mWorld.m41 = params.vPosition.x;
+    mWorld.m42 = params.vPosition.y;
+    mWorld.m43 = params.vPosition.z;
+    mWorld.m44 = 1.0f;
+    mWorld.m43 += 0.625f * params.fHeight;
 
     u8 isVisible = WorldManager::s_World->IsSphereInFrustum(mWorld, fRadius);
     u32 interval;
@@ -187,9 +187,9 @@ void RenderCharacterIntoTexture(const ProjectedShadowParams& params)
     }
     else
     {
-        shadowPos.f.x = params.vLight.f.x;
-        shadowPos.f.y = params.vLight.f.y;
-        shadowPos.f.z = params.vLight.f.z;
+        shadowPos.x = params.vLight.x;
+        shadowPos.y = params.vLight.y;
+        shadowPos.z = params.vLight.z;
     }
 
     targetPos = params.vPosition;
@@ -199,17 +199,17 @@ void RenderCharacterIntoTexture(const ProjectedShadowParams& params)
         float lx;
         float ly;
         float lz;
-        lz = -shadowPos.f.z;
-        ly = -shadowPos.f.y;
-        lx = -shadowPos.f.x;
+        lz = -shadowPos.z;
+        ly = -shadowPos.y;
+        lx = -shadowPos.x;
         float lenSq = lx * lx + ly * ly + lz * lz;
         float len = nlSqrt(lenSq, true);
         float invLen = nlRecipSqrt(lenSq, false);
 
         float scale = len * (s_fLightDist * radius);
-        eyePos.f.x = targetPos.f.x + scale * (invLen * lx);
-        eyePos.f.y = targetPos.f.y + scale * (invLen * ly);
-        eyePos.f.z = targetPos.f.z + scale * (invLen * lz);
+        eyePos.x = targetPos.x + scale * (invLen * lx);
+        eyePos.y = targetPos.y + scale * (invLen * ly);
+        eyePos.z = targetPos.z + scale * (invLen * lz);
     }
     else
     {
@@ -218,9 +218,9 @@ void RenderCharacterIntoTexture(const ProjectedShadowParams& params)
     }
 
     float eyeDistance = nlSqrt(nlGetLengthSquared3D(
-                                   targetPos.f.x - eyePos.f.x,
-                                   targetPos.f.y - eyePos.f.y,
-                                   targetPos.f.z - eyePos.f.z),
+                                   targetPos.x - eyePos.x,
+                                   targetPos.y - eyePos.y,
+                                   targetPos.z - eyePos.z),
         true);
 
     float ratio = radius / eyeDistance;
@@ -292,10 +292,10 @@ void RenderCharacterIntoTexture(const ProjectedShadowParams& params)
     nlSNPrintf(buffer, 32, "target/pshadow_updated%02d", params.nPartitionIndex);
 
     nlVector4 v;
-    v.f.x = 1.0f;
-    v.f.y = 0.0f;
-    v.f.z = 0.0f;
-    v.f.w = 0.0f;
+    v.x = 1.0f;
+    v.y = 0.0f;
+    v.z = 0.0f;
+    v.w = 0.0f;
     glConstantSet(buffer, v);
 }
 
@@ -308,10 +308,10 @@ void SetCharacterShadowUpdated(int index, bool updated)
     nlSNPrintf(buffer, 32, "target/pshadow_updated%02d", index);
 
     nlVector4 v;
-    v.f.x = updated ? 1.0f : 0.0f;
-    v.f.y = 0.0f;
-    v.f.z = 0.0f;
-    v.f.w = 0.0f;
+    v.x = updated ? 1.0f : 0.0f;
+    v.y = 0.0f;
+    v.z = 0.0f;
+    v.w = 0.0f;
 
     glConstantSet(buffer, v);
 }
@@ -330,19 +330,19 @@ static void SubdivideAndRender(glQuad3& quad, eGLView view)
     glQuad3 q;
     glModelPacket* pPacket;
 
-    p0.f.x = 0.5f * quad.m_pos[0].f.x + 0.5f * quad.m_pos[3].f.x;
-    p0.f.y = 0.5f * quad.m_pos[0].f.y + 0.5f * quad.m_pos[3].f.y;
-    p0.f.z = 0.5f * quad.m_pos[0].f.z + 0.5f * quad.m_pos[3].f.z;
+    p0.x = 0.5f * quad.m_pos[0].x + 0.5f * quad.m_pos[3].x;
+    p0.y = 0.5f * quad.m_pos[0].y + 0.5f * quad.m_pos[3].y;
+    p0.z = 0.5f * quad.m_pos[0].z + 0.5f * quad.m_pos[3].z;
 
-    p1.f.x = 0.5f * quad.m_pos[1].f.x + 0.5f * quad.m_pos[2].f.x;
-    p1.f.y = 0.5f * quad.m_pos[1].f.y + 0.5f * quad.m_pos[2].f.y;
-    p1.f.z = 0.5f * quad.m_pos[1].f.z + 0.5f * quad.m_pos[2].f.z;
+    p1.x = 0.5f * quad.m_pos[1].x + 0.5f * quad.m_pos[2].x;
+    p1.y = 0.5f * quad.m_pos[1].y + 0.5f * quad.m_pos[2].y;
+    p1.z = 0.5f * quad.m_pos[1].z + 0.5f * quad.m_pos[2].z;
 
-    uv0.f.x = 0.5f * quad.m_uv[0].f.x + 0.5f * quad.m_uv[3].f.x;
-    uv0.f.y = 0.5f * quad.m_uv[0].f.y + 0.5f * quad.m_uv[3].f.y;
+    uv0.x = 0.5f * quad.m_uv[0].x + 0.5f * quad.m_uv[3].x;
+    uv0.y = 0.5f * quad.m_uv[0].y + 0.5f * quad.m_uv[3].y;
 
-    uv1.f.x = 0.5f * quad.m_uv[1].f.x + 0.5f * quad.m_uv[2].f.x;
-    uv1.f.y = 0.5f * quad.m_uv[1].f.y + 0.5f * quad.m_uv[2].f.y;
+    uv1.x = 0.5f * quad.m_uv[1].x + 0.5f * quad.m_uv[2].x;
+    uv1.y = 0.5f * quad.m_uv[1].y + 0.5f * quad.m_uv[2].y;
 
     c = quad.m_colour[0];
     c.c[3] = (unsigned char)g_Alpha[1];
@@ -426,8 +426,8 @@ static void RenderBlobShadow(const nlVector3& vPosition, const nlVector3* pPoint
 
     float posX, posY, antiFlimmer;
     antiFlimmer = g_AntiFlimmer;
-    posY = vPosition.f.y;
-    posX = vPosition.f.x;
+    posY = vPosition.y;
+    posX = vPosition.x;
 
     if (pColour == NULL)
     {
@@ -447,27 +447,27 @@ static void RenderBlobShadow(const nlVector3& vPosition, const nlVector3* pPoint
         float hw = half_w;
         float hh = half_h;
 
-        quad.m_pos[0].f.x = posX - hw;
-        quad.m_pos[0].f.y = posY - hh;
-        quad.m_pos[0].f.z = antiFlimmer;
-        quad.m_pos[1].f.x = posX - hw;
-        quad.m_pos[1].f.y = posY + hh;
-        quad.m_pos[1].f.z = antiFlimmer;
-        quad.m_pos[2].f.x = posX + hw;
-        quad.m_pos[2].f.y = posY + hh;
-        quad.m_pos[2].f.z = antiFlimmer;
-        quad.m_pos[3].f.x = posX + hw;
-        quad.m_pos[3].f.y = posY - hh;
-        quad.m_pos[3].f.z = antiFlimmer;
+        quad.m_pos[0].x = posX - hw;
+        quad.m_pos[0].y = posY - hh;
+        quad.m_pos[0].z = antiFlimmer;
+        quad.m_pos[1].x = posX - hw;
+        quad.m_pos[1].y = posY + hh;
+        quad.m_pos[1].z = antiFlimmer;
+        quad.m_pos[2].x = posX + hw;
+        quad.m_pos[2].y = posY + hh;
+        quad.m_pos[2].z = antiFlimmer;
+        quad.m_pos[3].x = posX + hw;
+        quad.m_pos[3].y = posY - hh;
+        quad.m_pos[3].z = antiFlimmer;
 
-        quad.m_uv[0].f.x = 1.0f;
-        quad.m_uv[0].f.y = 1.0f;
-        quad.m_uv[1].f.x = 0.0f;
-        quad.m_uv[1].f.y = 1.0f;
-        quad.m_uv[2].f.x = 0.0f;
-        quad.m_uv[2].f.y = 0.0f;
-        quad.m_uv[3].f.x = 1.0f;
-        quad.m_uv[3].f.y = 0.0f;
+        quad.m_uv[0].x = 1.0f;
+        quad.m_uv[0].y = 1.0f;
+        quad.m_uv[1].x = 0.0f;
+        quad.m_uv[1].y = 1.0f;
+        quad.m_uv[2].x = 0.0f;
+        quad.m_uv[2].y = 0.0f;
+        quad.m_uv[3].x = 1.0f;
+        quad.m_uv[3].y = 0.0f;
     }
     else
     {
@@ -493,8 +493,8 @@ static void RenderBlobShadow(const nlVector3& vPosition, const nlVector3* pPoint
             idx = uvOrder[0];
         }
         pUV = &quad.m_uv[idx];
-        pUV->f.x = 0.75f;
-        pUV->f.y = 0.666f;
+        pUV->x = 0.75f;
+        pUV->y = 0.666f;
 
         if (uvOrder == NULL)
         {
@@ -505,8 +505,8 @@ static void RenderBlobShadow(const nlVector3& vPosition, const nlVector3* pPoint
             idx = uvOrder[1];
         }
         pUV = &quad.m_uv[idx];
-        pUV->f.x = 0.25f;
-        pUV->f.y = 0.666f;
+        pUV->x = 0.25f;
+        pUV->y = 0.666f;
 
         if (uvOrder == NULL)
         {
@@ -517,8 +517,8 @@ static void RenderBlobShadow(const nlVector3& vPosition, const nlVector3* pPoint
             idx = uvOrder[2];
         }
         pUV = &quad.m_uv[idx];
-        pUV->f.x = 0.25f;
-        pUV->f.y = 0.125f;
+        pUV->x = 0.25f;
+        pUV->y = 0.125f;
 
         if (uvOrder == NULL)
         {
@@ -529,8 +529,8 @@ static void RenderBlobShadow(const nlVector3& vPosition, const nlVector3* pPoint
             idx = uvOrder[3];
         }
         pUV = &quad.m_uv[idx];
-        pUV->f.x = 0.75f;
-        pUV->f.y = 0.125f;
+        pUV->x = 0.75f;
+        pUV->y = 0.125f;
     }
 
     quad.m_colour[1] = c;
@@ -559,18 +559,18 @@ static void RenderBlobShadow(const nlVector3& vPosition, const nlVector3* pPoint
 
 static inline void CastDirectional(nlVector3& p, const nlVector3& lightPos)
 {
-    float lz = -lightPos.f.z;
-    float ly = -lightPos.f.y;
-    float lx = -lightPos.f.x;
-    float pz = p.f.z;
-    float py = p.f.y;
-    float px = p.f.x;
+    float lz = -lightPos.z;
+    float ly = -lightPos.y;
+    float lx = -lightPos.x;
+    float pz = p.z;
+    float py = p.y;
+    float px = p.x;
     nlVector3 vDir;
     nlVec3Set(vDir, lx, ly, lz);
     nlVec3Scale(vDir, nlRecipSqrt(vDir.GetLengthSq3D(), false));
-    float dirX = vDir.f.x;
-    float dirY = vDir.f.y;
-    float dirZ = vDir.f.z;
+    float dirX = vDir.x;
+    float dirY = vDir.y;
+    float dirZ = vDir.z;
 
     float Vx = 0.0f;
     float Vy = 0.0f;
@@ -579,9 +579,9 @@ static inline void CastDirectional(nlVector3& p, const nlVector3& lightPos)
     float den = Vx * dirX + Vy * dirY + Vz * dirZ;
     float t = -(num / den);
 
-    p.f.x = px + t * dirX;
-    p.f.y = py + t * dirY;
-    p.f.z = pz + t * dirZ;
+    p.x = px + t * dirX;
+    p.y = py + t * dirY;
+    p.z = pz + t * dirZ;
 }
 
 static inline void CastPoint(nlVector3& p, const nlVector3& vLight)
@@ -590,20 +590,20 @@ static inline void CastPoint(nlVector3& p, const nlVector3& vLight)
     nlVector4 Q = { 0.0f, 0.0f, 0.0f, 1.0f };
     nlVector4 L = { 0.0f, 0.0f, 0.0f, 0.0f };
 
-    Q.f.x = p.f.x;
-    Q.f.y = p.f.y;
-    Q.f.z = p.f.z;
+    Q.x = p.x;
+    Q.y = p.y;
+    Q.z = p.z;
 
-    L.f.x = Q.f.x - vLight.f.x;
-    L.f.y = Q.f.y - vLight.f.y;
-    L.f.z = Q.f.z - vLight.f.z;
+    L.x = Q.x - vLight.x;
+    L.y = Q.y - vLight.y;
+    L.z = Q.z - vLight.z;
 
-    float t = -((V.f.x * Q.f.x + V.f.y * Q.f.y + V.f.z * Q.f.z + V.f.w * Q.f.w)
-        / (V.f.x * L.f.x + V.f.y * L.f.y + V.f.z * L.f.z + V.f.w * L.f.w));
+    float t = -((V.x * Q.x + V.y * Q.y + V.z * Q.z + V.w * Q.w)
+        / (V.x * L.x + V.y * L.y + V.z * L.z + V.w * L.w));
 
-    p.f.x = Q.f.x + t * L.f.x;
-    p.f.y = Q.f.y + t * L.f.y;
-    p.f.z = Q.f.z + t * L.f.z;
+    p.x = Q.x + t * L.x;
+    p.y = Q.y + t * L.y;
+    p.z = Q.z + t * L.z;
 }
 
 /**
@@ -638,9 +638,9 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
         float y;
         float z;
         float x;
-        y = params.vLight.f.y;
-        z = params.vLight.f.z;
-        x = params.vLight.f.x;
+        y = params.vLight.y;
+        z = params.vLight.z;
+        x = params.vLight.x;
         nlVec3Set(vLight, x, y, z);
     }
 
@@ -650,7 +650,7 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
         nlVector3 vDir;
         vDir.Sub2D(vTemp, vLight);
         vDir.z = 0.0f;
-        vTemp.f.z += 0.5f * height;
+        vTemp.z += 0.5f * height;
 
         nlVec3Scale(vDir, nlRecipSqrt(vDir.GetLengthSq3D(), false));
         nlVec3CrossProduct(vDir, vDir, vUp);
@@ -664,7 +664,7 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
         nlVec3ScaleAdd(p[0], -0.5f * height, vUp, p[0]);
         nlVec3ScaleAdd(p[1], -0.5f * height, vUp, p[1]);
         float halfH = 0.5f * height;
-        vTemp.f.z += halfH;
+        vTemp.z += halfH;
         nlVec3ScaleAdd(p[2], -0.5f * width, vDir, vTemp);
         nlVec3ScaleAdd(p[3], 0.5f * width, vDir, vTemp);
         nlVec3ScaleAdd(p[2], 0.5f * height, vUp, p[2]);
@@ -697,29 +697,29 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
                 CastPoint(*pPoint, vLight);
             }
 
-            pPoint->f.z = g_AntiFlimmer;
+            pPoint->z = g_AntiFlimmer;
         }
     }
 
     dir = vLight;
-    dir.f.z = 0.0f;
+    dir.z = 0.0f;
 
     {
         nlVec3Scale(dir, nlRecipSqrt(dir.GetLengthSq3D(), false));
     }
 
     {
-        float xAdjust = g_fProjectionAdjust * dir.f.x;
-        float yAdjust = g_fProjectionAdjust * dir.f.y;
+        float xAdjust = g_fProjectionAdjust * dir.x;
+        float yAdjust = g_fProjectionAdjust * dir.y;
 
-        p[0].f.x += xAdjust;
-        p[0].f.y += yAdjust;
-        p[1].f.x += xAdjust;
-        p[1].f.y += yAdjust;
-        p[2].f.x += xAdjust;
-        p[2].f.y += yAdjust;
-        p[3].f.x += xAdjust;
-        p[3].f.y += yAdjust;
+        p[0].x += xAdjust;
+        p[0].y += yAdjust;
+        p[1].x += xAdjust;
+        p[1].y += yAdjust;
+        p[2].x += xAdjust;
+        p[2].y += yAdjust;
+        p[3].x += xAdjust;
+        p[3].y += yAdjust;
     }
 
     if (g_bShadowBounds)
@@ -747,10 +747,10 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
     {
         nlMatrix4 mLight;
         mLight.SetIdentity();
-        mLight.f.m41 = vLight.f.x;
-        mLight.f.m42 = vLight.f.y;
-        mLight.f.m43 = vLight.f.z;
-        mLight.f.m44 = 1.0f;
+        mLight.m41 = vLight.x;
+        mLight.m42 = vLight.y;
+        mLight.m43 = vLight.z;
+        mLight.m44 = 1.0f;
 
         c.c[0] = 0xFF;
         c.c[1] = 0xFF;

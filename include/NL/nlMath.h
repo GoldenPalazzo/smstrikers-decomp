@@ -4,31 +4,21 @@
 #include "types.h"
 #include "dolphin/mtx.h"
 
-#ifndef _FAKE_TGMATH_H_
 #include "math.h"
 #include "cmath.h"
-#else
-namespace std
-{
-inline float fabsf(float value)
-{
-    return ::fabsf(value);
-}
-} // namespace std
-#endif
 
-float nlBezier(float*, int, float);
-float nlATan2f(float, float);
-float nlTan(unsigned short);
-int nlACos(float);
+float nlBezier(float* fControlPoints, int nNumPoints, float fMu);
+float nlATan2f(float y, float x);
+float nlTan(unsigned short angle);
+int nlACos(float x);
 void nlSinCos(float* presult_sin, float* presult_cos, unsigned short angle);
-float nlSin(unsigned short);
-float nlRecipSqrt(float, bool);
-float nlSqrt(float, bool);
-float nlRandomf(float, float, unsigned int*);
-float nlRandomf(float, unsigned int*);
-unsigned int nlRandom(unsigned int, unsigned int*);
-void nlSetRandomSeed(unsigned int, unsigned int*);
+float nlSin(unsigned short angle);
+float nlRecipSqrt(float x, bool bAccurate);
+float nlSqrt(float x, bool bAccurate);
+float nlRandomf(float fMin, float fMax, unsigned int* pSeed);
+float nlRandomf(float fMax, unsigned int* pSeed);
+unsigned int nlRandom(unsigned int range, unsigned int* seed);
+void nlSetRandomSeed(unsigned int value, unsigned int* seed);
 void nlInitRandom();
 
 inline unsigned int nlAlignUp(unsigned int value, unsigned int alignment)
@@ -63,11 +53,6 @@ public:
         {
             float x;
             float y;
-        } f;
-        struct
-        {
-            float x;
-            float y;
         };
     };
 };
@@ -84,12 +69,6 @@ public:
             float x;
             float y;
             float z;
-        } f;
-        struct
-        {
-            float x;
-            float y;
-            float z;
         };
     };
 
@@ -97,41 +76,39 @@ public:
 
     inline float CalculateDistanceSquared2D(const nlVector3& v)
     {
-        float dx = f.x - v.f.x;
-        float dy = f.y - v.f.y;
+        float dx = x - v.x;
+        float dy = y - v.y;
         return dx * dx + dy * dy;
     }
 
     inline float GetLengthSq2D() const
     {
-        return f.x * f.x + f.y * f.y;
+        return x * x + y * y;
     }
 
     inline void Sub2D(const nlVector3& a, const nlVector3& b)
     {
-        float y = a.f.y - b.f.y;
-        float x = a.f.x - b.f.x;
-        f.x = x;
-        f.y = y;
+        float dy = a.y - b.y;
+        float dx = a.x - b.x;
+        x = dx;
+        y = dy;
     }
 
     inline float GetLengthSq3D() const
     {
-        return f.x * f.x + f.y * f.y + f.z * f.z;
+        return x * x + y * y + z * z;
     }
 };
 
-#pragma cpp_extensions reset
-
 inline void nlVec2Set(nlVector2& v0, float _x, float _y)
 {
-    v0.f.x = _x;
-    v0.f.y = _y;
+    v0.x = _x;
+    v0.y = _y;
 }
 
 inline void nlVec2Sub(nlVector2& result, const nlVector2& a, const nlVector2& b)
 {
-    nlVec2Set(result, a.f.x - b.f.x, a.f.y - b.f.y);
+    nlVec2Set(result, a.x - b.x, a.y - b.y);
 }
 
 inline float nlGetLengthSquared1D(float x)
@@ -168,47 +145,46 @@ inline float nlGetLength3D(float x, float y, float z)
 
 inline void nlVec3Set(nlVector3& v0, float _x, float _y, float _z)
 {
-    v0.f.x = _x;
-    v0.f.y = _y;
-    v0.f.z = _z;
+    v0.x = _x;
+    v0.y = _y;
+    v0.z = _z;
 }
 
 inline void nlVec3Sub(nlVector3& result, const nlVector3& a, const nlVector3& b)
 {
-    nlVec3Set(result, a.f.x - b.f.x, a.f.y - b.f.y, a.f.z - b.f.z);
+    nlVec3Set(result, a.x - b.x, a.y - b.y, a.z - b.z);
 }
 
 inline void nlVec3Sub2D(nlVector3& result, const nlVector3& a, const nlVector3& b)
 {
-    result.f.x = a.f.x - b.f.x;
-    result.f.y = a.f.y - b.f.y;
+    result.x = a.x - b.x;
+    result.y = a.y - b.y;
 }
 
 inline float nlVec3DotProduct(const nlVector3& a, const nlVector3& b)
 {
-    return (a.f.x * b.f.x) + (a.f.y * b.f.y) + (a.f.z * b.f.z);
+    return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
 }
 
 inline float nlVec3DotProduct2D(const nlVector3& a, const nlVector3& b)
 {
-    return (a.f.x * b.f.x) + (a.f.y * b.f.y);
+    return (a.x * b.x) + (a.y * b.y);
 }
 
 inline void nlVec3CrossProduct(nlVector3& result, const nlVector3& a, const nlVector3& b)
 {
-    float x = (a.f.y * b.f.z) - (a.f.z * b.f.y);
-    float y = (-a.f.x * b.f.z) + (a.f.z * b.f.x);
-    float z = (a.f.x * b.f.y) - (a.f.y * b.f.x);
+    float x = (a.y * b.z) - (a.z * b.y);
+    float y = (-a.x * b.z) + (a.z * b.x);
+    float z = (a.x * b.y) - (a.y * b.x);
     nlVec3Set(result, x, y, z);
 }
 
-// this version is used by PhysicsFinitePlane.cpp and seems to be correct!
 inline void nlVec3CrossProductAlt(nlVector3& result, const nlVector3& a, const nlVector3& b)
 {
     nlVec3Set(result,
-        (a.f.x * b.f.y) - (a.f.y * b.f.x),
-        (-a.f.x * b.f.z) + (a.f.z * b.f.x),
-        (a.f.y * b.f.z) - (a.f.z * b.f.y));
+        (a.x * b.y) - (a.y * b.x),
+        (-a.x * b.z) + (a.z * b.x),
+        (a.y * b.z) - (a.z * b.y));
 }
 
 inline float nlVec3LengthSquared(const nlVector3& v)
@@ -218,55 +194,53 @@ inline float nlVec3LengthSquared(const nlVector3& v)
 
 inline void nlVec3Add(nlVector3& result, const nlVector3& a, const nlVector3& b)
 {
-    nlVec3Set(result, a.f.x + b.f.x, a.f.y + b.f.y, a.f.z + b.f.z);
+    nlVec3Set(result, a.x + b.x, a.y + b.y, a.z + b.z);
 }
 
 inline void nlVec3Add(nlVector3& result, float x, float y, float z)
 {
-    nlVec3Set(result, x + result.f.x, y + result.f.y, z + result.f.z);
+    nlVec3Set(result, x + result.x, y + result.y, z + result.z);
 }
 
 inline void nlVec3Scale(nlVector3& result, const nlVector3& v, const float scale)
 {
-    nlVec3Set(result, scale * v.f.x, scale * v.f.y, scale * v.f.z);
+    nlVec3Set(result, scale * v.x, scale * v.y, scale * v.z);
 }
 
 inline void nlVec3Scale(nlVector3& result, float scale)
 {
-    nlVec3Set(result, scale * result.f.x, scale * result.f.y, scale * result.f.z);
+    nlVec3Set(result, scale * result.x, scale * result.y, scale * result.z);
 }
 
 inline void nlVecLerp(nlVector3& result, const nlVector3& a, const nlVector3& b, float alpha)
 {
     float oneMinusAlpha = 1.0f - alpha;
-    result.f.x = oneMinusAlpha * a.f.x + alpha * b.f.x;
-    result.f.y = oneMinusAlpha * a.f.y + alpha * b.f.y;
-    result.f.z = oneMinusAlpha * a.f.z + alpha * b.f.z;
+    result.x = oneMinusAlpha * a.x + alpha * b.x;
+    result.y = oneMinusAlpha * a.y + alpha * b.y;
+    result.z = oneMinusAlpha * a.z + alpha * b.z;
 }
 
 inline void nlVec3Cross(nlVector3& result, const nlVector3& a, const nlVector3& b)
 {
     nlVec3Set(result,
-        (a.f.y * b.f.z) - (a.f.z * b.f.y),
-        (-a.f.x * b.f.z) + (a.f.z * b.f.x),
-        (a.f.x * b.f.y) - (a.f.y * b.f.x));
+        (a.y * b.z) - (a.z * b.y),
+        (-a.x * b.z) + (a.z * b.x),
+        (a.x * b.y) - (a.y * b.x));
 }
 
-// result = scale * dir + origin
 inline void nlVec3ScaleAdd(nlVector3& result, float scale, const nlVector3& dir, const nlVector3& origin)
 {
     nlVec3Set(result,
-        scale * dir.f.x + origin.f.x,
-        scale * dir.f.y + origin.f.y,
-        scale * dir.f.z + origin.f.z);
+        scale * dir.x + origin.x,
+        scale * dir.y + origin.y,
+        scale * dir.z + origin.z);
 }
 
-// result = wa * a + wb * b (component-wise weighted sum / blend)
 inline void nlVec3WeightedSum(nlVector3& result, float wa, const nlVector3& a, float wb, const nlVector3& b)
 {
-    result.f.x = wa * a.f.x + wb * b.f.x;
-    result.f.y = wa * a.f.y + wb * b.f.y;
-    result.f.z = wa * a.f.z + wb * b.f.z;
+    result.x = wa * a.x + wb * b.x;
+    result.y = wa * a.y + wb * b.y;
+    result.z = wa * a.z + wb * b.z;
 }
 
 class nlVector4
@@ -280,40 +254,31 @@ public:
             float y; // offset 0x4, size 0x4
             float z; // offset 0x8, size 0x4
             float w; // offset 0xC, size 0x4
-        } f;
+        };
         float e[4]; // offset 0x0, size 0x10
     };
-
-    // nlVector4() { }
-    // nlVector4(float x, float y, float z, float w)
-    //     : x(x)
-    //     , y(y)
-    //     , z(z)
-    //     , w(w)
-    // {
-    // }
 }; // total size: 0x10
 
 inline void nlVec4Set(nlVector4& v0, float _x, float _y, float _z, float _w)
 {
-    v0.f.x = _x;
-    v0.f.y = _y;
-    v0.f.z = _z;
-    v0.f.w = _w;
+    v0.x = _x;
+    v0.y = _y;
+    v0.z = _z;
+    v0.w = _w;
 }
 
 inline float nlPlaneDot(const nlVector4& plane, const nlVector3& v)
 {
-    return v.f.x * plane.f.x + v.f.y * plane.f.y + v.f.z * plane.f.z + plane.f.w;
+    return v.x * plane.x + v.y * plane.y + v.z * plane.z + plane.w;
 }
 
-struct nlMatrix3
+class nlMatrix3
 {
-    // float m[3 * 3]; // Flat array access
+public:
     union
-    {                  // inferred
-        float m[9];    // offset 0x0, size 0x24
-        float e[3][3]; // offset 0x0, size 0x24
+    {                   // inferred
+        float e[9];     // offset 0x0, size 0x24
+        float e2[3][3]; // offset 0x0, size 0x24
         struct
         {              // inferred
             float m11; // offset 0x0, size 0x4
@@ -325,45 +290,39 @@ struct nlMatrix3
             float m31; // offset 0x18, size 0x4
             float m32; // offset 0x1C, size 0x4
             float m33; // offset 0x20, size 0x4
-        } f;
+        };
     };
 
     inline void SetIdentity()
     {
-        f.m32 = 0.0f;
-        f.m31 = 0.0f;
-        f.m23 = 0.0f;
-        f.m21 = 0.0f;
-        f.m13 = 0.0f;
-        f.m12 = 0.0f;
+        m32 = 0.0f;
+        m31 = 0.0f;
+        m23 = 0.0f;
+        m21 = 0.0f;
+        m13 = 0.0f;
+        m12 = 0.0f;
 
-        f.m33 = 1.0f;
-        f.m22 = 1.0f;
-        f.m11 = 1.0f;
+        m33 = 1.0f;
+        m22 = 1.0f;
+        m11 = 1.0f;
     }
 
     inline nlVector2 operator*(const nlVector2& v_in) const
     {
-        nlVector2 tmp;
-        tmp.f.x = m[6] + ((m[0] * v_in.f.x) + (m[3] * v_in.f.y));
-        tmp.f.y = m[7] + ((m[1] * v_in.f.x) + (m[4] * v_in.f.y));
-        return tmp;
+        nlVector2 result;
+        result.x = e[6] + ((e[0] * v_in.x) + (e[3] * v_in.y));
+        result.y = e[7] + ((e[1] * v_in.x) + (e[4] * v_in.y));
+        return result;
     }
 };
 
-/*
-m[0][0] m[0][1] m[0][2] m[0][3]  // Row 0: offset 0x00, 0x04, 0x08, 0x0C
-m[1][0] m[1][1] m[1][2] m[1][3]  // Row 1: offset 0x10, 0x14, 0x18, 0x1C
-m[2][0] m[2][1] m[2][2] m[2][3]  // Row 2: offset 0x20, 0x24, 0x28, 0x2C
-m[3][0] m[3][1] m[3][2] m[3][3]  // Row 3: offset 0x30, 0x34, 0x38, 0x3C
-*/
-struct nlMatrix4
+class nlMatrix4
 {
-    // Mtx44 m;
+public:
     union
     {
-        float m[4][4]; // offset 0x0, size 0x40
-        float e[16];   // offset 0x0, size 0x40
+        float e2[4][4]; // offset 0x0, size 0x40
+        float e[16];    // offset 0x0, size 0x40
         struct
         {              // inferred
             float m11; // offset 0x0, size 0x4
@@ -382,71 +341,50 @@ struct nlMatrix4
             float m42; // offset 0x34, size 0x4
             float m43; // offset 0x38, size 0x4
             float m44; // offset 0x3C, size 0x4
-        } f;
+        };
     };
 
     void SetIdentity();
     void SetColumn(int col, const nlVector3& v);
     unsigned char IsRigidTransformation(float tolerance) const;
 
-    // inline version
     void SetColumn_(int col, const nlVector3& v)
     {
-        m[0][col] = v.f.x;
-        m[1][col] = v.f.y;
-        m[2][col] = v.f.z;
+        e2[0][col] = v.x;
+        e2[1][col] = v.y;
+        e2[2][col] = v.z;
     }
 
-    // inline version
     void SetRow_(int row, const nlVector3& v)
     {
-        m[row][0] = v.f.x;
-        m[row][1] = v.f.y;
-        m[row][2] = v.f.z;
-    }
-
-    inline void SetRow3_(int row, const float x, const float y, const float z)
-    {
-        m[row][0] = x;
-        m[row][1] = y;
-        m[row][2] = z;
-        m[row][3] = 1.0f;
+        e2[row][0] = v.x;
+        e2[row][1] = v.y;
+        e2[row][2] = v.z;
     }
 
     void SetRow4_(int row, const float x, const float y, const float z, const float w)
     {
-        m[row][0] = x;
-        m[row][1] = y;
-        m[row][2] = z;
-        m[row][3] = w;
+        e2[row][0] = x;
+        e2[row][1] = y;
+        e2[row][2] = z;
+        e2[row][3] = w;
     }
 
-    /**
-     * Offset/Address/Size: 0x0 | 0x80204294 | size: 0x8
-     */
-    nlVector3& GetTranslation() const
-    {
-        return *(nlVector3*)&f.m41;
-    }
-
-    void SetTranslation(const nlVector3& v)
-    {
-        f.m41 = v.f.x;
-        f.m42 = v.f.y;
-        f.m43 = v.f.z;
-        f.m44 = 1.0f;
-    }
+    nlVector3& GetTranslation() const;
+    void SetTranslation(const nlVector3& trans);
 
     inline nlVector4 operator*(const nlVector4& v_in) const
     {
-        nlVector4 tmp;
-        tmp.f.x = m[0][0] * v_in.f.x + m[1][0] * v_in.f.y + m[2][0] * v_in.f.z + m[3][0] * v_in.f.w;
-        tmp.f.z = m[0][2] * v_in.f.x + m[1][2] * v_in.f.y + m[2][2] * v_in.f.z + m[3][2] * v_in.f.w;
-        tmp.f.y = m[0][1] * v_in.f.x + m[1][1] * v_in.f.y + m[2][1] * v_in.f.z + m[3][1] * v_in.f.w;
-        tmp.f.w = m[0][3] * v_in.f.x + m[1][3] * v_in.f.y + m[2][3] * v_in.f.z + m[3][3] * v_in.f.w;
-        return tmp;
+        nlVector4 result;
+        result.x = e2[0][0] * v_in.x + e2[1][0] * v_in.y + e2[2][0] * v_in.z + e2[3][0] * v_in.w;
+        result.z = e2[0][2] * v_in.x + e2[1][2] * v_in.y + e2[2][2] * v_in.z + e2[3][2] * v_in.w;
+        result.y = e2[0][1] * v_in.x + e2[1][1] * v_in.y + e2[2][1] * v_in.z + e2[3][1] * v_in.w;
+        result.w = e2[0][3] * v_in.x + e2[1][3] * v_in.y + e2[2][3] * v_in.z + e2[3][3] * v_in.w;
+        return result;
     }
 };
+
+#pragma cpp_extensions reset
 
 void nlVecAdd(nlVector3& out, const nlVector3& a, const nlVector3& b);
 
@@ -455,41 +393,13 @@ void nlVecAdd(nlVector3& out, const nlVector3& a, const nlVector3& b);
  */
 inline void ConvertNLMat3ToDMat3(const nlMatrix3& src, float* dest)
 {
-    nlVec3Set(*(nlVector3*)dest, src.m[0], src.m[3], src.m[6]);
-    nlVec3Set(*(nlVector3*)&dest[4], src.m[1], src.m[4], src.m[7]);
-    nlVec3Set(*(nlVector3*)&dest[8], src.m[2], src.m[5], src.m[8]);
-}
-
-/**
- * Convert a nlMatrix4 [4x4] matrix to a [4x3] ODE matrix
- * Mathematical Operation: Row-wise transpose of first 3 rows
- *
- * Input 4x4 Matrix:     Output 4x3 Matrix:
- * [m00 m01 m02 m03]     [m00 m01 m02]
- * [m10 m11 m12 m13]  ->  [m10 m11 m12]
- * [m20 m21 m22 m23]     [m20 m21 m22]
- * [m30 m31 m32 m33]     [m30 m31 m32]
- *
- * Takes rows 0, 1, 2 from 4x4 matrix and stores them as columns 0, 1, 2 in 4x3 matrix
- */
-inline void ConvertNLMat4ToDMat3(const nlMatrix4& src, float* dest)
-{
-    nlVec4Set(*(nlVector4*)&dest[0], src.e[0], src.e[3], src.e[6], src.e[9]);
-    nlVec4Set(*(nlVector4*)&dest[4], src.e[1], src.e[4], src.e[7], src.e[10]);
-    nlVec4Set(*(nlVector4*)&dest[8], src.e[2], src.e[5], src.e[8], src.e[11]);
+    nlVec3Set(*(nlVector3*)dest, src.e[0], src.e[3], src.e[6]);
+    nlVec3Set(*(nlVector3*)&dest[4], src.e[1], src.e[4], src.e[7]);
+    nlVec3Set(*(nlVector3*)&dest[8], src.e[2], src.e[5], src.e[8]);
 }
 
 /**
  * Convert a nlMatrix4 [4x4] matrix to a [4x3] ODE matrix (Column Transpose)
- * Mathematical Operation: Column-wise transpose of first 3 columns
- *
- * Input 4x4 Matrix:     Output 4x3 Matrix:
- * [m00 m01 m02 m03]     [m00 m10 m20]
- * [m10 m11 m12 m13]  ->  [m01 m11 m21]
- * [m20 m21 m22 m23]     [m02 m12 m22]
- * [m30 m31 m32 m33]     [m03 m13 m23]
- *
- * Takes columns 0, 1, 2 from 4x4 matrix and stores them as rows 0, 1, 2 in 4x3 matrix
  */
 inline void ConvertNLMat4ToDMat3_Transposed(const nlMatrix4& src, float* dest)
 {

@@ -33,10 +33,10 @@ AvoidController::AvoidController(cFielder* fielder)
     m_UseMinimumAvoidance = false;
     m_pIgnoreThisPlayer = 0;
 
-    m_SidelineNormal.f.x = 0.0f;
-    m_SidelineNormal.f.y = 0.0f;
-    m_SidelineDirection.f.x = 0.0f;
-    m_SidelineDirection.f.y = 0.0f;
+    m_SidelineNormal.x = 0.0f;
+    m_SidelineNormal.y = 0.0f;
+    m_SidelineDirection.x = 0.0f;
+    m_SidelineDirection.y = 0.0f;
 
     m_LastRepulsionVector[0] = v3Zero;
     m_LastRepulsionVector[1] = v3Zero;
@@ -258,9 +258,9 @@ void AvoidController::Update(float)
         if (fTotalWeight_v3 > 0.0f)
         {
             float fInvTotalWeight = 1.0f / fTotalWeight_v3;
-            v3FinalRepulsion.f.x = fInvTotalWeight * vAccumulated_v3.f.x;
-            v3FinalRepulsion.f.y = fInvTotalWeight * vAccumulated_v3.f.y;
-            v3FinalRepulsion.f.z = fInvTotalWeight * vAccumulated_v3.f.z;
+            v3FinalRepulsion.x = fInvTotalWeight * vAccumulated_v3.x;
+            v3FinalRepulsion.y = fInvTotalWeight * vAccumulated_v3.y;
+            v3FinalRepulsion.z = fInvTotalWeight * vAccumulated_v3.z;
         }
         else
         {
@@ -284,9 +284,9 @@ void AvoidController::Update(float)
     else
     {
         float fLastRepulsionWeight = 0.95f;
-        v3FinalRepulsion.f.x = fLastRepulsionWeight * m_LastRepulsionVector[5].f.x;
-        v3FinalRepulsion.f.y = fLastRepulsionWeight * m_LastRepulsionVector[5].f.y;
-        v3FinalRepulsion.f.z = fLastRepulsionWeight * m_LastRepulsionVector[5].f.z;
+        v3FinalRepulsion.x = fLastRepulsionWeight * m_LastRepulsionVector[5].x;
+        v3FinalRepulsion.y = fLastRepulsionWeight * m_LastRepulsionVector[5].y;
+        v3FinalRepulsion.z = fLastRepulsionWeight * m_LastRepulsionVector[5].z;
 
         if ((m_ThingsToAvoid != 0) && (nlVec3LengthSquared(v3FinalRepulsion) > 0.1f))
         {
@@ -313,9 +313,9 @@ bool AvoidController::CalcFielderRepulsionVector(nlVector3& v3OutRepulsion)
     float fDeltaX, fDeltaY, fDeltaZ;
     float fDistance, fMagnitude, fClosingSpeed;
 
-    v3OutRepulsion.f.x = 0.0f;
-    v3OutRepulsion.f.y = 0.0f;
-    v3OutRepulsion.f.z = 0.0f;
+    v3OutRepulsion.x = 0.0f;
+    v3OutRepulsion.y = 0.0f;
+    v3OutRepulsion.z = 0.0f;
 
     for (int i_team = 0; i_team < 2; i_team++)
     {
@@ -327,9 +327,9 @@ bool AvoidController::CalcFielderRepulsionVector(nlVector3& v3OutRepulsion)
                 continue;
             }
 
-            fDeltaZ = m_pFielder->m_v3Position.f.y - pFielder->m_v3Position.f.y;
-            fDeltaX = m_pFielder->m_v3Position.f.x - pFielder->m_v3Position.f.x;
-            fDeltaY = m_pFielder->m_v3Position.f.z - pFielder->m_v3Position.f.z;
+            fDeltaZ = m_pFielder->m_v3Position.y - pFielder->m_v3Position.y;
+            fDeltaX = m_pFielder->m_v3Position.x - pFielder->m_v3Position.x;
+            fDeltaY = m_pFielder->m_v3Position.z - pFielder->m_v3Position.z;
 
             float fDistanceSq = fDeltaZ * fDeltaZ;
             fDistanceSq += fDeltaX * fDeltaX;
@@ -402,14 +402,14 @@ bool AvoidController::CalcGoalieRepulsionVector(nlVector3& v3OutRepulsion)
     {
         Goalie* pGoalie = g_pTeams[i_team]->GetGoalie();
 
-        const float fDeltaY = m_pFielder->m_v3Position.f.y - pGoalie->m_v3Position.f.y;
-        const float fDeltaX = m_pFielder->m_v3Position.f.x - pGoalie->m_v3Position.f.x;
+        const float fDeltaY = m_pFielder->m_v3Position.y - pGoalie->m_v3Position.y;
+        const float fDeltaX = m_pFielder->m_v3Position.x - pGoalie->m_v3Position.x;
         nlVector3 v3Delta;
         nlVec3Set(
             v3Delta,
             fDeltaX,
             fDeltaY,
-            m_pFielder->m_v3Position.f.z - pGoalie->m_v3Position.f.z);
+            m_pFielder->m_v3Position.z - pGoalie->m_v3Position.z);
 
         float fDistanceSq = nlVec3LengthSquared(v3Delta);
         if (fDistanceSq > 16.0f)
@@ -476,9 +476,9 @@ bool AvoidController::CalcBowserRepulsionVector(nlVector3& v3OutRepulsion)
     {
         nlVector3 v3Delta;
         nlVec3Sub(v3Delta, m_pFielder->m_v3Position, pBowser->mv3Position);
-        fDeltaY = v3Delta.f.y;
-        fDeltaX = v3Delta.f.x;
-        fDeltaZ = v3Delta.f.z;
+        fDeltaY = v3Delta.y;
+        fDeltaX = v3Delta.x;
+        fDeltaZ = v3Delta.z;
 
         float fDistanceSq = fDeltaY * fDeltaY;
         fDistanceSq += fDeltaX * fDeltaX;
@@ -531,9 +531,9 @@ bool AvoidController::CalcPowerupRepulsionVector(nlVector3& v3OutRepulsion)
     float fMagnitude;
     float fClosingSpeed;
 
-    v3OutRepulsion.f.x = 0.0f;
-    v3OutRepulsion.f.y = 0.0f;
-    v3OutRepulsion.f.z = 0.0f;
+    v3OutRepulsion.x = 0.0f;
+    v3OutRepulsion.y = 0.0f;
+    v3OutRepulsion.z = 0.0f;
 
     if (m_pFielder->IsInvincible())
     {
@@ -548,9 +548,9 @@ bool AvoidController::CalcPowerupRepulsionVector(nlVector3& v3OutRepulsion)
         {
             nlVector3 delta;
             nlVec3Sub(delta, m_pFielder->m_v3Position, pPowerup->m_v3Position);
-            fDeltaX = delta.f.x;
-            fDeltaY = delta.f.y;
-            fDeltaZ = delta.f.z;
+            fDeltaX = delta.x;
+            fDeltaY = delta.y;
+            fDeltaZ = delta.z;
             float fDistanceSq = nlVec3DotProduct(delta, delta);
 
             if (fDistanceSq > 25.0f)
@@ -569,9 +569,9 @@ bool AvoidController::CalcPowerupRepulsionVector(nlVector3& v3OutRepulsion)
 
             fClosingSpeed = GetClosingSpeed2D(m_pFielder->GetPosition(), m_pFielder->GetVelocity(), pPowerup->m_v3Position, pPowerup->m_v3Velocity);
 
-            float fPowerupSpeedSq = pPowerup->m_v3Velocity.f.x * pPowerup->m_v3Velocity.f.x
-                                  + pPowerup->m_v3Velocity.f.y * pPowerup->m_v3Velocity.f.y
-                                  + pPowerup->m_v3Velocity.f.z * pPowerup->m_v3Velocity.f.z;
+            float fPowerupSpeedSq = pPowerup->m_v3Velocity.x * pPowerup->m_v3Velocity.x
+                                  + pPowerup->m_v3Velocity.y * pPowerup->m_v3Velocity.y
+                                  + pPowerup->m_v3Velocity.z * pPowerup->m_v3Velocity.z;
 
             if (fPowerupSpeedSq <= 2.0f)
             {
@@ -620,7 +620,7 @@ bool AvoidController::CalcDesiredVelocityToAvoidSideline(
 {
     bool bHitSideline = false;
 
-    float fDotNormalVel = vSidelineNormal.f.x * vCurrentDesiredVelDir.f.x + vSidelineNormal.f.y * vCurrentDesiredVelDir.f.y;
+    float fDotNormalVel = vSidelineNormal.x * vCurrentDesiredVelDir.x + vSidelineNormal.y * vCurrentDesiredVelDir.y;
 
     nlVector2* pPos;
     if (m_pFielder->m_pBall != NULL)
@@ -632,8 +632,8 @@ bool AvoidController::CalcDesiredVelocityToAvoidSideline(
         pPos = (nlVector2*)&m_pFielder->m_v3Position;
     }
 
-    float dy = pPos->f.y - vSidelinePos.f.y;
-    float dx = pPos->f.x - vSidelinePos.f.x;
+    float dy = pPos->y - vSidelinePos.y;
+    float dx = pPos->x - vSidelinePos.x;
     float fDistance = nlSqrt(dx * dx + dy * dy, true);
 
     float fMaxDistance = 0.5f;
@@ -664,13 +664,13 @@ bool AvoidController::CalcDesiredVelocityToAvoidSideline(
                 nlSinCos(&fSin, &fCos, 0x4000);
 
                 nlVector2 vParallelVelDir;
-                vParallelVelDir.f.x = vSidelineNormal.f.x * fCos - vSidelineNormal.f.y * fSin;
-                vParallelVelDir.f.y = vSidelineNormal.f.y * fCos + vSidelineNormal.f.x * fSin;
+                vParallelVelDir.x = vSidelineNormal.x * fCos - vSidelineNormal.y * fSin;
+                vParallelVelDir.y = vSidelineNormal.y * fCos + vSidelineNormal.x * fSin;
 
-                if (vParallelVelDir.f.x * vCurrentDesiredVelDir.f.x + vParallelVelDir.f.y * vCurrentDesiredVelDir.f.y < 0.0f)
+                if (vParallelVelDir.x * vCurrentDesiredVelDir.x + vParallelVelDir.y * vCurrentDesiredVelDir.y < 0.0f)
                 {
-                    vParallelVelDir.f.y = v3Zero.f.y - vParallelVelDir.f.y;
-                    vParallelVelDir.f.x = v3Zero.f.x - vParallelVelDir.f.x;
+                    vParallelVelDir.y = v3Zero.y - vParallelVelDir.y;
+                    vParallelVelDir.x = v3Zero.x - vParallelVelDir.x;
                 }
 
                 vNewDesiredVelDir = vParallelVelDir;
@@ -713,14 +713,14 @@ bool AvoidController::CalcDesiredVelocityToAvoidCorner(
 
     float fDistX;
     float fDistY;
-    fDistY = corner.vCenter.f.y - vBallPosition.f.y;
-    fDistX = corner.vCenter.f.x - vBallPosition.f.x;
+    fDistY = corner.vCenter.y - vBallPosition.y;
+    fDistX = corner.vCenter.x - vBallPosition.x;
     if (nlSqrt(fDistX * fDistX + fDistY * fDistY, true) <= corner.fRadius)
     {
         float fDeltaX;
         float fDeltaY;
-        fDeltaY = vBallPosition.f.y - corner.vCenter.f.y;
-        fDeltaX = vBallPosition.f.x - corner.vCenter.f.x;
+        fDeltaY = vBallPosition.y - corner.vCenter.y;
+        fDeltaX = vBallPosition.x - corner.vCenter.x;
 
         f32 fAngle = 10430.378f * nlATan2f(fDeltaY, fDeltaX);
         u16 aCornerToPos = (u16)(s32)fAngle;
@@ -735,8 +735,8 @@ bool AvoidController::CalcDesiredVelocityToAvoidCorner(
         {
             float fFielderX;
             float fFielderY;
-            fFielderY = vPosition.f.y - corner.vCenter.f.y;
-            fFielderX = vPosition.f.x - corner.vCenter.f.x;
+            fFielderY = vPosition.y - corner.vCenter.y;
+            fFielderX = vPosition.x - corner.vCenter.x;
 
             f32 fAngle2 = 10430.378f * nlATan2f(fFielderY, fFielderX);
             u16 aCornerToFielder = (u16)(s32)fAngle2;
@@ -754,8 +754,8 @@ bool AvoidController::CalcDesiredVelocityToAvoidCorner(
                 float ny;
                 ny = fInvDistance * fFielderY;
                 nx = fInvDistance * fFielderX;
-                nlVec2Set(vSidelineNormal, v2Zero.f.x - nx, v2Zero.f.y - ny);
-                nlVec2Set(vSidelinePos, corner.fRadius * nx + corner.vCenter.f.x, corner.fRadius * ny + corner.vCenter.f.y);
+                nlVec2Set(vSidelineNormal, v2Zero.x - nx, v2Zero.y - ny);
+                nlVec2Set(vSidelinePos, corner.fRadius * nx + corner.vCenter.x, corner.fRadius * ny + corner.vCenter.y);
                 bHitSideline = CalcDesiredVelocityToAvoidSideline(
                     vNewDesiredVelDir, vCurrentDesiredVelDir, vCurrentVelDir, vSidelinePos, vSidelineNormal);
             }
@@ -763,7 +763,7 @@ bool AvoidController::CalcDesiredVelocityToAvoidCorner(
             {
                 float fInvDistance = nlRecipSqrt(fDeltaX * fDeltaX + fDeltaY * fDeltaY, true);
                 float ny = fInvDistance * fDeltaY;
-                float sidelineNormalY = v2Zero.f.y - ny;
+                float sidelineNormalY = v2Zero.y - ny;
                 float nx = fInvDistance * fDeltaX;
                 float sidelinePosX;
                 float sidelinePosY;
@@ -772,17 +772,17 @@ bool AvoidController::CalcDesiredVelocityToAvoidCorner(
                 float fCornerDistY;
                 float fDotNormalVelY;
                 float fDotNormalVel;
-                sidelinePosY = corner.fRadius * ny + corner.vCenter.f.y;
-                sidelinePosX = corner.fRadius * nx + corner.vCenter.f.x;
-                fCornerDistY = vBallPosition.f.y - sidelinePosY;
-                sidelineNormalX = v2Zero.f.x - nx;
-                fDotNormalVelY = sidelineNormalY * vCurrentDesiredVelDir.f.y;
-                fDotNormalVel = sidelineNormalX * vCurrentDesiredVelDir.f.x + fDotNormalVelY;
-                fCornerDistX = vBallPosition.f.x - sidelinePosX;
-                vSidelineNormal.f.y = sidelineNormalY;
-                vSidelineNormal.f.x = sidelineNormalX;
-                vSidelinePos.f.x = sidelinePosX;
-                vSidelinePos.f.y = sidelinePosY;
+                sidelinePosY = corner.fRadius * ny + corner.vCenter.y;
+                sidelinePosX = corner.fRadius * nx + corner.vCenter.x;
+                fCornerDistY = vBallPosition.y - sidelinePosY;
+                sidelineNormalX = v2Zero.x - nx;
+                fDotNormalVelY = sidelineNormalY * vCurrentDesiredVelDir.y;
+                fDotNormalVel = sidelineNormalX * vCurrentDesiredVelDir.x + fDotNormalVelY;
+                fCornerDistX = vBallPosition.x - sidelinePosX;
+                vSidelineNormal.y = sidelineNormalY;
+                vSidelineNormal.x = sidelineNormalX;
+                vSidelinePos.x = sidelinePosX;
+                vSidelinePos.y = sidelinePosY;
                 float fDistance = nlSqrt(fCornerDistX * fCornerDistX + fCornerDistY * fCornerDistY, true);
                 float fMaxDistance = 0.5f;
                 fDistance -= m_pFTweaks->fPhysCapsuleRadius;
@@ -831,8 +831,8 @@ bool AvoidController::AvoidSidelines()
 
     bTurboAllowed = true;
 
-    nlSinCos(&vCurrentVelDir.f.y, &vCurrentVelDir.f.x, m_pFielder->m_aActualMovementDirection);
-    nlSinCos(&vCurrentDesiredVelDir.f.y, &vCurrentDesiredVelDir.f.x, m_pFielder->m_aDesiredMovementDirection);
+    nlSinCos(&vCurrentVelDir.y, &vCurrentVelDir.x, m_pFielder->m_aActualMovementDirection);
+    nlSinCos(&vCurrentDesiredVelDir.y, &vCurrentDesiredVelDir.x, m_pFielder->m_aDesiredMovementDirection);
 
     vNewDesiredVelDir = vCurrentDesiredVelDir;
 
@@ -861,17 +861,17 @@ bool AvoidController::AvoidSidelines()
             sSideLinePlane* pSide = (sSideLinePlane*)(pBase + i * sizeof(sSideLinePlane));
             nlVector2 vSidelineNormal;
             nlVector2 vSidelinePos = *(nlVector2*)&m_pFielder->m_v3Position;
-            float normY = v2Zero.f.y - pSide->vNormal.f.y;
-            vSidelineNormal.f.x = v2Zero.f.x - pSide->vNormal.f.x;
-            vSidelineNormal.f.y = normY;
+            float normY = v2Zero.y - pSide->vNormal.y;
+            vSidelineNormal.x = v2Zero.x - pSide->vNormal.x;
+            vSidelineNormal.y = normY;
 
-            if (vSidelineNormal.f.x == 0.0f)
+            if (vSidelineNormal.x == 0.0f)
             {
-                vSidelinePos.f.y = pSide->fDistance * pSide->vNormal.f.y;
+                vSidelinePos.y = pSide->fDistance * pSide->vNormal.y;
             }
             else
             {
-                vSidelinePos.f.x = pSide->fDistance * pSide->vNormal.f.x;
+                vSidelinePos.x = pSide->fDistance * pSide->vNormal.x;
             }
 
             bHitSideline = CalcDesiredVelocityToAvoidSideline(
@@ -884,17 +884,17 @@ bool AvoidController::AvoidSidelines()
     if (bHitSideline)
     {
         bool isZero = false;
-        if (v2Zero.f.x == vNewDesiredVelDir.f.x)
-            if (v2Zero.f.y == vNewDesiredVelDir.f.y)
+        if (v2Zero.x == vNewDesiredVelDir.x)
+            if (v2Zero.y == vNewDesiredVelDir.y)
                 isZero = true;
         if (isZero)
             bTurboAllowed = false;
         else
         {
-            float fDot = vNewDesiredVelDir.f.x * vCurrentVelDir.f.x + vNewDesiredVelDir.f.y * vCurrentVelDir.f.y;
+            float fDot = vNewDesiredVelDir.x * vCurrentVelDir.x + vNewDesiredVelDir.y * vCurrentVelDir.y;
             if (fDot < 0.99f)
                 bTurboAllowed = false;
-            m_pFielder->m_aDesiredMovementDirection = (u16)(s32)(10430.378f * nlATan2f(vNewDesiredVelDir.f.y, vNewDesiredVelDir.f.x));
+            m_pFielder->m_aDesiredMovementDirection = (u16)(s32)(10430.378f * nlATan2f(vNewDesiredVelDir.y, vNewDesiredVelDir.x));
             m_pFielder->m_aDesiredFacingDirection = m_pFielder->m_aDesiredMovementDirection;
         }
     }
@@ -938,21 +938,21 @@ void AvoidController::CalcDesiredAndCurrentVelocities(
 {
     if (vOutDesiredVel != NULL)
     {
-        nlSinCos(&vOutDesiredVel->f.y, &vOutDesiredVel->f.x, m_pFielder->m_aDesiredMovementDirection);
+        nlSinCos(&vOutDesiredVel->y, &vOutDesiredVel->x, m_pFielder->m_aDesiredMovementDirection);
         if (!bNormalized)
         {
-            vOutDesiredVel->f.x *= m_pFielder->m_fDesiredSpeed;
-            vOutDesiredVel->f.y *= m_pFielder->m_fDesiredSpeed;
+            vOutDesiredVel->x *= m_pFielder->m_fDesiredSpeed;
+            vOutDesiredVel->y *= m_pFielder->m_fDesiredSpeed;
         }
     }
 
     if (vOutCurrentVel != NULL)
     {
-        nlSinCos(&vOutCurrentVel->f.y, &vOutCurrentVel->f.x, m_pFielder->m_aActualMovementDirection);
+        nlSinCos(&vOutCurrentVel->y, &vOutCurrentVel->x, m_pFielder->m_aActualMovementDirection);
         if (!bNormalized)
         {
-            vOutCurrentVel->f.x *= m_pFielder->m_fActualSpeed;
-            vOutCurrentVel->f.y *= m_pFielder->m_fActualSpeed;
+            vOutCurrentVel->x *= m_pFielder->m_fActualSpeed;
+            vOutCurrentVel->y *= m_pFielder->m_fActualSpeed;
         }
     }
 }
@@ -968,7 +968,7 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
     }
 
     f32 fRepulsionMag = nlSqrt(
-        v3Repulsion.f.x * v3Repulsion.f.x + v3Repulsion.f.y * v3Repulsion.f.y + v3Repulsion.f.z * v3Repulsion.f.z,
+        v3Repulsion.x * v3Repulsion.x + v3Repulsion.y * v3Repulsion.y + v3Repulsion.z * v3Repulsion.z,
         true);
     if (fRepulsionMag <= 0.0f)
     {
@@ -982,19 +982,19 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
 
     CalcDesiredAndCurrentVelocities((nlVector2*)&v3DesiredVelDir, NULL, true);
 
-    v3DesiredVelDir.f.z = 0.0f;
+    v3DesiredVelDir.z = 0.0f;
 
     f32 fInvRepulsionMag = nlRecipSqrt(
-        v3Repulsion.f.x * v3Repulsion.f.x + v3Repulsion.f.y * v3Repulsion.f.y + v3Repulsion.f.z * v3Repulsion.f.z,
+        v3Repulsion.x * v3Repulsion.x + v3Repulsion.y * v3Repulsion.y + v3Repulsion.z * v3Repulsion.z,
         true);
 
-    f32 fRepulsionX = fInvRepulsionMag * v3Repulsion.f.x;
-    f32 fRepulsionZ = fInvRepulsionMag * v3Repulsion.f.z;
-    f32 fRepulsionY = fInvRepulsionMag * v3Repulsion.f.y;
+    f32 fRepulsionX = fInvRepulsionMag * v3Repulsion.x;
+    f32 fRepulsionZ = fInvRepulsionMag * v3Repulsion.z;
+    f32 fRepulsionY = fInvRepulsionMag * v3Repulsion.y;
 
-    rRepulsionDir.f.x = fRepulsionX;
-    rRepulsionDir.f.y = fRepulsionY;
-    rRepulsionDir.f.z = fRepulsionZ;
+    rRepulsionDir.x = fRepulsionX;
+    rRepulsionDir.y = fRepulsionY;
+    rRepulsionDir.z = fRepulsionZ;
 
     f32 fDot = nlVec3DotProduct(v3DesiredVelDir, rRepulsionDir);
 
@@ -1004,7 +1004,7 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
         f32 fSin;
 
         f32 fRepulsionAngle = nlATan2f(fRepulsionY, fRepulsionX);
-        f32 fDesiredAngle = nlATan2f(v3DesiredVelDir.f.y, v3DesiredVelDir.f.x);
+        f32 fDesiredAngle = nlATan2f(v3DesiredVelDir.y, v3DesiredVelDir.x);
 
         u16 aDesired = (u16)(s32)(10430.378f * fDesiredAngle);
         u16 aRepulsion = (u16)(s32)(10430.378f * fRepulsionAngle);
@@ -1022,61 +1022,61 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
 
         nlSinCos(&fSin, &fCos, (u16)aAdjust);
 
-        rRepulsionDir.f.x = v3DesiredVelDir.f.x * fCos - v3DesiredVelDir.f.y * fSin;
-        rRepulsionDir.f.y = v3DesiredVelDir.f.y * fCos + v3DesiredVelDir.f.x * fSin;
+        rRepulsionDir.x = v3DesiredVelDir.x * fCos - v3DesiredVelDir.y * fSin;
+        rRepulsionDir.y = v3DesiredVelDir.y * fCos + v3DesiredVelDir.x * fSin;
 
         nlVec3Scale(v3Repulsion, rRepulsionDir, fRepulsionMag);
     }
 
     if (m_VeryCloseToSideline)
     {
-        f32 fDotNormalVel = rRepulsionDir.f.x * m_SidelineNormal.f.x
-            + rRepulsionDir.f.y * m_SidelineNormal.f.y;
+        f32 fDotNormalVel = rRepulsionDir.x * m_SidelineNormal.x
+            + rRepulsionDir.y * m_SidelineNormal.y;
 
         if (fDotNormalVel < -0.1f)
         {
-            f32 fSidelineDirXSq = m_SidelineDirection.f.x * m_SidelineDirection.f.x;
-            f32 fSidelineDirYSq = m_SidelineDirection.f.y * m_SidelineDirection.f.y;
+            f32 fSidelineDirXSq = m_SidelineDirection.x * m_SidelineDirection.x;
+            f32 fSidelineDirYSq = m_SidelineDirection.y * m_SidelineDirection.y;
 
             if (fSidelineDirXSq + fSidelineDirYSq > 0.0f)
             {
-                f32 fRepulsionDirZ = rRepulsionDir.f.z;
+                f32 fRepulsionDirZ = rRepulsionDir.z;
                 f32 fSidelineDirZ = 0.0f;
                 f32 fMinusOne = -1.0f;
 
-                v3Repulsion.f.z = fRepulsionMag * fSidelineDirZ;
+                v3Repulsion.z = fRepulsionMag * fSidelineDirZ;
 
                 f32 fScale = (fRepulsionDirZ * fSidelineDirZ
-                    + (rRepulsionDir.f.x * m_SidelineDirection.f.x + rRepulsionDir.f.y * m_SidelineDirection.f.y))
-                    / nlGetLengthSquared3D(m_SidelineDirection.f.x, m_SidelineDirection.f.y, fSidelineDirZ);
-                f32 fParallelY = fScale * m_SidelineDirection.f.y;
-                f32 fParallelX = fScale * m_SidelineDirection.f.x;
+                    + (rRepulsionDir.x * m_SidelineDirection.x + rRepulsionDir.y * m_SidelineDirection.y))
+                    / nlGetLengthSquared3D(m_SidelineDirection.x, m_SidelineDirection.y, fSidelineDirZ);
+                f32 fParallelY = fScale * m_SidelineDirection.y;
+                f32 fParallelX = fScale * m_SidelineDirection.x;
                 f32 fParallelZ = fScale * fSidelineDirZ;
 
-                rRepulsionDir.f.x = fMinusOne * (rRepulsionDir.f.x - fParallelX) + fParallelX;
-                rRepulsionDir.f.y = fMinusOne * (rRepulsionDir.f.y - fParallelY) + fParallelY;
-                rRepulsionDir.f.z = fMinusOne * (fRepulsionDirZ - fParallelZ) + fParallelZ;
-                rRepulsionDir.f.z = fSidelineDirZ;
+                rRepulsionDir.x = fMinusOne * (rRepulsionDir.x - fParallelX) + fParallelX;
+                rRepulsionDir.y = fMinusOne * (rRepulsionDir.y - fParallelY) + fParallelY;
+                rRepulsionDir.z = fMinusOne * (fRepulsionDirZ - fParallelZ) + fParallelZ;
+                rRepulsionDir.z = fSidelineDirZ;
 
-                f32 fScaledY = fRepulsionMag * rRepulsionDir.f.y;
-                f32 fScaledX = fRepulsionMag * rRepulsionDir.f.x;
-                v3Repulsion.f.x = fScaledX;
-                v3Repulsion.f.y = fScaledY;
+                f32 fScaledY = fRepulsionMag * rRepulsionDir.y;
+                f32 fScaledX = fRepulsionMag * rRepulsionDir.x;
+                v3Repulsion.x = fScaledX;
+                v3Repulsion.y = fScaledY;
             }
             else
             {
                 nlVec2Set(*(nlVector2*)&v3Repulsion,
-                    fRepulsionMag * m_SidelineNormal.f.x,
-                    fRepulsionMag * m_SidelineNormal.f.y);
+                    fRepulsionMag * m_SidelineNormal.x,
+                    fRepulsionMag * m_SidelineNormal.y);
             }
         }
     }
 
     nlVector3 v3Resultant;
     nlVec3ScaleAdd(v3Resultant, m_pFielder->m_fDesiredSpeed, v3DesiredVelDir, v3Repulsion);
-    f32 fResultantX = v3Resultant.f.x;
-    f32 fResultantY = v3Resultant.f.y;
-    f32 fResultantZ = v3Resultant.f.z;
+    f32 fResultantX = v3Resultant.x;
+    f32 fResultantY = v3Resultant.y;
+    f32 fResultantZ = v3Resultant.z;
 
     f32 fResultantMag = nlSqrt(fResultantX * fResultantX + fResultantY * fResultantY + fResultantZ * fResultantZ, true);
 

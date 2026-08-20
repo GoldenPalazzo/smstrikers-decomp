@@ -66,22 +66,22 @@ static inline void _Putchar(glPoly2& poly, float sx, float sy, int charIndex, co
 {
     float s = (float)((charIndex % 8) * 8);
     float t = (float)((charIndex / 8) * 8);
-    poly.m_uv[0].f.x = s / 64.0f;
-    poly.m_uv[0].f.y = t / 128.0f;
-    poly.m_uv[1].f.x = s / 64.0f;
-    poly.m_uv[1].f.y = (t + 8.0f) / 128.0f;
-    poly.m_uv[2].f.x = (s + 8.0f) / 64.0f;
-    poly.m_uv[2].f.y = (t + 8.0f) / 128.0f;
-    poly.m_uv[3].f.x = (s + 8.0f) / 64.0f;
-    poly.m_uv[3].f.y = t / 128.0f;
-    poly.m_pos[0].f.x = sx;
-    poly.m_pos[0].f.y = sy;
-    poly.m_pos[1].f.x = sx;
-    poly.m_pos[1].f.y = 10.0f + sy;
-    poly.m_pos[2].f.x = 10.0f + sx;
-    poly.m_pos[2].f.y = 10.0f + sy;
-    poly.m_pos[3].f.x = 10.0f + sx;
-    poly.m_pos[3].f.y = sy;
+    poly.m_uv[0].x = s / 64.0f;
+    poly.m_uv[0].y = t / 128.0f;
+    poly.m_uv[1].x = s / 64.0f;
+    poly.m_uv[1].y = (t + 8.0f) / 128.0f;
+    poly.m_uv[2].x = (s + 8.0f) / 64.0f;
+    poly.m_uv[2].y = (t + 8.0f) / 128.0f;
+    poly.m_uv[3].x = (s + 8.0f) / 64.0f;
+    poly.m_uv[3].y = t / 128.0f;
+    poly.m_pos[0].x = sx;
+    poly.m_pos[0].y = sy;
+    poly.m_pos[1].x = sx;
+    poly.m_pos[1].y = 10.0f + sy;
+    poly.m_pos[2].x = 10.0f + sx;
+    poly.m_pos[2].y = 10.0f + sy;
+    poly.m_pos[3].x = 10.0f + sx;
+    poly.m_pos[3].y = sy;
     poly.depth = font_z;
     poly.m_colour[0] = colour;
     poly.m_colour[1] = colour;
@@ -142,8 +142,8 @@ int glFontPrint(eGLView view, int virtual_x, int virtual_y, const nlColour& colo
                 pPoly[i].m_colour[j].c[1] = 0;
                 pPoly[i].m_colour[j].c[2] = 0;
                 pPoly[i].m_colour[j].c[3] = 0xFF;
-                pPoly[i].m_pos[j].f.x += 3.0f;
-                pPoly[i].m_pos[j].f.y += 3.0f;
+                pPoly[i].m_pos[j].x += 3.0f;
+                pPoly[i].m_pos[j].y += 3.0f;
             }
             pPoly[i].depth += -0.001f;
         }
@@ -154,8 +154,8 @@ int glFontPrint(eGLView view, int virtual_x, int virtual_y, const nlColour& colo
             for (j = 0; j < 4; j++)
             {
                 *(u32*)&pPoly[i].m_colour[j].c[0] = *(u32*)&colour.c[0];
-                pPoly[i].m_pos[j].f.x -= 3.0f;
-                pPoly[i].m_pos[j].f.y -= 3.0f;
+                pPoly[i].m_pos[j].x -= 3.0f;
+                pPoly[i].m_pos[j].y -= 3.0f;
             }
             pPoly[i].depth = fz;
         }

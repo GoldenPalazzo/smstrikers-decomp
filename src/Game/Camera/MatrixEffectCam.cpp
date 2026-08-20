@@ -64,7 +64,7 @@ void MatrixEffectCam::Reset(const nlVector3& cameraStart, const nlVector3& begin
 
     nlCartesianToPolar(mCurrentPolarFromTarget, targetToCamera);
 
-    mfCurrentCameraHeightAboveTarget = cameraStart.f.z - tgt.f.z;
+    mfCurrentCameraHeightAboveTarget = cameraStart.z - tgt.z;
     mfElapsedTime = 0.0f;
 
     cBaseCamera* top = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
@@ -155,9 +155,9 @@ void MatrixEffectCam::Update(float dt)
             int i = mCurrentFilterDataIndex + 1;
             mCurrentFilterDataIndex = i - ((i / 10) * 10);
 
-            mFilteredTargetPosition.f.x = 0.0f;
-            mFilteredTargetPosition.f.y = 0.0f;
-            mFilteredTargetPosition.f.z = 0.0f;
+            mFilteredTargetPosition.x = 0.0f;
+            mFilteredTargetPosition.y = 0.0f;
+            mFilteredTargetPosition.z = 0.0f;
             for (i = 0; i < 10; ++i)
             {
                 nlVec3Add(mFilteredTargetPosition, mFilteredTargetPosition, mTargetFilterData[i]);
@@ -191,9 +191,9 @@ const nlVector3& MatrixEffectCam::GetTargetPosition() const
     nlVec3Sub(diff, mFinalTarget, mBeginTarget);
 
     nlVec3Set(mTargetPosition,
-        (alpha * diff.f.x) + mBeginTarget.f.x,
-        (alpha * diff.f.y) + mBeginTarget.f.y,
-        (alpha * diff.f.z) + mBeginTarget.f.z);
+        (alpha * diff.x) + mBeginTarget.x,
+        (alpha * diff.y) + mBeginTarget.y,
+        (alpha * diff.z) + mBeginTarget.z);
 
     return mTargetPosition;
 }
@@ -205,7 +205,7 @@ const nlVector3& MatrixEffectCam::GetCameraPosition() const
 {
     nlPolarToCartesian(cameraPosition, mCurrentPolarFromTarget);
 
-    cameraPosition.f.z = mfCurrentCameraHeightAboveTarget;
+    cameraPosition.z = mfCurrentCameraHeightAboveTarget;
 
     nlVec3Add(cameraPosition, cameraPosition, GetTargetPosition());
 

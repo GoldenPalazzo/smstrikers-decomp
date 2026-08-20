@@ -45,13 +45,13 @@ void DrawableBall::Blend(const float* blendFactors, const DrawableBall& lhs, con
 
     const f32 t = *blendFactors;
 
-    mPosition.f.x = (1.0f - t) * lhs.mPosition.f.x + t * rhs.mPosition.f.x;
-    mPosition.f.y = (1.0f - t) * lhs.mPosition.f.y + t * rhs.mPosition.f.y;
-    mPosition.f.z = (1.0f - t) * lhs.mPosition.f.z + t * rhs.mPosition.f.z;
+    mPosition.x = (1.0f - t) * lhs.mPosition.x + t * rhs.mPosition.x;
+    mPosition.y = (1.0f - t) * lhs.mPosition.y + t * rhs.mPosition.y;
+    mPosition.z = (1.0f - t) * lhs.mPosition.z + t * rhs.mPosition.z;
 
-    mVelocity.f.x = (1.0f - t) * lhs.mVelocity.f.x + t * rhs.mVelocity.f.x;
-    mVelocity.f.y = (1.0f - t) * lhs.mVelocity.f.y + t * rhs.mVelocity.f.y;
-    mVelocity.f.z = (1.0f - t) * lhs.mVelocity.f.z + t * rhs.mVelocity.f.z;
+    mVelocity.x = (1.0f - t) * lhs.mVelocity.x + t * rhs.mVelocity.x;
+    mVelocity.y = (1.0f - t) * lhs.mVelocity.y + t * rhs.mVelocity.y;
+    mVelocity.z = (1.0f - t) * lhs.mVelocity.z + t * rhs.mVelocity.z;
 
     mVisible = lhs.mVisible && rhs.mVisible;
 
@@ -75,9 +75,9 @@ inline void DrawableBall::RenderMotionBlur(DrawableObject& obj) const
     const float blurOffsetScale = 0.0078125f;
     nlVector3 blurOffset;
     nlVec3Set(blurOffset,
-        blurOffsetScale * mView.f.m13,
-        blurOffsetScale * mView.f.m23,
-        blurOffsetScale * mView.f.m33);
+        blurOffsetScale * mView.m13,
+        blurOffsetScale * mView.m23,
+        blurOffsetScale * mView.m33);
 
     savedBallShadowDisabled = DrawableModel::GetBallShadowDisabled();
     DrawableModel::SetBallShadowDisabled(1);
@@ -100,9 +100,9 @@ inline void DrawableBall::RenderMotionBlur(DrawableObject& obj) const
         obj.m_worldMatrixUpToDate = 0;
 
         mWorld = obj.GetWorldMatrix();
-        mWorld.f.m41 += blurOffset.f.x;
-        mWorld.f.m42 += blurOffset.f.y;
-        mWorld.f.m43 += blurOffset.f.z;
+        mWorld.m41 += blurOffset.x;
+        mWorld.m42 += blurOffset.y;
+        mWorld.m43 += blurOffset.z;
         obj.m_worldMatrix = mWorld;
 
         obj.Draw();
@@ -265,18 +265,18 @@ DrawableCharacter* DrawableBall::IndexToPlayer(int index) const
 template <>
 void DrawableBall::Replay<SaveFrame>(SaveFrame& frame)
 {
-    Replayable<1, SaveFrame, FloatCompressor<-127, 127, 7> >(frame, FloatCompressor<-127, 127, 7>(mPosition.f.x));
-    Replayable<1, SaveFrame, FloatCompressor<-127, 127, 7> >(frame, FloatCompressor<-127, 127, 7>(mPosition.f.y));
-    Replayable<1, SaveFrame, FloatCompressor<-127, 127, 7> >(frame, FloatCompressor<-127, 127, 7>(mPosition.f.z));
+    Replayable<1, SaveFrame, FloatCompressor<-127, 127, 7> >(frame, FloatCompressor<-127, 127, 7>(mPosition.x));
+    Replayable<1, SaveFrame, FloatCompressor<-127, 127, 7> >(frame, FloatCompressor<-127, 127, 7>(mPosition.y));
+    Replayable<1, SaveFrame, FloatCompressor<-127, 127, 7> >(frame, FloatCompressor<-127, 127, 7>(mPosition.z));
 
-    Replayable<1, SaveFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.f.x));
-    Replayable<1, SaveFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.f.y));
-    Replayable<1, SaveFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.f.z));
-    Replayable<1, SaveFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.f.w));
+    Replayable<1, SaveFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.x));
+    Replayable<1, SaveFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.y));
+    Replayable<1, SaveFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.z));
+    Replayable<1, SaveFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.w));
 
-    Replayable<1, SaveFrame, FloatCompressor<-127, 127, 5> >(frame, FloatCompressor<-127, 127, 5>(mVelocity.f.x));
-    Replayable<1, SaveFrame, FloatCompressor<-127, 127, 5> >(frame, FloatCompressor<-127, 127, 5>(mVelocity.f.y));
-    Replayable<1, SaveFrame, FloatCompressor<-127, 127, 5> >(frame, FloatCompressor<-127, 127, 5>(mVelocity.f.z));
+    Replayable<1, SaveFrame, FloatCompressor<-127, 127, 5> >(frame, FloatCompressor<-127, 127, 5>(mVelocity.x));
+    Replayable<1, SaveFrame, FloatCompressor<-127, 127, 5> >(frame, FloatCompressor<-127, 127, 5>(mVelocity.y));
+    Replayable<1, SaveFrame, FloatCompressor<-127, 127, 5> >(frame, FloatCompressor<-127, 127, 5>(mVelocity.z));
 
     Replayable<1, SaveFrame, bool>(frame, mVisible);
     Replayable<1, SaveFrame, char>(frame, (char&)mOwnerIndex);
@@ -291,18 +291,18 @@ void DrawableBall::Replay<SaveFrame>(SaveFrame& frame)
 template <>
 void DrawableBall::Replay<LoadFrame>(LoadFrame& frame)
 {
-    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 7> >(frame, FloatCompressor<-127, 127, 7>(mPosition.f.x));
-    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 7> >(frame, FloatCompressor<-127, 127, 7>(mPosition.f.y));
-    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 7> >(frame, FloatCompressor<-127, 127, 7>(mPosition.f.z));
+    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 7> >(frame, FloatCompressor<-127, 127, 7>(mPosition.x));
+    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 7> >(frame, FloatCompressor<-127, 127, 7>(mPosition.y));
+    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 7> >(frame, FloatCompressor<-127, 127, 7>(mPosition.z));
 
-    Replayable<1, LoadFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.f.x));
-    Replayable<1, LoadFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.f.y));
-    Replayable<1, LoadFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.f.z));
-    Replayable<1, LoadFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.f.w));
+    Replayable<1, LoadFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.x));
+    Replayable<1, LoadFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.y));
+    Replayable<1, LoadFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.z));
+    Replayable<1, LoadFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.w));
 
-    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 5> >(frame, FloatCompressor<-127, 127, 5>(mVelocity.f.x));
-    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 5> >(frame, FloatCompressor<-127, 127, 5>(mVelocity.f.y));
-    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 5> >(frame, FloatCompressor<-127, 127, 5>(mVelocity.f.z));
+    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 5> >(frame, FloatCompressor<-127, 127, 5>(mVelocity.x));
+    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 5> >(frame, FloatCompressor<-127, 127, 5>(mVelocity.y));
+    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 5> >(frame, FloatCompressor<-127, 127, 5>(mVelocity.z));
 
     Replayable<1, LoadFrame, bool>(frame, mVisible);
     Replayable<1, LoadFrame, char>(frame, (char&)mOwnerIndex);

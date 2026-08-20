@@ -11,9 +11,9 @@ class feVector3
 public:
     void GetNLVector3(nlVector3& out) const
     {
-        out.f.x = f.x;
-        out.f.y = f.y;
-        out.f.z = f.z;
+        out.x = f.x;
+        out.y = f.y;
+        out.z = f.z;
     }
 
     union

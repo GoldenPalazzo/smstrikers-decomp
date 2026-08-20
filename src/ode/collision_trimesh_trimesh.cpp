@@ -1530,7 +1530,7 @@ VecMatMult4(dVector3 &in_v, Matrix4x4 &in_m, dVector3 &out_v)
         out_v[i] = 0.0;
         
         for (int j=0; j<4; j++)
-            out_v[i] += in_v[j]*in_m.m[j][i];
+            out_v[i] += in_v[j]*in_m.e2[j][i];
     }
 }
 

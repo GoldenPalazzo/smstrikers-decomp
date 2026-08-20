@@ -8,22 +8,22 @@ float PhysicsObject::DefaultGravity = -9.8f;
  */
 void ConvertDMat3ToNLMat4(const float* src, nlMatrix4* dest)
 {
-    dest->m[0][0] = src[0];
-    dest->m[1][0] = src[1];
-    dest->m[2][0] = src[2];
-    dest->m[0][1] = src[4];
-    dest->m[1][1] = src[5];
-    dest->m[2][1] = src[6];
-    dest->m[0][2] = src[8];
-    dest->m[1][2] = src[9];
-    dest->m[2][2] = src[10];
-    dest->m[3][0] = 0.0f;
-    dest->m[3][1] = 0.0f;
-    dest->m[3][2] = 0.0f;
-    dest->m[3][3] = 1.0f;
-    dest->m[0][3] = 0.0f;
-    dest->m[1][3] = 0.0f;
-    dest->m[2][3] = 0.0f;
+    dest->e2[0][0] = src[0];
+    dest->e2[1][0] = src[1];
+    dest->e2[2][0] = src[2];
+    dest->e2[0][1] = src[4];
+    dest->e2[1][1] = src[5];
+    dest->e2[2][1] = src[6];
+    dest->e2[0][2] = src[8];
+    dest->e2[1][2] = src[9];
+    dest->e2[2][2] = src[10];
+    dest->e2[3][0] = 0.0f;
+    dest->e2[3][1] = 0.0f;
+    dest->e2[3][2] = 0.0f;
+    dest->e2[3][3] = 1.0f;
+    dest->e2[0][3] = 0.0f;
+    dest->e2[1][3] = 0.0f;
+    dest->e2[2][3] = 0.0f;
 }
 
 /**
@@ -56,9 +56,9 @@ void PhysicsObject::CloneObject(const PhysicsObject& obj)
     }
 
     obj.GetLinearVelocity(&v3LinearVel);
-    dBodySetLinearVel(m_bodyID, v3LinearVel.f.x, v3LinearVel.f.y, v3LinearVel.f.z);
+    dBodySetLinearVel(m_bodyID, v3LinearVel.x, v3LinearVel.y, v3LinearVel.z);
     obj.GetAngularVelocity(&v3AngularVelocity);
-    dBodySetAngularVel(m_bodyID, v3AngularVelocity.f.x, v3AngularVelocity.f.y, v3AngularVelocity.f.z);
+    dBodySetAngularVel(m_bodyID, v3AngularVelocity.x, v3AngularVelocity.y, v3AngularVelocity.z);
     m_gravity = obj.m_gravity;
 
     if (obj.m_bodyID != NULL)
@@ -195,7 +195,7 @@ void PhysicsObject::SetWorldMatrix(const nlMatrix4& in)
         dGeomSetRotation(m_geomID, mat);
     }
 
-    nlVector3* pos = (nlVector3*)&(in.m[3][0]);
+    nlVector3* pos = (nlVector3*)&(in.e2[3][0]);
     SetPosition(*pos, WORLD_COORDINATES);
 }
 
@@ -249,7 +249,7 @@ void PhysicsObject::ZeroForceAccumulators()
  */
 void PhysicsObject::AddForceAtCentreOfMass(const nlVector3& force)
 {
-    dBodyAddForce(m_bodyID, force.f.x, force.f.y, force.f.z);
+    dBodyAddForce(m_bodyID, force.x, force.y, force.z);
 }
 
 /**
@@ -328,7 +328,7 @@ void PhysicsObject::GetAngularVelocity(nlVector3* arg1) const
  */
 void PhysicsObject::SetAngularVelocity(const nlVector3& velocity)
 {
-    dBodySetAngularVel(m_bodyID, (float)velocity.f.x, (float)velocity.f.y, (float)velocity.f.z);
+    dBodySetAngularVel(m_bodyID, (float)velocity.x, (float)velocity.y, (float)velocity.z);
 }
 
 /**
@@ -417,7 +417,7 @@ void PhysicsObject::GetLinearVelocity(nlVector3* out) const
  */
 void PhysicsObject::SetLinearVelocity(const nlVector3& velocity)
 {
-    dBodySetLinearVel(m_bodyID, velocity.f.x, velocity.f.y, velocity.f.z);
+    dBodySetLinearVel(m_bodyID, velocity.x, velocity.y, velocity.z);
 }
 
 /**
@@ -437,22 +437,22 @@ void PhysicsObject::GetRotation(nlMatrix4* m_out) const
 
     PhysicsObject* parentObj = m_parentObject;
 
-    m_out->m[0][0] = dRot[0];
-    m_out->m[1][0] = dRot[1];
-    m_out->m[2][0] = dRot[2];
-    m_out->m[0][1] = dRot[4];
-    m_out->m[1][1] = dRot[5];
-    m_out->m[2][1] = dRot[6];
-    m_out->m[0][2] = dRot[8];
-    m_out->m[1][2] = dRot[9];
-    m_out->m[2][2] = dRot[10];
-    m_out->m[3][0] = 0.f;
-    m_out->m[3][1] = 0.f;
-    m_out->m[3][2] = 0.f;
-    m_out->m[3][3] = 1.f;
-    m_out->m[0][3] = 0.f;
-    m_out->m[1][3] = 0.f;
-    m_out->m[2][3] = 0.f;
+    m_out->e2[0][0] = dRot[0];
+    m_out->e2[1][0] = dRot[1];
+    m_out->e2[2][0] = dRot[2];
+    m_out->e2[0][1] = dRot[4];
+    m_out->e2[1][1] = dRot[5];
+    m_out->e2[2][1] = dRot[6];
+    m_out->e2[0][2] = dRot[8];
+    m_out->e2[1][2] = dRot[9];
+    m_out->e2[2][2] = dRot[10];
+    m_out->e2[3][0] = 0.f;
+    m_out->e2[3][1] = 0.f;
+    m_out->e2[3][2] = 0.f;
+    m_out->e2[3][3] = 1.f;
+    m_out->e2[0][3] = 0.f;
+    m_out->e2[1][3] = 0.f;
+    m_out->e2[2][3] = 0.f;
 
     if (parentObj == NULL)
         return;
@@ -470,13 +470,13 @@ void PhysicsObject::GetRotation(nlMatrix4* m_out) const
     parentRot.SetColumn(0, *(nlVector3*)&dRot[0]);
     parentRot.SetColumn(1, *(nlVector3*)&dRot[4]);
     parentRot.SetColumn(2, *(nlVector3*)&dRot[8]);
-    parentRot.m[3][0] = 0.f;
-    parentRot.m[3][1] = 0.f;
-    parentRot.m[3][2] = 0.f;
-    parentRot.m[3][3] = 1.f;
-    parentRot.m[0][3] = 0.f;
-    parentRot.m[1][3] = 0.f;
-    parentRot.m[2][3] = 0.f;
+    parentRot.e2[3][0] = 0.f;
+    parentRot.e2[3][1] = 0.f;
+    parentRot.e2[3][2] = 0.f;
+    parentRot.e2[3][3] = 1.f;
+    parentRot.e2[0][3] = 0.f;
+    parentRot.e2[1][3] = 0.f;
+    parentRot.e2[2][3] = 0.f;
 
     PhysicsObject* parent_parentObj = parentObj->m_parentObject;
     if (parent_parentObj != NULL)
@@ -628,7 +628,7 @@ void PhysicsObject::GetPosition(nlVector3* position) const
                 nlMultMatrices(rot_1, rot_1, rot_tmp2);
             }
             nlMultPosVectorMatrix(parentPos, parentPos, rot_1);
-            parentPos.Set(pos_1.f.x + parentPos.f.x, pos_1.f.y + parentPos.f.y, pos_1.f.z + parentPos.f.z);
+            parentPos.Set(pos_1.x + parentPos.x, pos_1.y + parentPos.y, pos_1.z + parentPos.z);
         }
 
         parentObj = m_parentObject;
@@ -644,13 +644,13 @@ void PhysicsObject::GetPosition(nlVector3* position) const
         parentRot.SetColumn(0, *(nlVector3*)&_retFloats[0]);
         parentRot.SetColumn(1, *(nlVector3*)&_retFloats[4]);
         parentRot.SetColumn(2, *(nlVector3*)&_retFloats[8]);
-        parentRot.m[3][0] = 0.f;
-        parentRot.m[3][1] = 0.f;
-        parentRot.m[3][2] = 0.f;
-        parentRot.m[3][3] = 1.f;
-        parentRot.m[0][3] = 0.f;
-        parentRot.m[1][3] = 0.f;
-        parentRot.m[2][3] = 0.f;
+        parentRot.e2[3][0] = 0.f;
+        parentRot.e2[3][1] = 0.f;
+        parentRot.e2[3][2] = 0.f;
+        parentRot.e2[3][3] = 1.f;
+        parentRot.e2[0][3] = 0.f;
+        parentRot.e2[1][3] = 0.f;
+        parentRot.e2[2][3] = 0.f;
 
         PhysicsObject* temp_r28_2 = parentObj->m_parentObject;
         if (temp_r28_2 != NULL)
@@ -693,28 +693,28 @@ void PhysicsObject::SetPosition(const nlVector3& pos, PhysicsObject::CoordinateT
         m_parentObject->GetRotation(&rot);
         nlVector3& p = m_parentObject->GetPosition();
 
-        rot.m[3][0] = p.f.x;
-        rot.m[3][1] = p.f.y;
-        rot.m[3][2] = p.f.z;
-        rot.m[3][3] = 1.0f;
+        rot.e2[3][0] = p.x;
+        rot.e2[3][1] = p.y;
+        rot.e2[3][2] = p.z;
+        rot.e2[3][3] = 1.0f;
 
         nlInvertRotTransMatrix(inv_rot, rot);
         nlMultPosVectorMatrix(_pos, pos, inv_rot);
         if ((m_geomID == NULL) && (m_bodyID != NULL))
         {
-            dBodySetPosition(m_bodyID, _pos.f.x, _pos.f.y, _pos.f.z);
+            dBodySetPosition(m_bodyID, _pos.x, _pos.y, _pos.z);
             return;
         }
-        dGeomSetPosition(m_geomID, _pos.f.x, _pos.f.y, _pos.f.z);
+        dGeomSetPosition(m_geomID, _pos.x, _pos.y, _pos.z);
         return;
     }
 
     if ((m_geomID == NULL) && (m_bodyID != NULL))
     {
-        dBodySetPosition(m_bodyID, pos.f.x, pos.f.y, pos.f.z);
+        dBodySetPosition(m_bodyID, pos.x, pos.y, pos.z);
         return;
     }
-    dGeomSetPosition(m_geomID, pos.f.x, pos.f.y, pos.f.z);
+    dGeomSetPosition(m_geomID, pos.x, pos.y, pos.z);
 }
 
 /**

@@ -38,16 +38,16 @@ void PhysicsBanana::PreUpdate()
     PhysicsObject::PreUpdate();
     nlVector3 linVel = GetLinearVelocity();
 
-    float len = nlSqrt((linVel.f.x * linVel.f.x) + (linVel.f.y * linVel.f.y) + (linVel.f.z * linVel.f.z), true);
+    float len = nlSqrt((linVel.x * linVel.x) + (linVel.y * linVel.y) + (linVel.z * linVel.z), true);
 
     if ((m_bIsSupportedByGround) || ((len > 15.0f) && (m_pPowerupObject->m_eType == POWER_UP_BANANA)))
     {
-        if (((linVel.f.x * linVel.f.x) + (linVel.f.y * linVel.f.y) + (linVel.f.z * linVel.f.z)) > 0.1f)
+        if (((linVel.x * linVel.x) + (linVel.y * linVel.y) + (linVel.z * linVel.z)) > 0.1f)
         {
             float dumping = -g_pGame->m_pGameTweaks->fBananaResistance / len;
-            linVel.f.x = dumping * linVel.f.x;
-            linVel.f.y = dumping * linVel.f.y;
-            linVel.f.z = dumping * linVel.f.z;
+            linVel.x = dumping * linVel.x;
+            linVel.y = dumping * linVel.y;
+            linVel.z = dumping * linVel.z;
             AddForceAtCentreOfMass(linVel);
             return;
         }
@@ -76,7 +76,7 @@ ContactType PhysicsBanana::Contact(PhysicsObject* other, dContact* contact, int 
     {
         for (int i = 0; i < numContacts; i++)
         {
-            if (contact[i].geom.pos[2] <= bananaPos.f.z && contact[i].geom.normal[2] > 0.9f)
+            if (contact[i].geom.pos[2] <= bananaPos.z && contact[i].geom.normal[2] > 0.9f)
             {
                 if (!m_bIsSupportedByGround)
                 {
@@ -86,12 +86,12 @@ ContactType PhysicsBanana::Contact(PhysicsObject* other, dContact* contact, int 
                 nlVector3 linVel;
                 GetLinearVelocity(&linVel);
 
-                if (linVel.f.z < -1.0f)
+                if (linVel.z < -1.0f)
                 {
                     Event* event = g_pEventManager->CreateValidEvent(0x22, 0x2C);
                     CollisionPowerupGroundData* eventData = new (&event->m_data) CollisionPowerupGroundData();
                     GetPosition(&eventData->position);
-                    eventData->fVecZComponent = linVel.f.z;
+                    eventData->fVecZComponent = linVel.z;
                     eventData->eType = m_pPowerupObject->m_eType;
                 }
 
@@ -239,7 +239,7 @@ ContactType PhysicsBanana::Contact(PhysicsObject* other, dContact* contact, int 
     }
 
     nlVector3& linVel = GetLinearVelocity();
-    float velSq = (linVel.f.x * linVel.f.x) + (linVel.f.y * linVel.f.y) + (linVel.f.z * linVel.f.z);
+    float velSq = (linVel.x * linVel.x) + (linVel.y * linVel.y) + (linVel.z * linVel.z);
 
     if (hasWallContact && velSq > 1.0f)
     {

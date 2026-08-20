@@ -867,7 +867,7 @@ void MakeTextBoxReallyWide(TLTextInstance& textInstance)
 {
     nlVector2& boxSize = ((textInstance.m_OverloadFlags & 0x4) != 0) ? textInstance.m_OverloadedAttributes.BoxSize : textInstance.m_component->m_BoxSize;
     nlVector2 bb = boxSize;
-    bb.f.x = 999.9f;
+    bb.x = 999.9f;
     textInstance.m_OverloadedAttributes.BoxSize = bb;
     textInstance.m_OverloadFlags |= 0x4;
 }

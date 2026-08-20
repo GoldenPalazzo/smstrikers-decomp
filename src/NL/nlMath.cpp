@@ -30,58 +30,58 @@ static const volatile float nlHalfPi = M_PI / 2.0f;
 /**
  * Offset/Address/Size: 0x0 | 0x801D1474 | size: 0x1D4
  */
-float nlBezier(float* controlPoints, int degree, float t)
+float nlBezier(float* fControlPoints, int nNumPoints, float fMu)
 {
-    float oneMinusT;
+    float oneMinusMu;
     float powVal;
     float result;
-    float tPower;
-    float tPowerInv;
-    float coeffF;
+    float oneMinusMuToNMinusK;
+    float muToK;
+    float blend;
     float powTerm;
-    int factorialResult;
-    int factorialInv;
+    int nFactorial;
+    int kFactorial;
     int i;
     float* currentPoint;
-    int factorialDivisor;
-    int loopIndex;
+    int nMinusKFactorial;
+    int k;
 
-    if (t == 1.0f)
+    if (fMu == 1.0f)
     {
-        return controlPoints[degree - 1];
+        return fControlPoints[nNumPoints - 1];
     }
 
-    oneMinusT = 1.0f - t;
-    factorialResult = 1;
-    factorialInv = 1;
-    powVal = pow(oneMinusT, (float)degree);
-    tPower = powVal;
-    tPowerInv = 1.0f;
+    oneMinusMu = 1.0f - fMu;
+    nFactorial = 1;
+    kFactorial = 1;
+    powVal = pow(oneMinusMu, (float)nNumPoints);
+    oneMinusMuToNMinusK = powVal;
+    muToK = 1.0f;
 
-    for (i = 1; i <= degree; i++)
+    for (i = 1; i <= nNumPoints; i++)
     {
-        factorialResult *= i;
+        nFactorial *= i;
     }
 
-    factorialDivisor = factorialResult;
-    currentPoint = controlPoints + 1;
-    result = *controlPoints * powVal;
+    nMinusKFactorial = nFactorial;
+    currentPoint = fControlPoints + 1;
+    result = *fControlPoints * powVal;
 
-    for (loopIndex = 1; loopIndex <= degree; loopIndex++)
+    for (k = 1; k <= nNumPoints; k++)
     {
-        factorialInv *= loopIndex;
-        if (loopIndex != degree)
+        kFactorial *= k;
+        if (k != nNumPoints)
         {
-            factorialDivisor /= (degree - loopIndex) + 1;
+            nMinusKFactorial /= (nNumPoints - k) + 1;
         }
 
-        tPower /= oneMinusT;
-        tPowerInv *= t;
-        coeffF = (float)(factorialResult / (factorialInv * factorialDivisor));
-        powTerm = tPowerInv * tPower;
-        coeffF = coeffF * powTerm;
-        coeffF = coeffF * *currentPoint;
-        result = result + coeffF;
+        oneMinusMuToNMinusK /= oneMinusMu;
+        muToK *= fMu;
+        blend = (float)(nFactorial / (kFactorial * nMinusKFactorial));
+        powTerm = muToK * oneMinusMuToNMinusK;
+        blend = blend * powTerm;
+        blend = blend * *currentPoint;
+        result = result + blend;
         currentPoint += 1;
     }
 
@@ -299,6 +299,9 @@ void nlSinCos(float* presult_sin, float* presult_cos, unsigned short angle)
     *presult_cos = result_cos;
 }
 
+/**
+ * Offset/Address/Size: 0x6F0 | 0x801D1B64 | size: 0xA0
+ */
 float nlSin(unsigned short angle)
 {
     float a = nlAngleConstantsData.unitsToRadians * (float)angle;
@@ -325,7 +328,7 @@ float nlSin(unsigned short angle)
 /**
  * Offset/Address/Size: 0x790 | 0x801D1C04 | size: 0x70
  */
-float nlRecipSqrt(float x, bool)
+float nlRecipSqrt(float x, bool bAccurate)
 {
     float zero = 0.0f;
     if (x > zero)
@@ -379,7 +382,6 @@ float nlSqrt(float x, bool bAccurate)
 /**
  * Offset/Address/Size: 0x8EC | 0x801D1D60 | size: 0x84
  */
-#pragma fp_contract off
 float nlRandomf(float fMin, float fMax, unsigned int* pSeed)
 {
     unsigned int next;
@@ -396,7 +398,6 @@ float nlRandomf(float fMin, float fMax, unsigned int* pSeed)
     f32 fVal = scale * (f32)mod;
     return fMin + fVal;
 }
-#pragma fp_contract on
 
 /**
  * Offset/Address/Size: 0x970 | 0x801D1DE4 | size: 0x7C
@@ -433,17 +434,17 @@ uint nlRandom(uint range, uint* seed)
 /**
  * Offset/Address/Size: 0xA20 | 0x801D1E94 | size: 0x2C
  */
-void nlSetRandomSeed(uint initialSeed, uint* seedStorage)
+void nlSetRandomSeed(uint value, uint* seed)
 {
-    uint shiftedValue;
-    uint mixedValue;
+    uint temp;
+    uint next;
 
-    *seedStorage = initialSeed;
+    *seed = value;
 
-    mixedValue = *seedStorage ^ 0x1d872b41;        // Mix with constant
-    shiftedValue = mixedValue ^ (mixedValue >> 5); // Mix with right-shifted value
+    next = *seed ^ 0x1d872b41;
+    temp = next ^ (next >> 5);
 
-    *seedStorage = shiftedValue ^ (mixedValue ^ (shiftedValue << 0x1b)); // Final mixing
+    *seed = temp ^ (next ^ (temp << 0x1b));
 }
 
 /**
@@ -452,4 +453,9 @@ void nlSetRandomSeed(uint initialSeed, uint* seedStorage)
 void nlInitRandom()
 {
     seedMT(0x1105);
+}
+
+unsigned long nlMoreRandom()
+{
+    return randomMT();
 }

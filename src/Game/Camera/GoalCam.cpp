@@ -25,9 +25,9 @@ static f32 gfCamDist = 14.0f;
  */
 GoalCamera::GoalCamera()
 {
-    m_vecTarget.f.x = 0.0f;
-    m_vecTarget.f.y = 0.0f;
-    m_vecTarget.f.z = 0.0f;
+    m_vecTarget.x = 0.0f;
+    m_vecTarget.y = 0.0f;
+    m_vecTarget.z = 0.0f;
     Update(0.0f);
 }
 
@@ -55,9 +55,9 @@ void GoalCamera::Update(float /*dt*/)
     float fTiltCos;
     nlVector3 midvec;
 
-    vecUp.f.x = 0.0f;
-    vecUp.f.y = 0.0f;
-    vecUp.f.z = 1.0f;
+    vecUp.x = 0.0f;
+    vecUp.y = 0.0f;
+    vecUp.z = 1.0f;
 
     if (gnCamType == 0)
     {
@@ -88,21 +88,21 @@ void GoalCamera::Update(float /*dt*/)
 
     if (gnCamType == 0)
     {
-        m_vecTarget.f.x = fDir * cField::GetGoalLineX((unsigned int)1);
-        m_vecTarget.f.y = 0.0f;
-        m_vecTarget.f.z = 0.0f;
+        m_vecTarget.x = fDir * cField::GetGoalLineX((unsigned int)1);
+        m_vecTarget.y = 0.0f;
+        m_vecTarget.z = 0.0f;
 
         nlVec3Sub(m_vecCamera, ballpos, m_vecTarget);
 
-        f32 invLen = nlRecipSqrt((m_vecCamera.f.x * m_vecCamera.f.x) + (m_vecCamera.f.y * m_vecCamera.f.y) + (m_vecCamera.f.z * m_vecCamera.f.z), 1);
+        f32 invLen = nlRecipSqrt((m_vecCamera.x * m_vecCamera.x) + (m_vecCamera.y * m_vecCamera.y) + (m_vecCamera.z * m_vecCamera.z), 1);
         nlVec3Scale(m_vecCamera, invLen);
 
         nlVec3ScaleAdd(m_vecCamera, gfDistance, m_vecCamera, ballpos);
-        m_vecCamera.f.z = gfHeight;
+        m_vecCamera.z = gfHeight;
 
-        m_vecCamera.f.x = 0.9f * lastpos.f.x + 0.1f * m_vecCamera.f.x;
-        m_vecCamera.f.y = 0.9f * lastpos.f.y + 0.1f * m_vecCamera.f.y;
-        m_vecCamera.f.z = 0.9f * lastpos.f.z + 0.1f * m_vecCamera.f.z;
+        m_vecCamera.x = 0.9f * lastpos.x + 0.1f * m_vecCamera.x;
+        m_vecCamera.y = 0.9f * lastpos.y + 0.1f * m_vecCamera.y;
+        m_vecCamera.z = 0.9f * lastpos.z + 0.1f * m_vecCamera.z;
     }
     else if (gnCamType == 1)
     {
@@ -110,50 +110,50 @@ void GoalCamera::Update(float /*dt*/)
 
         g_pBall->m_pPhysicsBall->GetLinearVelocity(&dirvec);
 
-        dirvec.f.z = 0.0f;
-        dirvec.f.x = 1.0f;
-        dirvec.f.y = 0.0f;
-        dirvec.f.z = 0.3f;
+        dirvec.z = 0.0f;
+        dirvec.x = 1.0f;
+        dirvec.y = 0.0f;
+        dirvec.z = 0.3f;
 
         {
-            f32 invLen = nlRecipSqrt((dirvec.f.x * dirvec.f.x) + (dirvec.f.y * dirvec.f.y) + (dirvec.f.z * dirvec.f.z), 1);
+            f32 invLen = nlRecipSqrt((dirvec.x * dirvec.x) + (dirvec.y * dirvec.y) + (dirvec.z * dirvec.z), 1);
             nlVec3Scale(dirvec, invLen);
-            dirvec.f.x *= -1.0f;
-            dirvec.f.y *= -1.0f;
+            dirvec.x *= -1.0f;
+            dirvec.y *= -1.0f;
         }
 
         nlVec3ScaleAdd(m_vecCamera, gfDistance, dirvec, m_vecTarget);
-        m_vecCamera.f.z = m_vecTarget.f.z + gfHeight;
+        m_vecCamera.z = m_vecTarget.z + gfHeight;
 
-        m_vecCamera.f.x = 0.8f * lastpos.f.x + 0.2f * m_vecCamera.f.x;
-        m_vecCamera.f.y = 0.8f * lastpos.f.y + 0.2f * m_vecCamera.f.y;
-        m_vecCamera.f.z = 0.8f * lastpos.f.z + 0.2f * m_vecCamera.f.z;
+        m_vecCamera.x = 0.8f * lastpos.x + 0.2f * m_vecCamera.x;
+        m_vecCamera.y = 0.8f * lastpos.y + 0.2f * m_vecCamera.y;
+        m_vecCamera.z = 0.8f * lastpos.z + 0.2f * m_vecCamera.z;
 
-        m_vecTarget.f.x = 0.8f * lasttarg.f.x + 0.2f * m_vecTarget.f.x;
-        m_vecTarget.f.y = 0.8f * lasttarg.f.y + 0.2f * m_vecTarget.f.y;
-        m_vecTarget.f.z = 0.8f * lasttarg.f.z + 0.2f * m_vecTarget.f.z;
+        m_vecTarget.x = 0.8f * lasttarg.x + 0.2f * m_vecTarget.x;
+        m_vecTarget.y = 0.8f * lasttarg.y + 0.2f * m_vecTarget.y;
+        m_vecTarget.z = 0.8f * lasttarg.z + 0.2f * m_vecTarget.z;
     }
     else
     {
-        m_vecTarget.f.x = fDir * cField::GetGoalLineX((unsigned int)1);
-        m_vecTarget.f.y = 0.0f;
-        m_vecTarget.f.z = gfHeight;
+        m_vecTarget.x = fDir * cField::GetGoalLineX((unsigned int)1);
+        m_vecTarget.y = 0.0f;
+        m_vecTarget.z = gfHeight;
 
         nlSinCos(&fDirSin, &fDirCos, (u16)(s32)(10430.378f * gfCamDir));
         nlSinCos(&fTiltSin, &fTiltCos, (u16)(s32)(10430.378f * gfCamTilt));
 
-        m_vecCamera.f.x = fTiltCos * (gfCamDist * fDirCos);
-        m_vecCamera.f.y = fTiltCos * (gfCamDist * fDirSin);
-        m_vecCamera.f.z = gfCamDist * fTiltSin;
+        m_vecCamera.x = fTiltCos * (gfCamDist * fDirCos);
+        m_vecCamera.y = fTiltCos * (gfCamDist * fDirSin);
+        m_vecCamera.z = gfCamDist * fTiltSin;
 
         nlVec3Add(m_vecCamera, m_vecCamera, m_vecTarget);
 
-        m_vecCamera.f.x = 0.9f * lastpos.f.x + 0.1f * m_vecCamera.f.x;
-        m_vecCamera.f.y = 0.9f * lastpos.f.y + 0.1f * m_vecCamera.f.y;
-        m_vecCamera.f.z = 0.9f * lastpos.f.z + 0.1f * m_vecCamera.f.z;
+        m_vecCamera.x = 0.9f * lastpos.x + 0.1f * m_vecCamera.x;
+        m_vecCamera.y = 0.9f * lastpos.y + 0.1f * m_vecCamera.y;
+        m_vecCamera.z = 0.9f * lastpos.z + 0.1f * m_vecCamera.z;
 
         ballpos = m_vecCamera;
-        ballpos.f.z = gfHeight;
+        ballpos.z = gfHeight;
     }
 
     if (cPadManager::GetPad(0)->IsPressed(0x800, 0))
@@ -164,26 +164,26 @@ void GoalCamera::Update(float /*dt*/)
 
             nlVec3WeightedSum(midvec, 1.0f - gfSideBias, m_vecTarget, gfSideBias, ballpos);
 
-            dirvec.f.z = dirvec.f.x;
-            dirvec.f.x = dirvec.f.y;
-            dirvec.f.y = -dirvec.f.z;
+            dirvec.z = dirvec.x;
+            dirvec.x = dirvec.y;
+            dirvec.y = -dirvec.z;
 
             nlVec3ScaleAdd(dirvec, gfSideMult, dirvec, midvec);
-            dirvec.f.z = gfHeight;
+            dirvec.z = gfHeight;
         }
         else if (gnCamType == 1)
         {
-            float y = dirvec.f.y;
-            float x = dirvec.f.x;
+            float y = dirvec.y;
+            float x = dirvec.x;
             float nx = -y;
 
-            dirvec.f.z = x;
-            float x2 = dirvec.f.z;
-            dirvec.f.x = nx;
-            dirvec.f.y = x2;
+            dirvec.z = x;
+            float x2 = dirvec.z;
+            dirvec.x = nx;
+            dirvec.y = x2;
 
             nlVec3ScaleAdd(dirvec, gfDistance, dirvec, m_vecTarget);
-            dirvec.f.z = m_vecTarget.f.z + gfHeight;
+            dirvec.z = m_vecTarget.z + gfHeight;
 
             midvec = m_vecTarget;
         }

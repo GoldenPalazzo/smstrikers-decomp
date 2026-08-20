@@ -56,7 +56,7 @@ NLString Variant::ToString() const
 
         case FT_VECTOR:
         {
-            dataString = Format(NLString("({0},{1},{2})"), mData.vector.f.x, mData.vector.f.y, mData.vector.f.z);
+            dataString = Format(NLString("({0},{1},{2})"), mData.vector.x, mData.vector.y, mData.vector.z);
             break;
         }
 
@@ -122,10 +122,10 @@ unsigned long Variant::GetHash() const
 
     case FT_VECTOR:
     {
-        unsigned long hash1 = __cvt_fp2unsigned((f64)mData.vector.f.z);
-        unsigned long hash2 = __cvt_fp2unsigned((f64)mData.vector.f.y);
+        unsigned long hash1 = __cvt_fp2unsigned((f64)mData.vector.z);
+        unsigned long hash2 = __cvt_fp2unsigned((f64)mData.vector.y);
         hash2 ^= hash1;
-        unsigned long hash3 = __cvt_fp2unsigned((f64)mData.vector.f.x);
+        unsigned long hash3 = __cvt_fp2unsigned((f64)mData.vector.x);
         hash = hash3 | hash2;
         break;
     }

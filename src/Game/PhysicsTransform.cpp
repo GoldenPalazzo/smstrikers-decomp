@@ -81,13 +81,13 @@ void PhysicsTransform::Release()
         GetRotation(&mat);
 
         nlMultPosVectorMatrix(v, v2, mat);
-        v1.f.z = v1.f.z + v.f.z;
-        v1.f.y = v1.f.y + v.f.y;
-        v1.f.x = v1.f.x + v.f.x;
+        v1.z = v1.z + v.z;
+        v1.y = v1.y + v.y;
+        v1.x = v1.x + v.x;
         m_SubObject->SetPosition(v1, WORLD_COORDINATES);
-        v1.f.x = 0.f;
-        v1.f.y = 0.f;
-        v1.f.z = 0.f;
+        v1.x = 0.f;
+        v1.y = 0.f;
+        v1.z = 0.f;
         m_SubObject->SetLinearVelocity(v1);
         m_SubObject->SetAngularVelocity(v1);
         m_SubObject->ZeroForceAccumulators();
@@ -111,7 +111,7 @@ void PhysicsTransform::SetSubObjectTransform(const nlMatrix4& transform, Physics
 {
     nlVector3 v;
     m_SubObject->SetRotation(transform);
-    nlVec3Set(v, transform.m[3][0], transform.m[3][1], transform.m[3][2]);
-    // NL_VECTOR3_SET(v, transform.m[3][0], transform.m[3][1], transform.m[3][2]);
+    nlVec3Set(v, transform.e2[3][0], transform.e2[3][1], transform.e2[3][2]);
+    // NL_VECTOR3_SET(v, transform.e2[3][0], transform.e2[3][1], transform.e2[3][2]);
     m_SubObject->SetPosition(v, coordinateType);
 }

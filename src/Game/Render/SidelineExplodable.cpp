@@ -11,6 +11,7 @@
 #include "NL/glx/glxTexture.h"
 #include "NL/nlFunction.h"
 #include "NL/nlMath.h"
+#include "NL/vmath.h"
 #include "NL/nlString.h"
 #include "types.h"
 
@@ -79,7 +80,7 @@ void UpdateEmissionControllerPosition(EmissionController& ec, ExplosionFragment*
     }
     else
     {
-        pPos = (const nlVector3*)&(pFragment->mStationaryTransform->f.m41);
+        pPos = (const nlVector3*)&(pFragment->mStationaryTransform->m41);
     }
     ec.SetPosition(*pPos);
 }
@@ -101,7 +102,7 @@ nlVector3& ExplosionFragment::GetPosition() const
     {
         return mpPhysicsObject->GetPosition();
     }
-    return *(nlVector3*)&mStationaryTransform->m[3];
+    return *(nlVector3*)&mStationaryTransform->e2[3];
 }
 
 /**
@@ -306,14 +307,14 @@ void SidelineExplodable::InitializePhysicsObject(PhysicsObject* pPhysicsObject, 
 
         velPolar.r = fragmentHeight * nlSin((u16)maxAngle + 0x4000);
         nlPolarToCartesian(vel, velPolar);
-        vel.f.z = fragmentHeight * nlSin((u16)maxAngle);
+        vel.z = fragmentHeight * nlSin((u16)maxAngle);
 
         float angVelX = nlRandomf(-6.0f, 6.0f, &nlDefaultSeed);
         float angVelY = nlRandomf(-6.0f, 6.0f, &nlDefaultSeed);
         float angVelZ = nlRandomf(-6.0f, 6.0f, &nlDefaultSeed);
-        angularVel.f.x = angVelZ;
-        angularVel.f.y = angVelY;
-        angularVel.f.z = angVelX;
+        angularVel.x = angVelZ;
+        angularVel.y = angVelY;
+        angularVel.z = angVelX;
         pPhysicsObject->SetLinearVelocity(vel);
         pPhysicsObject->SetAngularVelocity(angularVel);
     }
@@ -339,11 +340,11 @@ void SidelineExplodable::Explode()
     if (!g_pGame->mbCaptainShotToScoreOn)
     {
         EmissionController* pSmokeControl = EmissionManager::Create(fxGetGroup("explosion_smoke"), 0);
-        pSmokeControl->SetPosition(*(nlVector3*)&GetWorldMatrix().f.m41);
+        pSmokeControl->SetPosition(*(nlVector3*)&GetWorldMatrix().m41);
     }
 
     CollisionBobombData* pEventData = new ((CollisionBobombData*)&g_pEventManager->CreateValidEvent(0x66, 0x34)->m_data) CollisionBobombData();
-    pEventData->v3ExplosionLocation = *(nlVector3*)&GetWorldMatrix().f.m41;
+    pEventData->v3ExplosionLocation = *(nlVector3*)&GetWorldMatrix().m41;
 
     int iFragment = 0;
     for (; iFragment < mNumFragmentModels; iFragment++)
@@ -374,7 +375,7 @@ void SidelineExplodable::Explode()
         if (!fragment.mbIsStationary)
         {
             PhysicsBox* box = (PhysicsBox*)::operator new(0x30, 8, false);
-            box = new (box) SidelineExplosionPhysicsObject(g_CollisionSpace, g_PhysicsWorld, dim.mDim.f.x, dim.mDim.f.y, dim.mDim.f.z, &fragment);
+            box = new (box) SidelineExplosionPhysicsObject(g_CollisionSpace, g_PhysicsWorld, dim.mDim.x, dim.mDim.y, dim.mDim.z, &fragment);
             box->SetDensity(5.0f);
 
             ExplodableCategoryData& transformCategoryData = GetCategoryData();
@@ -403,7 +404,7 @@ void SidelineExplodable::Explode()
         pSmokeControl->SetFinishedCallback(Function1<void, EmissionController&>(
             Bind<void>(EmissionControllerFinished, placeholder0, &fragment)));
 
-        pSmokeControl->SetPosition(*(nlVector3*)&GetWorldMatrix().f.m41);
+        pSmokeControl->SetPosition(*(nlVector3*)&GetWorldMatrix().m41);
         fragment.mpSmokeEmissionController = pSmokeControl;
     }
 }
@@ -417,7 +418,7 @@ void SidelineExplodable::FindExplosionAngleRange(unsigned short& min, unsigned s
     {
         float explosionRadius = cField::GetSidelineY(1U);
         const nlMatrix4& worldMatrix = GetWorldMatrix();
-        u16 angleToCentreOfField = (u16)(s32)(10430.378f * nlATan2f(worldMatrix.f.m42, worldMatrix.f.m41));
+        u16 angleToCentreOfField = (u16)(s32)(10430.378f * nlATan2f(worldMatrix.m42, worldMatrix.m41));
         angleToCentreOfField = (u16)(angleToCentreOfField + 0x8000);
 
         nlPolar polar = { 0, explosionRadius };
@@ -702,9 +703,9 @@ void SidelineExplodableManager::TriggerExplosions(const nlVector3& pos, float ex
     float posY;
     float posZ;
     float triggerDist = 1.2f * explosionRadius;
-    posZ = pos.f.z;
-    posY = pos.f.y;
-    posX = pos.f.x;
+    posZ = pos.z;
+    posY = pos.y;
+    posX = pos.x;
 
     while (node != NULL)
     {
@@ -857,9 +858,9 @@ ContactType SidelineExplosionPhysicsObject::Contact(PhysicsObject* other, dConta
             float deltaY;
             float deltaZ;
 
-            deltaY = linearVelocity->f.y - player->m_v3Velocity.x_field;
-            deltaX = linearVelocity->f.x - player->m_v3Velocity.y_field;
-            deltaZ = linearVelocity->f.z - player->m_v3Velocity.z_field;
+            deltaY = linearVelocity->y - player->m_v3Velocity.x_field;
+            deltaX = linearVelocity->x - player->m_v3Velocity.y_field;
+            deltaZ = linearVelocity->z - player->m_v3Velocity.z_field;
 
             float deltaYSq = deltaY * deltaY;
             float deltaSq = deltaYSq + deltaX * deltaX + deltaZ * deltaZ;
@@ -876,9 +877,9 @@ ContactType SidelineExplosionPhysicsObject::Contact(PhysicsObject* other, dConta
                 y = contact->geom.pos[1];
                 float x = contact->geom.pos[0];
 
-                eventData->v3CollisionLocation.f.x = x;
-                eventData->v3CollisionLocation.f.y = y;
-                eventData->v3CollisionLocation.f.z = z;
+                eventData->v3CollisionLocation.x = x;
+                eventData->v3CollisionLocation.y = y;
+                eventData->v3CollisionLocation.z = z;
                 eventData->v3CollisionVelocity = GetLinearVelocity();
             }
         }
@@ -906,19 +907,19 @@ void SidelineExplosionPhysicsObject::PostUpdate()
     nlVector3 angularVelocity;
     GetAngularVelocity(&angularVelocity);
 
-    float lenSq = angularVelocity.f.x * angularVelocity.f.x + angularVelocity.f.y * angularVelocity.f.y + angularVelocity.f.z * angularVelocity.f.z;
+    float lenSq = angularVelocity.x * angularVelocity.x + angularVelocity.y * angularVelocity.y + angularVelocity.z * angularVelocity.z;
     if (lenSq > 100.0f)
     {
         float recip = nlRecipSqrt(lenSq, true);
 
-        float xNorm = recip * angularVelocity.f.x;
+        float xNorm = recip * angularVelocity.x;
         float yNorm;
         float zNorm;
-        zNorm = recip * angularVelocity.f.z;
-        yNorm = recip * angularVelocity.f.y;
-        angularVelocity.f.x = xNorm;
-        angularVelocity.f.y = yNorm;
-        angularVelocity.f.z = zNorm;
+        zNorm = recip * angularVelocity.z;
+        yNorm = recip * angularVelocity.y;
+        angularVelocity.x = xNorm;
+        angularVelocity.y = yNorm;
+        angularVelocity.z = zNorm;
 
         nlVec3Scale(angularVelocity, angularVelocity, 10.0f);
         SetAngularVelocity(angularVelocity);
@@ -927,33 +928,33 @@ void SidelineExplosionPhysicsObject::PostUpdate()
     nlVector3 position = GetPosition();
     bool changed = false;
 
-    if (position.f.x > 100.0f)
+    if (position.x > 100.0f)
     {
-        position.f.x = 100.0f;
+        position.x = 100.0f;
         changed = true;
     }
 
-    if (position.f.x < -100.0f)
+    if (position.x < -100.0f)
     {
-        position.f.x = -100.0f;
+        position.x = -100.0f;
         changed = true;
     }
 
-    if (position.f.y > 100.0f)
+    if (position.y > 100.0f)
     {
-        position.f.y = 100.0f;
+        position.y = 100.0f;
         changed = true;
     }
 
-    if (position.f.y < -100.0f)
+    if (position.y < -100.0f)
     {
-        position.f.y = -100.0f;
+        position.y = -100.0f;
         changed = true;
     }
 
-    if (position.f.z > 100.0f)
+    if (position.z > 100.0f)
     {
-        position.f.z = 100.0f;
+        position.z = 100.0f;
         changed = true;
     }
 
@@ -973,8 +974,8 @@ void SidelineExplodableManager::AssociateEffectWithNearbyFloatingCamera(Emission
     SidelineExplodable* closest = GetClosestExplodable(position);
 
     const nlMatrix4& closestMat = closest->GetWorldMatrix();
-    float cdy = closestMat.m[3][1] - position.f.y;
-    float cdx = closestMat.m[3][0] - position.f.x;
+    float cdy = closestMat.e2[3][1] - position.y;
+    float cdx = closestMat.e2[3][0] - position.x;
     float closestDist = cdx * cdx + cdy * cdy;
     if (closestDist < 1.0f)
     {

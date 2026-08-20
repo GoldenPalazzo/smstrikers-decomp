@@ -304,9 +304,9 @@ float OnScreen(cPlayer* pPlayer)
     onScreenFlags[1] = 0;
     onScreenFlags[0] = onScreenFlags[1];
 
-    if ((float)fabs(pPlayer->m_v3ScreenPosition.f.x) <= 1.0f)
+    if ((float)fabs(pPlayer->m_v3ScreenPosition.x) <= 1.0f)
     {
-        if ((float)fabs(pPlayer->m_v3ScreenPosition.f.y) <= 1.0f)
+        if ((float)fabs(pPlayer->m_v3ScreenPosition.y) <= 1.0f)
         {
             onScreenFlags[0] = 1;
         }
@@ -314,7 +314,7 @@ float OnScreen(cPlayer* pPlayer)
 
     if (onScreenFlags[0] != 0)
     {
-        if ((float)fabs(pPlayer->m_v3ScreenPosition.f.z) <= 1.0f)
+        if ((float)fabs(pPlayer->m_v3ScreenPosition.z) <= 1.0f)
         {
             onScreenFlags[1] = 1;
         }
@@ -342,7 +342,7 @@ float OnTheGround(cPlayer* pPlayer)
     int jointIndex = pPlayer->m_nBip01JointIndex_0xA4;
     const nlVector3& jointPos = pPlayer->GetJointPosition(jointIndex);
 
-    return NormalizeVal(jointPos.f.z, pFuzzyTweaks->vOnGroundConfidenceDistance);
+    return NormalizeVal(jointPos.z, pFuzzyTweaks->vOnGroundConfidenceDistance);
 }
 
 /**
@@ -430,12 +430,12 @@ static inline float InPassingLane(cFielder* pFielder, cPlayer* pPassTarget, floa
 {
     nlVector3 v3BetweenIntercept = GetClosestPointOnLineABFromPointC(g_pScriptBall->m_v3Position, pPassTarget->m_v3Position, pFielder->m_v3Position);
 
-    float dy1 = g_pScriptBall->m_v3Position.f.y - v3BetweenIntercept.f.y;
-    float dx1 = g_pScriptBall->m_v3Position.f.x - v3BetweenIntercept.f.x;
+    float dy1 = g_pScriptBall->m_v3Position.y - v3BetweenIntercept.y;
+    float dx1 = g_pScriptBall->m_v3Position.x - v3BetweenIntercept.x;
     float fPossibleFielderDistance = ScaleByRunningSpeed(nlSqrt(dx1 * dx1 + dy1 * dy1, true) / fPotentialBallSpeed, pFielder);
 
-    float dx2 = pFielder->m_v3Position.f.x - v3BetweenIntercept.f.x;
-    return NormalizeVal(nlSqrt(dx2 * dx2 + (pFielder->m_v3Position.f.y - v3BetweenIntercept.f.y) * (pFielder->m_v3Position.f.y - v3BetweenIntercept.f.y), true), fPossibleFielderDistance + ((GameTweaks*)g_pGame->m_pFuzzyTweaks)->fShellExplodeChance, fPossibleFielderDistance);
+    float dx2 = pFielder->m_v3Position.x - v3BetweenIntercept.x;
+    return NormalizeVal(nlSqrt(dx2 * dx2 + (pFielder->m_v3Position.y - v3BetweenIntercept.y) * (pFielder->m_v3Position.y - v3BetweenIntercept.y), true), fPossibleFielderDistance + ((GameTweaks*)g_pGame->m_pFuzzyTweaks)->fShellExplodeChance, fPossibleFielderDistance);
 }
 
 /**
@@ -466,7 +466,7 @@ float InPassingLane(cFielder* pFielder)
     }
 
     nlPolar pBallSpeedPolar;
-    nlCartesianToPolar(pBallSpeedPolar, g_pScriptBall->m_v3Velocity.f.x, g_pScriptBall->m_v3Velocity.f.y);
+    nlCartesianToPolar(pBallSpeedPolar, g_pScriptBall->m_v3Velocity.x, g_pScriptBall->m_v3Velocity.y);
     return InPassingLane(pFielder, pPassingTarget, pBallSpeedPolar.r);
 }
 
@@ -604,10 +604,10 @@ float AbleToInterceptBall(cPlayer* pPlayer)
             if (classType == FIELDER)
             {
                 float fInterceptTimeScore = NormalizeVal(pPlayer->m_pTeam->mfBallInterceptTimes[pPlayer->m_ID], g_pGame->m_pFuzzyTweaks->vInterceptBallConfidenceTime);
-                float fPlayerCoord = pPlayer->m_v3Position.f.x;
-                float dx = g_pBall->m_v3Position.f.x - fPlayerCoord;
-                fPlayerCoord = pPlayer->m_v3Position.f.y;
-                float dy = g_pBall->m_v3Position.f.y - fPlayerCoord;
+                float fPlayerCoord = pPlayer->m_v3Position.x;
+                float dx = g_pBall->m_v3Position.x - fPlayerCoord;
+                fPlayerCoord = pPlayer->m_v3Position.y;
+                float dy = g_pBall->m_v3Position.y - fPlayerCoord;
                 float distance = nlSqrt((dx * dx) + (dy * dy), true);
                 float normalizedDistance = NormalizeVal(distance, g_pGame->m_pFuzzyTweaks->vInterceptBallConfidenceDistance);
                 float weight = g_pGame->m_pFuzzyTweaks->fInterceptBallScoreWeight;
@@ -625,10 +625,10 @@ float AbleToInterceptBall(cPlayer* pPlayer)
                     }
                     else
                     {
-                        float fPlayerCoord = pPlayer->m_v3Position.f.x;
-                        float dx = g_pScriptBall->m_v3Position.f.x - fPlayerCoord;
-                        fPlayerCoord = pPlayer->m_v3Position.f.y;
-                        float dy = g_pScriptBall->m_v3Position.f.y - fPlayerCoord;
+                        float fPlayerCoord = pPlayer->m_v3Position.x;
+                        float dx = g_pScriptBall->m_v3Position.x - fPlayerCoord;
+                        fPlayerCoord = pPlayer->m_v3Position.y;
+                        float dy = g_pScriptBall->m_v3Position.y - fPlayerCoord;
                         result = NormalizeVal(nlSqrt((dx * dx) + (dy * dy), true), g_pGame->m_pFuzzyTweaks->vCloseBallConfidenceDistance);
                     }
                     fScore = result;
@@ -711,10 +711,10 @@ float AbleToInterceptBallForSwapController(cFielder* pFielder)
         else
         {
             float fInterceptTimeScore = NormalizeVal(pFielder->m_pTeam->mfBallInterceptTimes[pFielder->m_ID], g_pGame->m_pFuzzyTweaks->vInterceptBallConfidenceTime);
-            float fFielderCoord = pFielder->m_v3Position.f.x;
-            float dx = g_pBall->m_v3Position.f.x - fFielderCoord;
-            fFielderCoord = pFielder->m_v3Position.f.y;
-            float dy = g_pBall->m_v3Position.f.y - fFielderCoord;
+            float fFielderCoord = pFielder->m_v3Position.x;
+            float dx = g_pBall->m_v3Position.x - fFielderCoord;
+            fFielderCoord = pFielder->m_v3Position.y;
+            float dy = g_pBall->m_v3Position.y - fFielderCoord;
             float distance = nlSqrt((dx * dx) + (dy * dy), true);
             float normalizedDistance = NormalizeVal(distance, g_pGame->m_pFuzzyTweaks->vInterceptBallConfidenceDistance);
             float weight = g_pGame->m_pFuzzyTweaks->fInterceptBallSwapControlerScoreWeight;
@@ -766,7 +766,7 @@ static inline float FielderOnGround(cFielder* pFielder, int powerupType)
     }
 
     FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
-    return NormalizeVal(pFielder->GetJointPosition(pFielder->m_nBip01JointIndex_0xA4).f.z, pFuzzyTweaks->vOnGroundConfidenceDistance);
+    return NormalizeVal(pFielder->GetJointPosition(pFielder->m_nBip01JointIndex_0xA4).z, pFuzzyTweaks->vOnGroundConfidenceDistance);
 }
 
 static inline float GetPowerupUsageRandomChance(cFielder* pFielder, int powerupType)
@@ -810,8 +810,8 @@ float CloseToBall(cPlayer* pPlayer)
         return 0.0f;
     }
 
-    float dx = g_pScriptBall->m_v3Position.f.x - pPlayer->m_v3Position.f.x;
-    float dy = g_pScriptBall->m_v3Position.f.y - pPlayer->m_v3Position.f.y;
+    float dx = g_pScriptBall->m_v3Position.x - pPlayer->m_v3Position.x;
+    float dy = g_pScriptBall->m_v3Position.y - pPlayer->m_v3Position.y;
     float distance = nlSqrt(dx * dx + dy * dy, true);
 
     FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
@@ -829,8 +829,8 @@ float NearToBall(cPlayer* pPlayer)
         return 0.0f;
     }
 
-    float dx = g_pScriptBall->m_v3Position.f.x - pPlayer->m_v3Position.f.x;
-    float dy = g_pScriptBall->m_v3Position.f.y - pPlayer->m_v3Position.f.y;
+    float dx = g_pScriptBall->m_v3Position.x - pPlayer->m_v3Position.x;
+    float dy = g_pScriptBall->m_v3Position.y - pPlayer->m_v3Position.y;
     float distance = nlSqrt(dx * dx + dy * dy, true);
 
     FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
@@ -848,8 +848,8 @@ float FarToBall(cPlayer* pPlayer)
         return 0.0f;
     }
 
-    float dx = g_pScriptBall->m_v3Position.f.x - pPlayer->m_v3Position.f.x;
-    float dy = g_pScriptBall->m_v3Position.f.y - pPlayer->m_v3Position.f.y;
+    float dx = g_pScriptBall->m_v3Position.x - pPlayer->m_v3Position.x;
+    float dy = g_pScriptBall->m_v3Position.y - pPlayer->m_v3Position.y;
     float distance = nlSqrt(dx * dx + dy * dy, true);
 
     FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
@@ -869,8 +869,8 @@ float CloseToMyNet(cPlayer* pPlayer)
 
     const nlVector3& netLocation = pPlayer->GetAIDefNetLocation(NULL);
 
-    float dx = netLocation.f.x - pPlayer->m_v3Position.f.x;
-    float dy = netLocation.f.y - pPlayer->m_v3Position.f.y;
+    float dx = netLocation.x - pPlayer->m_v3Position.x;
+    float dy = netLocation.y - pPlayer->m_v3Position.y;
     float distance = nlSqrt(dx * dx + dy * dy, true);
 
     FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
@@ -890,8 +890,8 @@ float NearToMyNet(cPlayer* pPlayer)
 
     const nlVector3& netLocation = pPlayer->GetAIDefNetLocation(NULL);
 
-    float dx = netLocation.f.x - pPlayer->m_v3Position.f.x;
-    float dy = netLocation.f.y - pPlayer->m_v3Position.f.y;
+    float dx = netLocation.x - pPlayer->m_v3Position.x;
+    float dy = netLocation.y - pPlayer->m_v3Position.y;
     float distance = nlSqrt(dx * dx + dy * dy, true);
 
     FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
@@ -911,8 +911,8 @@ float FarToMyNet(cPlayer* pPlayer)
 
     const nlVector3& netLocation = pPlayer->GetAIDefNetLocation(NULL);
 
-    float dx = netLocation.f.x - pPlayer->m_v3Position.f.x;
-    float dy = netLocation.f.y - pPlayer->m_v3Position.f.y;
+    float dx = netLocation.x - pPlayer->m_v3Position.x;
+    float dy = netLocation.y - pPlayer->m_v3Position.y;
     float distance = nlSqrt(dx * dx + dy * dy, true);
 
     FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
@@ -932,8 +932,8 @@ float CloseToTheirNet(cPlayer* pPlayer)
 
     const nlVector3& netLocation = pPlayer->GetAIOffNetLocation(NULL);
 
-    float dx = netLocation.f.x - pPlayer->m_v3Position.f.x;
-    float dy = netLocation.f.y - pPlayer->m_v3Position.f.y;
+    float dx = netLocation.x - pPlayer->m_v3Position.x;
+    float dy = netLocation.y - pPlayer->m_v3Position.y;
     float distance = nlSqrt(dx * dx + dy * dy, true);
 
     FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
@@ -953,8 +953,8 @@ float NearToTheirNet(cPlayer* pPlayer)
 
     const nlVector3& netLocation = pPlayer->GetAIOffNetLocation(NULL);
 
-    float dx = netLocation.f.x - pPlayer->m_v3Position.f.x;
-    float dy = netLocation.f.y - pPlayer->m_v3Position.f.y;
+    float dx = netLocation.x - pPlayer->m_v3Position.x;
+    float dy = netLocation.y - pPlayer->m_v3Position.y;
     float distance = nlSqrt(dx * dx + dy * dy, true);
 
     FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
@@ -974,8 +974,8 @@ float FarToTheirNet(cPlayer* pPlayer)
 
     const nlVector3& netLocation = pPlayer->GetAIOffNetLocation(NULL);
 
-    float dx = netLocation.f.x - pPlayer->m_v3Position.f.x;
-    float dy = netLocation.f.y - pPlayer->m_v3Position.f.y;
+    float dx = netLocation.x - pPlayer->m_v3Position.x;
+    float dy = netLocation.y - pPlayer->m_v3Position.y;
     float distance = nlSqrt(dx * dx + dy * dy, true);
 
     FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
@@ -1019,15 +1019,15 @@ float Pressured(cFielder* pFielder)
             if (pFielder->m_eClassType == GOALIE)
             {
                 FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
-                float dy = pOpponent->m_v3Position.f.y - pFielderPos->f.y;
-                float dx = pOpponent->m_v3Position.f.x - pFielderPos->f.x;
+                float dy = pOpponent->m_v3Position.y - pFielderPos->y;
+                float dx = pOpponent->m_v3Position.x - pFielderPos->x;
                 dist = NormalizeVal(nlSqrt(dx * dx + dy * dy, true), pFuzzyTweaks->vNearGoalieConfidenceDistance);
             }
             else if (pOpponent->m_eClassType == GOALIE)
             {
                 FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
-                float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
-                float dx = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
+                float dy = pFielderPos->y - pOpponent->m_v3Position.y;
+                float dx = pFielderPos->x - pOpponent->m_v3Position.x;
                 dist = NormalizeVal(nlSqrt(dx * dx + dy * dy, true), pFuzzyTweaks->vNearGoalieConfidenceDistance);
             }
             else
@@ -1042,8 +1042,8 @@ float Pressured(cFielder* pFielder)
                     pNearConfidence = &g_pGame->m_pFuzzyTweaks->vNearOpponentConfidenceDistance;
                 }
 
-                float dx = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
-                float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
+                float dx = pFielderPos->x - pOpponent->m_v3Position.x;
+                float dy = pFielderPos->y - pOpponent->m_v3Position.y;
                 dist = NormalizeVal(nlSqrt(dx * dx + dy * dy, true), *pNearConfidence);
             }
             fNearScore = dist;
@@ -1209,16 +1209,16 @@ float Attacked(cFielder* pFielder)
         }
         else if (pFielder->m_eClassType == GOALIE)
         {
-            float dy = pOpponent->m_v3Position.f.y - pFielderPos->f.y;
-            float dx = pOpponent->m_v3Position.f.x - pFielderPos->f.x;
+            float dy = pOpponent->m_v3Position.y - pFielderPos->y;
+            float dx = pOpponent->m_v3Position.x - pFielderPos->x;
             FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
             fNearDist = nlSqrt(dx * dx + dy * dy, true);
             fNearDist = NormalizeVal(fNearDist, pFuzzyTweaks->vNearGoalieConfidenceDistance);
         }
         else if (pOpponent->m_eClassType == GOALIE)
         {
-            float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
-            float dx = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
+            float dy = pFielderPos->y - pOpponent->m_v3Position.y;
+            float dx = pFielderPos->x - pOpponent->m_v3Position.x;
             FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
             fNearDist = nlSqrt(dx * dx + dy * dy, true);
             fNearDist = NormalizeVal(fNearDist, pFuzzyTweaks->vNearGoalieConfidenceDistance);
@@ -1234,8 +1234,8 @@ float Attacked(cFielder* pFielder)
             {
                 pTweaks = &g_pGame->m_pFuzzyTweaks->vNearOpponentConfidenceDistance;
             }
-            float dx = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
-            float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
+            float dx = pFielderPos->x - pOpponent->m_v3Position.x;
+            float dy = pFielderPos->y - pOpponent->m_v3Position.y;
             fNearDist = nlSqrt(dx * dx + dy * dy, true);
             fNearDist = NormalizeVal(fNearDist, *pTweaks);
         }
@@ -1256,16 +1256,16 @@ float Attacked(cFielder* pFielder)
         }
         else if (pFielder->m_eClassType == GOALIE)
         {
-            float dy = pOpponent->m_v3Position.f.y - pFielderPos->f.y;
-            float dx = pOpponent->m_v3Position.f.x - pFielderPos->f.x;
+            float dy = pOpponent->m_v3Position.y - pFielderPos->y;
+            float dx = pOpponent->m_v3Position.x - pFielderPos->x;
             FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
             fCloseDist = nlSqrt(dx * dx + dy * dy, true);
             fCloseDist = NormalizeVal(fCloseDist, pFuzzyTweaks->vCloseGoalieConfidenceDistance);
         }
         else if (pOpponent->m_eClassType == GOALIE)
         {
-            float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
-            float dx = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
+            float dy = pFielderPos->y - pOpponent->m_v3Position.y;
+            float dx = pFielderPos->x - pOpponent->m_v3Position.x;
             FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
             fCloseDist = nlSqrt(dx * dx + dy * dy, true);
             fCloseDist = NormalizeVal(fCloseDist, pFuzzyTweaks->vCloseGoalieConfidenceDistance);
@@ -1281,8 +1281,8 @@ float Attacked(cFielder* pFielder)
             {
                 pTweaks = &g_pGame->m_pFuzzyTweaks->vCloseOpponentConfidenceDistance;
             }
-            float dx = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
-            float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
+            float dx = pFielderPos->x - pOpponent->m_v3Position.x;
+            float dy = pFielderPos->y - pOpponent->m_v3Position.y;
             fCloseDist = nlSqrt(dx * dx + dy * dy, true);
             fCloseDist = NormalizeVal(fCloseDist, *pTweaks);
         }
@@ -1304,7 +1304,7 @@ float Attacked(cFielder* pFielder)
         else
         {
             nlVector3 vDiff;
-            nlVec3Set(vDiff, pFielderPos->f.x - pOpponent->m_v3Position.f.x, pFielderPos->f.y - pOpponent->m_v3Position.f.y, pFielderPos->f.z - pOpponent->m_v3Position.f.z);
+            nlVec3Set(vDiff, pFielderPos->x - pOpponent->m_v3Position.x, pFielderPos->y - pOpponent->m_v3Position.y, pFielderPos->z - pOpponent->m_v3Position.z);
 
             const int nOpponentFacing = (u16)pOpponent->m_aActualFacingDirection;
 
@@ -1364,7 +1364,7 @@ float AvoidingPowerups(cFielder* pFielder)
 
     nlVector3 repulsionVec = pFielder->m_pAvoidance->GetLastRepulsionVector(AVOID_POWERUPS);
 
-    float magnitude = nlSqrt(repulsionVec.f.x * repulsionVec.f.x + repulsionVec.f.y * repulsionVec.f.y + repulsionVec.f.z * repulsionVec.f.z, true);
+    float magnitude = nlSqrt(repulsionVec.x * repulsionVec.x + repulsionVec.y * repulsionVec.y + repulsionVec.z * repulsionVec.z, true);
 
     return NormalizeVal(magnitude, g_pGame->m_pFuzzyTweaks->vAvoidPowerupsRepulsionConfidence);
 }
@@ -1474,9 +1474,9 @@ float LikelyToScoreFromPosition(const nlVector3& v3Position, const nlVector3& v3
 
     fGoalLine = pNet->GetGoalLineX();
 
-    float fGoalX = fGoalLine - v3Position.f.x;
+    float fGoalX = fGoalLine - v3Position.x;
     float fGoalDeltaX = fGoalX * fSideSign;
-    float fPositionY = v3Position.f.y;
+    float fPositionY = v3Position.y;
 
     float fUpperAngle = nlATan2f(fNetHalfWidth - fPositionY, fGoalDeltaX);
     float fLowerAngle = nlATan2f(-fNetHalfWidth - fPositionY, fGoalDeltaX);
@@ -1485,9 +1485,9 @@ float LikelyToScoreFromPosition(const nlVector3& v3Position, const nlVector3& v3
     aUpperPostAngle = (u16)(s32)(10430.378f * fUpperAngle);
     aNetOpenAngle = aUpperPostAngle - aLowerPostAngle;
 
-    fGoalieDeltaX = v3GoaliePosition.f.x - v3Position.f.x;
+    fGoalieDeltaX = v3GoaliePosition.x - v3Position.x;
     fGoalieDeltaX *= fSideSign;
-    fGoalieDeltaY = v3GoaliePosition.f.y - v3Position.f.y;
+    fGoalieDeltaY = v3GoaliePosition.y - v3Position.y;
 
     float fGoalieCenterAngle = nlATan2f(fGoalieDeltaY, fGoalieDeltaX);
     float fGoalieHalfAngle = nlATan2f(0.5f, nlSqrt(fGoalieDeltaX * fGoalieDeltaX + fGoalieDeltaY * fGoalieDeltaY, true));
@@ -1536,9 +1536,9 @@ float PlayerShotDistance(cFielder* pFielder)
     cNet* pOtherNet = pFielder->m_pTeam->GetOtherNet();
 
     nlVector3 v;
-    nlVec3Set(v, pFielder->m_v3Position.f.x - pOtherNet->m_v3NetLocation.f.x, pFielder->m_v3Position.f.y - pOtherNet->m_v3NetLocation.f.y, pFielder->m_v3Position.f.z - pOtherNet->m_v3NetLocation.f.z);
+    nlVec3Set(v, pFielder->m_v3Position.x - pOtherNet->m_v3NetLocation.x, pFielder->m_v3Position.y - pOtherNet->m_v3NetLocation.y, pFielder->m_v3Position.z - pOtherNet->m_v3NetLocation.z);
 
-    return NormalizeVal(nlSqrt((v.f.x * v.f.x) + (v.f.y * v.f.y) + (v.f.z * v.f.z), true), g_pGame->m_pFuzzyTweaks->vPlayerShotDistance);
+    return NormalizeVal(nlSqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z), true), g_pGame->m_pFuzzyTweaks->vPlayerShotDistance);
 }
 
 /**
@@ -1581,26 +1581,26 @@ float GoalieOutOfPosition(cFielder* pFielder)
     pGoalie = pFielder->m_pTeam->GetOtherTeam()->GetGoalie();
     float halfNetWidth = 0.5f * cNet::m_fNetWidth;
     goalieNetPos = pGoalie->m_v3Position;
-    goalieNetPos.f.x = pGoalie->m_pTeam->m_pNet->m_v3NetLocation.f.x;
+    goalieNetPos.x = pGoalie->m_pTeam->m_pNet->m_v3NetLocation.x;
 
-    float goalieY = goalieNetPos.f.y;
+    float goalieY = goalieNetPos.y;
     if (goalieY < -halfNetWidth)
     {
-        goalieNetPos.f.y = -halfNetWidth;
+        goalieNetPos.y = -halfNetWidth;
     }
     else if (goalieY > halfNetWidth)
     {
-        goalieNetPos.f.y = halfNetWidth;
+        goalieNetPos.y = halfNetWidth;
     }
 
     const nlVector3& offNetLocation = pFielder->GetAIOffNetLocation(NULL);
 
-    float dx1 = pFielder->m_v3Position.f.x - offNetLocation.f.x;
-    float dy1 = pFielder->m_v3Position.f.y - offNetLocation.f.y;
+    float dx1 = pFielder->m_v3Position.x - offNetLocation.x;
+    float dy1 = pFielder->m_v3Position.y - offNetLocation.y;
     float fielderDistance = nlSqrt(dx1 * dx1 + dy1 * dy1, true);
 
-    float dx2 = pGoalie->m_v3Position.f.x - goalieNetPos.f.x;
-    float dy2 = pGoalie->m_v3Position.f.y - goalieNetPos.f.y;
+    float dx2 = pGoalie->m_v3Position.x - goalieNetPos.x;
+    float dy2 = pGoalie->m_v3Position.y - goalieNetPos.y;
     float goalieDistance = nlSqrt(dx2 * dx2 + dy2 * dy2, true);
 
     if (!((double)fielderDistance > 0.0))
@@ -1624,9 +1624,9 @@ float PositionIsInFrontOfNet(const nlVector3& position, const cNet* pNet)
     float sideSign;
     nlVector3 diff;
     nlVec3Set(diff,
-        position.f.x - pNet->m_v3NetLocation.f.x,
-        position.f.y - pNet->m_v3NetLocation.f.y,
-        position.f.z - pNet->m_v3NetLocation.f.z);
+        position.x - pNet->m_v3NetLocation.x,
+        position.y - pNet->m_v3NetLocation.y,
+        position.z - pNet->m_v3NetLocation.z);
     sideSign = pNet->m_fDirection;
     nlVec3Scale(diff, diff, sideSign);
 
@@ -1669,9 +1669,9 @@ float InFrontOfTheirNet(cFielder* pFielder)
 
     nlVector3 diff;
     nlVec3Set(diff,
-        pFielder->m_v3Position.f.x - pNet->m_v3NetLocation.f.x,
-        pFielder->m_v3Position.f.y - pNet->m_v3NetLocation.f.y,
-        pFielder->m_v3Position.f.z - pNet->m_v3NetLocation.f.z);
+        pFielder->m_v3Position.x - pNet->m_v3NetLocation.x,
+        pFielder->m_v3Position.y - pNet->m_v3NetLocation.y,
+        pFielder->m_v3Position.z - pNet->m_v3NetLocation.z);
 
     float sideSign = pNet->m_fDirection;
     nlVec3Scale(diff, diff, sideSign);
@@ -1739,8 +1739,8 @@ float OnBreakaway(cFielder* pFielder)
             nlVector3 v3MyPos = pFielder->m_v3Position;
             v3OppPos = pOpponent->m_v3Position;
             cNet* pOtherNet = pFielder->m_pTeam->GetOtherNet();
-            float sign = AIsgn(pOtherNet->m_v3NetLocation.f.x);
-            float upfieldDist = v3MyPos.f.x - v3OppPos.f.x;
+            float sign = AIsgn(pOtherNet->m_v3NetLocation.x);
+            float upfieldDist = v3MyPos.x - v3OppPos.x;
             fUpfieldScore = NormalizeVal(upfieldDist * sign, 0.0f, g_pGame->m_pFuzzyTweaks->fUpfieldMaxDistance);
         }
         float fInterceptScore;
@@ -1771,16 +1771,16 @@ float OnBreakaway(cFielder* pFielder)
         }
         else if (pFielder->m_eClassType == GOALIE)
         {
-            float dy = pOpponent->m_v3Position.f.y - pFielder->m_v3Position.f.y;
-            float dx = pOpponent->m_v3Position.f.x - pFielder->m_v3Position.f.x;
+            float dy = pOpponent->m_v3Position.y - pFielder->m_v3Position.y;
+            float dx = pOpponent->m_v3Position.x - pFielder->m_v3Position.x;
             FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
             float dist = nlSqrt(dx * dx + dy * dy, true);
             fProximityScore = NormalizeVal(dist, pFuzzyTweaks->vNearGoalieConfidenceDistance);
         }
         else if (pOpponent->m_eClassType == GOALIE)
         {
-            float dy = pFielder->m_v3Position.f.y - pOpponent->m_v3Position.f.y;
-            float dx = pFielder->m_v3Position.f.x - pOpponent->m_v3Position.f.x;
+            float dy = pFielder->m_v3Position.y - pOpponent->m_v3Position.y;
+            float dx = pFielder->m_v3Position.x - pOpponent->m_v3Position.x;
             FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
             float dist = nlSqrt(dx * dx + dy * dy, true);
             fProximityScore = NormalizeVal(dist, pFuzzyTweaks->vNearGoalieConfidenceDistance);
@@ -1796,8 +1796,8 @@ float OnBreakaway(cFielder* pFielder)
             {
                 pRange = &g_pGame->m_pFuzzyTweaks->vNearOpponentConfidenceDistance;
             }
-            float dx = pFielder->m_v3Position.f.x - pOpponent->m_v3Position.f.x;
-            float dy = pFielder->m_v3Position.f.y - pOpponent->m_v3Position.f.y;
+            float dx = pFielder->m_v3Position.x - pOpponent->m_v3Position.x;
+            float dy = pFielder->m_v3Position.y - pOpponent->m_v3Position.y;
             float dist = nlSqrt(dx * dx + dy * dy, true);
             fProximityScore = NormalizeVal(dist, *pRange);
         }
@@ -1815,9 +1815,9 @@ float OpenToPosition(const nlVector3& v3From, const nlVector3& v3To, const cTeam
 {
     extern cFielder* g_pScriptBallOwner;
     float dx, dy, dz;
-    dy = v3To.f.y - v3From.f.y;
-    dx = v3To.f.x - v3From.f.x;
-    dz = v3To.f.z - v3From.f.z;
+    dy = v3To.y - v3From.y;
+    dx = v3To.x - v3From.x;
+    dz = v3To.z - v3From.z;
     float sqrDist = dx * dx + dy * dy + dz * dz;
     float fScore = 0.0f;
     float isZeroDist = (float)(fabsf(sqrDist - fScore) <= 0.0001f);
@@ -1850,38 +1850,38 @@ float OpenToPosition(const nlVector3& v3From, const nlVector3& v3To, const cTeam
             if (pPlayer == pIgnorePlayer)
                 continue;
             nlVector3 closestPt = GetClosestPointOnLineABFromPointC(v3From, v3To, pPlayer->m_v3Position);
-            float pdy = pPlayer->m_v3Position.f.y - closestPt.f.y;
-            float pdx = pPlayer->m_v3Position.f.x - closestPt.f.x;
+            float pdy = pPlayer->m_v3Position.y - closestPt.y;
+            float pdx = pPlayer->m_v3Position.x - closestPt.x;
             float fLaneDistance = nlSqrt(pdx * pdx + pdy * pdy, true);
             float fDist = fLaneDistance;
-            if (fLaneDistance <= g_pGame->m_pFuzzyTweaks->vGetOpenPassLaneOffset.f.y)
+            if (fLaneDistance <= g_pGame->m_pFuzzyTweaks->vGetOpenPassLaneOffset.y)
             {
-                bool isClosestFrom = (v3From.f.x == closestPt.f.x) && (v3From.f.y == closestPt.f.y) && (v3From.f.z == closestPt.f.z);
+                bool isClosestFrom = (v3From.x == closestPt.x) && (v3From.y == closestPt.y) && (v3From.z == closestPt.z);
                 if (!isClosestFrom)
                 {
-                    bool isClosestTo = (v3To.f.x == closestPt.f.x) && (v3To.f.y == closestPt.f.y) && (v3To.f.z == closestPt.f.z);
+                    bool isClosestTo = (v3To.x == closestPt.x) && (v3To.y == closestPt.y) && (v3To.z == closestPt.z);
                     if (!isClosestTo)
                     {
-                        float fOpenDist = g_pGame->m_pFuzzyTweaks->vGetOpenPassLaneDist.f.x;
+                        float fOpenDist = g_pGame->m_pFuzzyTweaks->vGetOpenPassLaneDist.x;
                         if (pCurrentPlayer != NULL)
                         {
                             if (g_pScriptBallOwner == pCurrentPlayer)
                             {
-                                float fBallHeight = NormalizeVal(pCurrentPlayer->GetJointPosition(pCurrentPlayer->m_nBip01JointIndex_0xA4).f.z, 0.0f, 2.0f);
+                                float fBallHeight = NormalizeVal(pCurrentPlayer->GetJointPosition(pCurrentPlayer->m_nBip01JointIndex_0xA4).z, 0.0f, 2.0f);
                                 fOpenDist = Interpolate(fOpenDist, 3.5f, fBallHeight);
                             }
                         }
-                        float ldx = v3From.f.x - closestPt.f.x;
-                        float ldy = v3From.f.y - closestPt.f.y;
+                        float ldx = v3From.x - closestPt.x;
+                        float ldy = v3From.y - closestPt.y;
                         float fFromDist = nlSqrt(ldx * ldx + ldy * ldy, true);
                         fOpenDist = InterpolateRangeClamped(
-                            g_pGame->m_pFuzzyTweaks->vGetOpenPassLaneOffset.f.x,
-                            g_pGame->m_pFuzzyTweaks->vGetOpenPassLaneOffset.f.y,
+                            g_pGame->m_pFuzzyTweaks->vGetOpenPassLaneOffset.x,
+                            g_pGame->m_pFuzzyTweaks->vGetOpenPassLaneOffset.y,
                             fOpenDist,
-                            g_pGame->m_pFuzzyTweaks->vGetOpenPassLaneDist.f.y,
+                            g_pGame->m_pFuzzyTweaks->vGetOpenPassLaneDist.y,
                             fFromDist);
-                        float sign = AIsgn(pPlayer->GetAIDefNetLocation(NULL).f.x);
-                        float fDepthDelta = pPlayer->m_v3Position.f.x - v3To.f.x;
+                        float sign = AIsgn(pPlayer->GetAIDefNetLocation(NULL).x);
+                        float fDepthDelta = pPlayer->m_v3Position.x - v3To.x;
                         fDepthDelta = fDepthDelta;
                         float fDepth = fDepthDelta * sign;
                         if (fDepth < 0.0f)
@@ -2023,8 +2023,8 @@ static inline void ScoreOpenPlayerPair(bool CheckMyTeam, cTeam* pOpponentTeam, c
 
             if (!fIncapacitated)
             {
-                f32 dx = v3Position.f.x - (*ppPlayer)->m_v3Position.f.x;
-                f32 dy = v3Position.f.y - (*ppPlayer)->m_v3Position.f.y;
+                f32 dx = v3Position.x - (*ppPlayer)->m_v3Position.x;
+                f32 dy = v3Position.y - (*ppPlayer)->m_v3Position.y;
                 f32 dist = nlSqrt(dx * dx + (dy *= dy), true);
                 f32 normalized = NormalizeVal(dist, openRadius);
                 if (normalized > 0.0f)
@@ -2100,8 +2100,8 @@ static inline void ScoreOpenPlayerPair(bool CheckMyTeam, cTeam* pOpponentTeam, c
 
             if (!fIncapacitated)
             {
-                f32 dx = v3Position.f.x - (*ppPlayer)->m_v3Position.f.x;
-                f32 dy = v3Position.f.y - (*ppPlayer)->m_v3Position.f.y;
+                f32 dx = v3Position.x - (*ppPlayer)->m_v3Position.x;
+                f32 dy = v3Position.y - (*ppPlayer)->m_v3Position.y;
                 f32 dist = nlSqrt(dx * dx + (dy *= dy), true);
                 f32 normalized = NormalizeVal(dist, openRadius);
                 if (normalized > 0.0f)
@@ -2317,14 +2317,14 @@ static inline float InBetween(const nlVector3& v3InBetweenPos, const nlVector3& 
 {
     nlVector3 v3Intercept = GetClosestPointOnLineABFromPointC(v3A, v3InBetweenPos, v3B);
 
-    bool atA = (v3A.f.x == v3Intercept.f.x && v3A.f.y == v3Intercept.f.y && v3A.f.z == v3Intercept.f.z);
+    bool atA = (v3A.x == v3Intercept.x && v3A.y == v3Intercept.y && v3A.z == v3Intercept.z);
     if (atA)
     {
         goto ReturnZero;
     }
 
     {
-        bool atInBetween = (v3InBetweenPos.f.x == v3Intercept.f.x && v3InBetweenPos.f.y == v3Intercept.f.y && v3InBetweenPos.f.z == v3Intercept.f.z);
+        bool atInBetween = (v3InBetweenPos.x == v3Intercept.x && v3InBetweenPos.y == v3Intercept.y && v3InBetweenPos.z == v3Intercept.z);
         if (!atInBetween)
         {
             goto Compute;
@@ -2335,15 +2335,15 @@ ReturnZero:
     return 0.0f;
 
 Compute:
-    float dx1 = v3A.f.x - v3Intercept.f.x;
-    float dy1 = v3A.f.y - v3Intercept.f.y;
+    float dx1 = v3A.x - v3Intercept.x;
+    float dy1 = v3A.y - v3Intercept.y;
     float distA = nlSqrt(dx1 * dx1 + dy1 * dy1, true);
 
     FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
     float fMaxConeWidth = InterpolateRangeClamped(pFuzzyTweaks->vInBetweenConeWidth, pFuzzyTweaks->vInBetweenInterceptRange, distA);
 
-    float dx2 = v3Intercept.f.x - v3B.f.x;
-    float dy2 = v3Intercept.f.y - v3B.f.y;
+    float dx2 = v3Intercept.x - v3B.x;
+    float dy2 = v3Intercept.y - v3B.y;
 
     return InterpolateRangeClamped(1.0f, 0.0f, 0.0f, fMaxConeWidth, nlSqrt(dx2 * dx2 + dy2 * dy2, true));
 }
@@ -2428,8 +2428,8 @@ float CloseTo(cPlayer* pPlayer1, cPlayer* pPlayer2)
 
     if (pPlayer1->m_eClassType == GOALIE)
     {
-        float dx = pPlayer2->m_v3Position.f.x - pPlayer1->m_v3Position.f.x;
-        float dy = pPlayer2->m_v3Position.f.y - pPlayer1->m_v3Position.f.y;
+        float dx = pPlayer2->m_v3Position.x - pPlayer1->m_v3Position.x;
+        float dy = pPlayer2->m_v3Position.y - pPlayer1->m_v3Position.y;
 
         FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
         return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), pFuzzyTweaks->vCloseGoalieConfidenceDistance);
@@ -2437,8 +2437,8 @@ float CloseTo(cPlayer* pPlayer1, cPlayer* pPlayer2)
 
     if (pPlayer2->m_eClassType == GOALIE)
     {
-        float dx = pPlayer1->m_v3Position.f.x - pPlayer2->m_v3Position.f.x;
-        float dy = pPlayer1->m_v3Position.f.y - pPlayer2->m_v3Position.f.y;
+        float dx = pPlayer1->m_v3Position.x - pPlayer2->m_v3Position.x;
+        float dy = pPlayer1->m_v3Position.y - pPlayer2->m_v3Position.y;
 
         FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
         return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), pFuzzyTweaks->vCloseGoalieConfidenceDistance);
@@ -2454,8 +2454,8 @@ float CloseTo(cPlayer* pPlayer1, cPlayer* pPlayer2)
         pConfidenceDistance = &g_pGame->m_pFuzzyTweaks->vCloseOpponentConfidenceDistance;
     }
 
-    float dx = pPlayer1->m_v3Position.f.x - pPlayer2->m_v3Position.f.x;
-    float dy = pPlayer1->m_v3Position.f.y - pPlayer2->m_v3Position.f.y;
+    float dx = pPlayer1->m_v3Position.x - pPlayer2->m_v3Position.x;
+    float dy = pPlayer1->m_v3Position.y - pPlayer2->m_v3Position.y;
 
     return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), *pConfidenceDistance);
 }
@@ -2477,8 +2477,8 @@ float NearTo(cPlayer* pPlayer1, cPlayer* pPlayer2)
 
     if (pPlayer1->m_eClassType == GOALIE)
     {
-        float dx = pPlayer2->m_v3Position.f.x - pPlayer1->m_v3Position.f.x;
-        float dy = pPlayer2->m_v3Position.f.y - pPlayer1->m_v3Position.f.y;
+        float dx = pPlayer2->m_v3Position.x - pPlayer1->m_v3Position.x;
+        float dy = pPlayer2->m_v3Position.y - pPlayer1->m_v3Position.y;
 
         FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
         return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), pFuzzyTweaks->vNearGoalieConfidenceDistance);
@@ -2486,8 +2486,8 @@ float NearTo(cPlayer* pPlayer1, cPlayer* pPlayer2)
 
     if (pPlayer2->m_eClassType == GOALIE)
     {
-        float dx = pPlayer1->m_v3Position.f.x - pPlayer2->m_v3Position.f.x;
-        float dy = pPlayer1->m_v3Position.f.y - pPlayer2->m_v3Position.f.y;
+        float dx = pPlayer1->m_v3Position.x - pPlayer2->m_v3Position.x;
+        float dy = pPlayer1->m_v3Position.y - pPlayer2->m_v3Position.y;
 
         FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
         return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), pFuzzyTweaks->vNearGoalieConfidenceDistance);
@@ -2503,8 +2503,8 @@ float NearTo(cPlayer* pPlayer1, cPlayer* pPlayer2)
         pConfidenceDistance = &g_pGame->m_pFuzzyTweaks->vNearOpponentConfidenceDistance;
     }
 
-    float dx = pPlayer1->m_v3Position.f.x - pPlayer2->m_v3Position.f.x;
-    float dy = pPlayer1->m_v3Position.f.y - pPlayer2->m_v3Position.f.y;
+    float dx = pPlayer1->m_v3Position.x - pPlayer2->m_v3Position.x;
+    float dy = pPlayer1->m_v3Position.y - pPlayer2->m_v3Position.y;
 
     return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), *pConfidenceDistance);
 }
@@ -2526,8 +2526,8 @@ float FarTo(cPlayer* pPlayer1, cPlayer* pPlayer2)
 
     if (pPlayer1->m_eClassType == GOALIE)
     {
-        float dx = pPlayer2->m_v3Position.f.x - pPlayer1->m_v3Position.f.x;
-        float dy = pPlayer2->m_v3Position.f.y - pPlayer1->m_v3Position.f.y;
+        float dx = pPlayer2->m_v3Position.x - pPlayer1->m_v3Position.x;
+        float dy = pPlayer2->m_v3Position.y - pPlayer1->m_v3Position.y;
 
         FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
         return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), pFuzzyTweaks->vFarGoalieConfidenceDistance);
@@ -2535,8 +2535,8 @@ float FarTo(cPlayer* pPlayer1, cPlayer* pPlayer2)
 
     if (pPlayer2->m_eClassType == GOALIE)
     {
-        float dx = pPlayer1->m_v3Position.f.x - pPlayer2->m_v3Position.f.x;
-        float dy = pPlayer1->m_v3Position.f.y - pPlayer2->m_v3Position.f.y;
+        float dx = pPlayer1->m_v3Position.x - pPlayer2->m_v3Position.x;
+        float dy = pPlayer1->m_v3Position.y - pPlayer2->m_v3Position.y;
 
         FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
         return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), pFuzzyTweaks->vFarGoalieConfidenceDistance);
@@ -2552,8 +2552,8 @@ float FarTo(cPlayer* pPlayer1, cPlayer* pPlayer2)
         pConfidenceDistance = &g_pGame->m_pFuzzyTweaks->vFarOpponentConfidenceDistance;
     }
 
-    float dx = pPlayer1->m_v3Position.f.x - pPlayer2->m_v3Position.f.x;
-    float dy = pPlayer1->m_v3Position.f.y - pPlayer2->m_v3Position.f.y;
+    float dx = pPlayer1->m_v3Position.x - pPlayer2->m_v3Position.x;
+    float dy = pPlayer1->m_v3Position.y - pPlayer2->m_v3Position.y;
 
     return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), *pConfidenceDistance);
 }
@@ -2563,8 +2563,8 @@ float FarTo(cPlayer* pPlayer1, cPlayer* pPlayer2)
  */
 float NearToGoaliePosition(const nlVector3& pos1, const nlVector3& pos2)
 {
-    float dx = pos1.f.x - pos2.f.x;
-    float dy = pos1.f.y - pos2.f.y;
+    float dx = pos1.x - pos2.x;
+    float dy = pos1.y - pos2.y;
 
     FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
 
@@ -2579,8 +2579,8 @@ float CloseToTheirGoalie(cPlayer* pPlayer)
     cTeam* pOtherTeam = pPlayer->m_pTeam->GetOtherTeam();
     cPlayer* pGoalie = pOtherTeam->GetGoalie();
 
-    float dx = pPlayer->m_v3Position.f.x - pGoalie->m_v3Position.f.x;
-    float dy = pPlayer->m_v3Position.f.y - pGoalie->m_v3Position.f.y;
+    float dx = pPlayer->m_v3Position.x - pGoalie->m_v3Position.x;
+    float dy = pPlayer->m_v3Position.y - pGoalie->m_v3Position.y;
 
     FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
 
@@ -2595,8 +2595,8 @@ float NearToTheirGoalie(cPlayer* pPlayer)
     cTeam* pOtherTeam = pPlayer->m_pTeam->GetOtherTeam();
     cPlayer* pGoalie = pOtherTeam->GetGoalie();
 
-    float dx = pPlayer->m_v3Position.f.x - pGoalie->m_v3Position.f.x;
-    float dy = pPlayer->m_v3Position.f.y - pGoalie->m_v3Position.f.y;
+    float dx = pPlayer->m_v3Position.x - pGoalie->m_v3Position.x;
+    float dy = pPlayer->m_v3Position.y - pGoalie->m_v3Position.y;
 
     FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
 
@@ -2611,8 +2611,8 @@ float FarToTheirGoalie(cPlayer* pPlayer)
     cTeam* pOtherTeam = pPlayer->m_pTeam->GetOtherTeam();
     cPlayer* pGoalie = pOtherTeam->GetGoalie();
 
-    float dx = pPlayer->m_v3Position.f.x - pGoalie->m_v3Position.f.x;
-    float dy = pPlayer->m_v3Position.f.y - pGoalie->m_v3Position.f.y;
+    float dx = pPlayer->m_v3Position.x - pGoalie->m_v3Position.x;
+    float dy = pPlayer->m_v3Position.y - pGoalie->m_v3Position.y;
 
     FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
 
@@ -2642,22 +2642,22 @@ float CloseToSideline(const nlVector3& v3Position, const nlVector2* vDistanceCon
     const u8* pBase = (const u8*)cField::mSidelines;
     s32 i = 0;
     f32 fZero = 0.0f;
-    f32 posX = v3Position.f.x;
-    f32 posY = v3Position.f.y;
+    f32 posX = v3Position.x;
+    f32 posY = v3Position.y;
 
     for (; i < 4; i++)
     {
         const sSideLinePlane* sideline = (const sSideLinePlane*)(pBase + i * sizeof(sSideLinePlane));
         nlVector3 v3SidelinePos = v3Position;
-        v3SidelinePos.f.z = fZero;
+        v3SidelinePos.z = fZero;
 
-        if (fZero == sideline->vNormal.f.x)
+        if (fZero == sideline->vNormal.x)
         {
-            v3SidelinePos.f.y = sideline->fDistance * sideline->vNormal.f.y;
+            v3SidelinePos.y = sideline->fDistance * sideline->vNormal.y;
         }
         else
         {
-            v3SidelinePos.f.x = sideline->fDistance * sideline->vNormal.f.x;
+            v3SidelinePos.x = sideline->fDistance * sideline->vNormal.x;
         }
 
         float fDistance = nlSqrt(v3SidelinePos.CalculateDistanceSquared2D(v3Position), true);
@@ -2704,15 +2704,15 @@ static inline float NearToSidelineImpl(const nlVector3& v3Position, const nlVect
     {
         const sSideLinePlane* sideline = (const sSideLinePlane*)(pBase + i * sizeof(sSideLinePlane));
         nlVector3 v3Pt = v3Position;
-        v3Pt.f.z = fZero;
+        v3Pt.z = fZero;
 
-        if (fZero == sideline->vNormal.f.x)
+        if (fZero == sideline->vNormal.x)
         {
-            v3Pt.f.y = sideline->fDistance * sideline->vNormal.f.y;
+            v3Pt.y = sideline->fDistance * sideline->vNormal.y;
         }
         else
         {
-            v3Pt.f.x = sideline->fDistance * sideline->vNormal.f.x;
+            v3Pt.x = sideline->fDistance * sideline->vNormal.x;
         }
 
         float fDistance = nlSqrt(v3Pt.CalculateDistanceSquared2D(v3Position), true);
@@ -2758,21 +2758,21 @@ static inline float CloseToSidelineFielderImpl(cFielder* pFielder, const nlVecto
     {
         const sSideLinePlane* sideline = (const sSideLinePlane*)(pBase + i * sizeof(sSideLinePlane));
         nlVector3 v3SidelinePos = pFielder->m_v3Position;
-        v3SidelinePos.f.z = fZero;
+        v3SidelinePos.z = fZero;
 
-        if (fZero == sideline->vNormal.f.x)
+        if (fZero == sideline->vNormal.x)
         {
-            v3SidelinePos.f.y = sideline->fDistance * sideline->vNormal.f.y;
+            v3SidelinePos.y = sideline->fDistance * sideline->vNormal.y;
         }
         else
         {
-            v3SidelinePos.f.x = sideline->fDistance * sideline->vNormal.f.x;
+            v3SidelinePos.x = sideline->fDistance * sideline->vNormal.x;
         }
 
         nlVector2 delta;
-        delta.f.x = v3SidelinePos.f.x - pFielder->m_v3Position.f.x;
-        delta.f.y = v3SidelinePos.f.y - pFielder->m_v3Position.f.y;
-        float fDistance = nlSqrt(delta.f.x * delta.f.x + delta.f.y * delta.f.y, true);
+        delta.x = v3SidelinePos.x - pFielder->m_v3Position.x;
+        delta.y = v3SidelinePos.y - pFielder->m_v3Position.y;
+        float fDistance = nlSqrt(delta.x * delta.x + delta.y * delta.y, true);
 
         float fNormalized = NormalizeVal(fDistance, *pConfidence);
 
@@ -2833,7 +2833,7 @@ float FacingSideline(cFielder* pFielder)
         float* pSin = (pSidelineNormal != NULL) ? &fSin : &fSin;
         nlSinCos(pSin, &fCos, pFielder->m_aActualFacingDirection);
 
-        fResult = ((pSidelineNormal->f.x * fCos) + (pSidelineNormal->f.y * fSin));
+        fResult = ((pSidelineNormal->x * fCos) + (pSidelineNormal->y * fSin));
         fResult = -fResult;
 
         if (0.0f >= fResult)
@@ -2863,7 +2863,7 @@ float StuckOnSidelines(cFielder* pFielder)
     else
     {
         nlVector3 repulsionVec = pFielder->m_pAvoidance->GetLastRepulsionVector(AVOID_FIELDERS);
-        float magnitude = nlSqrt(repulsionVec.f.x * repulsionVec.f.x + repulsionVec.f.y * repulsionVec.f.y + repulsionVec.f.z * repulsionVec.f.z, true);
+        float magnitude = nlSqrt(repulsionVec.x * repulsionVec.x + repulsionVec.y * repulsionVec.y + repulsionVec.z * repulsionVec.z, true);
         sidelineRepulsion = NormalizeVal(magnitude, g_pGame->m_pFuzzyTweaks->vAvoidFieldersRepulsionConfidence);
     }
 
@@ -2875,7 +2875,7 @@ float StuckOnSidelines(cFielder* pFielder)
     else
     {
         nlVector3 repulsionVec = pFielder->m_pAvoidance->GetLastRepulsionVector(AVOID_POWERUPS);
-        float magnitude = nlSqrt(repulsionVec.f.x * repulsionVec.f.x + repulsionVec.f.y * repulsionVec.f.y + repulsionVec.f.z * repulsionVec.f.z, true);
+        float magnitude = nlSqrt(repulsionVec.x * repulsionVec.x + repulsionVec.y * repulsionVec.y + repulsionVec.z * repulsionVec.z, true);
         powerupRepulsion = NormalizeVal(magnitude, g_pGame->m_pFuzzyTweaks->vAvoidPowerupsRepulsionConfidence);
     }
 
@@ -2917,18 +2917,18 @@ float AtIdealDistanceForTackling(cPlayer* pPlayer1, cPlayer* pPlayer2)
         return 0.0f;
     }
 
-    float dx = pPlayer1->m_v3Position.f.x - pPlayer2->m_v3Position.f.x;
-    float dy = pPlayer1->m_v3Position.f.y - pPlayer2->m_v3Position.f.y;
+    float dx = pPlayer1->m_v3Position.x - pPlayer2->m_v3Position.x;
+    float dy = pPlayer1->m_v3Position.y - pPlayer2->m_v3Position.y;
     float distance = nlSqrt(dx * dx + dy * dy, true);
 
     FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
 
-    float idealDistance = pFuzzyTweaks->vIdealTacklingDistance.f.x;
+    float idealDistance = pFuzzyTweaks->vIdealTacklingDistance.x;
     if (distance < idealDistance)
     {
-        return NormalizeVal(distance, idealDistance - pFuzzyTweaks->vIdealTacklingDistance.f.y, idealDistance);
+        return NormalizeVal(distance, idealDistance - pFuzzyTweaks->vIdealTacklingDistance.y, idealDistance);
     }
-    return NormalizeVal(distance, idealDistance + pFuzzyTweaks->vIdealTacklingDistance.f.y, idealDistance);
+    return NormalizeVal(distance, idealDistance + pFuzzyTweaks->vIdealTacklingDistance.y, idealDistance);
 }
 
 /**
@@ -2936,18 +2936,18 @@ float AtIdealDistanceForTackling(cPlayer* pPlayer1, cPlayer* pPlayer2)
  */
 float PositionIsAtIdealDistanceForShooting(const nlVector3& pos1, const nlVector3& pos2)
 {
-    float dx = pos1.f.x - pos2.f.x;
-    float dy = pos1.f.y - pos2.f.y;
+    float dx = pos1.x - pos2.x;
+    float dy = pos1.y - pos2.y;
     float distance = nlSqrt(dx * dx + dy * dy, true);
 
     FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
 
-    float idealDistance = pFuzzyTweaks->vIdealDistanceForShooting.f.x;
+    float idealDistance = pFuzzyTweaks->vIdealDistanceForShooting.x;
     if (distance < idealDistance)
     {
-        return NormalizeVal(distance, idealDistance - pFuzzyTweaks->vIdealDistanceForShooting.f.y, idealDistance);
+        return NormalizeVal(distance, idealDistance - pFuzzyTweaks->vIdealDistanceForShooting.y, idealDistance);
     }
-    return NormalizeVal(distance, idealDistance + pFuzzyTweaks->vIdealDistanceForShooting.f.y, idealDistance);
+    return NormalizeVal(distance, idealDistance + pFuzzyTweaks->vIdealDistanceForShooting.y, idealDistance);
 }
 
 /**
@@ -2968,7 +2968,7 @@ float Facing(cPlayer* pPlayer1, cPlayer* pPlayer2)
         return 0.0f;
     }
 
-    nlVec3Set(v3Direction, pPlayer2->m_v3Position.f.x - pPlayer1->m_v3Position.f.x, pPlayer2->m_v3Position.f.y - pPlayer1->m_v3Position.f.y, pPlayer2->m_v3Position.f.z - pPlayer1->m_v3Position.f.z);
+    nlVec3Set(v3Direction, pPlayer2->m_v3Position.x - pPlayer1->m_v3Position.x, pPlayer2->m_v3Position.y - pPlayer1->m_v3Position.y, pPlayer2->m_v3Position.z - pPlayer1->m_v3Position.z);
 
     u16 playerFacing = pPlayer1->m_aActualFacingDirection;
     nlCartesianToPolar(polar, v3Direction);
@@ -3012,8 +3012,8 @@ float UpfieldFrom(cPlayer* pPlayer1, cPlayer* pPlayer2)
 
     nlVector3 v3FromPos = pPlayer1->m_v3Position;
     nlVector3 v3DownfieldPos = pPlayer2->m_v3Position;
-    float delta = v3FromPos.f.x - v3DownfieldPos.f.x;
-    float score = delta * AIsgn(pPlayer1->m_pTeam->GetOtherNet()->m_v3NetLocation.f.x);
+    float delta = v3FromPos.x - v3DownfieldPos.x;
+    float score = delta * AIsgn(pPlayer1->m_pTeam->GetOtherNet()->m_v3NetLocation.x);
 
     return NormalizeVal(score, 0.0f, g_pGame->m_pFuzzyTweaks->fUpfieldMaxDistance);
 }
@@ -3035,8 +3035,8 @@ float DownfieldFrom(cPlayer* pPlayer1, cPlayer* pPlayer2)
 
     nlVector3 v3FromPos = pPlayer1->m_v3Position;
     nlVector3 v3DownfieldPos = pPlayer2->m_v3Position;
-    float delta = v3DownfieldPos.f.x - v3FromPos.f.x;
-    float score = delta * AIsgn(pPlayer1->m_pTeam->GetOtherNet()->m_v3NetLocation.f.x);
+    float delta = v3DownfieldPos.x - v3FromPos.x;
+    float score = delta * AIsgn(pPlayer1->m_pTeam->GetOtherNet()->m_v3NetLocation.x);
 
     return NormalizeVal(score, 0.0f, g_pGame->m_pFuzzyTweaks->fDownfieldMaxDistance);
 }
@@ -3131,8 +3131,8 @@ float OutOfNet(Goalie* pGoalie)
 
     nlVector3 netLocation = pGoalie->GetAIDefNetLocation(NULL);
 
-    float dx = netLocation.f.x - pGoalie->m_v3Position.f.x;
-    float dy = netLocation.f.y - pGoalie->m_v3Position.f.y;
+    float dx = netLocation.x - pGoalie->m_v3Position.x;
+    float dy = netLocation.y - pGoalie->m_v3Position.y;
 
     return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), g_pGame->m_pFuzzyTweaks->vOutOfNetConfidenceDistance);
 }
@@ -3164,8 +3164,8 @@ float CloseToTheirNetB(cBall* pBall)
 
     const nlVector3& netLocation = g_pScriptCurrentFielder->GetAIOffNetLocation(&pBall->m_v3Position);
 
-    float dx = pBall->m_v3Position.f.x - netLocation.f.x;
-    float dy = pBall->m_v3Position.f.y - netLocation.f.y;
+    float dx = pBall->m_v3Position.x - netLocation.x;
+    float dy = pBall->m_v3Position.y - netLocation.y;
 
     return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), g_pGame->m_pFuzzyTweaks->vCloseBallNetConfidenceDistance);
 }
@@ -3179,8 +3179,8 @@ float NearToTheirNetB(cBall* pBall)
 
     const nlVector3& netLocation = g_pScriptCurrentFielder->GetAIOffNetLocation(&pBall->m_v3Position);
 
-    float dx = pBall->m_v3Position.f.x - netLocation.f.x;
-    float dy = pBall->m_v3Position.f.y - netLocation.f.y;
+    float dx = pBall->m_v3Position.x - netLocation.x;
+    float dy = pBall->m_v3Position.y - netLocation.y;
 
     return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), g_pGame->m_pFuzzyTweaks->vNearBallNetConfidenceDistance);
 }
@@ -3197,8 +3197,8 @@ float FarToTheirNetB(cBall* pBall)
 
     const nlVector3& netLocation = g_pScriptCurrentFielder->GetAIOffNetLocation(&pBall->m_v3Position);
 
-    float dx = pBall->m_v3Position.f.x - netLocation.f.x;
-    float dy = pBall->m_v3Position.f.y - netLocation.f.y;
+    float dx = pBall->m_v3Position.x - netLocation.x;
+    float dy = pBall->m_v3Position.y - netLocation.y;
 
     return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), g_pGame->m_pFuzzyTweaks->vFarBallNetConfidenceDistance);
 }
@@ -3217,8 +3217,8 @@ float CloseToPlayersNet(cBall* pBall, cPlayer* pPlayer)
 
     const nlVector3& netLocation = pPlayer->GetAIDefNetLocation(&pBall->m_v3Position);
 
-    float dx = pBall->m_v3Position.f.x - netLocation.f.x;
-    float dy = pBall->m_v3Position.f.y - netLocation.f.y;
+    float dx = pBall->m_v3Position.x - netLocation.x;
+    float dy = pBall->m_v3Position.y - netLocation.y;
 
     return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), g_pGame->m_pFuzzyTweaks->vCloseBallNetConfidenceDistance);
 }
@@ -3240,8 +3240,8 @@ float NearToPlayersNet(cBall* pBall, cPlayer* pPlayer)
 
     const nlVector3& netLocation = pPlayer->GetAIDefNetLocation(&pBall->m_v3Position);
 
-    float dx = pBall->m_v3Position.f.x - netLocation.f.x;
-    float dy = pBall->m_v3Position.f.y - netLocation.f.y;
+    float dx = pBall->m_v3Position.x - netLocation.x;
+    float dy = pBall->m_v3Position.y - netLocation.y;
 
     return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), g_pGame->m_pFuzzyTweaks->vNearBallNetConfidenceDistance);
 }
@@ -3260,8 +3260,8 @@ float FarToPlayersNet(cBall* pBall, cPlayer* pPlayer)
 
     const nlVector3& netLocation = pPlayer->GetAIDefNetLocation(&pBall->m_v3Position);
 
-    float dx = pBall->m_v3Position.f.x - netLocation.f.x;
-    float dy = pBall->m_v3Position.f.y - netLocation.f.y;
+    float dx = pBall->m_v3Position.x - netLocation.x;
+    float dy = pBall->m_v3Position.y - netLocation.y;
 
     return NormalizeVal(nlSqrt(dx * dx + dy * dy, true), g_pGame->m_pFuzzyTweaks->vFarBallNetConfidenceDistance);
 }
@@ -3281,8 +3281,8 @@ float InControlOfBall(cFielder* pFielder)
         return 0.0f;
     }
 
-    float dx = g_pScriptBall->m_v3Position.f.x - pFielder->m_v3Position.f.x;
-    float dy = g_pScriptBall->m_v3Position.f.y - pFielder->m_v3Position.f.y;
+    float dx = g_pScriptBall->m_v3Position.x - pFielder->m_v3Position.x;
+    float dy = g_pScriptBall->m_v3Position.y - pFielder->m_v3Position.y;
     float distance = nlSqrt(dx * dx + dy * dy, true);
 
     return NormalizeVal(distance, g_pGame->m_pFuzzyTweaks->vControlConfidenceDistance);
@@ -3520,7 +3520,7 @@ float High(cBall* pBall)
         return 0.0f;
     }
 
-    return NormalizeVal(g_pScriptBall->m_v3Position.f.z, g_pGame->m_pFuzzyTweaks->vHighBallConfidenceDistance);
+    return NormalizeVal(g_pScriptBall->m_v3Position.z, g_pGame->m_pFuzzyTweaks->vHighBallConfidenceDistance);
 }
 
 /**
@@ -3639,8 +3639,8 @@ float GonnaGetBall(cTeam* team)
     }
     else
     {
-        float dx = g_pScriptBall->m_v3Position.f.x - pPlayer->m_v3Position.f.x;
-        float dy = g_pScriptBall->m_v3Position.f.y - pPlayer->m_v3Position.f.y;
+        float dx = g_pScriptBall->m_v3Position.x - pPlayer->m_v3Position.x;
+        float dy = g_pScriptBall->m_v3Position.y - pPlayer->m_v3Position.y;
         fDist = NormalizeVal(nlSqrt(dx * dx + dy * dy, true), g_pGame->m_pFuzzyTweaks->vNearBallConfidenceDistance);
     }
 
@@ -3714,8 +3714,8 @@ float GonnaGetBall(cTeam* team)
     }
     else
     {
-        float dx = g_pScriptBall->m_v3Position.f.x - pOpponent->m_v3Position.f.x;
-        float dy = g_pScriptBall->m_v3Position.f.y - pOpponent->m_v3Position.f.y;
+        float dx = g_pScriptBall->m_v3Position.x - pOpponent->m_v3Position.x;
+        float dy = g_pScriptBall->m_v3Position.y - pOpponent->m_v3Position.y;
         fDist2 = NormalizeVal(nlSqrt(dx * dx + dy * dy, true), g_pGame->m_pFuzzyTweaks->vNearBallConfidenceDistance);
     }
 
@@ -4089,7 +4089,7 @@ float InOffensiveZone(const nlVector3& position, eTeamSide teamSide)
     nlVector3 aiLoc;
     FieldLocToAILoc(aiLoc, position, teamSide);
 
-    return NormalizeVal(aiLoc.f.x, g_pGame->m_pFuzzyTweaks->vOffensiveConfidenceDistances);
+    return NormalizeVal(aiLoc.x, g_pGame->m_pFuzzyTweaks->vOffensiveConfidenceDistances);
 }
 
 /**
@@ -4107,7 +4107,7 @@ float InDefensiveZone(cPlayer* pPlayer)
     nlVector3& playerPos = PositionOf<cPlayer*>(pPlayer);
     FieldLocToAILoc(aiLoc, playerPos, teamSide);
 
-    return NormalizeVal(aiLoc.f.x, g_pGame->m_pFuzzyTweaks->vDefensiveConfidenceDistances);
+    return NormalizeVal(aiLoc.x, g_pGame->m_pFuzzyTweaks->vDefensiveConfidenceDistances);
 }
 
 /**
@@ -4125,7 +4125,7 @@ float InOffensiveZone(cPlayer* pPlayer)
     nlVector3& playerPos = PositionOf<cPlayer*>(pPlayer);
     FieldLocToAILoc(aiLoc, playerPos, teamSide);
 
-    return NormalizeVal(aiLoc.f.x, g_pGame->m_pFuzzyTweaks->vOffensiveConfidenceDistances);
+    return NormalizeVal(aiLoc.x, g_pGame->m_pFuzzyTweaks->vOffensiveConfidenceDistances);
 }
 
 /**
@@ -4143,7 +4143,7 @@ float InDefensiveZoneOfPlayer(cBall* pBall, cPlayer* pPlayer)
     nlVector3& ballPos = PositionOf<cBall*>(pBall);
     FieldLocToAILoc(aiLoc, ballPos, teamSide);
 
-    return NormalizeVal(aiLoc.f.x, g_pGame->m_pFuzzyTweaks->vDefensiveConfidenceDistances);
+    return NormalizeVal(aiLoc.x, g_pGame->m_pFuzzyTweaks->vDefensiveConfidenceDistances);
 }
 
 static float InNeutralZoneOfPlayer(cBall* pBall, cPlayer* pPlayer)
@@ -4166,5 +4166,5 @@ float InOffensiveZoneOfPlayer(cBall* pBall, cPlayer* pPlayer)
     nlVector3& ballPos = PositionOf<cBall*>(pBall);
     FieldLocToAILoc(aiLoc, ballPos, teamSide);
 
-    return NormalizeVal(aiLoc.f.x, g_pGame->m_pFuzzyTweaks->vOffensiveConfidenceDistances);
+    return NormalizeVal(aiLoc.x, g_pGame->m_pFuzzyTweaks->vOffensiveConfidenceDistances);
 }

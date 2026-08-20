@@ -49,9 +49,9 @@ void FlareHandler::AddHalo(const nlMatrix4& mat)
     nlVec3Set(dir, 1.0f, 0.0f, 0.0f);
     nlMultDirVectorMatrix(out, dir, mat);
 
-    float xx = out.f.x * out.f.x;
-    float yy = out.f.y * out.f.y;
-    float zz = out.f.z * out.f.z;
+    float xx = out.x * out.x;
+    float yy = out.y * out.y;
+    float zz = out.z * out.z;
     p->size = nlSqrt(xx + yy + zz, true);
 
     p->colour.c[0] = 0xFF;
@@ -59,7 +59,7 @@ void FlareHandler::AddHalo(const nlMatrix4& mat)
     p->colour.c[2] = 0xFF;
     p->colour.c[3] = 0xFF;
 
-    p->worldPosition = *(nlVector3*)&mat.f.m41;
+    p->worldPosition = *(nlVector3*)&mat.m41;
 
     halos.Insert(p);
 }
@@ -77,9 +77,9 @@ void FlareHandler::AddGlow(const nlMatrix4& mat)
     nlVec3Set(dir, 1.0f, 0.0f, 0.0f);
     nlMultDirVectorMatrix(out, dir, mat);
 
-    float xx = out.f.x * out.f.x;
-    float yy = out.f.y * out.f.y;
-    float zz = out.f.z * out.f.z;
+    float xx = out.x * out.x;
+    float yy = out.y * out.y;
+    float zz = out.z * out.z;
     p->size = nlSqrt(xx + yy + zz, true);
 
     p->colour.c[0] = 0xFF;
@@ -87,7 +87,7 @@ void FlareHandler::AddGlow(const nlMatrix4& mat)
     p->colour.c[2] = 0xFF;
     p->colour.c[3] = 0xFF;
 
-    p->worldPosition = *(nlVector3*)&mat.f.m41;
+    p->worldPosition = *(nlVector3*)&mat.m41;
 
     glows.Insert(p);
 }
@@ -109,53 +109,53 @@ void FlareHandler::AddFace(const FlareStruct* pFlare, GLMeshWriter* pMeshWriter)
 
     position = pFlare->worldPosition;
     nlMultPosVectorMatrix(viewPosition, position, viewMatrix);
-    if (viewPosition.f.y == 0.0f)
+    if (viewPosition.y == 0.0f)
     {
         sn = 0.0f;
         cs = 0.5f * pFlare->size;
     }
     else
     {
-        nlSinCos(&sn, &cs, (u16)((s32)(8192.0f * (viewPosition.f.x / viewPosition.f.y)) + 0x2000));
+        nlSinCos(&sn, &cs, (u16)((s32)(8192.0f * (viewPosition.x / viewPosition.y)) + 0x2000));
         sn *= (pFlare->size * 0.5f);
         cs *= (pFlare->size * 0.5f);
     }
 
     nlVector3 a;
-    a.f.x = cs * viewRight.f.x + sn * viewUp.f.x;
-    a.f.y = cs * viewRight.f.y + sn * viewUp.f.y;
-    a.f.z = cs * viewRight.f.z + sn * viewUp.f.z;
+    a.x = cs * viewRight.x + sn * viewUp.x;
+    a.y = cs * viewRight.y + sn * viewUp.y;
+    a.z = cs * viewRight.z + sn * viewUp.z;
 
     nlVector3 b;
-    b.f.x = (-sn) * viewRight.f.x + cs * viewUp.f.x;
-    b.f.y = (-sn) * viewRight.f.y + cs * viewUp.f.y;
-    b.f.z = (-sn) * viewRight.f.z + cs * viewUp.f.z;
+    b.x = (-sn) * viewRight.x + cs * viewUp.x;
+    b.y = (-sn) * viewRight.y + cs * viewUp.y;
+    b.z = (-sn) * viewRight.z + cs * viewUp.z;
 
-    nlVec3Set(v[0], position.f.x + a.f.x + b.f.x, position.f.y + a.f.y + b.f.y, position.f.z + a.f.z + b.f.z);
-    nlVec3Set(v[1], position.f.x - a.f.x + b.f.x, position.f.y - a.f.y + b.f.y, position.f.z - a.f.z + b.f.z);
-    nlVec3Set(v[2], position.f.x - a.f.x - b.f.x, position.f.y - a.f.y - b.f.y, position.f.z - a.f.z - b.f.z);
-    nlVec3Set(v[3], position.f.x + a.f.x - b.f.x, position.f.y + a.f.y - b.f.y, position.f.z + a.f.z - b.f.z);
+    nlVec3Set(v[0], position.x + a.x + b.x, position.y + a.y + b.y, position.z + a.z + b.z);
+    nlVec3Set(v[1], position.x - a.x + b.x, position.y - a.y + b.y, position.z - a.z + b.z);
+    nlVec3Set(v[2], position.x - a.x - b.x, position.y - a.y - b.y, position.z - a.z - b.z);
+    nlVec3Set(v[3], position.x + a.x - b.x, position.y + a.y - b.y, position.z + a.z - b.z);
 
-    uv0.f.x = 0.0f;
-    uv0.f.y = 0.0f;
+    uv0.x = 0.0f;
+    uv0.y = 0.0f;
     pMeshWriter->Texcoord(uv0);
     pMeshWriter->Colour(pFlare->colour);
     pMeshWriter->Vertex(v[0]);
 
-    uv1.f.x = 1.0f;
-    uv1.f.y = 0.0f;
+    uv1.x = 1.0f;
+    uv1.y = 0.0f;
     pMeshWriter->Texcoord(uv1);
     pMeshWriter->Colour(pFlare->colour);
     pMeshWriter->Vertex(v[1]);
 
-    uv2.f.x = 1.0f;
-    uv2.f.y = 1.0f;
+    uv2.x = 1.0f;
+    uv2.y = 1.0f;
     pMeshWriter->Texcoord(uv2);
     pMeshWriter->Colour(pFlare->colour);
     pMeshWriter->Vertex(v[2]);
 
-    uv3.f.x = 0.0f;
-    uv3.f.y = 1.0f;
+    uv3.x = 0.0f;
+    uv3.y = 1.0f;
     pMeshWriter->Texcoord(uv3);
     pMeshWriter->Colour(pFlare->colour);
     pMeshWriter->Vertex(v[3]);
@@ -171,8 +171,8 @@ void FlareHandler::Render()
     if ((g_pGame->mbCaptainShotToScoreOn == false) && ((halos.m_headNode != NULL) || (glows.m_headNode != NULL)))
     {
         glViewGetViewMatrix(GLV_Unshadowed, viewMatrix);
-        nlVec3Set(viewRight, viewMatrix.f.m11, viewMatrix.f.m21, viewMatrix.f.m31); // this->unk40 = this->unk0;        // this->unk44 = this->unk10;        // this->unk48 = this->unk20;
-        nlVec3Set(viewUp, viewMatrix.f.m12, viewMatrix.f.m22, viewMatrix.f.m32);
+        nlVec3Set(viewRight, viewMatrix.m11, viewMatrix.m21, viewMatrix.m31); // this->unk40 = this->unk0;        // this->unk44 = this->unk10;        // this->unk48 = this->unk20;
+        nlVec3Set(viewUp, viewMatrix.m12, viewMatrix.m22, viewMatrix.m32);
         glSetDefaultState(1);
         glSetCurrentProgram(glGetProgram("3d unlit"));
         glSetRasterState(GLS_DepthWrite, 0U);

@@ -11,7 +11,7 @@
  */
 void nlMatrix4::SetIdentity()
 {
-    PSMTX44Identity(m);
+    PSMTX44Identity(e2);
 }
 
 /**
@@ -21,14 +21,14 @@ void nlMultMatrices(nlMatrix4& out, const nlMatrix4& a, const nlMatrix4& b)
 {
     nlMatrix4 sp8;
 
-    if ((out.m == a.m) || (out.m == b.m))
+    if ((out.e2 == a.e2) || (out.e2 == b.e2))
     {
         nlMatrix4 tmp;
-        PSMTX44Concat(a.m, b.m, tmp.m);
+        PSMTX44Concat(a.e2, b.e2, tmp.e2);
         out = tmp;
         return;
     }
-    PSMTX44Concat(a.m, b.m, out.m);
+    PSMTX44Concat(a.e2, b.e2, out.e2);
 }
 
 /**
@@ -36,14 +36,14 @@ void nlMultMatrices(nlMatrix4& out, const nlMatrix4& a, const nlMatrix4& b)
  */
 void nlTransposeMatrix(nlMatrix4& out, const nlMatrix4& in)
 {
-    if (out.m == in.m)
+    if (out.e2 == in.e2)
     {
         nlMatrix4 tmp;
-        PSMTX44Transpose(in.m, tmp.m);
+        PSMTX44Transpose(in.e2, tmp.e2);
         out = tmp;
         return;
     }
-    PSMTX44Transpose(in.m, out.m);
+    PSMTX44Transpose(in.e2, out.e2);
 }
 
 /**
@@ -52,7 +52,7 @@ void nlTransposeMatrix(nlMatrix4& out, const nlMatrix4& in)
 void nlInvertMatrix(nlMatrix4& out, const nlMatrix4& in)
 {
     nlMatrix4 tmp;
-    C_MTX44Inverse(in.m, tmp.m);
+    C_MTX44Inverse(in.e2, tmp.e2);
     out = tmp;
 }
 
@@ -62,8 +62,8 @@ void nlInvertMatrix(nlMatrix4& out, const nlMatrix4& in)
 void nlMultVectorMatrix(nlVector2& v_out, const nlVector2& v_in, const nlMatrix3& m)
 {
     nlVector2 t;
-    t.f.x = m.m[0] * v_in.f.x + m.m[3] * v_in.f.y + m.m[6];
-    t.f.y = m.m[1] * v_in.f.x + m.m[4] * v_in.f.y + m.m[7];
+    t.x = m.e[0] * v_in.x + m.e[3] * v_in.y + m.e[6];
+    t.y = m.e[1] * v_in.x + m.e[4] * v_in.y + m.e[7];
     v_out = t;
 }
 
@@ -106,10 +106,10 @@ void nlMultPosVectorMatrix(register nlVector3& result, register const nlVector3&
 void nlMultVectorMatrix(nlVector4& v_out, const nlVector4& v_in, const nlMatrix4& m)
 {
     nlVector4 tmp;
-    tmp.f.x = m.m[0][0] * v_in.f.x + m.m[1][0] * v_in.f.y + m.m[2][0] * v_in.f.z + m.m[3][0] * v_in.f.w;
-    tmp.f.y = m.m[0][1] * v_in.f.x + m.m[1][1] * v_in.f.y + m.m[2][1] * v_in.f.z + m.m[3][1] * v_in.f.w;
-    tmp.f.z = m.m[0][2] * v_in.f.x + m.m[1][2] * v_in.f.y + m.m[2][2] * v_in.f.z + m.m[3][2] * v_in.f.w;
-    tmp.f.w = m.m[0][3] * v_in.f.x + m.m[1][3] * v_in.f.y + m.m[2][3] * v_in.f.z + m.m[3][3] * v_in.f.w;
+    tmp.x = m.e2[0][0] * v_in.x + m.e2[1][0] * v_in.y + m.e2[2][0] * v_in.z + m.e2[3][0] * v_in.w;
+    tmp.y = m.e2[0][1] * v_in.x + m.e2[1][1] * v_in.y + m.e2[2][1] * v_in.z + m.e2[3][1] * v_in.w;
+    tmp.z = m.e2[0][2] * v_in.x + m.e2[1][2] * v_in.y + m.e2[2][2] * v_in.z + m.e2[3][2] * v_in.w;
+    tmp.w = m.e2[0][3] * v_in.x + m.e2[1][3] * v_in.y + m.e2[2][3] * v_in.z + m.e2[3][3] * v_in.w;
     v_out = tmp;
 }
 
@@ -151,11 +151,11 @@ void nlMakeRotationMatrixX(nlMatrix4& m, float angle)
     f32 sp8;
 
     nlSinCos(&spC, &sp8, (short)(RAD_TO_FIXED16 * angle));
-    PSMTX44Identity(m.m);
-    m.m[1][1] = sp8;        // cos(theta) at offset 0x14
-    m.m[1][2] = spC;        // sin(theta) at offset 0x18
-    m.m[2][1] = -m.m[1][2]; // -sin(theta) at offset 0x24
-    m.m[2][2] = m.m[1][1];  // cos(theta) at offset 0x28
+    PSMTX44Identity(m.e2);
+    m.e2[1][1] = sp8;        // cos(theta) at offset 0x14
+    m.e2[1][2] = spC;        // sin(theta) at offset 0x18
+    m.e2[2][1] = -m.e2[1][2]; // -sin(theta) at offset 0x24
+    m.e2[2][2] = m.e2[1][1];  // cos(theta) at offset 0x28
 }
 
 /**
@@ -167,11 +167,11 @@ void nlMakeRotationMatrixY(nlMatrix4& m, float angle)
     f32 sp8;
 
     nlSinCos(&spC, &sp8, (short)(RAD_TO_FIXED16 * angle));
-    PSMTX44Identity(m.m);
-    m.m[0][0] = sp8;        // cos(theta) at offset 0x00
-    m.m[0][2] = -spC;       // sin(theta) at offset 0x08
-    m.m[2][0] = -m.m[0][2]; // -sin(theta) at offset 0x18
-    m.m[2][2] = m.m[0][0];  // cos(theta) at offset 0x20
+    PSMTX44Identity(m.e2);
+    m.e2[0][0] = sp8;        // cos(theta) at offset 0x00
+    m.e2[0][2] = -spC;       // sin(theta) at offset 0x08
+    m.e2[2][0] = -m.e2[0][2]; // -sin(theta) at offset 0x18
+    m.e2[2][2] = m.e2[0][0];  // cos(theta) at offset 0x20
 }
 /**
  * Offset/Address/Size: 0x278 | 0x801C3DF4 | size: 0x78
@@ -182,12 +182,12 @@ void nlMakeRotationMatrixZ(nlMatrix4& m, float angle)
     f32 cs;
 
     nlSinCos(&sn, &cs, (short)(RAD_TO_FIXED16 * angle));
-    PSMTX44Identity(m.m);
+    PSMTX44Identity(m.e2);
 
-    m.m[0][0] = cs;         // cos(theta) at offset 0x00
-    m.m[0][1] = sn;         // sin(theta) at offset 0x04
-    m.m[1][0] = -m.m[0][1]; // -sin(theta) at offset 0x10
-    m.m[1][1] = m.m[0][0];  // cos(theta) at offset 0x14
+    m.e2[0][0] = cs;         // cos(theta) at offset 0x00
+    m.e2[0][1] = sn;         // sin(theta) at offset 0x04
+    m.e2[1][0] = -m.e2[0][1]; // -sin(theta) at offset 0x10
+    m.e2[1][1] = m.e2[0][0];  // cos(theta) at offset 0x14
 }
 
 /**
@@ -202,10 +202,10 @@ void nlMakeRotationMatrixZ(nlMatrix3& m, float angle)
 
     m.SetIdentity();
 
-    m.m[0] = cs;
-    m.m[1] = sn;
-    m.m[3] = -m.m[1];
-    m.m[4] = m.m[0];
+    m.e[0] = cs;
+    m.e[1] = sn;
+    m.e[3] = -m.e[1];
+    m.e[4] = m.e[0];
 }
 
 /**
@@ -226,22 +226,22 @@ void nlMakeRotationMatrixEulerAngles(nlMatrix4& m, float pitch, float yaw, float
     nlSinCos(&sinYaw, &cosYaw, (short)(RAD_TO_FIXED16 * yaw));
     nlSinCos(&sinPitch, &cosPitch, (short)(RAD_TO_FIXED16 * pitch));
 
-    m.m[2][3] = zero;
-    m.m[1][3] = zero;
-    m.m[0][3] = zero;
-    m.m[3][2] = zero;
-    m.m[3][1] = zero;
-    m.m[3][0] = zero;
-    m.m[3][3] = one;
-    m.m[0][0] = cosYaw * cosRoll;
-    m.m[0][1] = cosYaw * sinRoll;
-    m.m[0][2] = -sinYaw;
-    m.m[1][0] = (cosRoll * (sinPitch * sinYaw)) - (cosPitch * sinRoll);
-    m.m[1][1] = (sinRoll * (sinPitch * sinYaw)) + (cosPitch * cosRoll);
-    m.m[1][2] = cosYaw * sinPitch;
-    m.m[2][0] = (cosRoll * (cosPitch * sinYaw)) + (sinPitch * sinRoll);
-    m.m[2][1] = (sinRoll * (cosPitch * sinYaw)) - (sinPitch * cosRoll);
-    m.m[2][2] = cosYaw * cosPitch;
+    m.e2[2][3] = zero;
+    m.e2[1][3] = zero;
+    m.e2[0][3] = zero;
+    m.e2[3][2] = zero;
+    m.e2[3][1] = zero;
+    m.e2[3][0] = zero;
+    m.e2[3][3] = one;
+    m.e2[0][0] = cosYaw * cosRoll;
+    m.e2[0][1] = cosYaw * sinRoll;
+    m.e2[0][2] = -sinYaw;
+    m.e2[1][0] = (cosRoll * (sinPitch * sinYaw)) - (cosPitch * sinRoll);
+    m.e2[1][1] = (sinRoll * (sinPitch * sinYaw)) + (cosPitch * cosRoll);
+    m.e2[1][2] = cosYaw * sinPitch;
+    m.e2[2][0] = (cosRoll * (cosPitch * sinYaw)) + (sinPitch * sinRoll);
+    m.e2[2][1] = (sinRoll * (cosPitch * sinYaw)) - (sinPitch * cosRoll);
+    m.e2[2][2] = cosYaw * cosPitch;
 }
 
 /**
@@ -249,7 +249,7 @@ void nlMakeRotationMatrixEulerAngles(nlMatrix4& m, float pitch, float yaw, float
  */
 void nlMakeScaleMatrix(nlMatrix4& m, float sx, float sy, float sz)
 {
-    PSMTX44Scale(m.m, sx, sy, sz);
+    PSMTX44Scale(m.e2, sx, sy, sz);
 }
 
 /**

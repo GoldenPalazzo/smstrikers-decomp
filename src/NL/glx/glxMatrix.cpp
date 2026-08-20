@@ -14,22 +14,22 @@ extern "C"
 void glxCopyMatrix(float (&arg0)[3][4], const nlMatrix4& arg1)
 {
     // Row 0: copy from nlMatrix4 row 0 to target row 0
-    arg0[0][0] = arg1.m[0][0]; // offset 0x00
-    arg0[0][1] = arg1.m[1][0]; // offset 0x04
-    arg0[0][2] = arg1.m[2][0]; // offset 0x08
-    arg0[0][3] = arg1.m[3][0]; // offset 0x0C
+    arg0[0][0] = arg1.e2[0][0]; // offset 0x00
+    arg0[0][1] = arg1.e2[1][0]; // offset 0x04
+    arg0[0][2] = arg1.e2[2][0]; // offset 0x08
+    arg0[0][3] = arg1.e2[3][0]; // offset 0x0C
 
     // Row 1: copy from nlMatrix4 row 1 to target row 1
-    arg0[1][0] = arg1.m[0][1]; // offset 0x10
-    arg0[1][1] = arg1.m[1][1]; // offset 0x14
-    arg0[1][2] = arg1.m[2][1]; // offset 0x18
-    arg0[1][3] = arg1.m[3][1]; // offset 0x1C
+    arg0[1][0] = arg1.e2[0][1]; // offset 0x10
+    arg0[1][1] = arg1.e2[1][1]; // offset 0x14
+    arg0[1][2] = arg1.e2[2][1]; // offset 0x18
+    arg0[1][3] = arg1.e2[3][1]; // offset 0x1C
 
     // Row 2: copy from nlMatrix4 row 2 to target row 2
-    arg0[2][0] = arg1.m[0][2]; // offset 0x20
-    arg0[2][1] = arg1.m[1][2]; // offset 0x24
-    arg0[2][2] = arg1.m[2][2]; // offset 0x28
-    arg0[2][3] = arg1.m[3][2]; // offset 0x2C
+    arg0[2][0] = arg1.e2[0][2]; // offset 0x20
+    arg0[2][1] = arg1.e2[1][2]; // offset 0x24
+    arg0[2][2] = arg1.e2[2][2]; // offset 0x28
+    arg0[2][3] = arg1.e2[3][2]; // offset 0x2C
 }
 
 /**
@@ -37,7 +37,7 @@ void glxCopyMatrix(float (&arg0)[3][4], const nlMatrix4& arg1)
  */
 void glxCopyMatrix(float (&arg0)[4][4], const nlMatrix4& arg1)
 {
-    memcpy(arg0, arg1.m, sizeof(arg1.m));
+    memcpy(arg0, arg1.e2, sizeof(arg1.e2));
 }
 
 /**
@@ -53,14 +53,14 @@ void glplatMatrixLookAt(nlMatrix4& m, const nlVector3& eye, const nlVector3& at,
     float z;
     float inverseLength = nlRecipSqrt(
         nlGetLengthSquared3D(
-            x = eye.f.x - at.f.x,
-            y = eye.f.y - at.f.y,
-            z = eye.f.z - at.f.z),
+            x = eye.x - at.x,
+            y = eye.y - at.y,
+            z = eye.z - at.z),
         true);
-    float upZ = up.f.z;
-    float upY = up.f.y;
+    float upZ = up.z;
+    float upY = up.y;
     float forwardX = inverseLength * x;
-    float upX = up.f.x;
+    float upX = up.x;
     float forwardY = inverseLength * y;
     float forwardZ = inverseLength * z;
 
@@ -74,31 +74,31 @@ void glplatMatrixLookAt(nlMatrix4& m, const nlVector3& eye, const nlVector3& at,
 
     inverseLength = nlRecipSqrt(z * z + (x * x + y * y), true);
 
-    side.f.x = inverseLength * x;
-    side.f.y = inverseLength * y;
-    side.f.z = inverseLength * z;
+    side.x = inverseLength * x;
+    side.y = inverseLength * y;
+    side.z = inverseLength * z;
 
-    view.f.x = forwardX;
-    view.f.y = forwardY;
-    view.f.z = forwardZ;
+    view.x = forwardX;
+    view.y = forwardY;
+    view.z = forwardZ;
 
-    float negForwardX = -view.f.x;
-    float cameraUpX = (view.f.y * side.f.z) - (view.f.z * side.f.y);
+    float negForwardX = -view.x;
+    float cameraUpX = (view.y * side.z) - (view.z * side.y);
     nlVec3Set(cameraUp,
         cameraUpX,
-        (negForwardX * side.f.z) + (view.f.z * side.f.x),
-        (view.f.x * side.f.y) - (view.f.y * side.f.x));
+        (negForwardX * side.z) + (view.z * side.x),
+        (view.x * side.y) - (view.y * side.x));
 
     m.SetColumn_(0, side);
-    m.m[3][0] = -nlVec3DotProduct(side, eye);
+    m.e2[3][0] = -nlVec3DotProduct(side, eye);
     m.SetColumn_(1, cameraUp);
-    m.m[3][1] = -nlVec3DotProduct(cameraUp, eye);
+    m.e2[3][1] = -nlVec3DotProduct(cameraUp, eye);
     m.SetColumn_(2, view);
-    m.m[3][2] = -nlVec3DotProduct(view, eye);
-    m.m[0][3] = 0.0f;
-    m.m[1][3] = 0.0f;
-    m.m[2][3] = 0.0f;
-    m.m[3][3] = 1.0f;
+    m.e2[3][2] = -nlVec3DotProduct(view, eye);
+    m.e2[0][3] = 0.0f;
+    m.e2[1][3] = 0.0f;
+    m.e2[2][3] = 0.0f;
+    m.e2[3][3] = 1.0f;
 }
 
 /**
@@ -108,7 +108,7 @@ void glplatMatrixPerspective(nlMatrix4& matrix, float fovY, float aspect, float 
 {
     f32 temp_f2 = tan(0.5f * fovY);
     f32 atanVal = (f32)atan((1.0f / aspect) / (1.0f / temp_f2));
-    C_MTXPerspective(matrix.m, (2.f * atanVal * 180.0f) / 3.1415927f, aspect, near, far);
+    C_MTXPerspective(matrix.e2, (2.f * atanVal * 180.0f) / 3.1415927f, aspect, near, far);
 }
 
 /**
@@ -117,7 +117,7 @@ void glplatMatrixPerspective(nlMatrix4& matrix, float fovY, float aspect, float 
 void glplatMatrixOrthographicCentered(nlMatrix4& matrix, float width, float height, float near, float far)
 {
     float half = 0.5f;
-    C_MTXOrtho(matrix.m, height * half, -height * half, -width * half, width * half, near, far);
+    C_MTXOrtho(matrix.e2, height * half, -height * half, -width * half, width * half, near, far);
 }
 
 /**
@@ -127,5 +127,5 @@ void glplatMatrixOrthographic(nlMatrix4& matrix, float width, float height)
 {
     static float fNear = 0.0f;
     static float fFar = 16777215.0f;
-    C_MTXOrtho(matrix.m, 0.f, height, 0.f, width, fNear, fFar);
+    C_MTXOrtho(matrix.e2, 0.f, height, 0.f, width, fNear, fFar);
 }

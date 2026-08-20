@@ -26,13 +26,13 @@ void MakePerpendicularPlane(const nlVector3& v3Position, unsigned short aNormalA
     float fCos;
     nlSinCos(&fSin, &fCos, aNormalAngle);
 
-    v4Plane.f.x = fCos;
-    v4Plane.f.y = fSin;
-    v4Plane.f.z = 0.0f;
+    v4Plane.x = fCos;
+    v4Plane.y = fSin;
+    v4Plane.z = 0.0f;
 
-    float t0 = v3Position.f.y * fSin;
-    float t1 = v3Position.f.x * fCos + t0;
-    v4Plane.f.w = fPlaneOffset + t1;
+    float t0 = v3Position.y * fSin;
+    float t1 = v3Position.x * fCos + t0;
+    v4Plane.w = fPlaneOffset + t1;
 }
 
 /**
@@ -43,14 +43,14 @@ void MakePerpendicularPlane(const nlVector3& v3Position, const nlVector3& v3Norm
     f32 lenSq = const_cast<nlVector3&>(v3Normal).GetLengthSq3D();
     f32 invLen = nlRecipSqrt(lenSq, true);
 
-    f32 normX = invLen * v3Normal.f.x;
-    f32 normY = invLen * v3Normal.f.y;
-    f32 normZ = invLen * v3Normal.f.z;
-    v4Plane.f.x = normX;
-    v4Plane.f.y = normY;
-    v4Plane.f.z = normZ;
+    f32 normX = invLen * v3Normal.x;
+    f32 normY = invLen * v3Normal.y;
+    f32 normZ = invLen * v3Normal.z;
+    v4Plane.x = normX;
+    v4Plane.y = normY;
+    v4Plane.z = normZ;
 
-    v4Plane.f.w = fPlaneOffset + (v3Position.f.x * v4Plane.f.x + v3Position.f.y * v4Plane.f.y + v3Position.f.z * v4Plane.f.z);
+    v4Plane.w = fPlaneOffset + (v3Position.x * v4Plane.x + v3Position.y * v4Plane.y + v3Position.z * v4Plane.z);
 }
 
 /**
@@ -60,12 +60,12 @@ bool IsPointInCone(const nlVector3& v3Point, const nlVector3& v3Pivot, const nlV
 {
     f32 distSqA = const_cast<nlVector3&>(v3Plane1).CalculateDistanceSquared2D(v3Pivot);
     f32 distSqP = const_cast<nlVector3&>(v3Plane1).CalculateDistanceSquared2D(v3Point);
-    f32 pointY = v3Point.f.y;
-    f32 pivotY = v3Pivot.f.y;
+    f32 pointY = v3Point.y;
+    f32 pivotY = v3Pivot.y;
 
     if (distSqP < distSqA)
     {
-        f32 dirX = v3Pivot.f.x - v3Point.f.x;
+        f32 dirX = v3Pivot.x - v3Point.x;
         f32 zeroVal = 0.0f;
         f32 dirY = pivotY - pointY;
 
@@ -75,13 +75,13 @@ bool IsPointInCone(const nlVector3& v3Point, const nlVector3& v3Pivot, const nlV
 
         nlVector4 v4Plane;
         nlVector3& v3Plane = *(nlVector3*)&v4Plane;
-        v3Plane.f.x = invLen * perpY;
-        v3Plane.f.y = invLen * dirX;
-        v3Plane.f.z = invLen * zeroVal;
-        v4Plane.f.w = zeroVal + (v3Pivot.f.x * v4Plane.f.x + v3Pivot.f.y * v4Plane.f.y + v3Pivot.f.z * v4Plane.f.z);
+        v3Plane.x = invLen * perpY;
+        v3Plane.y = invLen * dirX;
+        v3Plane.z = invLen * zeroVal;
+        v4Plane.w = zeroVal + (v3Pivot.x * v4Plane.x + v3Pivot.y * v4Plane.y + v3Pivot.z * v4Plane.z);
 
-        f32 sideLeft = (v3Plane1.f.x * v4Plane.f.x + v3Plane1.f.y * v4Plane.f.y + v3Plane1.f.z * v4Plane.f.z) - v4Plane.f.w;
-        f32 sideRight = (v3Plane2.f.x * v4Plane.f.x + v3Plane2.f.y * v4Plane.f.y + v3Plane2.f.z * v4Plane.f.z) - v4Plane.f.w;
+        f32 sideLeft = (v3Plane1.x * v4Plane.x + v3Plane1.y * v4Plane.y + v3Plane1.z * v4Plane.z) - v4Plane.w;
+        f32 sideRight = (v3Plane2.x * v4Plane.x + v3Plane2.y * v4Plane.y + v3Plane2.z * v4Plane.z) - v4Plane.w;
 
         if (sideLeft * sideRight < zeroVal)
         {
@@ -247,30 +247,30 @@ bool ClipPositionToSidelines(nlVector3& position, float margin)
     float rightBound = cField::GetGoalLineX(1U) - margin;
     float topBound = cField::GetSidelineY(1U) - margin;
 
-    if (position.f.x > rightBound)
+    if (position.x > rightBound)
     {
-        position.f.x = rightBound;
+        position.x = rightBound;
         wasClipped = true;
     }
     else
     {
         float leftBound = -1.0f * rightBound;
-        if (position.f.x < leftBound)
+        if (position.x < leftBound)
         {
-            position.f.x = leftBound;
+            position.x = leftBound;
             wasClipped = true;
         }
     }
 
     float bottomBound = -1.0f * topBound;
-    if (position.f.y < bottomBound)
+    if (position.y < bottomBound)
     {
-        position.f.y = bottomBound;
+        position.y = bottomBound;
         wasClipped = true;
     }
-    else if (position.f.y > topBound)
+    else if (position.y > topBound)
     {
-        position.f.y = topBound;
+        position.y = topBound;
         wasClipped = true;
     }
 
@@ -288,7 +288,7 @@ bool TestCollision(float rp, const nlVector3& p1, const nlVector3& p2, float rq,
     // Check start positions
     nlVector3 diff1;
     nlVec3Sub(diff1, q1, p1);
-    float distSq1 = nlGetLengthSquared3D(diff1.f.x, diff1.f.y, diff1.f.z);
+    float distSq1 = nlGetLengthSquared3D(diff1.x, diff1.y, diff1.z);
 
     if (distSq1 <= radiusSq)
     {
@@ -298,7 +298,7 @@ bool TestCollision(float rp, const nlVector3& p1, const nlVector3& p2, float rq,
     // Check end positions
     nlVector3 diff2;
     nlVec3Sub(diff2, q2, p2);
-    float distSq2 = nlGetLengthSquared3D(diff2.f.x, diff2.f.y, diff2.f.z);
+    float distSq2 = nlGetLengthSquared3D(diff2.x, diff2.y, diff2.z);
 
     if (distSq2 <= radiusSq)
     {
@@ -358,16 +358,16 @@ float Exp(float k)
 float GetClosingSpeed2D(const nlVector3& pos1, const nlVector3& vel1, const nlVector3& pos2, const nlVector3& vel2)
 {
     float dx, dy;
-    dy = pos2.f.y - pos1.f.y;
-    dx = pos2.f.x - pos1.f.x;
+    dy = pos2.y - pos1.y;
+    dx = pos2.x - pos1.x;
     float distSq = dx * dx + dy * dy;
     float invDist = nlRecipSqrt(distSq, true);
 
     float normDx = invDist * dx;
     float normDy = invDist * dy;
 
-    float vel1Proj = normDx * vel1.f.x + normDy * vel1.f.y;
-    float vel2Proj = normDx * vel2.f.x + normDy * vel2.f.y;
+    float vel1Proj = normDx * vel1.x + normDy * vel1.y;
+    float vel2Proj = normDx * vel2.x + normDy * vel2.y;
 
     return vel1Proj - vel2Proj;
 }
@@ -378,9 +378,9 @@ float GetClosingSpeed2D(const nlVector3& pos1, const nlVector3& vel1, const nlVe
 float GetClosingSpeed(const nlVector3& pos1, const nlVector3& vel1, const nlVector3& pos2, const nlVector3& vel2)
 {
     float dx, dy, dz;
-    dz = pos2.f.z - pos1.f.z;
-    dy = pos2.f.y - pos1.f.y;
-    dx = pos2.f.x - pos1.f.x;
+    dz = pos2.z - pos1.z;
+    dy = pos2.y - pos1.y;
+    dx = pos2.x - pos1.x;
     float distSq = dx * dx + dy * dy + dz * dz;
     float invDist = nlRecipSqrt(distSq, true);
 
@@ -388,8 +388,8 @@ float GetClosingSpeed(const nlVector3& pos1, const nlVector3& vel1, const nlVect
     float normDy = invDist * dy;
     float normDz = invDist * dz;
 
-    float vel1Proj = normDx * vel1.f.x + normDy * vel1.f.y + normDz * vel1.f.z;
-    float vel2Proj = normDx * vel2.f.x + normDy * vel2.f.y + normDz * vel2.f.z;
+    float vel1Proj = normDx * vel1.x + normDy * vel1.y + normDz * vel1.z;
+    float vel2Proj = normDx * vel2.x + normDy * vel2.y + normDz * vel2.z;
 
     return vel1Proj - vel2Proj;
 }
@@ -403,12 +403,12 @@ void GetLocalPoint(nlVector3& v3LocalPointOut, const nlVector3& v3WorldPointIn, 
     float fCos; // r1+0x8
 
     nlSinCos(&fSin, &fCos, aRefAngle);
-    float dx = v3WorldPointIn.f.x - v3RefPosition.f.x;
-    float dy = v3WorldPointIn.f.y - v3RefPosition.f.y;
+    float dx = v3WorldPointIn.x - v3RefPosition.x;
+    float dy = v3WorldPointIn.y - v3RefPosition.y;
 
-    v3LocalPointOut.f.x = (fCos * dx) + (fSin * dy);
-    v3LocalPointOut.f.y = (fCos * dy) - (fSin * dx);
-    v3LocalPointOut.f.z = v3WorldPointIn.f.z;
+    v3LocalPointOut.x = (fCos * dx) + (fSin * dy);
+    v3LocalPointOut.y = (fCos * dy) - (fSin * dx);
+    v3LocalPointOut.z = v3WorldPointIn.z;
 }
 
 /**
@@ -419,14 +419,14 @@ void GetWorldPoint(nlVector3& v3WorldPointOut, const nlVector3& v3LocalPointIn, 
     f32 fSin;
     f32 fCos;
 
-    float localX = v3LocalPointIn.f.x;
-    float localY = v3LocalPointIn.f.y;
+    float localX = v3LocalPointIn.x;
+    float localY = v3LocalPointIn.y;
 
     nlSinCos(&fSin, &fCos, aRefAngle);
 
-    v3WorldPointOut.f.x = v3RefPosition.f.x + ((fCos * localX) - (fSin * localY));
-    v3WorldPointOut.f.y = v3RefPosition.f.y + ((fCos * localY) + (fSin * localX));
-    v3WorldPointOut.f.z = v3LocalPointIn.f.z;
+    v3WorldPointOut.x = v3RefPosition.x + ((fCos * localX) - (fSin * localY));
+    v3WorldPointOut.y = v3RefPosition.y + ((fCos * localY) + (fSin * localX));
+    v3WorldPointOut.z = v3LocalPointIn.z;
 }
 
 /**
@@ -437,14 +437,14 @@ void RotateVectorZAxis(nlVector3& v3Out, const nlVector3& v3In, unsigned short a
     f32 fSin;
     f32 fCos;
 
-    f32 localX = v3In.f.x;
-    f32 localY = v3In.f.y;
+    f32 localX = v3In.x;
+    f32 localY = v3In.y;
 
     nlSinCos(&fSin, &fCos, angle);
 
-    v3Out.f.x = (fCos * localX) - (fSin * localY);
-    v3Out.f.y = (fCos * localY) + (fSin * localX);
-    v3Out.f.z = v3In.f.z;
+    v3Out.x = (fCos * localX) - (fSin * localY);
+    v3Out.y = (fCos * localY) + (fSin * localX);
+    v3Out.z = v3In.z;
 }
 
 /**
@@ -465,43 +465,43 @@ void GetRotationBetweenVectors(nlQuaternion& quat, const nlVector3& v3Vec1, cons
     else if (fCosAngle < -0.99999f)
     {
         nlVector3 axis;
-        axis.f.x = 1.0f;
+        axis.x = 1.0f;
 
-        if (v3Vec1.f.x > v3Vec1.f.z || v3Vec1.f.y > v3Vec1.f.z)
+        if (v3Vec1.x > v3Vec1.z || v3Vec1.y > v3Vec1.z)
         {
-            axis.f.x = 0.0f;
-            axis.f.z = 1.0f;
-            axis.f.y = axis.f.x;
+            axis.x = 0.0f;
+            axis.z = 1.0f;
+            axis.y = axis.x;
         }
         else
         {
-            axis.f.y = 0.0f;
-            axis.f.z = axis.f.y;
+            axis.y = 0.0f;
+            axis.z = axis.y;
         }
 
-        cx = axis.f.y * v3Vec1.f.z - axis.f.z * v3Vec1.f.y;
-        cy = -axis.f.x * v3Vec1.f.z + axis.f.z * v3Vec1.f.x;
-        cz = axis.f.x * v3Vec1.f.y - axis.f.y * v3Vec1.f.x;
+        cx = axis.y * v3Vec1.z - axis.z * v3Vec1.y;
+        cy = -axis.x * v3Vec1.z + axis.z * v3Vec1.x;
+        cz = axis.x * v3Vec1.y - axis.y * v3Vec1.x;
 
         float invLen = nlRecipSqrt(cx * cx + cy * cy + cz * cz, true);
 
-        quat.f.x = invLen * cx;
-        quat.f.y = invLen * cy;
-        quat.f.z = invLen * cz;
-        quat.f.w = 0.0f;
+        quat.x = invLen * cx;
+        quat.y = invLen * cy;
+        quat.z = invLen * cz;
+        quat.w = 0.0f;
     }
     else
     {
         float fMagic = nlSqrt((float)(2.0 * (1.0 + fCosAngle)), true);
         float fMultiplier = fInvR1R2 / fMagic;
 
-        cx = v3Vec1.f.y * v3Vec2.f.z - v3Vec1.f.z * v3Vec2.f.y;
-        cy = -v3Vec1.f.x * v3Vec2.f.z + v3Vec1.f.z * v3Vec2.f.x;
-        cz = v3Vec1.f.x * v3Vec2.f.y - v3Vec1.f.y * v3Vec2.f.x;
-        quat.f.w = 0.5f * fMagic;
-        quat.f.x = cx * fMultiplier;
-        quat.f.y = cy * fMultiplier;
-        quat.f.z = cz * fMultiplier;
+        cx = v3Vec1.y * v3Vec2.z - v3Vec1.z * v3Vec2.y;
+        cy = -v3Vec1.x * v3Vec2.z + v3Vec1.z * v3Vec2.x;
+        cz = v3Vec1.x * v3Vec2.y - v3Vec1.y * v3Vec2.x;
+        quat.w = 0.5f * fMagic;
+        quat.x = cx * fMultiplier;
+        quat.y = cy * fMultiplier;
+        quat.z = cz * fMultiplier;
     }
 }
 
@@ -547,31 +547,31 @@ void RotateVector(nlVector3& result, const nlVector3& v, nlQuaternion& q)
     f32 x2;
     f32 B;
 
-    xx = q.f.x * q.f.x;
-    zz = q.f.z * q.f.z;
-    ww = q.f.w * q.f.w;
-    x2 = 2.0f * q.f.x;
-    z2 = 2.0f * q.f.z;
-    vy = v.f.y;
-    y2 = 2.0f * q.f.y;
-    vx = v.f.x;
-    yy = q.f.y * q.f.y;
+    xx = q.x * q.x;
+    zz = q.z * q.z;
+    ww = q.w * q.w;
+    x2 = 2.0f * q.x;
+    z2 = 2.0f * q.z;
+    vy = v.y;
+    y2 = 2.0f * q.y;
+    vx = v.x;
+    yy = q.y * q.y;
 
     A = ww - xx;
     B = xx + ww;
-    vz = v.f.z;
+    vz = v.z;
 
-    xy2 = x2 * q.f.y;
-    zw2 = z2 * q.f.w;
+    xy2 = x2 * q.y;
+    zw2 = z2 * q.w;
     C = yy + A;
     D = B - yy;
     E = xy2 - zw2;
     F = C - zz;
     G = A - yy;
-    xw2 = x2 * q.f.w;
-    yz2 = y2 * q.f.z;
-    xz2 = x2 * q.f.z;
-    yw2 = y2 * q.f.w;
+    xw2 = x2 * q.w;
+    yz2 = y2 * q.z;
+    xz2 = x2 * q.z;
+    yw2 = y2 * q.w;
     H = xw2 + yz2;
     I = D - zz;
     J = vy * E;
@@ -581,13 +581,13 @@ void RotateVector(nlVector3& result, const nlVector3& v, nlQuaternion& q)
     N = vx * I + J;
     O = xz2 - yw2;
     P = vy * H;
-    result.f.x = vz * M + N;
+    result.x = vz * M + N;
     R = yz2 - xw2;
     S = vx * K + L;
     T = zz + G;
     U = vx * O + P;
-    result.f.y = vz * R + S;
-    result.f.z = vz * T + U;
+    result.y = vz * R + S;
+    result.z = vz * T + U;
 }
 
 /**
@@ -630,10 +630,10 @@ float InterpolateRangeClamped(float fResultMin, float fResultMax, float fInputMi
  */
 float InterpolateRangeClamped(const nlVector2& outputRange, const nlVector2& inputRange, float value)
 {
-    float maxVal = inputRange.f.y;
-    float minVal = inputRange.f.x;
-    float outMax = outputRange.f.y;
-    float outMin = outputRange.f.x;
+    float maxVal = inputRange.y;
+    float minVal = inputRange.x;
+    float outMax = outputRange.y;
+    float outMin = outputRange.x;
 
     // Clamp value to input range
     if (minVal < maxVal)
@@ -661,10 +661,10 @@ float InterpolateRangeClamped(const nlVector2& outputRange, const nlVector2& inp
  */
 float NormalizeVal(float fromVal, const nlVector2& fromExtrema)
 {
-    if (fromExtrema.f.y == fromExtrema.f.x)
+    if (fromExtrema.y == fromExtrema.x)
         return 1.0f;
 
-    float t = (fromVal - fromExtrema.f.x) / (fromExtrema.f.y - fromExtrema.f.x);
+    float t = (fromVal - fromExtrema.x) / (fromExtrema.y - fromExtrema.x);
 
     float lo = (t >= 0.0f) ? t : 0.0f;
     float res = (lo <= 1.0f) ? lo : 1.0f;
@@ -841,13 +841,13 @@ nlVector3 GetClosestPointOnSidelines(const nlVector3& v3Position)
     f32 fDistToGoalLine;
     f32 fDistToSideline;
 
-    fDistToGoalLine = (f32)fabs(cField::GetGoalLineX(1U) - (f32)fabs(v3Position.f.x));
-    fDistToSideline = (f32)fabs(cField::GetSidelineY(1U) - (f32)fabs(v3Position.f.y));
+    fDistToGoalLine = (f32)fabs(cField::GetGoalLineX(1U) - (f32)fabs(v3Position.x));
+    fDistToSideline = (f32)fabs(cField::GetSidelineY(1U) - (f32)fabs(v3Position.y));
 
     if (fDistToGoalLine <= fDistToSideline)
     {
-        v3WallPosition.f.y = v3Position.f.y;
-        if (v3Position.f.x >= 0.0f)
+        v3WallPosition.y = v3Position.y;
+        if (v3Position.x >= 0.0f)
         {
             fSign = 1.0f;
         }
@@ -856,11 +856,11 @@ nlVector3 GetClosestPointOnSidelines(const nlVector3& v3Position)
             fSign = -1.0f;
         }
         f32 fGoalX = cField::GetGoalLineX(1U);
-        v3WallPosition.f.x = fGoalX * fSign;
+        v3WallPosition.x = fGoalX * fSign;
     }
     else
     {
-        if (v3Position.f.y >= 0.0f)
+        if (v3Position.y >= 0.0f)
         {
             fSign = 1.0f;
         }
@@ -869,10 +869,10 @@ nlVector3 GetClosestPointOnSidelines(const nlVector3& v3Position)
             fSign = -1.0f;
         }
         f32 fSideY = cField::GetSidelineY(1U);
-        v3WallPosition.f.y = fSideY * fSign;
-        v3WallPosition.f.x = v3Position.f.x;
+        v3WallPosition.y = fSideY * fSign;
+        v3WallPosition.x = v3Position.x;
     }
 
-    v3WallPosition.f.z = 0.0f;
+    v3WallPosition.z = 0.0f;
     return v3WallPosition;
 }

@@ -10,7 +10,7 @@
  */
 static inline u16 nlVector3ToAngle(const nlVector3& dir, u16 offset = 0)
 {
-    return (u16)((u32)(u16)(s32)(10430.378f * nlATan2f(dir.f.y, dir.f.x)) + offset);
+    return (u16)((u32)(u16)(s32)(10430.378f * nlATan2f(dir.y, dir.x)) + offset);
 }
 
 /*
@@ -56,7 +56,7 @@ inline float CalculateDistanceSquared(const nlVector3& pos1, const nlVector3& po
 {
     nlVector3 delta;
     nlVec3Sub(delta, pos1, pos2);
-    return nlGetLengthSquared3D(delta.f.x, delta.f.y, delta.f.z);
+    return nlGetLengthSquared3D(delta.x, delta.y, delta.z);
 }
 
 /*
@@ -66,7 +66,7 @@ inline float TestDistanceSquaredLessThan(const nlVector3& pos1, const nlVector3&
 {
     nlVector3 delta;
     nlVec3Sub(delta, pos1, pos2);
-    return nlGetLengthSquared3D(delta.f.x, delta.f.y, delta.f.z) < (threshold * threshold);
+    return nlGetLengthSquared3D(delta.x, delta.y, delta.z) < (threshold * threshold);
 }
 
 /*

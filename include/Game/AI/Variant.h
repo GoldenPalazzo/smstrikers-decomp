@@ -78,9 +78,9 @@ public:
     virtual void Reset()
     {
         mType = FT_UNSPECIFIED;
-        mData.vector.f.x = 0.0f;
-        mData.vector.f.y = 0.0f;
-        mData.vector.f.z = 0.0f;
+        mData.vector.x = 0.0f;
+        mData.vector.y = 0.0f;
+        mData.vector.z = 0.0f;
     };
 
     virtual unsigned long GetHash() const;
@@ -125,7 +125,7 @@ public:
                 bEqual = (mData.pTeam == other.mData.pTeam);
                 break;
             case FT_VECTOR:
-                bEqual = (other.mData.vector.f.x == mData.vector.f.x && other.mData.vector.f.y == mData.vector.f.y && other.mData.vector.f.z == mData.vector.f.z);
+                bEqual = (other.mData.vector.x == mData.vector.x && other.mData.vector.y == mData.vector.y && other.mData.vector.z == mData.vector.z);
                 break;
             }
         }

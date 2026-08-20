@@ -226,9 +226,9 @@ void PowerupThrowPosition(int nThrowOrder, eThrowStyle eStyle, PowerupBase* pNew
         pNewPowerup->m_pPhysicsObject->SetLinearVelocity(pFirstPowerup->m_v3Velocity);
 
         v3VelocityDirection = pFirstPowerup->m_v3Velocity;
-        v3VelocityDirection.f.z = 0.0f;
-        f32 invLen = nlRecipSqrt(v3VelocityDirection.f.x * v3VelocityDirection.f.x + v3VelocityDirection.f.y * v3VelocityDirection.f.y + v3VelocityDirection.f.z * v3VelocityDirection.f.z, true);
-        nlVec3Set(v3VelocityDirection, invLen * v3VelocityDirection.f.x, invLen * v3VelocityDirection.f.y, invLen * v3VelocityDirection.f.z);
+        v3VelocityDirection.z = 0.0f;
+        f32 invLen = nlRecipSqrt(v3VelocityDirection.x * v3VelocityDirection.x + v3VelocityDirection.y * v3VelocityDirection.y + v3VelocityDirection.z * v3VelocityDirection.z, true);
+        nlVec3Set(v3VelocityDirection, invLen * v3VelocityDirection.x, invLen * v3VelocityDirection.y, invLen * v3VelocityDirection.z);
 
         if (nThrowOrder % 2 == 0)
         {
@@ -240,8 +240,8 @@ void PowerupThrowPosition(int nThrowOrder, eThrowStyle eStyle, PowerupBase* pNew
         }
 
         fPowerupOffSet *= (f32)((nThrowOrder + 1) / 2);
-        nlVec3Set(v3PerpToVelocity, fPowerupOffSet * v3PerpToVelocity.f.x, fPowerupOffSet * v3PerpToVelocity.f.y, fPowerupOffSet * v3PerpToVelocity.f.z);
-        nlVec3Set(v3StartPosition, pFirstPowerup->m_v3Position.f.x + v3PerpToVelocity.f.x, pFirstPowerup->m_v3Position.f.y + v3PerpToVelocity.f.y, pFirstPowerup->m_v3Position.f.z + v3PerpToVelocity.f.z);
+        nlVec3Set(v3PerpToVelocity, fPowerupOffSet * v3PerpToVelocity.x, fPowerupOffSet * v3PerpToVelocity.y, fPowerupOffSet * v3PerpToVelocity.z);
+        nlVec3Set(v3StartPosition, pFirstPowerup->m_v3Position.x + v3PerpToVelocity.x, pFirstPowerup->m_v3Position.y + v3PerpToVelocity.y, pFirstPowerup->m_v3Position.z + v3PerpToVelocity.z);
 
         pNewPowerup->m_v3Position = v3StartPosition;
         pNewPowerup->m_pPhysicsObject->SetPosition(pNewPowerup->m_v3Position, PhysicsObject::WORLD_COORDINATES);
@@ -257,9 +257,9 @@ void PowerupThrowPosition(int nThrowOrder, eThrowStyle eStyle, PowerupBase* pNew
         pNewPowerup->m_pPhysicsObject->SetLinearVelocity(pFirstPowerup->m_v3Velocity);
 
         v3VelocityDirection = pFirstPowerup->m_v3Velocity;
-        v3VelocityDirection.f.z = 0.0f;
-        f32 invLen = nlRecipSqrt(v3VelocityDirection.f.x * v3VelocityDirection.f.x + v3VelocityDirection.f.y * v3VelocityDirection.f.y + v3VelocityDirection.f.z * v3VelocityDirection.f.z, true);
-        nlVec3Set(v3VelocityDirection, invLen * v3VelocityDirection.f.x, invLen * v3VelocityDirection.f.y, invLen * v3VelocityDirection.f.z);
+        v3VelocityDirection.z = 0.0f;
+        f32 invLen = nlRecipSqrt(v3VelocityDirection.x * v3VelocityDirection.x + v3VelocityDirection.y * v3VelocityDirection.y + v3VelocityDirection.z * v3VelocityDirection.z, true);
+        nlVec3Set(v3VelocityDirection, invLen * v3VelocityDirection.x, invLen * v3VelocityDirection.y, invLen * v3VelocityDirection.z);
 
         if (nThrowOrder % 2 == 0)
         {
@@ -272,15 +272,15 @@ void PowerupThrowPosition(int nThrowOrder, eThrowStyle eStyle, PowerupBase* pNew
 
         fPowerupOffSet *= (f32)((nThrowOrder + 1) / 2);
 
-        nlVec3Set(v3PerpToVelocity, fPowerupOffSet * v3PerpToVelocity.f.x, fPowerupOffSet * v3PerpToVelocity.f.y, fPowerupOffSet * v3PerpToVelocity.f.z);
-        nlVec3Set(v3VelocityDirection, fPowerupOffSet * v3VelocityDirection.f.x, fPowerupOffSet * v3VelocityDirection.f.y, fPowerupOffSet * v3VelocityDirection.f.z);
+        nlVec3Set(v3PerpToVelocity, fPowerupOffSet * v3PerpToVelocity.x, fPowerupOffSet * v3PerpToVelocity.y, fPowerupOffSet * v3PerpToVelocity.z);
+        nlVec3Set(v3VelocityDirection, fPowerupOffSet * v3VelocityDirection.x, fPowerupOffSet * v3VelocityDirection.y, fPowerupOffSet * v3VelocityDirection.z);
 
         RotateVectorZAxis(v3VelocityDirection, v3VelocityDirection, 0x8000);
 
         nlVec3Set(v3StartPosition,
-            pFirstPowerup->m_v3Position.f.x + (v3PerpToVelocity.f.x + v3VelocityDirection.f.x),
-            pFirstPowerup->m_v3Position.f.y + (v3PerpToVelocity.f.y + v3VelocityDirection.f.y),
-            pFirstPowerup->m_v3Position.f.z + (v3PerpToVelocity.f.z + v3VelocityDirection.f.z));
+            pFirstPowerup->m_v3Position.x + (v3PerpToVelocity.x + v3VelocityDirection.x),
+            pFirstPowerup->m_v3Position.y + (v3PerpToVelocity.y + v3VelocityDirection.y),
+            pFirstPowerup->m_v3Position.z + (v3PerpToVelocity.z + v3VelocityDirection.z));
 
         pNewPowerup->m_v3Position = v3StartPosition;
         pNewPowerup->m_pPhysicsObject->SetPosition(pNewPowerup->m_v3Position, PhysicsObject::WORLD_COORDINATES);
@@ -994,9 +994,9 @@ PowerupBase::PowerupBase(cFielder* pTarget, ePowerUpType eType, float fRadius, e
         mtNoHitTimer.SetSeconds(1.0f);
     }
 
-    m_v3Position.f.x = 0.0f;
-    m_v3Position.f.y = 0.0f;
-    m_v3Position.f.z = fRadius;
+    m_v3Position.x = 0.0f;
+    m_v3Position.y = 0.0f;
+    m_v3Position.z = fRadius;
     m_v3PrevPosition = m_v3Position;
     m_v3Velocity = v3Zero;
 
@@ -1060,9 +1060,9 @@ void PowerupBase::Update(float dt)
     m_pPhysicsObject->GetPosition(&m_v3Position);
     m_pPhysicsObject->GetLinearVelocity(&m_v3Velocity);
 
-    if (m_v3Position.f.z < ((PhysicsSphere*)m_pPhysicsObject)->GetRadius())
+    if (m_v3Position.z < ((PhysicsSphere*)m_pPhysicsObject)->GetRadius())
     {
-        m_v3Position.f.z = ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
+        m_v3Position.z = ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
         m_pPhysicsObject->SetPosition(m_v3Position, PhysicsObject::WORLD_COORDINATES);
     }
 
@@ -1077,7 +1077,7 @@ void PowerupBase::Update(float dt)
 
     if (m_pBlurHandler != nullptr)
     {
-        nlCartesianToPolar(polar, m_v3Velocity.f.x, m_v3Velocity.f.y);
+        nlCartesianToPolar(polar, m_v3Velocity.x, m_v3Velocity.y);
         if (polar.r < 0.5f)
         {
             m_pBlurHandler->Die(0.5f);
@@ -1537,8 +1537,8 @@ void PowerupBase::CollisionCallback(PhysicsObject* pObjA, PhysicsObject* pObjB, 
             {
                 nlVector3 v3NewVelocity = pObj->m_v3Velocity;
                 nlPolar aSpeedOut;
-                nlCartesianToPolar(aSpeedOut, v3NewVelocity.f.x, v3NewVelocity.f.y);
-                v3NewVelocity.f.z = 0.5f * aSpeedOut.r;
+                nlCartesianToPolar(aSpeedOut, v3NewVelocity.x, v3NewVelocity.y);
+                v3NewVelocity.z = 0.5f * aSpeedOut.r;
                 pObj->m_v3Velocity = v3NewVelocity;
                 pObj->m_pPhysicsObject->SetLinearVelocity(v3NewVelocity);
                 pObj->m_pTarget = NULL;
@@ -1722,9 +1722,9 @@ void PowerupBase::ThrowAt(cFielder* pThrower, Bowser*)
 
     nlVector3 v3Direction;
     nlVec3Set(v3Direction,
-        v3TargetPos.f.x - m_v3Position.f.x,
-        v3TargetPos.f.y - m_v3Position.f.y,
-        v3TargetPos.f.z - m_v3Position.f.z);
+        v3TargetPos.x - m_v3Position.x,
+        v3TargetPos.y - m_v3Position.y,
+        v3TargetPos.z - m_v3Position.z);
     float fInvDistance = nlRecipSqrt(v3Direction.GetLengthSq3D(), true);
     nlVec3Scale(v3Direction, fInvDistance);
 
@@ -1745,11 +1745,11 @@ void PowerupBase::ThrowAt(cFielder* pThrower, Bowser*)
         }
 
         nlVector3 v3ShellVelocity;
-        float predictedX = v3TargetVel.f.x * t + v3TargetPos.f.x;
-        float predictedY = v3TargetVel.f.y * t + v3TargetPos.f.y;
-        v3ShellVelocity.f.x = (predictedX - m_v3Position.f.x) / t;
-        v3ShellVelocity.f.y = (predictedY - m_v3Position.f.y) / t;
-        v3ShellVelocity.f.z = 0.0f;
+        float predictedX = v3TargetVel.x * t + v3TargetPos.x;
+        float predictedY = v3TargetVel.y * t + v3TargetPos.y;
+        v3ShellVelocity.x = (predictedX - m_v3Position.x) / t;
+        v3ShellVelocity.y = (predictedY - m_v3Position.y) / t;
+        v3ShellVelocity.z = 0.0f;
         m_v3Velocity = v3ShellVelocity;
         m_pPhysicsObject->SetLinearVelocity(v3ShellVelocity);
     }
@@ -1757,7 +1757,7 @@ void PowerupBase::ThrowAt(cFielder* pThrower, Bowser*)
     {
         nlVector3 v3Velocity;
         nlVec3Scale(v3Velocity, v3Direction, fSpeed);
-        v3Velocity.f.z = 0.0f;
+        v3Velocity.z = 0.0f;
         m_v3Velocity = v3Velocity;
         m_pPhysicsObject->SetLinearVelocity(v3Velocity);
     }
@@ -2037,7 +2037,7 @@ void PowerupBase::Destroy(bool bSilent)
                 Audio::gStadGenSFX.Play((Audio::eWorldSFX)0xCE, 100.0f, -1.0f, true, 100.0f);
                 EmissionController* pControl = EmissionManager::Create(pExplosionGroup, 0);
                 pControl->SetPosition(m_pPhysicsObject->GetPosition());
-                if ((m_v3Position.f.z - ((PhysicsSphere*)m_pPhysicsObject)->GetRadius()) < 1.0f)
+                if ((m_v3Position.z - ((PhysicsSphere*)m_pPhysicsObject)->GetRadius()) < 1.0f)
                 {
                     EmissionController* pControl = EmissionManager::Create(pGroundGroup, 0);
                     pControl->SetPosition(m_pPhysicsObject->GetPosition());
@@ -2260,7 +2260,7 @@ void PowerupBase::UpdateTransform()
     float fActualRadius;
     float fNormalRadius;
 
-    nlCartesianToPolar(pDirectionalSpeed, m_v3Velocity.f.x, m_v3Velocity.f.y);
+    nlCartesianToPolar(pDirectionalSpeed, m_v3Velocity.x, m_v3Velocity.y);
     fSpeedNormalized = NormalizeVal(pDirectionalSpeed.r, 0.0f, g_pGame->m_pGameTweaks->fGreenShellSpeed);
 
     {
@@ -2420,7 +2420,7 @@ void PowerupBase::SpeedManagement()
 
     if (mtNoHitTimer.m_uPackedTime == 0)
     {
-        nlCartesianToPolar(aShell, m_v3Velocity.f.x, m_v3Velocity.f.y);
+        nlCartesianToPolar(aShell, m_v3Velocity.x, m_v3Velocity.y);
         if (aShell.r < 3.0f)
         {
             m_bShouldDestroy = true;
@@ -2428,20 +2428,20 @@ void PowerupBase::SpeedManagement()
         else if (aShell.r > 20.0f)
         {
             v2NewVelocity = *(const nlVector2*)&m_v3Velocity;
-            f32 velX = v2NewVelocity.f.x;
-            f32 velY = v2NewVelocity.f.y;
+            f32 velX = v2NewVelocity.x;
+            f32 velY = v2NewVelocity.y;
             f32 sqX = velX * velX;
             f32 sqY = velY * velY;
             f32 recipLen = nlRecipSqrt(sqX + sqY, true);
-            v2NewVelocity.f.x = recipLen * velX;
-            v2NewVelocity.f.y = recipLen * velY;
-            f32 scaledY = 19.0f * v2NewVelocity.f.y;
-            f32 scaledX = 19.0f * v2NewVelocity.f.x;
-            v2NewVelocity.f.x = scaledX;
-            v2NewVelocity.f.y = scaledY;
-            v3NewVelocity.f.y = v2NewVelocity.f.y;
-            v3NewVelocity.f.x = v2NewVelocity.f.x;
-            v3NewVelocity.f.z = m_v3Velocity.f.z;
+            v2NewVelocity.x = recipLen * velX;
+            v2NewVelocity.y = recipLen * velY;
+            f32 scaledY = 19.0f * v2NewVelocity.y;
+            f32 scaledX = 19.0f * v2NewVelocity.x;
+            v2NewVelocity.x = scaledX;
+            v2NewVelocity.y = scaledY;
+            v3NewVelocity.y = v2NewVelocity.y;
+            v3NewVelocity.x = v2NewVelocity.x;
+            v3NewVelocity.z = m_v3Velocity.z;
             m_v3Velocity = v3NewVelocity;
             m_pPhysicsObject->SetLinearVelocity(v3NewVelocity);
         }
@@ -2603,9 +2603,9 @@ void GreenShell::Update(float dt)
     m_pPhysicsObject->GetPosition(&m_v3Position);
     m_pPhysicsObject->GetLinearVelocity(&m_v3Velocity);
 
-    if (m_v3Position.f.z < ((PhysicsSphere*)m_pPhysicsObject)->GetRadius())
+    if (m_v3Position.z < ((PhysicsSphere*)m_pPhysicsObject)->GetRadius())
     {
-        m_v3Position.f.z = ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
+        m_v3Position.z = ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
         m_pPhysicsObject->SetPosition(m_v3Position, PhysicsObject::WORLD_COORDINATES);
     }
 
@@ -2620,7 +2620,7 @@ void GreenShell::Update(float dt)
 
     if (m_pBlurHandler != NULL)
     {
-        nlCartesianToPolar(polar, m_v3Velocity.f.x, m_v3Velocity.f.y);
+        nlCartesianToPolar(polar, m_v3Velocity.x, m_v3Velocity.y);
         if (polar.r < 0.5f)
         {
             m_pBlurHandler->Die(0.5f);
@@ -2688,9 +2688,9 @@ void RedShell::Update(float dt)
     m_pPhysicsObject->GetPosition(&m_v3Position);
     m_pPhysicsObject->GetLinearVelocity(&m_v3Velocity);
 
-    if (m_v3Position.f.z < ((PhysicsSphere*)m_pPhysicsObject)->GetRadius())
+    if (m_v3Position.z < ((PhysicsSphere*)m_pPhysicsObject)->GetRadius())
     {
-        m_v3Position.f.z = ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
+        m_v3Position.z = ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
         m_pPhysicsObject->SetPosition(m_v3Position, PhysicsObject::WORLD_COORDINATES);
     }
 
@@ -2705,7 +2705,7 @@ void RedShell::Update(float dt)
 
     if (m_pBlurHandler != NULL)
     {
-        nlCartesianToPolar(polar, m_v3Velocity.f.x, m_v3Velocity.f.y);
+        nlCartesianToPolar(polar, m_v3Velocity.x, m_v3Velocity.y);
         if (polar.r < 0.5f)
         {
             m_pBlurHandler->Die(0.5f);
@@ -2776,8 +2776,8 @@ void RedShell::SeekTarget()
     }
 
     const nlVector3& targetPos = ((cCharacter*)target)->m_v3Position;
-    dy = targetPos.f.x - m_v3Position.f.x;
-    dx = targetPos.f.y - m_v3Position.f.y;
+    dy = targetPos.x - m_v3Position.x;
+    dx = targetPos.y - m_v3Position.y;
 
     float distSq = dy * dy + dx * dx;
     nlSqrt(distSq, true);
@@ -2786,15 +2786,15 @@ void RedShell::SeekTarget()
     dx = invDist * dx;
     dy = invDist * dy;
 
-    float velX = m_v3Velocity.f.y;
-    float velY = m_v3Velocity.f.x;
+    float velX = m_v3Velocity.y;
+    float velY = m_v3Velocity.x;
     fCurrSpeed = nlGetLength2D(velY, velX);
 
     float turnRate = 8.5f;
     float steerY = turnRate * dy;
     float steerX = turnRate * dx;
-    newVelY = steerY + m_v3Velocity.f.x;
-    newVelX = steerX + m_v3Velocity.f.y;
+    newVelY = steerY + m_v3Velocity.x;
+    newVelX = steerX + m_v3Velocity.y;
 
     float newSpeed = nlSqrt(newVelY * newVelY + newVelX * newVelX, true);
     float invNewSpeed = 1.0f / newSpeed;
@@ -2838,9 +2838,9 @@ void Banana::Update(float dt)
     m_pPhysicsObject->GetPosition(&m_v3Position);
     m_pPhysicsObject->GetLinearVelocity(&m_v3Velocity);
 
-    if (m_v3Position.f.z < ((PhysicsSphere*)m_pPhysicsObject)->GetRadius())
+    if (m_v3Position.z < ((PhysicsSphere*)m_pPhysicsObject)->GetRadius())
     {
-        m_v3Position.f.z = ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
+        m_v3Position.z = ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
         m_pPhysicsObject->SetPosition(m_v3Position, PhysicsObject::WORLD_COORDINATES);
     }
 
@@ -2855,7 +2855,7 @@ void Banana::Update(float dt)
 
     if (m_pBlurHandler != nullptr)
     {
-        nlCartesianToPolar(polar, m_v3Velocity.f.x, m_v3Velocity.f.y);
+        nlCartesianToPolar(polar, m_v3Velocity.x, m_v3Velocity.y);
         if (polar.r < 0.5f)
         {
             m_pBlurHandler->Die(0.5f);
@@ -2926,9 +2926,9 @@ void SpinyShell::Update(float dt)
     m_pPhysicsObject->GetPosition(&m_v3Position);
     m_pPhysicsObject->GetLinearVelocity(&m_v3Velocity);
 
-    if (m_v3Position.f.z < ((PhysicsSphere*)m_pPhysicsObject)->GetRadius())
+    if (m_v3Position.z < ((PhysicsSphere*)m_pPhysicsObject)->GetRadius())
     {
-        m_v3Position.f.z = ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
+        m_v3Position.z = ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
         m_pPhysicsObject->SetPosition(m_v3Position, PhysicsObject::WORLD_COORDINATES);
     }
 
@@ -2943,7 +2943,7 @@ void SpinyShell::Update(float dt)
 
     if (m_pBlurHandler != NULL)
     {
-        nlCartesianToPolar(polar, m_v3Velocity.f.x, m_v3Velocity.f.y);
+        nlCartesianToPolar(polar, m_v3Velocity.x, m_v3Velocity.y);
         if (polar.r < 0.5f)
         {
             m_pBlurHandler->Die(0.5f);
@@ -3011,9 +3011,9 @@ void FreezeShell::Update(float fDeltaT)
     m_pPhysicsObject->GetPosition(&m_v3Position);
     m_pPhysicsObject->GetLinearVelocity(&m_v3Velocity);
 
-    if (m_v3Position.f.z < ((PhysicsSphere*)m_pPhysicsObject)->GetRadius())
+    if (m_v3Position.z < ((PhysicsSphere*)m_pPhysicsObject)->GetRadius())
     {
-        m_v3Position.f.z = ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
+        m_v3Position.z = ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
         m_pPhysicsObject->SetPosition(m_v3Position, PhysicsObject::WORLD_COORDINATES);
     }
 
@@ -3028,7 +3028,7 @@ void FreezeShell::Update(float fDeltaT)
 
     if (m_pBlurHandler != NULL)
     {
-        nlCartesianToPolar(polar, m_v3Velocity.f.x, m_v3Velocity.f.y);
+        nlCartesianToPolar(polar, m_v3Velocity.x, m_v3Velocity.y);
         if (polar.r < 0.5f)
         {
             m_pBlurHandler->Die(0.5f);
@@ -3113,9 +3113,9 @@ void Bobomb::Update(float dt)
     m_pPhysicsObject->GetPosition(&m_v3Position);
     m_pPhysicsObject->GetLinearVelocity(&m_v3Velocity);
 
-    if (m_v3Position.f.z < ((PhysicsSphere*)m_pPhysicsObject)->GetRadius())
+    if (m_v3Position.z < ((PhysicsSphere*)m_pPhysicsObject)->GetRadius())
     {
-        m_v3Position.f.z = ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
+        m_v3Position.z = ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
         m_pPhysicsObject->SetPosition(m_v3Position, PhysicsObject::WORLD_COORDINATES);
     }
 
@@ -3130,7 +3130,7 @@ void Bobomb::Update(float dt)
 
     if (m_pBlurHandler != nullptr)
     {
-        nlCartesianToPolar(polar, m_v3Velocity.f.x, m_v3Velocity.f.y);
+        nlCartesianToPolar(polar, m_v3Velocity.x, m_v3Velocity.y);
         if (polar.r < 0.5f)
         {
             m_pBlurHandler->Die(0.5f);
@@ -3186,7 +3186,7 @@ void Bobomb::Update(float dt)
 
     pController = EmissionManager::Create(fxGetGroup("bobomb_tick"), 0);
     pos = m_pPhysicsObject->GetPosition();
-    pos.f.z += ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
+    pos.z += ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
     pController->SetPosition(pos);
 
     if (mtActiveTimer.m_uPackedTime == 0)
@@ -3299,19 +3299,19 @@ skip_anticipation:
         }
 
         nlVector3 v3BobombVelocity;
-        float targetX = v3TargetVel.f.x * t + v3TargetPos.f.x;
-        float targetY = v3TargetVel.f.y * t + v3TargetPos.f.y;
+        float targetX = v3TargetVel.x * t + v3TargetPos.x;
+        float targetY = v3TargetVel.y * t + v3TargetPos.y;
 
-        v3BobombVelocity.f.x = (targetX - m_v3Position.f.x) / t;
-        v3BobombVelocity.f.y = (targetY - m_v3Position.f.y) / t;
-        v3BobombVelocity.f.z = -(t * (0.5f * m_pPhysicsObject->m_gravity));
+        v3BobombVelocity.x = (targetX - m_v3Position.x) / t;
+        v3BobombVelocity.y = (targetY - m_v3Position.y) / t;
+        v3BobombVelocity.z = -(t * (0.5f * m_pPhysicsObject->m_gravity));
 
         cGame* game = g_pGame;
         GameTweaks* gameTweaks = game->m_pGameTweaks;
 
-        if (v3BobombVelocity.f.z > game->m_pGameTweaks->fBobombMaxZSpeed)
+        if (v3BobombVelocity.z > game->m_pGameTweaks->fBobombMaxZSpeed)
         {
-            v3BobombVelocity.f.z = gameTweaks->fBobombMaxZSpeed;
+            v3BobombVelocity.z = gameTweaks->fBobombMaxZSpeed;
         }
 
         m_v3Velocity = v3BobombVelocity;
@@ -3319,17 +3319,17 @@ skip_anticipation:
     }
     else
     {
-        dy = v3TargetPos.f.y - m_v3Position.f.y;
-        dx = v3TargetPos.f.x - m_v3Position.f.x;
-        dz = v3TargetPos.f.z - m_v3Position.f.z;
+        dy = v3TargetPos.y - m_v3Position.y;
+        dx = v3TargetPos.x - m_v3Position.x;
+        dz = v3TargetPos.z - m_v3Position.z;
         float invDist = nlRecipSqrt((dx * dx) + (dy * dy) + (dz * dz), true);
         float speed = g_pGame->m_pGameTweaks->fBobombSpeed;
         nlVector3 v3BobombVelocity;
 
-        v3BobombVelocity.f.x = speed * (invDist * dx);
-        v3BobombVelocity.f.y = speed * (invDist * dy);
-        v3BobombVelocity.f.z = speed * (invDist * dz);
-        v3BobombVelocity.f.z = g_pGame->m_pGameTweaks->fBobombMaxZSpeed;
+        v3BobombVelocity.x = speed * (invDist * dx);
+        v3BobombVelocity.y = speed * (invDist * dy);
+        v3BobombVelocity.z = speed * (invDist * dz);
+        v3BobombVelocity.z = g_pGame->m_pGameTweaks->fBobombMaxZSpeed;
 
         m_v3Velocity = v3BobombVelocity;
         m_pPhysicsObject->SetLinearVelocity(v3BobombVelocity);

@@ -14,8 +14,8 @@ class FormationPos
 public:
     FormationPos()
     {
-        m_Location.f.x = 0.0f;
-        m_Location.f.y = 0.0f;
+        m_Location.x = 0.0f;
+        m_Location.y = 0.0f;
         m_CaptainPreference = 0.0f;
     }
     void GetLocationForTeam(nlVector2&, int) const;

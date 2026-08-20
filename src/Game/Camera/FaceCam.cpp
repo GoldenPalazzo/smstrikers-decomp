@@ -19,16 +19,16 @@ void FaceCam::Update(float dt)
     mTargetPosition = mpCharacter->GetJointPosition(mpCharacter->GetHeadJointIndex());
     const nlMatrix4& headMatrix = mpCharacter->m_pPoseAccumulator->GetNodeMatrix(mpCharacter->GetHeadJointIndex());
 
-    float forwardX = headMatrix.m[1][0];
+    float forwardX = headMatrix.e2[1][0];
     float forwardY = 0.f;
-    float forwardZ = headMatrix.m[1][1];
+    float forwardZ = headMatrix.e2[1][1];
 
     float len = nlRecipSqrt(forwardY + (forwardX * forwardX + (forwardZ * forwardZ)), 1);
 
     nlVec3Set(mCameraPosition,
-        mDistance * (len * forwardX) + mTargetPosition.f.x,
-        mDistance * (len * forwardZ) + mTargetPosition.f.y,
-        mDistance * (len * forwardY) + mTargetPosition.f.z);
+        mDistance * (len * forwardX) + mTargetPosition.x,
+        mDistance * (len * forwardZ) + mTargetPosition.y,
+        mDistance * (len * forwardY) + mTargetPosition.z);
 
     glMatrixLookAt(mViewMatrix, GetCameraPosition(), GetTargetPosition(), mUpVector);
 }

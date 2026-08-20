@@ -262,7 +262,7 @@ public:
 
     inline bool IsPositionBeyondGoalLine() const
     {
-        return (float)fabs(mv3TargetPosition.f.x) > cField::GetGoalLineX(1U);
+        return (float)fabs(mv3TargetPosition.x) > cField::GetGoalLineX(1U);
     }
 
     /*
@@ -272,7 +272,7 @@ public:
     inline u16 GetClampedFacing() const
     {
         u16 aFacing = m_aActualFacingDirection;
-        if (m_v3Position.f.x < 0.0f)
+        if (m_v3Position.x < 0.0f)
         {
             aFacing += 0x8000;
         }
@@ -284,7 +284,7 @@ public:
         {
             aFacing = (u16)-0x5550;
         }
-        if (m_v3Position.f.x < 0.0f)
+        if (m_v3Position.x < 0.0f)
         {
             aFacing += 0x8000;
         }

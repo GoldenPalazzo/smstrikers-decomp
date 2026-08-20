@@ -10,17 +10,17 @@ const float cornerRadius = 3.0f;
 
 nlVector3 cField::mv3FieldPosition = { 20.60211f, 12.0825f, 0.0f };
 sSideLinePlane cField::mSidelines[4] = {
-    { { 1.0f, 0.0f }, cField::mv3FieldPosition.f.x },
-    { { -1.0f, 0.0f }, cField::mv3FieldPosition.f.x },
-    { { 0.0f, 1.0f }, cField::mv3FieldPosition.f.y },
-    { { 0.0f, -1.0f }, cField::mv3FieldPosition.f.y }
+    { { 1.0f, 0.0f }, cField::mv3FieldPosition.x },
+    { { -1.0f, 0.0f }, cField::mv3FieldPosition.x },
+    { { 0.0f, 1.0f }, cField::mv3FieldPosition.y },
+    { { 0.0f, -1.0f }, cField::mv3FieldPosition.y }
 };
 
 sCornerSegment cField::mCorners[4] = {
-    { { cField::mv3FieldPosition.f.x - cornerRadius, cField::mv3FieldPosition.f.y - cornerRadius }, 0x0000, 0x4000, cornerRadius },
-    { { cornerRadius - mv3FieldPosition.f.x, cField::mv3FieldPosition.f.y - cornerRadius }, 0x4000, 0x8000, cornerRadius },
-    { { cornerRadius - mv3FieldPosition.f.x, cornerRadius - mv3FieldPosition.f.y }, 0x8000, 0xC000, cornerRadius },
-    { { cField::mv3FieldPosition.f.x - cornerRadius, cornerRadius - mv3FieldPosition.f.y }, 0xC000, 0x0000, cornerRadius }
+    { { cField::mv3FieldPosition.x - cornerRadius, cField::mv3FieldPosition.y - cornerRadius }, 0x0000, 0x4000, cornerRadius },
+    { { cornerRadius - mv3FieldPosition.x, cField::mv3FieldPosition.y - cornerRadius }, 0x4000, 0x8000, cornerRadius },
+    { { cornerRadius - mv3FieldPosition.x, cornerRadius - mv3FieldPosition.y }, 0x8000, 0xC000, cornerRadius },
+    { { cField::mv3FieldPosition.x - cornerRadius, cornerRadius - mv3FieldPosition.y }, 0xC000, 0x0000, cornerRadius }
 };
 
 float cField::mfPenaltyBoxX = 13.5f;
@@ -33,8 +33,8 @@ void cField::Init(cNet* net0, cNet* net1)
 {
     mpNet[0] = net0;
     mpNet[1] = net1;
-    net0->m_v3NetLocation.f.x = -mv3FieldPosition.f.x;
-    net1->m_v3NetLocation.f.x = mv3FieldPosition.f.x;
+    net0->m_v3NetLocation.x = -mv3FieldPosition.x;
+    net1->m_v3NetLocation.x = mv3FieldPosition.x;
 }
 
 /**
@@ -44,9 +44,9 @@ float cField::GetGoalLineX(float side)
 {
     if (side > 0)
     {
-        return mv3FieldPosition.f.x;
+        return mv3FieldPosition.x;
     }
-    return -mv3FieldPosition.f.x;
+    return -mv3FieldPosition.x;
 }
 
 /**
@@ -56,9 +56,9 @@ float cField::GetGoalLineX(unsigned int side)
 {
     if (side > 0)
     {
-        return mv3FieldPosition.f.x;
+        return mv3FieldPosition.x;
     }
-    return -mv3FieldPosition.f.x;
+    return -mv3FieldPosition.x;
 }
 
 /**
@@ -68,14 +68,14 @@ float cField::GetSidelineY(unsigned int side)
 {
     if (side > 0)
     {
-        return mv3FieldPosition.f.y;
+        return mv3FieldPosition.y;
     }
-    return -mv3FieldPosition.f.y;
+    return -mv3FieldPosition.y;
 }
 
 float cField::GetGroundZ()
 {
-    return mv3FieldPosition.f.z;
+    return mv3FieldPosition.z;
 }
 
 /**
@@ -124,9 +124,9 @@ cNet* cField::GetNet(unsigned int index)
  */
 bool cField::IsOnField(const nlVector3& location)
 {
-    if ((float)fabs(location.f.x) <= mv3FieldPosition.f.x)
+    if ((float)fabs(location.x) <= mv3FieldPosition.x)
     {
-        if ((float)fabs(location.f.y) <= mv3FieldPosition.f.y)
+        if ((float)fabs(location.y) <= mv3FieldPosition.y)
         {
             return true;
         }
@@ -148,8 +148,8 @@ static inline float FixComponent(float component, float half, float fMinDistance
  */
 void cField::FixOutOfBoundsPosition(nlVector3& v, float fMinDistanceFromWall)
 {
-    v.f.x = FixComponent(v.f.x, GetFieldPosition().f.x, fMinDistanceFromWall);
-    v.f.y = FixComponent(v.f.y, GetFieldPosition().f.y, fMinDistanceFromWall);
+    v.x = FixComponent(v.x, GetFieldPosition().x, fMinDistanceFromWall);
+    v.y = FixComponent(v.y, GetFieldPosition().y, fMinDistanceFromWall);
 }
 
 /**
@@ -157,6 +157,6 @@ void cField::FixOutOfBoundsPosition(nlVector3& v, float fMinDistanceFromWall)
  */
 void cField::SetFieldDimensions(float, float, float)
 {
-    mpNet[0]->m_v3NetLocation.f.x = -mv3FieldPosition.f.x;
-    mpNet[1]->m_v3NetLocation.f.x = mv3FieldPosition.f.x;
+    mpNet[0]->m_v3NetLocation.x = -mv3FieldPosition.x;
+    mpNet[1]->m_v3NetLocation.x = mv3FieldPosition.x;
 }

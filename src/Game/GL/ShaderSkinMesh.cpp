@@ -218,9 +218,9 @@ static inline void CopySoftwareVerts(ShaderSkinMesh* mesh)
 {
     for (int i = 0; i < mesh->numSoftwareVerts; i++)
     {
-        mesh->morphBuffer[i].f.x = mesh->softwareVertices[i].position.f.x;
-        mesh->morphBuffer[i].f.y = mesh->softwareVertices[i].position.f.y;
-        mesh->morphBuffer[i].f.z = mesh->softwareVertices[i].position.f.z;
+        mesh->morphBuffer[i].x = mesh->softwareVertices[i].position.x;
+        mesh->morphBuffer[i].y = mesh->softwareVertices[i].position.y;
+        mesh->morphBuffer[i].z = mesh->softwareVertices[i].position.z;
     }
 }
 
@@ -242,12 +242,12 @@ void ShaderSkinMesh::CreateMorphBuffer()
             {
                 float w = morphWeights[morphIndex];
                 nlVector3* dst = &morphBuffer[pCurrentMorph->index];
-                float rx = dst->f.x + w * pCurrentMorph->delta.f.x;
-                float rz = dst->f.z + w * pCurrentMorph->delta.f.z;
-                float ry = dst->f.y + w * pCurrentMorph->delta.f.y;
-                dst->f.x = rx;
-                dst->f.y = ry;
-                dst->f.z = rz;
+                float rx = dst->x + w * pCurrentMorph->delta.x;
+                float rz = dst->z + w * pCurrentMorph->delta.z;
+                float ry = dst->y + w * pCurrentMorph->delta.y;
+                dst->x = rx;
+                dst->y = ry;
+                dst->z = rz;
                 pCurrentMorph++;
             }
         }

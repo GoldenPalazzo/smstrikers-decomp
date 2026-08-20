@@ -35,34 +35,34 @@ void cHeadTrack::Update(const nlMatrix4& m4HeadMatrix, const nlMatrix4& m4Constr
     if (m_bTrackOOI)
     {
         m4Constrain = m4ConstraintMatrix;
-        float headM41 = m4HeadMatrix.f.m41;
-        float headM42 = m4HeadMatrix.f.m42;
-        float headM43 = m4HeadMatrix.f.m43;
+        float headM41 = m4HeadMatrix.m41;
+        float headM42 = m4HeadMatrix.m42;
+        float headM43 = m4HeadMatrix.m43;
 
-        m4Constrain.f.m41 = headM41;
-        m4Constrain.f.m42 = headM42;
-        m4Constrain.f.m43 = headM43;
-        m4Constrain.f.m44 = 1.0f;
+        m4Constrain.m41 = headM41;
+        m4Constrain.m42 = headM42;
+        m4Constrain.m43 = headM43;
+        m4Constrain.m44 = 1.0f;
 
         nlInvertRotTransMatrix(m4WorldSpaceToConstraintSpace, m4Constrain);
         nlMultPosVectorMatrix(v3OOIConstraintSpace, m_v3OOI, m4WorldSpaceToConstraintSpace);
 
         {
-            float x2 = v3OOIConstraintSpace.f.x * v3OOIConstraintSpace.f.x;
-            float y2 = v3OOIConstraintSpace.f.y * v3OOIConstraintSpace.f.y;
-            float z2 = v3OOIConstraintSpace.f.z * v3OOIConstraintSpace.f.z;
+            float x2 = v3OOIConstraintSpace.x * v3OOIConstraintSpace.x;
+            float y2 = v3OOIConstraintSpace.y * v3OOIConstraintSpace.y;
+            float z2 = v3OOIConstraintSpace.z * v3OOIConstraintSpace.z;
             float invLen = nlRecipSqrt(x2 + y2 + z2, true);
             nlVec3Scale(v3OOIConstraintSpace, invLen);
         }
 
-        nHeadSpin = ((int)(10430.378f * nlATan2f(v3OOIConstraintSpace.f.z, v3OOIConstraintSpace.f.y)) << 16) >> 16;
-        nHeadTilt = 0x4000 - nlACos(-v3OOIConstraintSpace.f.x);
+        nHeadSpin = ((int)(10430.378f * nlATan2f(v3OOIConstraintSpace.z, v3OOIConstraintSpace.y)) << 16) >> 16;
+        nHeadTilt = 0x4000 - nlACos(-v3OOIConstraintSpace.x);
         nHeadTilt = (nHeadTilt << 16) >> 16;
 
         {
             int absSpin = (nHeadSpin < 0) ? -nHeadSpin : nHeadSpin;
 
-            if ((absSpin < (int)(unsigned int)aOOIConstraint) || (m_v3OOI.f.z > 1.5f))
+            if ((absSpin < (int)(unsigned int)aOOIConstraint) || (m_v3OOI.z > 1.5f))
             {
                 nHeadSpin = (int)(float)nHeadSpin;
                 nHeadTilt = (int)(0.5f * (float)nHeadTilt);
@@ -108,9 +108,9 @@ void cHeadTrack::Update(const nlMatrix4& m4HeadMatrix, const nlMatrix4& m4Constr
         {
             float headM21;
             float headM22;
-            headM22 = m4HeadMatrix.f.m22;
-            headM21 = m4HeadMatrix.f.m21;
-            float constraintAtan = nlATan2f(m4Constrain.f.m22, m4Constrain.f.m21);
+            headM22 = m4HeadMatrix.m22;
+            headM21 = m4HeadMatrix.m21;
+            float constraintAtan = nlATan2f(m4Constrain.m22, m4Constrain.m21);
             float headAtan = nlATan2f(headM22, headM21);
             unsigned short spinConstraint = (unsigned short)(int)(10430.378f * constraintAtan);
             unsigned short spinHead = (unsigned short)(int)(10430.378f * headAtan);

@@ -24,48 +24,48 @@ class ScaleModel : public TransitionModifierInterface
 public:
     ScaleModel()
     {
-        m_v2StartScale.f.x = 1.0f;
-        m_v2StartScale.f.y = 1.0f;
-        m_v2EndScale.f.x = 1.0f;
-        m_v2EndScale.f.y = 1.0f;
+        m_v2StartScale.x = 1.0f;
+        m_v2StartScale.y = 1.0f;
+        m_v2EndScale.x = 1.0f;
+        m_v2EndScale.y = 1.0f;
     }
 
     virtual ~ScaleModel() { }
 
     virtual void InitializeFromParser(SimpleParser* parser)
     {
-        m_v2StartScale.f.x = atof(parser->NextTokenOnLine(true));
-        m_v2StartScale.f.y = atof(parser->NextTokenOnLine(true));
-        f32 val = m_v2StartScale.f.x;
+        m_v2StartScale.x = atof(parser->NextTokenOnLine(true));
+        m_v2StartScale.y = atof(parser->NextTokenOnLine(true));
+        f32 val = m_v2StartScale.x;
         char* token = parser->NextTokenOnLine(true);
         if (token != nullptr)
         {
             val = atof(token);
         }
-        m_v2EndScale.f.x = val;
+        m_v2EndScale.x = val;
 
-        val = m_v2StartScale.f.y;
+        val = m_v2StartScale.y;
         token = parser->NextTokenOnLine(true);
         if (token != nullptr)
         {
             val = atof(token);
         }
-        m_v2EndScale.f.y = val;
+        m_v2EndScale.y = val;
     }
 
     virtual void ApplyModifier(glPoly2& poly, float time)
     {
-        float x = ((1.0f - time) * m_v2StartScale.f.x) + (time * m_v2EndScale.f.x);
-        float y = ((1.0f - time) * m_v2StartScale.f.y) + (time * m_v2EndScale.f.y);
+        float x = ((1.0f - time) * m_v2StartScale.x) + (time * m_v2EndScale.x);
+        float y = ((1.0f - time) * m_v2StartScale.y) + (time * m_v2EndScale.y);
 
-        poly.m_pos[0].f.x *= x;
-        poly.m_pos[0].f.y *= y;
-        poly.m_pos[1].f.x *= x;
-        poly.m_pos[1].f.y *= y;
-        poly.m_pos[2].f.x *= x;
-        poly.m_pos[2].f.y *= y;
-        poly.m_pos[3].f.x *= x;
-        poly.m_pos[3].f.y *= y;
+        poly.m_pos[0].x *= x;
+        poly.m_pos[0].y *= y;
+        poly.m_pos[1].x *= x;
+        poly.m_pos[1].y *= y;
+        poly.m_pos[2].x *= x;
+        poly.m_pos[2].y *= y;
+        poly.m_pos[3].x *= x;
+        poly.m_pos[3].y *= y;
     }
 
     /* 0x4 */ nlVector2 m_v2StartScale;
@@ -148,48 +148,48 @@ class ScaleTexture : public TransitionModifierInterface
 public:
     ScaleTexture()
     {
-        m_v2StartShift.f.x = 1.0f;
-        m_v2StartShift.f.y = 1.0f;
-        m_v2EndShift.f.x = 1.0f;
-        m_v2EndShift.f.y = 1.0f;
+        m_v2StartShift.x = 1.0f;
+        m_v2StartShift.y = 1.0f;
+        m_v2EndShift.x = 1.0f;
+        m_v2EndShift.y = 1.0f;
     }
 
     virtual ~ScaleTexture() { }
 
     virtual void InitializeFromParser(SimpleParser* parser)
     {
-        m_v2StartShift.f.x = atof(parser->NextTokenOnLine(true));
-        m_v2StartShift.f.y = atof(parser->NextTokenOnLine(true));
-        f32 val = m_v2StartShift.f.x;
+        m_v2StartShift.x = atof(parser->NextTokenOnLine(true));
+        m_v2StartShift.y = atof(parser->NextTokenOnLine(true));
+        f32 val = m_v2StartShift.x;
         char* token = parser->NextTokenOnLine(true);
         if (token != nullptr)
         {
             val = atof(token);
         }
-        m_v2EndShift.f.x = val;
+        m_v2EndShift.x = val;
 
-        val = m_v2StartShift.f.y;
+        val = m_v2StartShift.y;
         token = parser->NextTokenOnLine(true);
         if (token != nullptr)
         {
             val = atof(token);
         }
-        m_v2EndShift.f.y = val;
+        m_v2EndShift.y = val;
     }
 
     virtual void ApplyModifier(glPoly2& poly, float time)
     {
-        float x = ((1.0f - time) * m_v2StartShift.f.x) + (time * m_v2EndShift.f.x);
-        float y = ((1.0f - time) * m_v2StartShift.f.y) + (time * m_v2EndShift.f.y);
+        float x = ((1.0f - time) * m_v2StartShift.x) + (time * m_v2EndShift.x);
+        float y = ((1.0f - time) * m_v2StartShift.y) + (time * m_v2EndShift.y);
 
-        poly.m_uv[0].f.x *= x;
-        poly.m_uv[0].f.y *= y;
-        poly.m_uv[1].f.x *= x;
-        poly.m_uv[1].f.y *= y;
-        poly.m_uv[2].f.x *= x;
-        poly.m_uv[2].f.y *= y;
-        poly.m_uv[3].f.x *= x;
-        poly.m_uv[3].f.y *= y;
+        poly.m_uv[0].x *= x;
+        poly.m_uv[0].y *= y;
+        poly.m_uv[1].x *= x;
+        poly.m_uv[1].y *= y;
+        poly.m_uv[2].x *= x;
+        poly.m_uv[2].y *= y;
+        poly.m_uv[3].x *= x;
+        poly.m_uv[3].y *= y;
     }
 
     /* 0x4 */ nlVector2 m_v2StartShift;
@@ -201,48 +201,48 @@ class TranslateModel : public TransitionModifierInterface
 public:
     TranslateModel()
     {
-        m_v2StartShift.f.x = 0.0f;
-        m_v2StartShift.f.y = 0.0f;
-        m_v2EndShift.f.x = 0.0f;
-        m_v2EndShift.f.y = 0.0f;
+        m_v2StartShift.x = 0.0f;
+        m_v2StartShift.y = 0.0f;
+        m_v2EndShift.x = 0.0f;
+        m_v2EndShift.y = 0.0f;
     }
 
     virtual ~TranslateModel() { }
 
     virtual void InitializeFromParser(SimpleParser* parser)
     {
-        m_v2StartShift.f.x = atof(parser->NextTokenOnLine(true));
-        m_v2StartShift.f.y = atof(parser->NextTokenOnLine(true));
-        f32 val = m_v2StartShift.f.x;
+        m_v2StartShift.x = atof(parser->NextTokenOnLine(true));
+        m_v2StartShift.y = atof(parser->NextTokenOnLine(true));
+        f32 val = m_v2StartShift.x;
         char* token = parser->NextTokenOnLine(true);
         if (token != nullptr)
         {
             val = atof(token);
         }
-        m_v2EndShift.f.x = val;
+        m_v2EndShift.x = val;
 
-        val = m_v2StartShift.f.y;
+        val = m_v2StartShift.y;
         token = parser->NextTokenOnLine(true);
         if (token != nullptr)
         {
             val = atof(token);
         }
-        m_v2EndShift.f.y = val;
+        m_v2EndShift.y = val;
     }
 
     virtual void ApplyModifier(glPoly2& poly, float time)
     {
-        float x = ((1.0f - time) * m_v2StartShift.f.x) + (time * m_v2EndShift.f.x);
-        float y = ((1.0f - time) * m_v2StartShift.f.y) + (time * m_v2EndShift.f.y);
+        float x = ((1.0f - time) * m_v2StartShift.x) + (time * m_v2EndShift.x);
+        float y = ((1.0f - time) * m_v2StartShift.y) + (time * m_v2EndShift.y);
 
-        poly.m_pos[0].f.x += x;
-        poly.m_pos[0].f.y += y;
-        poly.m_pos[1].f.x += x;
-        poly.m_pos[1].f.y += y;
-        poly.m_pos[2].f.x += x;
-        poly.m_pos[2].f.y += y;
-        poly.m_pos[3].f.x += x;
-        poly.m_pos[3].f.y += y;
+        poly.m_pos[0].x += x;
+        poly.m_pos[0].y += y;
+        poly.m_pos[1].x += x;
+        poly.m_pos[1].y += y;
+        poly.m_pos[2].x += x;
+        poly.m_pos[2].y += y;
+        poly.m_pos[3].x += x;
+        poly.m_pos[3].y += y;
     }
 
     /* 0x4 */ nlVector2 m_v2StartShift;
@@ -254,48 +254,48 @@ class TranslateTexture : public TransitionModifierInterface
 public:
     TranslateTexture()
     {
-        m_v2StartShift.f.x = 0.0f;
-        m_v2StartShift.f.y = 0.0f;
-        m_v2EndShift.f.x = 0.0f;
-        m_v2EndShift.f.y = 0.0f;
+        m_v2StartShift.x = 0.0f;
+        m_v2StartShift.y = 0.0f;
+        m_v2EndShift.x = 0.0f;
+        m_v2EndShift.y = 0.0f;
     }
 
     virtual ~TranslateTexture() { }
 
     virtual void InitializeFromParser(SimpleParser* parser)
     {
-        m_v2StartShift.f.x = atof(parser->NextTokenOnLine(true));
-        m_v2StartShift.f.y = atof(parser->NextTokenOnLine(true));
-        f32 val = m_v2StartShift.f.x;
+        m_v2StartShift.x = atof(parser->NextTokenOnLine(true));
+        m_v2StartShift.y = atof(parser->NextTokenOnLine(true));
+        f32 val = m_v2StartShift.x;
         char* token = parser->NextTokenOnLine(true);
         if (token != nullptr)
         {
             val = atof(token);
         }
-        m_v2EndShift.f.x = val;
+        m_v2EndShift.x = val;
 
-        val = m_v2StartShift.f.y;
+        val = m_v2StartShift.y;
         token = parser->NextTokenOnLine(true);
         if (token != nullptr)
         {
             val = atof(token);
         }
-        m_v2EndShift.f.y = val;
+        m_v2EndShift.y = val;
     }
 
     virtual void ApplyModifier(glPoly2& poly, float time)
     {
-        float x = ((1.0f - time) * m_v2StartShift.f.x) + (time * m_v2EndShift.f.x);
-        float y = ((1.0f - time) * m_v2StartShift.f.y) + (time * m_v2EndShift.f.y);
+        float x = ((1.0f - time) * m_v2StartShift.x) + (time * m_v2EndShift.x);
+        float y = ((1.0f - time) * m_v2StartShift.y) + (time * m_v2EndShift.y);
 
-        poly.m_uv[0].f.x += x;
-        poly.m_uv[0].f.y += y;
-        poly.m_uv[1].f.x += x;
-        poly.m_uv[1].f.y += y;
-        poly.m_uv[2].f.x += x;
-        poly.m_uv[2].f.y += y;
-        poly.m_uv[3].f.x += x;
-        poly.m_uv[3].f.y += y;
+        poly.m_uv[0].x += x;
+        poly.m_uv[0].y += y;
+        poly.m_uv[1].x += x;
+        poly.m_uv[1].y += y;
+        poly.m_uv[2].x += x;
+        poly.m_uv[2].y += y;
+        poly.m_uv[3].x += x;
+        poly.m_uv[3].y += y;
     }
 
     /* 0x04 */ nlVector2 m_v2StartShift;
@@ -309,9 +309,9 @@ public:
     {
         m_angleStart = 0.0f;
         m_angleEnd = 0.0f;
-        m_v3Axis.f.x = 0.0f;
-        m_v3Axis.f.y = 0.0f;
-        m_v3Axis.f.z = 1.0f;
+        m_v3Axis.x = 0.0f;
+        m_v3Axis.y = 0.0f;
+        m_v3Axis.z = 1.0f;
     }
 
     virtual ~RotateModel() { }
@@ -320,9 +320,9 @@ public:
     {
         f32 angleEnd;
 
-        m_v3Axis.f.x = atof(parser->NextTokenOnLine(true));
-        m_v3Axis.f.y = atof(parser->NextTokenOnLine(true));
-        m_v3Axis.f.z = atof(parser->NextTokenOnLine(true));
+        m_v3Axis.x = atof(parser->NextTokenOnLine(true));
+        m_v3Axis.y = atof(parser->NextTokenOnLine(true));
+        m_v3Axis.z = atof(parser->NextTokenOnLine(true));
         m_angleStart = atof(parser->NextTokenOnLine(true));
 
         angleEnd = m_angleStart;
@@ -343,15 +343,15 @@ public:
         nlMakeQuat(quat, m_v3Axis, (3.1415927f * ((m_angleStart * (1.0f - time)) + (time * m_angleEnd))) / 180.0f);
         nlQuatToMatrix(m4, quat);
 
-        m3.m[0] = m4.f.m11;
-        m3.m[1] = m4.f.m12;
-        m3.m[3] = m4.f.m21;
-        m3.m[4] = m4.f.m22;
-        m3.m[7] = 0.0f;
-        m3.m[6] = 0.0f;
-        m3.m[5] = 0.0f;
-        m3.m[2] = 0.0f;
-        m3.m[8] = 1.0f;
+        m3.e[0] = m4.m11;
+        m3.e[1] = m4.m12;
+        m3.e[3] = m4.m21;
+        m3.e[4] = m4.m22;
+        m3.e[7] = 0.0f;
+        m3.e[6] = 0.0f;
+        m3.e[5] = 0.0f;
+        m3.e[2] = 0.0f;
+        m3.e[8] = 1.0f;
 
         for (int i = 0; i < 4; i++)
         {
@@ -373,9 +373,9 @@ public:
     {
         m_angleStart = 0.0f;
         m_angleEnd = 0.0f;
-        m_v3Axis.f.x = 0.0f;
-        m_v3Axis.f.y = 0.0f;
-        m_v3Axis.f.z = 1.0f;
+        m_v3Axis.x = 0.0f;
+        m_v3Axis.y = 0.0f;
+        m_v3Axis.z = 1.0f;
     }
 
     virtual ~RotateTexture() { }
@@ -384,9 +384,9 @@ public:
     {
         f32 angleEnd;
 
-        m_v3Axis.f.x = atof(parser->NextTokenOnLine(true));
-        m_v3Axis.f.y = atof(parser->NextTokenOnLine(true));
-        m_v3Axis.f.z = atof(parser->NextTokenOnLine(true));
+        m_v3Axis.x = atof(parser->NextTokenOnLine(true));
+        m_v3Axis.y = atof(parser->NextTokenOnLine(true));
+        m_v3Axis.z = atof(parser->NextTokenOnLine(true));
         m_angleStart = atof(parser->NextTokenOnLine(true));
 
         angleEnd = m_angleStart;
@@ -407,15 +407,15 @@ public:
         nlMakeQuat(quat, m_v3Axis, (3.1415927f * ((m_angleStart * (1.0f - time)) + (time * m_angleEnd))) / 180.0f);
         nlQuatToMatrix(m4, quat);
 
-        m3.m[0] = m4.f.m11;
-        m3.m[1] = m4.f.m12;
-        m3.m[3] = m4.f.m21;
-        m3.m[4] = m4.f.m22;
-        m3.m[7] = 0.0f;
-        m3.m[6] = 0.0f;
-        m3.m[5] = 0.0f;
-        m3.m[2] = 0.0f;
-        m3.m[8] = 1.0f;
+        m3.e[0] = m4.m11;
+        m3.e[1] = m4.m12;
+        m3.e[3] = m4.m21;
+        m3.e[4] = m4.m22;
+        m3.e[7] = 0.0f;
+        m3.e[6] = 0.0f;
+        m3.e[5] = 0.0f;
+        m3.e[2] = 0.0f;
+        m3.e[8] = 1.0f;
 
         for (int i = 0; i < 4; i++)
         {
@@ -510,15 +510,15 @@ public:
         m_m3Position.SetIdentity();
         m_m3UV.SetIdentity();
 
-        m_m3Position.f.m11 = temp_f30;
-        m_m3Position.f.m22 = temp_f31;
-        m_m3Position.f.m31 = temp_f30 - temp_f1;
-        m_m3Position.f.m32 = temp_f31 - temp_f1;
+        m_m3Position.m11 = temp_f30;
+        m_m3Position.m22 = temp_f31;
+        m_m3Position.m31 = temp_f30 - temp_f1;
+        m_m3Position.m32 = temp_f31 - temp_f1;
 
-        m_m3UV.f.m32 = 0.5f;
-        m_m3UV.f.m31 = 0.5f;
-        m_m3UV.f.m22 = 0.5f;
-        m_m3UV.f.m11 = 0.5f;
+        m_m3UV.m32 = 0.5f;
+        m_m3UV.m31 = 0.5f;
+        m_m3UV.m22 = 0.5f;
+        m_m3UV.m11 = 0.5f;
     };
 
     virtual ~ToScreenCoordinates() { }

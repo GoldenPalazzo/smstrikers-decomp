@@ -62,26 +62,26 @@ void cDebugCamera::UpdateCameraControls(float dt)
     float temp_f27, temp_f28;
     float t = 0.f;
     float temp_f5;
-    temp_f27 = (0.2f * m_matView.f.m21);
-    temp_f28 = (0.2f * m_matView.f.m11);
+    temp_f27 = (0.2f * m_matView.m21);
+    temp_f28 = (0.2f * m_matView.m11);
     temp_f5 = dt * (sfControlSpeedScale * cPadManager::GetPad(0)->AnalogLeftX());
     float x0 = temp_f5 * temp_f28;
     float y0 = temp_f5 * temp_f27;
-    float z0 = m_vecTarget.f.z + t;
+    float z0 = m_vecTarget.z + t;
     nlVec3Set(m_vecTarget,
-        m_vecTarget.f.x + x0,
-        m_vecTarget.f.y + y0,
+        m_vecTarget.x + x0,
+        m_vecTarget.y + y0,
         z0);
 
-    temp_f27 = (0.2f * m_matView.f.m23);
-    temp_f28 = (0.2f * m_matView.f.m13);
+    temp_f27 = (0.2f * m_matView.m23);
+    temp_f28 = (0.2f * m_matView.m13);
     temp_f5 = dt * (sfControlSpeedScale * -cPadManager::GetPad(0)->AnalogLeftY());
     float x1 = temp_f5 * temp_f28;
     float y1 = temp_f5 * temp_f27;
-    float z1 = m_vecTarget.f.z + t;
+    float z1 = m_vecTarget.z + t;
     nlVec3Set(m_vecTarget,
-        m_vecTarget.f.x + x1,
-        m_vecTarget.f.y + y1,
+        m_vecTarget.x + x1,
+        m_vecTarget.y + y1,
         z1);
 
     if (nlTaskManager::m_pInstance->m_CurrState == 0x100)
@@ -132,7 +132,7 @@ void cDebugCamera::Update(float dt)
 
     nlVec3Set(m_vecCamera, d * cs, d * sn, z);
 
-    m_vecTarget.f.z = m_fHeight;
+    m_vecTarget.z = m_fHeight;
 
     nlVec3Add(m_vecCamera, m_vecCamera, m_vecTarget);
 

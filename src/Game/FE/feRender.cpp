@@ -1,4 +1,5 @@
 #include "Game/FE/feRender.h"
+#include "NL/vmath.h"
 #include "Game/FE/tlInstance.h"
 #include "Game/FE/tlImageInstance.h"
 #include "Game/FE/tlTextInstance.h"
@@ -82,7 +83,7 @@ void FERender::PushTransformMatrix(const TLInstance* instance)
     nlVector3 v3Pos;
     tlPosition.GetNLVector3(v3Pos);
     combinedMatrix.SetTranslation(v3Pos);
-    combinedMatrix.f.m43 *= -1.0f;
+    combinedMatrix.m43 *= -1.0f;
 
     m_pMatrixStack->PushMatrix();
     m_pMatrixStack->MultMatrix(combinedMatrix);

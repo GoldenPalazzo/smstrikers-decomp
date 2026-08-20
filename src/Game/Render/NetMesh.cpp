@@ -153,9 +153,9 @@ inline static void AccumForces(NetMesh* self, nlVector3& newPos)
     nlVector3* upVector = &cCameraManager::m_UpVectorStack[cCameraManager::m_UpVectorStackSize];
     float gravityMagnitude = -NetMesh::s_fNetGravityMagnitude;
 
-    newPos.f.x = gravityMagnitude * upVector->f.x;
-    newPos.f.y = gravityMagnitude * upVector->f.y;
-    newPos.f.z = gravityMagnitude * upVector->f.z;
+    newPos.x = gravityMagnitude * upVector->x;
+    newPos.y = gravityMagnitude * upVector->y;
+    newPos.z = gravityMagnitude * upVector->z;
 
     for (int i = 0; i < self->m_NumParticles; i++)
     {
@@ -173,9 +173,9 @@ inline static void Integrate(NetMesh* self, float t, nlVector3& v3Temp)
 
         v3Temp = v3Pos;
 
-        v3Pos.f.x = v3Pos.f.x + ((NetMesh::s_fDampening * (v3Pos.f.x - v3PrevPos.f.x)) + (t * (v3Accel.f.x * t)));
-        v3Pos.f.y = v3Pos.f.y + ((NetMesh::s_fDampening * (v3Pos.f.y - v3PrevPos.f.y)) + (t * (v3Accel.f.y * t)));
-        v3Pos.f.z = v3Pos.f.z + ((NetMesh::s_fDampening * (v3Pos.f.z - v3PrevPos.f.z)) + (t * (v3Accel.f.z * t)));
+        v3Pos.x = v3Pos.x + ((NetMesh::s_fDampening * (v3Pos.x - v3PrevPos.x)) + (t * (v3Accel.x * t)));
+        v3Pos.y = v3Pos.y + ((NetMesh::s_fDampening * (v3Pos.y - v3PrevPos.y)) + (t * (v3Accel.y * t)));
+        v3Pos.z = v3Pos.z + ((NetMesh::s_fDampening * (v3Pos.z - v3PrevPos.z)) + (t * (v3Accel.z * t)));
 
         v3PrevPos = v3Temp;
     }
@@ -187,7 +187,7 @@ inline static void ComputeMotion(NetMesh* self)
     {
         nlVector3& v3Pos = self->m_v3Position[i];
         nlVector3& v3PrevPos = self->m_v3PrevPosition[i];
-        float motion = ((float)fabs(v3PrevPos.f.x - v3Pos.f.x) + (float)fabs(v3PrevPos.f.y - v3Pos.f.y)) + (float)fabs(v3PrevPos.f.z - v3Pos.f.z);
+        float motion = ((float)fabs(v3PrevPos.x - v3Pos.x) + (float)fabs(v3PrevPos.y - v3Pos.y)) + (float)fabs(v3PrevPos.z - v3Pos.z);
 
         if (motion > self->mfMotion)
         {
@@ -200,7 +200,7 @@ inline static bool IsBallMoving(PhysicsSphere* sphere)
 {
     nlVector3 vel;
     sphere->GetLinearVelocity(&vel);
-    return ((vel.f.x * vel.f.x) + (vel.f.y * vel.f.y) + (vel.f.z * vel.f.z)) > NetMesh::s_fIsBallMovingThreshold;
+    return ((vel.x * vel.x) + (vel.y * vel.y) + (vel.z * vel.z)) > NetMesh::s_fIsBallMovingThreshold;
 }
 
 /**
@@ -240,7 +240,7 @@ void NetMesh::Update(float dt, const nlVector3& ballPosition, const nlVector3& b
         {
             if (PhysicsAIBall::DidBallJustEnterNet(ballPrevPosition, ballPosition))
             {
-                float x = ballPosition.f.x;
+                float x = ballPosition.x;
                 if (((x > 0.0f) && mbPositiveEnd) || ((x < 0.0f) && !mbPositiveEnd))
                 {
                     mbBallIsInsideNet = true;
@@ -274,7 +274,7 @@ void NetMesh::JoltNet(float zDisplacement)
     mJolt = zDisplacement;
     for (s32 i = 0; i < m_NumParticles; i++)
     {
-        m_v3Position[i].f.z += zDisplacement;
+        m_v3Position[i].z += zDisplacement;
     }
 
     mbIsActive = true;
@@ -299,10 +299,10 @@ void NetMesh::SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerate
 
             nlVector3 d;
             nlVec3Sub(d, x1, x2);
-            float dy = d.f.y;
+            float dy = d.y;
             float dyy = dy * dy;
-            float dx = d.f.x;
-            float dz = d.f.z;
+            float dx = d.x;
+            float dz = d.z;
 
             float length = nlSqrt(dyy + (dx * dx) + (dz * dz), true);
 
@@ -312,13 +312,13 @@ void NetMesh::SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerate
                 float diff = (length - restLength) / length;
                 float halfDiff = 0.5f * diff;
 
-                x1.f.x -= dx * halfDiff;
-                x1.f.y -= dy * halfDiff;
-                x1.f.z -= dz * halfDiff;
+                x1.x -= dx * halfDiff;
+                x1.y -= dy * halfDiff;
+                x1.z -= dz * halfDiff;
 
-                x2.f.x += dx * halfDiff;
-                x2.f.y += dy * halfDiff;
-                x2.f.z += dz * halfDiff;
+                x2.x += dx * halfDiff;
+                x2.y += dy * halfDiff;
+                x2.z += dz * halfDiff;
             }
         }
 
@@ -403,10 +403,10 @@ void NetMesh::SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerate
                 float zero = 0.0f;
                 float dy;
                 float dz;
-                dz = ballPosition.f.z - zero;
-                dy = ballPosition.f.y - centerY;
+                dz = ballPosition.z - zero;
+                dy = ballPosition.y - centerY;
                 float dyy = dy * dy;
-                float dx = ballPosition.f.x - centerX;
+                float dx = ballPosition.x - centerX;
                 m_fBallPenetrationDepth = nlSqrt(dyy + (dx * dx) + (dz * dz), true);
             }
         }
@@ -419,22 +419,22 @@ void NetMesh::SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerate
             float tz;
             float tx;
 
-            tz = c.v3Position.f.z;
-            ty = c.v3Position.f.y;
-            tx = c.v3Position.f.x;
+            tz = c.v3Position.z;
+            ty = c.v3Position.y;
+            tx = c.v3Position.x;
 
-            x.f.x = tx;
-            x.f.y = ty;
-            x.f.z = tz;
+            x.x = tx;
+            x.y = ty;
+            x.z = tz;
         }
 
         {
             static float fGroundHeight = 0.01f;
             for (i = 0; i < m_NumParticles; i++)
             {
-                if (m_v3Position[i].f.z < fGroundHeight)
+                if (m_v3Position[i].z < fGroundHeight)
                 {
-                    m_v3Position[i].f.z = fGroundHeight;
+                    m_v3Position[i].z = fGroundHeight;
                 }
             }
         }
@@ -458,20 +458,20 @@ void NetMesh::AddForcesToBall(const nlVector3& position, PhysicsSphere* sphere)
         {
             nlVector3& temp_r3 = sphere->GetLinearVelocity();
 
-            forceMagnitude = (m_v3BallPenetrationNormal.f.x * temp_r3.f.x)
-                           + (m_v3BallPenetrationNormal.f.y * temp_r3.f.y)
-                           + (m_v3BallPenetrationNormal.f.z * temp_r3.f.z);
+            forceMagnitude = (m_v3BallPenetrationNormal.x * temp_r3.x)
+                           + (m_v3BallPenetrationNormal.y * temp_r3.y)
+                           + (m_v3BallPenetrationNormal.z * temp_r3.z);
 
             nlVec3Set(vel,
-                forceMagnitude * m_v3BallPenetrationNormal.f.x,
-                forceMagnitude * m_v3BallPenetrationNormal.f.y,
-                forceMagnitude * m_v3BallPenetrationNormal.f.z);
+                forceMagnitude * m_v3BallPenetrationNormal.x,
+                forceMagnitude * m_v3BallPenetrationNormal.y,
+                forceMagnitude * m_v3BallPenetrationNormal.z);
 
             nlVector3& temp_r3_2 = sphere->GetLinearVelocity();
             nlVec3Set(vel,
-                temp_r3_2.f.x - vel.f.x,
-                temp_r3_2.f.y - vel.f.y,
-                temp_r3_2.f.z - vel.f.z);
+                temp_r3_2.x - vel.x,
+                temp_r3_2.y - vel.y,
+                temp_r3_2.z - vel.z);
 
             sphere->SetLinearVelocity(vel);
         }
@@ -491,15 +491,15 @@ void NetMesh::AddForcesToBall(const nlVector3& position, PhysicsSphere* sphere)
 
             velocity = sphere->GetLinearVelocity();
 
-            if (((velocity.f.x * m_v3BallPenetrationNormal.f.x)
-                    + (velocity.f.y * m_v3BallPenetrationNormal.f.y)
-                    + (velocity.f.z * m_v3BallPenetrationNormal.f.z))
+            if (((velocity.x * m_v3BallPenetrationNormal.x)
+                    + (velocity.y * m_v3BallPenetrationNormal.y)
+                    + (velocity.z * m_v3BallPenetrationNormal.z))
                 > 0.0f)
             {
                 nlVec3Set(velocity,
-                    s_fVelocityDampingCoefficient * velocity.f.x,
-                    s_fVelocityDampingCoefficient * velocity.f.y,
-                    s_fVelocityDampingCoefficient * velocity.f.z);
+                    s_fVelocityDampingCoefficient * velocity.x,
+                    s_fVelocityDampingCoefficient * velocity.y,
+                    s_fVelocityDampingCoefficient * velocity.z);
                 sphere->SetLinearVelocity(velocity);
             }
 
@@ -514,9 +514,9 @@ void NetMesh::AddForcesToBall(const nlVector3& position, PhysicsSphere* sphere)
 
             // wtf? I mathematically dont understand why the order is reversed here.
             dBodyAddTorque(sphere->m_bodyID,
-                0.1f * (crossProductScaled.f.z - currentAngularVelocity.f.x),
-                0.1f * (crossProductScaled.f.y - currentAngularVelocity.f.y),
-                0.1f * (crossProductScaled.f.x - currentAngularVelocity.f.z));
+                0.1f * (crossProductScaled.z - currentAngularVelocity.x),
+                0.1f * (crossProductScaled.y - currentAngularVelocity.y),
+                0.1f * (crossProductScaled.x - currentAngularVelocity.z));
         }
 
         Event* pEvent = g_pEventManager->CreateValidEvent(0x32, 0x28);
@@ -559,14 +559,14 @@ void NetMesh::Initialize(unsigned long netMeshDrawableObjectID)
         nlVector3& p = m_v3Position[i];
         m_v3PrevPosition[i] = p;
 
-        if (p.f.x > mfMaxX)
-            mfMaxX = p.f.x;
-        if (p.f.y > mfMaxY)
-            mfMaxY = p.f.y;
-        if (p.f.x < mfMinX)
-            mfMinX = p.f.x;
-        if (p.f.y < mfMinY)
-            mfMinY = p.f.y;
+        if (p.x > mfMaxX)
+            mfMaxX = p.x;
+        if (p.y > mfMaxY)
+            mfMaxY = p.y;
+        if (p.x < mfMinX)
+            mfMinX = p.x;
+        if (p.y < mfMinY)
+            mfMinY = p.y;
 
         nlVec3Set(m_v3Accel[i], 0.0f, 0.0f, 0.0f);
     }

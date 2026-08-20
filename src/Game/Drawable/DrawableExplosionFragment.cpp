@@ -85,9 +85,9 @@ void DrawableExplosionFragment::Blend(const float* w, const DrawableExplosionFra
     const float t = w[2];
     const float it = 1.0f - t;
 
-    mPosition.f.x = it * a.mPosition.f.x + t * b.mPosition.f.x;
-    mPosition.f.y = it * a.mPosition.f.y + t * b.mPosition.f.y;
-    mPosition.f.z = it * a.mPosition.f.z + t * b.mPosition.f.z;
+    mPosition.x = it * a.mPosition.x + t * b.mPosition.x;
+    mPosition.y = it * a.mPosition.y + t * b.mPosition.y;
+    mPosition.z = it * a.mPosition.z + t * b.mPosition.z;
 
     nlQuatSlerp(mOrientation, a.mOrientation, b.mOrientation, t);
 

@@ -2670,7 +2670,7 @@ void CupHubScene::UpdateRoundMessage(bool hideMessage)
     {
         nlVector2& boxSize = ((pText->m_OverloadFlags & 0x4) != 0) ? pText->m_OverloadedAttributes.BoxSize : pText->m_component->m_BoxSize;
         nlVector2 bb = boxSize;
-        bb.f.x = 999.9f;
+        bb.x = 999.9f;
         pText->m_OverloadedAttributes.BoxSize = bb;
         pText->m_OverloadFlags |= 0x4;
     }

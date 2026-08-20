@@ -315,10 +315,10 @@ static void SetupRenderInfo()
     {
         if (BeginFrameTask::s_FramerateLocked && nlTaskManager::m_pInstance->m_CurrState == 0x100)
         {
-            vwait.f.x = 2.0f;
-            vwait.f.y = 2.0f;
-            vwait.f.z = 2.0f;
-            vwait.f.w = 2.0f;
+            vwait.x = 2.0f;
+            vwait.y = 2.0f;
+            vwait.z = 2.0f;
+            vwait.w = 2.0f;
         }
         else
         {
@@ -337,33 +337,33 @@ static void SetupRenderInfo()
             case 0x10:
             case 4:
             case 0x100:
-                vwait.f.x = vwaitValue;
-                vwait.f.y = vwaitValue;
-                vwait.f.z = vwaitValue;
-                vwait.f.w = vwaitValue;
+                vwait.x = vwaitValue;
+                vwait.y = vwaitValue;
+                vwait.z = vwaitValue;
+                vwait.w = vwaitValue;
                 break;
             default:
-                vwait.f.x = vwaitValue;
-                vwait.f.y = vwaitValue;
-                vwait.f.z = vwaitValue;
-                vwait.f.w = vwaitValue;
+                vwait.x = vwaitValue;
+                vwait.y = vwaitValue;
+                vwait.z = vwaitValue;
+                vwait.w = vwaitValue;
                 break;
             }
         }
     }
     else if (g_eWaitMode == 1)
     {
-        vwait.f.x = 0.0f;
-        vwait.f.y = 0.0f;
-        vwait.f.z = 0.0f;
-        vwait.f.w = 0.0f;
+        vwait.x = 0.0f;
+        vwait.y = 0.0f;
+        vwait.z = 0.0f;
+        vwait.w = 0.0f;
     }
     else
     {
-        vwait.f.x = 1.0f;
-        vwait.f.y = 1.0f;
-        vwait.f.z = 1.0f;
-        vwait.f.w = 1.0f;
+        vwait.x = 1.0f;
+        vwait.y = 1.0f;
+        vwait.z = 1.0f;
+        vwait.w = 1.0f;
     }
 
     glConstantSet("glxswap/vwait", vwait);
@@ -381,9 +381,9 @@ static inline void meshTexcoord(GLMeshWriterCore& w, const nlVector2& tc)
 static inline void meshVertex(GLMeshWriterCore& w, float x, float y, float z)
 {
     nlVector3 v;
-    v.f.x = x;
-    v.f.y = y;
-    v.f.z = z;
+    v.x = x;
+    v.y = y;
+    v.z = z;
     w.Vertex(v);
 }
 
@@ -413,16 +413,16 @@ static void DrawSafeFrame()
         if (mesh.Begin(2, GLP_LineList, 3, streams.e, false))
         {
             nlVector2 tc;
-            tc.f.x = 0.0f;
-            tc.f.y = 0.0f;
+            tc.x = 0.0f;
+            tc.y = 0.0f;
             meshTexcoord(mesh, tc);
             mesh.Colour(safeFrameColour);
 
             meshVertex(mesh, (float)leftEdge, 30.0f, 0.0f);
 
             nlVector2 tc2;
-            tc2.f.x = 0.0f;
-            tc2.f.y = 0.0f;
+            tc2.x = 0.0f;
+            tc2.y = 0.0f;
             meshTexcoord(mesh, tc2);
             mesh.Colour(safeFrameColour);
 
@@ -445,16 +445,16 @@ static void DrawSafeFrame()
         if (mesh.Begin(2, GLP_LineList, 3, streams.e, false))
         {
             nlVector2 tc;
-            tc.f.x = 0.0f;
-            tc.f.y = 0.0f;
+            tc.x = 0.0f;
+            tc.y = 0.0f;
             meshTexcoord(mesh, tc);
             mesh.Colour(safeFrameColour);
 
             meshVertex(mesh, (float)leftEdge, 450.0f, 0.0f);
 
             nlVector2 tc2;
-            tc2.f.x = 0.0f;
-            tc2.f.y = 0.0f;
+            tc2.x = 0.0f;
+            tc2.y = 0.0f;
             meshTexcoord(mesh, tc2);
             mesh.Colour(safeFrameColour);
 
@@ -477,16 +477,16 @@ static void DrawSafeFrame()
         if (mesh.Begin(2, GLP_LineList, 3, streams.e, false))
         {
             nlVector2 tc;
-            tc.f.x = 0.0f;
-            tc.f.y = 0.0f;
+            tc.x = 0.0f;
+            tc.y = 0.0f;
             meshTexcoord(mesh, tc);
             mesh.Colour(safeFrameColour);
 
             meshVertex(mesh, (float)leftEdge, 30.0f, 0.0f);
 
             nlVector2 tc2;
-            tc2.f.x = 0.0f;
-            tc2.f.y = 0.0f;
+            tc2.x = 0.0f;
+            tc2.y = 0.0f;
             meshTexcoord(mesh, tc2);
             mesh.Colour(safeFrameColour);
 
@@ -509,16 +509,16 @@ static void DrawSafeFrame()
         if (mesh.Begin(2, GLP_LineList, 3, streams.e, false))
         {
             nlVector2 tc;
-            tc.f.x = 0.0f;
-            tc.f.y = 0.0f;
+            tc.x = 0.0f;
+            tc.y = 0.0f;
             meshTexcoord(mesh, tc);
             mesh.Colour(safeFrameColour);
 
             meshVertex(mesh, (float)rightEdge, 30.0f, 0.0f);
 
             nlVector2 tc2;
-            tc2.f.x = 0.0f;
-            tc2.f.y = 0.0f;
+            tc2.x = 0.0f;
+            tc2.y = 0.0f;
             meshTexcoord(mesh, tc2);
             mesh.Colour(safeFrameColour);
 
@@ -551,15 +551,15 @@ static void DrawGrid(int spacing)
         if (mesh.Begin(2, GLP_LineList, 3, streams.e, false))
         {
             nlVector2 tc;
-            tc.f.x = 0.0f;
-            tc.f.y = 0.0f;
+            tc.x = 0.0f;
+            tc.y = 0.0f;
             meshTexcoord(mesh, tc);
             mesh.Colour(gridColour);
             meshVertex(mesh, 0.0f, (float)y, 0.0f);
 
             nlVector2 tc2;
-            tc2.f.x = 0.0f;
-            tc2.f.y = 0.0f;
+            tc2.x = 0.0f;
+            tc2.y = 0.0f;
             meshTexcoord(mesh, tc2);
             mesh.Colour(gridColour);
             meshVertex(mesh, 640.0f, (float)y, 0.0f);
@@ -582,15 +582,15 @@ static void DrawGrid(int spacing)
         if (mesh.Begin(2, GLP_LineList, 3, streams.e, false))
         {
             nlVector2 tc;
-            tc.f.x = 0.0f;
-            tc.f.y = 0.0f;
+            tc.x = 0.0f;
+            tc.y = 0.0f;
             meshTexcoord(mesh, tc);
             mesh.Colour(gridColour);
             meshVertex(mesh, (float)x, 0.0f, 0.0f);
 
             nlVector2 tc2;
-            tc2.f.x = 0.0f;
-            tc2.f.y = 0.0f;
+            tc2.x = 0.0f;
+            tc2.y = 0.0f;
             meshTexcoord(mesh, tc2);
             mesh.Colour(gridColour);
             meshVertex(mesh, (float)x, 480.0f, 0.0f);
@@ -612,15 +612,15 @@ static void DrawGrid(int spacing)
         if (mesh.Begin(2, GLP_LineList, 3, streams.e, false))
         {
             nlVector2 tc;
-            tc.f.x = 0.0f;
-            tc.f.y = 0.0f;
+            tc.x = 0.0f;
+            tc.y = 0.0f;
             meshTexcoord(mesh, tc);
             mesh.Colour(centerColour);
             meshVertex(mesh, 320.0f, 0.0f, 0.0f);
 
             nlVector2 tc2;
-            tc2.f.x = 0.0f;
-            tc2.f.y = 0.0f;
+            tc2.x = 0.0f;
+            tc2.y = 0.0f;
             meshTexcoord(mesh, tc2);
             mesh.Colour(centerColour);
             meshVertex(mesh, 320.0f, 480.0f, 0.0f);
@@ -692,18 +692,18 @@ void BeginFrameTask::Run(float dt)
 
         nlVector3 points[4] = { 0 };
 
-        points[0].f.x = left;
-        points[0].f.y = bottom;
-        points[0].f.z = z;
-        points[1].f.x = right;
-        points[1].f.y = bottom;
-        points[1].f.z = z;
-        points[2].f.x = right;
-        points[2].f.y = top;
-        points[2].f.z = z;
-        points[3].f.x = left;
-        points[3].f.y = top;
-        points[3].f.z = z;
+        points[0].x = left;
+        points[0].y = bottom;
+        points[0].z = z;
+        points[1].x = right;
+        points[1].y = bottom;
+        points[1].z = z;
+        points[2].x = right;
+        points[2].y = top;
+        points[2].z = z;
+        points[3].x = left;
+        points[3].y = top;
+        points[3].z = z;
 
         glSetDefaultState(false);
         glSetRasterState(GLS_Culling, g_bCoPlanarRefVisible ? 1 : 3);
@@ -714,26 +714,26 @@ void BeginFrameTask::Run(float dt)
 
         glQuad3 q;
         q.m_pos[0] = points[0];
-        q.m_uv[0].f.x = 0.0f;
-        q.m_uv[0].f.y = 0.0f;
+        q.m_uv[0].x = 0.0f;
+        q.m_uv[0].y = 0.0f;
         q.m_pos[1] = points[1];
-        q.m_uv[1].f.x = 0.0f;
-        q.m_uv[1].f.y = 0.0f;
+        q.m_uv[1].x = 0.0f;
+        q.m_uv[1].y = 0.0f;
         q.m_pos[2] = points[2];
-        q.m_uv[2].f.x = 0.0f;
-        q.m_uv[2].f.y = 0.0f;
+        q.m_uv[2].x = 0.0f;
+        q.m_uv[2].y = 0.0f;
         q.m_pos[3] = points[3];
-        q.m_uv[3].f.x = 0.0f;
-        q.m_uv[3].f.y = 0.0f;
+        q.m_uv[3].x = 0.0f;
+        q.m_uv[3].y = 0.0f;
 
         q.SetColour(0xFF, 0xFF, 0xFF, 0xFF);
         q.Attach(GLV_CoPlanar, 0, true);
 
         z = GetCoPlanar0Z();
-        q.m_pos[0].f.z = z;
-        q.m_pos[1].f.z = z;
-        q.m_pos[2].f.z = z;
-        q.m_pos[3].f.z = z;
+        q.m_pos[0].z = z;
+        q.m_pos[1].z = z;
+        q.m_pos[2].z = z;
+        q.m_pos[3].z = z;
         q.Attach(GLV_CoPlanar0, 0, true);
     }
 

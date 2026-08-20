@@ -160,7 +160,7 @@ void ReplayCamera::ManualUpdate(float deltaT)
         {
             DrawableCharacter* goalie = &render->mCharacters[GetGoalieIndex(mSideOfInterest)];
             nlVector3 bip01Pos = goalie->mPosition;
-            bip01Pos.f.z += goalie->mHeight;
+            bip01Pos.z += goalie->mHeight;
             nlVec3Add(lookAt, lookAt, bip01Pos);
         }
 
@@ -171,7 +171,7 @@ void ReplayCamera::ManualUpdate(float deltaT)
             {
                 numFocusPoints++;
                 nlVector3 bip01Pos = player->mPosition;
-                bip01Pos.f.z += player->mHeight;
+                bip01Pos.z += player->mHeight;
                 nlVec3Add(lookAt, lookAt, bip01Pos);
             }
             else
@@ -181,7 +181,7 @@ void ReplayCamera::ManualUpdate(float deltaT)
                 {
                     numFocusPoints++;
                     nlVector3 bip01Pos = player->mPosition;
-                    bip01Pos.f.z += player->mHeight;
+                    bip01Pos.z += player->mHeight;
                     nlVec3Add(lookAt, lookAt, bip01Pos);
                 }
             }
@@ -190,7 +190,7 @@ void ReplayCamera::ManualUpdate(float deltaT)
         if (mFocus & 0x4)
         {
             nlVector3 netPos = { 0.0f, 0.0f, 0.0f };
-            netPos.f.x = cField::GetGoalLineX(GetSideDirection(mSideOfInterest));
+            netPos.x = cField::GetGoalLineX(GetSideDirection(mSideOfInterest));
             numFocusPoints++;
             nlVec3Add(lookAt, lookAt, netPos);
         }
@@ -256,9 +256,9 @@ void ReplayCamera::CutTo(ReplayCameraPosition camPos)
 
 void ReplayCamera::Dampen(nlVector3& from, const nlVector3& to, float dampFactor)
 {
-    from.f.x = (1.0f - dampFactor) * from.f.x + dampFactor * to.f.x;
-    from.f.y = (1.0f - dampFactor) * from.f.y + dampFactor * to.f.y;
-    from.f.z = (1.0f - dampFactor) * from.f.z + dampFactor * to.f.z;
+    from.x = (1.0f - dampFactor) * from.x + dampFactor * to.x;
+    from.y = (1.0f - dampFactor) * from.y + dampFactor * to.y;
+    from.z = (1.0f - dampFactor) * from.z + dampFactor * to.z;
 }
 
 /**
@@ -306,18 +306,18 @@ nlVector3 ReplayCamera::GetPosition(ReplayCameraPosition position, float directi
         float x = GetConfigFloat(Config::Global(), "replay/camera_inside_net_x", 7.0f);
         float y = GetConfigFloat(Config::Global(), "replay/camera_inside_net_y", 8.0f);
         float z = GetConfigFloat(Config::Global(), "replay/camera_inside_net_z", 2.0f);
-        result.f.x = cField::GetGoalLineX(direction) + direction * x;
-        result.f.y = y;
-        result.f.z = z;
+        result.x = cField::GetGoalLineX(direction) + direction * x;
+        result.y = y;
+        result.z = z;
         break;
     }
     case REPLAY_CAMERA_POSITION_SIDELINE:
     {
         RenderSnapshot* render = ReplayManager::Instance()->mRender;
         result = render->mBall.mPosition;
-        result.f.x *= 0.8f;
-        result.f.y = cField::GetSidelineY(0) + (-5.0f);
-        result.f.z = 2.0f;
+        result.x *= 0.8f;
+        result.y = cField::GetSidelineY(0) + (-5.0f);
+        result.z = 2.0f;
         break;
     }
     case REPLAY_CAMERA_POSITION_BALL_TO_GOAL:
@@ -325,7 +325,7 @@ nlVector3 ReplayCamera::GetPosition(ReplayCameraPosition position, float directi
         RenderSnapshot* render = ReplayManager::Instance()->mRender;
         nlVector3 ballPos = render->mBall.mPosition;
         nlVector3 goalPos = { 0.0f, 0.0f, 0.0f };
-        goalPos.f.x = 30.0f * direction + goalLineX;
+        goalPos.x = 30.0f * direction + goalLineX;
 
         nlVector3 ballToGoal;
         nlVec3Sub(ballToGoal, goalPos, ballPos);
@@ -333,23 +333,23 @@ nlVector3 ReplayCamera::GetPosition(ReplayCameraPosition position, float directi
 
         float behindDist = GetConfigFloat(Config::Global(), "replay/camera_ball_to_goal_behind_dist", 16.0f);
         float scale = -behindDist;
-        float offsetX = scale * ballToGoal.f.x;
-        float offsetY = scale * ballToGoal.f.y;
-        float offsetZ = scale * ballToGoal.f.z;
-        result.f.x = ballPos.f.x + offsetX;
-        result.f.y = ballPos.f.y + offsetY;
-        result.f.z = ballPos.f.z + offsetZ;
+        float offsetX = scale * ballToGoal.x;
+        float offsetY = scale * ballToGoal.y;
+        float offsetZ = scale * ballToGoal.z;
+        result.x = ballPos.x + offsetX;
+        result.y = ballPos.y + offsetY;
+        result.z = ballPos.z + offsetZ;
 
         float minHeight = GetConfigFloat(Config::Global(), "replay/camera_ball_to_goal_min_height", 3.0f);
-        if (result.f.z < minHeight)
+        if (result.z < minHeight)
         {
-            result.f.z = minHeight;
+            result.z = minHeight;
         }
 
         float minDistToGoal = GetConfigFloat(Config::Global(), "replay/camera_ball_to_goal_min_dist_to_goal", 8.0f);
-        if ((float)fabs(goalPos.f.x - result.f.x) < minDistToGoal)
+        if ((float)fabs(goalPos.x - result.x) < minDistToGoal)
         {
-            result.f.x = goalPos.f.x - direction * minDistToGoal;
+            result.x = goalPos.x - direction * minDistToGoal;
         }
         break;
     }
@@ -360,13 +360,13 @@ nlVector3 ReplayCamera::GetPosition(ReplayCameraPosition position, float directi
         float highZ = GetConfigFloat(Config::Global(), "replay/camera_high_up_z", 8.0f);
         float minDistBehind = GetConfigFloat(Config::Global(), "replay/camera_high_up_min_dist_behind", 8.0f);
 
-        result.f.x = highX * GetSideDirection(mSideOfInterest);
-        result.f.y = highY;
-        result.f.z = highZ;
+        result.x = highX * GetSideDirection(mSideOfInterest);
+        result.y = highY;
+        result.z = highZ;
 
-        if ((float)fabs(result.f.x - mLookAt.f.x) < minDistBehind)
+        if ((float)fabs(result.x - mLookAt.x) < minDistBehind)
         {
-            result.f.x = mLookAt.f.x - minDistBehind * GetSideDirection(mSideOfInterest);
+            result.x = mLookAt.x - minDistBehind * GetSideDirection(mSideOfInterest);
         }
         break;
     }
@@ -380,35 +380,35 @@ nlVector3 ReplayCamera::GetPosition(ReplayCameraPosition position, float directi
             float xVal = GetConfigFloat(Config::Global(), prefix.Append("x").c_str(), 0.0f) * GetSideDirection(mSideOfInterest);
             float yVal = GetConfigFloat(Config::Global(), prefix.Append("y").c_str(), 0.0f);
             float zVal = GetConfigFloat(Config::Global(), prefix.Append("z").c_str(), 0.0f);
-            result.f.x = xVal;
-            result.f.y = yVal;
-            result.f.z = zVal;
+            result.x = xVal;
+            result.y = yVal;
+            result.z = zVal;
         }
         break;
     }
     }
 
     nlVector3 limits = { 0.0f, 0.0f, 0.0f };
-    limits.f.x = GetConfigFloat(Config::Global(), "replay/camera_max_behind_goal_line", 2.0f);
-    limits.f.y = GetConfigFloat(Config::Global(), "replay/camera_max_beyond_side_line", 2.0f);
-    limits.f.z = GetConfigFloat(Config::Global(), "replay/camera_max_height", 20.0f);
+    limits.x = GetConfigFloat(Config::Global(), "replay/camera_max_behind_goal_line", 2.0f);
+    limits.y = GetConfigFloat(Config::Global(), "replay/camera_max_beyond_side_line", 2.0f);
+    limits.z = GetConfigFloat(Config::Global(), "replay/camera_max_height", 20.0f);
 
     float minZ = GetConfigFloat(Config::Global(), "replay/camera_min_height", 0.5f);
 
-    if (result.f.z > limits.f.z)
-        result.f.z = limits.f.z;
-    if (result.f.z < minZ)
-        result.f.z = minZ;
+    if (result.z > limits.z)
+        result.z = limits.z;
+    if (result.z < minZ)
+        result.z = minZ;
 
-    if (result.f.x < -((float)fabs(goalLineX)) - limits.f.x)
-        result.f.x = -((float)fabs(goalLineX)) - limits.f.x;
-    if (result.f.x > limits.f.x + (float)fabs(goalLineX))
-        result.f.x = limits.f.x + (float)fabs(goalLineX);
+    if (result.x < -((float)fabs(goalLineX)) - limits.x)
+        result.x = -((float)fabs(goalLineX)) - limits.x;
+    if (result.x > limits.x + (float)fabs(goalLineX))
+        result.x = limits.x + (float)fabs(goalLineX);
 
-    if (result.f.y < -sidelineY - limits.f.y)
-        result.f.y = -sidelineY - limits.f.y;
-    if (result.f.y > sidelineY + limits.f.y)
-        result.f.y = sidelineY + limits.f.y;
+    if (result.y < -sidelineY - limits.y)
+        result.y = -sidelineY - limits.y;
+    if (result.y > sidelineY + limits.y)
+        result.y = sidelineY + limits.y;
 
     return result;
 }

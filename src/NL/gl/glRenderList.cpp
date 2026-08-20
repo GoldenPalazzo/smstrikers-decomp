@@ -136,8 +136,8 @@ static inline unsigned long PackMatrixDepth(const glModelPacket* pPacket, const 
     nlMatrix4 packetMatrix;
     nlVector3 out;
     glGetMatrix(pPacket->state.matrix, packetMatrix);
-    nlMultPosVectorMatrix(out, *(nlVector3*)&packetMatrix.m[3][0], view);
-    return ((unsigned long)(int)(-out.f.z * 100.0f) << 12) | (seq & 0xFFF);
+    nlMultPosVectorMatrix(out, *(nlVector3*)&packetMatrix.e2[3][0], view);
+    return ((unsigned long)(int)(-out.z * 100.0f) << 12) | (seq & 0xFFF);
 }
 
 static inline unsigned long PackStreamDepth(const glModelPacket* pPacket, const nlMatrix4& view)
@@ -146,7 +146,7 @@ static inline unsigned long PackStreamDepth(const glModelPacket* pPacket, const 
     nlVector3 out;
     glGetMatrix(pPacket->state.matrix, packetMatrix);
     nlMultPosVectorMatrix(out, *(nlVector3*)pPacket->streams->address, view);
-    return (unsigned long)(int)(-out.f.z * 2147483648.0f);
+    return (unsigned long)(int)(-out.z * 2147483648.0f);
 }
 
 extern GLRenderBuffer glRenderBuffer;

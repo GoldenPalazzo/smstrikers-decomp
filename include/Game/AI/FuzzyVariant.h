@@ -35,9 +35,9 @@ public:
     virtual void Reset()
     {
         mType = FT_UNSPECIFIED;
-        mData.vector.f.x = 0.0f;
-        mData.vector.f.y = 0.0f;
-        mData.vector.f.z = 0.0f;
+        mData.vector.x = 0.0f;
+        mData.vector.y = 0.0f;
+        mData.vector.z = 0.0f;
         ExtraData.Reset();
         Confidence = 0.0f;
         SelectionChance = 1.0f;

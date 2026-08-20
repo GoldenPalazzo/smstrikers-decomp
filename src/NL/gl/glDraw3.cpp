@@ -169,14 +169,14 @@ void glQuad3::SetupRotatedRectangle(float w, float h, const nlMatrix4& mtx, bool
         var_f3 = 1.0f;
     }
 
-    m_uv[0].f.x = var_f0;
-    m_uv[0].f.y = var_f2;
-    m_uv[1].f.x = var_f1;
-    m_uv[1].f.y = var_f2;
-    m_uv[2].f.x = var_f1;
-    m_uv[2].f.y = var_f3;
-    m_uv[3].f.x = var_f0;
-    m_uv[3].f.y = var_f3;
+    m_uv[0].x = var_f0;
+    m_uv[0].y = var_f2;
+    m_uv[1].x = var_f1;
+    m_uv[1].y = var_f2;
+    m_uv[2].x = var_f1;
+    m_uv[2].y = var_f3;
+    m_uv[3].x = var_f0;
+    m_uv[3].y = var_f3;
 
     m_colour[0].c[0] = 0xFF;
     m_colour[0].c[1] = 0xFF;

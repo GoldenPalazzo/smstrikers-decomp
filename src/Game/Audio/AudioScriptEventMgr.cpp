@@ -463,7 +463,7 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
             return;
         }
         AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_MissShot,
-            pData->position.f.x > 0.0f ? AudioScriptEventMgr::AET_Home : AudioScriptEventMgr::AET_Away);
+            pData->position.x > 0.0f ? AudioScriptEventMgr::AET_Home : AudioScriptEventMgr::AET_Away);
         return;
     }
     case 46:
@@ -475,7 +475,7 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
         CollisionBallGoalpostData* pData;
         pEvent->GetData(&pData);
         nlVector3 vel = pData->v3CollisionVelocity;
-        float speed = nlSqrt(vel.f.z * vel.f.z + (vel.f.x * vel.f.x + vel.f.y * vel.f.y), true);
+        float speed = nlSqrt(vel.z * vel.z + (vel.x * vel.x + vel.y * vel.y), true);
         if (speed > 35.0f)
         {
             speed = 35.0f;

@@ -358,7 +358,7 @@ void AIEventHandler(Event* pEvent, void*)
             if (pEventData->pPlayer->m_eClassType != GOALIE)
             {
                 nlVector3 p2 = pEventData->contactPoint;
-                p2.f.z += sfElectrocutionHeightOffset;
+                p2.z += sfElectrocutionHeightOffset;
                 CharacterElectrocutionEffect(pEventData->pPlayer, p2, normal);
             }
         }
@@ -453,8 +453,8 @@ void AIEventHandler(Event* pEvent, void*)
         if (pEventData->pBall->m_pPrevOwner == 0)
             break;
 
-        float dy = pEventData->pBall->m_v3Position.f.y - pEventData->pBall->m_pPrevOwner->m_v3Position.f.y;
-        float dx = pEventData->pBall->m_v3Position.f.x - pEventData->pBall->m_pPrevOwner->m_v3Position.f.x;
+        float dy = pEventData->pBall->m_v3Position.y - pEventData->pBall->m_pPrevOwner->m_v3Position.y;
+        float dx = pEventData->pBall->m_v3Position.x - pEventData->pBall->m_pPrevOwner->m_v3Position.x;
         float angleRad = nlATan2f(dy, dx);
         s32 nAngle = (s32)(angleRad * 10430.378f);
 
@@ -909,9 +909,9 @@ void AIEventHandler(Event* pEvent, void*)
                     nlMatrix4& nodeMatrix = pFielder->m_pPoseAccumulator->GetNodeMatrix(pFielder->m_nBip01JointIndex_0xA4);
 
                     float dist = nlSqrt(nlGetLengthSquared3D(
-                                            pEventData->v3ExplosionLocation.f.x - nodeMatrix.m[3][0],
-                                            pEventData->v3ExplosionLocation.f.y - nodeMatrix.m[3][1],
-                                            pEventData->v3ExplosionLocation.f.z - nodeMatrix.m[3][2]),
+                                            pEventData->v3ExplosionLocation.x - nodeMatrix.e2[3][0],
+                                            pEventData->v3ExplosionLocation.y - nodeMatrix.e2[3][1],
+                                            pEventData->v3ExplosionLocation.z - nodeMatrix.e2[3][2]),
                         true);
 
                     if (!(dist < pEventData->fExplosionRadius))
@@ -1334,9 +1334,9 @@ cCharacter::cCharacter(eCharacterClass cc, const int* nModelID, cSHierarchy* pHi
         m_pBlinker = NULL;
     }
 
-    m_v3ScreenPosition.f.x = 0.0f;
-    m_v3ScreenPosition.f.y = 0.0f;
-    m_v3ScreenPosition.f.z = 0.0f;
+    m_v3ScreenPosition.x = 0.0f;
+    m_v3ScreenPosition.y = 0.0f;
+    m_v3ScreenPosition.z = 0.0f;
 }
 
 inline eVariantType VariantTypeOf(const nlVector3&)
@@ -1449,8 +1449,8 @@ s16 cCharacter::CalcAnimTurnAdjust(unsigned short aFacingDirection, unsigned sho
  */
 s16 cCharacter::GetFacingDeltaToPosition(const nlVector3& position)
 {
-    float dy = position.f.y - m_v3Position.f.y;
-    float dx = position.f.x - m_v3Position.f.x;
+    float dy = position.y - m_v3Position.y;
+    float dx = position.x - m_v3Position.x;
     float angleRad = nlATan2f(dy, dx);
 
     // Convert radians to 16-bit angle format (65536.0f / (2*pi) ~= 10430.378f)
@@ -1476,7 +1476,7 @@ static inline AnimRetarget* GetCharacterAnimRetarget(const cCharacter* character
 nlVector3& cCharacter::GetJointPosition(int jointIndex) const
 {
     const nlMatrix4& poseMatrix = m_pPoseAccumulator->GetNodeMatrix(jointIndex);
-    return *(nlVector3*)&poseMatrix.m[3];
+    return *(nlVector3*)&poseMatrix.e2[3];
 }
 
 /**
@@ -1526,12 +1526,12 @@ void cCharacter::GetJointPositionFuture(nlVector3* v3Out, int nAnimIndex, int nJ
 
         nlVector3 v3RootVelocity;
         animController.GetRootTrans(&v3RootVelocity, aCurRotation);
-        v3RootVelocity.f.z = 0.0f;
+        v3RootVelocity.z = 0.0f;
 
         if (bUsePrevPosition)
         {
-            v3RootVelocity.f.x += m_v3Position.f.x;
-            v3RootVelocity.f.y += m_v3Position.f.y;
+            v3RootVelocity.x += m_v3Position.x;
+            v3RootVelocity.y += m_v3Position.y;
         }
 
         if (nJointIndex < 0)
@@ -1540,16 +1540,16 @@ void cCharacter::GetJointPositionFuture(nlVector3* v3Out, int nAnimIndex, int nJ
             return;
         }
 
-        m4RootMat.m[3][0] = v3RootVelocity.f.x;
-        m4RootMat.m[3][1] = v3RootVelocity.f.y;
-        m4RootMat.m[3][2] = v3RootVelocity.f.z;
-        m4RootMat.m[3][3] = 1.0f;
+        m4RootMat.e2[3][0] = v3RootVelocity.x;
+        m4RootMat.e2[3][1] = v3RootVelocity.y;
+        m4RootMat.e2[3][2] = v3RootVelocity.z;
+        m4RootMat.e2[3][3] = 1.0f;
     }
 
     poseAccumulator.Pose(animController, m4RootMat);
 
     const nlMatrix4& m4NodeMatrix = poseAccumulator.GetNodeMatrix(nJointIndex);
-    *v3Out = *(nlVector3*)&m4NodeMatrix.m[3][0];
+    *v3Out = *(nlVector3*)&m4NodeMatrix.e2[3][0];
 }
 
 /**
@@ -1571,9 +1571,9 @@ void cCharacter::GetCurrentAnimFuture(int nJointIndex, float fTime, nlVector3& v
     m_pCurrentAnimController->GetRootRot(&rootRot);
     outFacing += rootRot;
 
-    v3FutureRoot.f.x += m_v3Position.f.x;
-    v3FutureRoot.f.y += m_v3Position.f.y;
-    v3FutureRoot.f.z = 0.0f;
+    v3FutureRoot.x += m_v3Position.x;
+    v3FutureRoot.y += m_v3Position.y;
+    v3FutureRoot.z = 0.0f;
 
     if (nJointIndex < 0)
     {
@@ -1585,13 +1585,13 @@ void cCharacter::GetCurrentAnimFuture(int nJointIndex, float fTime, nlVector3& v
 
         nlMatrix4 m;
         nlMakeRotationMatrixZ(m, 0.0000958738f * (float)outFacing);
-        m.m[3][0] = v3FutureRoot.f.x;
-        m.m[3][1] = v3FutureRoot.f.y;
-        m.m[3][2] = v3FutureRoot.f.z;
-        m.m[3][3] = 1.0f;
+        m.e2[3][0] = v3FutureRoot.x;
+        m.e2[3][1] = v3FutureRoot.y;
+        m.e2[3][2] = v3FutureRoot.z;
+        m.e2[3][3] = 1.0f;
 
         pAccumulator->Pose(*m_pCurrentAnimController, m);
-        v3Out = *(nlVector3*)&pAccumulator->GetNodeMatrix(nJointIndex).m[3][0];
+        v3Out = *(nlVector3*)&pAccumulator->GetNodeMatrix(nJointIndex).e2[3][0];
 
         delete pAccumulator;
     }
@@ -1611,7 +1611,7 @@ void cCharacter::GetCurrentAnimFuture(int nJointIndex, float fTime, nlVector3& v
 nlVector3& cCharacter::GetPrevJointPosition(int jointIndex)
 {
     nlMatrix4& prevMatrix = m_pPoseAccumulator->m_PrevNodeMatrices.mData[jointIndex];
-    return *(nlVector3*)&prevMatrix.m[3];
+    return *(nlVector3*)&prevMatrix.e2[3];
 }
 
 /**
@@ -1929,7 +1929,7 @@ void cCharacter::PoseSkinMesh(cPoseAccumulator* pPoseAccumulator)
  */
 void cCharacter::PrePhysicsUpdate(float)
 {
-    if ((m_eClassType != GOALIE) || ((m_v3Position.f.x * g_pBall->m_v3Position.f.x) > 0.0f))
+    if ((m_eClassType != GOALIE) || ((m_v3Position.x * g_pBall->m_v3Position.x) > 0.0f))
     {
         nlMatrix4 identityMatrix;
         identityMatrix.SetIdentity();
@@ -1950,9 +1950,9 @@ void cCharacter::PreUpdate(float)
 void cCharacter::CreateWorldMatrix()
 {
     nlMakeRotationMatrixZ(m_m4WorldMatrix, 0.0000958738f * (f32)m_aActualFacingDirection);
-    m_m4WorldMatrix.m[3][0] = m_v3Position.f.x;
-    m_m4WorldMatrix.m[3][1] = m_v3Position.f.y;
-    m_m4WorldMatrix.m[3][2] = m_v3Position.f.z;
+    m_m4WorldMatrix.e2[3][0] = m_v3Position.x;
+    m_m4WorldMatrix.e2[3][1] = m_v3Position.y;
+    m_m4WorldMatrix.e2[3][2] = m_v3Position.z;
 }
 
 /**
@@ -1964,16 +1964,16 @@ void cCharacter::PostPhysicsUpdate()
     m_pPhysicsCharacter->GetCharacterPositionXY(&m_v3Position);
     m_pPhysicsCharacter->GetCharacterVelocityXY(&m_v3Velocity);
 
-    m_fActualSpeed = nlGetLength2D(m_v3Velocity.f.x, m_v3Velocity.f.y);
+    m_fActualSpeed = nlGetLength2D(m_v3Velocity.x, m_v3Velocity.y);
 
     float angleRad = 0.0000958738f * (float)m_aActualFacingDirection;
     nlMakeRotationMatrixZ(m_m4WorldMatrix, angleRad);
 
-    m_m4WorldMatrix.m[3][0] = m_v3Position.f.x;
-    m_m4WorldMatrix.m[3][1] = m_v3Position.f.y;
-    m_m4WorldMatrix.m[3][2] = m_v3Position.f.z;
+    m_m4WorldMatrix.e2[3][0] = m_v3Position.x;
+    m_m4WorldMatrix.e2[3][1] = m_v3Position.y;
+    m_m4WorldMatrix.e2[3][2] = m_v3Position.z;
 
-    if (m_eClassType != GOALIE || ((m_v3Position.f.x * g_pBall->m_v3Position.f.x) > 0.0f))
+    if (m_eClassType != GOALIE || ((m_v3Position.x * g_pBall->m_v3Position.x) > 0.0f))
     {
         m_pPoseAccumulator->MultNodeMatrices(&m_m4WorldMatrix);
     }
@@ -2131,7 +2131,7 @@ void cCharacter::Update(float fDeltaT)
 
     if (m_pBlurHandler != nullptr)
     {
-        bool bIsZero = (v3Zero.f.x == g_v3PrevJointPosition.f.x && v3Zero.f.y == g_v3PrevJointPosition.f.y && v3Zero.f.z == g_v3PrevJointPosition.f.z);
+        bool bIsZero = (v3Zero.x == g_v3PrevJointPosition.x && v3Zero.y == g_v3PrevJointPosition.y && v3Zero.z == g_v3PrevJointPosition.z);
 
         if (bIsZero)
         {
@@ -2145,9 +2145,9 @@ void cCharacter::Update(float fDeltaT)
         {
             cSHierarchy* hierarchy = m_pPoseAccumulator->m_BaseSHierarchy;
             const nlMatrix4& nodeMatrix = m_pPoseAccumulator->GetNodeMatrix(hierarchy->GetNodeIndexByID(nlStringLowerHash("bip01 spine1")));
-            jointPosition = *(nlVector3*)&nodeMatrix.m[3][0];
+            jointPosition = *(nlVector3*)&nodeMatrix.e2[3][0];
 
-            nlVec3Set(forwardVector, m_v3Position.f.x - m_v3PrevPosition.f.x, m_v3Position.f.y - m_v3PrevPosition.f.y, m_v3Position.f.z - m_v3PrevPosition.f.z);
+            nlVec3Set(forwardVector, m_v3Position.x - m_v3PrevPosition.x, m_v3Position.y - m_v3PrevPosition.y, m_v3Position.z - m_v3PrevPosition.z);
         }
         // what happens here, if m_eClassType != FIELDER? ...
 
@@ -2209,12 +2209,12 @@ void cCharacter::UpdateMovementState(float fDeltaT)
     {
     case MOVEMENT_COAST:
     {
-        float mag = nlSqrt(m_v3Velocity.f.x * m_v3Velocity.f.x + m_v3Velocity.f.y * m_v3Velocity.f.y + m_v3Velocity.f.z * m_v3Velocity.f.z, true);
+        float mag = nlSqrt(m_v3Velocity.x * m_v3Velocity.x + m_v3Velocity.y * m_v3Velocity.y + m_v3Velocity.z * m_v3Velocity.z, true);
         if (mag > 15.0f)
         {
             nlPolar polar;
-            nlCartesianToPolar(polar, m_v3Velocity.f.x, m_v3Velocity.f.y);
-            nlPolarToCartesian(m_v3Velocity.f.x, m_v3Velocity.f.y, polar.a, 15.0f);
+            nlCartesianToPolar(polar, m_v3Velocity.x, m_v3Velocity.y);
+            nlPolarToCartesian(m_v3Velocity.x, m_v3Velocity.y, polar.a, 15.0f);
         }
         break;
     }
@@ -2244,7 +2244,7 @@ void cCharacter::UpdateMovementState(float fDeltaT)
             newSpeed = fDesiredSpeed;
         }
         m_fActualSpeed = newSpeed;
-        nlPolarToCartesian(m_v3Velocity.f.x, m_v3Velocity.f.y, m_aActualMovementDirection, m_fActualSpeed);
+        nlPolarToCartesian(m_v3Velocity.x, m_v3Velocity.y, m_aActualMovementDirection, m_fActualSpeed);
         break;
     }
 
@@ -2295,11 +2295,11 @@ void cCharacter::UpdateMovementState(float fDeltaT)
         nlVector3 v3RootTrans;
         pSourceNode->GetRootTrans(&v3RootTrans, m_aPrevFacingDirection);
         nlVec3Add(v3RootTrans, v3RootTrans, v3ConsumedMove);
-        m_v3Velocity.f.x = v3RootTrans.f.x / fDeltaT;
-        m_v3Velocity.f.y = v3RootTrans.f.y / fDeltaT;
+        m_v3Velocity.x = v3RootTrans.x / fDeltaT;
+        m_v3Velocity.y = v3RootTrans.y / fDeltaT;
 
         nlPolar aSpeed;
-        nlCartesianToPolar(aSpeed, m_v3Velocity.f.x, m_v3Velocity.f.y);
+        nlCartesianToPolar(aSpeed, m_v3Velocity.x, m_v3Velocity.y);
         m_fActualSpeed = aSpeed.r;
         break;
     }
@@ -2313,8 +2313,8 @@ void cCharacter::UpdateMovementState(float fDeltaT)
 
         nlVector3 v3RootTrans;
         m_pCurrentAnimController->GetRootTrans(&v3RootTrans, m_aPrevFacingDirection);
-        m_v3Velocity.f.x = v3RootTrans.f.x / fDeltaT;
-        m_v3Velocity.f.y = v3RootTrans.f.y / fDeltaT;
+        m_v3Velocity.x = v3RootTrans.x / fDeltaT;
+        m_v3Velocity.y = v3RootTrans.y / fDeltaT;
         break;
     }
 
@@ -2326,7 +2326,7 @@ void cCharacter::UpdateMovementState(float fDeltaT)
         m_pPhysicsCharacter->SetFacingDirection(aNewFacingDirection);
 
         m_fActualSpeed = 0.0f;
-        nlPolarToCartesian(m_v3Velocity.f.x, m_v3Velocity.f.y, m_aActualMovementDirection, m_fActualSpeed);
+        nlPolarToCartesian(m_v3Velocity.x, m_v3Velocity.y, m_aActualMovementDirection, m_fActualSpeed);
         break;
     }
 
@@ -2362,7 +2362,7 @@ void cCharacter::UpdateMovementState(float fDeltaT)
             m_fActualSpeed = 15.0f;
         }
 
-        nlPolarToCartesian(m_v3Velocity.f.x, m_v3Velocity.f.y, m_aActualFacingDirection, m_fActualSpeed);
+        nlPolarToCartesian(m_v3Velocity.x, m_v3Velocity.y, m_aActualFacingDirection, m_fActualSpeed);
         break;
     }
 
@@ -2374,7 +2374,7 @@ void cCharacter::UpdateMovementState(float fDeltaT)
             m_fActualSpeed = 15.0f;
         }
 
-        nlPolarToCartesian(m_v3Velocity.f.x, m_v3Velocity.f.y, m_aActualMovementDirection, m_fActualSpeed);
+        nlPolarToCartesian(m_v3Velocity.x, m_v3Velocity.y, m_aActualMovementDirection, m_fActualSpeed);
         break;
     }
 
@@ -2393,7 +2393,7 @@ void cCharacter::UpdateMovementState(float fDeltaT)
             m_fActualSpeed = 15.0f;
         }
 
-        nlPolarToCartesian(m_v3Velocity.f.x, m_v3Velocity.f.y, m_aActualMovementDirection, m_fActualSpeed);
+        nlPolarToCartesian(m_v3Velocity.x, m_v3Velocity.y, m_aActualMovementDirection, m_fActualSpeed);
         break;
     }
 
@@ -2403,7 +2403,7 @@ void cCharacter::UpdateMovementState(float fDeltaT)
     }
 
     nlPolar pMovement;
-    nlCartesianToPolar(pMovement, m_v3Velocity.f.x, m_v3Velocity.f.y);
+    nlCartesianToPolar(pMovement, m_v3Velocity.x, m_v3Velocity.y);
     m_aActualMovementDirection = pMovement.a;
     m_pPhysicsCharacter->SetCharacterVelocityXY(m_v3Velocity);
 }

@@ -111,15 +111,15 @@ void GameplayCamera::CalcDynamicZoom()
             cFielder* fielder = g_pTeams[i]->GetFielder(j);
             nlVector3 screenPosition = fielder->m_v3ScreenPosition;
 
-            screenPosition.f.x = fabsf(screenPosition.f.x);
-            screenPosition.f.y = fabsf(screenPosition.f.y);
+            screenPosition.x = fabsf(screenPosition.x);
+            screenPosition.y = fabsf(screenPosition.y);
 
-            if (screenPosition.f.x <= 0.75f && screenPosition.f.y <= 0.75f)
+            if (screenPosition.x <= 0.75f && screenPosition.y <= 0.75f)
             {
                 numFieldersInInnerZone++;
             }
 
-            if (screenPosition.f.x <= 0.85f && screenPosition.f.y <= 0.85f)
+            if (screenPosition.x <= 0.85f && screenPosition.y <= 0.85f)
             {
                 numFieldersInMidZone++;
             }
@@ -225,16 +225,16 @@ void GameplayCamera::Update(float deltaTime)
     float zoom = m_fZoom;
     inverseZoom = 1.0f - zoom;
 
-    m_v3Target.f.x = (inverseZoom * m_nearZoom.m_v3Target.f.x) + (zoom * m_farZoom.m_v3Target.f.x);
-    m_v3Target.f.y = (inverseZoom * m_nearZoom.m_v3Target.f.y) + (zoom * m_farZoom.m_v3Target.f.y);
-    m_v3Target.f.z = (inverseZoom * m_nearZoom.m_v3Target.f.z) + (zoom * m_farZoom.m_v3Target.f.z);
+    m_v3Target.x = (inverseZoom * m_nearZoom.m_v3Target.x) + (zoom * m_farZoom.m_v3Target.x);
+    m_v3Target.y = (inverseZoom * m_nearZoom.m_v3Target.y) + (zoom * m_farZoom.m_v3Target.y);
+    m_v3Target.z = (inverseZoom * m_nearZoom.m_v3Target.z) + (zoom * m_farZoom.m_v3Target.z);
 
     zoom = m_fZoom;
     inverseZoom = 1.0f - zoom;
 
-    m_v3Camera.f.x = (inverseZoom * m_nearZoom.m_v3Camera.f.x) + (zoom * m_farZoom.m_v3Camera.f.x);
-    m_v3Camera.f.y = (inverseZoom * m_nearZoom.m_v3Camera.f.y) + (zoom * m_farZoom.m_v3Camera.f.y);
-    m_v3Camera.f.z = (inverseZoom * m_nearZoom.m_v3Camera.f.z) + (zoom * m_farZoom.m_v3Camera.f.z);
+    m_v3Camera.x = (inverseZoom * m_nearZoom.m_v3Camera.x) + (zoom * m_farZoom.m_v3Camera.x);
+    m_v3Camera.y = (inverseZoom * m_nearZoom.m_v3Camera.y) + (zoom * m_farZoom.m_v3Camera.y);
+    m_v3Camera.z = (inverseZoom * m_nearZoom.m_v3Camera.z) + (zoom * m_farZoom.m_v3Camera.z);
 
     m_fFOV = Interpolate(m_nearZoom.m_CameraData->fov, m_farZoom.m_CameraData->fov, m_fZoom);
 
@@ -366,8 +366,8 @@ void GameplayCameraZoomLevel::CalcDesiredTarget()
         {
             fAccumulatedWeight += *pKnotTableBlendWeights;
 
-            float fMappedX = MapFromFieldPosToTargetPos(v3OOIPos.f.x, m_CameraData->fieldKnotsX[i], m_CameraData->targetKnotsX[i], m_CameraData->numKnotsX);
-            float fMappedY = MapFromFieldPosToTargetPos(v3OOIPos.f.y, m_CameraData->fieldKnotsY[i], m_CameraData->targetKnotsY[i], m_CameraData->numKnotsY);
+            float fMappedX = MapFromFieldPosToTargetPos(v3OOIPos.x, m_CameraData->fieldKnotsX[i], m_CameraData->targetKnotsX[i], m_CameraData->numKnotsX);
+            float fMappedY = MapFromFieldPosToTargetPos(v3OOIPos.y, m_CameraData->fieldKnotsY[i], m_CameraData->targetKnotsY[i], m_CameraData->numKnotsY);
             fBlendPercent = *pKnotTableBlendWeights / fAccumulatedWeight;
 
             m_fDesiredTargetX = Interpolate(m_fDesiredTargetX, fMappedX, fBlendPercent);
@@ -398,7 +398,7 @@ static inline void CalcCurrentKnotTable(GameplayCameraZoomLevel* self, bool forc
 
     if (pBallOwner != NULL && !forceNeutral)
     {
-        if (pBallOwner->m_pTeam->GetOtherNet()->m_v3NetLocation.f.x > 0.0f)
+        if (pBallOwner->m_pTeam->GetOtherNet()->m_v3NetLocation.x > 0.0f)
         {
             nNewKnotTable = 1;
         }
@@ -492,13 +492,13 @@ void GameplayCameraZoomLevel::Update(float fDeltaT, bool forceNeutral)
 
     fXYDist = fCos * m_CameraData->distance;
 
-    m_v3Camera.f.x = (fOrientCos * fXYDist) + m_fDampenedTargetX;
-    m_v3Camera.f.y = (fOrientSin * fXYDist) + m_fDampenedTargetY;
-    m_v3Camera.f.z = fSin * m_CameraData->distance;
+    m_v3Camera.x = (fOrientCos * fXYDist) + m_fDampenedTargetX;
+    m_v3Camera.y = (fOrientSin * fXYDist) + m_fDampenedTargetY;
+    m_v3Camera.z = fSin * m_CameraData->distance;
 
     float dampenedY = m_fDampenedTargetY;
     float dampenedX = m_fDampenedTargetX;
-    m_v3Target.f.x = dampenedX;
-    m_v3Target.f.y = dampenedY;
-    m_v3Target.f.z = 0.0f;
+    m_v3Target.x = dampenedX;
+    m_v3Target.y = dampenedY;
+    m_v3Target.z = 0.0f;
 }

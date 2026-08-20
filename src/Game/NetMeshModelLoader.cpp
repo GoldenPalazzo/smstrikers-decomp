@@ -575,12 +575,12 @@ void NetMeshModelLoader::CreateNetMeshFromVertexList()
         vertex->GetNormal(normal);
         vertex->GetTextureCoord(texCoord);
 
-        shortCoord.e[0] = (s16)(scale * texCoord.f.x);
-        shortCoord.e[1] = (s16)(scale * texCoord.f.y);
+        shortCoord.e[0] = (s16)(scale * texCoord.x);
+        shortCoord.e[1] = (s16)(scale * texCoord.y);
 
         if (sbPullGoalsOut != 0)
         {
-            position.f.x = position.f.x - 5.0f;
+            position.x = position.x - 5.0f;
         }
 
         nlMultPosVectorMatrix(position, position, pObject->GetWorldMatrix());
@@ -667,9 +667,9 @@ void NetMeshModelLoader::CreateNetMeshFromVertexList()
             nlVector3 position1 = *edgeEntry->key.mpVertex1->GetPosition();
             nlVector3 position2 = *edgeEntry->key.mpVertex2->GetPosition();
 
-            float dx = position1.f.x - position2.f.x;
-            float dy = position1.f.y - position2.f.y;
-            float dz = position1.f.z - position2.f.z;
+            float dx = position1.x - position2.x;
+            float dy = position1.y - position2.y;
+            float dz = position1.z - position2.z;
             float distance = nlSqrt(dx * dx + dy * dy + dz * dz, true);
 
             m_NetMesh.SetDistanceConstraint(index1, index2, distance);

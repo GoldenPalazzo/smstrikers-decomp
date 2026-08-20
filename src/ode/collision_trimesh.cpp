@@ -114,7 +114,7 @@ dxTriMeshData::Build(const void* Vertices, int VertexStide, int VertexCount,
     // user data (not used by OPCODE)
     for (int i=0; i<3; i++)
 	for (int j=0; j<3; j++)
-	    last_trans.m[i][j] = 0;
+	    last_trans.e2[i][j] = 0;
 
     Normals = (dReal *) in_Normals;
 }
@@ -142,7 +142,7 @@ void dGeomTriMeshDataSet(dTriMeshDataID g, int data_id, void* in_data)
 	elem = (double *) in_data;
 	for (int i=0; i<4; i++)
 	    for (int j=0; j<4; j++)
-		g->last_trans.m[i][j] = (dReal) elem[i*4 + j];
+		g->last_trans.e2[i][j] = (dReal) elem[i*4 + j];
 	
 	break;
     default:

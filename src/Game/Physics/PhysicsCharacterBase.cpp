@@ -37,19 +37,19 @@ void PhysicsCharacterBase::GetBoneVolumePoints(nlVector3* points, bool includeEn
         if (includeEndpoints)
         {
             f32 radius = 0.333f;
-            nlVec3Set(points[0], radius + pos.f.x, radius + pos.f.y, radius + pos.f.z);
-            nlVec3Set(points[1], pos.f.x - radius, pos.f.y - radius, pos.f.z - radius);
+            nlVec3Set(points[0], radius + pos.x, radius + pos.y, radius + pos.z);
+            nlVec3Set(points[1], pos.x - radius, pos.y - radius, pos.z - radius);
             points += 2;
         }
         else
         {
             f32 radius = 0.333f;
-            nlVec3Set(points[0], radius + pos.f.x, pos.f.y, pos.f.z);
-            nlVec3Set(points[1], pos.f.x - radius, pos.f.y, pos.f.z);
-            nlVec3Set(points[2], pos.f.x, radius + pos.f.y, pos.f.z);
-            nlVec3Set(points[3], pos.f.x, pos.f.y - radius, pos.f.z);
-            nlVec3Set(points[4], pos.f.x, pos.f.y, radius + pos.f.z);
-            nlVec3Set(points[5], pos.f.x, pos.f.y, pos.f.z - radius);
+            nlVec3Set(points[0], radius + pos.x, pos.y, pos.z);
+            nlVec3Set(points[1], pos.x - radius, pos.y, pos.z);
+            nlVec3Set(points[2], pos.x, radius + pos.y, pos.z);
+            nlVec3Set(points[3], pos.x, pos.y - radius, pos.z);
+            nlVec3Set(points[4], pos.x, pos.y, radius + pos.z);
+            nlVec3Set(points[5], pos.x, pos.y, pos.z - radius);
             points += 6;
         }
     }
@@ -98,9 +98,9 @@ PhysicsCharacterBase::~PhysicsCharacterBase()
 void PhysicsCharacterBase::SetCharacterPosition(const nlVector3& pos)
 {
     nlVector3 newPos;
-    newPos.f.x = pos.f.x;
-    newPos.f.y = pos.f.y;
-    newPos.f.z = pos.f.z + m_CentreOfMassHeight;
+    newPos.x = pos.x;
+    newPos.y = pos.y;
+    newPos.z = pos.z + m_CentreOfMassHeight;
     SetPosition(newPos, WORLD_COORDINATES);
 }
 
@@ -212,8 +212,8 @@ void PhysicsCharacterBase::UpdatePose(cPoseAccumulator* pose, float heightOffset
         nlMultMatrices(worldMatrix, boneVolume->m_Transform, pose->GetNodeMatrix(boneVolume->m_BoneIndex));
 
         // Adjust Z position for center of mass
-        worldMatrix.f.m43 -= m_CentreOfMassHeight;
-        worldMatrix.f.m43 += heightOffset;
+        worldMatrix.m43 -= m_CentreOfMassHeight;
+        worldMatrix.m43 += heightOffset;
 
         // Apply the transform
         AdjustTransform(boneVolume->m_TransformHandle, worldMatrix);

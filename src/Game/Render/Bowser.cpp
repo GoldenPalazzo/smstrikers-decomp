@@ -1,4 +1,5 @@
 #include "Game/Render/Bowser.h"
+#include "NL/vmath.h"
 #include "Game/SAnim/pnFeather.h"
 #include "Game/SAnim/pnBlender.h"
 #include "Game/AI/AiUtil.h"
@@ -229,7 +230,7 @@ void Bowser::Update(float fDeltaT)
         {
             if (mAttackType != BOWSER_ATTACK_STOMP)
             {
-                if (fabsf(mv3TargetPos.f.x - nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->GetTargetPosition().f.x) > 8.0f)
+                if (fabsf(mv3TargetPos.x - nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->GetTargetPosition().x) > 8.0f)
                 {
                     return;
                 }
@@ -298,7 +299,7 @@ void Bowser::Update(float fDeltaT)
             {
                 pTweaks = g_pGame->m_pGameTweaks;
                 float fTiltForce = pTweaks->unk324 + nlRandomf(pTweaks->unk328 - pTweaks->unk324, &nlDefaultSeed);
-                float fNewTilt = mfYAxisTilt - (fTiltForce * mv3Position.f.x);
+                float fNewTilt = mfYAxisTilt - (fTiltForce * mv3Position.x);
                 float fMaxTilt = g_pGame->m_pGameTweaks->unk32C;
                 if (fNewTilt > fMaxTilt)
                 {
@@ -367,7 +368,7 @@ void Bowser::Update(float fDeltaT)
             nlVector3 v3BallPos = g_pBall->m_v3Position;
             CheckTargetBounds(v3BallPos);
 
-            maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(v3BallPos.f.y - mv3Position.f.y, v3BallPos.f.x - mv3Position.f.x));
+            maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(v3BallPos.y - mv3Position.y, v3BallPos.x - mv3Position.x));
             AnimMoveSeek(fDeltaT, 40000.0f, 3000.0f, false);
 
             nlVector3 v3Pos = mv3Position;
@@ -433,7 +434,7 @@ void Bowser::Update(float fDeltaT)
             nlVector3 v3TargetPos = mpTarget->m_v3Position;
             CheckTargetBounds(v3TargetPos);
 
-            maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(v3TargetPos.f.y - mv3Position.f.y, v3TargetPos.f.x - mv3Position.f.x));
+            maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(v3TargetPos.y - mv3Position.y, v3TargetPos.x - mv3Position.x));
             AnimMoveSeek(fDeltaT, 40000.0f, 3000.0f, false);
 
             nlVector3 v3Pos = mv3Position;
@@ -466,8 +467,8 @@ void Bowser::Update(float fDeltaT)
                 }
                 else
                 {
-                    float fDeltaX = mv3Position.f.x - mpTarget->m_v3Position.f.x;
-                    float fDeltaY = mv3Position.f.y - mpTarget->m_v3Position.f.y;
+                    float fDeltaX = mv3Position.x - mpTarget->m_v3Position.x;
+                    float fDeltaY = mv3Position.y - mpTarget->m_v3Position.y;
                     if ((fDeltaX * fDeltaX) + (fDeltaY * fDeltaY) < 64.0f)
                     {
                         if (nlRandom(100, &nlDefaultSeed) < 50)
@@ -530,7 +531,7 @@ void Bowser::Update(float fDeltaT)
 
         CheckTargetBounds(v3TargetPos);
 
-        maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(v3TargetPos.f.y - mv3Position.f.y, v3TargetPos.f.x - mv3Position.f.x));
+        maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(v3TargetPos.y - mv3Position.y, v3TargetPos.x - mv3Position.x));
         AnimMoveSeek(fDeltaT, 40000.0f, 3000.0f, false);
 
         nlVector3 v3Pos = mv3Position;
@@ -732,8 +733,8 @@ void Bowser::ActionInit()
     if (mAttackType == BOWSER_ATTACK_STOMP)
     {
         mStompStage++;
-        if (fabsf(cCameraManager::m_UpVectorStack[cCameraManager::m_UpVectorStackSize].f.x) < 0.001f
-            && fabsf(cCameraManager::m_UpVectorStack[cCameraManager::m_UpVectorStackSize].f.y) < 0.001f
+        if (fabsf(cCameraManager::m_UpVectorStack[cCameraManager::m_UpVectorStackSize].x) < 0.001f
+            && fabsf(cCameraManager::m_UpVectorStack[cCameraManager::m_UpVectorStackSize].y) < 0.001f
             && mStompStage == 2)
         {
             mAttackType = BOWSER_ATTACK_ROLL;
@@ -813,34 +814,34 @@ void Bowser::ActionInit()
     {
         mv3TargetPos = v3Zero;
         if (mfYAxisTilt > 0.0f)
-            mv3TargetPos.f.x = 8.0f;
+            mv3TargetPos.x = 8.0f;
         else
-            mv3TargetPos.f.x = -8.0f;
+            mv3TargetPos.x = -8.0f;
     }
     if (mStompStage != 2)
     {
         float clampX = cField::GetGoalLineX(1u) - 3.0f;
-        if (fabsf(mv3TargetPos.f.x) > clampX)
+        if (fabsf(mv3TargetPos.x) > clampX)
         {
-            if (mv3TargetPos.f.x > 0.0f)
-                mv3TargetPos.f.x = clampX;
+            if (mv3TargetPos.x > 0.0f)
+                mv3TargetPos.x = clampX;
             else
-                mv3TargetPos.f.x = -clampX;
+                mv3TargetPos.x = -clampX;
         }
         float clampY = cField::GetSidelineY(1u) - 3.0f;
-        if (fabsf(mv3TargetPos.f.y) > clampY)
+        if (fabsf(mv3TargetPos.y) > clampY)
         {
-            if (mv3TargetPos.f.y < 0.0f)
-                mv3TargetPos.f.y = -clampY;
+            if (mv3TargetPos.y < 0.0f)
+                mv3TargetPos.y = -clampY;
             else
-                mv3TargetPos.f.y = clampY;
+                mv3TargetPos.y = clampY;
         }
-        if (fabsf(mv3TargetPos.f.x) < 8.0f)
+        if (fabsf(mv3TargetPos.x) < 8.0f)
         {
-            if (mv3TargetPos.f.x < 0.0f)
-                mv3TargetPos.f.x = -8.0f;
+            if (mv3TargetPos.x < 0.0f)
+                mv3TargetPos.x = -8.0f;
             else
-                mv3TargetPos.f.x = 8.0f;
+                mv3TargetPos.x = 8.0f;
         }
     }
     ActionStomp();
@@ -946,38 +947,38 @@ void Bowser::ActionStomp()
     nlVector3 targetPos = mv3TargetPos;
     float goalLineX = cField::GetGoalLineX(1U);
     float limitX = goalLineX - 3.0f;
-    if ((float)fabs(targetPos.f.x) > limitX)
+    if ((float)fabs(targetPos.x) > limitX)
     {
-        if (targetPos.f.x > 0.0f)
+        if (targetPos.x > 0.0f)
         {
-            targetPos.f.x = limitX;
+            targetPos.x = limitX;
         }
         else
         {
-            targetPos.f.x = -limitX;
+            targetPos.x = -limitX;
         }
     }
     float sidelineY = cField::GetSidelineY(1U);
     float limitY = sidelineY - 3.0f;
-    if ((float)fabs(targetPos.f.y) > limitY)
+    if ((float)fabs(targetPos.y) > limitY)
     {
-        if (targetPos.f.y < 0.0f)
+        if (targetPos.y < 0.0f)
         {
-            targetPos.f.y = -limitY;
+            targetPos.y = -limitY;
         }
         else
         {
-            targetPos.f.y = limitY;
+            targetPos.y = limitY;
         }
     }
-    targetPos.f.z = 10.0f;
-    targetPos.f.z = 0.0f;
-    targetPos.f.y += 3.0f;
+    targetPos.z = 10.0f;
+    targetPos.z = 0.0f;
+    targetPos.y += 3.0f;
     SetPosition(targetPos);
     maFacingDirection = 0xC000;
     maDesiredFacingDirection = 0xC000;
     vel = v3Zero;
-    vel.f.y = -3.0f;
+    vel.y = -3.0f;
     mv3Velocity = vel;
     mtActiveTimer.m_uPackedTime = 0;
 }
@@ -1031,42 +1032,42 @@ void Bowser::ActionFall()
 
     float goalLineX = cField::GetGoalLineX(1U);
     float limitX = goalLineX - 3.0f;
-    if ((float)fabs(targetPos.f.x) > limitX)
+    if ((float)fabs(targetPos.x) > limitX)
     {
-        if (targetPos.f.x > 0.0f)
+        if (targetPos.x > 0.0f)
         {
-            targetPos.f.x = limitX;
+            targetPos.x = limitX;
         }
         else
         {
-            targetPos.f.x = -limitX;
+            targetPos.x = -limitX;
         }
     }
 
     float sidelineY = cField::GetSidelineY(1U);
     float limitY = sidelineY - 3.0f;
-    if ((float)fabs(targetPos.f.y) > limitY)
+    if ((float)fabs(targetPos.y) > limitY)
     {
-        if (targetPos.f.y < 0.0f)
+        if (targetPos.y < 0.0f)
         {
-            targetPos.f.y = -limitY;
+            targetPos.y = -limitY;
         }
         else
         {
-            targetPos.f.y = limitY;
+            targetPos.y = limitY;
         }
     }
 
-    targetPos.f.z = 10.0f;
-    targetPos.f.z = 0.0f;
-    targetPos.f.y += 3.0f;
+    targetPos.z = 10.0f;
+    targetPos.z = 0.0f;
+    targetPos.y += 3.0f;
     SetPosition(targetPos);
 
     maFacingDirection = 0xC000;
     maDesiredFacingDirection = 0xC000;
 
     vel = v3Zero;
-    vel.f.y = -3.0f;
+    vel.y = -3.0f;
     mv3Velocity = vel;
 }
 
@@ -1081,71 +1082,71 @@ void Bowser::ActionJump()
     SetBowserAnimState(BOWSER_ANIM_JUMP, PM_HOLD, 0.2f);
 
     nlVector3 v3JumpPos = g_pBall->m_v3Position;
-    v3JumpPos.f.x += nlRandomf(3.0f, &nlDefaultSeed) - 1.5f;
+    v3JumpPos.x += nlRandomf(3.0f, &nlDefaultSeed) - 1.5f;
 
     float fMaxTilt = g_pGame->m_pGameTweaks->unk32C;
-    if (v3JumpPos.f.x > 0.0f && mfYAxisTilt <= -fMaxTilt)
+    if (v3JumpPos.x > 0.0f && mfYAxisTilt <= -fMaxTilt)
     {
-        v3JumpPos.f.x *= -1.0f;
+        v3JumpPos.x *= -1.0f;
     }
-    else if (v3JumpPos.f.x < 0.0f && mfYAxisTilt >= fMaxTilt)
+    else if (v3JumpPos.x < 0.0f && mfYAxisTilt >= fMaxTilt)
     {
-        v3JumpPos.f.x *= -1.0f;
+        v3JumpPos.x *= -1.0f;
     }
 
-    if (v3JumpPos.f.y < 0.0f)
+    if (v3JumpPos.y < 0.0f)
     {
-        v3JumpPos.f.y += 1.0f + nlRandomf(3.0f, &nlDefaultSeed);
+        v3JumpPos.y += 1.0f + nlRandomf(3.0f, &nlDefaultSeed);
     }
     else
     {
-        v3JumpPos.f.y -= 1.0f + nlRandomf(3.0f, &nlDefaultSeed);
+        v3JumpPos.y -= 1.0f + nlRandomf(3.0f, &nlDefaultSeed);
     }
 
     float goalLineX = cField::GetGoalLineX(1U);
     float limitX = goalLineX - 3.0f;
-    if ((float)fabs(v3JumpPos.f.x) > limitX)
+    if ((float)fabs(v3JumpPos.x) > limitX)
     {
-        if (v3JumpPos.f.x > 0.0f)
+        if (v3JumpPos.x > 0.0f)
         {
-            v3JumpPos.f.x = limitX;
+            v3JumpPos.x = limitX;
         }
         else
         {
-            v3JumpPos.f.x = -limitX;
+            v3JumpPos.x = -limitX;
         }
     }
 
     float sidelineY = cField::GetSidelineY(1U);
     float limitY = sidelineY - 3.0f;
-    if ((float)fabs(v3JumpPos.f.y) > limitY)
+    if ((float)fabs(v3JumpPos.y) > limitY)
     {
-        if (v3JumpPos.f.y < 0.0f)
+        if (v3JumpPos.y < 0.0f)
         {
-            v3JumpPos.f.y = -limitY;
+            v3JumpPos.y = -limitY;
         }
         else
         {
-            v3JumpPos.f.y = limitY;
+            v3JumpPos.y = limitY;
         }
     }
 
     nlVector3 v3JumpVel;
-    v3JumpVel.f.x = v3JumpPos.f.x - mv3Position.f.x;
-    v3JumpVel.f.y = v3JumpPos.f.y - mv3Position.f.y;
-    v3JumpVel.f.z = v3JumpPos.f.z - mv3Position.f.z;
-    v3JumpVel.f.z = 0.0f;
+    v3JumpVel.x = v3JumpPos.x - mv3Position.x;
+    v3JumpVel.y = v3JumpPos.y - mv3Position.y;
+    v3JumpVel.z = v3JumpPos.z - mv3Position.z;
+    v3JumpVel.z = 0.0f;
 
-    float vz = v3JumpVel.f.z;
-    float vy = v3JumpVel.f.y;
-    float speed = nlGetLength3D(v3JumpVel.f.x, vy, vz);
+    float vz = v3JumpVel.z;
+    float vy = v3JumpVel.y;
+    float speed = nlGetLength3D(v3JumpVel.x, vy, vz);
 
     mfDesiredSpeed = 2.2f * speed;
-    v3JumpVel.f.y = vy * 0.5f;
-    v3JumpVel.f.x = v3JumpVel.f.x * 0.5f;
-    v3JumpVel.f.z = vz * 0.5f;
+    v3JumpVel.y = vy * 0.5f;
+    v3JumpVel.x = v3JumpVel.x * 0.5f;
+    v3JumpVel.z = vz * 0.5f;
 
-    maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(v3JumpVel.f.y, v3JumpVel.f.x));
+    maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(v3JumpVel.y, v3JumpVel.x));
     mv3Velocity = v3JumpVel;
 }
 
@@ -1301,9 +1302,9 @@ void Bowser::ActionLeave()
 
     unsigned short aDesired = 0;
 
-    if (v3CameraTarget.f.x > mv3Position.f.x)
+    if (v3CameraTarget.x > mv3Position.x)
     {
-        v3Velocity.f.x *= -1.0f;
+        v3Velocity.x *= -1.0f;
         aDesired = 0x8000;
     }
 
@@ -1320,7 +1321,7 @@ void Bowser::ActionLeave()
  */
 void Bowser::Move(float fDeltaT)
 {
-    float speed = nlSqrt(mv3Velocity.f.x * mv3Velocity.f.x + mv3Velocity.f.y * mv3Velocity.f.y + mv3Velocity.f.z * mv3Velocity.f.z, true);
+    float speed = nlSqrt(mv3Velocity.x * mv3Velocity.x + mv3Velocity.y * mv3Velocity.y + mv3Velocity.z * mv3Velocity.z, true);
 
     float newSpeed = SeekSpeed(speed, mfDesiredSpeed, 25.0f, 75.0f, fDeltaT);
 
@@ -1328,39 +1329,39 @@ void Bowser::Move(float fDeltaT)
 
     nlVector3 vel;
     nlVector3 newPos;
-    nlPolarToCartesian(vel.f.x, vel.f.y, maDesiredFacingDirection, newSpeed);
-    vel.f.z = mv3Velocity.f.z;
+    nlPolarToCartesian(vel.x, vel.y, maDesiredFacingDirection, newSpeed);
+    vel.z = mv3Velocity.z;
     mv3Velocity = vel;
 
     newPos = mv3Position;
-    newPos.f.x += vel.f.x * fDeltaT;
-    newPos.f.y += vel.f.y * fDeltaT;
+    newPos.x += vel.x * fDeltaT;
+    newPos.y += vel.y * fDeltaT;
 
     float goalLineX = cField::GetGoalLineX(1U);
     float limitX = goalLineX - 3.0f;
-    if ((float)fabs(newPos.f.x) > limitX)
+    if ((float)fabs(newPos.x) > limitX)
     {
-        if (newPos.f.x > 0.0f)
+        if (newPos.x > 0.0f)
         {
-            newPos.f.x = limitX;
+            newPos.x = limitX;
         }
         else
         {
-            newPos.f.x = -limitX;
+            newPos.x = -limitX;
         }
     }
 
     float sidelineY = cField::GetSidelineY(1U);
     float limitY = sidelineY - 3.0f;
-    if ((float)fabs(newPos.f.y) > limitY)
+    if ((float)fabs(newPos.y) > limitY)
     {
-        if (newPos.f.y < 0.0f)
+        if (newPos.y < 0.0f)
         {
-            newPos.f.y = -limitY;
+            newPos.y = -limitY;
         }
         else
         {
-            newPos.f.y = limitY;
+            newPos.y = limitY;
         }
     }
 
@@ -1374,26 +1375,26 @@ eBowserMoveResult Bowser::GravityMove(float fDeltaT)
     nlVector3 v3Pos = mv3Position;
     eBowserMoveResult result = BOWSER_MOVE_RESULT_NORMAL;
 
-    if ((float)fabs(v3Vel.f.z) < 1.0f && v3Pos.f.z < 0.05f)
+    if ((float)fabs(v3Vel.z) < 1.0f && v3Pos.z < 0.05f)
     {
-        v3Pos.f.z = 0.0f;
-        v3Vel.f.z = 0.0f;
+        v3Pos.z = 0.0f;
+        v3Vel.z = 0.0f;
         result = BOWSER_MOVE_RESULT_AT_REST;
     }
     else
     {
-        v3Pos.f.z += (v3Vel.f.z + fHalfGrav * fDeltaT) * fDeltaT;
-        v3Vel.f.z += fDeltaT * g_pGame->m_pGameTweaks->unk330;
-        if (v3Pos.f.z < 0.0f)
+        v3Pos.z += (v3Vel.z + fHalfGrav * fDeltaT) * fDeltaT;
+        v3Vel.z += fDeltaT * g_pGame->m_pGameTweaks->unk330;
+        if (v3Pos.z < 0.0f)
         {
-            v3Pos.f.z = 0.0f;
-            v3Vel.f.z *= g_pGame->m_pGameTweaks->unk334;
+            v3Pos.z = 0.0f;
+            v3Vel.z *= g_pGame->m_pGameTweaks->unk334;
             result = BOWSER_MOVE_RESULT_REBOUND;
         }
     }
 
-    v3Pos.f.x += v3Vel.f.x * fDeltaT;
-    v3Pos.f.y += v3Vel.f.y * fDeltaT;
+    v3Pos.x += v3Vel.x * fDeltaT;
+    v3Pos.y += v3Vel.y * fDeltaT;
     SetPosition(v3Pos);
     mv3Velocity = v3Vel;
 
@@ -1420,7 +1421,7 @@ void Bowser::ActionIdle()
     }
 
     nlVector3 pos = mv3Position;
-    pos.f.z = 0.0f;
+    pos.z = 0.0f;
     SetPosition(pos);
 
     mv3Velocity = v3Zero;
@@ -1451,7 +1452,7 @@ void Bowser::SetTiltParameters(float fYAxisTilt)
         if ((float)fabs(fYAxisTilt) > 0.01f)
         {
             nlVector3 tiltForce = { 0.0f, 0.0f, 0.0f };
-            tiltForce.f.x = -fYAxisTilt * g_pGame->m_pGameTweaks->unk338;
+            tiltForce.x = -fYAxisTilt * g_pGame->m_pGameTweaks->unk338;
 
             g_pBall->m_pPhysicsBall->m_v3TiltForce = tiltForce;
             g_pBall->m_pPhysicsBall->m_bUseTiltForce = true;
@@ -1545,10 +1546,10 @@ void Bowser::UpdateFireEmitter(EmissionController& controller)
         nlMatrix4& headMatrix = pPoseAccumulator->GetNodeMatrixByHashID(HeadJointID);
         nlVector3 direction;
         // = headMatrix.GetTranslation();
-        nlVec3Set(direction, headMatrix.f.m21, headMatrix.f.m22, headMatrix.f.m23);
-        // direction.f.x = headMatrix.f.m21; // row 1, column 0
-        // direction.f.y = headMatrix.f.m22; // row 1, column 1
-        // direction.f.z = headMatrix.f.m23; // row 1, column 2
+        nlVec3Set(direction, headMatrix.m21, headMatrix.m22, headMatrix.m23);
+        // direction.x = headMatrix.m21; // row 1, column 0
+        // direction.y = headMatrix.m22; // row 1, column 1
+        // direction.z = headMatrix.m23; // row 1, column 2
         controller.SetDirection(direction);
     }
 }
@@ -1742,11 +1743,11 @@ void Bowser::CheckFootSteps()
 
         if (mAttackType != BOWSER_ATTACK_STOMP)
         {
-            fNewTilt -= 0.5f * (fTiltForce * mv3Position.f.x);
+            fNewTilt -= 0.5f * (fTiltForce * mv3Position.x);
         }
         else
         {
-            fNewTilt -= fTiltForce * mv3Position.f.x;
+            fNewTilt -= fTiltForce * mv3Position.x;
         }
 
         f32 fMaxTilt = g_pGame->m_pGameTweaks->unk32C;
@@ -1781,29 +1782,29 @@ bool Bowser::CheckTargetBounds(nlVector3& v3Target)
     bool bClipped = false;
 
     float fXLimit = cField::GetGoalLineX(1U) - 3.0f;
-    if (fabsf(v3Target.f.x) > fXLimit)
+    if (fabsf(v3Target.x) > fXLimit)
     {
-        if (v3Target.f.x > 0.0f)
+        if (v3Target.x > 0.0f)
         {
-            v3Target.f.x = fXLimit;
+            v3Target.x = fXLimit;
         }
         else
         {
-            v3Target.f.x = -fXLimit;
+            v3Target.x = -fXLimit;
         }
         bClipped = true;
     }
 
     float fYLimit = cField::GetSidelineY(1U) - 3.0f;
-    if (fabsf(v3Target.f.y) > fYLimit)
+    if (fabsf(v3Target.y) > fYLimit)
     {
-        if (v3Target.f.y < 0.0f)
+        if (v3Target.y < 0.0f)
         {
-            v3Target.f.y = -fYLimit;
+            v3Target.y = -fYLimit;
         }
         else
         {
-            v3Target.f.y = fYLimit;
+            v3Target.y = fYLimit;
         }
         bClipped = true;
     }

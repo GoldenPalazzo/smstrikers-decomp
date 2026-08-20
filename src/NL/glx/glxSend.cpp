@@ -163,19 +163,19 @@ static void GetConstants()
 
     {
         const nlVector4& v = glConstantGet("shadow/pass0_colour");
-        shadow0 = makeColor(v.f.x, v.f.y, v.f.z, v.f.w);
+        shadow0 = makeColor(v.x, v.y, v.z, v.w);
         rshadow_colour[0] = shadow0;
     }
 
     {
         const nlVector4& v = glConstantGet("shadow/pass1_colour");
-        shadow1 = makeColor(v.f.x, v.f.y, v.f.z, v.f.w);
+        shadow1 = makeColor(v.x, v.y, v.z, v.w);
         rshadow_colour[1] = shadow1;
     }
 
     {
         const nlVector4& v = glConstantGet("lighting/ambient_colour");
-        ambient = makeColor(v.f.x, v.f.y, v.f.z, v.f.w);
+        ambient = makeColor(v.x, v.y, v.z, v.w);
         world_ambient.c[0] = ambient.r;
         world_ambient.c[1] = ambient.g;
         world_ambient.c[2] = ambient.b;
@@ -188,11 +188,11 @@ static void GetConstants()
 
     {
         const nlVector4& warbleDivisor = glConstantGet("warble/divisor");
-        glx_IndDivisor = warbleDivisor.f.x;
+        glx_IndDivisor = warbleDivisor.x;
     }
 
     vMult = glConstantGet("lighting/range");
-    if (vMult.f.x == 1.0f)
+    if (vMult.x == 1.0f)
     {
         glx_tevscale = (_GXTevScale)0;
     }
@@ -203,12 +203,12 @@ static void GetConstants()
 
     if (glConstantGet("texture/density", vTexel))
     {
-        glx_SetGridMode(vTexel.f.x == 1.0f);
+        glx_SetGridMode(vTexel.x == 1.0f);
     }
 
     {
         const nlVector4& crowdFrame = glConstantGet("crowd/frame");
-        f32 crowdOffsetV = crowdFrame.f.x;
+        f32 crowdOffsetV = crowdFrame.x;
         PSMTXIdentity(crowdMatrix);
         crowdMatrix[1][3] = crowdOffsetV;
         GXLoadTexMtxImm(crowdMatrix, 0x36, (_GXTexMtxType)1);
@@ -1355,13 +1355,13 @@ static void glx_LoadLight(GLLightUserData* pLight, _GXLightID lightId)
             0.0f,
         };
 
-        float worldY = pLight->worldPosition.f.y - origin.f.y;
-        float worldX = pLight->worldPosition.f.x - origin.f.x;
-        float worldZ = pLight->worldPosition.f.z - origin.f.z;
+        float worldY = pLight->worldPosition.y - origin.y;
+        float worldX = pLight->worldPosition.x - origin.x;
+        float worldZ = pLight->worldPosition.z - origin.z;
 
-        worldDir.f.x = worldX;
-        worldDir.f.y = worldY;
-        worldDir.f.z = worldZ;
+        worldDir.x = worldX;
+        worldDir.y = worldY;
+        worldDir.z = worldZ;
 
         {
             float lengthSq = worldDir.GetLengthSq3D();
@@ -1374,14 +1374,14 @@ static void glx_LoadLight(GLLightUserData* pLight, _GXLightID lightId)
 
         nlVec3Scale(viewDir, 1048576.0f);
 
-        GXInitLightPos(&light, viewDir.f.x, viewDir.f.y, viewDir.f.z);
+        GXInitLightPos(&light, viewDir.x, viewDir.y, viewDir.z);
         GXInitLightAttnA(&light, 1.0f, 0.0f, 0.0f);
         GXInitLightDistAttn(&light, 1048576.0f, 1.0f, GX_DA_OFF);
     }
     else
     {
         nlMultPosVectorMatrix(viewPos, pLight->worldPosition, mview);
-        GXInitLightPos(&light, viewPos.f.x, viewPos.f.y, viewPos.f.z);
+        GXInitLightPos(&light, viewPos.x, viewPos.y, viewPos.z);
         GXInitLightAttnA(&light, 1.0f, 0.0f, 0.0f);
         GXInitLightDistAttn(&light, refMult * pLight->outerRadius, refBright, dist_func[refFunc]);
     }
@@ -1404,7 +1404,7 @@ static inline void glx_LoadDirectionalLight(GLDirectionalLightUserData* pLight, 
 
     nlMultDirVectorMatrix(viewDir, pLight->direction, mview);
     nlVec3Scale(viewDir, 1048576.0f);
-    GXInitLightPos(&light, viewDir.f.x, viewDir.f.y, viewDir.f.z);
+    GXInitLightPos(&light, viewDir.x, viewDir.y, viewDir.z);
 
     GXInitLightAttnA(&light, 1.0f, 0.0f, 0.0f);
     GXInitLightDistAttn(&light, 1048576.0f, 1.0f, GX_DA_OFF);
@@ -1421,19 +1421,19 @@ static inline void glx_LoadSpecular(GLSpecularUserData* pLight, GXLightID lightI
 
     {
         float recipLength = nlRecipSqrt(
-            pLight->worldDirection.f.x * pLight->worldDirection.f.x + pLight->worldDirection.f.y * pLight->worldDirection.f.y + pLight->worldDirection.f.z * pLight->worldDirection.f.z,
+            pLight->worldDirection.x * pLight->worldDirection.x + pLight->worldDirection.y * pLight->worldDirection.y + pLight->worldDirection.z * pLight->worldDirection.z,
             false);
-        nlVec3Set(worldDir, recipLength * pLight->worldDirection.f.x, recipLength * pLight->worldDirection.f.y, recipLength * pLight->worldDirection.f.z);
+        nlVec3Set(worldDir, recipLength * pLight->worldDirection.x, recipLength * pLight->worldDirection.y, recipLength * pLight->worldDirection.z);
     }
 
     nlMultDirVectorMatrix(viewDir, worldDir, mview);
 
     {
         float recipLength = nlRecipSqrt(
-            viewDir.f.x * viewDir.f.x + viewDir.f.y * viewDir.f.y + viewDir.f.z * viewDir.f.z,
+            viewDir.x * viewDir.x + viewDir.y * viewDir.y + viewDir.z * viewDir.z,
             false);
 
-        nlVec3Set(viewDir, recipLength * viewDir.f.x, recipLength * viewDir.f.y, recipLength * viewDir.f.z);
+        nlVec3Set(viewDir, recipLength * viewDir.x, recipLength * viewDir.y, recipLength * viewDir.z);
     }
 
     colour.r = nlFloatColourToByte(pLight->colour.c[0] * pLight->intensity * SpecularFudge);
@@ -1442,7 +1442,7 @@ static inline void glx_LoadSpecular(GLSpecularUserData* pLight, GXLightID lightI
     colour.a = nlFloatColourToByte(pLight->colour.c[3] * pLight->intensity * SpecularFudge);
 
     GXInitLightColor(&light, colour);
-    GXInitSpecularDir(&light, viewDir.f.x, viewDir.f.y, viewDir.f.z);
+    GXInitSpecularDir(&light, viewDir.x, viewDir.y, viewDir.z);
 
     {
         float half = 0.5f;
@@ -1905,7 +1905,7 @@ static inline void AdjustViewport(bool bOn)
         GXLoadPosMtxImm(gx_modelview, 0);
 
         _GXProjectionType type;
-        if (-1.0f == mproj.m[3][2])
+        if (-1.0f == mproj.e2[3][2])
         {
             type = (_GXProjectionType)0;
         }
@@ -2433,7 +2433,7 @@ static inline void glx_SwitchViews(eGLView view)
         glxCopyMatrix(gx_proj, mproj);
 
         GXProjectionType type;
-        if (mproj.m[3][2] == -1.0f)
+        if (mproj.e2[3][2] == -1.0f)
         {
             type = GX_PERSPECTIVE;
         }

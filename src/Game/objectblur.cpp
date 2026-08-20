@@ -169,7 +169,7 @@ void BlurHandler::RenderMesh(unsigned long uTexID)
 
     nlMatrix4 matWorld;
     matWorld.SetIdentity();
-    matWorld.f.m43 += fFlimmerOffset;
+    matWorld.m43 += fFlimmerOffset;
 
     matHandle = glAllocMatrix();
     if (matHandle != (u32)-1)
@@ -261,15 +261,15 @@ void BlurHandler::RenderMesh(unsigned long uTexID)
 
                 mesh.Colour(colour);
                 nlVector2 tc0;
-                tc0.f.x = texU;
-                tc0.f.y = 0.0f;
+                tc0.x = texU;
+                tc0.y = 0.0f;
                 ((GLMeshWriterCore*)&mesh)->Texcoord(tc0);
                 mesh.Vertex(v3Top);
 
                 mesh.Colour(colour);
                 nlVector2 tc1;
-                tc1.f.x = texU;
-                tc1.f.y = 1.0f;
+                tc1.x = texU;
+                tc1.y = 1.0f;
                 ((GLMeshWriterCore*)&mesh)->Texcoord(tc1);
                 mesh.Vertex(v3Bottom);
             }
@@ -277,15 +277,15 @@ void BlurHandler::RenderMesh(unsigned long uTexID)
             {
                 mesh.Colour(colour);
                 nlVector2 tc0;
-                tc0.f.x = texU;
-                tc0.f.y = 0.0f;
+                tc0.x = texU;
+                tc0.y = 0.0f;
                 ((GLMeshWriterCore*)&mesh)->Texcoord(tc0);
                 mesh.Vertex(BPEntry->v3Top);
 
                 mesh.Colour(colour);
                 nlVector2 tc1;
-                tc1.f.x = texU;
-                tc1.f.y = 1.0f;
+                tc1.x = texU;
+                tc1.y = 1.0f;
                 ((GLMeshWriterCore*)&mesh)->Texcoord(tc1);
                 mesh.Vertex(BPEntry->v3Bottom);
             }
@@ -331,9 +331,9 @@ void BlurHandler::AddViewOrientedPoint(const nlVector3& position, const nlVector
         if (m_pLastPoint != nullptr)
         {
             nlVector3 delta;
-            nlVec3Set(delta, m_pLastPoint->v3Top.f.x - m_pointFinal.v3Top.f.x, m_pLastPoint->v3Top.f.y - m_pointFinal.v3Top.f.y, m_pLastPoint->v3Top.f.z - m_pointFinal.v3Top.f.z);
+            nlVec3Set(delta, m_pLastPoint->v3Top.x - m_pointFinal.v3Top.x, m_pLastPoint->v3Top.y - m_pointFinal.v3Top.y, m_pLastPoint->v3Top.z - m_pointFinal.v3Top.z);
 
-            if ((delta.f.x * delta.f.x) + (delta.f.y * delta.f.y) + (delta.f.z * delta.f.z) < 0.0025000002f)
+            if ((delta.x * delta.x) + (delta.y * delta.y) + (delta.z * delta.z) < 0.0025000002f)
             {
                 return;
             }
@@ -383,16 +383,16 @@ bool BlurHandler::ConstructViewOrientedPoints(nlVector3& topPoint, nlVector3& bo
     float normX;
     float normZ;
     float normY;
-    normZ = invLen * forwardVector.f.z;
-    normY = invLen * forwardVector.f.y;
-    normX = invLen * forwardVector.f.x;
+    normZ = invLen * forwardVector.z;
+    normY = invLen * forwardVector.y;
+    normX = invLen * forwardVector.x;
 
     cCameraManager::GetViewVector(viewVector);
-    if (viewVector.f.x * normX + viewVector.f.y * normY + viewVector.f.z * normZ < 0.99f)
+    if (viewVector.x * normX + viewVector.y * normY + viewVector.z * normZ < 0.99f)
     {
-        float crossX = (normY * viewVector.f.z) - (normZ * viewVector.f.y);
-        float crossY = (-normX * viewVector.f.z) + (normZ * viewVector.f.x);
-        float crossZ = (normX * viewVector.f.y) - (normY * viewVector.f.x);
+        float crossX = (normY * viewVector.z) - (normZ * viewVector.y);
+        float crossY = (-normX * viewVector.z) + (normZ * viewVector.x);
+        float crossZ = (normX * viewVector.y) - (normY * viewVector.x);
 
         float invLen2 = nlRecipSqrt((crossZ * crossZ) + ((crossX * crossX) + (crossY * crossY)), 1);
 
@@ -405,9 +405,9 @@ bool BlurHandler::ConstructViewOrientedPoints(nlVector3& topPoint, nlVector3& bo
     {
         if (m_pLastPoint != NULL)
         {
-            perpX = 0.5f * (m_pLastPoint->v3Top.f.x - m_pLastPoint->v3Bottom.f.x);
-            perpY = 0.5f * (m_pLastPoint->v3Top.f.y - m_pLastPoint->v3Bottom.f.y);
-            perpZ = 0.5f * (m_pLastPoint->v3Top.f.z - m_pLastPoint->v3Bottom.f.z);
+            perpX = 0.5f * (m_pLastPoint->v3Top.x - m_pLastPoint->v3Bottom.x);
+            perpY = 0.5f * (m_pLastPoint->v3Top.y - m_pLastPoint->v3Bottom.y);
+            perpZ = 0.5f * (m_pLastPoint->v3Top.z - m_pLastPoint->v3Bottom.z);
         }
         else
         {
@@ -415,8 +415,8 @@ bool BlurHandler::ConstructViewOrientedPoints(nlVector3& topPoint, nlVector3& bo
         }
     }
 
-    nlVec3Set(topPoint, position.f.x + perpX, position.f.y + perpY, position.f.z + perpZ);
-    nlVec3Set(bottomPoint, position.f.x - perpX, position.f.y - perpY, position.f.z - perpZ);
+    nlVec3Set(topPoint, position.x + perpX, position.y + perpY, position.z + perpZ);
+    nlVec3Set(bottomPoint, position.x - perpX, position.y - perpY, position.z - perpZ);
 
     return true;
 }

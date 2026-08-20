@@ -40,10 +40,10 @@ void ColourBlendScreenTransition::Render(eGLView view)
 
     v4Clr = tmp;
     nlColourSet(colour,
-        (u8)(255.0f * v4Clr.f.x),
-        (u8)(255.0f * v4Clr.f.y),
-        (u8)(255.0f * v4Clr.f.z),
-        (u8)(255.0f * v4Clr.f.w));
+        (u8)(255.0f * v4Clr.x),
+        (u8)(255.0f * v4Clr.y),
+        (u8)(255.0f * v4Clr.z),
+        (u8)(255.0f * v4Clr.w));
 
     glSetDefaultState(false);
     glSetCurrentTexture(m_nTexture, GLTT_Diffuse);
@@ -71,15 +71,15 @@ ColourBlendScreenTransition* ColourBlendScreenTransition::GetFromParser(SimplePa
 
     float fLength = atof(parser->NextTokenOnLine(true));
 
-    v4StartColour.f.x = atof(parser->NextTokenOnLine(true));
-    v4StartColour.f.y = atof(parser->NextTokenOnLine(true));
-    v4StartColour.f.z = atof(parser->NextTokenOnLine(true));
-    v4StartColour.f.w = atof(parser->NextTokenOnLine(true));
+    v4StartColour.x = atof(parser->NextTokenOnLine(true));
+    v4StartColour.y = atof(parser->NextTokenOnLine(true));
+    v4StartColour.z = atof(parser->NextTokenOnLine(true));
+    v4StartColour.w = atof(parser->NextTokenOnLine(true));
 
-    v4EndColour.f.x = atof(parser->NextTokenOnLine(true));
-    v4EndColour.f.y = atof(parser->NextTokenOnLine(true));
-    v4EndColour.f.z = atof(parser->NextTokenOnLine(true));
-    v4EndColour.f.w = atof(parser->NextTokenOnLine(true));
+    v4EndColour.x = atof(parser->NextTokenOnLine(true));
+    v4EndColour.y = atof(parser->NextTokenOnLine(true));
+    v4EndColour.z = atof(parser->NextTokenOnLine(true));
+    v4EndColour.w = atof(parser->NextTokenOnLine(true));
 
     pToken = parser->NextTokenOnLine(true);
     if (pToken != NULL)

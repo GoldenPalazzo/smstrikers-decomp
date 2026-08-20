@@ -369,7 +369,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
  */
 void nlFont::DrawString(eGLView View, const FontCharString& Text, const nlVector2& Position, const nlColour& Colour, const nlColour& EffectColour, int Length, nlFont::TextPass Passes, bool FlipY, unsigned long* pMatrix, nlColour* pOverrideColour) const
 {
-    float PositionY = Position.f.y;
+    float PositionY = Position.y;
     float CurrentY;
     float CurrentX;
     float StartingX;
@@ -383,7 +383,7 @@ void nlFont::DrawString(eGLView View, const FontCharString& Text, const nlVector
         renderAscent = m_Metrics.RenderAscent;
     }
 
-    StartingX = Position.f.x;
+    StartingX = Position.x;
     CurrentY = PositionY - (float)renderAscent;
 
     unsigned short EscapeBegin;
@@ -525,15 +525,15 @@ void nlFont::DrawString(eGLView View, const FontCharString& Text, const nlVector
                     CurrentX += (float)pGlyph->Offset;
                     if (Page == CurrentPage)
                     {
-                        pCurrentQuad->m_pos[1].f.x = CurrentX;
-                        pCurrentQuad->m_pos[0].f.x = CurrentX;
+                        pCurrentQuad->m_pos[1].x = CurrentX;
+                        pCurrentQuad->m_pos[0].x = CurrentX;
 
                         float EndX = CurrentX + (float)pGlyph->RenderWidth;
-                        pCurrentQuad->m_pos[3].f.x = EndX;
-                        pCurrentQuad->m_pos[2].f.x = EndX;
+                        pCurrentQuad->m_pos[3].x = EndX;
+                        pCurrentQuad->m_pos[2].x = EndX;
 
-                        pCurrentQuad->m_pos[3].f.y = CurrentY;
-                        pCurrentQuad->m_pos[0].f.y = CurrentY;
+                        pCurrentQuad->m_pos[3].y = CurrentY;
+                        pCurrentQuad->m_pos[0].y = CurrentY;
 
                         int renderHeight;
                         if (FlipY)
@@ -546,26 +546,26 @@ void nlFont::DrawString(eGLView View, const FontCharString& Text, const nlVector
                         }
 
                         float EndY = CurrentY + (float)renderHeight;
-                        pCurrentQuad->m_pos[2].f.y = EndY;
-                        pCurrentQuad->m_pos[1].f.y = EndY;
+                        pCurrentQuad->m_pos[2].y = EndY;
+                        pCurrentQuad->m_pos[1].y = EndY;
 
                         pCurrentQuad->depth = 0.0f;
 
-                        float GlyphU = pGlyph->uv.f.x;
-                        pCurrentQuad->m_uv[1].f.x = GlyphU;
-                        pCurrentQuad->m_uv[0].f.x = GlyphU;
+                        float GlyphU = pGlyph->uv.x;
+                        pCurrentQuad->m_uv[1].x = GlyphU;
+                        pCurrentQuad->m_uv[0].x = GlyphU;
 
-                        float EndU = pGlyph->uv.f.x + (0.999f * ((float)pGlyph->RenderWidth * m_InvTexSize));
-                        pCurrentQuad->m_uv[3].f.x = EndU;
-                        pCurrentQuad->m_uv[2].f.x = EndU;
+                        float EndU = pGlyph->uv.x + (0.999f * ((float)pGlyph->RenderWidth * m_InvTexSize));
+                        pCurrentQuad->m_uv[3].x = EndU;
+                        pCurrentQuad->m_uv[2].x = EndU;
 
-                        float GlyphV = pGlyph->uv.f.y;
-                        pCurrentQuad->m_uv[3].f.y = GlyphV;
-                        pCurrentQuad->m_uv[0].f.y = GlyphV;
+                        float GlyphV = pGlyph->uv.y;
+                        pCurrentQuad->m_uv[3].y = GlyphV;
+                        pCurrentQuad->m_uv[0].y = GlyphV;
 
-                        float EndV = pGlyph->uv.f.y + GlyphRenderHeightVOffset;
-                        pCurrentQuad->m_uv[2].f.y = EndV;
-                        pCurrentQuad->m_uv[1].f.y = EndV;
+                        float EndV = pGlyph->uv.y + GlyphRenderHeightVOffset;
+                        pCurrentQuad->m_uv[2].y = EndV;
+                        pCurrentQuad->m_uv[1].y = EndV;
 
                         pCurrentQuad->SetColour(OverrideColour);
 

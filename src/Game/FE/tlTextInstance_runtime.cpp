@@ -117,12 +117,12 @@ void TLTextInstance::Render(eGLView view, const nlColour& colour) const
     case 1:
     {
         float half = 0.5f;
-        float bx = m_OverloadedAttributes.BoxSize.f.x;
+        float bx = m_OverloadedAttributes.BoxSize.x;
         x = -bx * half;
         break;
     }
     case 2:
-        x = -m_OverloadedAttributes.BoxSize.f.x;
+        x = -m_OverloadedAttributes.BoxSize.x;
         break;
     }
 
@@ -135,17 +135,17 @@ void TLTextInstance::Render(eGLView view, const nlColour& colour) const
     case 0x10:
     {
         float half = 0.5f;
-        float by = m_OverloadedAttributes.BoxSize.f.y;
+        float by = m_OverloadedAttributes.BoxSize.y;
         y = by * half;
         break;
     }
     case 0x20:
-        y = m_OverloadedAttributes.BoxSize.f.y;
+        y = m_OverloadedAttributes.BoxSize.y;
         break;
     }
 
-    drawAt.f.x = x;
-    drawAt.f.y = y;
+    drawAt.x = x;
+    drawAt.y = y;
 
     if (m_UseScissorRect)
     {

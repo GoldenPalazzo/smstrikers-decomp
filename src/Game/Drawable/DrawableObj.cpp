@@ -20,10 +20,10 @@ DrawableObject::DrawableObject()
     m_uObjectFlags = 0;
     m_bRenderPlanarShadow = false;
 
-    m_orientation.f.z = 0.f;
-    m_orientation.f.y = 0.f;
-    m_orientation.f.x = 0.f;
-    m_orientation.f.w = 1.f;
+    m_orientation.z = 0.f;
+    m_orientation.y = 0.f;
+    m_orientation.x = 0.f;
+    m_orientation.w = 1.f;
 
     nlVec3Set(m_translation, 0.f, 0.f, 0.f);
 
@@ -53,10 +53,10 @@ nlMatrix4& DrawableObject::GetWorldMatrix() const
         nlMatrix4 rot_mtx;
         nlQuatToMatrix(rot_mtx, m_orientation);
 
-        rot_mtx.m[3][0] = m_translation.f.x;
-        rot_mtx.m[3][1] = m_translation.f.y;
-        rot_mtx.m[3][2] = m_translation.f.z;
-        rot_mtx.m[3][3] = 1.0f;
+        rot_mtx.e2[3][0] = m_translation.x;
+        rot_mtx.e2[3][1] = m_translation.y;
+        rot_mtx.e2[3][2] = m_translation.z;
+        rot_mtx.e2[3][3] = 1.0f;
 
         nlMatrix4 scale_mtx;
         float s = m_scale;
@@ -72,15 +72,15 @@ nlMatrix4& DrawableObject::GetWorldMatrix() const
  */
 void DrawableObject::GetAABBDimensions(AABBDimensions& dim, bool param) const
 {
-    dim.mMin.f.x = 0.0f;
-    dim.mMin.f.y = 0.0f;
-    dim.mMin.f.z = 0.0f;
-    dim.mMax.f.x = 0.0f;
-    dim.mMax.f.y = 0.0f;
-    dim.mMax.f.z = 0.0f;
-    dim.mDim.f.x = 0.0f;
-    dim.mDim.f.y = 0.0f;
-    dim.mDim.f.z = 0.0f;
+    dim.mMin.x = 0.0f;
+    dim.mMin.y = 0.0f;
+    dim.mMin.z = 0.0f;
+    dim.mMax.x = 0.0f;
+    dim.mMax.y = 0.0f;
+    dim.mMax.z = 0.0f;
+    dim.mDim.x = 0.0f;
+    dim.mDim.y = 0.0f;
+    dim.mDim.z = 0.0f;
 }
 
 // /**

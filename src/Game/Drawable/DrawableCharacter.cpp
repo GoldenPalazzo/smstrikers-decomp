@@ -1,4 +1,5 @@
 #include "Game/SAnim/pnSingleAxisBlender.h"
+#include "NL/vmath.h"
 #include "Game/SAnim/pnSAnimController.h"
 #include "Game/SAnim/pnFeather.h"
 #include "Game/SAnim/pnBlender.h"
@@ -167,15 +168,15 @@ DrawableCharacter::DrawableCharacter()
     mCharacter = nullptr;
     mBowser = nullptr;
 
-    mPosition.f.x = 0.0f;
-    mPosition.f.y = 0.0f;
-    mPosition.f.z = 0.0f;
-    mBip01Position.f.x = 0.0f;
-    mBip01Position.f.y = 0.0f;
-    mBip01Position.f.z = 0.0f;
-    mHeadPosition.f.x = 0.0f;
-    mHeadPosition.f.y = 0.0f;
-    mHeadPosition.f.z = 0.0f;
+    mPosition.x = 0.0f;
+    mPosition.y = 0.0f;
+    mPosition.z = 0.0f;
+    mBip01Position.x = 0.0f;
+    mBip01Position.y = 0.0f;
+    mBip01Position.z = 0.0f;
+    mHeadPosition.x = 0.0f;
+    mHeadPosition.y = 0.0f;
+    mHeadPosition.z = 0.0f;
 }
 
 /**
@@ -234,7 +235,7 @@ void DrawableCharacter::Grab(cCharacter& character)
     mPosition = character.m_v3Position;
     mBip01Position = character.GetJointPosition(character.m_nBip01JointIndex_0xA4);
     mHeadPosition = character.GetJointPosition(character.m_nHeadJointIndex);
-    mHeight = mBip01Position.f.z;
+    mHeight = mBip01Position.z;
     mVelocity = character.m_v3Velocity;
     mFacingDirection = character.m_aActualFacingDirection;
     mHeadSpin = (unsigned short)character.m_pHeadTrack->m_fHeadSpin;
@@ -373,10 +374,10 @@ static bool IsVisible(const nlVector3& worldPosition, eCharacterClass cc)
             fRadius = 2.5f;
         nlMatrix4 mWorld;
         mWorld.SetIdentity();
-        mWorld.f.m41 = worldPosition.f.x;
-        mWorld.f.m42 = worldPosition.f.y;
-        mWorld.f.m43 = worldPosition.f.z;
-        mWorld.f.m44 = 1.0f;
+        mWorld.m41 = worldPosition.x;
+        mWorld.m42 = worldPosition.y;
+        mWorld.m43 = worldPosition.z;
+        mWorld.m44 = 1.0f;
         return WorldManager::s_World->IsSphereInFrustum(mWorld, fRadius);
     }
     return 1;
@@ -391,13 +392,13 @@ static void DrawSphere(const nlVector3& vCentre, float fRadius, const nlColour& 
 
     nlMatrix4 sphereWorldMatrix;
     sphereWorldMatrix.SetIdentity();
-    sphereWorldMatrix.f.m41 = vCentre.f.x;
-    sphereWorldMatrix.f.m42 = vCentre.f.y;
-    sphereWorldMatrix.f.m43 = vCentre.f.z;
-    sphereWorldMatrix.f.m44 = 1.0f;
-    sphereWorldMatrix.f.m11 = fRadius;
-    sphereWorldMatrix.f.m22 = fRadius;
-    sphereWorldMatrix.f.m33 = fRadius;
+    sphereWorldMatrix.m41 = vCentre.x;
+    sphereWorldMatrix.m42 = vCentre.y;
+    sphereWorldMatrix.m43 = vCentre.z;
+    sphereWorldMatrix.m44 = 1.0f;
+    sphereWorldMatrix.m11 = fRadius;
+    sphereWorldMatrix.m22 = fRadius;
+    sphereWorldMatrix.m33 = fRadius;
 
     unsigned long matrix = glAllocMatrix();
     if (matrix != 0xFFFFFFFF)
@@ -436,45 +437,45 @@ static void FindBoundingSphereAccurate(nlVector3* pOutSphere, float* pOutRadius,
     int i;
     float radiusSq;
 
-    minZPt.f.z = kBigFloat;
-    minYPt.f.y = kBigFloat;
-    minXPt.f.x = kBigFloat;
-    maxZPt.f.z = -kBigFloat;
-    maxYPt.f.y = -kBigFloat;
-    maxXPt.f.x = -kBigFloat;
+    minZPt.z = kBigFloat;
+    minYPt.y = kBigFloat;
+    minXPt.x = kBigFloat;
+    maxZPt.z = -kBigFloat;
+    maxYPt.y = -kBigFloat;
+    maxXPt.x = -kBigFloat;
 
     p = pVertices;
     for (i = 0; i < numVertices; i++, p++)
     {
-        if (p->f.x < minXPt.f.x)
+        if (p->x < minXPt.x)
         {
             minXPt = *p;
         }
-        if (p->f.x > maxXPt.f.x)
+        if (p->x > maxXPt.x)
         {
             maxXPt = *p;
         }
-        if (p->f.y < minYPt.f.y)
+        if (p->y < minYPt.y)
         {
             minYPt = *p;
         }
-        if (p->f.y > maxYPt.f.y)
+        if (p->y > maxYPt.y)
         {
             maxYPt = *p;
         }
-        if (p->f.z < minZPt.f.z)
+        if (p->z < minZPt.z)
         {
             minZPt = *p;
         }
-        if (p->f.z > maxZPt.f.z)
+        if (p->z > maxZPt.z)
         {
             maxZPt = *p;
         }
     }
 
-    float xSpanDistSq = nlGetLengthSquared3D(maxXPt.f.x - minXPt.f.x, maxXPt.f.y - minXPt.f.y, maxXPt.f.z - minXPt.f.z);
-    float ySpanDistSq = nlGetLengthSquared3D(maxYPt.f.x - minYPt.f.x, maxYPt.f.y - minYPt.f.y, maxYPt.f.z - minYPt.f.z);
-    float zSpanDistSq = nlGetLengthSquared3D(maxZPt.f.x - minZPt.f.x, maxZPt.f.y - minZPt.f.y, maxZPt.f.z - minZPt.f.z);
+    float xSpanDistSq = nlGetLengthSquared3D(maxXPt.x - minXPt.x, maxXPt.y - minXPt.y, maxXPt.z - minXPt.z);
+    float ySpanDistSq = nlGetLengthSquared3D(maxYPt.x - minYPt.x, maxYPt.y - minYPt.y, maxYPt.z - minYPt.z);
+    float zSpanDistSq = nlGetLengthSquared3D(maxZPt.x - minZPt.x, maxZPt.y - minZPt.y, maxZPt.z - minZPt.z);
 
     span1 = minXPt;
     span2 = maxXPt;
@@ -490,26 +491,26 @@ static void FindBoundingSphereAccurate(nlVector3* pOutSphere, float* pOutRadius,
         span2 = maxZPt;
     }
 
-    nlVec3Set(*pOutSphere, 0.5f * (span1.f.x + span2.f.x), 0.5f * (span1.f.y + span2.f.y), 0.5f * (span1.f.z + span2.f.z));
+    nlVec3Set(*pOutSphere, 0.5f * (span1.x + span2.x), 0.5f * (span1.y + span2.y), 0.5f * (span1.z + span2.z));
 
     nlVector3 result;
     nlVec3Sub(result, span2, *pOutSphere);
-    radiusSq = nlGetLengthSquared3D(result.f.x, result.f.y, result.f.z);
+    radiusSq = nlGetLengthSquared3D(result.x, result.y, result.z);
 
     *pOutRadius = nlSqrt(radiusSq, false);
 
     for (i = 0; i < numVertices; pVertices++, i++)
     {
-        float distSq = nlGetLengthSquared3D(pVertices->f.x - pOutSphere->f.x, pVertices->f.y - pOutSphere->f.y, pVertices->f.z - pOutSphere->f.z);
+        float distSq = nlGetLengthSquared3D(pVertices->x - pOutSphere->x, pVertices->y - pOutSphere->y, pVertices->z - pOutSphere->z);
         if (distSq > radiusSq)
         {
             float dist = nlSqrt(distSq, false);
             *pOutRadius = 0.5f * (*pOutRadius + dist);
             float d = dist - *pOutRadius;
             radiusSq = *pOutRadius * *pOutRadius;
-            pOutSphere->f.x = (*pOutRadius * pOutSphere->f.x + d * pVertices->f.x) / dist;
-            pOutSphere->f.y = (*pOutRadius * pOutSphere->f.y + d * pVertices->f.y) / dist;
-            pOutSphere->f.z = (*pOutRadius * pOutSphere->f.z + d * pVertices->f.z) / dist;
+            pOutSphere->x = (*pOutRadius * pOutSphere->x + d * pVertices->x) / dist;
+            pOutSphere->y = (*pOutRadius * pOutSphere->y + d * pVertices->y) / dist;
+            pOutSphere->z = (*pOutRadius * pOutSphere->z + d * pVertices->z) / dist;
         }
     }
 }
@@ -528,13 +529,13 @@ static inline void RenderCharacterBoundingSphere(nlMatrix4& sphereWorldMatrix, c
     pSphereModel = glModelDup(glInventory.GetModel(nlStringHash("debug/sphere")), true);
 
     sphereWorldMatrix.SetIdentity();
-    sphereWorldMatrix.f.m41 = vCenter.f.x;
-    sphereWorldMatrix.f.m42 = vCenter.f.y;
-    sphereWorldMatrix.f.m43 = vCenter.f.z;
-    sphereWorldMatrix.f.m44 = 1.0f;
-    sphereWorldMatrix.f.m11 = sphereRadius;
-    sphereWorldMatrix.f.m22 = sphereRadius;
-    sphereWorldMatrix.f.m33 = sphereRadius;
+    sphereWorldMatrix.m41 = vCenter.x;
+    sphereWorldMatrix.m42 = vCenter.y;
+    sphereWorldMatrix.m43 = vCenter.z;
+    sphereWorldMatrix.m44 = 1.0f;
+    sphereWorldMatrix.m11 = sphereRadius;
+    sphereWorldMatrix.m22 = sphereRadius;
+    sphereWorldMatrix.m33 = sphereRadius;
 
     unsigned long matrix = glAllocMatrix();
     if (matrix != 0xFFFFFFFF)
@@ -567,9 +568,9 @@ static void FindBoundingSphereSloppy(const nlVector3& vCenter, float* pOutRadius
     for (int i = 0; i < numVertices; i++)
     {
         float distSq = nlGetLengthSquared3D(
-            pVertices[i].f.x - vCenter.f.x,
-            pVertices[i].f.y - vCenter.f.y,
-            pVertices[i].f.z - vCenter.f.z);
+            pVertices[i].x - vCenter.x,
+            pVertices[i].y - vCenter.y,
+            pVertices[i].z - vCenter.z);
         maxDistSq = (maxDistSq >= distSq) ? maxDistSq : distSq;
     }
 
@@ -671,10 +672,10 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
         }
 
         mWorld.SetIdentity();
-        mWorld.f.m41 = mBip01Position.f.x;
-        mWorld.f.m42 = mBip01Position.f.y;
-        mWorld.f.m43 = mBip01Position.f.z;
-        mWorld.f.m44 = 1.0f;
+        mWorld.m41 = mBip01Position.x;
+        mWorld.m42 = mBip01Position.y;
+        mWorld.m43 = mBip01Position.z;
+        mWorld.m44 = 1.0f;
 
         isVisible = WorldManager::s_World->IsSphereInFrustum(mWorld, fRadius);
     }
@@ -787,9 +788,9 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
                 for (int i = 0; i < numBoneVolumePoints; i++)
                 {
                     float distSq = nlGetLengthSquared3D(
-                        points[i].f.x - vCenter.f.x,
-                        points[i].f.y - vCenter.f.y,
-                        points[i].f.z - vCenter.f.z);
+                        points[i].x - vCenter.x,
+                        points[i].y - vCenter.y,
+                        points[i].z - vCenter.z);
                     maxDistSq = (maxDistSq >= distSq) ? maxDistSq : distSq;
                 }
 
@@ -849,7 +850,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
                 characterSizeIndex = charSizes[NUM_FIELDER_CLASSES];
             }
 
-            nlVec4Set(params.vLight, pLight->m_worldPosition.f.x, pLight->m_worldPosition.f.y, pLight->m_worldPosition.f.z, 1.0f);
+            nlVec4Set(params.vLight, pLight->m_worldPosition.x, pLight->m_worldPosition.y, pLight->m_worldPosition.z, 1.0f);
             params.vPosition = mBip01Position;
             params.fRadius = g_fRadiusScale * fRadius;
             params.fHeight = s_fHeightFudge * fHeight;
@@ -885,11 +886,11 @@ void DrawableCharacter::Grab(SkinAnimatedMovableNPC& npc)
     mPosition = npc.mv3Position;
 
     nlMatrix4& nodeMatrix = npc.mpPoseAccumulator->GetNodeMatrix(0);
-    mHeight = nodeMatrix.f.m43;
+    mHeight = nodeMatrix.m43;
 
-    mVelocity.f.x = 0.0f;
-    mVelocity.f.y = 0.0f;
-    mVelocity.f.z = 0.0f;
+    mVelocity.x = 0.0f;
+    mVelocity.y = 0.0f;
+    mVelocity.z = 0.0f;
 
     mFacingDirection = npc.maFacingDirection;
 
@@ -944,15 +945,15 @@ void DrawableCharacter::Blend(const float* blendFactors, const DrawableCharacter
     mCharacter = lhs.mCharacter;
     mBowser = lhs.mBowser;
     mDirt = lhs.mDirt;
-    mPosition.f.x = (1.0f - *blendFactors) * lhs.mPosition.f.x + *blendFactors * rhs.mPosition.f.x;
-    mPosition.f.y = (1.0f - *blendFactors) * lhs.mPosition.f.y + *blendFactors * rhs.mPosition.f.y;
-    mPosition.f.z = (1.0f - *blendFactors) * lhs.mPosition.f.z + *blendFactors * rhs.mPosition.f.z;
-    mBip01Position.f.x = (1.0f - *blendFactors) * lhs.mBip01Position.f.x + *blendFactors * rhs.mBip01Position.f.x;
-    mBip01Position.f.y = (1.0f - *blendFactors) * lhs.mBip01Position.f.y + *blendFactors * rhs.mBip01Position.f.y;
-    mBip01Position.f.z = (1.0f - *blendFactors) * lhs.mBip01Position.f.z + *blendFactors * rhs.mBip01Position.f.z;
-    mHeadPosition.f.x = (1.0f - *blendFactors) * lhs.mHeadPosition.f.x + *blendFactors * rhs.mHeadPosition.f.x;
-    mHeadPosition.f.y = (1.0f - *blendFactors) * lhs.mHeadPosition.f.y + *blendFactors * rhs.mHeadPosition.f.y;
-    mHeadPosition.f.z = (1.0f - *blendFactors) * lhs.mHeadPosition.f.z + *blendFactors * rhs.mHeadPosition.f.z;
+    mPosition.x = (1.0f - *blendFactors) * lhs.mPosition.x + *blendFactors * rhs.mPosition.x;
+    mPosition.y = (1.0f - *blendFactors) * lhs.mPosition.y + *blendFactors * rhs.mPosition.y;
+    mPosition.z = (1.0f - *blendFactors) * lhs.mPosition.z + *blendFactors * rhs.mPosition.z;
+    mBip01Position.x = (1.0f - *blendFactors) * lhs.mBip01Position.x + *blendFactors * rhs.mBip01Position.x;
+    mBip01Position.y = (1.0f - *blendFactors) * lhs.mBip01Position.y + *blendFactors * rhs.mBip01Position.y;
+    mBip01Position.z = (1.0f - *blendFactors) * lhs.mBip01Position.z + *blendFactors * rhs.mBip01Position.z;
+    mHeadPosition.x = (1.0f - *blendFactors) * lhs.mHeadPosition.x + *blendFactors * rhs.mHeadPosition.x;
+    mHeadPosition.y = (1.0f - *blendFactors) * lhs.mHeadPosition.y + *blendFactors * rhs.mHeadPosition.y;
+    mHeadPosition.z = (1.0f - *blendFactors) * lhs.mHeadPosition.z + *blendFactors * rhs.mHeadPosition.z;
     float t = *blendFactors;
     mFacingDirection = lhs.mFacingDirection + (short)(t * (float)(short)(rhs.mFacingDirection - lhs.mFacingDirection));
     mHeadSpin = lhs.mHeadSpin + (short)(t * (float)(short)(rhs.mHeadSpin - lhs.mHeadSpin));
@@ -994,9 +995,9 @@ void DrawableCharacter::Blend(const float* blendFactors, const DrawableCharacter
     }
     nlMatrix4 rotMatrix;
     nlMakeRotationMatrixZ(rotMatrix, 0.0000958738f * (float)mFacingDirection);
-    rotMatrix.m[3][0] = mPosition.f.x;
-    rotMatrix.m[3][1] = mPosition.f.y;
-    rotMatrix.m[3][2] = mPosition.f.z;
+    rotMatrix.e2[3][0] = mPosition.x;
+    rotMatrix.e2[3][1] = mPosition.y;
+    rotMatrix.e2[3][2] = mPosition.z;
     if (mCharacter != nullptr)
     {
         mPoseAccumulator->SetBuildNodeMatrixCallback(mCharacter->m_nHeadJointIndex, DrawableCharacterHeadTrackCallback, (unsigned int)this, 0);
@@ -1024,9 +1025,9 @@ void DrawableCharacter::EvaluateFrom(const cPoseNode& poseNode, const nlVector3&
 {
     mPosition = offset;
 
-    mVelocity.f.x = 0.0f;
-    mVelocity.f.y = 0.0f;
-    mVelocity.f.z = 0.0f;
+    mVelocity.x = 0.0f;
+    mVelocity.y = 0.0f;
+    mVelocity.z = 0.0f;
 
     mFacingDirection = facingAngle;
     mHeadSpin = 0;
@@ -1132,18 +1133,18 @@ template <typename T>
 void DrawableCharacter::Replay(T& frame)
 {
     Replayable<1>(frame, mDirt);
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mPosition.f.x));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mPosition.f.y));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mPosition.f.z));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mBip01Position.f.x));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mBip01Position.f.y));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mBip01Position.f.z));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mHeadPosition.f.x));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mHeadPosition.f.y));
-    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mHeadPosition.f.z));
-    Replayable<1>(frame, FloatCompressor<-512, 512, 8>(mVelocity.f.x));
-    Replayable<1>(frame, FloatCompressor<-512, 512, 8>(mVelocity.f.y));
-    Replayable<1>(frame, FloatCompressor<-512, 512, 8>(mVelocity.f.z));
+    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mPosition.x));
+    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mPosition.y));
+    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mPosition.z));
+    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mBip01Position.x));
+    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mBip01Position.y));
+    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mBip01Position.z));
+    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mHeadPosition.x));
+    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mHeadPosition.y));
+    Replayable<1>(frame, FloatCompressor<-128, 128, 8>(mHeadPosition.z));
+    Replayable<1>(frame, FloatCompressor<-512, 512, 8>(mVelocity.x));
+    Replayable<1>(frame, FloatCompressor<-512, 512, 8>(mVelocity.y));
+    Replayable<1>(frame, FloatCompressor<-512, 512, 8>(mVelocity.z));
     Replayable<1>(frame, mVisible);
     Replayable<1>(frame, mFacingDirection);
     Replayable<1>(frame, mHeadSpin);

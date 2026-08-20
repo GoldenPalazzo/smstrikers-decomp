@@ -106,10 +106,10 @@ void glplatViewProjectPoint(eGLView view, const nlVector3& arg1, nlVector3& arg2
     nlMatrix4* temp_r30 = glViewGetProjectionMatrix(view);
     nlMultPosVectorMatrix(v_out, arg1, *temp_r31);
     nlMultPosVectorMatrix(arg2, v_out, *temp_r30);
-    float temp_f1 = 1.f / -v_out.f.z;
-    arg2.f.x = arg2.f.x * temp_f1;
-    arg2.f.y = -arg2.f.y * temp_f1;
-    arg2.f.z = arg2.f.z * temp_f1;
+    float temp_f1 = 1.f / -v_out.z;
+    arg2.x = arg2.x * temp_f1;
+    arg2.y = -arg2.y * temp_f1;
+    arg2.z = arg2.z * temp_f1;
 }
 
 /**
@@ -390,7 +390,7 @@ static void glx_SendViews()
                 if (glx_bFogAdjust)
                 {
                     glViewGetProjectionMatrix((eGLView)view, projection);
-                    GXInitFogAdjTable(&fogAdjTable, 0x280, projection.m);
+                    GXInitFogAdjTable(&fogAdjTable, 0x280, projection.e2);
                     GXSetFogRangeAdj(1, 0x140, &fogAdjTable);
                 }
                 else
@@ -421,7 +421,7 @@ static void glx_SendViews()
             continue;
 
         case 0x11:
-            glx_DOFUpdate(dofRange.f.x);
+            glx_DOFUpdate(dofRange.x);
             glx_DOFGrab();
             break;
 

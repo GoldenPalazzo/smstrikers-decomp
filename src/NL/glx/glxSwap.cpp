@@ -315,7 +315,7 @@ static void hitz_Pre(bool)
 {
     GXWaitDrawDone();
     u32 retraceCount = VIGetRetraceCount();
-    float value = glConstantGet("glxswap/vwait").f.x;
+    float value = glConstantGet("glxswap/vwait").x;
 
     if (value == 2.0f)
     {

@@ -74,8 +74,8 @@ static inline float DoCalculatePassSpeed(
     float passDistMax)
 {
     const nlVector3& ballPos = g_pBall->m_v3Position;
-    float dx = teammatePosition.f.x - ballPos.f.x;
-    float dy = teammatePosition.f.y - ballPos.f.y;
+    float dx = teammatePosition.x - ballPos.x;
+    float dy = teammatePosition.y - ballPos.y;
     float distToTarget = nlSqrt(dx * dx + dy * dy, true);
     float passGroundSpeed = InterpolateRangeClamped(passSpeedMin, passSpeedMax, passDistMin, passDistMax, distToTarget);
     float closingSpeed = GetClosingSpeed2D(teammatePosition, teammateVelocity, g_pBall->m_v3Position, v3Zero);
@@ -107,8 +107,8 @@ static inline cPlayer* GetClosestPlayerOnTeam(cPlayer* pSelf, cTeam* pTeam, int 
         v3RefPos = *pPosition;
     }
 
-    refX = v3RefPos.f.x;
-    refY = v3RefPos.f.y;
+    refX = v3RefPos.x;
+    refY = v3RefPos.y;
 
     for (int i = 0; i < nNumPlayers; i++)
     {
@@ -117,8 +117,8 @@ static inline cPlayer* GetClosestPlayerOnTeam(cPlayer* pSelf, cTeam* pTeam, int 
         {
             continue;
         }
-        f32 dx = refX - pPlayer->m_v3Position.f.x;
-        f32 dy = refY - pPlayer->m_v3Position.f.y;
+        f32 dx = refX - pPlayer->m_v3Position.x;
+        f32 dy = refY - pPlayer->m_v3Position.y;
         f32 dist = dx * dx + dy * dy;
         if (dist < fClosestDistSquared)
         {
@@ -255,9 +255,9 @@ cPlayer::cPlayer(
 
     m_tSwapFacingTimer.SetSeconds(0.0f);
 
-    m_v3AIPosition.f.x = 0.0f;
-    m_v3AIPosition.f.y = 0.0f;
-    m_v3AIPosition.f.z = 0.0f;
+    m_v3AIPosition.x = 0.0f;
+    m_v3AIPosition.y = 0.0f;
+    m_v3AIPosition.z = 0.0f;
 }
 
 /**
@@ -406,9 +406,9 @@ u8 cPlayer::SwapController()
                     pCandidate = m_pTeam->GetFielder(iFielder);
 
                     float dx, dy, dz;
-                    dy = pCandidate->m_v3Position.f.y - g_pBall->m_v3Position.f.y;
-                    dx = pCandidate->m_v3Position.f.x - g_pBall->m_v3Position.f.x;
-                    dz = pCandidate->m_v3Position.f.z - g_pBall->m_v3Position.f.z;
+                    dy = pCandidate->m_v3Position.y - g_pBall->m_v3Position.y;
+                    dx = pCandidate->m_v3Position.x - g_pBall->m_v3Position.x;
+                    dz = pCandidate->m_v3Position.z - g_pBall->m_v3Position.z;
                     float fDist = nlSqrt(dx * dx + dy * dy + dz * dz, true);
 
                     if (pCandidate != this)
@@ -478,10 +478,10 @@ void cPlayer::GetAnimatedBallOrientation(nlQuaternion& qRetval)
     int sanimBallNode = m_pCurrentAnimController->RemapNode(m_nBallJointIndex);
 
     RotAccum* rot = &m_pPoseAccumulator->m_rot.mData[m_nBallJointIndex];
-    rot->q.f.x = 0.0f;
-    rot->q.f.y = 0.0f;
-    rot->q.f.z = 0.0f;
-    rot->q.f.w = 1.0f;
+    rot->q.x = 0.0f;
+    rot->q.y = 0.0f;
+    rot->q.z = 0.0f;
+    rot->q.w = 1.0f;
     rot->quatAccumulatedWeight = 0.0f;
     rot->rotAroundZ = 0;
     rot->rotAroundZAccumulatedWeight = 0.0f;
@@ -533,8 +533,8 @@ float cPlayer::DoFlashLight(
     float fIgnoreObjectFartherThanThis)
 {
     float dx;
-    float dy = Position2.f.y - Position1.f.y;
-    dx = Position2.f.x - Position1.f.x;
+    float dy = Position2.y - Position1.y;
+    dx = Position2.x - Position1.x;
     float fDistBetween;
     float dist = nlSqrt(dx * dx + dy * dy, true);
     fDistBetween = dist;
@@ -563,8 +563,8 @@ float cPlayer::DoFlashLight(
 {
     float fDistBetween;
     float dx;
-    float dy = Position.f.y - m_v3Position.f.y;
-    dx = Position.f.x - m_v3Position.f.x;
+    float dy = Position.y - m_v3Position.y;
+    dx = Position.x - m_v3Position.x;
 
     float fSqrt = nlSqrt(dx * dx + dy * dy, true);
     fDistBetween = fSqrt;
@@ -652,8 +652,8 @@ void cPlayer::PickupBall(cBall* pBall)
 
                     if (closest != NULL)
                     {
-                        f32 dy = player->m_v3Position.f.y - m_v3Position.f.y;
-                        f32 dx = player->m_v3Position.f.x - m_v3Position.f.x;
+                        f32 dy = player->m_v3Position.y - m_v3Position.y;
+                        f32 dx = player->m_v3Position.x - m_v3Position.x;
                         cPlayer* passTarget = g_pBall->m_pPassTarget;
                         f32 distSq = dx * dx + dy * dy;
 
@@ -930,8 +930,8 @@ cPlayer* cPlayer::DoFindBestPassTarget(bool bAllowLeadPass, bool bIsPerfectPass)
             fAngleWeighting = g_pGame->m_pGameTweaks->fPassAngleWeighting;
         }
 
-        dy = pTarget->m_v3Position.f.y - m_v3Position.f.y;
-        dx = pTarget->m_v3Position.f.x - m_v3Position.f.x;
+        dy = pTarget->m_v3Position.y - m_v3Position.y;
+        dx = pTarget->m_v3Position.x - m_v3Position.x;
 
         f32 fSqrt = nlSqrt(dx * dx + dy * dy, true);
         fDistBetween = fSqrt;
@@ -1050,7 +1050,7 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
             float distSq2D = pSuggestedPassDirection->GetLengthSq2D();
             if (distSq2D > 1.0f)
             {
-                float zSq = pSuggestedPassDirection->f.z * pSuggestedPassDirection->f.z;
+                float zSq = pSuggestedPassDirection->z * pSuggestedPassDirection->z;
                 float distSq3D = zSq + distSq2D;
                 float fRecipDist = nlRecipSqrt(distSq3D, true);
                 bLeadPass = false;
@@ -1059,24 +1059,24 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
                 if (fSearchScore < 0.3f)
                 {
                     nlPolarToCartesian(
-                        teammateLeadPassVelocity.f.x,
-                        teammateLeadPassVelocity.f.y,
+                        teammateLeadPassVelocity.x,
+                        teammateLeadPassVelocity.y,
                         pPassTarget->m_aActualFacingDirection,
                         fRunningSpeed);
                     bLeadPass = true;
-                    teammateLeadPassVelocity.f.z = 0.0f;
+                    teammateLeadPassVelocity.z = 0.0f;
                 }
                 else
                 {
                     float fLength = nlSqrt(
-                        pSuggestedPassDirection->f.x * pSuggestedPassDirection->f.x
-                            + pSuggestedPassDirection->f.y * pSuggestedPassDirection->f.y
-                            + pSuggestedPassDirection->f.z * pSuggestedPassDirection->f.z,
+                        pSuggestedPassDirection->x * pSuggestedPassDirection->x
+                            + pSuggestedPassDirection->y * pSuggestedPassDirection->y
+                            + pSuggestedPassDirection->z * pSuggestedPassDirection->z,
                         true);
                     float fScale = fRunningSpeed / fLength;
-                    teammateLeadPassVelocity.f.x = fScale * pSuggestedPassDirection->f.x;
-                    teammateLeadPassVelocity.f.y = fScale * pSuggestedPassDirection->f.y;
-                    teammateLeadPassVelocity.f.z = fScale * pSuggestedPassDirection->f.z;
+                    teammateLeadPassVelocity.x = fScale * pSuggestedPassDirection->x;
+                    teammateLeadPassVelocity.y = fScale * pSuggestedPassDirection->y;
+                    teammateLeadPassVelocity.z = fScale * pSuggestedPassDirection->z;
                 }
                 if (bVolleyPass || bParam4)
                 {
@@ -1106,12 +1106,12 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
                 }
                 if (!bLeadPass)
                 {
-                    float dxBall = g_pBall->m_v3Position.f.x - suggestedPassTarget.f.x;
-                    float dyBall = g_pBall->m_v3Position.f.y - suggestedPassTarget.f.y;
+                    float dxBall = g_pBall->m_v3Position.x - suggestedPassTarget.x;
+                    float dyBall = g_pBall->m_v3Position.y - suggestedPassTarget.y;
                     float distBallToTarget = nlSqrt(dxBall * dxBall + dyBall * dyBall, true);
                     float fDistToBallSave = distBallToTarget;
-                    float dxTeam = pPassTarget->m_v3Position.f.x - suggestedPassTarget.f.x;
-                    float dyTeam = pPassTarget->m_v3Position.f.y - suggestedPassTarget.f.y;
+                    float dxTeam = pPassTarget->m_v3Position.x - suggestedPassTarget.x;
+                    float dyTeam = pPassTarget->m_v3Position.y - suggestedPassTarget.y;
                     float distTeammateToTarget = nlSqrt(dxTeam * dxTeam + dyTeam * dyTeam, true);
                     float fTimeBall = distBallToTarget / fPassGroundSpeed;
                     float fRequiredSpeed = distTeammateToTarget / fTimeBall;
@@ -1140,9 +1140,9 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
                         {
                             v3PassIntercept = suggestedPassTarget;
                             float fVelLength = nlSqrt(
-                                teammateLeadPassVelocity.f.x * teammateLeadPassVelocity.f.x
-                                    + teammateLeadPassVelocity.f.y * teammateLeadPassVelocity.f.y
-                                    + teammateLeadPassVelocity.f.z * teammateLeadPassVelocity.f.z,
+                                teammateLeadPassVelocity.x * teammateLeadPassVelocity.x
+                                    + teammateLeadPassVelocity.y * teammateLeadPassVelocity.y
+                                    + teammateLeadPassVelocity.z * teammateLeadPassVelocity.z,
                                 true);
                             float fVelScale = fRequiredSpeed / fVelLength;
                             nlVec3Scale(teammateLeadPassVelocity, fVelScale);
@@ -1177,9 +1177,9 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
                         {
                             fTime = interceptTimes[0];
                         }
-                        v3PassIntercept.f.x = teammateLeadPassVelocity.f.x * fTime + pPassTarget->m_v3Position.f.x;
-                        v3PassIntercept.f.y = teammateLeadPassVelocity.f.y * fTime + pPassTarget->m_v3Position.f.y;
-                        v3PassIntercept.f.z = 0.0f;
+                        v3PassIntercept.x = teammateLeadPassVelocity.x * fTime + pPassTarget->m_v3Position.x;
+                        v3PassIntercept.y = teammateLeadPassVelocity.y * fTime + pPassTarget->m_v3Position.y;
+                        v3PassIntercept.z = 0.0f;
                         if (!ClipPositionToSidelines(v3PassIntercept, m_pTweaks->fPhysCapsuleRadius))
                         {
                             calcPassIntercept = true;
@@ -1236,22 +1236,22 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
         m_pCharacterSFX->StopMovementLoop();
     }
 
-    float dxIntercept = v3PassIntercept.f.x - g_pBall->m_v3Position.f.x;
-    float dyIntercept = v3PassIntercept.f.y - g_pBall->m_v3Position.f.y;
+    float dxIntercept = v3PassIntercept.x - g_pBall->m_v3Position.x;
+    float dyIntercept = v3PassIntercept.y - g_pBall->m_v3Position.y;
     fDistToBall = nlSqrt(dxIntercept * dxIntercept + dyIntercept * dyIntercept, true);
     float fPassTime = fDistToBall / fPassGroundSpeed;
     unsigned short facingDirection;
 
     if (calcPassIntercept)
     {
-        s32 facingDirectionTemp = (s32)(nlATan2f(teammateLeadPassVelocity.f.y, teammateLeadPassVelocity.f.x) * 10430.378f);
+        s32 facingDirectionTemp = (s32)(nlATan2f(teammateLeadPassVelocity.y, teammateLeadPassVelocity.x) * 10430.378f);
         facingDirection = (u16)facingDirectionTemp;
     }
     else
     {
         s32 facingDirectionTemp = (s32)(nlATan2f(
-                                            g_pBall->m_v3Position.f.y - pPassTarget->m_v3Position.f.y,
-                                            g_pBall->m_v3Position.f.x - pPassTarget->m_v3Position.f.x)
+                                            g_pBall->m_v3Position.y - pPassTarget->m_v3Position.y,
+                                            g_pBall->m_v3Position.x - pPassTarget->m_v3Position.x)
                                         * 10430.378f);
         facingDirection = (u16)facingDirectionTemp;
     }
@@ -1267,32 +1267,32 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
     pPassTarget->GetReceivePassBallContactOffset(ballContactOffset, facingDirection, pAnimInfo);
     eSpinType spinType = SPINTYPE_ROLLING;
     bool bHighArc = false;
-    v3PassIntercept.f.z += ballContactOffset.f.z;
-    v3PassIntercept.f.y += ballContactOffset.f.y;
-    v3PassIntercept.f.x += ballContactOffset.f.x;
+    v3PassIntercept.z += ballContactOffset.z;
+    v3PassIntercept.y += ballContactOffset.y;
+    v3PassIntercept.x += ballContactOffset.x;
 
     if (bVolleyPass)
     {
         spinType = SPINTYPE_BACK;
         g_pBall->ShootAtFast(velocity, v3PassIntercept, fPassTime);
-        if (velocity.f.z > 14.0f)
+        if (velocity.z > 14.0f)
         {
-            velocity.f.z = 14.0f;
+            velocity.z = 14.0f;
             bHighArc = true;
         }
     }
     else
     {
         float fInvSpeed = 1.0f / fPassTime;
-        float dz = v3PassIntercept.f.z - g_pBall->m_v3Position.f.z;
-        float dy = v3PassIntercept.f.y - g_pBall->m_v3Position.f.y;
-        float dx = v3PassIntercept.f.x - g_pBall->m_v3Position.f.x;
-        velocity.f.x = fInvSpeed * dx;
-        velocity.f.y = fInvSpeed * dy;
-        velocity.f.z = fInvSpeed * dz;
-        if (g_pBall->m_v3Position.f.z < 0.36f)
+        float dz = v3PassIntercept.z - g_pBall->m_v3Position.z;
+        float dy = v3PassIntercept.y - g_pBall->m_v3Position.y;
+        float dx = v3PassIntercept.x - g_pBall->m_v3Position.x;
+        velocity.x = fInvSpeed * dx;
+        velocity.y = fInvSpeed * dy;
+        velocity.z = fInvSpeed * dz;
+        if (g_pBall->m_v3Position.z < 0.36f)
         {
-            velocity.f.z = InterpolateRangeClamped(
+            velocity.z = InterpolateRangeClamped(
                 0.5f,
                 2.0f,
                 g_pGame->m_pGameTweaks->fPassSpeedMinDist,
@@ -1301,7 +1301,7 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
         }
         else
         {
-            velocity.f.z = 0.0f;
+            velocity.z = 0.0f;
         }
     }
     g_pBall->ShootRelease(velocity, spinType);
@@ -1546,7 +1546,7 @@ void cPlayer::PrePhysicsUpdate(float dt)
     m_pPoseAccumulator->SetBuildNodeMatrixCallback(m_nHeadJointIndex, PlayerHeadTrackCallback, (unsigned int)this, 0);
 
     bool poseLocal = false;
-    if (m_eClassType != GOALIE || m_v3Position.f.x * g_pBall->m_v3Position.f.x > 0.0f)
+    if (m_eClassType != GOALIE || m_v3Position.x * g_pBall->m_v3Position.x > 0.0f)
     {
         poseLocal = true;
     }
@@ -1567,14 +1567,14 @@ void cPlayer::PrePhysicsUpdate(float dt)
     if (m_pBall != NULL)
     {
         nlVector3 jointPos = GetJointPosition(m_nBallJointIndex);
-        float physZ = m_pPhysicsCharacter->GetPosition().f.z;
-        jointPos.f.z -= physZ;
+        float physZ = m_pPhysicsCharacter->GetPosition().z;
+        jointPos.z -= physZ;
         m_pPhysicsCharacter->m_SubObject.SetSubObjectPosition(jointPos, PhysicsObject::RELATIVE_TO_PARENT);
     }
 
     if (poseLocal)
     {
-        m_pPhysicsCharacter->UpdatePose(m_pPoseAccumulator, m_v3Position.f.z);
+        m_pPhysicsCharacter->UpdatePose(m_pPoseAccumulator, m_v3Position.z);
     }
 }
 
@@ -1613,9 +1613,9 @@ bool cPlayer::CanPickupBall(cBall* pBall)
     }
 
     bool bDoPickUp = false;
-    float speedSq = pBall->m_v3Velocity.f.x * pBall->m_v3Velocity.f.x
-                  + pBall->m_v3Velocity.f.y * pBall->m_v3Velocity.f.y
-                  + pBall->m_v3Velocity.f.z * pBall->m_v3Velocity.f.z;
+    float speedSq = pBall->m_v3Velocity.x * pBall->m_v3Velocity.x
+                  + pBall->m_v3Velocity.y * pBall->m_v3Velocity.y
+                  + pBall->m_v3Velocity.z * pBall->m_v3Velocity.z;
 
     if (pBall->m_pOwner == NULL && pBall->m_tNoPickupTimer.m_uPackedTime == 0)
     {
@@ -1630,8 +1630,8 @@ bool cPlayer::CanPickupBall(cBall* pBall)
 
                 nlVector3 v3PrevPlayerPos = self->m_v3PrevPosition;
                 nlVector3 v3PlayerPos = self->m_v3Position;
-                v3PlayerPos.f.z = 0.18f;
-                v3PrevPlayerPos.f.z = 0.18f;
+                v3PlayerPos.z = 0.18f;
+                v3PrevPlayerPos.z = 0.18f;
 
                 u8 bCollision = TestCollision(fPhysicsRadius, v3PrevPlayerPos, v3PlayerPos, 0.18f, pBall->m_v3PrevPosition, pBall->m_v3Position);
                 bDoPickUp = false;
@@ -1678,19 +1678,19 @@ bool cPlayer::CanPickupBallFromPass(cBall* pBall)
 nlVector3 cPlayer::GetAIOffNetLocation(const nlVector3* v3ReferencePos)
 {
     nlVector3 v3NetLocation = m_pTeam->GetOtherNet()->m_v3NetLocation;
-    float yCoord = (v3ReferencePos != NULL) ? v3ReferencePos->f.y : m_v3Position.f.y;
+    float yCoord = (v3ReferencePos != NULL) ? v3ReferencePos->y : m_v3Position.y;
 
     float fNetWidth = 0.5f * cNet::m_fNetWidth;
 
     if (yCoord < 0.0f)
     {
         yCoord = max_float(yCoord, -1.0f * fNetWidth);
-        v3NetLocation.f.y = yCoord;
+        v3NetLocation.y = yCoord;
     }
     else
     {
         yCoord = min_float(yCoord, fNetWidth);
-        v3NetLocation.f.y = yCoord;
+        v3NetLocation.y = yCoord;
     }
 
     return v3NetLocation;
@@ -1702,19 +1702,19 @@ nlVector3 cPlayer::GetAIOffNetLocation(const nlVector3* v3ReferencePos)
 nlVector3 cPlayer::GetAIDefNetLocation(const nlVector3* v3ReferencePos)
 {
     nlVector3 v3NetLocation = m_pTeam->m_pNet->m_v3NetLocation;
-    float yCoord = (v3ReferencePos != NULL) ? v3ReferencePos->f.y : m_v3Position.f.y;
+    float yCoord = (v3ReferencePos != NULL) ? v3ReferencePos->y : m_v3Position.y;
 
     float fNetWidth = 0.5f * cNet::m_fNetWidth;
 
     if (yCoord < 0.0f)
     {
         yCoord = max_float(yCoord, -1.0f * fNetWidth);
-        v3NetLocation.f.y = yCoord;
+        v3NetLocation.y = yCoord;
     }
     else
     {
         yCoord = min_float(yCoord, fNetWidth);
-        v3NetLocation.f.y = yCoord;
+        v3NetLocation.y = yCoord;
     }
 
     return v3NetLocation;
@@ -1752,20 +1752,20 @@ bool cPlayer::SuggestPassDirection(nlVector3& suggestedDirection, cPlayer* fromP
     float distanceSquared2D = suggestedDirection.GetLengthSq2D();
     if (distanceSquared2D > 1.0f)
     {
-        float zSquared = suggestedDirection.f.z * suggestedDirection.f.z;
+        float zSquared = suggestedDirection.z * suggestedDirection.z;
         float reciprocalDistance = nlRecipSqrt(zSquared + distanceSquared2D, true);
         nlVec3Scale(suggestedDirection, reciprocalDistance);
         if (leadPass)
         {
-            nlPolarToCartesian(suggestedDirection.f.x, suggestedDirection.f.y, m_aActualFacingDirection, m_pTweaks->fRunningSpeed);
-            suggestedDirection.f.z = 0.0f;
+            nlPolarToCartesian(suggestedDirection.x, suggestedDirection.y, m_aActualFacingDirection, m_pTweaks->fRunningSpeed);
+            suggestedDirection.z = 0.0f;
         }
         else
         {
             float length = nlSqrt(
-                suggestedDirection.f.x * suggestedDirection.f.x
-                    + suggestedDirection.f.y * suggestedDirection.f.y
-                    + suggestedDirection.f.z * suggestedDirection.f.z,
+                suggestedDirection.x * suggestedDirection.x
+                    + suggestedDirection.y * suggestedDirection.y
+                    + suggestedDirection.z * suggestedDirection.z,
                 true);
             float scale = m_pTweaks->fRunningSpeed / length;
             nlVec3Scale(suggestedDirection, scale);

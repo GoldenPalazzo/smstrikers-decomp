@@ -148,10 +148,10 @@ void InitializeGameObjectLighting()
         nlMultDirVectorMatrix(fillDirection, initialDirection, matY);
         nlMultDirVectorMatrix(fillDirection, fillDirection, matZ);
 
-        nlVec3Set(pLightArray->lights[0].worldPosition, -keyDirection.f.x, -keyDirection.f.y, -keyDirection.f.z);
+        nlVec3Set(pLightArray->lights[0].worldPosition, -keyDirection.x, -keyDirection.y, -keyDirection.z);
         pLightArray->lights[0].intensity = pParams->inGameKeyIntensity;
 
-        nlVec3Set(pLightArray->lights[1].worldPosition, -fillDirection.f.x, -fillDirection.f.y, -fillDirection.f.z);
+        nlVec3Set(pLightArray->lights[1].worldPosition, -fillDirection.x, -fillDirection.y, -fillDirection.z);
         pLightArray->lights[1].intensity = pParams->inGameFillIntensity;
     }
 
@@ -299,7 +299,7 @@ void UpdateGameObjectLighting()
 
     cCameraManager::GetViewVector(viewVec);
 
-    f32 angle = nlATan2f(viewVec.f.y, viewVec.f.x);
+    f32 angle = nlATan2f(viewVec.y, viewVec.x);
     u16 u16Angle = (u16)(s32)(angle * 10430.378f);
     f32 radAngle = (f32)u16Angle * 0.0000958738f;
 
@@ -312,12 +312,12 @@ void UpdateGameObjectLighting()
 
     nlMultDirVectorMatrix(transformedDir, keyLightInViewSpace, viewRotMat);
 
-    nlVec3Set(pLights->lights[0].worldPosition, -transformedDir.f.x, -transformedDir.f.y, -transformedDir.f.z);
+    nlVec3Set(pLights->lights[0].worldPosition, -transformedDir.x, -transformedDir.y, -transformedDir.z);
     pLights->lights[0].intensity = params->keyLightIntensity;
 
     nlMultDirVectorMatrix(transformedDir, fillLightInViewSpace, viewRotMat);
 
-    nlVec3Set(pLights->lights[1].worldPosition, -transformedDir.f.x, -transformedDir.f.y, -transformedDir.f.z);
+    nlVec3Set(pLights->lights[1].worldPosition, -transformedDir.x, -transformedDir.y, -transformedDir.z);
     pLights->lights[1].intensity = params->fillLightIntensity;
 }
 

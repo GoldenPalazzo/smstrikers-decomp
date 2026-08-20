@@ -102,13 +102,13 @@ NisPlayer::NisPlayer()
             if (sscanf(dictionaryCursor, "\tnum_cameras %d", &header.numCameras) != 1)
                 break;
             SkipLine(dictionaryCursor);
-            if (sscanf(dictionaryCursor, "\tcenter %f, %f, %f", &header.center.f.x, &header.center.f.y, &header.center.f.z) != 3)
+            if (sscanf(dictionaryCursor, "\tcenter %f, %f, %f", &header.center.x, &header.center.y, &header.center.z) != 3)
                 break;
             SkipLine(dictionaryCursor);
-            if (sscanf(dictionaryCursor, "\tmin_bounds %f, %f, %f", &header.minBounds.f.x, &header.minBounds.f.y, &header.minBounds.f.z) != 3)
+            if (sscanf(dictionaryCursor, "\tmin_bounds %f, %f, %f", &header.minBounds.x, &header.minBounds.y, &header.minBounds.z) != 3)
                 break;
             SkipLine(dictionaryCursor);
-            if (sscanf(dictionaryCursor, "\tmax_bounds %f, %f, %f", &header.maxBounds.f.x, &header.maxBounds.f.y, &header.maxBounds.f.z) != 3)
+            if (sscanf(dictionaryCursor, "\tmax_bounds %f, %f, %f", &header.maxBounds.x, &header.maxBounds.y, &header.maxBounds.z) != 3)
                 break;
             SkipLine(dictionaryCursor);
 
@@ -118,7 +118,7 @@ NisPlayer::NisPlayer()
             for (int i = 0; i < header.numAnimations; i++)
             {
                 nlVector3 beginPos = { { 0, 0, 0 } };
-                int parsedValueCount = sscanf(dictionaryCursor, "\tbegin_pos %f, %f, %f", &beginPos.f.x, &beginPos.f.y, &beginPos.f.z);
+                int parsedValueCount = sscanf(dictionaryCursor, "\tbegin_pos %f, %f, %f", &beginPos.x, &beginPos.y, &beginPos.z);
                 if (parsedValueCount != 3)
                     break;
                 SkipLine(dictionaryCursor);
@@ -744,9 +744,9 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
 
         if (useStadiumOffset == NIS_NO_STADIUM_OFFSET)
         {
-            nisHeader.stadiumOffset.f.x = 0.0f;
-            nisHeader.stadiumOffset.f.y = 0.0f;
-            nisHeader.stadiumOffset.f.z = 0.0f;
+            nisHeader.stadiumOffset.x = 0.0f;
+            nisHeader.stadiumOffset.y = 0.0f;
+            nisHeader.stadiumOffset.z = 0.0f;
         }
         else
         {
@@ -755,9 +755,9 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
 
             float offset = GetConfigFloat(Config::Global(), offsetConfigName.c_str(), 0.0f);
 
-            nisHeader.stadiumOffset.f.x = 0.0f;
-            nisHeader.stadiumOffset.f.y = scale * offset;
-            nisHeader.stadiumOffset.f.z = 0.0f;
+            nisHeader.stadiumOffset.x = 0.0f;
+            nisHeader.stadiumOffset.y = scale * offset;
+            nisHeader.stadiumOffset.z = 0.0f;
         }
 
         bool mirrored = IsMirrored(target, nisHeader.name, winnerType);
@@ -767,7 +767,7 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
             mBeginPositions[i] = nisHeader.beginPositions[i];
             if (mirrored)
             {
-                mBeginPositions[i].f.x *= -1.0f;
+                mBeginPositions[i].x *= -1.0f;
             }
         }
 
@@ -786,9 +786,9 @@ void NisPlayer::PlayCharacterDirection()
     directionData->away = &mBeginPositions[4];
     for (int i = 0; i < 10; i++)
     {
-        mBeginPositions[i].f.x = nlRandomf(-8.0f, 8.0f, &nlDefaultSeed);
-        mBeginPositions[i].f.y = nlRandomf(-4.0f, 4.0f, &nlDefaultSeed);
-        mBeginPositions[i].f.z = 0.0f;
+        mBeginPositions[i].x = nlRandomf(-8.0f, 8.0f, &nlDefaultSeed);
+        mBeginPositions[i].y = nlRandomf(-4.0f, 4.0f, &nlDefaultSeed);
+        mBeginPositions[i].z = 0.0f;
     }
 }
 

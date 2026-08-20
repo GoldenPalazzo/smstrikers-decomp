@@ -410,17 +410,17 @@ void cAnimCamera::BuildAnimViewMatrix(nlMatrix4& mView)
     nlVec3Sub(dofDelta, m_vecCamera, m_vecTarget);
     float dist = nlSqrt(dofDelta.GetLengthSq3D(), true);
     DepthOfFieldManager::instance.m_fDistanceFromCamera = dofBehindTarget + dist;
-    cameraPos.f.x *= m_Mirror.f.x;
-    cameraPos.f.y *= m_Mirror.f.y;
-    cameraPos.f.z *= m_Mirror.f.z;
-    targetPos.f.x *= m_Mirror.f.x;
-    targetPos.f.y *= m_Mirror.f.y;
-    targetPos.f.z *= m_Mirror.f.z;
-    if (m_Mirror.f.x != 1.0f || m_Mirror.f.y != 1.0f || m_Mirror.f.z != 1.0f)
+    cameraPos.x *= m_Mirror.x;
+    cameraPos.y *= m_Mirror.y;
+    cameraPos.z *= m_Mirror.z;
+    targetPos.x *= m_Mirror.x;
+    targetPos.y *= m_Mirror.y;
+    targetPos.z *= m_Mirror.z;
+    if (m_Mirror.x != 1.0f || m_Mirror.y != 1.0f || m_Mirror.z != 1.0f)
     {
-        cameraRot.f.x *= -m_Mirror.f.x;
-        cameraRot.f.y *= -m_Mirror.f.y;
-        cameraRot.f.z *= -m_Mirror.f.z;
+        cameraRot.x *= -m_Mirror.x;
+        cameraRot.y *= -m_Mirror.y;
+        cameraRot.z *= -m_Mirror.z;
     }
     nlVec3Add(m_vecCamera, cameraPos, m_OffsetPos);
     nlVec3Add(m_vecTarget, targetPos, m_OffsetPos);
@@ -437,10 +437,10 @@ void cAnimCamera::BuildAnimViewMatrix(nlMatrix4& mView)
         float facingAngleRadians = (float)mFacingAngle * 0.0000958738f;
         nlMakeRotationMatrixZ(facingAngleMatrix, facingAngleRadians);
         nlMultMatrices(viewMatrix, viewMatrix, facingAngleMatrix);
-        viewMatrix.f.m41 = m_vecCamera.f.x;
-        viewMatrix.f.m42 = m_vecCamera.f.y;
-        viewMatrix.f.m43 = m_vecCamera.f.z;
-        viewMatrix.f.m44 = 1.0f;
+        viewMatrix.m41 = m_vecCamera.x;
+        viewMatrix.m42 = m_vecCamera.y;
+        viewMatrix.m43 = m_vecCamera.z;
+        viewMatrix.m44 = 1.0f;
         nlInvertMatrix(mView, viewMatrix);
     }
 }

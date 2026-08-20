@@ -74,15 +74,15 @@ inline void EmissionController::Replay(T& frame)
     ::Replayable<0>(frame, m_fGround);
     frame.template Replayable<0>(m_aFacing);
     ::Replayable<0>(frame, (char&)m_GlView);
-    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vPosition.f.x));
-    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vPosition.f.y));
-    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vPosition.f.z));
-    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vDirection.f.x));
-    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vDirection.f.y));
-    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vDirection.f.z));
-    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vVelocity.f.x));
-    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vVelocity.f.y));
-    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vVelocity.f.z));
+    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vPosition.x));
+    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vPosition.y));
+    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vPosition.z));
+    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vDirection.x));
+    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vDirection.y));
+    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vDirection.z));
+    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vVelocity.x));
+    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vVelocity.y));
+    ::Replayable<0>(frame, FloatCompressor<-255, 255, 6>(m_vVelocity.z));
 
     if (ReplayFrameTraits<T>::IsLoadFrame)
     {

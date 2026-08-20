@@ -70,27 +70,27 @@ static void DrawShadow(float radius, float x, float y, float z)
     }
 
     glQuad3 quad;
-    quad.m_pos[0].f.x = x - shadowRadius;
-    quad.m_pos[0].f.y = y - shadowRadius;
-    quad.m_pos[0].f.z = 0.015625f;
-    quad.m_pos[1].f.x = x - shadowRadius;
-    quad.m_pos[1].f.y = y + shadowRadius;
-    quad.m_pos[1].f.z = 0.015625f;
-    quad.m_pos[2].f.x = x + shadowRadius;
-    quad.m_pos[2].f.y = y + shadowRadius;
-    quad.m_pos[2].f.z = 0.015625f;
-    quad.m_pos[3].f.x = x + shadowRadius;
-    quad.m_pos[3].f.y = y - shadowRadius;
-    quad.m_pos[3].f.z = 0.015625f;
+    quad.m_pos[0].x = x - shadowRadius;
+    quad.m_pos[0].y = y - shadowRadius;
+    quad.m_pos[0].z = 0.015625f;
+    quad.m_pos[1].x = x - shadowRadius;
+    quad.m_pos[1].y = y + shadowRadius;
+    quad.m_pos[1].z = 0.015625f;
+    quad.m_pos[2].x = x + shadowRadius;
+    quad.m_pos[2].y = y + shadowRadius;
+    quad.m_pos[2].z = 0.015625f;
+    quad.m_pos[3].x = x + shadowRadius;
+    quad.m_pos[3].y = y - shadowRadius;
+    quad.m_pos[3].z = 0.015625f;
 
-    quad.m_uv[0].f.x = 1.0f;
-    quad.m_uv[0].f.y = 1.0f;
-    quad.m_uv[1].f.x = 0.0f;
-    quad.m_uv[1].f.y = 1.0f;
-    quad.m_uv[2].f.x = 0.0f;
-    quad.m_uv[2].f.y = 0.0f;
-    quad.m_uv[3].f.x = 1.0f;
-    quad.m_uv[3].f.y = 0.0f;
+    quad.m_uv[0].x = 1.0f;
+    quad.m_uv[0].y = 1.0f;
+    quad.m_uv[1].x = 0.0f;
+    quad.m_uv[1].y = 1.0f;
+    quad.m_uv[2].x = 0.0f;
+    quad.m_uv[2].y = 0.0f;
+    quad.m_uv[3].x = 1.0f;
+    quad.m_uv[3].y = 0.0f;
 
     unsigned char colour[4];
     colour[0] = 0xFF;
@@ -191,7 +191,7 @@ void DrawablePowerup::Render(int idx) const
 
     if (model == NULL)
     {
-        DrawShadow(mRadius, mPosition.f.x, mPosition.f.y, mPosition.f.z);
+        DrawShadow(mRadius, mPosition.x, mPosition.y, mPosition.z);
     }
     else
     {

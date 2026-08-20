@@ -113,8 +113,8 @@ bool PhysicsLoader::StartLoad(LoadingManager*)
         g_StaticPhysicsPrimitives.AddEnd(
             new (nlMalloc(sizeof(PhysicsWall), 8, false)) PhysicsWall(
                 g_CollisionSpace,
-                sideline.vNormal.f.x,
-                sideline.vNormal.f.y,
+                sideline.vNormal.x,
+                sideline.vNormal.y,
                 sideline.fDistance));
     }
 
@@ -125,8 +125,8 @@ bool PhysicsLoader::StartLoad(LoadingManager*)
             g_CollisionSpace,
             corner.vCenter,
             corner.fRadius,
-            corner.vCenter.f.x > 0.0f,
-            corner.vCenter.f.y > 0.0f);
+            corner.vCenter.x > 0.0f,
+            corner.vCenter.y > 0.0f);
         corners[i] = pCorner;
     }
 
@@ -208,13 +208,13 @@ void PhysicsLoader::ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhys
             nlVector3 v2;
             bool normalPointsAwayFromField = false;
 
-            nlVec3Set(centre, physElement->matLocalToParent.f.m41, physElement->matLocalToParent.f.m42, physElement->matLocalToParent.f.m43);
-            nlVec3Set(v1, physElement->matLocalToParent.f.m11, physElement->matLocalToParent.f.m12, physElement->matLocalToParent.f.m13);
-            nlVec3Set(v2, physElement->matLocalToParent.f.m21, physElement->matLocalToParent.f.m22, physElement->matLocalToParent.f.m23);
+            nlVec3Set(centre, physElement->matLocalToParent.m41, physElement->matLocalToParent.m42, physElement->matLocalToParent.m43);
+            nlVec3Set(v1, physElement->matLocalToParent.m11, physElement->matLocalToParent.m12, physElement->matLocalToParent.m13);
+            nlVec3Set(v2, physElement->matLocalToParent.m21, physElement->matLocalToParent.m22, physElement->matLocalToParent.m23);
 
-            float m31 = physElement->matLocalToParent.f.m31;
+            float m31 = physElement->matLocalToParent.m31;
 
-            if ((centre.f.x > 0.0f && m31 > 0.01f) || (centre.f.x < 0.0f && m31 < -0.01f))
+            if ((centre.x > 0.0f && m31 > 0.01f) || (centre.x < 0.0f && m31 < -0.01f))
             {
                 normalPointsAwayFromField = true;
             }

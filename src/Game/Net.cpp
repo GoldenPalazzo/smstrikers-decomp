@@ -14,9 +14,9 @@ cNet::cNet(int nIndex)
 {
     m_nIndex = nIndex;
 
-    m_v3NetLocation.f.y = 0.0f;
-    m_v3NetLocation.f.z = 0.0f;
-    m_v3NetLocation.f.x = 0.0f;
+    m_v3NetLocation.y = 0.0f;
+    m_v3NetLocation.z = 0.0f;
+    m_v3NetLocation.x = 0.0f;
 
     if (m_nIndex == 0)
     {
@@ -51,17 +51,17 @@ void cNet::GetPostLocation(nlVector3& v3PostPosition, unsigned int uPostNum, flo
     f32 fAdjust;
 
     v3PostPosition = m_v3NetLocation;
-    v3PostPosition.f.x = -((m_fNetPostRadius * m_fDirection) - v3PostPosition.f.x);
-    v3PostPosition.f.x += m_fNetPostOffsetFromGoalLine * m_fDirection;
+    v3PostPosition.x = -((m_fNetPostRadius * m_fDirection) - v3PostPosition.x);
+    v3PostPosition.x += m_fNetPostOffsetFromGoalLine * m_fDirection;
     fAdjust = (0.5f * m_fNetWidth) + fYAdjust;
 
     if (uPostNum == 0)
     {
-        v3PostPosition.f.y -= fAdjust;
+        v3PostPosition.y -= fAdjust;
         return;
     }
 
-    v3PostPosition.f.y += fAdjust;
+    v3PostPosition.y += fAdjust;
 }
 
 /**

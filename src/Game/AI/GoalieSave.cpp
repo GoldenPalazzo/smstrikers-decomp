@@ -148,7 +148,7 @@ void SavePositionData::Init(Goalie* pGoalie, int animID)
     nlVector3 v3RootTrans;
     pController->GetRootTrans(&v3RootTrans, 0);
 
-    mfAnimDistance = v3RootTrans.f.y;
+    mfAnimDistance = v3RootTrans.y;
     mfAnimTime = (float)pController->m_pSAnim->m_nNumKeys / 30.0f;
     mfAnimVelocity = mfAnimDistance / mfAnimTime;
 
@@ -481,8 +481,8 @@ SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3
 
     float y;
     float z;
-    z = v3LocalPos.f.z;
-    y = v3LocalPos.f.y;
+    z = v3LocalPos.z;
+    y = v3LocalPos.y;
 
     float netWidth = cField::GetNet(1.0f)->GetNetWidth();
     float netHeight = cField::GetNet(1.0f)->GetNetHeight();
@@ -643,10 +643,10 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
 
             if (fSaveTime <= fTime)
             {
-                float fDistY = v3AdjLocalPos.f.y - candidateBlendInfo.mv3BlendedSavePos.f.y;
+                float fDistY = v3AdjLocalPos.y - candidateBlendInfo.mv3BlendedSavePos.y;
                 float fDistSq = fDistY * fDistY
-                              + (v3AdjLocalPos.f.z - candidateBlendInfo.mv3BlendedSavePos.f.z)
-                                    * (v3AdjLocalPos.f.z - candidateBlendInfo.mv3BlendedSavePos.f.z);
+                              + (v3AdjLocalPos.z - candidateBlendInfo.mv3BlendedSavePos.z)
+                                    * (v3AdjLocalPos.z - candidateBlendInfo.mv3BlendedSavePos.z);
 
                 if (fDistSq < fClosest)
                 {
@@ -757,12 +757,12 @@ void GoalieSave::FindVerticalBoundingPoints(SaveData* pSaveData, const nlVector3
     SaveData* pHiSaveData = pSaveData;
     SaveData* pLoSaveData = pSaveData;
 
-    while (pHiSaveData != NULL && v3TargetPoint.f.z > pHiSaveData->mv3SavePos.f.z)
+    while (pHiSaveData != NULL && v3TargetPoint.z > pHiSaveData->mv3SavePos.z)
     {
         pLoSaveData = pHiSaveData;
         pHiSaveData = pHiSaveData->mpConnectedSaveData[0];
     }
-    while (pLoSaveData != NULL && v3TargetPoint.f.z < pLoSaveData->mv3SavePos.f.z)
+    while (pLoSaveData != NULL && v3TargetPoint.z < pLoSaveData->mv3SavePos.z)
     {
         pHiSaveData = pLoSaveData;
         pLoSaveData = pLoSaveData->mpConnectedSaveData[1];
@@ -804,9 +804,9 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
     blendInfo.mfSaveBlendSecondary = 0.0f;
     blendInfo.mfSaveBlendComposite = 0.0f;
 
-    if (pSaveData->mv3GroupMaxCoords.f.y > v3TargetPos.f.y)
+    if (pSaveData->mv3GroupMaxCoords.y > v3TargetPos.y)
     {
-        if (pSaveData->mv3GroupMinCoords.f.y < v3TargetPos.f.y)
+        if (pSaveData->mv3GroupMinCoords.y < v3TargetPos.y)
         {
             FindVerticalBoundingPoints(pSaveData, v3TargetPos, &pLeft, &pLeftUp);
 
@@ -816,9 +816,9 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
             unsigned char done = 0;
             while (!done)
             {
-                if (v3TargetPos.f.y <= pLeft->mv3SavePos.f.y || v3TargetPos.f.y <= pLeftUp->mv3SavePos.f.y)
+                if (v3TargetPos.y <= pLeft->mv3SavePos.y || v3TargetPos.y <= pLeftUp->mv3SavePos.y)
                 {
-                    if (v3TargetPos.f.y >= pLeft->mv3SavePos.f.y || v3TargetPos.f.y >= pLeftUp->mv3SavePos.f.y || pLeft->mpConnectedSaveData[3] == NULL)
+                    if (v3TargetPos.y >= pLeft->mv3SavePos.y || v3TargetPos.y >= pLeftUp->mv3SavePos.y || pLeft->mpConnectedSaveData[3] == NULL)
                     {
                         pEdge = pLeft;
                         break;
@@ -830,9 +830,9 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                         FindVerticalBoundingPoints(pLeft->mpConnectedSaveData[3], v3TargetPos, &pLeft, &pLeftUp);
                     }
                 }
-                else if (v3TargetPos.f.y >= pRight->mv3SavePos.f.y || v3TargetPos.f.y >= pRightUp->mv3SavePos.f.y)
+                else if (v3TargetPos.y >= pRight->mv3SavePos.y || v3TargetPos.y >= pRightUp->mv3SavePos.y)
                 {
-                    if (v3TargetPos.f.y <= pRight->mv3SavePos.f.y || v3TargetPos.f.y <= pRightUp->mv3SavePos.f.y || pRight->mpConnectedSaveData[2] == NULL)
+                    if (v3TargetPos.y <= pRight->mv3SavePos.y || v3TargetPos.y <= pRightUp->mv3SavePos.y || pRight->mpConnectedSaveData[2] == NULL)
                     {
                         pEdge = pRight;
                         break;
@@ -851,17 +851,17 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
 
                     if (pLeft != pLeftUp)
                     {
-                        fScaleLeft = (v3TargetPos.f.z - pLeft->mv3SavePos.f.z) / (pLeftUp->mv3SavePos.f.z - pLeft->mv3SavePos.f.z);
+                        fScaleLeft = (v3TargetPos.z - pLeft->mv3SavePos.z) / (pLeftUp->mv3SavePos.z - pLeft->mv3SavePos.z);
                     }
 
                     if (pRight != pRightUp)
                     {
-                        fScaleRight = (v3TargetPos.f.z - pRight->mv3SavePos.f.z) / (pRightUp->mv3SavePos.f.z - pRight->mv3SavePos.f.z);
+                        fScaleRight = (v3TargetPos.z - pRight->mv3SavePos.z) / (pRightUp->mv3SavePos.z - pRight->mv3SavePos.z);
                     }
 
-                    float fLefty = Interpolate(pLeft->mv3SavePos.f.y, pLeftUp->mv3SavePos.f.y, fScaleLeft);
-                    float fRighty = Interpolate(pRight->mv3SavePos.f.y, pRightUp->mv3SavePos.f.y, fScaleRight);
-                    float fComposite = (v3TargetPos.f.y - fLefty) / (fRighty - fLefty);
+                    float fLefty = Interpolate(pLeft->mv3SavePos.y, pLeftUp->mv3SavePos.y, fScaleLeft);
+                    float fRighty = Interpolate(pRight->mv3SavePos.y, pRightUp->mv3SavePos.y, fScaleRight);
+                    float fComposite = (v3TargetPos.y - fLefty) / (fRighty - fLefty);
 
                     if (fComposite <= 0.001f)
                     {
@@ -891,7 +891,7 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                             {
                                 blendInfo.mpSaveData[1] = pLeftUp;
                                 pClosest = pLeft;
-                                fLeftZ = v3TargetPos.f.z;
+                                fLeftZ = v3TargetPos.z;
                                 blendInfo.mfSaveBlendPrimary = fScaleLeft;
 
                                 for (milestone = 0; milestone < 5; milestone++)
@@ -904,7 +904,7 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                             }
                             else
                             {
-                                fLeftZ = pLeft->mv3SavePos.f.z;
+                                fLeftZ = pLeft->mv3SavePos.z;
                                 for (milestone = 0; milestone < 5; milestone++)
                                 {
                                     fTimeLeft[milestone] = pLeft->GetMilestoneTime(milestone);
@@ -914,7 +914,7 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                         else
                         {
                             blendInfo.mpSaveData[0] = pLeftUp;
-                            fLeftZ = pLeftUp->mv3SavePos.f.z;
+                            fLeftZ = pLeftUp->mv3SavePos.z;
                             for (milestone = 0; milestone < 5; milestone++)
                             {
                                 fTimeLeft[milestone] = pLeftUp->GetMilestoneTime(milestone);
@@ -934,7 +934,7 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                             if (fScaleRight >= 0.001f)
                             {
                                 blendInfo.mpSaveData[3] = pRightUp;
-                                fRightZ = v3TargetPos.f.z;
+                                fRightZ = v3TargetPos.z;
                                 blendInfo.mfSaveBlendSecondary = fScaleRight;
 
                                 for (milestone = 0; milestone < 5; milestone++)
@@ -947,7 +947,7 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                             }
                             else
                             {
-                                fRightZ = pRight->mv3SavePos.f.z;
+                                fRightZ = pRight->mv3SavePos.z;
                                 for (milestone = 0; milestone < 5; milestone++)
                                 {
                                     fTimeRight[milestone] = pRight->GetMilestoneTime(milestone);
@@ -957,7 +957,7 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                         else
                         {
                             blendInfo.mpSaveData[2] = pRightUp;
-                            fRightZ = pRightUp->mv3SavePos.f.z;
+                            fRightZ = pRightUp->mv3SavePos.z;
                             for (milestone = 0; milestone < 5; milestone++)
                             {
                                 fTimeRight[milestone] = pRightUp->GetMilestoneTime(milestone);
@@ -965,8 +965,8 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                         }
                     }
 
-                    blendInfo.mv3BlendedSavePos.f.y = v3TargetPos.f.y;
-                    blendInfo.mv3BlendedSavePos.f.z = Interpolate(fLeftZ, fRightZ, fComposite);
+                    blendInfo.mv3BlendedSavePos.y = v3TargetPos.y;
+                    blendInfo.mv3BlendedSavePos.z = Interpolate(fLeftZ, fRightZ, fComposite);
 
                     {
                         int milestone;
@@ -1035,7 +1035,7 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
 
         if (pDown != pUp)
         {
-            float fPrimary = (v3TargetPos.f.z - pDown->mv3SavePos.f.z) / (pUp->mv3SavePos.f.z - pDown->mv3SavePos.f.z);
+            float fPrimary = (v3TargetPos.z - pDown->mv3SavePos.z) / (pUp->mv3SavePos.z - pDown->mv3SavePos.z);
             if (fPrimary >= 0.999f)
             {
                 blendInfo.mv3BlendedSavePos = pUp->mv3SavePos;
@@ -1056,9 +1056,9 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
             else
             {
                 blendInfo.mfSaveBlendPrimary = fPrimary;
-                blendInfo.mv3BlendedSavePos.f.x = pDown->mv3SavePos.f.x;
-                blendInfo.mv3BlendedSavePos.f.y = Interpolate(pDown->mv3SavePos.f.y, pUp->mv3SavePos.f.y, fPrimary);
-                blendInfo.mv3BlendedSavePos.f.z = v3TargetPos.f.z;
+                blendInfo.mv3BlendedSavePos.x = pDown->mv3SavePos.x;
+                blendInfo.mv3BlendedSavePos.y = Interpolate(pDown->mv3SavePos.y, pUp->mv3SavePos.y, fPrimary);
+                blendInfo.mv3BlendedSavePos.z = v3TargetPos.z;
                 blendInfo.mpSaveData[1] = pUp;
 
                 for (milestone = 0; milestone < 5; milestone++)
@@ -1082,30 +1082,30 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
             {
                 const float fNudge = 0.1f;
 
-                if (fabsf(pDown->mv3SavePos.f.y - v3TargetPos.f.y) < fNudge)
+                if (fabsf(pDown->mv3SavePos.y - v3TargetPos.y) < fNudge)
                 {
-                    blendInfo.mv3BlendedSavePos.f.y = v3TargetPos.f.y;
+                    blendInfo.mv3BlendedSavePos.y = v3TargetPos.y;
                 }
-                else if (pDown->mv3SavePos.f.y > v3TargetPos.f.y)
+                else if (pDown->mv3SavePos.y > v3TargetPos.y)
                 {
-                    blendInfo.mv3BlendedSavePos.f.y -= fNudge;
+                    blendInfo.mv3BlendedSavePos.y -= fNudge;
                 }
                 else
                 {
-                    blendInfo.mv3BlendedSavePos.f.y += fNudge;
+                    blendInfo.mv3BlendedSavePos.y += fNudge;
                 }
 
-                if (fabsf(pDown->mv3SavePos.f.z - v3TargetPos.f.z) < fNudge)
+                if (fabsf(pDown->mv3SavePos.z - v3TargetPos.z) < fNudge)
                 {
-                    blendInfo.mv3BlendedSavePos.f.z = v3TargetPos.f.z;
+                    blendInfo.mv3BlendedSavePos.z = v3TargetPos.z;
                 }
-                else if (pDown->mv3SavePos.f.z > v3TargetPos.f.z)
+                else if (pDown->mv3SavePos.z > v3TargetPos.z)
                 {
-                    blendInfo.mv3BlendedSavePos.f.z -= fNudge;
+                    blendInfo.mv3BlendedSavePos.z -= fNudge;
                 }
                 else
                 {
-                    blendInfo.mv3BlendedSavePos.f.z += fNudge;
+                    blendInfo.mv3BlendedSavePos.z += fNudge;
                 }
             }
         }
@@ -1116,7 +1116,7 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
             pClosest = blendInfo.mpSaveData[1];
     }
 
-    blendInfo.mv3BlendedSavePos.f.x = pClosest->mv3SavePos.f.x;
+    blendInfo.mv3BlendedSavePos.x = pClosest->mv3SavePos.x;
     return pClosest;
 }
 /**
@@ -1195,8 +1195,8 @@ bool GoalieSave::TriggerCallback(float fTime, float fDuration, unsigned long uEv
 
 static inline void AddPointToGrid(SaveData* pSaveData, const nlVector3& v3Point)
 {
-    float z = v3Point.f.z;
-    float y = v3Point.f.y;
+    float z = v3Point.z;
+    float y = v3Point.y;
 
     float netWidth = cField::GetNet(1.0f)->GetNetWidth();
     float netHeight = cField::GetNet(1.0f)->GetNetHeight();
@@ -1320,51 +1320,51 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
     v3TopRight = pCurBot->mv3SavePos;
     while (pCur != NULL)
     {
-        if (pCur->mv3SavePos.f.y > v3TopRight.f.y)
-            v3TopRight.f.y = pCur->mv3SavePos.f.y;
+        if (pCur->mv3SavePos.y > v3TopRight.y)
+            v3TopRight.y = pCur->mv3SavePos.y;
         pCur = pCur->mpConnectedSaveData[1];
     }
     while (pCurBot != NULL)
     {
-        if (pCurBot->mv3SavePos.f.z > v3TopRight.f.z)
-            v3TopRight.f.z = pCurBot->mv3SavePos.f.z;
+        if (pCurBot->mv3SavePos.z > v3TopRight.z)
+            v3TopRight.z = pCurBot->mv3SavePos.z;
         pCurBot = pCurBot->mpConnectedSaveData[3];
     }
 
     pRoot->mv3GroupMaxCoords = v3TopRight;
     float halfYInc = 0.51f * yInc;
     float halfZInc = 0.51f * zInc;
-    v3TopRight.f.y += halfYInc;
-    v3TopRight.f.z += halfZInc;
+    v3TopRight.y += halfYInc;
+    v3TopRight.z += halfZInc;
 
     pCur = pRightCorner;
     v3BotLeft = pRightCorner->mv3SavePos;
     while (pCur != NULL)
     {
-        if (pCur->mv3SavePos.f.y < v3BotLeft.f.y)
-            v3BotLeft.f.y = pCur->mv3SavePos.f.y;
+        if (pCur->mv3SavePos.y < v3BotLeft.y)
+            v3BotLeft.y = pCur->mv3SavePos.y;
         pCur = pCur->mpConnectedSaveData[0];
     }
     pCur = pRightCorner;
     while (pCur != NULL)
     {
-        if (pCur->mv3SavePos.f.z < v3BotLeft.f.z)
-            v3BotLeft.f.z = pCur->mv3SavePos.f.z;
+        if (pCur->mv3SavePos.z < v3BotLeft.z)
+            v3BotLeft.z = pCur->mv3SavePos.z;
         pCur = pCur->mpConnectedSaveData[2];
     }
 
     pRoot->mv3GroupMinCoords = v3BotLeft;
-    v3BotLeft.f.y -= halfYInc;
-    v3BotLeft.f.z -= halfZInc;
+    v3BotLeft.y -= halfYInc;
+    v3BotLeft.z -= halfZInc;
 
     pNextRight = pRightCorner;
     pCurBot = pNextRight;
     pNextNextRight = pNextRight->mpConnectedSaveData[2];
     v3CurRowPos = v3BotLeft;
 
-    while (v3CurRowPos.f.y < v3TopRight.f.y)
+    while (v3CurRowPos.y < v3TopRight.y)
     {
-        if (v3CurRowPos.f.y >= pNextRight->mv3SavePos.f.y && pNextNextRight != NULL)
+        if (v3CurRowPos.y >= pNextRight->mv3SavePos.y && pNextNextRight != NULL)
         {
             pCurBot = pNextRight;
             pNextRight = pNextNextRight;
@@ -1374,22 +1374,22 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
         pCurRight = pNextRight;
         v3CurColPos = v3CurRowPos;
 
-        while (v3CurColPos.f.z < v3TopRight.f.z)
+        while (v3CurColPos.z < v3TopRight.z)
         {
             FindVerticalBoundingPoints(pCurLeft, v3CurColPos, &pCurLeft, &pCurUp);
 
             FindVerticalBoundingPoints(pCurRight, v3CurColPos, &pCurRight, &pCurRightUp);
 
             {
-                float dy = pCurLeft->mv3SavePos.f.y - v3CurColPos.f.y;
-                float dz = pCurLeft->mv3SavePos.f.z - v3CurColPos.f.z;
+                float dy = pCurLeft->mv3SavePos.y - v3CurColPos.y;
+                float dz = pCurLeft->mv3SavePos.z - v3CurColPos.z;
                 fCloseDist = nlGetLengthSquared2D(dy, dz);
                 pClosest = pCurLeft;
 
                 if (pCurLeft != pCurUp)
                 {
-                    float upDy = pCurUp->mv3SavePos.f.y - v3CurColPos.f.y;
-                    float upDz = pCurUp->mv3SavePos.f.z - v3CurColPos.f.z;
+                    float upDy = pCurUp->mv3SavePos.y - v3CurColPos.y;
+                    float upDz = pCurUp->mv3SavePos.z - v3CurColPos.z;
                     float d = nlGetLengthSquared2D(upDy, upDz);
                     if (d < fCloseDist)
                     {
@@ -1400,8 +1400,8 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
 
                 if (pCurLeft != pCurRight)
                 {
-                    float rightDy = pCurRight->mv3SavePos.f.y - v3CurColPos.f.y;
-                    float rightDz = pCurRight->mv3SavePos.f.z - v3CurColPos.f.z;
+                    float rightDy = pCurRight->mv3SavePos.y - v3CurColPos.y;
+                    float rightDz = pCurRight->mv3SavePos.z - v3CurColPos.z;
                     float d = nlGetLengthSquared2D(rightDy, rightDz);
                     if (d < fCloseDist)
                     {
@@ -1410,8 +1410,8 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
                     }
                     if (pCurRight != pCurRightUp)
                     {
-                        float upRightDy = pCurRightUp->mv3SavePos.f.y - v3CurColPos.f.y;
-                        float upRightDz = pCurRightUp->mv3SavePos.f.z - v3CurColPos.f.z;
+                        float upRightDy = pCurRightUp->mv3SavePos.y - v3CurColPos.y;
+                        float upRightDz = pCurRightUp->mv3SavePos.z - v3CurColPos.z;
                         float fUpRightDistSq = nlGetLengthSquared2D(upRightDy, upRightDz);
                         if (fUpRightDistSq < fCloseDist)
                         {
@@ -1425,9 +1425,9 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
             pClosest->mv3GroupMinCoords = pRoot->mv3GroupMinCoords;
             pClosest->mv3GroupMaxCoords = pRoot->mv3GroupMaxCoords;
             AddPointToGrid(pClosest, v3CurColPos);
-            v3CurColPos.f.z += zInc;
+            v3CurColPos.z += zInc;
         }
-        v3CurRowPos.f.y += yInc;
+        v3CurRowPos.y += yInc;
     }
 }
 
@@ -1480,8 +1480,8 @@ void GoalieSave::AddSegmentToGrid(SaveData* pStartSaveData, SaveData* pEndSaveDa
     nlVector3 v3CurPos;
     nlVector3 v3Delta;
 
-    Local2GridCoords(pStartSaveData->mv3SavePos.f.y, pStartSaveData->mv3SavePos.f.z, i, j);
-    Local2GridCoords(pEndSaveData->mv3SavePos.f.y, pEndSaveData->mv3SavePos.f.z, m, n);
+    Local2GridCoords(pStartSaveData->mv3SavePos.y, pStartSaveData->mv3SavePos.z, i, j);
+    Local2GridCoords(pEndSaveData->mv3SavePos.y, pEndSaveData->mv3SavePos.z, m, n);
     divisions = AbsInt(i - m) + AbsInt(j - n);
     nlVec3Sub(v3Delta, pEndSaveData->mv3SavePos, pStartSaveData->mv3SavePos);
     if (divisions > 0)
@@ -1491,10 +1491,10 @@ void GoalieSave::AddSegmentToGrid(SaveData* pStartSaveData, SaveData* pEndSaveDa
     v3CurPos = pStartSaveData->mv3SavePos;
     for (count = 0; count <= divisions; count++)
     {
-        if (nlGetLengthSquared2D(pStartSaveData->mv3SavePos.f.y - v3CurPos.f.y,
-                pStartSaveData->mv3SavePos.f.z - v3CurPos.f.z)
-            < nlGetLengthSquared2D(pEndSaveData->mv3SavePos.f.y - v3CurPos.f.y,
-                IdentityFloat(pEndSaveData->mv3SavePos.f.z - v3CurPos.f.z)))
+        if (nlGetLengthSquared2D(pStartSaveData->mv3SavePos.y - v3CurPos.y,
+                pStartSaveData->mv3SavePos.z - v3CurPos.z)
+            < nlGetLengthSquared2D(pEndSaveData->mv3SavePos.y - v3CurPos.y,
+                IdentityFloat(pEndSaveData->mv3SavePos.z - v3CurPos.z)))
             pCurSaveData = pStartSaveData;
         else
             pCurSaveData = pEndSaveData;
@@ -1538,19 +1538,19 @@ void GoalieSave::AddChainToGrid(SaveData* pSaveData, bool bVertical)
 
     while (pCur != NULL)
     {
-        if (pCur->mv3SavePos.f.x > pSaveData->mv3GroupMaxCoords.f.x)
-            pSaveData->mv3GroupMaxCoords.f.x = pCur->mv3SavePos.f.x;
-        if (pCur->mv3SavePos.f.y > pSaveData->mv3GroupMaxCoords.f.y)
-            pSaveData->mv3GroupMaxCoords.f.y = pCur->mv3SavePos.f.y;
-        if (pCur->mv3SavePos.f.z > pSaveData->mv3GroupMaxCoords.f.z)
-            pSaveData->mv3GroupMaxCoords.f.z = pCur->mv3SavePos.f.z;
+        if (pCur->mv3SavePos.x > pSaveData->mv3GroupMaxCoords.x)
+            pSaveData->mv3GroupMaxCoords.x = pCur->mv3SavePos.x;
+        if (pCur->mv3SavePos.y > pSaveData->mv3GroupMaxCoords.y)
+            pSaveData->mv3GroupMaxCoords.y = pCur->mv3SavePos.y;
+        if (pCur->mv3SavePos.z > pSaveData->mv3GroupMaxCoords.z)
+            pSaveData->mv3GroupMaxCoords.z = pCur->mv3SavePos.z;
 
-        if (pCur->mv3SavePos.f.x < pSaveData->mv3GroupMinCoords.f.x)
-            pSaveData->mv3GroupMinCoords.f.x = pCur->mv3SavePos.f.x;
-        if (pCur->mv3SavePos.f.y < pSaveData->mv3GroupMinCoords.f.y)
-            pSaveData->mv3GroupMinCoords.f.y = pCur->mv3SavePos.f.y;
-        if (pCur->mv3SavePos.f.z < pSaveData->mv3GroupMinCoords.f.z)
-            pSaveData->mv3GroupMinCoords.f.z = pCur->mv3SavePos.f.z;
+        if (pCur->mv3SavePos.x < pSaveData->mv3GroupMinCoords.x)
+            pSaveData->mv3GroupMinCoords.x = pCur->mv3SavePos.x;
+        if (pCur->mv3SavePos.y < pSaveData->mv3GroupMinCoords.y)
+            pSaveData->mv3GroupMinCoords.y = pCur->mv3SavePos.y;
+        if (pCur->mv3SavePos.z < pSaveData->mv3GroupMinCoords.z)
+            pSaveData->mv3GroupMinCoords.z = pCur->mv3SavePos.z;
 
         pLast = pCur;
         SaveData* next = pCur->mpConnectedSaveData[dir];

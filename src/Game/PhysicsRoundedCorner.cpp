@@ -23,5 +23,5 @@ PhysicsRoundedCorner::PhysicsRoundedCorner(CollisionSpace* collisionSpace, const
     dGeomSetData(m_geomID, this);
     SetDefaultCollideBits();
 
-    dGeomSetPosition(m_geomID, position.f.x, position.f.y, 0.0f);
+    dGeomSetPosition(m_geomID, position.x, position.y, 0.0f);
 }

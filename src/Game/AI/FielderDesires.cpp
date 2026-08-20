@@ -132,9 +132,9 @@ static const nlVector2 g_vMarkFollowTimeDelay = {
 
 static inline void CalcDeltaToTarget(nlVector3& outDelta, const nlVector3& target, const nlVector3& origin)
 {
-    outDelta.f.x = target.f.x - origin.f.x;
-    outDelta.f.y = target.f.y - origin.f.y;
-    outDelta.f.z = target.f.z - origin.f.z;
+    outDelta.x = target.x - origin.x;
+    outDelta.y = target.y - origin.y;
+    outDelta.z = target.z - origin.z;
 }
 
 static inline const nlVector3& GetBallPosition(cBall* pBall)
@@ -150,8 +150,8 @@ static inline const nlVector3& GetBallVelocity(cBall* pBall)
 CommonDesireData::CommonDesireData(eFielderDesireState desireType)
 {
     m_DesireType = desireType;
-    m_ConfidenceExtrema.f.x = 1.0f;
-    m_ConfidenceExtrema.f.y = 0.0f;
+    m_ConfidenceExtrema.x = 1.0f;
+    m_ConfidenceExtrema.y = 0.0f;
 }
 
 /**
@@ -175,13 +175,13 @@ bool CommonDesireData::CalcBoolChance(float fChance)
  */
 float CommonDesireData::NormalizeConfidence(float fConfidence)
 {
-    if (m_ConfidenceExtrema.f.x > fConfidence)
+    if (m_ConfidenceExtrema.x > fConfidence)
     {
-        m_ConfidenceExtrema.f.x = (0.5f * fConfidence) + (0.5f * m_ConfidenceExtrema.f.x);
+        m_ConfidenceExtrema.x = (0.5f * fConfidence) + (0.5f * m_ConfidenceExtrema.x);
     }
-    if (m_ConfidenceExtrema.f.y < fConfidence)
+    if (m_ConfidenceExtrema.y < fConfidence)
     {
-        m_ConfidenceExtrema.f.y = (0.5f * fConfidence) + (0.5f * m_ConfidenceExtrema.f.y);
+        m_ConfidenceExtrema.y = (0.5f * fConfidence) + (0.5f * m_ConfidenceExtrema.y);
     }
     return NormalizeVal(fConfidence, m_ConfidenceExtrema);
 }
@@ -740,12 +740,12 @@ void cFielder::DesireInterceptBall(float fDeltaT)
                 else
                 {
                     float fSeconds = g_pBall->m_tPassTargetTimer.GetSeconds();
-                    float fz = pPassTarget->m_v3Position.f.z + fSeconds * pPassTarget->m_v3Velocity.f.z;
-                    float fy = pPassTarget->m_v3Position.f.y + fSeconds * pPassTarget->m_v3Velocity.f.y;
-                    float fx = pPassTarget->m_v3Position.f.x + fSeconds * pPassTarget->m_v3Velocity.f.x;
-                    v3FutureTargetPosition.f.x = fx;
-                    v3FutureTargetPosition.f.y = fy;
-                    v3FutureTargetPosition.f.z = fz;
+                    float fz = pPassTarget->m_v3Position.z + fSeconds * pPassTarget->m_v3Velocity.z;
+                    float fy = pPassTarget->m_v3Position.y + fSeconds * pPassTarget->m_v3Velocity.y;
+                    float fx = pPassTarget->m_v3Position.x + fSeconds * pPassTarget->m_v3Velocity.x;
+                    v3FutureTargetPosition.x = fx;
+                    v3FutureTargetPosition.y = fy;
+                    v3FutureTargetPosition.z = fz;
 
                     v3DesirePosition = GetClosestPointOnLineABFromPointC(g_pBall->m_v3Position, v3FutureTargetPosition, m_v3Position);
                 }
@@ -766,20 +766,20 @@ void cFielder::DesireInterceptBall(float fDeltaT)
                 float fRawTime = m_pTeam->mfBallInterceptTimes[m_ID];
                 float fInterceptTime = (3.0f <= fRawTime) ? 3.0f : fRawTime;
 
-                float fz = g_pBall->m_v3Position.f.z + fInterceptTime * g_pBall->m_v3Velocity.f.z;
-                float fy = g_pBall->m_v3Position.f.y + fInterceptTime * g_pBall->m_v3Velocity.f.y;
-                float fx = g_pBall->m_v3Position.f.x + fInterceptTime * g_pBall->m_v3Velocity.f.x;
-                v3DesirePosition.f.x = fx;
-                v3DesirePosition.f.y = fy;
-                v3DesirePosition.f.z = fz;
+                float fz = g_pBall->m_v3Position.z + fInterceptTime * g_pBall->m_v3Velocity.z;
+                float fy = g_pBall->m_v3Position.y + fInterceptTime * g_pBall->m_v3Velocity.y;
+                float fx = g_pBall->m_v3Position.x + fInterceptTime * g_pBall->m_v3Velocity.x;
+                v3DesirePosition.x = fx;
+                v3DesirePosition.y = fy;
+                v3DesirePosition.z = fz;
             }
         }
 
         if (bTrackBall)
         {
             eTurboRequest turboRequest = TR_MOVING_TARGET;
-            float dx = v3DesirePosition.f.x - m_v3Position.f.x;
-            float dy = v3DesirePosition.f.y - m_v3Position.f.y;
+            float dx = v3DesirePosition.x - m_v3Position.x;
+            float dy = v3DesirePosition.y - m_v3Position.y;
             if (nlSqrt(dx * dx + dy * dy, true) < 1.0f)
             {
                 turboRequest = TR_FAR_DISTANCE;
@@ -809,7 +809,7 @@ void cFielder::DesireInterceptBall(float fDeltaT)
             if (mActionSlideAttackVars.bAttackSucceeded == 0)
             {
                 float fBallSpeed = nlSqrt(
-                    g_pBall->m_v3Velocity.f.x * g_pBall->m_v3Velocity.f.x + g_pBall->m_v3Velocity.f.y * g_pBall->m_v3Velocity.f.y + g_pBall->m_v3Velocity.f.z * g_pBall->m_v3Velocity.f.z,
+                    g_pBall->m_v3Velocity.x * g_pBall->m_v3Velocity.x + g_pBall->m_v3Velocity.y * g_pBall->m_v3Velocity.y + g_pBall->m_v3Velocity.z * g_pBall->m_v3Velocity.z,
                     true);
 
                 if (fBallSpeed > 0.05f)
@@ -927,8 +927,8 @@ void cFielder::DesireMark(float fDeltaT)
     if (m_DesireCommonVars.tMiscTimer.m_uPackedTime == 0)
     {
         fTimeDelay = Interpolate(
-            g_vMarkFollowTimeDelay.f.x,
-            g_vMarkFollowTimeDelay.f.y,
+            g_vMarkFollowTimeDelay.x,
+            g_vMarkFollowTimeDelay.y,
             SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->Def_Marking);
 
         float fTimeDelayRange = fTimeDelay;
@@ -940,10 +940,10 @@ void cFielder::DesireMark(float fDeltaT)
 
         nlVector3 v3MarkPosition;
         nlVec3ScaleAdd(v3MarkPosition, 0.1f, m_pMark->m_v3Velocity, m_pMark->m_v3Position);
-        v3MarkPosition.f.z = 0.0f;
+        v3MarkPosition.z = 0.0f;
 
         nlVector3 v3Dir;
-        nlVec3Set(v3Dir, v3NetPosition.f.x - v3MarkPosition.f.x, v3NetPosition.f.y - v3MarkPosition.f.y, v3NetPosition.f.z - v3MarkPosition.f.z);
+        nlVec3Set(v3Dir, v3NetPosition.x - v3MarkPosition.x, v3NetPosition.y - v3MarkPosition.y, v3NetPosition.z - v3MarkPosition.z);
         nlVec3Scale(v3Dir, nlRecipSqrt(nlVec3LengthSquared(v3Dir), true));
 
         fTotalWeight_v3 = 0.0f;
@@ -951,24 +951,24 @@ void cFielder::DesireMark(float fDeltaT)
         vAccumulated_v3 = v3Zero;
 
         fMarkingNetPassBalance = Interpolate(
-            g_vMarkingNetPassBalance.f.x,
-            g_vMarkingNetPassBalance.f.y,
+            g_vMarkingNetPassBalance.x,
+            g_vMarkingNetPassBalance.y,
             SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->Def_Marking);
         fMarkingDistance = Interpolate(
-            g_vMarkDistance.f.x,
-            g_vMarkDistance.f.y,
+            g_vMarkDistance.x,
+            g_vMarkDistance.y,
             SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->Def_Marking);
         fMarkFormationBalance = Interpolate(
-            g_vMarkFormationBalance.f.x,
-            g_vMarkFormationBalance.f.y,
+            g_vMarkFormationBalance.x,
+            g_vMarkFormationBalance.y,
             SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->Def_Marking);
         fMarkBallOwnerBalance = Interpolate(
-            g_vMarkBallOwner.f.x,
-            g_vMarkBallOwner.f.y,
+            g_vMarkBallOwner.x,
+            g_vMarkBallOwner.y,
             SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->Def_Marking);
         fMarkThreatCoeff = Interpolate(
-            g_vMarkImmediateThreatCoeff.f.x,
-            g_vMarkImmediateThreatCoeff.f.y,
+            g_vMarkImmediateThreatCoeff.x,
+            g_vMarkImmediateThreatCoeff.y,
             SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->Def_Marking);
 
         fDistanceMultiplier = Interpolate(0.5f, 1.0f, FarToTheirNet(m_pMark));
@@ -992,7 +992,7 @@ void cFielder::DesireMark(float fDeltaT)
                 nlVec3ScaleAdd(v3SBCPosition, 0.1f, pSBC->m_v3Velocity, pSBC->m_v3Position);
 
                 nlVector3 v3SBCDir;
-                nlVec3Set(v3SBCDir, v3SBCPosition.f.x - v3MarkPosition.f.x, v3SBCPosition.f.y - v3MarkPosition.f.y, v3SBCPosition.f.z - v3MarkPosition.f.z);
+                nlVec3Set(v3SBCDir, v3SBCPosition.x - v3MarkPosition.x, v3SBCPosition.y - v3MarkPosition.y, v3SBCPosition.z - v3MarkPosition.z);
 
                 nlVec3Scale(v3SBCDir, nlRecipSqrt(nlVec3LengthSquared(v3SBCDir), true));
 
@@ -1000,18 +1000,18 @@ void cFielder::DesireMark(float fDeltaT)
                 {
                     float fToMarkNetPassBalance = 1.0f - fMarkingNetPassBalance;
                     nlVec3Set(v3Dir,
-                        (fToMarkNetPassBalance * v3Dir.f.x) + (fMarkingNetPassBalance * v3SBCDir.f.x),
-                        (fToMarkNetPassBalance * v3Dir.f.y) + (fMarkingNetPassBalance * v3SBCDir.f.y),
-                        (fToMarkNetPassBalance * v3Dir.f.z) + (fMarkingNetPassBalance * v3SBCDir.f.z));
+                        (fToMarkNetPassBalance * v3Dir.x) + (fMarkingNetPassBalance * v3SBCDir.x),
+                        (fToMarkNetPassBalance * v3Dir.y) + (fMarkingNetPassBalance * v3SBCDir.y),
+                        (fToMarkNetPassBalance * v3Dir.z) + (fMarkingNetPassBalance * v3SBCDir.z));
                 }
 
                 nlVector3 v3ToNet;
-                nlVec3Set(v3ToNet, v3NetPosition.f.x - v3SBCPosition.f.x, v3NetPosition.f.y - v3SBCPosition.f.y, v3NetPosition.f.z - v3SBCPosition.f.z);
+                nlVec3Set(v3ToNet, v3NetPosition.x - v3SBCPosition.x, v3NetPosition.y - v3SBCPosition.y, v3NetPosition.z - v3SBCPosition.z);
                 float fToNetInvLength = nlRecipSqrt(nlVec3LengthSquared(v3ToNet), true);
                 nlVec3Scale(v3ToNet, fToNetInvLength);
 
                 nlVector3 vThreatTarget;
-                nlVec3Set(vThreatTarget, (fMarkingDistance * v3ToNet.f.x) + v3SBCPosition.f.x, (fMarkingDistance * v3ToNet.f.y) + v3SBCPosition.f.y, (fMarkingDistance * v3ToNet.f.z) + v3SBCPosition.f.z);
+                nlVec3Set(vThreatTarget, (fMarkingDistance * v3ToNet.x) + v3SBCPosition.x, (fMarkingDistance * v3ToNet.y) + v3SBCPosition.y, (fMarkingDistance * v3ToNet.z) + v3SBCPosition.z);
 
                 float fMarkBallOwner = Fuzzy::ShouldIMarkBallOwner(this).mData.f;
                 if (fMarkBallOwner > 0.0f)
@@ -1026,9 +1026,9 @@ void cFielder::DesireMark(float fDeltaT)
         nlVector3 v3MarkTarget;
         nlVec3Set(
             v3MarkTarget,
-            (fMarkingDistance * v3Dir.f.x) + v3MarkPosition.f.x,
-            (fMarkingDistance * v3Dir.f.y) + v3MarkPosition.f.y,
-            (fMarkingDistance * v3Dir.f.z) + v3MarkPosition.f.z);
+            (fMarkingDistance * v3Dir.x) + v3MarkPosition.x,
+            (fMarkingDistance * v3Dir.y) + v3MarkPosition.y,
+            (fMarkingDistance * v3Dir.z) + v3MarkPosition.z);
         nlVec3ScaleAdd(vAccumulated_v3, fMarkFormationBalance, v3MarkTarget, vAccumulated_v3);
         fTotalWeight_v3 = fTotalWeight_v3 + fMarkFormationBalance;
 
@@ -1041,17 +1041,17 @@ void cFielder::DesireMark(float fDeltaT)
         float fFormationWeight = 1.0f - fMarkFormationBalance;
         fTotalWeight_v3 = fTotalWeight_v3 + fFormationWeight;
         nlVec3Set(vAccumulated_v3,
-            (fFormationWeight * v3FormationPosition.f.x) + vAccumulated_v3.f.x,
-            (fFormationWeight * v3FormationPosition.f.y) + vAccumulated_v3.f.y,
-            (fFormationWeight * v3FormationPosition.f.z) + vAccumulated_v3.f.z);
+            (fFormationWeight * v3FormationPosition.x) + vAccumulated_v3.x,
+            (fFormationWeight * v3FormationPosition.y) + vAccumulated_v3.y,
+            (fFormationWeight * v3FormationPosition.z) + vAccumulated_v3.z);
 
         if (fTotalWeight_v3 > 0.0f)
         {
             float fInvTotalWeight = 1.0f / fTotalWeight_v3;
             nlVec3Set(v3DesiredPos,
-                fInvTotalWeight * vAccumulated_v3.f.x,
-                fInvTotalWeight * vAccumulated_v3.f.y,
-                fInvTotalWeight * vAccumulated_v3.f.z);
+                fInvTotalWeight * vAccumulated_v3.x,
+                fInvTotalWeight * vAccumulated_v3.y,
+                fInvTotalWeight * vAccumulated_v3.z);
         }
         else
         {
@@ -1114,11 +1114,11 @@ void cFielder::DesireSupportBall(float fDeltaT, bool bDefensive)
     nlVector3 v3BallAILoc;
 
     cBall* pBall = g_pBall;
-    v3BallPosition.f.x = pBall->m_v3Position.f.x + (0.2f * pBall->GetAIVelocity()->f.x);
+    v3BallPosition.x = pBall->m_v3Position.x + (0.2f * pBall->GetAIVelocity()->x);
 
     pBall = g_pBall;
-    v3BallPosition.f.y = pBall->m_v3Position.f.y + (0.2f * pBall->GetAIVelocity()->f.y);
-    v3BallPosition.f.z = 0.0f;
+    v3BallPosition.y = pBall->m_v3Position.y + (0.2f * pBall->GetAIVelocity()->y);
+    v3BallPosition.z = 0.0f;
 
     FieldLocToAILoc(v3BallAILoc, v3BallPosition, (eTeamSide)m_pTeam->m_nSide);
 
@@ -1127,8 +1127,8 @@ void cFielder::DesireSupportBall(float fDeltaT, bool bDefensive)
 
     for (int i = 0; i < iNumRules; i++)
     {
-        float dy = v3BallAILoc.f.y - pAILocations[i][0].f.y;
-        float dx = v3BallAILoc.f.x - pAILocations[i][0].f.x;
+        float dy = v3BallAILoc.y - pAILocations[i][0].y;
+        float dx = v3BallAILoc.x - pAILocations[i][0].x;
         float dist = nlSqrt(dx * dx + dy * dy, true);
 
         if (dist < best_rule_distance[0])
@@ -1152,13 +1152,13 @@ void cFielder::DesireSupportBall(float fDeltaT, bool bDefensive)
     {
         const nlVector2* pLocation = pAILocations[best_rule_i[i_rule]];
 
-        float offsetX = pLocation[1].f.x - pLocation[0].f.x;
-        float offsetY = pLocation[1].f.y - pLocation[0].f.y;
-        v2OffsetFromBall[i_rule].f.x = offsetX;
-        v2OffsetFromBall[i_rule].f.y = offsetY;
+        float offsetX = pLocation[1].x - pLocation[0].x;
+        float offsetY = pLocation[1].y - pLocation[0].y;
+        v2OffsetFromBall[i_rule].x = offsetX;
+        v2OffsetFromBall[i_rule].y = offsetY;
 
-        v2TargetPositions[i_rule].f.x = SupportClampUpper(SupportClampLower(v3BallAILoc.f.x + v2OffsetFromBall[i_rule].f.x, 0.0f), 4.0f);
-        v2TargetPositions[i_rule].f.y = SupportClampUpper(SupportClampLower(v3BallAILoc.f.y + v2OffsetFromBall[i_rule].f.y, -1.0f), 1.0f);
+        v2TargetPositions[i_rule].x = SupportClampUpper(SupportClampLower(v3BallAILoc.x + v2OffsetFromBall[i_rule].x, 0.0f), 4.0f);
+        v2TargetPositions[i_rule].y = SupportClampUpper(SupportClampLower(v3BallAILoc.y + v2OffsetFromBall[i_rule].y, -1.0f), 1.0f);
     }
 
     nlVector3 v3SupportPosition = {
@@ -1170,8 +1170,8 @@ void cFielder::DesireSupportBall(float fDeltaT, bool bDefensive)
     float t = best_rule_distance[1] / (best_rule_distance[0] + best_rule_distance[1]);
     float oneMinusT = 1.0f - t;
 
-    v3SupportPosition.f.x = ((1.0f - oneMinusT) * v2TargetPositions[0].f.x) + (oneMinusT * v2TargetPositions[1].f.x);
-    v3SupportPosition.f.y = ((1.0f - oneMinusT) * v2TargetPositions[0].f.y) + (oneMinusT * v2TargetPositions[1].f.y);
+    v3SupportPosition.x = ((1.0f - oneMinusT) * v2TargetPositions[0].x) + (oneMinusT * v2TargetPositions[1].x);
+    v3SupportPosition.y = ((1.0f - oneMinusT) * v2TargetPositions[0].y) + (oneMinusT * v2TargetPositions[1].y);
 
     AILocToFieldLoc(v3SupportPosition, v3SupportPosition, (eTeamSide)m_pTeam->m_nSide);
 
@@ -1181,12 +1181,12 @@ void cFielder::DesireSupportBall(float fDeltaT, bool bDefensive)
     nlVector3 vAccumulated_v3 = v3Zero;
     fTotalWeight_v3 = fTotalWeight_v3 + fAIBallLocationWeight;
 
-    float fWeightedX = (fAIBallLocationWeight * v3SupportPosition.f.x) + vAccumulated_v3.f.x;
-    float fWeightedZ = (fAIBallLocationWeight * v3SupportPosition.f.z) + vAccumulated_v3.f.z;
-    float fWeightedY = (fAIBallLocationWeight * v3SupportPosition.f.y) + vAccumulated_v3.f.y;
-    vAccumulated_v3.f.x = fWeightedX;
-    vAccumulated_v3.f.y = fWeightedY;
-    vAccumulated_v3.f.z = fWeightedZ;
+    float fWeightedX = (fAIBallLocationWeight * v3SupportPosition.x) + vAccumulated_v3.x;
+    float fWeightedZ = (fAIBallLocationWeight * v3SupportPosition.z) + vAccumulated_v3.z;
+    float fWeightedY = (fAIBallLocationWeight * v3SupportPosition.y) + vAccumulated_v3.y;
+    vAccumulated_v3.x = fWeightedX;
+    vAccumulated_v3.y = fWeightedY;
+    vAccumulated_v3.z = fWeightedZ;
 
     float fFormationWeight = 0.3f;
 
@@ -1199,20 +1199,20 @@ void cFielder::DesireSupportBall(float fDeltaT, bool bDefensive)
 
     fTotalWeight_v3 = fTotalWeight_v3 + fFormationWeight;
 
-    float fFormationWeightedX = (fFormationWeight * v3FormationPosition.f.x) + vAccumulated_v3.f.x;
-    float fFormationWeightedZ = (fFormationWeight * v3FormationPosition.f.z) + vAccumulated_v3.f.z;
-    float fFormationWeightedY = (fFormationWeight * v3FormationPosition.f.y) + vAccumulated_v3.f.y;
-    vAccumulated_v3.f.x = fFormationWeightedX;
-    vAccumulated_v3.f.y = fFormationWeightedY;
-    vAccumulated_v3.f.z = fFormationWeightedZ;
+    float fFormationWeightedX = (fFormationWeight * v3FormationPosition.x) + vAccumulated_v3.x;
+    float fFormationWeightedZ = (fFormationWeight * v3FormationPosition.z) + vAccumulated_v3.z;
+    float fFormationWeightedY = (fFormationWeight * v3FormationPosition.y) + vAccumulated_v3.y;
+    vAccumulated_v3.x = fFormationWeightedX;
+    vAccumulated_v3.y = fFormationWeightedY;
+    vAccumulated_v3.z = fFormationWeightedZ;
 
     nlVector3 v3DesiredPos;
     if (fTotalWeight_v3 > 0.0f)
     {
         float fInvWeight = 1.0f / fTotalWeight_v3;
-        v3DesiredPos.f.x = fInvWeight * vAccumulated_v3.f.x;
-        v3DesiredPos.f.y = fInvWeight * vAccumulated_v3.f.y;
-        v3DesiredPos.f.z = fInvWeight * vAccumulated_v3.f.z;
+        v3DesiredPos.x = fInvWeight * vAccumulated_v3.x;
+        v3DesiredPos.y = fInvWeight * vAccumulated_v3.y;
+        v3DesiredPos.z = fInvWeight * vAccumulated_v3.z;
     }
     else
     {
@@ -1293,15 +1293,15 @@ bool cFielder::InitDesireGetOpen()
     }
 
     nlVector3 v3TargetPosition = *pTargetPosition;
-    v3TargetPosition.f.z = 0.0f;
+    v3TargetPosition.z = 0.0f;
 
     SetSpaceSearch(new (nlMalloc(0x78, 8, false)) SSearchBestPass(m_DesireCommonVars.pSBC, this, false, false));
     m_pSpaceSearch->m_bDebugOn = false;
     m_pSpaceSearch->FindBestPosition(v3BestPosition, v3FormationPosition, DIR_TOWARD_TARGET, &v3TargetPosition, 4.0f, 0x8000);
 
-    m_DesireCommonVars.v3DesiredPosition.f.x = (1.0f - 0.95f) * v3FormationPosition.f.x + 0.95f * v3BestPosition.f.x;
-    m_DesireCommonVars.v3DesiredPosition.f.y = (1.0f - 0.95f) * v3FormationPosition.f.y + 0.95f * v3BestPosition.f.y;
-    m_DesireCommonVars.v3DesiredPosition.f.z = (1.0f - 0.95f) * v3FormationPosition.f.z + 0.95f * v3BestPosition.f.z;
+    m_DesireCommonVars.v3DesiredPosition.x = (1.0f - 0.95f) * v3FormationPosition.x + 0.95f * v3BestPosition.x;
+    m_DesireCommonVars.v3DesiredPosition.y = (1.0f - 0.95f) * v3FormationPosition.y + 0.95f * v3BestPosition.y;
+    m_DesireCommonVars.v3DesiredPosition.z = (1.0f - 0.95f) * v3FormationPosition.z + 0.95f * v3BestPosition.z;
 
     m_pAvoidance->SetThingsToAvoid(0x1F);
 
@@ -1469,11 +1469,11 @@ bool cFielder::InitDesireOneTimerFromRun(unsigned short aFutureFacingDirection, 
 
         nlVector3 v3Me2DesiredPosition;
         nlVec3Set(*(nlVector3*)&v3Me2DesiredPosition,
-            m_DesireOneTimerVars.v3DesiredPosition.f.x - m_v3Position.f.x,
-            m_DesireOneTimerVars.v3DesiredPosition.f.y - m_v3Position.f.y,
-            m_DesireOneTimerVars.v3DesiredPosition.f.z - m_v3Position.f.z);
+            m_DesireOneTimerVars.v3DesiredPosition.x - m_v3Position.x,
+            m_DesireOneTimerVars.v3DesiredPosition.y - m_v3Position.y,
+            m_DesireOneTimerVars.v3DesiredPosition.z - m_v3Position.z);
 
-        unsigned short aDesiredAngle = (unsigned short)(int)(10430.378f * nlATan2f(v3Me2DesiredPosition.f.y, v3Me2DesiredPosition.f.x));
+        unsigned short aDesiredAngle = (unsigned short)(int)(10430.378f * nlATan2f(v3Me2DesiredPosition.y, v3Me2DesiredPosition.x));
 
         s16 angleDiff = aDesiredAngle - m_aActualFacingDirection;
         int absDiff = angleDiff;
@@ -1482,7 +1482,7 @@ bool cFielder::InitDesireOneTimerFromRun(unsigned short aFutureFacingDirection, 
 
         if ((u16)absDiff < 0x4000)
         {
-            float fSpeed = nlSqrt(v3Me2DesiredPosition.f.x * v3Me2DesiredPosition.f.x + v3Me2DesiredPosition.f.y * v3Me2DesiredPosition.f.y, true) / m_DesireOneTimerVars.fDesiredTime;
+            float fSpeed = nlSqrt(v3Me2DesiredPosition.x * v3Me2DesiredPosition.x + v3Me2DesiredPosition.y * v3Me2DesiredPosition.y, true) / m_DesireOneTimerVars.fDesiredTime;
             m_fDesiredSpeed = fSpeed;
             m_fActualSpeed = fSpeed;
             m_aDesiredFacingDirection = aDesiredAngle;
@@ -1537,20 +1537,20 @@ void cFielder::DesireOneTimer(float fDeltaT)
     nlVector3 vBallDir;
     vBallDir.Sub2D(fp->m_DesireOneTimerVars.v3BallPosition, g_pBall->m_v3Position);
     float invLen = nlRecipSqrt(vBallDir.GetLengthSq2D(), true);
-    float targetDirY = invLen * vBallDir.f.y;
-    vBallDir.f.y = invLen * vBallDir.f.x;
+    float targetDirY = invLen * vBallDir.y;
+    vBallDir.y = invLen * vBallDir.x;
 
     cBall* pBall = g_pBall;
-    invLen = nlRecipSqrt(pBall->m_v3Velocity.f.x * pBall->m_v3Velocity.f.x + pBall->m_v3Velocity.f.y * pBall->m_v3Velocity.f.y, true);
+    invLen = nlRecipSqrt(pBall->m_v3Velocity.x * pBall->m_v3Velocity.x + pBall->m_v3Velocity.y * pBall->m_v3Velocity.y, true);
 
     float ballDirX;
     float ballDirY;
-    ballDirY = invLen * pBall->m_v3Velocity.f.y;
-    ballDirX = invLen * pBall->m_v3Velocity.f.x;
+    ballDirY = invLen * pBall->m_v3Velocity.y;
+    ballDirX = invLen * pBall->m_v3Velocity.x;
 
     if (fp->m_pBall == NULL && fp->m_eDesireSubState != 1)
     {
-        invLen = vBallDir.f.y * ballDirX + targetDirY * ballDirY;
+        invLen = vBallDir.y * ballDirX + targetDirY * ballDirY;
         if (invLen < 0.98f)
         {
             fp->ClearPassTargetIfAmThePassTarget();
@@ -1567,8 +1567,8 @@ void cFielder::DesireOneTimer(float fDeltaT)
     {
         if (fp->m_DesireOneTimerVars.fDesiredTime <= 0.0f)
         {
-            float yToTarget = fp->m_v3Position.f.y - fp->m_DesireOneTimerVars.v3DesiredPosition.f.y;
-            float xToTarget = fp->m_v3Position.f.x - fp->m_DesireOneTimerVars.v3DesiredPosition.f.x;
+            float yToTarget = fp->m_v3Position.y - fp->m_DesireOneTimerVars.v3DesiredPosition.y;
+            float xToTarget = fp->m_v3Position.x - fp->m_DesireOneTimerVars.v3DesiredPosition.x;
 
             if (xToTarget * xToTarget + yToTarget * yToTarget > 4.0f)
             {
@@ -1666,20 +1666,20 @@ void cFielder::DesireReceivePassFromIdle(float fDeltaT)
     nlVector3 vBallDir;
     vBallDir.Sub2D(m_DesireReceivePassSharedVars.v3BallPosition, g_pBall->m_v3Position);
     float invDist = nlRecipSqrt(vBallDir.GetLengthSq2D(), true);
-    float normY = invDist * vBallDir.f.y;
-    vBallDir.f.y = invDist * vBallDir.f.x;
+    float normY = invDist * vBallDir.y;
+    vBallDir.y = invDist * vBallDir.x;
 
     cBall* pBall = g_pBall;
-    invDist = nlRecipSqrt(pBall->m_v3Velocity.f.x * pBall->m_v3Velocity.f.x + pBall->m_v3Velocity.f.y * pBall->m_v3Velocity.f.y, true);
+    invDist = nlRecipSqrt(pBall->m_v3Velocity.x * pBall->m_v3Velocity.x + pBall->m_v3Velocity.y * pBall->m_v3Velocity.y, true);
 
     float ballVelNormX;
     float ballVelNormY;
-    ballVelNormY = invDist * pBall->m_v3Velocity.f.y;
-    ballVelNormX = invDist * pBall->m_v3Velocity.f.x;
+    ballVelNormY = invDist * pBall->m_v3Velocity.y;
+    ballVelNormX = invDist * pBall->m_v3Velocity.x;
 
     if (m_pBall == NULL && m_eDesireSubState != 2)
     {
-        invDist = vBallDir.f.y * ballVelNormX + normY * ballVelNormY;
+        invDist = vBallDir.y * ballVelNormX + normY * ballVelNormY;
         float fDot = invDist;
         if (fDot < 0.98f || g_pBall->m_pOwner != NULL)
         {
@@ -1957,7 +1957,7 @@ void cFielder::InitDesireReceivePassFromRun(const LooseBallContactAnimInfo* pAni
     float fDesiredTime;
 
     SetVelocity(rv3Velocity);
-    SetFacingDirection((unsigned short)(int)(10430.378f * nlATan2f(rv3Velocity.f.y, rv3Velocity.f.x)));
+    SetFacingDirection((unsigned short)(int)(10430.378f * nlATan2f(rv3Velocity.y, rv3Velocity.x)));
 
     m_DesireReceivePassSharedVars.aDesiredFacingDirection = m_aActualFacingDirection;
     m_DesireReceivePassSharedVars.nReceivePassAnim = pAnimInfo->nAnimID;
@@ -2001,15 +2001,15 @@ void cFielder::InitDesireReceivePassFromRun(const LooseBallContactAnimInfo* pAni
             SetRunningAnimState(0.1f);
 
             nlVec3Set(*(nlVector3*)&v3DesiredDelta,
-                m_DesireReceivePassSharedVars.v3DesiredPosition.f.x - m_v3Position.f.x,
-                m_DesireReceivePassSharedVars.v3DesiredPosition.f.y - m_v3Position.f.y,
-                m_DesireReceivePassSharedVars.v3DesiredPosition.f.z - m_v3Position.f.z);
-            float fSpeed = nlGetLength2D(v3DesiredDelta.f.x, v3DesiredDelta.f.y) / m_DesireReceivePassSharedVars.fDesiredTime;
+                m_DesireReceivePassSharedVars.v3DesiredPosition.x - m_v3Position.x,
+                m_DesireReceivePassSharedVars.v3DesiredPosition.y - m_v3Position.y,
+                m_DesireReceivePassSharedVars.v3DesiredPosition.z - m_v3Position.z);
+            float fSpeed = nlGetLength2D(v3DesiredDelta.x, v3DesiredDelta.y) / m_DesireReceivePassSharedVars.fDesiredTime;
 
             m_fDesiredSpeed = fSpeed;
             m_fActualSpeed = fSpeed;
 
-            unsigned short aDesiredAngle = (unsigned short)(int)(10430.378f * nlATan2f(v3DesiredDelta.f.y, v3DesiredDelta.f.x));
+            unsigned short aDesiredAngle = (unsigned short)(int)(10430.378f * nlATan2f(v3DesiredDelta.y, v3DesiredDelta.x));
             m_aDesiredFacingDirection = aDesiredAngle;
             m_aActualFacingDirection = aDesiredAngle;
             m_aDesiredMovementDirection = m_aDesiredFacingDirection;
@@ -2046,20 +2046,20 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
     nlVector3 vBallDir;
     vBallDir.Sub2D(m_DesireReceivePassSharedVars.v3BallPosition, g_pBall->m_v3Position);
     float invDist = nlRecipSqrt(vBallDir.GetLengthSq2D(), true);
-    float normY = invDist * vBallDir.f.y;
-    vBallDir.f.y = invDist * vBallDir.f.x;
+    float normY = invDist * vBallDir.y;
+    vBallDir.y = invDist * vBallDir.x;
 
     cBall* pBall = g_pBall;
-    invDist = nlRecipSqrt(pBall->m_v3Velocity.f.x * pBall->m_v3Velocity.f.x + pBall->m_v3Velocity.f.y * pBall->m_v3Velocity.f.y, true);
+    invDist = nlRecipSqrt(pBall->m_v3Velocity.x * pBall->m_v3Velocity.x + pBall->m_v3Velocity.y * pBall->m_v3Velocity.y, true);
 
     float ballVelNormX;
     float ballVelNormY;
-    ballVelNormY = invDist * pBall->m_v3Velocity.f.y;
-    ballVelNormX = invDist * pBall->m_v3Velocity.f.x;
+    ballVelNormY = invDist * pBall->m_v3Velocity.y;
+    ballVelNormX = invDist * pBall->m_v3Velocity.x;
 
     if (m_pBall == NULL && m_eDesireSubState != 1)
     {
-        invDist = vBallDir.f.y * ballVelNormX + normY * ballVelNormY;
+        invDist = vBallDir.y * ballVelNormX + normY * ballVelNormY;
         float fDot = invDist;
         if (fDot < 0.98f || g_pBall->m_pOwner != NULL)
         {
@@ -2172,8 +2172,8 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
 
         if (m_DesireReceivePassSharedVars.fDesiredTime <= 0.0f)
         {
-            float yToTarget = m_v3Position.f.y - m_DesireReceivePassSharedVars.v3DesiredPosition.f.y;
-            float xToTarget = m_v3Position.f.x - m_DesireReceivePassSharedVars.v3DesiredPosition.f.x;
+            float yToTarget = m_v3Position.y - m_DesireReceivePassSharedVars.v3DesiredPosition.y;
+            float xToTarget = m_v3Position.x - m_DesireReceivePassSharedVars.v3DesiredPosition.x;
 
             if ((xToTarget * xToTarget) + (yToTarget * yToTarget) > 4.0f)
             {
@@ -2352,7 +2352,7 @@ bool cFielder::InitDesireRunToNet()
     nlVec3Sub(v3DesiredVelDirection, v3BestPosition, m_v3Position);
 
     float fInvDistance = nlRecipSqrt(
-        (v3DesiredVelDirection.f.x * v3DesiredVelDirection.f.x) + (v3DesiredVelDirection.f.y * v3DesiredVelDirection.f.y) + (v3DesiredVelDirection.f.z * v3DesiredVelDirection.f.z), true);
+        (v3DesiredVelDirection.x * v3DesiredVelDirection.x) + (v3DesiredVelDirection.y * v3DesiredVelDirection.y) + (v3DesiredVelDirection.z * v3DesiredVelDirection.z), true);
 
     nlVec3Scale(v3DesiredVelDirection, fInvDistance);
 
@@ -2361,11 +2361,11 @@ bool cFielder::InitDesireRunToNet()
 
     nlVector3 v3NormVelocity;
     nlVec3Scale(v3NormVelocity, m_v3Velocity, fInvVelocity);
-    float fNormVelY = v3NormVelocity.f.y;
-    float fNormVelX = v3NormVelocity.f.x;
-    float fNormVelZ = v3NormVelocity.f.z;
+    float fNormVelY = v3NormVelocity.y;
+    float fNormVelX = v3NormVelocity.x;
+    float fNormVelZ = v3NormVelocity.z;
 
-    float fDot = (fNormVelX * v3DesiredVelDirection.f.x) + (fNormVelY * v3DesiredVelDirection.f.y) + (fNormVelZ * v3DesiredVelDirection.f.z);
+    float fDot = (fNormVelX * v3DesiredVelDirection.x) + (fNormVelY * v3DesiredVelDirection.y) + (fNormVelZ * v3DesiredVelDirection.z);
 
     m_DesireCommonVars.v3DesiredPosition = v3DesiredVelDirection;
     m_DesireCommonVars.turboRequest = TR_FAR_DISTANCE;
@@ -2614,11 +2614,11 @@ void cFielder::DesireRunUpField(float fDeltaT)
     }
     else
     {
-        float fUpFieldDistance = InterpolateRangeClamped(g_vUpFieldMaxDistance.f.x, g_vUpFieldMaxDistance.f.y, g_vUpFieldRange.f.x, g_vUpFieldRange.f.y, m_v3AIPosition.f.x);
-        float fSign = AIsgn(m_pTeam->GetOtherNet()->m_v3NetLocation.f.x);
-        v3DesiredPosition.f.x = v3DesiredPosition.f.x + (fUpFieldDistance * fSign);
-        float dx = v3DesiredPosition.f.x - m_v3Position.f.x;
-        float dy = v3DesiredPosition.f.y - m_v3Position.f.y;
+        float fUpFieldDistance = InterpolateRangeClamped(g_vUpFieldMaxDistance.x, g_vUpFieldMaxDistance.y, g_vUpFieldRange.x, g_vUpFieldRange.y, m_v3AIPosition.x);
+        float fSign = AIsgn(m_pTeam->GetOtherNet()->m_v3NetLocation.x);
+        v3DesiredPosition.x = v3DesiredPosition.x + (fUpFieldDistance * fSign);
+        float dx = v3DesiredPosition.x - m_v3Position.x;
+        float dy = v3DesiredPosition.y - m_v3Position.y;
         m_DesireCommonVars.bInPosition = ((dx * dx + dy * dy) <= 1.0f);
     }
     SetDesiredSpeedAndDirectionToPosition(fDeltaT, v3DesiredPosition, TR_FAR_DISTANCE, 0.8f, 0.8f);
@@ -2650,15 +2650,15 @@ void cFielder::DesireRunDownField(float fDeltaT)
     }
     else
     {
-        float fUpFieldDistance = InterpolateRangeClamped(g_vUpFieldMaxDistance.f.y, g_vUpFieldMaxDistance.f.x, g_vUpFieldRange.f.x, g_vUpFieldRange.f.y, m_v3AIPosition.f.x);
+        float fUpFieldDistance = InterpolateRangeClamped(g_vUpFieldMaxDistance.y, g_vUpFieldMaxDistance.x, g_vUpFieldRange.x, g_vUpFieldRange.y, m_v3AIPosition.x);
         if (g_pBall->GetOwnerGoalie() != NULL)
         {
             fUpFieldDistance *= 2.0f;
         }
-        float fSign = AIsgn(m_pTeam->m_pNet->m_v3NetLocation.f.x);
-        v3DesiredPosition.f.x = v3DesiredPosition.f.x + (fUpFieldDistance * fSign);
-        float dx = v3DesiredPosition.f.x - m_v3Position.f.x;
-        float dy = v3DesiredPosition.f.y - m_v3Position.f.y;
+        float fSign = AIsgn(m_pTeam->m_pNet->m_v3NetLocation.x);
+        v3DesiredPosition.x = v3DesiredPosition.x + (fUpFieldDistance * fSign);
+        float dx = v3DesiredPosition.x - m_v3Position.x;
+        float dy = v3DesiredPosition.y - m_v3Position.y;
         m_DesireCommonVars.bInPosition = ((dx * dx + dy * dy) <= 1.5f);
     }
     SetDesiredSpeedAndDirectionToPosition(fDeltaT, v3DesiredPosition, TR_FAR_DISTANCE, 0.8f, 0.8f);
@@ -2735,9 +2735,9 @@ void cFielder::DesireSlideAttack(float fDeltaT)
         }
 
         cFielder* pTarget = m_DesireSlideAttackVars.m_pSlideAttackTarget;
-        v3VictimPosition.f.x = pTarget->m_v3Position.f.x + 0.25f * pTarget->m_v3Velocity.f.x;
-        v3VictimPosition.f.y = pTarget->m_v3Position.f.y + 0.25f * pTarget->m_v3Velocity.f.y;
-        v3VictimPosition.f.z = 0.0f;
+        v3VictimPosition.x = pTarget->m_v3Position.x + 0.25f * pTarget->m_v3Velocity.x;
+        v3VictimPosition.y = pTarget->m_v3Position.y + 0.25f * pTarget->m_v3Velocity.y;
+        v3VictimPosition.z = 0.0f;
 
         u8 turbo = ShouldITurboWithoutBall();
         SetDesiredSpeedAndDirectionToPosition(fDeltaT, v3VictimPosition, (eTurboRequest)(turbo != 0), 1.0f, 1.0f);
@@ -2755,7 +2755,7 @@ void cFielder::DesireSlideAttack(float fDeltaT)
             if (mActionSlideAttackVars.bAttackSucceeded == 0)
             {
                 float fBallSpeed = nlSqrt(
-                    g_pBall->m_v3Velocity.f.x * g_pBall->m_v3Velocity.f.x + g_pBall->m_v3Velocity.f.y * g_pBall->m_v3Velocity.f.y + g_pBall->m_v3Velocity.f.z * g_pBall->m_v3Velocity.f.z,
+                    g_pBall->m_v3Velocity.x * g_pBall->m_v3Velocity.x + g_pBall->m_v3Velocity.y * g_pBall->m_v3Velocity.y + g_pBall->m_v3Velocity.z * g_pBall->m_v3Velocity.z,
                     true);
 
                 if (fBallSpeed > 0.05f)
@@ -2951,14 +2951,14 @@ void cFielder::DesireUserControlled(float fDeltaT)
         p.r = m_fDesiredSpeed;
         nlPolarToCartesian(v3Velocity, p);
         float fScale = 0.25f;
-        v3Velocity.f.z = 0.0f;
-        float fZero = v3Velocity.f.z;
-        float fDesiredX = fScale * v3Velocity.f.x + m_v3Position.f.x;
-        float fDesiredZ = fScale * fZero + m_v3Position.f.z;
-        float fDesiredY = fScale * v3Velocity.f.y + m_v3Position.f.y;
-        m_v3DesiredPosition.f.x = fDesiredX;
-        m_v3DesiredPosition.f.y = fDesiredY;
-        m_v3DesiredPosition.f.z = fDesiredZ;
+        v3Velocity.z = 0.0f;
+        float fZero = v3Velocity.z;
+        float fDesiredX = fScale * v3Velocity.x + m_v3Position.x;
+        float fDesiredZ = fScale * fZero + m_v3Position.z;
+        float fDesiredY = fScale * v3Velocity.y + m_v3Position.y;
+        m_v3DesiredPosition.x = fDesiredX;
+        m_v3DesiredPosition.y = fDesiredY;
+        m_v3DesiredPosition.z = fDesiredZ;
 
         if (m_pTeam->mpCurrentSituation != SITUATION_LOOSE)
             ShouldIStrafe();

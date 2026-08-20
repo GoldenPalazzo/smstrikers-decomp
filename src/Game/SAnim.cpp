@@ -101,9 +101,9 @@ cSAnim* cSAnim::Initialize(nlChunk* pChunk)
 
         float dist = nlSqrt(
             nlGetLengthSquared3D(
-                v3PosEnd.f.x - v3PosStart.f.x,
-                v3PosEnd.f.y - v3PosStart.f.y,
-                v3PosEnd.f.z - v3PosStart.f.z),
+                v3PosEnd.x - v3PosStart.x,
+                v3PosEnd.y - v3PosStart.y,
+                v3PosEnd.z - v3PosStart.z),
             true);
 
         pRetval->m_fLinearSpeed = dist / ((float)pRetval->m_nNumKeys / 30.0f);
@@ -147,10 +147,10 @@ void cSAnim::BlendRot(int nodeIndex, int remappedNodeIndex, float tNorm, float w
             }
 
             nlQuaternion q;
-            q.f.x = 0.000061035156f * ((signed short*)pRawKeys)[0];
-            q.f.y = 0.000061035156f * ((signed short*)pRawKeys)[1];
-            q.f.z = 0.000061035156f * ((signed short*)pRawKeys)[2];
-            q.f.w = 0.000061035156f * ((signed short*)pRawKeys)[3];
+            q.x = 0.000061035156f * ((signed short*)pRawKeys)[0];
+            q.y = 0.000061035156f * ((signed short*)pRawKeys)[1];
+            q.z = 0.000061035156f * ((signed short*)pRawKeys)[2];
+            q.w = 0.000061035156f * ((signed short*)pRawKeys)[3];
             acc->BlendRot(nodeIndex, &q, weight, additive);
             return;
         }
@@ -167,10 +167,10 @@ void cSAnim::BlendRot(int nodeIndex, int remappedNodeIndex, float tNorm, float w
 
             signed short* pLast = ((signed short*)pRawKeys) + (lastIndex * 4);
             nlQuaternion q;
-            q.f.x = 0.000061035156f * pLast[0];
-            q.f.y = 0.000061035156f * pLast[1];
-            q.f.z = 0.000061035156f * pLast[2];
-            q.f.w = 0.000061035156f * pLast[3];
+            q.x = 0.000061035156f * pLast[0];
+            q.y = 0.000061035156f * pLast[1];
+            q.z = 0.000061035156f * pLast[2];
+            q.w = 0.000061035156f * pLast[3];
             acc->BlendRot(nodeIndex, &q, weight, additive);
             return;
         }
@@ -190,10 +190,10 @@ void cSAnim::BlendRot(int nodeIndex, int remappedNodeIndex, float tNorm, float w
         {
             signed short* pKey = ((signed short*)pRawKeys) + (nKeyIndex * 4);
             nlQuaternion q1;
-            q1.f.x = 0.000061035156f * pKey[0];
-            q1.f.y = 0.000061035156f * pKey[1];
-            q1.f.z = 0.000061035156f * pKey[2];
-            q1.f.w = 0.000061035156f * pKey[3];
+            q1.x = 0.000061035156f * pKey[0];
+            q1.y = 0.000061035156f * pKey[1];
+            q1.z = 0.000061035156f * pKey[2];
+            q1.w = 0.000061035156f * pKey[3];
             acc->BlendRot(nodeIndex, &q1, fWeight1, additive);
         }
 
@@ -207,10 +207,10 @@ void cSAnim::BlendRot(int nodeIndex, int remappedNodeIndex, float tNorm, float w
 
         signed short* pKey = ((signed short*)(((void**)m_pRotKeys)[remappedNodeIndex])) + ((nKeyIndex + 1) * 4);
         nlQuaternion q2;
-        q2.f.x = 0.000061035156f * pKey[0];
-        q2.f.y = 0.000061035156f * pKey[1];
-        q2.f.z = 0.000061035156f * pKey[2];
-        q2.f.w = 0.000061035156f * pKey[3];
+        q2.x = 0.000061035156f * pKey[0];
+        q2.y = 0.000061035156f * pKey[1];
+        q2.z = 0.000061035156f * pKey[2];
+        q2.w = 0.000061035156f * pKey[3];
         acc->BlendRot(nodeIndex, &q2, fWeight2, additive);
         return;
     }
@@ -229,9 +229,9 @@ void cSAnim::BlendScale(int nodeIndex, int remappedNodeIndex, float tNorm, float
         if (m_pNodeProperties[remappedNodeIndex] & 0x8)
         {
             nlVector3 v;
-            v.f.x = 0.000244140625f * pKeys[0].x;
-            v.f.y = 0.000244140625f * pKeys[0].y;
-            v.f.z = 0.000244140625f * pKeys[0].z;
+            v.x = 0.000244140625f * pKeys[0].x;
+            v.y = 0.000244140625f * pKeys[0].y;
+            v.z = 0.000244140625f * pKeys[0].z;
             acc->BlendScale(nodeIndex, &v, weight, additive);
             return;
         }
@@ -240,9 +240,9 @@ void cSAnim::BlendScale(int nodeIndex, int remappedNodeIndex, float tNorm, float
         {
             PackedScale* pLastKey = &pKeys[m_nNumKeys - 1];
             nlVector3 v;
-            v.f.x = 0.000244140625f * pLastKey->x;
-            v.f.y = 0.000244140625f * pLastKey->y;
-            v.f.z = 0.000244140625f * pLastKey->z;
+            v.x = 0.000244140625f * pLastKey->x;
+            v.y = 0.000244140625f * pLastKey->y;
+            v.z = 0.000244140625f * pLastKey->z;
             acc->BlendScale(nodeIndex, &v, weight, additive);
             return;
         }
@@ -255,16 +255,16 @@ void cSAnim::BlendScale(int nodeIndex, int remappedNodeIndex, float tNorm, float
 
         PackedScale* pKey = &pKeys[nKeyIndex];
         nlVector3 v1;
-        v1.f.x = 0.000244140625f * pKey->x;
-        v1.f.y = 0.000244140625f * pKey->y;
-        v1.f.z = 0.000244140625f * pKey->z;
+        v1.x = 0.000244140625f * pKey->x;
+        v1.y = 0.000244140625f * pKey->y;
+        v1.z = 0.000244140625f * pKey->z;
         acc->BlendScale(nodeIndex, &v1, fWeight1, additive);
 
         PackedScale* pNextKey = &m_pScaleKeys[remappedNodeIndex][nKeyIndex + 1];
         nlVector3 v2;
-        v2.f.x = 0.000244140625f * pNextKey->x;
-        v2.f.y = 0.000244140625f * pNextKey->y;
-        v2.f.z = 0.000244140625f * pNextKey->z;
+        v2.x = 0.000244140625f * pNextKey->x;
+        v2.y = 0.000244140625f * pNextKey->y;
+        v2.z = 0.000244140625f * pNextKey->z;
         acc->BlendScale(nodeIndex, &v2, fWeight2, additive);
     }
     else
@@ -289,9 +289,9 @@ void cSAnim::BlendTrans(int nAccumulatorNode, int nSAnimNode, float fTime, float
         if (m_pNodeProperties[nSAnimNode] & 0x4)
         {
             nlVector3 v;
-            v.f.x = pKeys[0].x;
-            v.f.y = pKeys[0].y;
-            v.f.z = pKeys[0].z;
+            v.x = pKeys[0].x;
+            v.y = pKeys[0].y;
+            v.z = pKeys[0].z;
             pAccumulator->BlendTrans(nAccumulatorNode, &v, fWeight, bMirror);
             return;
         }
@@ -300,9 +300,9 @@ void cSAnim::BlendTrans(int nAccumulatorNode, int nSAnimNode, float fTime, float
         {
             PackedTrans* pLastKey = &pKeys[m_nNumKeys - 1];
             nlVector3 v;
-            v.f.x = pLastKey->x;
-            v.f.y = pLastKey->y;
-            v.f.z = pLastKey->z;
+            v.x = pLastKey->x;
+            v.y = pLastKey->y;
+            v.z = pLastKey->z;
             pAccumulator->BlendTrans(nAccumulatorNode, &v, fWeight, bMirror);
             return;
         }
@@ -314,16 +314,16 @@ void cSAnim::BlendTrans(int nAccumulatorNode, int nSAnimNode, float fTime, float
 
         PackedTrans* pKey = &pKeys[nKeyIndex];
         nlVector3 v1;
-        v1.f.x = pKey->x;
-        v1.f.y = pKey->y;
-        v1.f.z = pKey->z;
+        v1.x = pKey->x;
+        v1.y = pKey->y;
+        v1.z = pKey->z;
         pAccumulator->BlendTrans(nAccumulatorNode, &v1, fWeight1, bMirror);
 
         PackedTrans* pNextKey = &m_pTransKeys[nSAnimNode][nKeyIndex + 1];
         nlVector3 v2;
-        v2.f.x = pNextKey->x;
-        v2.f.y = pNextKey->y;
-        v2.f.z = pNextKey->z;
+        v2.x = pNextKey->x;
+        v2.y = pNextKey->y;
+        v2.z = pNextKey->z;
         pAccumulator->BlendTrans(nAccumulatorNode, &v2, fWeight2, bMirror);
     }
     else
@@ -394,9 +394,9 @@ void cSAnim::GetRootTrans(float t, nlVector3* out) const
 
         return;
     }
-    out->f.x = 0.0f;
-    out->f.y = 0.0f;
-    out->f.z = 0.0f;
+    out->x = 0.0f;
+    out->y = 0.0f;
+    out->z = 0.0f;
 }
 
 /**

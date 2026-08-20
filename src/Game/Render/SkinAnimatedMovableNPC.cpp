@@ -11,13 +11,13 @@ SkinAnimatedMovableNPC::SkinAnimatedMovableNPC(cSHierarchy& pHierarchy, int nMod
     maDesiredFacingDirection = 0;
     mfDesiredSpeed = 0.0f;
     mpPhysObj = &pPhysicsObj;
-    mv3Velocity.f.x = 0.0f;
-    mv3Velocity.f.y = 0.0f;
-    mv3Velocity.f.z = 0.0f;
+    mv3Velocity.x = 0.0f;
+    mv3Velocity.y = 0.0f;
+    mv3Velocity.z = 0.0f;
     nlVector3 v3Start;
-    v3Start.f.x = 0.0f;
-    v3Start.f.y = 1.0f;
-    v3Start.f.z = 0.0f;
+    v3Start.x = 0.0f;
+    v3Start.y = 1.0f;
+    v3Start.z = 0.0f;
     SetPosition(v3Start);
     mpPhysObj->SetPosition(mv3Position, PhysicsObject::WORLD_COORDINATES);
     mpPhysObj->EnableCollisions();
@@ -40,7 +40,7 @@ void SkinAnimatedMovableNPC::SetPosition(const nlVector3& pos)
 {
     mv3Position = pos;
     nlVector3 physPos = pos;
-    physPos.f.z += mpPhysObj->GetRadius();
+    physPos.z += mpPhysObj->GetRadius();
     mpPhysObj->SetPosition(physPos, PhysicsObject::WORLD_COORDINATES);
 }
 #pragma pop
@@ -59,10 +59,10 @@ void SkinAnimatedMovableNPC::Update(float dt)
 void SkinAnimatedMovableNPC::Render()
 {
     nlMakeRotationMatrixZ(mWorldMatrix, maFacingDirection * (6.28318530718f / 65536.0f));
-    mWorldMatrix.m[3][0] = mv3Position.f.x;
-    mWorldMatrix.m[3][1] = mv3Position.f.y;
-    mWorldMatrix.m[3][2] = mv3Position.f.z;
-    mWorldMatrix.m[3][3] = 1.0f;
+    mWorldMatrix.e2[3][0] = mv3Position.x;
+    mWorldMatrix.e2[3][1] = mv3Position.y;
+    mWorldMatrix.e2[3][2] = mv3Position.z;
+    mWorldMatrix.e2[3][3] = 1.0f;
     SkinAnimatedNPC::Render();
 }
 
@@ -86,16 +86,16 @@ void SkinAnimatedMovableNPC::AnimTranslate(float fDeltaT, bool bUseZ)
     mpAnimController->GetRootTrans(&v3RootVel, maFacingDirection);
 
     float fInvDeltaT = 1.0f / fDeltaT;
-    mv3Velocity.f.x = v3RootVel.f.x * fInvDeltaT;
-    mv3Velocity.f.y = v3RootVel.f.y * fInvDeltaT;
+    mv3Velocity.x = v3RootVel.x * fInvDeltaT;
+    mv3Velocity.y = v3RootVel.y * fInvDeltaT;
 
-    v3Pos.f.x += v3RootVel.f.x;
-    v3Pos.f.y += v3RootVel.f.y;
+    v3Pos.x += v3RootVel.x;
+    v3Pos.y += v3RootVel.y;
 
     if (bUseZ)
     {
-        mv3Velocity.f.z = v3RootVel.f.z * fInvDeltaT;
-        v3Pos.f.z += v3RootVel.f.z;
+        mv3Velocity.z = v3RootVel.z * fInvDeltaT;
+        v3Pos.z += v3RootVel.z;
     }
 
     SetPosition(v3Pos);

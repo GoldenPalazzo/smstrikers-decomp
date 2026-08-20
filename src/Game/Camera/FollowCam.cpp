@@ -112,13 +112,13 @@ void cFollowCamera::Update(float fDeltaT)
         return;
     }
 
-    m_v3OOI.f.z += g_fFollowCamMinZOffset + (g_fFollowCamMaxZOffset - g_fFollowCamMinZOffset) * ((m_fOOIDistance - g_fMinDistance) / (g_fMaxDistance - g_fMinDistance));
+    m_v3OOI.z += g_fFollowCamMinZOffset + (g_fFollowCamMaxZOffset - g_fFollowCamMinZOffset) * ((m_fOOIDistance - g_fMinDistance) / (g_fMaxDistance - g_fMinDistance));
 
     m_v3OOIDampenedPrev = m_v3OOIDampened;
 
-    m_v3OOIDampened.f.x = (1.0f - g_fFollowCamOOISeek) * m_v3OOIDampened.f.x + g_fFollowCamOOISeek * m_v3OOI.f.x;
-    m_v3OOIDampened.f.y = (1.0f - g_fFollowCamOOISeek) * m_v3OOIDampened.f.y + g_fFollowCamOOISeek * m_v3OOI.f.y;
-    m_v3OOIDampened.f.z = (1.0f - g_fFollowCamOOIZSeek) * m_v3OOIDampened.f.z + g_fFollowCamOOIZSeek * m_v3OOI.f.z;
+    m_v3OOIDampened.x = (1.0f - g_fFollowCamOOISeek) * m_v3OOIDampened.x + g_fFollowCamOOISeek * m_v3OOI.x;
+    m_v3OOIDampened.y = (1.0f - g_fFollowCamOOISeek) * m_v3OOIDampened.y + g_fFollowCamOOISeek * m_v3OOI.y;
+    m_v3OOIDampened.z = (1.0f - g_fFollowCamOOIZSeek) * m_v3OOIDampened.z + g_fFollowCamOOIZSeek * m_v3OOI.z;
 
     xPressure = cPadManager::GetPad(0)->GetPressure(0x400, false);
     yPressure = cPadManager::GetPad(0)->GetPressure(0x800, false);
@@ -149,11 +149,11 @@ void cFollowCamera::Update(float fDeltaT)
             m_aPitch = g_aFollowCamMinPitch;
     }
 
-    const float vx = -m_matView.m[0][2];
-    const float vy = -m_matView.m[1][2];
+    const float vx = -m_matView.e2[0][2];
+    const float vy = -m_matView.e2[1][2];
 
-    const float dx = (m_v3OOIDampened.f.x - m_v3OOIDampenedPrev.f.x);
-    const float dy = (m_v3OOIDampened.f.y - m_v3OOIDampenedPrev.f.y);
+    const float dx = (m_v3OOIDampened.x - m_v3OOIDampenedPrev.x);
+    const float dy = (m_v3OOIDampened.y - m_v3OOIDampenedPrev.y);
 
     fScalar = 0.0f;
     const float denom = nlSqrt(fScalar + (vx * vx + vy * vy), true);
@@ -181,9 +181,9 @@ void cFollowCamera::Update(float fDeltaT)
     nlMakeRotationMatrixZ(m4Orient, m_aFacingDirection * 0.0000958738f);
     nlMultPosVectorMatrix(m_v3CameraPosition, m_v3CameraPosition, m4Orient);
 
-    m_v3CameraPosition.f.x += m_v3OOIDampened.f.x;
-    m_v3CameraPosition.f.y += m_v3OOIDampened.f.y;
-    m_v3CameraPosition.f.z += m_v3OOIDampened.f.z;
+    m_v3CameraPosition.x += m_v3OOIDampened.x;
+    m_v3CameraPosition.y += m_v3OOIDampened.y;
+    m_v3CameraPosition.z += m_v3OOIDampened.z;
 
     glMatrixLookAt(m_matView, m_v3CameraPosition, m_v3OOIDampened, mUpVector);
 }

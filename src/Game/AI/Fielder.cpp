@@ -155,9 +155,9 @@ cFielder::cFielder(int nPlayerID, int nTeamID, eCharacterClass cc, const int* nM
     mbCanKickoff = false;
     mbCaptShootToScoreEffectOn = false;
     m_fDistanceToDesiredPosition = -9999.9f;
-    m_v3DesiredPosition.f.x = 0.0f;
-    m_v3DesiredPosition.f.y = 0.0f;
-    m_v3DesiredPosition.f.z = 0.0f;
+    m_v3DesiredPosition.x = 0.0f;
+    m_v3DesiredPosition.y = 0.0f;
+    m_v3DesiredPosition.z = 0.0f;
 
     AIPlay* pAIPlayMem = (AIPlay*)nlMalloc(sizeof(AIPlay), 8, false);
     pAIPlayMem = new (pAIPlayMem) AIPlay(this, AIPLAY_NULL, -1.0f);
@@ -344,16 +344,16 @@ bool cFielder::CanLooseBallShoot()
 
         nlVector3 v3PredictedPos;
         nlVec3Set(v3PredictedPos,
-            (contactTime * g_pBall->m_v3Velocity.f.x) + g_pBall->m_v3Position.f.x,
-            (contactTime * g_pBall->m_v3Velocity.f.y) + g_pBall->m_v3Position.f.y,
-            (contactTime * g_pBall->m_v3Velocity.f.z) + g_pBall->m_v3Position.f.z);
+            (contactTime * g_pBall->m_v3Velocity.x) + g_pBall->m_v3Position.x,
+            (contactTime * g_pBall->m_v3Velocity.y) + g_pBall->m_v3Position.y,
+            (contactTime * g_pBall->m_v3Velocity.z) + g_pBall->m_v3Position.z);
 
         s16 facingDelta = GetFacingDeltaToPosition(v3PredictedPos);
         u16 uFacingDelta = (facingDelta < 0) ? -facingDelta : facingDelta;
 
         float fInterpolatedValue = InterpolateRangeClamped(1.75f, 2.75f, 32768.0f, 16384.0f, uFacingDelta);
 
-        if (v3PredictedPos.f.z < 1.0f)
+        if (v3PredictedPos.z < 1.0f)
         {
             nlVector3 v3Delta;
             nlVec3Sub2D(v3Delta, v3PredictedPos, m_v3Position);
@@ -391,18 +391,18 @@ bool cFielder::CanLooseBallPass()
 
         nlVector3 v3PredictedPos;
         nlVec3Set(v3PredictedPos,
-            (contactTime * g_pBall->m_v3Velocity.f.x) + g_pBall->m_v3Position.f.x,
-            (contactTime * g_pBall->m_v3Velocity.f.y) + g_pBall->m_v3Position.f.y,
-            (contactTime * g_pBall->m_v3Velocity.f.z) + g_pBall->m_v3Position.f.z);
+            (contactTime * g_pBall->m_v3Velocity.x) + g_pBall->m_v3Position.x,
+            (contactTime * g_pBall->m_v3Velocity.y) + g_pBall->m_v3Position.y,
+            (contactTime * g_pBall->m_v3Velocity.z) + g_pBall->m_v3Position.z);
 
         s16 facingDelta = GetFacingDeltaToPosition(v3PredictedPos);
         u16 uFacingDelta = (facingDelta < 0) ? -facingDelta : facingDelta;
 
         float fLooseBallRadius = InterpolateRangeClamped(1.75f, 2.75f, 32768.0f, 16384.0f, uFacingDelta);
 
-        if (g_pBall->m_v3Velocity.f.z < 0.05f)
+        if (g_pBall->m_v3Velocity.z < 0.05f)
         {
-            if (v3PredictedPos.f.z < 1.0f)
+            if (v3PredictedPos.z < 1.0f)
             {
                 nlVector3 v3Delta;
                 nlVec3Sub2D(v3Delta, v3PredictedPos, m_v3Position);
@@ -543,8 +543,8 @@ void cFielder::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
 
         nlVector3 adjustedPosition;
         adjustedPosition = pFielderCollidedWith->m_v3Position;
-        adjustedPosition.f.x += cosVal * combinedRadius;
-        adjustedPosition.f.y += sinVal * combinedRadius;
+        adjustedPosition.x += cosVal * combinedRadius;
+        adjustedPosition.y += sinVal * combinedRadius;
 
         float closingSpeed = GetClosingSpeed(adjustedPosition, pData->velocity1, pFielderCollidedWith->m_v3Position, v3Zero);
         float attackIntensity = NormalizeVal(closingSpeed, -m_pTweaks->fRunningSpeed, m_pTweaks->fRunningSpeed);
@@ -899,9 +899,9 @@ void cFielder::CollideWithChainCallback(ChainChomp* pChainChomp)
         float leftFootZ;
         float ballJointZ;
 
-        leftFootZ = offsetZ + GetJointPosition(m_nLeftFootJointIndex).f.z;
-        rightFootZ = offsetZ + GetJointPosition(m_nRightFootJointIndex).f.z;
-        ballJointZ = offsetZ + GetJointPosition(m_nHeadJointIndex).f.z;
+        leftFootZ = offsetZ + GetJointPosition(m_nLeftFootJointIndex).z;
+        rightFootZ = offsetZ + GetJointPosition(m_nRightFootJointIndex).z;
+        ballJointZ = offsetZ + GetJointPosition(m_nHeadJointIndex).z;
 
         bool bInAir;
         if (leftFootZ > 1.0f && rightFootZ > 1.0f && ballJointZ > 1.0f)
@@ -960,12 +960,12 @@ void cFielder::CollideWithBowserCallback(Bowser* pBowser)
 
             nlVector3 v3Direction;
             nlVec3Set(v3Direction,
-                g_pBall->m_v3Position.f.x - pBowser->mv3Position.f.x,
-                g_pBall->m_v3Position.f.y - pBowser->mv3Position.f.y,
-                g_pBall->m_v3Position.f.z - pBowser->mv3Position.f.z);
+                g_pBall->m_v3Position.x - pBowser->mv3Position.x,
+                g_pBall->m_v3Position.y - pBowser->mv3Position.y,
+                g_pBall->m_v3Position.z - pBowser->mv3Position.z);
             nlVec3Scale(v3Direction, v3Direction, 2.0f);
 
-            v3Direction.f.z = 3.0f + nlRandomf(4.0f, &nlDefaultSeed);
+            v3Direction.z = 3.0f + nlRandomf(4.0f, &nlDefaultSeed);
 
             g_pBall->ShootRelease(v3Direction, SPINTYPE_NONE);
         }
@@ -996,7 +996,7 @@ void cFielder::CollideWithWallCallback(const CollisionPlayerWallData* eventData)
     nlVector3 jointPos = GetJointPosition(m_nBip01JointIndex_0xA4);
 
     bool shouldElectrocute;
-    if ((f32)fabs(eventData->contactPoint.f.y) > netHalfWidth || (f32)fabs(jointPos.f.z) > netHeight)
+    if ((f32)fabs(eventData->contactPoint.y) > netHalfWidth || (f32)fabs(jointPos.z) > netHeight)
     {
         shouldElectrocute = true;
     }
@@ -1051,12 +1051,12 @@ bool cFielder::IsCharacterInAir(bool bUseOffset) const
     f32 offsetZ = 0.0f;
     if (bUseOffset)
     {
-        offsetZ = m_v3Position.f.z;
+        offsetZ = m_v3Position.z;
     }
 
-    f32 leftFootZ = offsetZ + GetJointPosition(m_nLeftFootJointIndex).f.z;
-    f32 rightFootZ = offsetZ + GetJointPosition(m_nRightFootJointIndex).f.z;
-    f32 headZ = offsetZ + GetJointPosition(m_nHeadJointIndex).f.z;
+    f32 leftFootZ = offsetZ + GetJointPosition(m_nLeftFootJointIndex).z;
+    f32 rightFootZ = offsetZ + GetJointPosition(m_nRightFootJointIndex).z;
+    f32 headZ = offsetZ + GetJointPosition(m_nHeadJointIndex).z;
 
     if (leftFootZ > 1.0f && rightFootZ > 1.0f && headZ > 1.0f)
     {
@@ -1232,8 +1232,8 @@ void cFielder::CleanUpAction()
         break;
 
     case ACTION_ELECTROCUTION:
-        m_v3Position.f.z = 0.0f;
-        m_v3Velocity.f.z = 0.0f;
+        m_v3Position.z = 0.0f;
+        m_v3Velocity.z = 0.0f;
         break;
 
     case ACTION_LOOSE_BALL_PASS:
@@ -1359,8 +1359,8 @@ void cFielder::CalcRegularShot(nlVector3& rv3Vel, nlVector3& rv3Target)
     DoFindBestShotTarget(rv3Target, fShotTime, false);
 
     float fDesiredTime = 1.0f / fShotTime;
-    float fDeltaX = pBall->m_v3Position.f.x - rv3Target.f.x;
-    float fDeltaY = pBall->m_v3Position.f.y - rv3Target.f.y;
+    float fDeltaX = pBall->m_v3Position.x - rv3Target.x;
+    float fDeltaY = pBall->m_v3Position.y - rv3Target.y;
     float fDistance = nlSqrt((fDeltaX * fDeltaX) + (fDeltaY * fDeltaY), true);
     fDesiredTime = fDistance * fDesiredTime;
 
@@ -1388,9 +1388,9 @@ void cFielder::CalcRegularShot(nlVector3& rv3Vel, nlVector3& rv3Target)
     static FilteredRandomReal randgenZAccuracy;
 
     float fYRand = fYAccuracy * randgenYAccuracy.genrand();
-    rv3Target.f.y += 0.5f * fYAccuracy - fYRand;
+    rv3Target.y += 0.5f * fYAccuracy - fYRand;
     float fZOffset = fZAccuracy * randgenZAccuracy.genrand();
-    rv3Target.f.z += fZOffset;
+    rv3Target.z += fZOffset;
 
     g_pBall->ShootAtFast(rv3Vel, rv3Target, fDesiredTime);
 
@@ -1487,15 +1487,15 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
         fInvSpeed = 1.0f / (1.25f * fShotSpeed);
     }
     {
-        float dx = ballPos->f.x - v3BallTarget.f.x;
-        float dy = ballPos->f.y - v3BallTarget.f.y;
+        float dx = ballPos->x - v3BallTarget.x;
+        float dy = ballPos->y - v3BallTarget.y;
         float fDist = nlSqrt(dx * dx + dy * dy, true);
         fDesiredTime = fDist * fInvSpeed;
     }
     g_pBall->ShootAtFast(v3BallVelocity, v3BallTarget, fDesiredTime);
     {
-        float dx = ballPos->f.x - goaliePos->f.x;
-        float dy = ballPos->f.y - goaliePos->f.y;
+        float dx = ballPos->x - goaliePos->x;
+        float dy = ballPos->y - goaliePos->y;
         fDist2Goalie = nlSqrt(dx * dx + dy * dy, true);
     }
     ReleaseBall();
@@ -1510,9 +1510,9 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
         if (fDist2Goalie > 7.0f && 100.0f * randgenSwat.genrand() < 66.0f * fSTSValue)
         {
             int nSide = -1;
-            if (nlAbs(ballPos->f.x) > 4.0f)
+            if (nlAbs(ballPos->x) > 4.0f)
             {
-                if (ballPos->f.y * ballPos->f.x < 0.0f)
+                if (ballPos->y * ballPos->x < 0.0f)
                 {
                     nSide = 0;
                 }
@@ -1523,7 +1523,7 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
             }
             pGoalie->ChooseSwatAnim(nSide);
             GetWorldPoint(v3BallTarget, *(nlVector3*)pGoalie->mpLooseBallInfo, *goaliePos, pGoalie->m_aActualFacingDirection);
-            v3BallTarget.f.z += InterpolateRangeClamped(0.0f, 0.8f, 6.0f, 20.0f, fDist2Goalie);
+            v3BallTarget.z += InterpolateRangeClamped(0.0f, 0.8f, 6.0f, 20.0f, fDist2Goalie);
             if (fTime2Goalie >= pGoalie->mpLooseBallInfo->mfPickupTime * pGoalie->mpLooseBallInfo->mfAnimDuration)
             {
                 fDesiredTime = fTime2Goalie;
@@ -1555,9 +1555,9 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
                 float sdx;
                 float sdy;
                 float sdz;
-                sdy = v3WorldSavePos.f.y - v3InterceptPos.f.y;
-                sdx = v3WorldSavePos.f.x - v3InterceptPos.f.x;
-                sdz = v3WorldSavePos.f.z - v3InterceptPos.f.z;
+                sdy = v3WorldSavePos.y - v3InterceptPos.y;
+                sdx = v3WorldSavePos.x - v3InterceptPos.x;
+                sdz = v3WorldSavePos.z - v3InterceptPos.z;
                 if (sdx * sdx + sdy * sdy + sdz * sdz > 1.0f)
                 {
                     pGoalie->mpSaveData = NULL;
@@ -1570,23 +1570,23 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
             if (pGoalie->mpSaveData == NULL)
             {
                 cNet* pNet = pGoalie->m_pTeam->m_pNet;
-                v3BallTarget.f.x = pNet->m_v3NetLocation.f.x;
+                v3BallTarget.x = pNet->m_v3NetLocation.x;
                 float fNetY = 0.5f * cNet::m_fNetWidth + 0.1f;
-                if (v3BallTarget.f.y > 0.0f)
+                if (v3BallTarget.y > 0.0f)
                 {
-                    v3BallTarget.f.y = fNetY;
+                    v3BallTarget.y = fNetY;
                 }
                 else
                 {
-                    v3BallTarget.f.y = -fNetY;
+                    v3BallTarget.y = -fNetY;
                 }
-                float dx = ballPos->f.x - v3BallTarget.f.x;
-                float dy = ballPos->f.y - v3BallTarget.f.y;
+                float dx = ballPos->x - v3BallTarget.x;
+                float dy = ballPos->y - v3BallTarget.y;
                 float dist = nlSqrt(dx * dx + dy * dy, true);
                 float fPercent = fDist2Goalie / dist;
-                v3InterceptPos.f.x = (1.0f - fPercent) * ballPos->f.x + fPercent * v3BallTarget.f.x;
-                v3InterceptPos.f.y = (1.0f - fPercent) * ballPos->f.y + fPercent * v3BallTarget.f.y;
-                v3InterceptPos.f.z = (1.0f - fPercent) * ballPos->f.z + fPercent * v3BallTarget.f.z;
+                v3InterceptPos.x = (1.0f - fPercent) * ballPos->x + fPercent * v3BallTarget.x;
+                v3InterceptPos.y = (1.0f - fPercent) * ballPos->y + fPercent * v3BallTarget.y;
+                v3InterceptPos.z = (1.0f - fPercent) * ballPos->z + fPercent * v3BallTarget.z;
                 pGoalie->CalcBestSave(0.6f, *ballPos, v3InterceptPos, 0xFFFC, true);
             }
             else
@@ -1606,9 +1606,9 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
             float sdx;
             float sdy;
             float sdz;
-            sdy = v3InterceptPos.f.y - v3BallTarget.f.y;
-            sdx = v3InterceptPos.f.x - v3BallTarget.f.x;
-            sdz = v3InterceptPos.f.z - v3BallTarget.f.z;
+            sdy = v3InterceptPos.y - v3BallTarget.y;
+            sdx = v3InterceptPos.x - v3BallTarget.x;
+            sdz = v3InterceptPos.z - v3BallTarget.z;
             if (!(sdx * sdx + sdy * sdy + sdz * sdz > 4.0f))
             {
                 goto yellow_use_goalie_time;
@@ -1616,23 +1616,23 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
         }
         {
             cNet* pNet = pGoalie->m_pTeam->m_pNet;
-            v3BallTarget.f.x = pNet->m_v3NetLocation.f.x;
+            v3BallTarget.x = pNet->m_v3NetLocation.x;
             float fNetY = 0.5f * cNet::m_fNetWidth + 0.1f;
-            if (v3BallTarget.f.y > 0.0f)
+            if (v3BallTarget.y > 0.0f)
             {
-                v3BallTarget.f.y = fNetY;
+                v3BallTarget.y = fNetY;
             }
             else
             {
-                v3BallTarget.f.y = -fNetY;
+                v3BallTarget.y = -fNetY;
             }
-            float dx = ballPos->f.x - v3BallTarget.f.x;
-            float dy = ballPos->f.y - v3BallTarget.f.y;
+            float dx = ballPos->x - v3BallTarget.x;
+            float dy = ballPos->y - v3BallTarget.y;
             float dist = nlSqrt(dx * dx + dy * dy, true);
             float fPercent = fDist2Goalie / dist;
-            v3InterceptPos.f.x = (1.0f - fPercent) * ballPos->f.x + fPercent * v3BallTarget.f.x;
-            v3InterceptPos.f.y = (1.0f - fPercent) * ballPos->f.y + fPercent * v3BallTarget.f.y;
-            v3InterceptPos.f.z = (1.0f - fPercent) * ballPos->f.z + fPercent * v3BallTarget.f.z;
+            v3InterceptPos.x = (1.0f - fPercent) * ballPos->x + fPercent * v3BallTarget.x;
+            v3InterceptPos.y = (1.0f - fPercent) * ballPos->y + fPercent * v3BallTarget.y;
+            v3InterceptPos.z = (1.0f - fPercent) * ballPos->z + fPercent * v3BallTarget.z;
             pGoalie->CalcBestSave(0.5f, *ballPos, v3InterceptPos, 0xFFFC, true);
         }
         goto yellow_final;
@@ -1653,14 +1653,14 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
     case S2S_SUPER_SHOT:
     {
         nlVector3 v3MagicPos = m_v3Position;
-        if ((f32)fabs(pGoalie->m_v3Position.f.y) > (0.5f * cNet::m_fNetWidth - 0.5f))
+        if ((f32)fabs(pGoalie->m_v3Position.y) > (0.5f * cNet::m_fNetWidth - 0.5f))
         {
             cNet* pNet = pGoalie->m_pTeam->m_pNet;
-            v3MagicPos.f.x = pNet->m_v3NetLocation.f.x;
+            v3MagicPos.x = pNet->m_v3NetLocation.x;
         }
         bool bSharpAngle = pGoalie->FindSTSMissData(v3MagicPos);
         unsigned short aAngle = pGoalie->m_aActualFacingDirection;
-        if (goaliePos->f.x > 0.0f)
+        if (goaliePos->x > 0.0f)
         {
             aAngle = (unsigned short)(aAngle + 0x8000);
         }
@@ -1676,7 +1676,7 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
             }
             aAngle = (unsigned short)clampedAngle;
         }
-        if (goaliePos->f.x > 0.0f)
+        if (goaliePos->x > 0.0f)
         {
             aAngle = (unsigned short)(aAngle + 0x8000);
         }
@@ -1691,14 +1691,14 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
             float sdx;
             float sdy;
             float sdz;
-            sdy = v3InterceptPos.f.y - v3BlastPos.f.y;
-            sdx = v3InterceptPos.f.x - v3BlastPos.f.x;
-            sdz = v3InterceptPos.f.z - v3BlastPos.f.z;
+            sdy = v3InterceptPos.y - v3BlastPos.y;
+            sdx = v3InterceptPos.x - v3BlastPos.x;
+            sdz = v3InterceptPos.z - v3BlastPos.z;
             if (sdx * sdx + sdy * sdy + sdz * sdz > 9.0f)
             {
             spin_data:
                 bool bDoSpin;
-                if (pGoalie->mv3LocalContactPosition.f.y > 0.0f)
+                if (pGoalie->mv3LocalContactPosition.y > 0.0f)
                 {
                     bDoSpin = true;
                 }
@@ -1751,9 +1751,9 @@ void cFielder::SetKickOffWaitTime()
  */
 void cFielder::SetBombImpactTime(const nlVector3& v3BombImpactLocation, float fBombImpactRadius)
 {
-    float fDeltaX = m_v3Position.f.x - v3BombImpactLocation.f.x;
-    float fDeltaY = m_v3Position.f.y - v3BombImpactLocation.f.y;
-    float fDeltaZ = m_v3Position.f.z - v3BombImpactLocation.f.z;
+    float fDeltaX = m_v3Position.x - v3BombImpactLocation.x;
+    float fDeltaY = m_v3Position.y - v3BombImpactLocation.y;
+    float fDeltaZ = m_v3Position.z - v3BombImpactLocation.z;
 
     float fDistanceSquared = fDeltaX * fDeltaX + fDeltaY * fDeltaY + fDeltaZ * fDeltaZ;
     float fTime = nlSqrt(fDistanceSquared, true) / 25.f;
@@ -1802,8 +1802,8 @@ void cFielder::ShootBallDueToContact(const nlVector3& v3IncomingVelocity)
     if (bBallAwayFromCarrier)
     {
         nlVector3 v3Direction;
-        nlPolarToCartesian(v3Direction.f.x, v3Direction.f.y, m_aActualFacingDirection, m_fActualSpeed);
-        v3Direction.f.z = 0.5f;
+        nlPolarToCartesian(v3Direction.x, v3Direction.y, m_aActualFacingDirection, m_fActualSpeed);
+        v3Direction.z = 0.5f;
         g_pBall->ShootRelease(v3Direction, SPINTYPE_NONE);
         return;
     }
@@ -1813,24 +1813,24 @@ void cFielder::ShootBallDueToContact(const nlVector3& v3IncomingVelocity)
         return;
     }
     nlVector3 v3ReleaseVelocity;
-    float fZ = v3IncomingVelocity.f.z + m_v3Velocity.f.z;
-    float fY = v3IncomingVelocity.f.y + m_v3Velocity.f.y;
-    float fX = v3IncomingVelocity.f.x + m_v3Velocity.f.x;
+    float fZ = v3IncomingVelocity.z + m_v3Velocity.z;
+    float fY = v3IncomingVelocity.y + m_v3Velocity.y;
+    float fX = v3IncomingVelocity.x + m_v3Velocity.x;
     nlVec3Set(v3ReleaseVelocity, fX, fY, fZ);
-    if ((v3IncomingVelocity.f.x * v3IncomingVelocity.f.x + v3IncomingVelocity.f.y * v3IncomingVelocity.f.y + v3IncomingVelocity.f.z * v3IncomingVelocity.f.z < 0.001f * 0.001f) || (m_v3Velocity.f.x * m_v3Velocity.f.x + m_v3Velocity.f.y * m_v3Velocity.f.y + m_v3Velocity.f.z * m_v3Velocity.f.z < 0.001f * 0.001f) || (v3ReleaseVelocity.f.x * v3ReleaseVelocity.f.x + v3ReleaseVelocity.f.y * v3ReleaseVelocity.f.y + v3ReleaseVelocity.f.z * v3ReleaseVelocity.f.z < 0.001f * 0.001f))
+    if ((v3IncomingVelocity.x * v3IncomingVelocity.x + v3IncomingVelocity.y * v3IncomingVelocity.y + v3IncomingVelocity.z * v3IncomingVelocity.z < 0.001f * 0.001f) || (m_v3Velocity.x * m_v3Velocity.x + m_v3Velocity.y * m_v3Velocity.y + m_v3Velocity.z * m_v3Velocity.z < 0.001f * 0.001f) || (v3ReleaseVelocity.x * v3ReleaseVelocity.x + v3ReleaseVelocity.y * v3ReleaseVelocity.y + v3ReleaseVelocity.z * v3ReleaseVelocity.z < 0.001f * 0.001f))
     {
         nlVector3 v3FallbackDirection;
-        nlPolarToCartesian(v3FallbackDirection.f.x, v3FallbackDirection.f.y, m_aActualFacingDirection, 2.0f);
-        v3FallbackDirection.f.z = 0.5f;
+        nlPolarToCartesian(v3FallbackDirection.x, v3FallbackDirection.y, m_aActualFacingDirection, 2.0f);
+        v3FallbackDirection.z = 0.5f;
         g_pBall->ShootRelease(v3FallbackDirection, SPINTYPE_NONE);
         return;
     }
-    float fRecip = nlRecipSqrt(v3ReleaseVelocity.f.x * v3ReleaseVelocity.f.x + v3ReleaseVelocity.f.y * v3ReleaseVelocity.f.y + v3ReleaseVelocity.f.z * v3ReleaseVelocity.f.z, true);
+    float fRecip = nlRecipSqrt(v3ReleaseVelocity.x * v3ReleaseVelocity.x + v3ReleaseVelocity.y * v3ReleaseVelocity.y + v3ReleaseVelocity.z * v3ReleaseVelocity.z, true);
     nlVec3Scale(v3ReleaseVelocity, v3ReleaseVelocity, fRecip);
 
     float fSpeed = 2.0f + m_fActualSpeed;
-    nlVec3Set(v3ReleaseVelocity, fSpeed * v3ReleaseVelocity.f.x, fSpeed * v3ReleaseVelocity.f.y, fSpeed * v3ReleaseVelocity.f.z);
-    v3ReleaseVelocity.f.z = 0.5f;
+    nlVec3Set(v3ReleaseVelocity, fSpeed * v3ReleaseVelocity.x, fSpeed * v3ReleaseVelocity.y, fSpeed * v3ReleaseVelocity.z);
+    v3ReleaseVelocity.z = 0.5f;
     g_pBall->ShootRelease(v3ReleaseVelocity, SPINTYPE_NONE);
 }
 
@@ -1853,8 +1853,8 @@ void cFielder::ShootBallDueToContact(unsigned short aShootDirection)
     if (!bBallAwayFromCarrier)
     {
         nlVector3 v3Direction;
-        nlPolarToCartesian(v3Direction.f.x, v3Direction.f.y, aShootDirection, 2.0f + m_fActualSpeed);
-        v3Direction.f.z = 0.5f;
+        nlPolarToCartesian(v3Direction.x, v3Direction.y, aShootDirection, 2.0f + m_fActualSpeed);
+        v3Direction.z = 0.5f;
 
         g_pBall->ShootRelease(v3Direction, SPINTYPE_NONE);
     }
@@ -1873,10 +1873,10 @@ void cFielder::DoClearBall()
     float fGoalline = cField::GetGoalLineX(m_pTeam->GetOtherNet()->m_fDirection);
 
     float fTopY = cField::GetSidelineY(1) - fRandomDistance;
-    nlCartesianToPolar(pClearingTopAngle, fGoalline - m_v3Position.f.x, fTopY - m_v3Position.f.y);
+    nlCartesianToPolar(pClearingTopAngle, fGoalline - m_v3Position.x, fTopY - m_v3Position.y);
 
     float fBottomY = fRandomDistance + cField::GetSidelineY(0);
-    nlCartesianToPolar(pClearingBottomAngle, fGoalline - m_v3Position.f.x, fBottomY - m_v3Position.f.y);
+    nlCartesianToPolar(pClearingBottomAngle, fGoalline - m_v3Position.x, fBottomY - m_v3Position.y);
 
     ShotMeter* pShotMeter = m_pShotMeter;
     u32 aFacing = m_aActualFacingDirection;
@@ -1920,8 +1920,8 @@ void cFielder::DoClearBall()
     }
 
     nlVector3 v3ClearBallVelocity;
-    nlPolarToCartesian(v3ClearBallVelocity.f.x, v3ClearBallVelocity.f.y, aClearingAngle, fClearSpeed);
-    v3ClearBallVelocity.f.z = fZSpeed;
+    nlPolarToCartesian(v3ClearBallVelocity.x, v3ClearBallVelocity.y, aClearingAngle, fClearSpeed);
+    v3ClearBallVelocity.z = fZSpeed;
 
     if (m_pBall != NULL)
     {
@@ -2026,7 +2026,7 @@ void cFielder::DoHandleActiveShotMeter()
             if (pShotMeter->m_eShotMeterState == SHOT_METER_STS_TRANSISTION)
             {
                 cNet* pOtherNet = m_pTeam->GetOtherNet();
-                if ((m_v3Position.f.x * pOtherNet->m_fDirection) <= 0.0f)
+                if ((m_v3Position.x * pOtherNet->m_fDirection) <= 0.0f)
                 {
                     bCanShootToScore = true;
                 }
@@ -2088,12 +2088,12 @@ bool cFielder::DoLooseBallContactFromIdle(nlVector3& v3AnimStartPosition, float&
 
     nlVector3 v3ContactOffsetWorld;
     nlVector3* pContactOffsetWorld = &v3ContactOffsetWorld;
-    float ySin = v3ContactOffsetLocal.f.y * fSin;
-    float xSin = v3ContactOffsetLocal.f.x * fSin;
+    float ySin = v3ContactOffsetLocal.y * fSin;
+    float xSin = v3ContactOffsetLocal.x * fSin;
 
-    pContactOffsetWorld->f.x = (v3ContactOffsetLocal.f.x * fCos) - ySin;
-    pContactOffsetWorld->f.y = (v3ContactOffsetLocal.f.y * fCos) + xSin;
-    pContactOffsetWorld->f.z = v3ContactOffsetLocal.f.z;
+    pContactOffsetWorld->x = (v3ContactOffsetLocal.x * fCos) - ySin;
+    pContactOffsetWorld->y = (v3ContactOffsetLocal.y * fCos) + xSin;
+    pContactOffsetWorld->z = v3ContactOffsetLocal.z;
 
     float fPrevBestDistToContactSquared;
     float fBallContactTargetX;
@@ -2102,9 +2102,9 @@ bool cFielder::DoLooseBallContactFromIdle(nlVector3& v3AnimStartPosition, float&
     float fBestDistToContactSquared;
     float fSimulatedTime;
 
-    fBallContactTargetZ = m_v3Position.f.z + pContactOffsetWorld->f.z;
-    fBallContactTargetY = m_v3Position.f.y + pContactOffsetWorld->f.y;
-    fBallContactTargetX = m_v3Position.f.x + pContactOffsetWorld->f.x;
+    fBallContactTargetZ = m_v3Position.z + pContactOffsetWorld->z;
+    fBallContactTargetY = m_v3Position.y + pContactOffsetWorld->y;
+    fBallContactTargetX = m_v3Position.x + pContactOffsetWorld->x;
 
     FakeBallWorld::ResetBallIterator();
 
@@ -2123,9 +2123,9 @@ bool cFielder::DoLooseBallContactFromIdle(nlVector3& v3AnimStartPosition, float&
         float deltaY;
         float deltaZ;
 
-        deltaY = fBallContactTargetY - v3SimulatedBallPos.f.y;
-        deltaZ = fBallContactTargetZ - v3SimulatedBallPos.f.z;
-        deltaX = fBallContactTargetX - v3SimulatedBallPos.f.x;
+        deltaY = fBallContactTargetY - v3SimulatedBallPos.y;
+        deltaZ = fBallContactTargetZ - v3SimulatedBallPos.z;
+        deltaX = fBallContactTargetX - v3SimulatedBallPos.x;
         distSq = deltaY * deltaY;
         distSq += deltaX * deltaX;
         distSq += deltaZ * deltaZ;
@@ -2154,12 +2154,12 @@ bool cFielder::DoLooseBallContactFromIdle(nlVector3& v3AnimStartPosition, float&
     float startY;
     float startZ;
 
-    startX = v3BallContactPosition.f.x - pContactOffsetWorld->f.x;
-    startZ = v3BallContactPosition.f.z - pContactOffsetWorld->f.z;
-    startY = v3BallContactPosition.f.y - pContactOffsetWorld->f.y;
-    v3AnimStartPosition.f.x = startX;
-    v3AnimStartPosition.f.y = startY;
-    v3AnimStartPosition.f.z = startZ;
+    startX = v3BallContactPosition.x - pContactOffsetWorld->x;
+    startZ = v3BallContactPosition.z - pContactOffsetWorld->z;
+    startY = v3BallContactPosition.y - pContactOffsetWorld->y;
+    v3AnimStartPosition.x = startX;
+    v3AnimStartPosition.y = startY;
+    v3AnimStartPosition.z = startZ;
 
     unsigned int nNumKeys = pGuessContactAnim->m_nNumKeys;
     float fContactTimeNorm = pBestBallContactAnimInfo->fAnimContactFrame / (float)nNumKeys;
@@ -2199,9 +2199,9 @@ bool cFielder::DoLooseBallContactFromRun(nlVector3& v3AnimStartPosition, float& 
     FakeBallWorld::ResetBallIterator();
 
     fSimulatedTime = 0.0f;
-    passInterceptX = v3PassIntercept.f.x;
+    passInterceptX = v3PassIntercept.x;
     bestDistToPassInterceptSquared = 0.0f;
-    passInterceptY = v3PassIntercept.f.y;
+    passInterceptY = v3PassIntercept.y;
     fMaxSimulatedTime = 5.0f;
     float bestTime;
 
@@ -2210,8 +2210,8 @@ bool cFielder::DoLooseBallContactFromRun(nlVector3& v3AnimStartPosition, float& 
         FakeBallWorld::GetNextBallPosition(v3SimulatedBallPos);
         fSimulatedTime += FixedUpdateTask::GetPhysicsUpdateTick();
 
-        float deltaX = v3SimulatedBallPos.f.x - passInterceptX;
-        float deltaY = v3SimulatedBallPos.f.y - passInterceptY;
+        float deltaX = v3SimulatedBallPos.x - passInterceptX;
+        float deltaY = v3SimulatedBallPos.y - passInterceptY;
         distSq = deltaX * deltaX + deltaY * deltaY;
 
         if (distSq < bestDistToPassInterceptSquared)
@@ -2240,21 +2240,21 @@ bool cFielder::DoLooseBallContactFromRun(nlVector3& v3AnimStartPosition, float& 
     nlSinCos(&fSin, &fCos, m_aActualFacingDirection);
 
     nlVector3* pContactOffsetWorld = &v3ContactOffsetWorld;
-    float ySin = v3ContactOffsetLocal.f.y * fSin;
-    float xSin = v3ContactOffsetLocal.f.x * fSin;
-    pContactOffsetWorld->f.x = (v3ContactOffsetLocal.f.x * fCos) - ySin;
-    pContactOffsetWorld->f.y = (v3ContactOffsetLocal.e[1] * fCos) + xSin;
-    pContactOffsetWorld->f.z = v3ContactOffsetLocal.f.z;
+    float ySin = v3ContactOffsetLocal.y * fSin;
+    float xSin = v3ContactOffsetLocal.x * fSin;
+    pContactOffsetWorld->x = (v3ContactOffsetLocal.x * fCos) - ySin;
+    pContactOffsetWorld->y = (v3ContactOffsetLocal.e[1] * fCos) + xSin;
+    pContactOffsetWorld->z = v3ContactOffsetLocal.z;
 
     float fDesiredSpeedToAnimStart = (float)nNumKeys / 30.0f;
     float fBestSpeedToAnimStartDelta = fAnimTimeToContact * fDesiredSpeedToAnimStart;
 
-    fMaxSimulatedTime = bestIntercept.f.z - pContactOffsetWorld->f.z;
+    fMaxSimulatedTime = bestIntercept.z - pContactOffsetWorld->z;
     nlVec3Set(v3AnimStartPosition,
-        bestIntercept.f.x - pContactOffsetWorld->f.x,
-        bestIntercept.f.y - pContactOffsetWorld->f.y,
+        bestIntercept.x - pContactOffsetWorld->x,
+        bestIntercept.y - pContactOffsetWorld->y,
         fMaxSimulatedTime);
-    v3AnimStartPosition.f.z = 0.0f;
+    v3AnimStartPosition.z = 0.0f;
 
     fAnimStartTime = bestTime - fBestSpeedToAnimStartDelta;
 
@@ -2287,11 +2287,11 @@ bool cFielder::DoLooseBallContactFromRunVolley(nlVector3& v3AnimStartPosition, f
 
     nlVector3 v3ContactOffsetWorld;
     nlVector3* pContactOffsetWorld = &v3ContactOffsetWorld;
-    float ySin = v3ContactOffsetLocal.f.y * fSin;
-    float xSin = v3ContactOffsetLocal.f.x * fSin;
-    pContactOffsetWorld->f.x = (v3ContactOffsetLocal.f.x * fCos) - ySin;
-    pContactOffsetWorld->f.y = (v3ContactOffsetLocal.e[1] * fCos) + xSin;
-    pContactOffsetWorld->f.z = v3ContactOffsetLocal.f.z;
+    float ySin = v3ContactOffsetLocal.y * fSin;
+    float xSin = v3ContactOffsetLocal.x * fSin;
+    pContactOffsetWorld->x = (v3ContactOffsetLocal.x * fCos) - ySin;
+    pContactOffsetWorld->y = (v3ContactOffsetLocal.e[1] * fCos) + xSin;
+    pContactOffsetWorld->z = v3ContactOffsetLocal.z;
 
     float fContactZ;
     float currDistZ;
@@ -2304,7 +2304,7 @@ bool cFielder::DoLooseBallContactFromRunVolley(nlVector3& v3AnimStartPosition, f
     FakeBallWorld::ResetBallIterator();
 
     float fSimulatedTime = 0.0f;
-    fContactZ = pContactOffsetWorld->f.z;
+    fContactZ = pContactOffsetWorld->z;
     fPrevBallZ = fSimulatedTime;
     fMaxSimulatedTime = 5.0f;
     float bestTime;
@@ -2314,15 +2314,15 @@ bool cFielder::DoLooseBallContactFromRunVolley(nlVector3& v3AnimStartPosition, f
         FakeBallWorld::GetNextBallPosition(v3SimulatedBallPos);
         fSimulatedTime += FixedUpdateTask::GetPhysicsUpdateTick();
 
-        currDistZ = (float)fabs(v3SimulatedBallPos.f.z - fContactZ);
+        currDistZ = (float)fabs(v3SimulatedBallPos.z - fContactZ);
         prevDistZ = (float)fabs(fPrevBallZ - fContactZ);
 
         if (fSimulatedTime > FixedUpdateTask::GetPhysicsUpdateTick())
         {
-            if (((v3SimulatedBallPos.f.z < v3ContactOffsetWorld.f.z) || (fPrevBallZ < v3ContactOffsetWorld.f.z)) && ((v3SimulatedBallPos.f.z >= v3ContactOffsetWorld.f.z) || (fPrevBallZ >= v3ContactOffsetWorld.f.z)) || (currDistZ >= prevDistZ))
+            if (((v3SimulatedBallPos.z < v3ContactOffsetWorld.z) || (fPrevBallZ < v3ContactOffsetWorld.z)) && ((v3SimulatedBallPos.z >= v3ContactOffsetWorld.z) || (fPrevBallZ >= v3ContactOffsetWorld.z)) || (currDistZ >= prevDistZ))
             {
-                float deltaY = v3SimulatedBallPos.f.y - v3PassIntercept.f.y;
-                float deltaX = v3SimulatedBallPos.f.x - v3PassIntercept.f.x;
+                float deltaY = v3SimulatedBallPos.y - v3PassIntercept.y;
+                float deltaX = v3SimulatedBallPos.x - v3PassIntercept.x;
                 float distSq = deltaX * deltaX + deltaY * deltaY;
                 if (distSq < 1.0f)
                 {
@@ -2333,7 +2333,7 @@ bool cFielder::DoLooseBallContactFromRunVolley(nlVector3& v3AnimStartPosition, f
             }
         }
 
-        fPrevBallZ = v3SimulatedBallPos.f.z;
+        fPrevBallZ = v3SimulatedBallPos.z;
     }
 
     if (fSimulatedTime >= fMaxSimulatedTime)
@@ -2346,7 +2346,7 @@ bool cFielder::DoLooseBallContactFromRunVolley(nlVector3& v3AnimStartPosition, f
     float fAnimLength = (float)nNumKeys / 30.0f;
 
     nlVec3Sub(v3AnimStartPosition, bestIntercept, *pContactOffsetWorld);
-    v3AnimStartPosition.f.z = 0.0f;
+    v3AnimStartPosition.z = 0.0f;
 
     float fBestSpeedToAnimStartDelta = fContactTimeNorm * fAnimLength;
     fAnimStartTime = bestTime - fBestSpeedToAnimStartDelta;
@@ -2418,7 +2418,7 @@ void cFielder::DoPositioningInterceptBall()
     float fInterceptTimes[2];
     nlVector3* pPos = &m_v3Position;
 
-    if (nlGetLengthSquared2D(g_pBall->m_v3Position.f.x - pPos->f.x, g_pBall->m_v3Position.f.y - pPos->f.y) <= 4.0f)
+    if (nlGetLengthSquared2D(g_pBall->m_v3Position.x - pPos->x, g_pBall->m_v3Position.y - pPos->y) <= 4.0f)
     {
         CalcInterceptXY(*pPos, m_pTweaks->fRunningSpeed, 0.f, g_pBall->m_v3Position, g_pBall->m_v3Velocity, nInterceptResult, fInterceptTimes);
 
@@ -2435,11 +2435,11 @@ void cFielder::DoPositioningInterceptBall()
                 fTime = fInterceptTimes[0];
             }
 
-            float fInterceptX = g_pBall->m_v3Position.f.x + fTime * g_pBall->m_v3Velocity.f.x;
-            float fInterceptY = g_pBall->m_v3Position.f.y + fTime * g_pBall->m_v3Velocity.f.y;
+            float fInterceptX = g_pBall->m_v3Position.x + fTime * g_pBall->m_v3Velocity.x;
+            float fInterceptY = g_pBall->m_v3Position.y + fTime * g_pBall->m_v3Velocity.y;
 
-            float dyToIntercept = fInterceptY - m_v3Position.f.y;
-            float dxToIntercept = fInterceptX - m_v3Position.f.x;
+            float dyToIntercept = fInterceptY - m_v3Position.y;
+            float dxToIntercept = fInterceptX - m_v3Position.x;
             float angleRad = nlATan2f(dyToIntercept, dxToIntercept);
 
             float angle16 = 10430.378f * angleRad;
@@ -2655,17 +2655,17 @@ void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed,
 
     float fDist2NetSide = 0.5f * cNet::m_fNetWidth - kBallAllowance;
     cNet* pNet = m_pTeam->GetOtherNet();
-    float fNetBaseX = pNet->m_v3NetLocation.f.x;
-    float fBallY = pBall->m_v3Position.f.y;
+    float fNetBaseX = pNet->m_v3NetLocation.x;
+    float fBallY = pBall->m_v3Position.y;
 
     float fBallYClamped = nlMinEquals(nlMaxEquals(fBallY, -fDist2NetSide), fDist2NetSide);
 
     float fBallZClamped = bIsSTS
-                            ? nlMinEquals(nlMaxEquals(pBall->m_v3Position.f.z, 0.18f), kBallAllowance)
-                            : nlMinEquals(nlMaxEquals(pBall->m_v3Position.f.z, 0.18f), cNet::m_fNetHeight - kBallAllowance);
+                            ? nlMinEquals(nlMaxEquals(pBall->m_v3Position.z, 0.18f), kBallAllowance)
+                            : nlMinEquals(nlMaxEquals(pBall->m_v3Position.z, 0.18f), cNet::m_fNetHeight - kBallAllowance);
 
     fBallY -= fBallYClamped;
-    float fDX = pBall->m_v3Position.f.x - fNetBaseX;
+    float fDX = pBall->m_v3Position.x - fNetBaseX;
     fShotDist = nlSqrt((fDX * fDX) + (fBallY * fBallY), true);
 
     bool bIsChipShot2 = false;
@@ -2693,18 +2693,18 @@ void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed,
     fShotSpeed = InterpolateRangeClamped(fShotMinSpeed, fShotMaxSpeed, 3.0f, 18.0f, speedFactor);
 
     float fAngPost1;
-    float fAbsBallX = fabsf(pBall->m_v3Position.f.x);
+    float fAbsBallX = fabsf(pBall->m_v3Position.x);
     float fAimValue = m_pShotMeter->GetShotAimValue();
     float fAbsAimValue = fabsf(fAimValue);
-    float fAbsBallY = fabsf(pBall->m_v3Position.f.y);
+    float fAbsBallY = fabsf(pBall->m_v3Position.y);
 
     if (fAbsBallY < 1.5f + fDist2NetSide
-        && (fAbsBallX > fabsf(pGoalie->m_v3Position.f.x)
+        && (fAbsBallX > fabsf(pGoalie->m_v3Position.x)
             || fAbsBallX > cField::GetGoalLineX(1u) - 1.5f))
     {
-        v3PositionOut.f.x = 1.005f * pNet->m_v3NetLocation.f.x;
-        v3PositionOut.f.y = 0.9f * fBallYClamped;
-        v3PositionOut.f.z = fBallZClamped + nlRandomf(0.2f, &nlDefaultSeed);
+        v3PositionOut.x = 1.005f * pNet->m_v3NetLocation.x;
+        v3PositionOut.y = 0.9f * fBallYClamped;
+        v3PositionOut.z = fBallZClamped + nlRandomf(0.2f, &nlDefaultSeed);
         if (fShotDist < 2.0f)
         {
             fShotSpeed = 10.0f;
@@ -2712,11 +2712,11 @@ void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed,
     }
     else
     {
-        float fNetBaseY = pNet->m_v3NetLocation.f.y;
+        float fNetBaseY = pNet->m_v3NetLocation.y;
         nlVector3 v3Post1 = pNet->m_v3NetLocation;
         nlVector3 v3Post2 = pNet->m_v3NetLocation;
-        v3Post1.f.y = fNetBaseY - fDist2NetSide;
-        v3Post2.f.y = fNetBaseY + fDist2NetSide;
+        v3Post1.y = fNetBaseY - fDist2NetSide;
+        v3Post2.y = fNetBaseY + fDist2NetSide;
 
         nlVector3 v3Post1Delta;
         nlVector3 v3Post2Delta;
@@ -2724,14 +2724,14 @@ void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed,
         nlVec3Sub(v3Post2Delta, v3Post2, pBall->m_v3Position);
         nlVector3 v3GoalieDelta;
         nlVec3Sub(v3GoalieDelta, pGoalie->m_v3Position, pBall->m_v3Position);
-        float fPost1DY = v3Post1Delta.f.y;
-        float fPost2DY = v3Post2Delta.f.y;
-        float fPost1DX = v3Post1Delta.f.x;
-        float fPost2DX = v3Post2Delta.f.x;
-        float fPost1DZ = v3Post1Delta.f.z;
-        float fPost2DZ = v3Post2Delta.f.z;
-        float fGoalieDY = v3GoalieDelta.f.y;
-        float fGoalieDX = v3GoalieDelta.f.x;
+        float fPost1DY = v3Post1Delta.y;
+        float fPost2DY = v3Post2Delta.y;
+        float fPost1DX = v3Post1Delta.x;
+        float fPost2DX = v3Post2Delta.x;
+        float fPost1DZ = v3Post1Delta.z;
+        float fPost2DZ = v3Post2Delta.z;
+        float fGoalieDY = v3GoalieDelta.y;
+        float fGoalieDX = v3GoalieDelta.x;
 
         fAngPost1 = nlATan2f(fPost1DY, fPost1DX);
         u16 aAngPost2 = nlVector3ToAngle(v3Post2Delta);
@@ -2744,7 +2744,7 @@ void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed,
         u16 uAbsP1P2 = (u16)abs_s16(
             GetAngleDifference((u16)(s32)(10430.378f * fAngPost1), aAngPost2));
 
-        v3PositionOut.f.x = 1.005f * pNet->m_v3NetLocation.f.x;
+        v3PositionOut.x = 1.005f * pNet->m_v3NetLocation.x;
 
         float fProbability;
         if (fAbsAimValue > 0.01f)
@@ -2761,10 +2761,10 @@ void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed,
         }
         else
         {
-            float fAngToNet = nlATan2f(pNet->m_v3NetLocation.f.y - pBall->m_v3Position.f.y,
-                pNet->m_v3NetLocation.f.x - pBall->m_v3Position.f.x);
+            float fAngToNet = nlATan2f(pNet->m_v3NetLocation.y - pBall->m_v3Position.y,
+                pNet->m_v3NetLocation.x - pBall->m_v3Position.x);
             u16 angle2Net = (u16)(s32)(10430.378f * fAngToNet);
-            if (pNet->m_v3NetLocation.f.x < 0.0f)
+            if (pNet->m_v3NetLocation.x < 0.0f)
             {
                 angle2Net += 0x8000;
             }
@@ -2808,32 +2808,32 @@ void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed,
 
         if (randgenPost.genrand(fProbability))
         {
-            v3PositionOut.f.y = pBall->m_v3Position.f.y + fPost1DY;
+            v3PositionOut.y = pBall->m_v3Position.y + fPost1DY;
             float fDistPost1Sq = (fPost1DX * fPost1DX) + (fPost1DY * fPost1DY) + (fPost1DZ * fPost1DZ);
             float fDistPost2Sq = (fPost2DX * fPost2DX) + (fPost2DY * fPost2DY) + (fPost2DZ * fPost2DZ);
             if (fDistPost1Sq < fDistPost2Sq)
             {
-                v3PositionOut.f.x = 0.985f * pNet->m_v3NetLocation.f.x;
+                v3PositionOut.x = 0.985f * pNet->m_v3NetLocation.x;
             }
         }
         else
         {
-            v3PositionOut.f.y = pBall->m_v3Position.f.y + fPost2DY;
+            v3PositionOut.y = pBall->m_v3Position.y + fPost2DY;
             float fDistPost2Sq = (fPost2DX * fPost2DX) + (fPost2DY * fPost2DY) + (fPost2DZ * fPost2DZ);
             float fDistPost1Sq = (fPost1DX * fPost1DX) + (fPost1DY * fPost1DY) + (fPost1DZ * fPost1DZ);
             if (fDistPost2Sq < fDistPost1Sq)
             {
-                v3PositionOut.f.x = 0.985f * pNet->m_v3NetLocation.f.x;
+                v3PositionOut.x = 0.985f * pNet->m_v3NetLocation.x;
             }
         }
 
         if (bIsSTS)
         {
-            v3PositionOut.f.z = kBallAllowance + nlRandomf(0.5f, &nlDefaultSeed);
+            v3PositionOut.z = kBallAllowance + nlRandomf(0.5f, &nlDefaultSeed);
         }
         else if (fShotDist > g_pGame->m_pGameTweaks->unk2F8)
         {
-            v3PositionOut.f.z = cNet::m_fNetHeight - kBallAllowance;
+            v3PositionOut.z = cNet::m_fNetHeight - kBallAllowance;
         }
         else
         {
@@ -2845,11 +2845,11 @@ void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed,
             if (bIsChip)
             {
                 float fAllowableHeight = cNet::m_fNetHeight - kBallAllowance;
-                v3PositionOut.f.z = 0.9f * fAllowableHeight + nlRandomf(0.100000024f * fAllowableHeight, &nlDefaultSeed);
+                v3PositionOut.z = 0.9f * fAllowableHeight + nlRandomf(0.100000024f * fAllowableHeight, &nlDefaultSeed);
             }
             else
             {
-                v3PositionOut.f.z = kBallAllowance + nlRandomf(cNet::m_fNetHeight - 2.0f * kBallAllowance, &nlDefaultSeed);
+                v3PositionOut.z = kBallAllowance + nlRandomf(cNet::m_fNetHeight - 2.0f * kBallAllowance, &nlDefaultSeed);
             }
         }
     }
@@ -2922,27 +2922,27 @@ void cFielder::DoRegularShooting()
     {
         spinType = SPINTYPE_PARAMETER;
 
-        v3AngVel.f.x = 7.5f - nlRandomf(15.0f, &nlDefaultSeed);
-        v3AngVel.f.y = 15.0f - nlRandomf(30.0f, &nlDefaultSeed);
-        v3AngVel.f.z = 10.0f + nlRandomf(15.0f, &nlDefaultSeed);
+        v3AngVel.x = 7.5f - nlRandomf(15.0f, &nlDefaultSeed);
+        v3AngVel.y = 15.0f - nlRandomf(30.0f, &nlDefaultSeed);
+        v3AngVel.z = 10.0f + nlRandomf(15.0f, &nlDefaultSeed);
 
         nlVector3 v3Delta;
         v3Delta.Sub2D(v3Target, g_pBall->m_v3Position);
         bool bNegZSpin = false;
 
-        if (fabsf(v3Delta.f.x) < fabsf(v3Delta.f.y))
+        if (fabsf(v3Delta.x) < fabsf(v3Delta.y))
         {
-            if (v3Delta.f.x * v3Delta.f.y > 0.0f)
+            if (v3Delta.x * v3Delta.y > 0.0f)
                 bNegZSpin = true;
         }
         else
         {
-            if (v3Target.f.x * v3Target.f.y > 0.0f)
+            if (v3Target.x * v3Target.y > 0.0f)
                 bNegZSpin = true;
         }
 
         if (bNegZSpin)
-            v3AngVel.f.z *= -1.0f;
+            v3AngVel.z *= -1.0f;
 
         RotateVectorZAxis(v3AngVel, v3AngVel, m_aActualFacingDirection);
 
@@ -2980,9 +2980,9 @@ void cFielder::DoDebugShooting()
     if (sDebugShootingMode == DEBUG_SHOOT_AT_NET)
     {
         v3Target = m_pTeam->GetOtherNet()->m_v3NetLocation;
-        v3Target.f.x = 0.99f * v3Target.f.x + sfDebugShotXOffset;
-        v3Target.f.y += sfDebugShotYOffset;
-        v3Target.f.z = sfDebugShotHeight * cNet::m_fNetHeight;
+        v3Target.x = 0.99f * v3Target.x + sfDebugShotXOffset;
+        v3Target.y += sfDebugShotYOffset;
+        v3Target.z = sfDebugShotHeight * cNet::m_fNetHeight;
         g_pBall->ShootAtFast(v3BallVelocity, v3Target, sfDebugShotVelocity);
     }
     else
@@ -3125,7 +3125,7 @@ LooseBallContactAnimInfo* cFielder::GetOneTimerBallContactAnimInfo(unsigned shor
         }
     }
 
-    u16 aNetAngle = (u16)(s32)(10430.378f * nlATan2f(v3OneTimerTarget.f.y - v3FuturePosition.f.y, v3OneTimerTarget.f.x - v3FuturePosition.f.x)) - aFutureFacingDirection;
+    u16 aNetAngle = (u16)(s32)(10430.378f * nlATan2f(v3OneTimerTarget.y - v3FuturePosition.y, v3OneTimerTarget.x - v3FuturePosition.x)) - aFutureFacingDirection;
 
     LooseBallContactAnimInfo* pBestBallContactAnimInfo = NULL;
 
@@ -3199,7 +3199,7 @@ const LooseBallContactAnimInfo* cFielder::GetReceivePassBallContactAnimInfo(cBal
         }
     }
 
-    u16 aNetAngle = (u16)(s32)(10430.378f * nlATan2f(pBall->m_v3Position.f.y - rv3Pos.f.y, pBall->m_v3Position.f.x - rv3Pos.f.x)) - aAngle;
+    u16 aNetAngle = (u16)(s32)(10430.378f * nlATan2f(pBall->m_v3Position.y - rv3Pos.y, pBall->m_v3Position.x - rv3Pos.x)) - aAngle;
     const LooseBallContactAnimInfo* pBestBallContactAnimInfo = NULL;
     for (int i = 0; i < nNumContactAnims; i++)
     {
@@ -3231,9 +3231,9 @@ void cFielder::GetReceivePassBallContactOffset(nlVector3& v3Offset, unsigned sho
     float cos, sin;
     nlSinCos(&sin, &cos, aFacingDirection);
 
-    v3Offset.f.x = v3ContactOffsetLocal.f.x * cos - v3ContactOffsetLocal.f.y * sin;
-    v3Offset.f.y = v3ContactOffsetLocal.f.y * cos + v3ContactOffsetLocal.f.x * sin;
-    v3Offset.f.z = v3ContactOffsetLocal.f.z;
+    v3Offset.x = v3ContactOffsetLocal.x * cos - v3ContactOffsetLocal.y * sin;
+    v3Offset.y = v3ContactOffsetLocal.y * cos + v3ContactOffsetLocal.x * sin;
+    v3Offset.z = v3ContactOffsetLocal.z;
 }
 
 /**
@@ -3476,17 +3476,17 @@ float cFielder::DoFindBestSlideAttackTarget(nlVector3& v3PositionOut, nlVector3&
         {
             if (g_pBall->m_pPrevOwner->m_tBallUnPossessionTimer.GetSeconds() > 0.25f)
             {
-                float dx1 = g_pBall->m_v3Position.f.x - g_pBall->m_v3PassIntercept.f.x;
-                float dy1 = g_pBall->m_v3Position.f.y - g_pBall->m_v3PassIntercept.f.y;
+                float dx1 = g_pBall->m_v3Position.x - g_pBall->m_v3PassIntercept.x;
+                float dy1 = g_pBall->m_v3Position.y - g_pBall->m_v3PassIntercept.y;
                 float fDistToPassIntercept = nlSqrt(dx1 * dx1 + dy1 * dy1, true);
 
-                float predX = g_pBall->m_v3Position.f.x + t * g_pBall->m_v3Velocity.f.x;
-                float predY = g_pBall->m_v3Position.f.y + t * g_pBall->m_v3Velocity.f.y;
-                float dx2 = g_pBall->m_v3Position.f.x - predX;
-                float dy2 = g_pBall->m_v3Position.f.y - predY;
+                float predX = g_pBall->m_v3Position.x + t * g_pBall->m_v3Velocity.x;
+                float predY = g_pBall->m_v3Position.y + t * g_pBall->m_v3Velocity.y;
+                float dx2 = g_pBall->m_v3Position.x - predX;
+                float dy2 = g_pBall->m_v3Position.y - predY;
                 float fDistToPredicted = nlSqrt(dx2 * dx2 + dy2 * dy2, true);
 
-                if (fDistToPassIntercept < fDistToPredicted || g_pBall->m_v3Position.f.z > 0.75f)
+                if (fDistToPassIntercept < fDistToPredicted || g_pBall->m_v3Position.z > 0.75f)
                 {
                     v3PositionOut = g_pBall->m_v3PassIntercept;
                     v3VelocityOut = v3Zero;
@@ -3495,7 +3495,7 @@ float cFielder::DoFindBestSlideAttackTarget(nlVector3& v3PositionOut, nlVector3&
             }
         }
 
-        if (v3BallPosition.f.z > 0.75f)
+        if (v3BallPosition.z > 0.75f)
         {
             float fLandingTime = g_pBall->PredictLandingSpotAndTime(v3LandingSpot);
             v3PositionOut = v3LandingSpot;
@@ -3673,37 +3673,37 @@ void cFielder::CalcPointOnPerimeter(nlVector3& dest, const nlVector3& fromPoint,
 
     if (fFutureTimeDelta > 0.0f)
     {
-        v3Position.f.x = m_v3Position.f.x + fFutureTimeDelta * m_v3Velocity.f.x;
-        v3Position.f.y = m_v3Position.f.y + fFutureTimeDelta * m_v3Velocity.f.y;
-        v3Position.f.z = m_v3Position.f.z + fFutureTimeDelta * m_v3Velocity.f.z;
+        v3Position.x = m_v3Position.x + fFutureTimeDelta * m_v3Velocity.x;
+        v3Position.y = m_v3Position.y + fFutureTimeDelta * m_v3Velocity.y;
+        v3Position.z = m_v3Position.z + fFutureTimeDelta * m_v3Velocity.z;
     }
     else
     {
         v3Position = m_v3Position;
     }
 
-    float dx = fromPoint.f.x - v3Position.f.x;
-    float dy = fromPoint.f.y - v3Position.f.y;
-    float dz = fromPoint.f.z - v3Position.f.z;
-    dest.f.x = dx;
-    dest.f.y = dy;
-    dest.f.z = dz;
+    float dx = fromPoint.x - v3Position.x;
+    float dy = fromPoint.y - v3Position.y;
+    float dz = fromPoint.z - v3Position.z;
+    dest.x = dx;
+    dest.y = dy;
+    dest.z = dz;
 
-    float fInvLen = nlRecipSqrt(dest.f.x * dest.f.x + dest.f.y * dest.f.y + dest.f.z * dest.f.z, true);
+    float fInvLen = nlRecipSqrt(dest.x * dest.x + dest.y * dest.y + dest.z * dest.z, true);
 
-    float nx = fInvLen * dest.f.x;
-    float nz = fInvLen * dest.f.z;
-    float ny = fInvLen * dest.f.y;
-    dest.f.x = nx;
-    dest.f.y = ny;
-    dest.f.z = nz;
+    float nx = fInvLen * dest.x;
+    float nz = fInvLen * dest.z;
+    float ny = fInvLen * dest.y;
+    dest.x = nx;
+    dest.y = ny;
+    dest.z = nz;
 
-    float rx = v3Position.f.x + fMinDistance * dest.f.x;
-    float rz = v3Position.f.z + fMinDistance * dest.f.z;
-    float ry = v3Position.f.y + fMinDistance * dest.f.y;
-    dest.f.x = rx;
-    dest.f.y = ry;
-    dest.f.z = rz;
+    float rx = v3Position.x + fMinDistance * dest.x;
+    float rz = v3Position.z + fMinDistance * dest.z;
+    float ry = v3Position.y + fMinDistance * dest.y;
+    dest.x = rx;
+    dest.y = ry;
+    dest.z = rz;
 }
 
 void cFielder::CleanActionHit()
@@ -3718,8 +3718,8 @@ void cFielder::CleanActionDeke()
 
 void cFielder::CleanActionElectrocution()
 {
-    m_v3Position.f.z = 0.0f;
-    m_v3Velocity.f.z = 0.0f;
+    m_v3Position.z = 0.0f;
+    m_v3Velocity.z = 0.0f;
 }
 
 void cFielder::CleanActionLooseBallPass()
@@ -4322,7 +4322,7 @@ void cFielder::SetRunningWBAnimState(float)
 bool cFielder::ShouldIClearBall()
 {
     cNet* pOtherNet = m_pTeam->GetOtherNet();
-    float fPositionX = m_v3Position.f.x;
+    float fPositionX = m_v3Position.x;
     float fSideSign = pOtherNet->m_fDirection;
     float fResult = fPositionX * fSideSign;
 
@@ -4353,13 +4353,13 @@ bool cFielder::CanISlideAttack(const nlVector3& v3Position, const nlVector3& v3V
         return false;
     }
 
-    if (v3Position.f.z > 0.5f)
+    if (v3Position.z > 0.5f)
     {
         return false;
     }
 
-    float fYDiff = m_v3Position.f.y - v3Position.f.y;
-    float fXDiff = m_v3Position.f.x - v3Position.f.x;
+    float fYDiff = m_v3Position.y - v3Position.y;
+    float fXDiff = m_v3Position.x - v3Position.x;
 
     t = -1.0f;
 
@@ -4417,10 +4417,10 @@ bool cFielder::CanISlideAttack(const nlVector3& v3Position, const nlVector3& v3V
     {
         if (fTime != nullptr)
         {
-            float fInterceptX = v3Velocity.f.x * t + v3Position.f.x;
-            float fInterceptY = v3Velocity.f.y * t + v3Position.f.y;
-            float fToInterceptX = fInterceptX - m_v3Position.f.x;
-            float fToInterceptY = fInterceptY - m_v3Position.f.y;
+            float fInterceptX = v3Velocity.x * t + v3Position.x;
+            float fInterceptY = v3Velocity.y * t + v3Position.y;
+            float fToInterceptX = fInterceptX - m_v3Position.x;
+            float fToInterceptY = fInterceptY - m_v3Position.y;
 
             float fLenSq = fToInterceptX * fToInterceptX + fToInterceptY * fToInterceptY;
             float fInvLen = nlRecipSqrt(fZero + fLenSq, true);
@@ -4517,12 +4517,12 @@ void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVect
 
     nlVector3 v3Delta;
     v3Delta.Sub2D(v3FixedPos, m_v3Position);
-    float fDeltaY = v3Delta.f.y;
-    float fDeltaYFromDesired = v3FixedPos.f.y - m_v3DesiredPosition.f.y;
-    float fDeltaX = v3FixedPos.f.x - m_v3Position.f.x;
-    float fDeltaXFromDesired = v3FixedPos.f.x - m_v3DesiredPosition.f.x;
+    float fDeltaY = v3Delta.y;
+    float fDeltaYFromDesired = v3FixedPos.y - m_v3DesiredPosition.y;
+    float fDeltaX = v3FixedPos.x - m_v3Position.x;
+    float fDeltaXFromDesired = v3FixedPos.x - m_v3DesiredPosition.x;
     float fDistSq = fDeltaX * fDeltaX + fDeltaY * fDeltaY;
-    float fDeltaZFromDesired = v3FixedPos.f.z - m_v3DesiredPosition.f.z;
+    float fDeltaZFromDesired = v3FixedPos.z - m_v3DesiredPosition.z;
 
     float fDesiredPositionRateOfChange = 0.0f;
     float fZero = fDesiredPositionRateOfChange;
@@ -4533,7 +4533,7 @@ void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVect
     else
     {
         fDesiredPositionRateOfChange = nlSqrt(fDeltaXFromDesired * fDeltaXFromDesired + fDeltaYFromDesired * fDeltaYFromDesired + fDeltaZFromDesired * fDeltaZFromDesired, true) / fDeltaT;
-        float fAngle = nlATan2f(v3FixedPos.f.y - m_v3Position.f.y, v3FixedPos.f.x - m_v3Position.f.x);
+        float fAngle = nlATan2f(v3FixedPos.y - m_v3Position.y, v3FixedPos.x - m_v3Position.x);
         m_aDesiredFacingDirection = (u16)(fAngle * 10430.378f);
         m_aDesiredMovementDirection = m_aDesiredFacingDirection;
     }
@@ -4870,17 +4870,17 @@ u8 cFielder::ShouldIStrafe()
         if (fTotalScore > threshold)
         {
             float ballWeight = fStrafeBall / fTotalScore;
-            float targetY = ballWeight * g_pBall->m_v3Position.f.y;
-            float targetX = ballWeight * g_pBall->m_v3Position.f.x;
+            float targetY = ballWeight * g_pBall->m_v3Position.y;
+            float targetX = ballWeight * g_pBall->m_v3Position.x;
 
             if (m_pMark != NULL)
             {
                 float markWeight = fStrafeMark / fTotalScore;
-                targetX += markWeight * m_pMark->m_v3Position.f.x;
-                targetY += markWeight * m_pMark->m_v3Position.f.y;
+                targetX += markWeight * m_pMark->m_v3Position.x;
+                targetY += markWeight * m_pMark->m_v3Position.y;
             }
 
-            float angle = nlATan2f(targetY - m_v3Position.f.y, targetX - m_v3Position.f.x);
+            float angle = nlATan2f(targetY - m_v3Position.y, targetX - m_v3Position.x);
             aDesiredFacingDir = (u16)(s32)(10430.378f * angle);
         }
 
@@ -4911,14 +4911,14 @@ bool cFielder::ShouldITurboWithoutBall()
 
             const nlVector3& offNet = m_pMark->GetAIOffNetLocation(NULL);
 
-            float dx = m_pMark->m_v3Position.f.x - offNet.f.x;
-            float dy = m_pMark->m_v3Position.f.y - offNet.f.y;
+            float dx = m_pMark->m_v3Position.x - offNet.x;
+            float dy = m_pMark->m_v3Position.y - offNet.y;
             float distOff = nlSqrt(dx * dx + dy * dy, true);
 
             const nlVector3& defNet = GetAIDefNetLocation(NULL);
 
-            float dx2 = m_v3Position.f.x - defNet.f.x;
-            float dy2 = m_v3Position.f.y - defNet.f.y;
+            float dx2 = m_v3Position.x - defNet.x;
+            float dy2 = m_v3Position.y - defNet.y;
             float distDef = nlSqrt(dx2 * dx2 + dy2 * dy2, true);
 
             if (distOff < distDef)
@@ -4930,8 +4930,8 @@ bool cFielder::ShouldITurboWithoutBall()
 
     if (-9999.9f == m_fDistanceToDesiredPosition)
     {
-        float dx = m_v3Position.f.x - m_v3DesiredPosition.f.x;
-        float dy = m_v3Position.f.y - m_v3DesiredPosition.f.y;
+        float dx = m_v3Position.x - m_v3DesiredPosition.x;
+        float dy = m_v3Position.y - m_v3DesiredPosition.y;
         m_fDistanceToDesiredPosition = nlSqrt(dx * dx + dy * dy, true);
     }
 
@@ -5327,7 +5327,7 @@ void cFielder::PostPhysicsUpdate()
                     g_pBall->ClearPassTarget();
 
                     cNet* pOtherNet = m_pTeam->GetOtherNet();
-                    float posX = m_v3Position.f.x;
+                    float posX = m_v3Position.x;
                     float sideSign = pOtherNet->m_fDirection;
                     if (!(posX * sideSign <= 0.0f))
                     {
@@ -5460,9 +5460,9 @@ void cFielder::Update(float fDeltaT)
     cPlayer::Update(fDeltaT);
 
     m_fDistanceToDesiredPosition = -9999.9f;
-    m_v3AccumDesiredPos.f.x = 0.0f;
-    m_v3AccumDesiredPos.f.y = 0.0f;
-    m_v3AccumDesiredPos.f.z = 0.0f;
+    m_v3AccumDesiredPos.x = 0.0f;
+    m_v3AccumDesiredPos.y = 0.0f;
+    m_v3AccumDesiredPos.z = 0.0f;
     m_fAccumDesiredPosWeight = 0.0f;
 
     if (m_tFrozenTimer.m_uPackedTime == 0)
@@ -6178,8 +6178,8 @@ float cFielder::GetDistanceToDesiredPos()
 {
     if (m_fDistanceToDesiredPosition == -9999.9f)
     {
-        float dx = m_v3Position.f.x - m_v3DesiredPosition.f.x;
-        float dy = m_v3Position.f.y - m_v3DesiredPosition.f.y;
+        float dx = m_v3Position.x - m_v3DesiredPosition.x;
+        float dy = m_v3Position.y - m_v3DesiredPosition.y;
         float distanceSquared = dx * dx + dy * dy;
         m_fDistanceToDesiredPosition = nlSqrt(distanceSquared, true);
     }

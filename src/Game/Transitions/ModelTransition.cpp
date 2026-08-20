@@ -2,6 +2,7 @@
 
 #include "Game/SHierarchy.h"
 #include "NL/nlMath.h"
+#include "NL/vmath.h"
 #include "NL/nlMemory.h"
 #include "NL/nlSlotPool.h"
 #include "NL/nlFile.h"
@@ -164,7 +165,7 @@ static void ShuffleIntoOutline(Vector<nlVector3, DefaultAllocator>& polygon)
 
     for (int i = 1; i < polygon.mSize; i++)
     {
-        float dist = nlGetLengthSquared3D(polygon.mData[0].f.x - polygon.mData[i].f.x, polygon.mData[0].f.y - polygon.mData[i].f.y, polygon.mData[0].f.z - polygon.mData[i].f.z);
+        float dist = nlGetLengthSquared3D(polygon.mData[0].x - polygon.mData[i].x, polygon.mData[0].y - polygon.mData[i].y, polygon.mData[0].z - polygon.mData[i].z);
 
         if (dist < min)
         {
@@ -180,11 +181,11 @@ static void ShuffleIntoOutline(Vector<nlVector3, DefaultAllocator>& polygon)
     for (int i = 1; i < polygon.mSize - 1; i++)
     {
         float max = 1.0f;
-        nlRecipSqrt(dir.f.x * dir.f.x + dir.f.y * dir.f.y + dir.f.z * dir.f.z, true);
+        nlRecipSqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z, true);
 
         int prev = i;
         prev -= 1;
-        nlVec3Set(dir, polygon.mData[i].f.x - polygon.mData[prev].f.x, polygon.mData[i].f.y - polygon.mData[prev].f.y, polygon.mData[i].f.z - polygon.mData[prev].f.z);
+        nlVec3Set(dir, polygon.mData[i].x - polygon.mData[prev].x, polygon.mData[i].y - polygon.mData[prev].y, polygon.mData[i].z - polygon.mData[prev].z);
 
         for (int j = i + 1; j < polygon.mSize; j++)
         {
@@ -498,9 +499,9 @@ void ModeledScreenTransition::RenderOutline() const
                 else
                 {
                     const s16* s = (const s16*)((u8*)stream.address + index * stream.stride);
-                    current.f.x = s[0] / 128.0f;
-                    current.f.y = s[1] / 128.0f;
-                    current.f.z = s[2] / 128.0f;
+                    current.x = s[0] / 128.0f;
+                    current.y = s[1] / 128.0f;
+                    current.z = s[2] / 128.0f;
                 }
 
                 nlMultPosVectorMatrix(current, current, m_pPoseAccumulator->GetNodeMatrix(m_pModelMap[i]));
@@ -530,16 +531,16 @@ void ModeledScreenTransition::RenderOutline() const
             {
                 mesh.Colour(m_OutlineColour);
                 nlVector2 uv;
-                uv.f.x = 0.0f;
-                uv.f.y = 0.0f;
+                uv.x = 0.0f;
+                uv.y = 0.0f;
                 ((GLMeshWriterCore*)&mesh)->Texcoord(uv);
                 mesh.Vertex(outline.mData[k]);
             }
 
             mesh.Colour(m_OutlineColour);
             nlVector2 uv;
-            uv.f.x = 0.0f;
-            uv.f.y = 0.0f;
+            uv.x = 0.0f;
+            uv.y = 0.0f;
             ((GLMeshWriterCore*)&mesh)->Texcoord(uv);
             mesh.Vertex(outline.mData[0]);
 

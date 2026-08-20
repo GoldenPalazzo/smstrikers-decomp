@@ -34,8 +34,8 @@ static inline void FieldLocToAILoc(nlVector2& dest, const nlVector2& field_locat
         fMaxFromY = -fMaxFromY;
     }
 
-    dest.f.x = Remap(field_location.f.x, fMinFromX, fMaxFromX, 0.0f, 4.0f);
-    dest.f.y = Remap(field_location.f.y, fMinFromY, fMaxFromY, -1.0f, 1.0f);
+    dest.x = Remap(field_location.x, fMinFromX, fMaxFromX, 0.0f, 4.0f);
+    dest.y = Remap(field_location.y, fMinFromY, fMaxFromY, -1.0f, 1.0f);
 }
 
 static inline void AILocToFieldLoc(nlVector2& dest, const nlVector2& ai_location, eTeamSide nTeamSide)
@@ -53,8 +53,8 @@ static inline void AILocToFieldLoc(nlVector2& dest, const nlVector2& ai_location
         fMaxFromY = -fMaxFromY;
     }
 
-    dest.f.x = Remap(ai_location.f.x, 0.0f, 4.0f, fMinFromX, fMaxFromX);
-    dest.f.y = Remap(ai_location.f.y, -1.0f, 1.0f, fMinFromY, fMaxFromY);
+    dest.x = Remap(ai_location.x, 0.0f, 4.0f, fMinFromX, fMaxFromX);
+    dest.y = Remap(ai_location.y, -1.0f, 1.0f, fMinFromY, fMaxFromY);
 }
 
 /**
@@ -76,9 +76,9 @@ void FieldLocToAILoc(nlVector3& dest, const nlVector3& field_location, eTeamSide
         fMaxFromY = -fMaxFromY;
     }
 
-    dest.f.x = Remap(field_location.f.x, fMinFromX, fMaxFromX, 0.0f, 4.0f);
-    dest.f.y = Remap(field_location.f.y, fMinFromY, fMaxFromY, -1.0f, 1.0f);
-    dest.f.z = 0.0f;
+    dest.x = Remap(field_location.x, fMinFromX, fMaxFromX, 0.0f, 4.0f);
+    dest.y = Remap(field_location.y, fMinFromY, fMaxFromY, -1.0f, 1.0f);
+    dest.z = 0.0f;
 }
 
 /**
@@ -103,20 +103,20 @@ void AILocToFieldLoc(nlVector3& result, const nlVector3& input, eTeamSide side)
         maxZ = -1.0f;
     }
 
-    normX = (input.f.x - minX) / (maxX - minX);
+    normX = (input.x - minX) / (maxX - minX);
     if (normX > 1.0f)
         normX = 1.0f;
     if (normX < 0.0f)
         normX = 0.0f;
 
-    result.f.x = normX * xScale + (-20.60211f);
-    f32 normZ = (input.f.y - minZ) / (maxZ - minZ);
+    result.x = normX * xScale + (-20.60211f);
+    f32 normZ = (input.y - minZ) / (maxZ - minZ);
     if (normZ > 1.0f)
         normZ = 1.0f;
     if (normZ < 0.0f)
         normZ = 0.0f;
-    result.f.y = normZ * yScale + (-12.0825f);
-    result.f.z = 0.0f;
+    result.y = normZ * yScale + (-12.0825f);
+    result.z = 0.0f;
 }
 
 /**
@@ -129,7 +129,7 @@ void FormationPos::GetLocationForTeam(nlVector2& dest, int teamId) const
         dest = m_Location;
         return;
     }
-    nlVec2Set(dest, -m_Location.f.x, -m_Location.f.y);
+    nlVec2Set(dest, -m_Location.x, -m_Location.y);
 }
 
 /**
@@ -152,10 +152,10 @@ void FormationSpec::CalculateExtents(nlVector2& minOut, nlVector2& maxOut, const
     const float fieldHalfWidth = 18.541899f;
     const float fieldHalfHeight = 10.87425f;
 
-    minOut.f.x = -fieldHalfWidth + (input.f.x - m_v2Min.f.x);
-    maxOut.f.x = fieldHalfWidth + (input.f.x - m_v2Max.f.x);
-    minOut.f.y = -fieldHalfHeight + (input.f.y - m_v2Min.f.y);
-    maxOut.f.y = fieldHalfHeight + (input.f.y - m_v2Max.f.y);
+    minOut.x = -fieldHalfWidth + (input.x - m_v2Min.x);
+    maxOut.x = fieldHalfWidth + (input.x - m_v2Max.x);
+    minOut.y = -fieldHalfHeight + (input.y - m_v2Min.y);
+    maxOut.y = fieldHalfHeight + (input.y - m_v2Max.y);
 }
 
 static inline float FormationMin(float current, float value)
@@ -188,32 +188,32 @@ void FormationSpec::Init(int id, int iKeyIndex, const char* name)
     {
         SetName(name);
     }
-    m_v2Min.f.x = 999999.9f;
-    m_v2Min.f.y = 999999.9f;
-    m_v2Max.f.x = -999999.9f;
-    m_v2Max.f.y = -999999.9f;
-    m_v2Center.f.x = 0.0f;
-    m_v2Center.f.y = 0.0f;
+    m_v2Min.x = 999999.9f;
+    m_v2Min.y = 999999.9f;
+    m_v2Max.x = -999999.9f;
+    m_v2Max.y = -999999.9f;
+    m_v2Center.x = 0.0f;
+    m_v2Center.y = 0.0f;
 
     for (int i_fielder = 0; i_fielder < 4; i_fielder++)
     {
-        m_v2Min.f.x = FormationMin(m_v2Min.f.x, m_Positions[i_fielder].m_Location.f.x);
-        m_v2Min.f.y = FormationMin(m_v2Min.f.y, m_Positions[i_fielder].m_Location.f.y);
-        m_v2Max.f.x = FormationMax(m_v2Max.f.x, m_Positions[i_fielder].m_Location.f.x);
-        m_v2Max.f.y = FormationMax(m_v2Max.f.y, m_Positions[i_fielder].m_Location.f.y);
+        m_v2Min.x = FormationMin(m_v2Min.x, m_Positions[i_fielder].m_Location.x);
+        m_v2Min.y = FormationMin(m_v2Min.y, m_Positions[i_fielder].m_Location.y);
+        m_v2Max.x = FormationMax(m_v2Max.x, m_Positions[i_fielder].m_Location.x);
+        m_v2Max.y = FormationMax(m_v2Max.y, m_Positions[i_fielder].m_Location.y);
         {
-            float cx = m_v2Center.f.x + m_Positions[i_fielder].m_Location.f.x;
-            float cy = m_v2Center.f.y + m_Positions[i_fielder].m_Location.f.y;
-            m_v2Center.f.x = cx;
-            m_v2Center.f.y = cy;
+            float cx = m_v2Center.x + m_Positions[i_fielder].m_Location.x;
+            float cy = m_v2Center.y + m_Positions[i_fielder].m_Location.y;
+            m_v2Center.x = cx;
+            m_v2Center.y = cy;
         }
     }
 
     {
-        float cx = m_v2Center.f.x * 0.25f;
-        float cy = m_v2Center.f.y * 0.25f;
-        m_v2Center.f.x = cx;
-        m_v2Center.f.y = cy;
+        float cx = m_v2Center.x * 0.25f;
+        float cy = m_v2Center.y * 0.25f;
+        m_v2Center.x = cx;
+        m_v2Center.y = cy;
     }
 }
 
@@ -353,8 +353,8 @@ FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_num
 
                 nlVector2 ailocation = { 0.0f, 0.0f };
                 nlVector2 fieldLocation;
-                ailocation.f.x = xVal;
-                ailocation.f.y = yVal;
+                ailocation.x = xVal;
+                ailocation.y = yVal;
                 AILocToFieldLoc(fieldLocation, ailocation, HOME);
 
                 position.m_Location = fieldLocation;

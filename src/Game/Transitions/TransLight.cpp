@@ -107,15 +107,15 @@ void TransitionLight::LoadFromParser(SimpleParser* parser)
         {
             pToken = parser->NextTokenOnLine(true);
             if (pToken)
-                m_Directionals[m_nDirLights].direction.f.x = (float)atof(pToken);
+                m_Directionals[m_nDirLights].direction.x = (float)atof(pToken);
 
             pToken = parser->NextTokenOnLine(true);
             if (pToken)
-                m_Directionals[m_nDirLights].direction.f.y = (float)atof(pToken);
+                m_Directionals[m_nDirLights].direction.y = (float)atof(pToken);
 
             pToken = parser->NextTokenOnLine(true);
             if (pToken)
-                m_Directionals[m_nDirLights].direction.f.z = (float)atof(pToken);
+                m_Directionals[m_nDirLights].direction.z = (float)atof(pToken);
 
             pToken = parser->NextTokenOnLine(true);
             if (pToken)
@@ -139,11 +139,11 @@ void TransitionLight::LoadFromParser(SimpleParser* parser)
             }
 
             nlVector3& d = m_Directionals[m_nDirLights].direction;
-            float invLen = nlRecipSqrt((d.f.x * d.f.x) + (d.f.y * d.f.y) + (d.f.z * d.f.z), 1);
+            float invLen = nlRecipSqrt((d.x * d.x) + (d.y * d.y) + (d.z * d.z), 1);
             nlVec3Set(d,
-                invLen * d.f.x,
-                invLen * d.f.y,
-                invLen * d.f.z);
+                invLen * d.x,
+                invLen * d.y,
+                invLen * d.z);
 
             m_nDirLights += 1;
         }
@@ -152,15 +152,15 @@ void TransitionLight::LoadFromParser(SimpleParser* parser)
 
             pToken = parser->NextTokenOnLine(true);
             if (pToken)
-                m_PointLights[m_nPointLights].worldPosition.f.x = (float)atof(pToken);
+                m_PointLights[m_nPointLights].worldPosition.x = (float)atof(pToken);
 
             pToken = parser->NextTokenOnLine(true);
             if (pToken)
-                m_PointLights[m_nPointLights].worldPosition.f.y = (float)atof(pToken);
+                m_PointLights[m_nPointLights].worldPosition.y = (float)atof(pToken);
 
             pToken = parser->NextTokenOnLine(true);
             if (pToken)
-                m_PointLights[m_nPointLights].worldPosition.f.z = (float)atof(pToken);
+                m_PointLights[m_nPointLights].worldPosition.z = (float)atof(pToken);
 
             // colour (scaled by 255.0)
             pToken = parser->NextTokenOnLine(true);

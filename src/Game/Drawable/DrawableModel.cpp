@@ -68,7 +68,7 @@ static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p
  */
 static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p, bool bGlow)
 {
-    f32 frac = vPosition.f.z / p.fReferenceHeight;
+    f32 frac = vPosition.z / p.fReferenceHeight;
     if (frac < 0.0f)
     {
         frac = 0.0f;
@@ -92,36 +92,36 @@ static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p
     }
 
     nlColour c = p.colour;
-    fY0 = vPosition.f.y - half_dim;
-    fX0 = vPosition.f.x - half_dim;
+    fY0 = vPosition.y - half_dim;
+    fX0 = vPosition.x - half_dim;
 
     glQuad3 quad;
     c.c[3] = (u8)alpha;
 
-    fY1 = vPosition.f.y + half_dim;
-    fX1 = vPosition.f.x + half_dim;
+    fY1 = vPosition.y + half_dim;
+    fX1 = vPosition.x + half_dim;
 
-    quad.m_pos[0].f.x = fX0;
-    quad.m_pos[0].f.y = fY0;
-    quad.m_pos[0].f.z = 1.0f / 64.0f;
-    quad.m_pos[1].f.x = fX0;
-    quad.m_pos[1].f.y = fY1;
-    quad.m_pos[1].f.z = 1.0f / 64.0f;
-    quad.m_pos[2].f.x = fX1;
-    quad.m_pos[2].f.y = fY1;
-    quad.m_pos[2].f.z = 1.0f / 64.0f;
-    quad.m_pos[3].f.x = fX1;
-    quad.m_pos[3].f.y = fY0;
-    quad.m_pos[3].f.z = 1.0f / 64.0f;
+    quad.m_pos[0].x = fX0;
+    quad.m_pos[0].y = fY0;
+    quad.m_pos[0].z = 1.0f / 64.0f;
+    quad.m_pos[1].x = fX0;
+    quad.m_pos[1].y = fY1;
+    quad.m_pos[1].z = 1.0f / 64.0f;
+    quad.m_pos[2].x = fX1;
+    quad.m_pos[2].y = fY1;
+    quad.m_pos[2].z = 1.0f / 64.0f;
+    quad.m_pos[3].x = fX1;
+    quad.m_pos[3].y = fY0;
+    quad.m_pos[3].z = 1.0f / 64.0f;
 
-    quad.m_uv[0].f.x = 1.0f;
-    quad.m_uv[0].f.y = 1.0f;
-    quad.m_uv[1].f.x = 0.0f;
-    quad.m_uv[1].f.y = 1.0f;
-    quad.m_uv[2].f.x = 0.0f;
-    quad.m_uv[2].f.y = 0.0f;
-    quad.m_uv[3].f.x = 1.0f;
-    quad.m_uv[3].f.y = 0.0f;
+    quad.m_uv[0].x = 1.0f;
+    quad.m_uv[0].y = 1.0f;
+    quad.m_uv[1].x = 0.0f;
+    quad.m_uv[1].y = 1.0f;
+    quad.m_uv[2].x = 0.0f;
+    quad.m_uv[2].y = 0.0f;
+    quad.m_uv[3].x = 1.0f;
+    quad.m_uv[3].y = 0.0f;
 
     quad.m_colour[3] = c;
     quad.m_colour[2] = c;
@@ -216,10 +216,10 @@ static void Fresnelify(glModelPacket* pPacket, eGLView view)
             s8* pNormal = pNormals + vertIndex * 3;
             nlColour* pColour = pColours + vertIndex;
             nlVector3 normal = { 0 };
-            normal.f.x = (f32)pNormal[0] * (1.0f / 64.0f);
-            normal.f.y = (f32)pNormal[1] * (1.0f / 64.0f);
-            normal.f.z = (f32)pNormal[2] * (1.0f / 64.0f);
-            f32 dot = normal.f.x * modelview.m[0][2] + normal.f.y * modelview.m[1][2] + normal.f.z * modelview.m[2][2];
+            normal.x = (f32)pNormal[0] * (1.0f / 64.0f);
+            normal.y = (f32)pNormal[1] * (1.0f / 64.0f);
+            normal.z = (f32)pNormal[2] * (1.0f / 64.0f);
+            f32 dot = normal.x * modelview.e2[0][2] + normal.y * modelview.e2[1][2] + normal.z * modelview.e2[2][2];
             if (dot < 0.0f)
             {
                 dot = 0.0f;
@@ -259,10 +259,10 @@ static void Fresnelify(glModelPacket* pPacket, eGLView view)
             s8* pNormal = pNormals + vertIndex * 3;
             nlColour* pColour = pColours + vertIndex;
             nlVector3 normal = { 0 };
-            normal.f.x = (f32)pNormal[0] * (1.0f / 64.0f);
-            normal.f.y = (f32)pNormal[1] * (1.0f / 64.0f);
-            normal.f.z = (f32)pNormal[2] * (1.0f / 64.0f);
-            f32 dot = normal.f.x * modelview.m[0][2] + normal.f.y * modelview.m[1][2] + normal.f.z * modelview.m[2][2];
+            normal.x = (f32)pNormal[0] * (1.0f / 64.0f);
+            normal.y = (f32)pNormal[1] * (1.0f / 64.0f);
+            normal.z = (f32)pNormal[2] * (1.0f / 64.0f);
+            f32 dot = normal.x * modelview.e2[0][2] + normal.y * modelview.e2[1][2] + normal.z * modelview.e2[2][2];
             if (dot < 0.0f)
             {
                 dot = 0.0f;
@@ -302,10 +302,10 @@ static void Fresnelify(glModelPacket* pPacket, eGLView view)
             s8* pNormal = pNormals + vertIndex * 3;
             nlColour* pColour = pColours + vertIndex;
             nlVector3 normal = { 0 };
-            normal.f.x = (f32)pNormal[0] * (1.0f / 64.0f);
-            normal.f.y = (f32)pNormal[1] * (1.0f / 64.0f);
-            normal.f.z = (f32)pNormal[2] * (1.0f / 64.0f);
-            f32 dot = normal.f.x * modelview.m[0][2] + normal.f.y * modelview.m[1][2] + normal.f.z * modelview.m[2][2];
+            normal.x = (f32)pNormal[0] * (1.0f / 64.0f);
+            normal.y = (f32)pNormal[1] * (1.0f / 64.0f);
+            normal.z = (f32)pNormal[2] * (1.0f / 64.0f);
+            f32 dot = normal.x * modelview.e2[0][2] + normal.y * modelview.e2[1][2] + normal.z * modelview.e2[2][2];
             if (dot < 0.0f)
             {
                 dot = 0.0f;
@@ -435,7 +435,7 @@ void DrawableModel::DrawModel(const nlMatrix4& worldMatrix)
         newModel = glModelDupNoStreams(m_pModel, true, false);
     }
 
-    if (m_pModel->id == BallModelID && !sbBallShadowDisabled && worldMatrix.m[3][2] >= 0.0f)
+    if (m_pModel->id == BallModelID && !sbBallShadowDisabled && worldMatrix.e2[3][2] >= 0.0f)
     {
         BallShadowParams p;
         p.fReferenceHeight = g_fBallShadowH;
@@ -447,7 +447,7 @@ void DrawableModel::DrawModel(const nlMatrix4& worldMatrix)
         p.colour.c[1] = 0xFF;
         p.colour.c[2] = 0xFF;
         p.colour.c[3] = 0xFF;
-        DrawBallShadow(*(const nlVector3*)&worldMatrix.m[3][0], p, false);
+        DrawBallShadow(*(const nlVector3*)&worldMatrix.e2[3][0], p, false);
 
         if (g_bBallGlow)
         {
@@ -460,7 +460,7 @@ void DrawableModel::DrawModel(const nlMatrix4& worldMatrix)
             p.colour.c[1] = g_nBallGlowGreen;
             p.colour.c[2] = g_nBallGlowBlue;
             p.colour.c[3] = 0xFF;
-            DrawBallShadow(*(const nlVector3*)&worldMatrix.m[3][0], p, true);
+            DrawBallShadow(*(const nlVector3*)&worldMatrix.e2[3][0], p, true);
         }
     }
 
@@ -698,39 +698,39 @@ void GetAABBDimensions(const glModel* model, AABBDimensions& dimensions, unsigne
                 s16* src = (s16*)((u8*)stream->address + vert * stride);
                 float scale = 1.0f / 256.0f;
 
-                point.f.x = (float)src[0] * scale;
-                point.f.y = (float)src[1] * scale;
-                point.f.z = (float)src[2] * scale;
+                point.x = (float)src[0] * scale;
+                point.y = (float)src[1] * scale;
+                point.z = (float)src[2] * scale;
             }
 
-            if (point.f.x < min.f.x || first)
+            if (point.x < min.x || first)
             {
-                min.f.x = point.f.x;
+                min.x = point.x;
             }
 
-            if (point.f.y < min.f.y || first)
+            if (point.y < min.y || first)
             {
-                min.f.y = point.f.y;
+                min.y = point.y;
             }
 
-            if (point.f.z < min.f.z || first)
+            if (point.z < min.z || first)
             {
-                min.f.z = point.f.z;
+                min.z = point.z;
             }
 
-            if (point.f.x > max.f.x || first)
+            if (point.x > max.x || first)
             {
-                max.f.x = point.f.x;
+                max.x = point.x;
             }
 
-            if (point.f.y > max.f.y || first)
+            if (point.y > max.y || first)
             {
-                max.f.y = point.f.y;
+                max.y = point.y;
             }
 
-            if (point.f.z > max.f.z || first)
+            if (point.z > max.z || first)
             {
-                max.f.z = point.f.z;
+                max.z = point.z;
             }
 
             first = 0;
@@ -743,12 +743,12 @@ void GetAABBDimensions(const glModel* model, AABBDimensions& dimensions, unsigne
 
     dimensions.mMin = min;
     dimensions.mMax = max;
-    float dz = dimensions.mMax.f.z - dimensions.mMin.f.z;
-    float dy = dimensions.mMax.f.y - dimensions.mMin.f.y;
-    float dx = dimensions.mMax.f.x - dimensions.mMin.f.x;
-    dimensions.mDim.f.x = dx;
-    dimensions.mDim.f.y = dy;
-    dimensions.mDim.f.z = dz;
+    float dz = dimensions.mMax.z - dimensions.mMin.z;
+    float dy = dimensions.mMax.y - dimensions.mMin.y;
+    float dx = dimensions.mMax.x - dimensions.mMin.x;
+    dimensions.mDim.x = dx;
+    dimensions.mDim.y = dy;
+    dimensions.mDim.z = dz;
 
     if (boundingBoxCacheKey != 0)
     {
@@ -811,25 +811,25 @@ static void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matri
 static inline void MakePlanarShadowMatrix(nlMatrix4& shadowMatrix, const nlMatrix4& objectToWorldMatrix)
 {
     const nlVector3& lightVector = *(const nlVector3*)(*(u32*)((u8*)WorldManager::s_World + 0x138) + 4);
-    float xOverZ = -lightVector.f.x / lightVector.f.z;
-    float yOverZ = -lightVector.f.y / lightVector.f.z;
+    float xOverZ = -lightVector.x / lightVector.z;
+    float yOverZ = -lightVector.y / lightVector.z;
 
-    shadowMatrix.f.m11 = objectToWorldMatrix.f.m11 + xOverZ * objectToWorldMatrix.f.m13;
-    shadowMatrix.f.m21 = objectToWorldMatrix.f.m21 + xOverZ * objectToWorldMatrix.f.m23;
-    shadowMatrix.f.m31 = objectToWorldMatrix.f.m31 + xOverZ * objectToWorldMatrix.f.m33;
-    shadowMatrix.f.m41 = objectToWorldMatrix.f.m41 + xOverZ * objectToWorldMatrix.f.m43;
-    shadowMatrix.f.m12 = objectToWorldMatrix.f.m12 + yOverZ * objectToWorldMatrix.f.m13;
-    shadowMatrix.f.m22 = objectToWorldMatrix.f.m22 + yOverZ * objectToWorldMatrix.f.m23;
-    shadowMatrix.f.m32 = objectToWorldMatrix.f.m32 + yOverZ * objectToWorldMatrix.f.m33;
-    shadowMatrix.f.m42 = objectToWorldMatrix.f.m42 + yOverZ * objectToWorldMatrix.f.m43;
-    shadowMatrix.f.m13 = 0.0f;
-    shadowMatrix.f.m23 = 0.0f;
-    shadowMatrix.f.m33 = 0.0f;
-    shadowMatrix.f.m43 = 0.0f;
-    shadowMatrix.f.m14 = 0.0f;
-    shadowMatrix.f.m24 = 0.0f;
-    shadowMatrix.f.m34 = 0.0f;
-    shadowMatrix.f.m44 = 1.0f;
+    shadowMatrix.m11 = objectToWorldMatrix.m11 + xOverZ * objectToWorldMatrix.m13;
+    shadowMatrix.m21 = objectToWorldMatrix.m21 + xOverZ * objectToWorldMatrix.m23;
+    shadowMatrix.m31 = objectToWorldMatrix.m31 + xOverZ * objectToWorldMatrix.m33;
+    shadowMatrix.m41 = objectToWorldMatrix.m41 + xOverZ * objectToWorldMatrix.m43;
+    shadowMatrix.m12 = objectToWorldMatrix.m12 + yOverZ * objectToWorldMatrix.m13;
+    shadowMatrix.m22 = objectToWorldMatrix.m22 + yOverZ * objectToWorldMatrix.m23;
+    shadowMatrix.m32 = objectToWorldMatrix.m32 + yOverZ * objectToWorldMatrix.m33;
+    shadowMatrix.m42 = objectToWorldMatrix.m42 + yOverZ * objectToWorldMatrix.m43;
+    shadowMatrix.m13 = 0.0f;
+    shadowMatrix.m23 = 0.0f;
+    shadowMatrix.m33 = 0.0f;
+    shadowMatrix.m43 = 0.0f;
+    shadowMatrix.m14 = 0.0f;
+    shadowMatrix.m24 = 0.0f;
+    shadowMatrix.m34 = 0.0f;
+    shadowMatrix.m44 = 1.0f;
 }
 
 static void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matrix, float& x0, float& x1, float& y0, float& y1, unsigned long userData)
@@ -840,14 +840,14 @@ static void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matri
     const nlVector3& max = dimensions.mMax;
     nlVector4 p[8];
 
-    nlVec4Set(p[0], dimensions.mMin.f.x, dimensions.mMin.f.y, dimensions.mMin.f.z, 1.0f);
-    nlVec4Set(p[1], dimensions.mMin.f.x, dimensions.mMin.f.y, max.f.z, 1.0f);
-    nlVec4Set(p[2], dimensions.mMin.f.x, max.f.y, dimensions.mMin.f.z, 1.0f);
-    nlVec4Set(p[3], dimensions.mMin.f.x, max.f.y, max.f.z, 1.0f);
-    nlVec4Set(p[4], max.f.x, dimensions.mMin.f.y, dimensions.mMin.f.z, 1.0f);
-    nlVec4Set(p[5], max.f.x, dimensions.mMin.f.y, max.f.z, 1.0f);
-    nlVec4Set(p[6], max.f.x, max.f.y, dimensions.mMin.f.z, 1.0f);
-    nlVec4Set(p[7], max.f.x, max.f.y, max.f.z, 1.0f);
+    nlVec4Set(p[0], dimensions.mMin.x, dimensions.mMin.y, dimensions.mMin.z, 1.0f);
+    nlVec4Set(p[1], dimensions.mMin.x, dimensions.mMin.y, max.z, 1.0f);
+    nlVec4Set(p[2], dimensions.mMin.x, max.y, dimensions.mMin.z, 1.0f);
+    nlVec4Set(p[3], dimensions.mMin.x, max.y, max.z, 1.0f);
+    nlVec4Set(p[4], max.x, dimensions.mMin.y, dimensions.mMin.z, 1.0f);
+    nlVec4Set(p[5], max.x, dimensions.mMin.y, max.z, 1.0f);
+    nlVec4Set(p[6], max.x, max.y, dimensions.mMin.z, 1.0f);
+    nlVec4Set(p[7], max.x, max.y, max.z, 1.0f);
 
     nlMatrix4 shadowMatrix;
     MakePlanarShadowMatrix(shadowMatrix, matrix);
@@ -857,24 +857,24 @@ static void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matri
     {
         nlMultVectorMatrix(p[i], p[i], shadowMatrix);
 
-        if (i == 0 || p[i].f.x < x0)
+        if (i == 0 || p[i].x < x0)
         {
-            x0 = p[i].f.x;
+            x0 = p[i].x;
         }
 
-        if (i == 0 || p[i].f.x > x1)
+        if (i == 0 || p[i].x > x1)
         {
-            x1 = p[i].f.x;
+            x1 = p[i].x;
         }
 
-        if (i == 0 || p[i].f.y < y0)
+        if (i == 0 || p[i].y < y0)
         {
-            y0 = p[i].f.y;
+            y0 = p[i].y;
         }
 
-        if (i == 0 || p[i].f.y > y1)
+        if (i == 0 || p[i].y > y1)
         {
-            y1 = p[i].f.y;
+            y1 = p[i].y;
         }
     }
 }
@@ -902,25 +902,25 @@ static void DrawCoPlanarReference(eGLView view, const glModel& model, const nlMa
     GetShadowBoundingSquare(&model, mtx, x0, x1, y0, y1, userData);
 
     nlVector3 points[4] = { };
-    points[0].f.x = x0;
-    points[0].f.y = y0;
-    points[0].f.z = z;
-    points[1].f.x = x1;
-    points[1].f.y = y0;
-    points[1].f.z = z;
-    points[2].f.x = x1;
-    points[2].f.y = y1;
-    points[2].f.z = z;
-    points[3].f.x = x0;
-    points[3].f.y = y1;
-    points[3].f.z = z;
+    points[0].x = x0;
+    points[0].y = y0;
+    points[0].z = z;
+    points[1].x = x1;
+    points[1].y = y0;
+    points[1].z = z;
+    points[2].x = x1;
+    points[2].y = y1;
+    points[2].z = z;
+    points[3].x = x0;
+    points[3].y = y1;
+    points[3].z = z;
 
     if (x0 + x1 < 0.0f)
     {
-        points[0].f.x = x1;
-        points[1].f.x = x0;
-        points[2].f.x = x0;
-        points[3].f.x = x1;
+        points[0].x = x1;
+        points[1].x = x0;
+        points[2].x = x0;
+        points[3].x = x1;
     }
 
     glSetDefaultState(false);
@@ -934,20 +934,20 @@ static void DrawCoPlanarReference(eGLView view, const glModel& model, const nlMa
 
     glQuad3 quad;
     quad.m_pos[0] = points[0];
-    quad.m_uv[0].f.x = 0.0f;
-    quad.m_uv[0].f.y = 0.0f;
+    quad.m_uv[0].x = 0.0f;
+    quad.m_uv[0].y = 0.0f;
 
     quad.m_pos[1] = points[1];
-    quad.m_uv[1].f.x = 0.0f;
-    quad.m_uv[1].f.y = 0.0f;
+    quad.m_uv[1].x = 0.0f;
+    quad.m_uv[1].y = 0.0f;
 
     quad.m_pos[2] = points[2];
-    quad.m_uv[2].f.x = 0.0f;
-    quad.m_uv[2].f.y = 0.0f;
+    quad.m_uv[2].x = 0.0f;
+    quad.m_uv[2].y = 0.0f;
 
     quad.m_pos[3] = points[3];
-    quad.m_uv[3].f.x = 0.0f;
-    quad.m_uv[3].f.y = 0.0f;
+    quad.m_uv[3].x = 0.0f;
+    quad.m_uv[3].y = 0.0f;
 
     quad.SetColour(0xAA, 0xAA, 0xAA, 0xFF);
     quad.Attach(view, 0, true);
@@ -989,7 +989,7 @@ void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float 
 
     if (g_bCoPlanarPerObject)
     {
-        if (g_bCoPlanarIgnoreIdentity && worldMatrix.f.m41 == 0.0f && worldMatrix.f.m42 == 0.0f && worldMatrix.f.m43 == 0.0f)
+        if (g_bCoPlanarIgnoreIdentity && worldMatrix.m41 == 0.0f && worldMatrix.m42 == 0.0f && worldMatrix.m43 == 0.0f)
         {
             return;
         }
@@ -1100,9 +1100,9 @@ void RenderBoundingBox(const glModel* model, const nlMatrix4& matrix)
     GetAABBDimensions(model, dimensions, 0);
 
     nlVector4 points[8];
-    float minx = dimensions.mMin.f.x;
-    float miny = dimensions.mMin.f.y;
-    float minz = dimensions.mMin.f.z;
+    float minx = dimensions.mMin.x;
+    float miny = dimensions.mMin.y;
+    float minz = dimensions.mMin.z;
 
     nlVector4* p1 = &points[1];
     nlVector4* p2 = &points[2];
@@ -1117,13 +1117,13 @@ void RenderBoundingBox(const glModel* model, const nlMatrix4& matrix)
     int i = 0;
 
     nlVec4Set(points[0], minx, miny, minz, 1.0f);
-    nlVec4Set(*p1, minx, miny, dimensions.mMax.f.z, 1.0f);
-    nlVec4Set(*p2, minx, dimensions.mMax.f.y, dimensions.mMax.f.z, 1.0f);
-    nlVec4Set(*p3, minx, dimensions.mMax.f.y, minz, 1.0f);
-    nlVec4Set(*p4, dimensions.mMax.f.x, miny, minz, 1.0f);
-    nlVec4Set(*p5, dimensions.mMax.f.x, miny, dimensions.mMax.f.z, 1.0f);
-    nlVec4Set(*p6, dimensions.mMax.f.x, dimensions.mMax.f.y, dimensions.mMax.f.z, 1.0f);
-    nlVec4Set(*p7, dimensions.mMax.f.x, dimensions.mMax.f.y, minz, 1.0f);
+    nlVec4Set(*p1, minx, miny, dimensions.mMax.z, 1.0f);
+    nlVec4Set(*p2, minx, dimensions.mMax.y, dimensions.mMax.z, 1.0f);
+    nlVec4Set(*p3, minx, dimensions.mMax.y, minz, 1.0f);
+    nlVec4Set(*p4, dimensions.mMax.x, miny, minz, 1.0f);
+    nlVec4Set(*p5, dimensions.mMax.x, miny, dimensions.mMax.z, 1.0f);
+    nlVec4Set(*p6, dimensions.mMax.x, dimensions.mMax.y, dimensions.mMax.z, 1.0f);
+    nlVec4Set(*p7, dimensions.mMax.x, dimensions.mMax.y, minz, 1.0f);
 
     for (; i < 8; i++, p0++)
     {

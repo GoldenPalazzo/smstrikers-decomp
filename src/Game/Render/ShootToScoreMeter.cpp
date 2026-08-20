@@ -44,11 +44,11 @@ static inline void InterpolateColours(const nlColour& colour0, const nlColour& c
 
 static inline void NDCToScreenCoordinates(const nlVector3& v3NormalizedScreenPos, nlVector3& v3ScreenPos)
 {
-    v3ScreenPos.f.x = 320.0f * v3NormalizedScreenPos.f.x;
-    v3ScreenPos.f.y = 240.0f * v3NormalizedScreenPos.f.y;
-    v3ScreenPos.f.x += 320.0f;
-    v3ScreenPos.f.y += 240.0f;
-    v3ScreenPos.f.z = -0.1f;
+    v3ScreenPos.x = 320.0f * v3NormalizedScreenPos.x;
+    v3ScreenPos.y = 240.0f * v3NormalizedScreenPos.y;
+    v3ScreenPos.x += 320.0f;
+    v3ScreenPos.y += 240.0f;
+    v3ScreenPos.z = -0.1f;
 }
 
 static inline float clamp_ge(float x, float limit)
@@ -99,10 +99,10 @@ void ShootToScoreMeter::DrawIndicatorBar(float angle, const nlColour& colour, co
     float sine = nlSin((u16)angleIndex);
     float cosine = nlSin((u16)((u16)angleIndex + 0x4000));
 
-    barMatrix.m[3][0] = radius * cosine;
-    barMatrix.m[3][1] = radius * sine;
-    barMatrix.m[3][2] = zDepth;
-    barMatrix.m[3][3] = 1.0f;
+    barMatrix.e2[3][0] = radius * cosine;
+    barMatrix.e2[3][1] = radius * sine;
+    barMatrix.e2[3][2] = zDepth;
+    barMatrix.e2[3][3] = 1.0f;
     nlMultMatrices(barMatrix, barMatrix, meterMatrix);
 
     barQuad.SetupRotatedRectangle(scaledWhiteBarWidth, scaledWhiteBarHeight, barMatrix, false, false);
@@ -156,9 +156,9 @@ void ShootToScoreMeter::TurnOnMeter(ShootToScoreMeter::STSMeterType type, float 
 void ShootToScoreMeter::RumbleMeter(float rumbleIntensity, float xOffset, float zOffset)
 {
     mfRumbleAmount = 0.175f * rumbleIntensity;
-    m_v3MeterPosition.f.x = xOffset * mfRumbleAmount + m_v3OriginalMeterPosition.f.x;
-    m_v3MeterPosition.f.y = m_v3OriginalMeterPosition.f.y;
-    m_v3MeterPosition.f.z = zOffset * mfRumbleAmount + m_v3OriginalMeterPosition.f.z;
+    m_v3MeterPosition.x = xOffset * mfRumbleAmount + m_v3OriginalMeterPosition.x;
+    m_v3MeterPosition.y = m_v3OriginalMeterPosition.y;
+    m_v3MeterPosition.z = zOffset * mfRumbleAmount + m_v3OriginalMeterPosition.z;
 }
 
 /**
@@ -202,27 +202,27 @@ void ShootToScoreMeter::DrawMeter()
         glViewProjectPoint(GLV_Unshadowed, m_v3MeterPosition, screenPosition);
 
         NDCToScreenCoordinates(screenPosition, screenPosition);
-        screenPosition.f.y += -20.0f;
+        screenPosition.y += -20.0f;
 
         scale = 640.0f;
         scaledMeterWidth = MeterWidth * scale;
 
-        screenPosition.f.x = clamp_le(clamp_ge(screenPosition.f.x, 92.0f), 548.0f);
-        screenPosition.f.y = clamp_le(clamp_ge(screenPosition.f.y, 84.0f), 396.0f);
+        screenPosition.x = clamp_le(clamp_ge(screenPosition.x, 92.0f), 548.0f);
+        screenPosition.y = clamp_le(clamp_ge(screenPosition.y, 84.0f), 396.0f);
 
-        matrix.m[3][0] = screenPosition.f.x;
-        matrix.m[3][1] = screenPosition.f.y;
-        matrix.m[3][2] = screenPosition.f.z;
-        matrix.m[3][3] = 1.0f;
+        matrix.e2[3][0] = screenPosition.x;
+        matrix.e2[3][1] = screenPosition.y;
+        matrix.e2[3][2] = screenPosition.z;
+        matrix.e2[3][3] = 1.0f;
     }
     else
     {
         scale = cCameraManager::GetDistanceFromCameraToObject(m_v3MeterPosition);
 
-        matrix.m[3][0] = m_v3MeterPosition.f.x;
-        matrix.m[3][1] = m_v3MeterPosition.f.y;
-        matrix.m[3][2] = m_v3MeterPosition.f.z;
-        matrix.m[3][3] = 1.0f;
+        matrix.e2[3][0] = m_v3MeterPosition.x;
+        matrix.e2[3][1] = m_v3MeterPosition.y;
+        matrix.e2[3][2] = m_v3MeterPosition.z;
+        matrix.e2[3][3] = 1.0f;
 
         scaledMeterWidth = MeterWidth * scale;
     }
@@ -390,27 +390,27 @@ void ShootToScoreMeter::DrawColouredRegion(float startAngle, float endAngle, con
             zDepth = 0.0f;
         }
 
-        vertexPosition.f.x = innerRadius * segmentStartCosine;
-        vertexPosition.f.y = innerRadius * segmentStartSine;
-        vertexPosition.f.z = zDepth;
+        vertexPosition.x = innerRadius * segmentStartCosine;
+        vertexPosition.y = innerRadius * segmentStartSine;
+        vertexPosition.z = zDepth;
         nlMultPosVectorMatrix(vertexPosition, vertexPosition, meterMatrix);
         barQuad.m_pos[0] = vertexPosition;
 
-        vertexPosition.f.x = outerRadius * segmentStartCosine;
-        vertexPosition.f.y = outerRadius * segmentStartSine;
-        vertexPosition.f.z = zDepth;
+        vertexPosition.x = outerRadius * segmentStartCosine;
+        vertexPosition.y = outerRadius * segmentStartSine;
+        vertexPosition.z = zDepth;
         nlMultPosVectorMatrix(vertexPosition, vertexPosition, meterMatrix);
         barQuad.m_pos[1] = vertexPosition;
 
-        vertexPosition.f.x = outerRadius * segmentEndCosine;
-        vertexPosition.f.y = outerRadius * segmentEndSine;
-        vertexPosition.f.z = zDepth;
+        vertexPosition.x = outerRadius * segmentEndCosine;
+        vertexPosition.y = outerRadius * segmentEndSine;
+        vertexPosition.z = zDepth;
         nlMultPosVectorMatrix(vertexPosition, vertexPosition, meterMatrix);
         barQuad.m_pos[2] = vertexPosition;
 
-        vertexPosition.f.x = innerRadius * segmentEndCosine;
-        vertexPosition.f.y = innerRadius * segmentEndSine;
-        vertexPosition.f.z = zDepth;
+        vertexPosition.x = innerRadius * segmentEndCosine;
+        vertexPosition.y = innerRadius * segmentEndSine;
+        vertexPosition.z = zDepth;
         nlMultPosVectorMatrix(vertexPosition, vertexPosition, meterMatrix);
         barQuad.m_pos[3] = vertexPosition;
 
@@ -510,10 +510,10 @@ void ShootToScoreMeter::DrawCaptainMeter()
         float scale = (float)(i + 1) / 12.0f;
         float yOffset = 30.0f * scale;
         float yPosition = 365.0f + (yOffset);
-        matrix.m[3][0] = 320.0f;
-        matrix.m[3][1] = yPosition;
-        matrix.m[3][2] = -500.0f;
-        matrix.m[3][3] = 1.0f;
+        matrix.e2[3][0] = 320.0f;
+        matrix.e2[3][1] = yPosition;
+        matrix.e2[3][2] = -500.0f;
+        matrix.e2[3][3] = 1.0f;
 
         nlColour colour = { 255, 255, 255, 255 };
         quad.SetColour(colour);
@@ -524,10 +524,10 @@ void ShootToScoreMeter::DrawCaptainMeter()
     glSetTextureState(GLTS_DiffuseWrap, 0);
     glSetCurrentTextureState(glHandleizeTextureState());
 
-    matrix.m[3][0] = 320.0f;
-    matrix.m[3][1] = 365.0f;
-    matrix.m[3][2] = -500.0f;
-    matrix.m[3][3] = 1.0f;
+    matrix.e2[3][0] = 320.0f;
+    matrix.e2[3][1] = 365.0f;
+    matrix.e2[3][2] = -500.0f;
+    matrix.e2[3][3] = 1.0f;
 
     nlColour colour = { 255, 255, 255, 255 };
     quad.SetColour(colour);

@@ -342,14 +342,14 @@ FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
     if (flag)
     {
         float dt = 0.1f;
-        float px = ThePlayer->m_v3Position.f.x + dt * ThePlayer->m_v3Velocity.f.x;
-        float tx = passTarget->m_v3Position.f.x + dt * passTarget->m_v3Velocity.f.x;
-        float pz = ThePlayer->m_v3Position.f.y + dt * ThePlayer->m_v3Velocity.f.y;
-        float tz = passTarget->m_v3Position.f.y + dt * passTarget->m_v3Velocity.f.y;
+        float px = ThePlayer->m_v3Position.x + dt * ThePlayer->m_v3Velocity.x;
+        float tx = passTarget->m_v3Position.x + dt * passTarget->m_v3Velocity.x;
+        float pz = ThePlayer->m_v3Position.y + dt * ThePlayer->m_v3Velocity.y;
+        float tz = passTarget->m_v3Position.y + dt * passTarget->m_v3Velocity.y;
         float dx = px - tx;
         float dy = pz - tz;
         float dist = nlSqrt(dx * dx + dy * dy, true);
-        float maxDist = 2.0f * cField::mv3FieldPosition.f.x;
+        float maxDist = 2.0f * cField::mv3FieldPosition.x;
         float range = 0.5f * maxDist;
         float normalized = NormalizeVal(dist, range, 0.0f);
         weightedSum += normalized * passWeight;
@@ -385,9 +385,9 @@ FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
 
     u8 isIdle;
     isIdle = 0;
-    if ((float)fabs(ThePlayer->m_v3ScreenPosition.f.x) <= 1.0f)
+    if ((float)fabs(ThePlayer->m_v3ScreenPosition.x) <= 1.0f)
     {
-        if ((float)fabs(ThePlayer->m_v3ScreenPosition.f.y) <= 1.0f)
+        if ((float)fabs(ThePlayer->m_v3ScreenPosition.y) <= 1.0f)
             isIdle = 1;
     }
 
@@ -3372,9 +3372,9 @@ FuzzyVariant Fuzzy::InDangerDelayed(cFielder* TheFielder)
                 fConfidence = (float)(double)fConfidence * fBranchRatio2;
             }
             SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
-            float fMin = Interpolate(g_vInDangerDelayedMin.f.x, g_vInDangerDelayedMin.f.y, pSkillTweaks->Off_Reaction);
+            float fMin = Interpolate(g_vInDangerDelayedMin.x, g_vInDangerDelayedMin.y, pSkillTweaks->Off_Reaction);
             pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
-            float fMax = Interpolate(g_vInDangerDelayedMax.f.x, g_vInDangerDelayedMax.f.y, pSkillTweaks->Off_Reaction);
+            float fMax = Interpolate(g_vInDangerDelayedMax.x, g_vInDangerDelayedMax.y, pSkillTweaks->Off_Reaction);
 
             cTeam* pTeam = TheFielder ? TheFielder->m_pTeam : NULL;
             if (Difficult(pTeam) == 0.0f)

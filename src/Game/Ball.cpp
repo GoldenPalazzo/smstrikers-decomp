@@ -98,22 +98,22 @@ cBall::cBall()
     m_pPhysicsBall = new (nlMalloc(0x5c, 8, FALSE)) PhysicsAIBall(0.18f);
     m_pPhysicsBall->m_pAIBall = this;
 
-    m_v3Position.f.x = 0.f;
-    m_v3Position.f.y = 2.f;
-    m_v3Position.f.z = 0.18f;
+    m_v3Position.x = 0.f;
+    m_v3Position.y = 2.f;
+    m_v3Position.z = 0.18f;
 
     m_v3PrevPosition = m_v3Position;
 
-    m_v3PassIntercept.f.x = 0.f;
-    m_v3PassIntercept.f.y = 0.f;
-    m_v3PassIntercept.f.z = 0.f;
+    m_v3PassIntercept.x = 0.f;
+    m_v3PassIntercept.y = 0.f;
+    m_v3PassIntercept.z = 0.f;
 
     m_pPhysicsBall->SetPosition(m_v3Position, PhysicsObject::WORLD_COORDINATES);
 
-    m_qOrientation.f.z = 0.f;
-    m_qOrientation.f.y = 0.f;
-    m_qOrientation.f.x = 0.f;
-    m_qOrientation.f.w = 1.f;
+    m_qOrientation.z = 0.f;
+    m_qOrientation.y = 0.f;
+    m_qOrientation.x = 0.f;
+    m_qOrientation.w = 1.f;
 
     m_v3ShotOrigin = m_v3Position;
     m_v3Velocity = v3Zero;
@@ -217,16 +217,16 @@ void cBall::CollideWithCharacterCallback(cPlayer* pCharacter, const nlVector3& v
 {
     if (m_pOwner == NULL)
     {
-        float currentVel = nlSqrt(m_v3Velocity.f.x * m_v3Velocity.f.x + m_v3Velocity.f.y * m_v3Velocity.f.y, true);
+        float currentVel = nlSqrt(m_v3Velocity.x * m_v3Velocity.x + m_v3Velocity.y * m_v3Velocity.y, true);
         if (currentVel > 0.1f)
         {
-            float previousVel = nlSqrt(v3PreBallVelocity.f.x * v3PreBallVelocity.f.x + v3PreBallVelocity.f.y * v3PreBallVelocity.f.y, true);
+            float previousVel = nlSqrt(v3PreBallVelocity.x * v3PreBallVelocity.x + v3PreBallVelocity.y * v3PreBallVelocity.y, true);
             float speedDifference = (previousVel - currentVel) / currentVel;
             speedDifference = fabsf(speedDifference);
 
             if (speedDifference < 0.2f)
             {
-                float dot = m_v3Velocity.f.x * v3PreBallVelocity.f.x + m_v3Velocity.f.y * v3PreBallVelocity.f.y;
+                float dot = m_v3Velocity.x * v3PreBallVelocity.x + m_v3Velocity.y * v3PreBallVelocity.y;
                 if (dot > previousVel * (0.99f * currentVel))
                 {
                     return;
@@ -373,9 +373,9 @@ void cBall::CollideWithCharacterCallback(cPlayer* pCharacter, const nlVector3& v
             m_pPassTarget = NULL;
         }
 
-        m_v3PassIntercept.f.x = 0.f;
-        m_v3PassIntercept.f.y = 0.f;
-        m_v3PassIntercept.f.z = 0.f;
+        m_v3PassIntercept.x = 0.f;
+        m_v3PassIntercept.y = 0.f;
+        m_v3PassIntercept.z = 0.f;
 
         m_tPassTargetTimer.m_uPackedTime = 0;
 
@@ -403,9 +403,9 @@ void cBall::CollideWithCharacterCallback(cPlayer* pCharacter, const nlVector3& v
         {
             nlVector3 v3ContactLocation = pCharacter->m_v3Position;
             nlVector3 v3PhysicsRadialSpot;
-            nlPolarToCartesian(v3PhysicsRadialSpot.f.x, v3PhysicsRadialSpot.f.y, pCharacter->m_aActualFacingDirection, pCharacter->m_pTweaks->fPhysCapsuleRadius);
+            nlPolarToCartesian(v3PhysicsRadialSpot.x, v3PhysicsRadialSpot.y, pCharacter->m_aActualFacingDirection, pCharacter->m_pTweaks->fPhysCapsuleRadius);
 
-            v3PhysicsRadialSpot.f.z = 0.0f;
+            v3PhysicsRadialSpot.z = 0.0f;
             nlVec3Add(v3ContactLocation, v3ContactLocation, v3PhysicsRadialSpot);
 
             s16 nHitterContactLocationFacingDelta = pCharacter->GetFacingDeltaToPosition(v3ContactLocation);
@@ -562,9 +562,9 @@ void cBall::CollideWithGroundCallback()
         m_pPassTarget = NULL;
     }
 
-    m_v3PassIntercept.f.x = 0.f;
-    m_v3PassIntercept.f.y = 0.f;
-    m_v3PassIntercept.f.z = 0.f;
+    m_v3PassIntercept.x = 0.f;
+    m_v3PassIntercept.y = 0.f;
+    m_v3PassIntercept.z = 0.f;
 
     m_tPassTargetTimer.m_uPackedTime = 0;
 
@@ -692,9 +692,9 @@ void cBall::CollideWithWallCallback()
             m_pPassTarget = NULL;
         }
 
-        m_v3PassIntercept.f.x = 0.0f;
-        m_v3PassIntercept.f.y = 0.0f;
-        m_v3PassIntercept.f.z = 0.0f;
+        m_v3PassIntercept.x = 0.0f;
+        m_v3PassIntercept.y = 0.0f;
+        m_v3PassIntercept.z = 0.0f;
 
         m_tPassTargetTimer.m_uPackedTime = 0;
 
@@ -834,29 +834,29 @@ void cBall::PostPhysicsUpdate(float fDeltaT)
         float fPrevZVel;
 
         v3HitSpot = mpDamageTarget->GetJointPosition(mpDamageTarget->m_pPoseAccumulator->m_BaseSHierarchy->m_nPelvisNodeIndex);
-        v3HitSpot.f.z = clampAbove(0.3f, v3HitSpot.f.z + 0.05f);
+        v3HitSpot.z = clampAbove(0.3f, v3HitSpot.z + 0.05f);
 
         v3CurPos = m_v3Position;
         v3PrevPos = m_v3PrevPosition;
 
-        if (v3CurPos.f.z < 0.3f)
+        if (v3CurPos.z < 0.3f)
         {
-            v3CurPos.f.z = 0.3f;
+            v3CurPos.z = 0.3f;
         }
 
-        if (v3PrevPos.f.z < 0.3f)
+        if (v3PrevPos.z < 0.3f)
         {
-            v3PrevPos.f.z = 0.3f;
+            v3PrevPos.z = 0.3f;
         }
 
         nlVec3Set(targetDelta,
-            v3HitSpot.f.x - v3PrevPos.f.x,
-            v3HitSpot.f.y - v3PrevPos.f.y,
-            v3HitSpot.f.z - v3PrevPos.f.z);
+            v3HitSpot.x - v3PrevPos.x,
+            v3HitSpot.y - v3PrevPos.y,
+            v3HitSpot.z - v3PrevPos.z);
         nlVec3Set(currentDelta,
-            v3CurPos.f.x - v3PrevPos.f.x,
-            v3CurPos.f.y - v3PrevPos.f.y,
-            v3CurPos.f.z - v3PrevPos.f.z);
+            v3CurPos.x - v3PrevPos.x,
+            v3CurPos.y - v3PrevPos.y,
+            v3CurPos.z - v3PrevPos.z);
 
         float targetDist = nlSqrt(targetDelta.GetLengthSq3D(), true);
         float currentDist = nlSqrt(currentDelta.GetLengthSq3D(), true);
@@ -886,12 +886,12 @@ void cBall::PostPhysicsUpdate(float fDeltaT)
         FakeBallWorld::InvalidateBallCache();
         m_bBallPathChangeCount = m_bBallPathChangeCount + 1;
 
-        fPrevZVel = m_v3Velocity.f.z;
+        fPrevZVel = m_v3Velocity.z;
         const nlVector3& ballVelocity = m_v3Velocity;
         float distanceSq = currentDelta.GetLengthSq3D();
         float projectedScale = nlVec3DotProduct(ballVelocity, currentDelta) / distanceSq;
         nlVec3Scale(v3BallVel, currentDelta, projectedScale);
-        v3BallVel.f.z = fPrevZVel;
+        v3BallVel.z = fPrevZVel;
 
         float speedSq = v3BallVel.GetLengthSq3D();
         if (speedSq < 400.0f)
@@ -900,9 +900,9 @@ void cBall::PostPhysicsUpdate(float fDeltaT)
             nlVec3Scale(v3BallVel, 20.0f / speed);
         }
 
-        if (v3CurPos.f.z < 0.4f && v3BallVel.f.z < 0.0f)
+        if (v3CurPos.z < 0.4f && v3BallVel.z < 0.0f)
         {
-            v3BallVel.f.z = 0.0f;
+            v3BallVel.z = 0.0f;
         }
 
         m_v3Velocity = v3BallVel;
@@ -936,7 +936,7 @@ nlVector3* cBall::GetAIVelocity() const
 nlVector3* cBall::GetDrawablePosition() const
 {
     const nlMatrix4& mtx = m_pDrawableBall->GetWorldMatrix();
-    return (nlVector3*)&(mtx.m[3][0]);
+    return (nlVector3*)&(mtx.e2[3][0]);
 }
 
 /**
@@ -1016,7 +1016,7 @@ bool cBall::GetInNet(int& nSide)
         int i;
         for (i = 0; i < 2; i++)
         {
-            if (m_v3Position.f.x * pTeams[i]->m_pNet->m_fDirection > 1.0f)
+            if (m_v3Position.x * pTeams[i]->m_pNet->m_fDirection > 1.0f)
             {
                 nSide = i;
             }
@@ -1300,9 +1300,9 @@ void cBall::SetOwner(cPlayer* pOwner)
         m_pPassTarget = NULL;
     }
 
-    m_v3PassIntercept.f.x = 0.f;
-    m_v3PassIntercept.f.y = 0.f;
-    m_v3PassIntercept.f.z = 0.f;
+    m_v3PassIntercept.x = 0.f;
+    m_v3PassIntercept.y = 0.f;
+    m_v3PassIntercept.z = 0.f;
 
     m_tPassTargetTimer.m_uPackedTime = 0;
 
@@ -1381,9 +1381,9 @@ void cBall::SetVelocity(const nlVector3& velocity, eSpinType spin, const nlVecto
 
     if (spin == SPINTYPE_NONE)
     {
-        v3AngVel.f.x = 0.0f;
-        v3AngVel.f.y = 0.0f;
-        v3AngVel.f.z = 0.0f;
+        v3AngVel.x = 0.0f;
+        v3AngVel.y = 0.0f;
+        v3AngVel.z = 0.0f;
     }
     else if ((spin == SPINTYPE_FORWARD) || (spin == SPINTYPE_BACK))
     {
@@ -1394,18 +1394,18 @@ void cBall::SetVelocity(const nlVector3& velocity, eSpinType spin, const nlVecto
         }
 
         nlVector3 v3Up = v3SpinUpZero;
-        v3Up.f.z = fSpinRand;
+        v3Up.z = fSpinRand;
 
         nlVector3 v3Cross;
         nlVec3CrossProductAlt(v3Cross, v3Up, velocity);
-        v3AngVel.f.x = v3Cross.f.z;
-        v3AngVel.f.y = v3Cross.f.y;
-        v3AngVel.f.z = v3Cross.f.x;
+        v3AngVel.x = v3Cross.z;
+        v3AngVel.y = v3Cross.y;
+        v3AngVel.z = v3Cross.x;
     }
     else if (spin == SPINTYPE_ROLLING)
     {
         m_pPhysicsBall->CalcAngularFromLinearVelocity(v3AngVel);
-        nlVec3Set(v3AngVel, 0.92f * v3AngVel.f.x, 0.92f * v3AngVel.f.y, 0.92f * v3AngVel.f.z);
+        nlVec3Set(v3AngVel, 0.92f * v3AngVel.x, 0.92f * v3AngVel.y, 0.92f * v3AngVel.z);
     }
     else if (spin == SPINTYPE_PARAMETER)
     {
@@ -1459,27 +1459,27 @@ void cBall::Shoot(const nlVector3& v3Dir, const nlVector3& v3Spin, eSpinType spi
 
     if (spinType == SPINTYPE_NONE)
     {
-        v3AngVel.f.x = 0.0f;
-        v3AngVel.f.y = 0.0f;
-        v3AngVel.f.z = 0.0f;
+        v3AngVel.x = 0.0f;
+        v3AngVel.y = 0.0f;
+        v3AngVel.z = 0.0f;
     }
     else if ((spinType == SPINTYPE_FORWARD) || (spinType == SPINTYPE_BACK))
     {
         float fSpinRand = CalcSpinRand(spinType);
 
         v3Up = v3SpinUpZero;
-        v3Up.f.z = fSpinRand;
+        v3Up.z = fSpinRand;
 
         nlVector3 v3Cross;
         nlVec3CrossProductAlt(v3Cross, v3Up, v3Dir);
-        v3AngVel.f.x = v3Cross.f.z;
-        v3AngVel.f.y = v3Cross.f.y;
-        v3AngVel.f.z = v3Cross.f.x;
+        v3AngVel.x = v3Cross.z;
+        v3AngVel.y = v3Cross.y;
+        v3AngVel.z = v3Cross.x;
     }
     else if (spinType == SPINTYPE_ROLLING)
     {
         m_pPhysicsBall->CalcAngularFromLinearVelocity(v3AngVel);
-        nlVec3Set(v3AngVel, 0.92f * v3AngVel.f.x, 0.92f * v3AngVel.f.y, 0.92f * v3AngVel.f.z);
+        nlVec3Set(v3AngVel, 0.92f * v3AngVel.x, 0.92f * v3AngVel.y, 0.92f * v3AngVel.z);
     }
     else if (spinType == SPINTYPE_PARAMETER)
     {
@@ -1506,7 +1506,7 @@ void cBall::Shoot(const nlVector3& v3Dir, const nlVector3& v3Spin, eSpinType spi
 
     if (m_pPhysicsBall->m_bUseMagnusEffect)
     {
-        float fDist = nlSqrt(nlGetLengthSquared3D(m_v3Position.f.x - m_v3ShotTarget.f.x, m_v3Position.f.y - m_v3ShotTarget.f.y, m_v3Position.f.z - m_v3ShotTarget.f.z), true);
+        float fDist = nlSqrt(nlGetLengthSquared3D(m_v3Position.x - m_v3ShotTarget.x, m_v3Position.y - m_v3ShotTarget.y, m_v3Position.z - m_v3ShotTarget.z), true);
 
         FakeBallWorld::GetPredictedPosAtDistance(fDist, v3PredPos, v3PredVel);
 
@@ -1516,19 +1516,19 @@ void cBall::Shoot(const nlVector3& v3Dir, const nlVector3& v3Spin, eSpinType spi
         GetRotationBetweenVectors(qRot, v3FromDir, v3ToDir);
         RotateVector(m_v3Velocity, v3Dir, qRot);
 
-        if (m_v3Velocity.f.z < 1.0f && m_v3Position.f.z < 1.0f)
+        if (m_v3Velocity.z < 1.0f && m_v3Position.z < 1.0f)
         {
-            m_v3Velocity.f.z = 1.0f;
+            m_v3Velocity.z = 1.0f;
         }
 
         float fSidelineY = cField::GetSidelineY(1) - 0.5f;
-        if (m_v3Position.f.y > fSidelineY && m_v3Velocity.f.y > -0.1f)
+        if (m_v3Position.y > fSidelineY && m_v3Velocity.y > -0.1f)
         {
-            m_v3Velocity.f.y = -0.1f;
+            m_v3Velocity.y = -0.1f;
         }
-        else if (m_v3Position.f.y < 0.5f - cField::GetSidelineY(1) && m_v3Velocity.f.y < 0.1f)
+        else if (m_v3Position.y < 0.5f - cField::GetSidelineY(1) && m_v3Velocity.y < 0.1f)
         {
-            m_v3Velocity.f.y = 0.1f;
+            m_v3Velocity.y = 0.1f;
         }
 
         m_pPhysicsBall->SetLinearVelocity(m_v3Velocity);
@@ -1558,27 +1558,27 @@ void cBall::ShootRelease(const nlVector3& v3Velocity, eSpinType SpinType)
 
     if (SpinType == SPINTYPE_NONE)
     {
-        v3AngVel.f.x = 0.0f;
-        v3AngVel.f.y = 0.0f;
-        v3AngVel.f.z = 0.0f;
+        v3AngVel.x = 0.0f;
+        v3AngVel.y = 0.0f;
+        v3AngVel.z = 0.0f;
     }
     else if ((SpinType == SPINTYPE_FORWARD) || (SpinType == SPINTYPE_BACK))
     {
         float fSpinRand = CalcSpinRand(SpinType);
 
         v3Up = v3SpinUpZero;
-        v3Up.f.z = fSpinRand;
+        v3Up.z = fSpinRand;
 
         nlVector3 v3Cross;
         nlVec3CrossProductAlt(v3Cross, v3Up, v3Velocity);
-        v3AngVel.f.x = v3Cross.f.z;
-        v3AngVel.f.y = v3Cross.f.y;
-        v3AngVel.f.z = v3Cross.f.x;
+        v3AngVel.x = v3Cross.z;
+        v3AngVel.y = v3Cross.y;
+        v3AngVel.z = v3Cross.x;
     }
     else if (SpinType == SPINTYPE_ROLLING)
     {
         m_pPhysicsBall->CalcAngularFromLinearVelocity(v3AngVel);
-        nlVec3Set(v3AngVel, 0.92f * v3AngVel.f.x, 0.92f * v3AngVel.f.y, 0.92f * v3AngVel.f.z);
+        nlVec3Set(v3AngVel, 0.92f * v3AngVel.x, 0.92f * v3AngVel.y, 0.92f * v3AngVel.z);
     }
     else if (SpinType == SPINTYPE_PARAMETER)
     {
@@ -1604,9 +1604,9 @@ void cBall::ShootAtFast(nlVector3& v3Vel, const nlVector3& v3Target, float fDesi
     float kSquaredOverOneMinusEToTheNegativeKT = (k * k) / (1.0f - eToTheNegativeKT);
     float oneOverK = 1.0f / k;
 
-    v3Vel.f.x = kSquaredOverOneMinusEToTheNegativeKT * (oneOverK * (v3Target.f.x - m_v3Position.f.x));
-    v3Vel.f.y = kSquaredOverOneMinusEToTheNegativeKT * (oneOverK * (v3Target.f.y - m_v3Position.f.y));
-    v3Vel.f.z = kSquaredOverOneMinusEToTheNegativeKT * (oneOverK * (v3Target.f.z - m_v3Position.f.z - g * fDesiredTime / k)) + g / k;
+    v3Vel.x = kSquaredOverOneMinusEToTheNegativeKT * (oneOverK * (v3Target.x - m_v3Position.x));
+    v3Vel.y = kSquaredOverOneMinusEToTheNegativeKT * (oneOverK * (v3Target.y - m_v3Position.y));
+    v3Vel.z = kSquaredOverOneMinusEToTheNegativeKT * (oneOverK * (v3Target.z - m_v3Position.z - g * fDesiredTime / k)) + g / k;
 }
 
 /**
@@ -1718,10 +1718,10 @@ void cBall::Update(float fDeltaT)
 
 static inline void CalcBallRotationFromVelocity(nlQuaternion& qOrientationDelta, const nlVector3& v3Velocity, float fDeltaT)
 {
-    qOrientationDelta.f.z = 0.0f;
-    qOrientationDelta.f.y = 0.0f;
-    qOrientationDelta.f.x = 0.0f;
-    qOrientationDelta.f.w = 1.0f;
+    qOrientationDelta.z = 0.0f;
+    qOrientationDelta.y = 0.0f;
+    qOrientationDelta.x = 0.0f;
+    qOrientationDelta.w = 1.0f;
 
     float fVel = nlSqrt(v3Velocity.GetLengthSq3D(), true);
     if (fVel > 0.0001f)
@@ -1732,17 +1732,17 @@ static inline void CalcBallRotationFromVelocity(nlQuaternion& qOrientationDelta,
 
         nlVec3Set(v3Up, 0.0f, 0.0f, 1.0f);
 
-        v3NormalizedVelocity.f.x /= fVel;
-        v3NormalizedVelocity.f.y /= fVel;
-        v3NormalizedVelocity.f.z /= fVel;
+        v3NormalizedVelocity.x /= fVel;
+        v3NormalizedVelocity.y /= fVel;
+        v3NormalizedVelocity.z /= fVel;
 
         float fAxisX;
         float fAxisY;
         float fAxisZ;
 
-        fAxisX = v3Up.f.y * v3NormalizedVelocity.f.z - v3Up.f.z * v3NormalizedVelocity.f.y;
-        fAxisY = -v3Up.f.x * v3NormalizedVelocity.f.z + v3Up.f.z * v3NormalizedVelocity.f.x;
-        fAxisZ = v3Up.f.x * v3NormalizedVelocity.f.y - v3Up.f.y * v3NormalizedVelocity.f.x;
+        fAxisX = v3Up.y * v3NormalizedVelocity.z - v3Up.z * v3NormalizedVelocity.y;
+        fAxisY = -v3Up.x * v3NormalizedVelocity.z + v3Up.z * v3NormalizedVelocity.x;
+        fAxisZ = v3Up.x * v3NormalizedVelocity.y - v3Up.y * v3NormalizedVelocity.x;
         nlVec3Set(v3RotationAxis, fAxisX, fAxisY, fAxisZ);
 
         nlMakeQuat(qOrientationDelta, v3RotationAxis, fDeltaT * (fVel / 0.18f));
@@ -1771,7 +1771,7 @@ void cBall::UpdateOrientation(float fDeltaT)
         {
             m_pPhysicsBall->GetAngularVelocity(&v3AngVel);
 
-            float fAng = nlSqrt(v3AngVel.f.x * v3AngVel.f.x + v3AngVel.f.y * v3AngVel.f.y + v3AngVel.f.z * v3AngVel.f.z, true);
+            float fAng = nlSqrt(v3AngVel.x * v3AngVel.x + v3AngVel.y * v3AngVel.y + v3AngVel.z * v3AngVel.z, true);
             if (fAng > 0.01f)
             {
                 fInvAng = 1.0f / fAng;
@@ -1780,10 +1780,10 @@ void cBall::UpdateOrientation(float fDeltaT)
             }
             else
             {
-                qOrientationDelta.f.z = 0.0f;
-                qOrientationDelta.f.y = 0.0f;
-                qOrientationDelta.f.x = 0.0f;
-                qOrientationDelta.f.w = 1.0f;
+                qOrientationDelta.z = 0.0f;
+                qOrientationDelta.y = 0.0f;
+                qOrientationDelta.x = 0.0f;
+                qOrientationDelta.w = 1.0f;
             }
         }
         else
@@ -1908,9 +1908,9 @@ void cBall::ClearPassTarget()
         m_pPassTarget = NULL;
     }
 
-    m_v3PassIntercept.f.x = 0.f;
-    m_v3PassIntercept.f.y = 0.f;
-    m_v3PassIntercept.f.z = 0.f;
+    m_v3PassIntercept.x = 0.f;
+    m_v3PassIntercept.y = 0.f;
+    m_v3PassIntercept.z = 0.f;
 
     m_tPassTargetTimer.m_uPackedTime = 0;
 
@@ -1940,12 +1940,12 @@ float cBall::PredictLandingSpotAndTime(nlVector3& v3Dest)
 {
     float fTime = 0.0f;
 
-    if (m_v3Position.f.z > 1.0f)
+    if (m_v3Position.z > 1.0f)
     {
         int numSolutions;
         float times[2];
 
-        SolveQuadratic(0.5f * m_pPhysicsBall->m_gravity, m_v3Velocity.f.z, m_v3Position.f.z, numSolutions, times[0], times[1]);
+        SolveQuadratic(0.5f * m_pPhysicsBall->m_gravity, m_v3Velocity.z, m_v3Position.z, numSolutions, times[0], times[1]);
 
         float t = 100000000.0f;
         float* root = times;
@@ -1959,13 +1959,13 @@ float cBall::PredictLandingSpotAndTime(nlVector3& v3Dest)
         }
 
         fTime = t;
-        float x = t * m_v3Velocity.f.x + m_v3Position.f.x;
-        float z = t * m_v3Velocity.f.z + m_v3Position.f.z;
-        float y = t * m_v3Velocity.f.y + m_v3Position.f.y;
-        v3Dest.f.x = x;
-        v3Dest.f.y = y;
-        v3Dest.f.z = z;
-        v3Dest.f.z = 0.0f;
+        float x = t * m_v3Velocity.x + m_v3Position.x;
+        float z = t * m_v3Velocity.z + m_v3Position.z;
+        float y = t * m_v3Velocity.y + m_v3Position.y;
+        v3Dest.x = x;
+        v3Dest.y = y;
+        v3Dest.z = z;
+        v3Dest.z = 0.0f;
     }
     else
     {

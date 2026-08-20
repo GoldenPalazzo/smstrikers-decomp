@@ -333,9 +333,9 @@ void RenderSnapshot::Blend(const float* blendFactors, const RenderSnapshot& lhs,
     mpNetMeshNegativeX->Blend(blendFactors[0], *lhs.mpNetMeshNegativeX, *rhs.mpNetMeshNegativeX);
 
     float blend = blendFactors[0];
-    mCameraUp.f.x = (1.0f - blend) * lhs.mCameraUp.f.x + blend * rhs.mCameraUp.f.x;
-    mCameraUp.f.y = (1.0f - blend) * lhs.mCameraUp.f.y + blend * rhs.mCameraUp.f.y;
-    mCameraUp.f.z = (1.0f - blend) * lhs.mCameraUp.f.z + blend * rhs.mCameraUp.f.z;
+    mCameraUp.x = (1.0f - blend) * lhs.mCameraUp.x + blend * rhs.mCameraUp.x;
+    mCameraUp.y = (1.0f - blend) * lhs.mCameraUp.y + blend * rhs.mCameraUp.y;
+    mCameraUp.z = (1.0f - blend) * lhs.mCameraUp.z + blend * rhs.mCameraUp.z;
 
     mGoalLight = rhs.mGoalLight;
     mDoGoalieNetTestPosX = rhs.mDoGoalieNetTestPosX;
