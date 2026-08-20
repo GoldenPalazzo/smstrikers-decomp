@@ -11,7 +11,7 @@ class GLPacketList;
 class GLRenderList
 {
 public:
-    s32 AttachModel(const glModel*, unsigned long);
+    bool AttachModel(const glModel*, unsigned long);
     void AttachPacket(unsigned long, const glModelPacket*);
     void Iterate(eGLView, void (*)(eGLView, unsigned long, const glModelPacket*));
     bool IsEmpty() const;
@@ -21,8 +21,10 @@ public:
     GLRenderList();
     ~GLRenderList();
 
-    /* 0x00 */ u32 m_unk_0x00;
-    /* 0x04 */ eGLViewSort m_unk_0x04;
+    /* 0x00 */ eGLView view;
+    /* 0x04 */ eGLViewSort sortMode;
+
+private:
     /* 0x08 */ unsigned long uDepthInsertNumber;
     /* 0x0C */ GLTexturePacketTree* texPacketTree[7];
     /* 0x28 */ GLDepthPacketTree* depthPacketTree;

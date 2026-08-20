@@ -115,6 +115,8 @@ public:
     /* 0x44 */ unsigned long m_LastUserStateKey;
     /* 0x48 */ unsigned long m_LastMaterialSet;
 
+    glModelStream* GetLastStreams() const { return m_LastStreams; }
+
     void ListCallback(const glModelPacket**);
     void DepthCallback(const DepthPacketPair&, unsigned int*);
     void TexCallback(const glModelPacket* const&, unsigned int*);
@@ -180,25 +182,24 @@ typedef WalkHelper<const glModelPacket*, DLListEntry<const glModelPacket*>, Pack
 typedef void (GLRenderPacketWalkHelper::*GLRenderPacketWalkCallback)(DLListEntry<const glModelPacket*>*);
 typedef void (PacketCallbackManager::*GLRenderPacketListCallback)(const glModelPacket**);
 
-/**
- * Dead in retail: MarioSoccerZ.MAP lists this body as UNUSED (0x50 bytes) and its
- * dwarf.txt DIE is Erased, so nothing referenced it. DoCallback compares the streams
- * itself. Keep the definition: the dead body is part of the object's .text layout.
- */
 static unsigned char StreamsDiffer(const glModelPacket* packet, unsigned long num_prev, const glModelStream* prev)
 {
-    int num = packet->numStreams;
-    if (num_prev != num)
+    if (num_prev != packet->numStreams)
     {
         return 1;
     }
 
-    for (int i = 0; i < num; i++)
+    const glModelStream* cur = packet->streams;
+    const glModelStream* last = prev;
+
+    for (int i = 0; i < packet->numStreams; i++)
     {
-        if (packet->streams[i].address != prev[i].address)
+        if (cur->address != last->address)
         {
             return 1;
         }
+        last++;
+        cur++;
     }
 
     return 0;
@@ -278,7 +279,7 @@ void GLRenderList::Compact()
  */
 bool GLRenderList::IsEmpty() const
 {
-    if (m_unk_0x04 == GLVSort_Texture)
+    if (sortMode == GLVSort_Texture)
     {
         for (int layer = 0; layer < 7; layer++)
         {
@@ -289,7 +290,7 @@ bool GLRenderList::IsEmpty() const
         }
         return true;
     }
-    if (m_unk_0x04 == GLVSort_TransformedDepth || m_unk_0x04 == GLVSort_TransformedMatrixDepth)
+    if (sortMode == GLVSort_TransformedDepth || sortMode == GLVSort_TransformedMatrixDepth)
     {
         return depthPacketTree->m_Root == NULL;
     }
@@ -368,37 +369,9 @@ void PacketCallbackManager::DoCallback(const glModelPacket* p, unsigned int coun
         }
     }
 
-    glModelStream* lastStreams = m_LastStreams;
-    glModelStream* streams;
-    int numStreams;
-    unsigned char streamsChanged;
-
-    if (m_LastNumStreams != (numStreams = p->numStreams))
+    if (StreamsDiffer(p, m_LastNumStreams, GetLastStreams()))
     {
-        streamsChanged = 1;
-    }
-    else
-    {
-        streams = p->streams;
-
-        for (int i = numStreams; i > 0; i--)
-        {
-            if (streams->address != lastStreams->address)
-            {
-                streamsChanged = 1;
-                goto stream_compare_done;
-            }
-            lastStreams++;
-            streams++;
-        }
-
-        streamsChanged = 0;
-    }
-
-stream_compare_done:
-    if (streamsChanged)
-    {
-        m_LastNumStreams = numStreams;
+        m_LastNumStreams = p->numStreams;
         m_LastStreams = p->streams;
         flags |= glv_StreamsChanged;
     }
@@ -470,7 +443,7 @@ void GLRenderList::Iterate(eGLView view, void (*cb)(eGLView, unsigned long, cons
     pkCallback.m_LastTexture[4] = (unsigned long)-1;
     pkCallback.m_LastTexture[5] = (unsigned long)-1;
 
-    if (m_unk_0x04 == GLVSort_Texture)
+    if (sortMode == GLVSort_Texture)
     {
         for (int layer = 0; layer < 7; layer++)
         {
@@ -482,7 +455,7 @@ void GLRenderList::Iterate(eGLView view, void (*cb)(eGLView, unsigned long, cons
             }
         }
     }
-    else if (m_unk_0x04 == GLVSort_TransformedDepth || m_unk_0x04 == GLVSort_TransformedMatrixDepth)
+    else if (sortMode == GLVSort_TransformedDepth || sortMode == GLVSort_TransformedMatrixDepth)
     {
         if (depthPacketTree->m_Root != NULL)
         {
@@ -491,7 +464,7 @@ void GLRenderList::Iterate(eGLView view, void (*cb)(eGLView, unsigned long, cons
             depthPacketTree->Walk(&pkCallback, depthCb);
         }
     }
-    else if (m_unk_0x04 == GLVSort_Reverse)
+    else if (sortMode == GLVSort_Reverse)
     {
         if (packetList->m_Head != NULL)
         {
@@ -524,14 +497,13 @@ void GLRenderList::AttachPacket(unsigned long layer, const glModelPacket* pPacke
 {
     const glModelPacket* pKey = pPacket;
 
-    if ((s32)m_unk_0x00 < 0x1A && glRenderBuffer.m_bEnabled && glRenderBuffer.m_bExclusive && !glRenderBuffer.m_bSending)
+    if (view < GLV_FrontEnd && glRenderBuffer.m_bEnabled && glRenderBuffer.m_bExclusive && !glRenderBuffer.m_bSending)
     {
         return;
     }
 
     GLTexturePacketTree* pTree = texPacketTree[layer];
-    const unsigned int& one = 1;
-    unsigned int* pCount = pTree->Add(pKey, one);
+    unsigned int* pCount = pTree->Add(pKey, 1);
 
     if (pCount != NULL)
     {
@@ -545,27 +517,13 @@ void GLRenderList::AttachPacket(unsigned long layer, const glModelPacket* pPacke
 void gl_ViewAttachPacket(eGLView view, unsigned long layer, const glModelPacket* pPacket)
 {
     GLRenderList* pList = gl_ViewGetRenderList(view);
-    const glModelPacket* pKey = pPacket;
-
-    if ((s32)pList->m_unk_0x00 < 0x1A && glRenderBuffer.m_bEnabled && glRenderBuffer.m_bExclusive && !glRenderBuffer.m_bSending)
-    {
-        return;
-    }
-
-    GLTexturePacketTree* pTree = pList->texPacketTree[layer];
-    const unsigned int& one = 1;
-    unsigned int* pCount = pTree->Add(pKey, one);
-
-    if (pCount != NULL)
-    {
-        (*pCount)++;
-    }
+    pList->AttachPacket(layer, pPacket);
 }
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D92C0 | size: 0x36C
  */
-s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
+bool GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
 {
     unsigned long index;
     glModelPacket* pPacket;
@@ -573,39 +531,39 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
     DepthPacketPair pair;
     nlMatrix4 m;
 
-    if ((s32)m_unk_0x00 < 0x1A && glRenderBuffer.m_bEnabled && glRenderBuffer.m_bExclusive && !glRenderBuffer.m_bSending)
+    if (view < GLV_FrontEnd && glRenderBuffer.m_bEnabled && glRenderBuffer.m_bExclusive && !glRenderBuffer.m_bSending)
     {
-        return 1;
+        return true;
     }
 
     pPacket = pModel->packets;
 
-    if (m_unk_0x04 == GLVSort_Texture)
+    if (sortMode == GLVSort_Texture)
     {
         if ((s32)gl_ModifyGetNum() > 0)
         {
-            for (index = 0; index < pModel->numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
+            for (index = 0; index < pModel->numPackets; index++, pPacket++)
             {
                 newPacket = gl_Modify(pPacket);
-                glplatAttachPacket((eGLView)m_unk_0x00, layer, newPacket == NULL ? pPacket : newPacket);
+                glplatAttachPacket(view, layer, newPacket == NULL ? pPacket : newPacket);
             }
         }
         else
         {
-            for (index = 0; index < pModel->numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
+            for (index = 0; index < pModel->numPackets; index++, pPacket++)
             {
-                glplatAttachPacket((eGLView)m_unk_0x00, layer, pPacket);
+                glplatAttachPacket(view, layer, pPacket);
             }
         }
     }
-    else if (m_unk_0x04 == GLVSort_TransformedDepth || m_unk_0x04 == GLVSort_TransformedMatrixDepth)
+    else if (sortMode == GLVSort_TransformedDepth || sortMode == GLVSort_TransformedMatrixDepth)
     {
         glGetIdentityMatrix();
-        glGetMatrix((unsigned long)glViewGetViewMatrix((eGLView)m_unk_0x00), m);
-        for (index = 0; index < pModel->numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
+        glGetMatrix((unsigned long)glViewGetViewMatrix(view), m);
+        for (index = 0; index < pModel->numPackets; index++, pPacket++)
         {
             pair.packet = pPacket;
-            if (m_unk_0x04 == GLVSort_TransformedMatrixDepth)
+            if (sortMode == GLVSort_TransformedMatrixDepth)
             {
                 pair.sortKey = PackMatrixDepth(pPacket, m, uDepthInsertNumber);
                 uDepthInsertNumber++;
@@ -622,22 +580,22 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
             }
         }
     }
-    else if (m_unk_0x04 == GLVSort_Reverse)
+    else if (sortMode == GLVSort_Reverse)
     {
-        for (index = 0; index < pModel->numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
+        for (index = 0; index < pModel->numPackets; index++, pPacket++)
         {
-            glModelPacket* modified = glplatModifyPacket((eGLView)m_unk_0x00, pPacket);
+            glModelPacket* modified = glplatModifyPacket(view, pPacket);
             packetList->AddStart(modified);
         }
     }
-    else if (m_unk_0x04 == GLVSort_None)
+    else if (sortMode == GLVSort_None)
     {
-        for (index = 0; index < pModel->numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
+        for (index = 0; index < pModel->numPackets; index++, pPacket++)
         {
-            glModelPacket* modified = glplatModifyPacket((eGLView)m_unk_0x00, pPacket);
+            glModelPacket* modified = glplatModifyPacket(view, pPacket);
             packetList->AddEnd(modified);
         }
     }
 
-    return 1;
+    return true;
 }

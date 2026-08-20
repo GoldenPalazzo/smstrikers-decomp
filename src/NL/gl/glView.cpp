@@ -150,7 +150,7 @@ eGLViewSort glViewSetSortMode(eGLView view, eGLViewSort sort)
     glView* v = views[view];
     eGLViewSort prev = v->sortMode;
     v->sortMode = sort;
-    v->renderList->m_unk_0x04 = sort;
+    v->renderList->sortMode = sort;
     return prev;
 }
 
@@ -212,7 +212,7 @@ void gl_ViewStartup()
         pView = views[view];
         pView->sortMode = GLVSort_Texture;
         renderList = pView->renderList;
-        renderList->m_unk_0x04 = GLVSort_Texture;
+        renderList->sortMode = GLVSort_Texture;
 
         pView = views[view];
         pView->viewMatrix = (nlMatrix4*)identity;
@@ -242,7 +242,7 @@ void gl_ViewStartup()
         pView = views[view];
         pView->bClearDepth = FALSE;
 
-        views[i]->renderList->m_unk_0x00 = i;
+        views[i]->renderList->view = (eGLView)i;
     }
 }
 
