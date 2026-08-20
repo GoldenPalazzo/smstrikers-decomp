@@ -51,14 +51,12 @@
 #include "NL/nlConfig.h"
 #include "types.h"
 
-// Define the scene entry struct
 struct SceneEntry
 {
     u32 sceneId;
     const char* sceneName;
 };
 
-// Declare the array of scene entries
 struct SceneEntry SceneEntryTable[] = {
     { 0x00, "art/fe/background.fen" },
     { 0x01, "art/fe/mariobg.fen" },
@@ -126,7 +124,7 @@ struct SceneEntry SceneEntryTable[] = {
     { 0x3F, "art/fe/lesson.fen" },
     { 0x40, "art/fe/strikers_101_lessons_v3.fen" },
     { 0x41, "art/fe/lessonmovieplayer.fen" },
-    { 0x42, NULL }, // 0x00000000 indicates NULL pointer
+    { 0x42, NULL },
     { 0x43, "art/fe/hud.fen" },
     { 0x44, "art/fe/ingame_text.fen" },
     { 0x45, "art/fe/popup_menu.fen" },
@@ -139,7 +137,7 @@ struct SceneEntry SceneEntryTable[] = {
     { 0x4C, "art/fe/igticker.fen" },
     { 0x4D, "art/fe/x2_sts.fen" },
     { 0x4E, "art/fe/loading_screen.fen" },
-    { 0x4F, NULL } // 0x00000000 indicates NULL pointer
+    { 0x4F, NULL }
 };
 
 /**
@@ -217,246 +215,246 @@ BaseSceneHandler* BaseGameSceneManager::Push(SceneList newscene, ScreenMovement 
     switch (newscene)
     {
     case SCENE_FRIENDLY_BACKGROUND:
-        newHandler = new (nlMalloc(0x24, 8, false)) BackgroundScene();
+        newHandler = new (nlMalloc(sizeof(BackgroundScene), 8, false)) BackgroundScene();
         break;
     case SCENE_MARIO_BACKGROUND:
-        newHandler = new (nlMalloc(0x24, 8, false)) BackgroundScene();
+        newHandler = new (nlMalloc(sizeof(BackgroundScene), 8, false)) BackgroundScene();
         break;
     case SCENE_TITLE:
-        newHandler = new (nlMalloc(0x28, 8, false)) TitleScene();
+        newHandler = new (nlMalloc(sizeof(TitleScene), 8, false)) TitleScene();
         break;
     case SCENE_MAIN_MENU:
-        newHandler = new (nlMalloc(0x25C, 8, false)) SHMainMenu();
+        newHandler = new (nlMalloc(sizeof(SHMainMenu), 8, false)) SHMainMenu();
         break;
     case SCENE_CHOOSE_SIDES_FRIENDLY:
-        newHandler = new (nlMalloc(0x110, 8, false)) SHChooseSides2((SHChooseSides2::eCSContext)0);
+        newHandler = new (nlMalloc(sizeof(SHChooseSides2), 8, false)) SHChooseSides2((SHChooseSides2::eCSContext)0);
         break;
     case SCENE_CHOOSE_SIDES_CUP:
-        newHandler = new (nlMalloc(0x110, 8, false)) SHChooseSides2((SHChooseSides2::eCSContext)1);
+        newHandler = new (nlMalloc(sizeof(SHChooseSides2), 8, false)) SHChooseSides2((SHChooseSides2::eCSContext)1);
         break;
     case SCENE_CHOOSE_SIDES_SUPER_CUP:
-        newHandler = new (nlMalloc(0x110, 8, false)) SHChooseSides2((SHChooseSides2::eCSContext)2);
+        newHandler = new (nlMalloc(sizeof(SHChooseSides2), 8, false)) SHChooseSides2((SHChooseSides2::eCSContext)2);
         break;
     case SCENE_CHOOSE_SIDES_TOURNAMENT:
-        newHandler = new (nlMalloc(0x110, 8, false)) SHChooseSides2((SHChooseSides2::eCSContext)3);
+        newHandler = new (nlMalloc(sizeof(SHChooseSides2), 8, false)) SHChooseSides2((SHChooseSides2::eCSContext)3);
         break;
     case SCENE_CHOOSE_CAPTAINS:
-        newHandler = new (nlMalloc(0x1C0, 8, false)) ChooseCaptainsSceneV2((ChooseCaptainsSceneV2::SceneType)0);
+        newHandler = new (nlMalloc(sizeof(ChooseCaptainsSceneV2), 8, false)) ChooseCaptainsSceneV2((ChooseCaptainsSceneV2::SceneType)0);
         break;
     case SCENE_STADIUM_SELECT:
-        newHandler = new (nlMalloc(0x49C, 8, false)) StadiumSelectSceneV2();
+        newHandler = new (nlMalloc(sizeof(StadiumSelectSceneV2), 8, false)) StadiumSelectSceneV2();
         break;
     case SCENE_CUP_CHEATER:
-        newHandler = new (nlMalloc(0x98, 8, false)) CupCheaterScene();
+        newHandler = new (nlMalloc(sizeof(CupCheaterScene), 8, false)) CupCheaterScene();
         break;
     case SCENE_CUP_BACKGROUND:
-        newHandler = new (nlMalloc(0x24, 8, false)) BackgroundScene();
+        newHandler = new (nlMalloc(sizeof(BackgroundScene), 8, false)) BackgroundScene();
         break;
     case SCENE_SUPER_CUP_BACKGROUND:
-        newHandler = new (nlMalloc(0x24, 8, false)) BackgroundScene();
+        newHandler = new (nlMalloc(sizeof(BackgroundScene), 8, false)) BackgroundScene();
         break;
     case SCENE_CUP_CHOOSE_CUP:
-        newHandler = new (nlMalloc(0x484, 8, false)) ChooseCupSceneV2(false);
+        newHandler = new (nlMalloc(sizeof(ChooseCupSceneV2), 8, false)) ChooseCupSceneV2(false);
         break;
     case SCENE_SUPER_CUP_CHOOSE_CUP:
-        newHandler = new (nlMalloc(0x484, 8, false)) ChooseCupSceneV2(true);
+        newHandler = new (nlMalloc(sizeof(ChooseCupSceneV2), 8, false)) ChooseCupSceneV2(true);
         break;
     case SCENE_CUP_CHOOSE_CAPTAIN:
-        newHandler = new (nlMalloc(0xA0, 8, false)) CupChooseCaptainSceneV2(false);
+        newHandler = new (nlMalloc(sizeof(CupChooseCaptainSceneV2), 8, false)) CupChooseCaptainSceneV2(false);
         break;
     case SCENE_SUPER_CUP_CHOOSE_CAPTAIN:
-        newHandler = new (nlMalloc(0xA0, 8, false)) CupChooseCaptainSceneV2(true);
+        newHandler = new (nlMalloc(sizeof(CupChooseCaptainSceneV2), 8, false)) CupChooseCaptainSceneV2(true);
         break;
     case SCENE_CUP_STANDINGS:
-        newHandler = new (nlMalloc(0x1260, 8, false)) CupHubScene(false, false);
+        newHandler = new (nlMalloc(sizeof(CupHubScene), 8, false)) CupHubScene(false, false);
         break;
     case SCENE_CUP_STANDINGS_ANIM:
-        newHandler = new (nlMalloc(0x1260, 8, false)) CupHubScene(true, false);
+        newHandler = new (nlMalloc(sizeof(CupHubScene), 8, false)) CupHubScene(true, false);
         break;
     case SCENE_CUP_STANDINGS_FINAL_ANIM:
-        newHandler = new (nlMalloc(0x1260, 8, false)) CupHubScene(false, true);
+        newHandler = new (nlMalloc(sizeof(CupHubScene), 8, false)) CupHubScene(false, true);
         break;
     case SCENE_SUPER_CUP_STANDINGS:
-        newHandler = new (nlMalloc(0x1260, 8, false)) CupHubScene(false, false);
+        newHandler = new (nlMalloc(sizeof(CupHubScene), 8, false)) CupHubScene(false, false);
         break;
     case SCENE_SUPER_CUP_STANDINGS_ANIM:
-        newHandler = new (nlMalloc(0x1260, 8, false)) CupHubScene(true, false);
+        newHandler = new (nlMalloc(sizeof(CupHubScene), 8, false)) CupHubScene(true, false);
         break;
     case SCENE_SUPER_CUP_STANDINGS_FINAL_ANIM:
-        newHandler = new (nlMalloc(0x1260, 8, false)) CupHubScene(false, true);
+        newHandler = new (nlMalloc(sizeof(CupHubScene), 8, false)) CupHubScene(false, true);
         break;
     case SCENE_TOURNAMENT_STANDINGS:
-        newHandler = new (nlMalloc(0x1260, 8, false)) CupHubScene(false, false);
+        newHandler = new (nlMalloc(sizeof(CupHubScene), 8, false)) CupHubScene(false, false);
         break;
     case SCENE_TOURNAMENT_STANDINGS_ANIM:
-        newHandler = new (nlMalloc(0x1260, 8, false)) CupHubScene(true, false);
+        newHandler = new (nlMalloc(sizeof(CupHubScene), 8, false)) CupHubScene(true, false);
         break;
     case SCENE_TOURNAMENT_STANDINGS_FINAL_ANIM:
-        newHandler = new (nlMalloc(0x1260, 8, false)) CupHubScene(false, true);
+        newHandler = new (nlMalloc(sizeof(CupHubScene), 8, false)) CupHubScene(false, true);
         break;
     case SCENE_CUP_SUPER_TEAM:
-        newHandler = new (nlMalloc(0x40, 8, false)) SuperTeamScene();
+        newHandler = new (nlMalloc(sizeof(SuperTeamScene), 8, false)) SuperTeamScene();
         break;
     case SCENE_POPUP_MENU:
-        newHandler = new (nlMalloc(0xAA8, 8, false)) FEPopupMenu();
+        newHandler = new (nlMalloc(sizeof(FEPopupMenu), 8, false)) FEPopupMenu();
         break;
     case SCENE_TROPHY_ROOM:
-        newHandler = new (nlMalloc(0x254, 8, false)) SpoilsScene();
+        newHandler = new (nlMalloc(sizeof(SpoilsScene), 8, false)) SpoilsScene();
         break;
     case SCENE_SCROLLING_TICKER:
     {
-        ScrollingTickerScene* ticker = new (nlMalloc(0xCC, 8, false)) ScrollingTickerScene();
+        ScrollingTickerScene* ticker = new (nlMalloc(sizeof(ScrollingTickerScene), 8, false)) ScrollingTickerScene();
         newHandler = ticker;
         break;
     }
     case SCENE_MAIN_BACKGROUND:
-        newHandler = new (nlMalloc(0x24, 8, false)) BackgroundScene();
+        newHandler = new (nlMalloc(sizeof(BackgroundScene), 8, false)) BackgroundScene();
         break;
     case SCENE_SAVE:
-        newHandler = new (nlMalloc(0x34, 8, false)) SaveLoadScene((SaveLoadScene::eSaveLoadMode)1);
+        newHandler = new (nlMalloc(sizeof(SaveLoadScene), 8, false)) SaveLoadScene((SaveLoadScene::eSaveLoadMode)1);
         break;
     case SCENE_LOAD:
-        newHandler = new (nlMalloc(0x34, 8, false)) SaveLoadScene((SaveLoadScene::eSaveLoadMode)3);
+        newHandler = new (nlMalloc(sizeof(SaveLoadScene), 8, false)) SaveLoadScene((SaveLoadScene::eSaveLoadMode)3);
         break;
     case SCENE_ASK_SAVE:
-        newHandler = new (nlMalloc(0x34, 8, false)) SaveLoadScene((SaveLoadScene::eSaveLoadMode)2);
+        newHandler = new (nlMalloc(sizeof(SaveLoadScene), 8, false)) SaveLoadScene((SaveLoadScene::eSaveLoadMode)2);
         break;
     case SCENE_ASK_LOAD:
-        newHandler = new (nlMalloc(0x34, 8, false)) SaveLoadScene((SaveLoadScene::eSaveLoadMode)4);
+        newHandler = new (nlMalloc(sizeof(SaveLoadScene), 8, false)) SaveLoadScene((SaveLoadScene::eSaveLoadMode)4);
         break;
     case SCENE_SHOULD_LOAD_OR_SAVE:
-        newHandler = new (nlMalloc(0x34, 8, false)) SaveLoadScene((SaveLoadScene::eSaveLoadMode)0);
+        newHandler = new (nlMalloc(sizeof(SaveLoadScene), 8, false)) SaveLoadScene((SaveLoadScene::eSaveLoadMode)0);
         break;
     case SCENE_TOURN_SETPARAMS:
-        newHandler = new (nlMalloc(0x26C, 8, false)) TournSetParamsScene();
+        newHandler = new (nlMalloc(sizeof(TournSetParamsScene), 8, false)) TournSetParamsScene();
         break;
     case SCENE_TOURN_SETTEAMS:
-        newHandler = new (nlMalloc(0x338, 8, false)) TournTeamSetupSceneV2();
+        newHandler = new (nlMalloc(sizeof(TournTeamSetupSceneV2), 8, false)) TournTeamSetupSceneV2();
         break;
     case SCENE_OPTIONS:
-        newHandler = new (nlMalloc(0x260, 8, false)) OptionsScene();
+        newHandler = new (nlMalloc(sizeof(OptionsScene), 8, false)) OptionsScene();
         break;
     case SCENE_LEGAL:
-        newHandler = new (nlMalloc(0x3C, 8, false)) CrossFaderScene();
+        newHandler = new (nlMalloc(sizeof(CrossFaderScene), 8, false)) CrossFaderScene();
         break;
     case SCENE_CUP_OPTIONS_INITIAL_CUP:
-        newHandler = new (nlMalloc(0x28, 8, false)) CupOptionsScene(SCENE_CUP_CHOOSE_CAPTAIN, SCENE_CUP_CHOOSE_CUP);
+        newHandler = new (nlMalloc(sizeof(CupOptionsScene), 8, false)) CupOptionsScene(SCENE_CUP_CHOOSE_CAPTAIN, SCENE_CUP_CHOOSE_CUP);
         break;
     case SCENE_CUP_OPTIONS_INITIAL_SUPER:
-        newHandler = new (nlMalloc(0x28, 8, false)) CupOptionsScene(SCENE_SUPER_CUP_CHOOSE_CAPTAIN, SCENE_SUPER_CUP_CHOOSE_CUP);
+        newHandler = new (nlMalloc(sizeof(CupOptionsScene), 8, false)) CupOptionsScene(SCENE_SUPER_CUP_CHOOSE_CAPTAIN, SCENE_SUPER_CUP_CHOOSE_CUP);
         break;
     case SCENE_CUP_OPTIONS_INITIAL_TOURN:
-        newHandler = new (nlMalloc(0x28, 8, false)) CupOptionsScene(SCENE_TOURN_SETTEAMS, SCENE_TOURN_SETPARAMS);
+        newHandler = new (nlMalloc(sizeof(CupOptionsScene), 8, false)) CupOptionsScene(SCENE_TOURN_SETTEAMS, SCENE_TOURN_SETPARAMS);
         break;
     case SCENE_SUPER_LOADING:
-        newHandler = new (nlMalloc(0x634, 8, false)) SuperLoadingScene();
+        newHandler = new (nlMalloc(sizeof(SuperLoadingScene), 8, false)) SuperLoadingScene();
         break;
     case SCENE_CUP_TROPHY:
-        newHandler = new (nlMalloc(0x788, 8, false)) CupTrophyScene();
+        newHandler = new (nlMalloc(sizeof(CupTrophyScene), 8, false)) CupTrophyScene();
         break;
     case SCENE_MILESTONE_TROPHY:
-        newHandler = new (nlMalloc(0x378, 8, false)) MilestoneTrophyScene();
+        newHandler = new (nlMalloc(sizeof(MilestoneTrophyScene), 8, false)) MilestoneTrophyScene();
         break;
     case SCENE_CUP_BRAG:
-        newHandler = new (nlMalloc(0x1644, 8, false)) BraggingRightsScene();
+        newHandler = new (nlMalloc(sizeof(BraggingRightsScene), 8, false)) BraggingRightsScene();
         break;
     case SCENE_TOURNEY_BRAG:
-        newHandler = new (nlMalloc(0x484, 8, false)) BraggingRightsOverlay();
+        newHandler = new (nlMalloc(sizeof(BraggingRightsOverlay), 8, false)) BraggingRightsOverlay();
         break;
     case SCENE_MOVIE_PLAYER:
-        newHandler = new (nlMalloc(0xB0, 8, false)) MoviePlayerScene();
+        newHandler = new (nlMalloc(sizeof(MoviePlayerScene), 8, false)) MoviePlayerScene();
         break;
     case SCENE_QUICK_GAMEPLAY_OPTIONS:
-        newHandler = new (nlMalloc(0x20, 8, false)) QuickGameplayOptionsScene();
+        newHandler = new (nlMalloc(sizeof(QuickGameplayOptionsScene), 8, false)) QuickGameplayOptionsScene();
         break;
     case SCENE_LOADING_TRANSITION:
-        newHandler = new (nlMalloc(0x1C, 8, false)) LoadingTransitionScene();
+        newHandler = new (nlMalloc(sizeof(LoadingTransitionScene), 8, false)) LoadingTransitionScene();
         break;
     case SCENE_HEALTH_WARNING:
-        newHandler = new (nlMalloc(0x2C, 8, false)) HealthWarningSceneV2();
+        newHandler = new (nlMalloc(sizeof(HealthWarningSceneV2), 8, false)) HealthWarningSceneV2();
         break;
     case SCENE_NLG_MOVIE:
-        newHandler = new (nlMalloc(0xB0, 8, false)) NLGLogoMovieScene();
+        newHandler = new (nlMalloc(sizeof(NLGLogoMovieScene), 8, false)) NLGLogoMovieScene();
         break;
     case SCENE_INTRO_MOVIE:
-        newHandler = new (nlMalloc(0xB0, 8, false)) IntroMovieScene();
+        newHandler = new (nlMalloc(sizeof(IntroMovieScene), 8, false)) IntroMovieScene();
         break;
     case SCENE_CREDITS:
-        newHandler = new (nlMalloc(0xA78, 8, false)) CreditScene();
+        newHandler = new (nlMalloc(sizeof(CreditScene), 8, false)) CreditScene();
         break;
     case SCENE_PROGRESSIVE_SCAN:
-        newHandler = new (nlMalloc(0x38, 8, false)) ProgressiveScanScene(false);
+        newHandler = new (nlMalloc(sizeof(ProgressiveScanScene), 8, false)) ProgressiveScanScene(false);
         break;
     case SCENE_EURO_RGB60:
-        newHandler = new (nlMalloc(0x38, 8, false)) ProgressiveScanScene(true);
+        newHandler = new (nlMalloc(sizeof(ProgressiveScanScene), 8, false)) ProgressiveScanScene(true);
         break;
     case IGSCENE_PAUSE:
-        newHandler = new (nlMalloc(0x290, 8, false)) PauseMenuScene((PauseMenuScene::ScreenContext)0);
+        newHandler = new (nlMalloc(sizeof(PauseMenuScene), 8, false)) PauseMenuScene((PauseMenuScene::ScreenContext)0);
         break;
     case IGSCENE_CHOOSE_SIDES:
-        newHandler = new (nlMalloc(0x110, 8, false)) SHChooseSides2((SHChooseSides2::eCSContext)4);
+        newHandler = new (nlMalloc(sizeof(SHChooseSides2), 8, false)) SHChooseSides2((SHChooseSides2::eCSContext)4);
         break;
     case IGSCENE_PAUSE_AUDIO:
-        newHandler = new (nlMalloc(0x34, 8, false)) PauseOptionsScene((PauseOptionsScene::Mode)0);
+        newHandler = new (nlMalloc(sizeof(PauseOptionsScene), 8, false)) PauseOptionsScene((PauseOptionsScene::Mode)0);
         break;
     case IGSCENE_PAUSE_VISUAL:
-        newHandler = new (nlMalloc(0x34, 8, false)) PauseOptionsScene((PauseOptionsScene::Mode)1);
+        newHandler = new (nlMalloc(sizeof(PauseOptionsScene), 8, false)) PauseOptionsScene((PauseOptionsScene::Mode)1);
         break;
     case IGSCENE_PAUSE_POST_GAME:
-        newHandler = new (nlMalloc(0x374, 8, false)) PausePostGameScene();
+        newHandler = new (nlMalloc(sizeof(PausePostGameScene), 8, false)) PausePostGameScene();
         break;
     case IGSCENE_STRIKERS_101_PAUSE:
-        newHandler = new (nlMalloc(0x290, 8, false)) PauseMenuScene((PauseMenuScene::ScreenContext)1);
+        newHandler = new (nlMalloc(sizeof(PauseMenuScene), 8, false)) PauseMenuScene((PauseMenuScene::ScreenContext)1);
         break;
     case IGSCENE_LESSON:
-        newHandler = new (nlMalloc(0x48, 8, false)) LessonScene();
+        newHandler = new (nlMalloc(sizeof(LessonScene), 8, false)) LessonScene();
         break;
     case IGSCENE_LESSON_SELECT:
-        newHandler = new (nlMalloc(0x2E0, 8, false)) LessonSelectScene();
+        newHandler = new (nlMalloc(sizeof(LessonSelectScene), 8, false)) LessonSelectScene();
         break;
     case IGSCENE_LESSON_MOVIE_PLAYER:
-        newHandler = new (nlMalloc(0xD4, 8, false)) LessonMoviePlayerScene();
+        newHandler = new (nlMalloc(sizeof(LessonMoviePlayerScene), 8, false)) LessonMoviePlayerScene();
         break;
     case OVERLAY_START:
         break;
     case OVERLAY_HUD:
-        newHandler = new (nlMalloc(0x1E0, 8, false)) HUDOverlay();
+        newHandler = new (nlMalloc(sizeof(HUDOverlay), 8, false)) HUDOverlay();
         break;
     case OVERLAY_TEXT:
-        newHandler = new (nlMalloc(0xB0, 8, false)) InGameTextOverlay();
+        newHandler = new (nlMalloc(sizeof(InGameTextOverlay), 8, false)) InGameTextOverlay();
         break;
     case OVERLAY_POPUP:
-        newHandler = new (nlMalloc(0xAA8, 8, false)) FEPopupMenu();
+        newHandler = new (nlMalloc(sizeof(FEPopupMenu), 8, false)) FEPopupMenu();
         break;
     case OVERLAY_SUMMARY:
-        newHandler = new (nlMalloc(0xC64, 8, false)) SummaryOverlay((SummaryOverlay::eSummaryContext)0);
+        newHandler = new (nlMalloc(sizeof(SummaryOverlay), 8, false)) SummaryOverlay((SummaryOverlay::eSummaryContext)0);
         break;
     case OVERLAY_SUMMARY_PAUSE:
-        newHandler = new (nlMalloc(0xC64, 8, false)) SummaryOverlay((SummaryOverlay::eSummaryContext)1);
+        newHandler = new (nlMalloc(sizeof(SummaryOverlay), 8, false)) SummaryOverlay((SummaryOverlay::eSummaryContext)1);
         break;
     case OVERLAY_GOAL:
-        newHandler = new (nlMalloc(0x280, 8, false)) GoalOverlay();
+        newHandler = new (nlMalloc(sizeof(GoalOverlay), 8, false)) GoalOverlay();
         break;
     case OVERLAY_BRAG:
-        newHandler = new (nlMalloc(0x484, 8, false)) BraggingRightsOverlay();
+        newHandler = new (nlMalloc(sizeof(BraggingRightsOverlay), 8, false)) BraggingRightsOverlay();
         break;
     case OVERLAY_DEMO:
-        newHandler = new (nlMalloc(0x28, 8, false)) DemoOverlay();
+        newHandler = new (nlMalloc(sizeof(DemoOverlay), 8, false)) DemoOverlay();
         break;
     case OVERLAY_WINNER:
-        newHandler = new (nlMalloc(0xC0, 8, false)) WinnerOverlay();
+        newHandler = new (nlMalloc(sizeof(WinnerOverlay), 8, false)) WinnerOverlay();
         break;
     case OVERLAY_LESSON_TICKER:
     {
-        NSNMessengerScene* nsn = new (nlMalloc(0x240, 8, false)) NSNMessengerScene();
+        NSNMessengerScene* nsn = new (nlMalloc(sizeof(NSNMessengerScene), 8, false)) NSNMessengerScene();
         newHandler = nsn;
         break;
     }
     case NUM_SCENES:
-        newHandler = new (nlMalloc(0x2C, 8, false)) STSX2Overlay();
+        newHandler = new (nlMalloc(sizeof(STSX2Overlay), 8, false)) STSX2Overlay();
         break;
     case 78:
-        newHandler = new (nlMalloc(0x1C, 8, false)) BaseSceneHandler();
+        newHandler = new (nlMalloc(sizeof(BaseSceneHandler), 8, false)) BaseSceneHandler();
         break;
     }
 
@@ -545,7 +543,6 @@ bool BaseGameSceneManager::GetVisible(SceneList sceneid)
  */
 int BaseGameSceneManager::GetSceneType(BaseSceneHandler* handler)
 {
-    // Iterate rows; when mHandlers[i] == handler, return mTypes[i], else -2. :contentReference[oaicite:10]{index=10}
     for (u32 i = 0; i < mCurrentStackDepth; ++i)
     {
         if (mBaseSceneHandlerStack[i] == handler)

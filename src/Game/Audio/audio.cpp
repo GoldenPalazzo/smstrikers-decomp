@@ -60,9 +60,9 @@ struct FadeAudioData
     float targetVol;          // offset 0x14, size 0x4
     union
     {
-        float floatVal;     // offset 0x0, size 0x4
-        float* floatPtrVal; // offset 0x0, size 0x4
-    } currentVol;           // offset 0x18, size 0x4
+        float floatVal;          // offset 0x0, size 0x4
+        float* floatPtrVal;      // offset 0x0, size 0x4
+    } currentVol;                // offset 0x18, size 0x4
     bool bShutDownAfterDuration; // offset 0x1C, size 0x1
     bool isEmitter;              // offset 0x1D, size 0x1
     bool bTurnFilterOn;          // offset 0x1E, size 0x1
@@ -107,7 +107,7 @@ namespace Audio
 {
 unsigned long uSFXVolume = 0x7F;
 bool gbStartingGame = true;
-}
+} // namespace Audio
 static void ReadVolGroupSettings();
 
 extern SoundPropAccessor* gpWORLDSoundPropAccessor;
@@ -1224,8 +1224,8 @@ bool InitializeReverb(eStadiumID stadiumID, unsigned char studio)
     Config config(Config::ALLOCATE_HIGH);
     config.LoadFromFile(AUDIO_DEFAULT_CONFIG_FILE);
 
-    memset(reverbStr, 0, 0x50);
-    memset(headerStr, 0, 0x50);
+    memset(reverbStr, 0, sizeof(reverbStr));
+    memset(headerStr, 0, sizeof(headerStr));
 
     if (stadiumID == STAD_INVALID)
     {
@@ -1590,6 +1590,11 @@ bool IsInited()
     return ::g_bAudioInitialized;
 }
 
+bool IsInGameLoaded()
+{
+    return ::g_bAudioInGameLoaded;
+}
+
 /**
  * Offset/Address/Size: 0x3258 | 0x8013F76C | size: 0x80
  */
@@ -1716,6 +1721,11 @@ void ResetForNewGame()
 void Silence()
 {
     PlatAudio::StopAllSound();
+}
+
+void SilenceIn(float fSeconds)
+{
+    gfSilenceTimer = g_fAudioTimer + fSeconds;
 }
 
 /**
@@ -1977,7 +1987,7 @@ unsigned long PlayWorldSFXbyStr(const char* szSFXType, float fVol, float fDelay,
 /**
  * Offset/Address/Size: 0x26DC | 0x8013EBF0 | size: 0x104
  */
-int PlayCharSFXbyStr(const char* szSFXType, NisCharacterClass charIdentifier, float fVol, float fDelay, bool bIs3D, bool bKeepTrack, const nlVector3* pInitialPosVector, const nlVector3* pInitialDirVector, unsigned long* unkPtr)
+int PlayCharSFXbyStr(const char* szSFXType, NisCharacterClass charIdentifier, float fVol, float fDelay, bool bIs3D, bool bKeepTrack, const nlVector3* pInitialPosVector, const nlVector3* pInitialDirVector, unsigned long* pType)
 {
     if (!::g_bAudioInitialized)
     {
@@ -1986,9 +1996,9 @@ int PlayCharSFXbyStr(const char* szSFXType, NisCharacterClass charIdentifier, fl
 
     unsigned long sfxType = AudioLoader::GetCharSFXTypeFromStr(szSFXType);
 
-    if (unkPtr != NULL)
+    if (pType != NULL)
     {
-        *unkPtr = sfxType;
+        *pType = sfxType;
     }
 
     if (g_pGame == NULL)
@@ -2332,7 +2342,6 @@ static inline void SetPitchBendOnAllDialogueSFXInl(unsigned short pitch)
 
 /**
  * Offset/Address/Size: 0x159C | 0x8013DAB0 | size: 0xA34
- * TODO: 99.53% match - remaining filter and pitch loop register differences.
  */
 void UpdateFades(float fDeltaT)
 {
@@ -2688,7 +2697,6 @@ static inline void Update3DSFXListenerPos()
 
 /**
  * Offset/Address/Size: 0x1340 | 0x8013D854 | size: 0x25C
- * TODO: 99.88% match - store order swap in PHYSOBJ velocity copy (stw r4/r0 at 0x13c/0x140)
  */
 void Update3DSFXEmitters()
 {
@@ -3031,9 +3039,6 @@ bool SetPitchBendOnSFX(unsigned long uVoiceID, unsigned short pitch)
     return PlatAudio::SetPitchBendOnSFX(uVoiceID, pitch);
 }
 
-/**
- * Offset/Address/Size: 0xDCC | 0x8013D2E0 | size: 0x8
- */
 void SetOutputMode(MusyXOutputType outputType)
 {
     PlatAudio::SetOutputMode(outputType);
@@ -3148,7 +3153,7 @@ static bool IsFadeDataInList(FadeType fadeType, unsigned long identifier, bool b
             }
             else if ((fadeType == FADE_TYPE_FILTER || fadeType == FADE_TYPE_FILTER_ALL
                          || fadeType == FADE_TYPE_VOLGROUP)
-                && pFadeData->targetVol == targetVol)
+                     && pFadeData->targetVol == targetVol)
             {
                 return true;
             }
@@ -3386,7 +3391,7 @@ static inline unsigned short ApplyDialoguePitchFromTweaks(cGame* pGame)
 {
     unsigned short pitchBend;
 
-    pitchBend = 8192.0f * pGame->m_pGameTweaks->unk220;
+    pitchBend = 8192.0f * pGame->m_pGameTweaks->fFadePitchMin;
     if (pitchBend > 0x3FFF)
     {
         pitchBend = 0x3FFF;
@@ -3457,7 +3462,7 @@ static inline void AddPitchBendFadeData(float currentVal, float fadeStepSize, fl
     newFade->targetVol = targetVal;
     newFade->currentVol.floatVal = currentVal;
 
-    if (targetVal == g_pGame->m_pGameTweaks->unk224)
+    if (targetVal == g_pGame->m_pGameTweaks->fFadePitchMax)
     {
         newFade->bPitchBendOn = false;
         newFade->bShutDownAfterDuration = true;
@@ -3475,7 +3480,7 @@ static inline void AddPitchBendFadeData(float currentVal, float fadeStepSize, fl
 /**
  * Offset/Address/Size: 0x474 | 0x8013C988 | size: 0x354
  */
-void PitchBend(float param1, float param2, float param3, float param4)
+void PitchBend(float currentVal, float fadeToVal, float fadeDuration, float fadeTimeStart)
 {
     TransitionTask* pTask = TransitionTask::sm_pGlobalTask;
     TRANSITION_STATE state;
@@ -3492,16 +3497,16 @@ void PitchBend(float param1, float param2, float param3, float param4)
         return;
     }
 
-    float diff = param2 - param1;
+    float diff = fadeToVal - currentVal;
     float fadePerFrame;
-    if (param3 <= 0.0f)
+    if (fadeDuration <= 0.0f)
     {
         fadePerFrame = diff;
-        if (0.0f != param4)
+        if (0.0f != fadeTimeStart)
         {
             goto createFade;
         }
-        if (1.0f == param2)
+        if (1.0f == fadeToVal)
         {
             if (!gbPitchBent)
             {
@@ -3534,10 +3539,10 @@ void PitchBend(float param1, float param2, float param3, float param4)
     }
     else
     {
-        fadePerFrame = diff / param3;
+        fadePerFrame = diff / fadeDuration;
     }
 createFade:
-    AddPitchBendFadeData(param1, fadePerFrame, param3, param2, param4);
+    AddPitchBendFadeData(currentVal, fadePerFrame, fadeDuration, fadeToVal, fadeTimeStart);
 }
 
 /**
@@ -3548,14 +3553,14 @@ void FadeFilterToFullStrength()
     if (!gbFilterOn)
     {
         GameTweaks* tweaks = g_pGame->m_pGameTweaks;
-        FadeFilter(tweaks->unk210, tweaks->unk214, tweaks->unk208, 0.0f);
+        FadeFilter(tweaks->fFadeFilterFreqMin, tweaks->fFadeFilterFreqMax, tweaks->fFadeFilterSlowMoInTime, 0.0f);
     }
 
     if (!gbPitchBent)
     {
         f32 t = (f32)gWorldSFX.muGroupPitch / 8192.0f;
         GameTweaks* tweaks = g_pGame->m_pGameTweaks;
-        PitchBend(t, tweaks->unk220, tweaks->unk208, 0.0f);
+        PitchBend(t, tweaks->fFadePitchMin, tweaks->fFadeFilterSlowMoInTime, 0.0f);
     }
 }
 
@@ -3587,7 +3592,7 @@ void FadeFilterFromCurrentToZero()
             }
         }
         GameTweaks* tweaks = g_pGame->m_pGameTweaks;
-        FadeFilter(t, tweaks->unk210, tweaks->unk20C, 0.0f);
+        FadeFilter(t, tweaks->fFadeFilterFreqMin, tweaks->fFadeFilterSlowMoOutTime, 0.0f);
     }
 
     if (gbPitchBent)
@@ -3611,7 +3616,7 @@ void FadeFilterFromCurrentToZero()
             }
         }
         GameTweaks* tweaks = g_pGame->m_pGameTweaks;
-        PitchBend(t, tweaks->unk224, tweaks->unk20C, 0.0f);
+        PitchBend(t, tweaks->fFadePitchMax, tweaks->fFadeFilterSlowMoOutTime, 0.0f);
     }
 }
 
@@ -3674,7 +3679,7 @@ static void AddFilterFadeData(float currentVal, float fadeStepSize, float fadeDu
     }
     else if (fadeType == FADE_TYPE_FILTER_ALL)
     {
-        if (targetVal == g_pGame->m_pGameTweaks->unk224)
+        if (targetVal == g_pGame->m_pGameTweaks->fFadePitchMax)
         {
             pFadeData->bPitchBendOn = false;
             pFadeData->bShutDownAfterDuration = true;
@@ -3692,7 +3697,6 @@ static void AddFilterFadeData(float currentVal, float fadeStepSize, float fadeDu
 
 /**
  * Offset/Address/Size: 0x22C | 0x8013C740 | size: 0x14
- * TODO: 97% match - register allocation (r3/r4 swap)
  */
 float MasterVolume::GetVolume(MasterVolume::VOLUME_GROUP group)
 {
@@ -3701,7 +3705,6 @@ float MasterVolume::GetVolume(MasterVolume::VOLUME_GROUP group)
 
 /**
  * Offset/Address/Size: 0x218 | 0x8013C72C | size: 0x14
- * TODO: 97% match - register allocation (r3/r4 swap)
  */
 void MasterVolume::SetVolume(MasterVolume::VOLUME_GROUP group, float volume)
 {
@@ -3740,31 +3743,19 @@ float MasterVolume::GetVoiceVolume()
     return gfVolumeGroups[3];
 }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80141234 | size: 0x8C
-//  */
 // void nlBSearch<nlSortedSlot<AudioStreamTrack::StreamTrack, 3>::EntryLookup<AudioStreamTrack::StreamTrack>, unsigned long>(const unsigned
 // long&, nlSortedSlot<AudioStreamTrack::StreamTrack, 3>::EntryLookup<AudioStreamTrack::StreamTrack>*, int)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801412C0 | size: 0x54
-//  */
 // void nlDeleteList<FadeAudioData>(FadeAudioData**)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x54 | 0x80141314 | size: 0x9C
-//  */
 // void nlListRemoveElement<FadeAudioData>(FadeAudioData**, FadeAudioData*, FadeAudioData**)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801413D8 | size: 0x3C
-//  */
 // void nlWalkDLRing<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>,
 // DLListContainerBase<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL,
 // BasicSlotPool<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>>>>(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*,
@@ -3773,9 +3764,6 @@ float MasterVolume::GetVoiceVolume()
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x3C | 0x80141414 | size: 0x3C
-//  */
 // void nlWalkDLRing<DLListEntry<GCAudioStreaming::StereoAudioStream*>, DLListContainerBase<GCAudioStreaming::StereoAudioStream*,
 // BasicSlotPool<DLListEntry<GCAudioStreaming::StereoAudioStream*>>>>(DLListEntry<GCAudioStreaming::StereoAudioStream*>*,
 // DLListContainerBase<GCAudioStreaming::StereoAudioStream*, BasicSlotPool<DLListEntry<GCAudioStreaming::StereoAudioStream*>>>*, void
@@ -3784,9 +3772,6 @@ float MasterVolume::GetVoiceVolume()
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x78 | 0x80141450 | size: 0x3C
-//  */
 // void nlWalkDLRing<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>,
 // DLListContainerBase<AudioStreamTrack::StreamTrack::QUEUED_STREAM,
 // nlStaticArrayAllocator<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>,
@@ -3798,9 +3783,6 @@ float MasterVolume::GetVoiceVolume()
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0xB4 | 0x8014148C | size: 0x3C
-//  */
 // void nlWalkDLRing<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>,
 // WalkHelper<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL,
 // DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>,
@@ -3813,37 +3795,21 @@ float MasterVolume::GetVoiceVolume()
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x110 | 0x801414E8 | size: 0x18
-//  */
 // void
 // nlDLRingGetStart<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>>(DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x128 | 0x80141500 | size: 0x18
-//  */
 // DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*
 // nlDLRingGetStart<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>>(
 //     DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x6B0 | 0x80141D74 | size: 0xF0
-//  */
 // void AudioStreamTrack::TrackManager<3>::Update(float)
 // {
 // }
 
-/**
- * Offset/Address/Size: 0x1F4 | 0x801418B8 | size: 0x204
- * TODO: 99.94% match - stream delete and fade cleanup pointer-to-member stack slots are swapped
- */
-// /**
-//  * Offset/Address/Size: 0x60 | 0x80142294 | size: 0x60
-//  */
 // void nlWalkRing<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>,
 // DLListContainerBase<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL,
 // BasicSlotPool<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>>>>(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*,
@@ -3854,9 +3820,6 @@ float MasterVolume::GetVoiceVolume()
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0xC0 | 0x801422F4 | size: 0x60
-//  */
 // void nlWalkRing<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>,
 // WalkHelper<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL,
 // DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>,

@@ -170,76 +170,6 @@ nlColour MenuHighliteColour = { 0xFF, 0xFF, 0xFF, 0xB2 };
 nlColour SubMenuHighliteColour = { 0xFF, 0xA8, 0x00, 0xFF };
 nlColour SubMenuUnhighliteColour = { 0xFF, 0xFF, 0xFF, 0xFF };
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800A6510 | size: 0x30
-//  */
-// void TakeGameMemSnapshot::LexicalCast<BasicString<char, Detail::TempStringAllocator>, unsigned long>(const unsigned long&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x164 | 0x800A4A28 | size: 0xD74
-//  */
-// void TakeGameMemSnapshot::FormatImpl<BasicString<char, Detail::TempStringAllocator>>::operator%<unsigned int>(const unsigned int&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x13C | 0x800A4A00 | size: 0x28
-//  */
-// void TakeGameMemSnapshot::FormatImpl<BasicString<char, Detail::TempStringAllocator>>::operator BasicString<char, Detail::TempStringAllocator>() const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800A48C4 | size: 0x13C
-//  */
-// void TakeGameMemSnapshot::Format<BasicString<char, Detail::TempStringAllocator>, unsigned long, unsigned int, unsigned int>(const BasicString<char, Detail::TempStringAllocator>&, const unsigned long&, const unsigned int&, const unsigned int&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800A4768 | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800A46E4 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800A46AC | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800A4550 | size: 0x15C
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800A44CC | size: 0x84
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800A4494 | size: 0x38
-//  */
-// void FEFinder<TLImageInstance, 2>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x1358 | 0x800A4414 | size: 0x80
  */
@@ -264,6 +194,11 @@ unsigned long GetStadiumStringID(eStadiumID stadiumID)
     default:
         return 0x094D126F;
     }
+}
+
+static unsigned long GetLOCCharacterName(eCharacterClass cc)
+{
+    return CCToStringName[cc];
 }
 
 /**
@@ -425,6 +360,18 @@ eCharacterClass ConvertToCharacterClass(eSidekickID sidekickID)
     default:
         return CHARACTER_CLASS_INVALID;
     }
+}
+
+static eTeamID ConvertToTeamID(eCharacterClass cc)
+{
+    for (int i = 0; i < 9; i++)
+    {
+        if (cc == TeamID2CharacterClassTable[i][1])
+        {
+            return (eTeamID)TeamID2CharacterClassTable[i][0];
+        }
+    }
+    return TEAM_INVALID;
 }
 
 /**
@@ -695,7 +642,7 @@ void EnableAutoPressed()
 /**
  * Offset/Address/Size: 0x700 | 0x800A37BC | size: 0x48
  */
-/* static */ const char* FECharacterSound::PlayCaptainName(eTeamID teamID)
+const char* FECharacterSound::PlayCaptainName(eTeamID teamID)
 {
     static char* CHARACTER_ACCEPT_SOUNDS[9] = {
         "sfx_accept_daisy",
@@ -716,7 +663,7 @@ void EnableAutoPressed()
 /**
  * Offset/Address/Size: 0x6CC | 0x800A3788 | size: 0x34
  */
-/* static */ void FECharacterSound::PlaySidekickName(eSidekickID sidekickID)
+void FECharacterSound::PlaySidekickName(eSidekickID sidekickID)
 {
     static char* SIDEKICK_SOUNDS[4] = {
         "sfx_accept_toad",
@@ -731,7 +678,7 @@ void EnableAutoPressed()
 /**
  * Offset/Address/Size: 0x698 | 0x800A3754 | size: 0x34
  */
-/* static */ void FECharacterSound::PlayCaptainSlideIn(eTeamID teamID)
+void FECharacterSound::PlayCaptainSlideIn(eTeamID teamID)
 {
     static char* CAPTAIN_SLIDE_SOUNDS[9] = {
         "sfx_focus_daisy",
@@ -746,6 +693,11 @@ void EnableAutoPressed()
     };
 
     FEAudio::PlayAnimAudioEvent(CAPTAIN_SLIDE_SOUNDS[teamID], false);
+}
+
+static unsigned long GetLargestFreeBlock()
+{
+    return StandardAllocator.LargestFreeBlock();
 }
 
 /**
@@ -808,7 +760,6 @@ void TakeGameMemSnapshot::WriteToDisk()
     fclose(pFile);
 
     pFile = fopen(filename, "at");
-    pFile = static_cast<FILE*>(pFile);
 
     BasicString<char, ::Detail::TempStringAllocator> data;
     data.AppendInPlace(NameTeamTable[GameInfoManager::GetInstance()->GetTeam(0)].mName);
@@ -839,7 +790,7 @@ void TakeGameMemSnapshot::WriteToDisk()
 
         largestFreeVM = nlVirtualLargestBlock();
         freeVM = nlVirtualTotalFree();
-        largestFree = StandardAllocator.LargestFreeBlock();
+        largestFree = GetLargestFreeBlock();
 
         stats = Format<BasicString<char, ::Detail::TempStringAllocator>, unsigned long, unsigned int, unsigned int>(fmt, largestFree, freeVM, largestFreeVM);
     }
@@ -870,7 +821,7 @@ const char* GetMemCardTitle()
 const char* GetMemCardDescription()
 {
     switch (g_Language)
-    { /* irregular */
+    {
     case LangEnglish:
         return "Save File";
     case LangFrench:
@@ -882,7 +833,7 @@ const char* GetMemCardDescription()
     case LangItalian:
         return "File di Dati";
     case LangJapanese:
-        return "\x83\x74\x83\x40\x83\x8B\x82\xF0\x8F\x9C\x82\xAF\x82\xCE"; // Japanese (SJIS): "Save File"
+        return "\x83\x74\x83\x40\x83\x8B\x82\xF0\x8F\x9C\x82\xAF\x82\xCE\0"; // Japanese (SJIS): "Save File"
     case LangUKEnglish:
         return "Save File";
     default:

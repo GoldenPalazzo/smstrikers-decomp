@@ -3,12 +3,13 @@
 
 #include "types.h"
 
-namespace FEMusic {
-    extern u32 mCurrentFEStreamHash;
+namespace FEMusic
+{
+extern u32 mCurrentFEStreamHash;
 
-    void ResetCurrentFEStreamHash();
-    void StopStream();
-    void StartStreamIfDifferent(int);
-}
+void ResetCurrentFEStreamHash();
+void StopStream();
+void StartStreamIfDifferent(int);
+} // namespace FEMusic
 
 #endif // _FEMUSIC_H_

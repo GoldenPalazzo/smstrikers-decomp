@@ -29,7 +29,9 @@ public:
     static float GetCornerRadius();
     static float GetPenaltyBoxX(unsigned int);
     static float GetPenaltyBoxY();
+    static cNet* GetNet(unsigned int);
     static cNet* GetNet(float);
+    static float GetGroundZ();
     static bool IsOnField(const nlVector3&);
     static void FixOutOfBoundsPosition(nlVector3&, float);
     static void SetFieldDimensions(float, float, float);
@@ -54,7 +56,6 @@ public:
     static nlVector3 mv3FieldPosition;
     static sSideLinePlane mSidelines[4];
     static sCornerSegment mCorners[4];
-    // static Corner mCorners;
     static float mfPenaltyBoxX;
     static float mfPenaltyBoxY;
     static cNet* mpNet[2];

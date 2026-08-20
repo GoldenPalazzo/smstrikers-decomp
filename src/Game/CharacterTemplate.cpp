@@ -130,6 +130,78 @@ char* GetCharacterName(eCharacterClass cc)
     return (char*)g_GoalieTextureInfo[cc - 13].szCharName;
 }
 
+static char* GetCharacterModelFileName(eCharacterClass cc)
+{
+    if (cc < NUM_FIELDER_CLASSES)
+    {
+        return (char*)g_aCharacterTemplateInfo[cc].szModelFilename;
+    }
+    return (char*)g_GoalieTemplateInfo.szModelFilename;
+}
+
+static char* GetCharacterModelTextureFileName(eCharacterClass cc)
+{
+    if (cc < NUM_FIELDER_CLASSES)
+    {
+        return (char*)g_aCharacterTemplateInfo[cc].szTextureFilename;
+    }
+    return (char*)g_GoalieTextureInfo[cc - NUM_FIELDER_CLASSES].szTextureFilename;
+}
+
+static AnimProperties* GetCharacterModelAnimProperties(eCharacterClass cc)
+{
+    if (cc < NUM_FIELDER_CLASSES)
+    {
+        return (AnimProperties*)g_aCharacterTemplateInfo[cc].pAnimProperties;
+    }
+    return (AnimProperties*)g_GoalieTemplateInfo.pAnimProperties;
+}
+
+static int GetCharacterModelNumAnumProperties(eCharacterClass cc)
+{
+    if (cc < NUM_FIELDER_CLASSES)
+    {
+        return g_aCharacterTemplateInfo[cc].nNumAnimProperties;
+    }
+    return g_GoalieTemplateInfo.nNumAnimProperties;
+}
+
+static char* GetCharacterModelHierarchyFileName(eCharacterClass cc)
+{
+    if (cc < NUM_FIELDER_CLASSES)
+    {
+        return (char*)g_aCharacterTemplateInfo[cc].szHierarchyFilename;
+    }
+    return (char*)g_GoalieTemplateInfo.szHierarchyFilename;
+}
+
+static char* GetCharacterModelHierarchyName(eCharacterClass cc)
+{
+    if (cc < NUM_FIELDER_CLASSES)
+    {
+        return (char*)g_aCharacterTemplateInfo[cc].szHierarchy;
+    }
+    return (char*)g_GoalieTemplateInfo.szHierarchy;
+}
+
+static char* GetCharacterModelAnimFileName(eCharacterClass cc)
+{
+    if (cc < NUM_FIELDER_CLASSES)
+    {
+        return (char*)g_aCharacterTemplateInfo[cc].szAnimFilename;
+    }
+    return (char*)g_GoalieTemplateInfo.szAnimFilename;
+}
+
+static unsigned char IsSidekick(eCharacterClass cc)
+{
+    if (cc == BIRDO || cc == HAMMERBROS || cc == KOOPA || cc == TOAD)
+    {
+        return true;
+    }
+    return false;
+}
+
 /**
  * Offset/Address/Size: 0x20EC | 0x800143D4 | size: 0x3C
  */
@@ -243,39 +315,39 @@ cPlayer* CreateCharacter(int nPlayerID, int nTeamID, eCharacterClass cc, bool bF
     cInventory<cSHierarchy>* pHierInv = g_aCharacterTemplates[cc]->pHierarchyInventory;
     u32 hash = nlStringHash(g_aCharacterTemplateInfo[cc].szHierarchy);
 
-    AnimRetargetList* pAnimRetarget;
+    AnimRetargetList* pAnimRetargetList;
     FielderTweaks* pTweaks;
     cSHierarchy* pHierarchy = pHierInv->Find((unsigned int)hash);
 
-    pAnimRetarget = NULL;
+    pAnimRetargetList = NULL;
     if (g_aCharacterTemplates[cc]->pAnimRetargetListInventory != NULL)
     {
-        pAnimRetarget = g_aCharacterTemplates[cc]->pAnimRetargetListInventory->Find(0);
+        pAnimRetargetList = g_aCharacterTemplates[cc]->pAnimRetargetListInventory->Find(0);
     }
 
-    pTweaks = new (nlMalloc(0x124, 8, false)) FielderTweaks(g_aCharacterTemplateInfo[cc].szTweaksFilename);
+    pTweaks = new (nlMalloc(sizeof(FielderTweaks), 8, false)) FielderTweaks(g_aCharacterTemplateInfo[cc].szTweaksFilename);
 
-    cPlayer* pPlayer;
+    cPlayer* pChar;
     if (!bForViewer)
     {
-        cFielder* pFielder = new (nlMalloc(0x3EC, 8, false)) cFielder(
-            nPlayerID, nTeamID, cc, (const int*)g_aCharacterTemplates[cc], pHierarchy, g_aCharacterTemplates[cc]->pAnimInventory, g_aCharacterTemplates[cc]->pPhysicsData, pTweaks, pAnimRetarget);
-        pPlayer = pFielder;
+        cFielder* pFielder = new (nlMalloc(sizeof(cFielder), 8, false)) cFielder(
+            nPlayerID, nTeamID, cc, (const int*)g_aCharacterTemplates[cc], pHierarchy, g_aCharacterTemplates[cc]->pAnimInventory, g_aCharacterTemplates[cc]->pPhysicsData, pTweaks, pAnimRetargetList);
+        pChar = pFielder;
     }
     else
     {
-        cPlayer* p = new (nlMalloc(0x1D4, 8, false)) cPlayer(
-            nPlayerID, cc, (const int*)g_aCharacterTemplates[cc], pHierarchy, g_aCharacterTemplates[cc]->pAnimInventory, g_aCharacterTemplates[cc]->pPhysicsData, (PlayerTweaks*)pTweaks, pAnimRetarget, (eClassTypes)1);
-        pPlayer = p;
+        cPlayer* pPlayer = new (nlMalloc(sizeof(cPlayer), 8, false)) cPlayer(
+            nPlayerID, cc, (const int*)g_aCharacterTemplates[cc], pHierarchy, g_aCharacterTemplates[cc]->pAnimInventory, g_aCharacterTemplates[cc]->pPhysicsData, (PlayerTweaks*)pTweaks, pAnimRetargetList, (eClassTypes)1);
+        pChar = pPlayer;
     }
 
-    pPlayer->m_szEffectsName = g_aCharacterTemplateInfo[cc].szEffectsName;
+    pChar->m_szEffectsName = g_aCharacterTemplateInfo[cc].szEffectsName;
     if (!AudioLoader::gbDisableAudio)
     {
-        pPlayer->SetSFX(g_aCharacterTemplateInfo[cc].pSFXPropAccessor);
+        pChar->SetSFX(g_aCharacterTemplateInfo[cc].pSFXPropAccessor);
     }
 
-    return pPlayer;
+    return pChar;
 }
 
 /**
@@ -294,7 +366,7 @@ static s32 SidekickTexture_cb(unsigned long textureId)
 /**
  * Offset/Address/Size: 0x14A4 | 0x8001378C | size: 0x5FC
  */
-cPlayer* CreateSidekick(int nPlayerID, int nTeamID, eCharacterClass cc, eCharacterClass captainCC, bool bForViewer)
+cPlayer* CreateSidekick(int nPlayerID, int nTeamID, eCharacterClass cc, eCharacterClass captaincc, bool bForViewer)
 {
     char szTexPath[64];
     char szArtPath[64];
@@ -314,47 +386,47 @@ cPlayer* CreateSidekick(int nPlayerID, int nTeamID, eCharacterClass cc, eCharact
 
     skiptexture = glGetTexture(szTexPath);
 
-    cPlayer* pPlayer = CreateCharacter(nPlayerID, nTeamID, cc, bForViewer);
+    cPlayer* pChar = CreateCharacter(nPlayerID, nTeamID, cc, bForViewer);
 
     glx_SetLoadCallback(oldCallback);
 
-    bool bLoaded = false;
+    bool swaptextureloaded = false;
 
     if (cc == HAMMERBROS)
     {
-        nlSNPrintf(szBundlePath, 64, "characters/%s/hammer_%s.glt", GetCharacterName(cc), GetCharacterName(captainCC));
-        nlSNPrintf(szArtPath, 64, "art/characters/%s/hammer_%s.glt", GetCharacterName(cc), GetCharacterName(captainCC));
+        nlSNPrintf(szBundlePath, 64, "characters/%s/hammer_%s.glt", GetCharacterName(cc), GetCharacterName(captaincc));
+        nlSNPrintf(szArtPath, 64, "art/characters/%s/hammer_%s.glt", GetCharacterName(cc), GetCharacterName(captaincc));
     }
     else
     {
-        nlSNPrintf(szBundlePath, 64, "characters/%s/%s_%s.glt", GetCharacterName(cc), GetCharacterName(cc), GetCharacterName(captainCC));
-        nlSNPrintf(szArtPath, 64, "art/characters/%s/%s_%s.glt", GetCharacterName(cc), GetCharacterName(cc), GetCharacterName(captainCC));
+        nlSNPrintf(szBundlePath, 64, "characters/%s/%s_%s.glt", GetCharacterName(cc), GetCharacterName(cc), GetCharacterName(captaincc));
+        nlSNPrintf(szArtPath, 64, "art/characters/%s/%s_%s.glt", GetCharacterName(cc), GetCharacterName(cc), GetCharacterName(captaincc));
     }
 
     if (cc == HAMMERBROS)
     {
-        nlSNPrintf(szPlayerPath, 64, "hammer_%s/hammer_%s", GetCharacterName(captainCC), GetCharacterName(captainCC));
+        nlSNPrintf(szPlayerPath, 64, "hammer_%s/hammer_%s", GetCharacterName(captaincc), GetCharacterName(captaincc));
     }
     else
     {
-        nlSNPrintf(szPlayerPath, 64, "%s_%s/%s_%s", GetCharacterName(cc), GetCharacterName(captainCC), GetCharacterName(cc), GetCharacterName(captainCC));
+        nlSNPrintf(szPlayerPath, 64, "%s_%s/%s_%s", GetCharacterName(cc), GetCharacterName(captaincc), GetCharacterName(cc), GetCharacterName(captaincc));
     }
 
     if (glTextureLoad(glGetTexture(szPlayerPath)))
     {
-        bLoaded = true;
+        swaptextureloaded = true;
     }
     else
     {
-        nlFile* fp = nlOpen(szArtPath);
-        if (fp != NULL)
+        nlFile* texturefile = nlOpen(szArtPath);
+        if (texturefile != NULL)
         {
-            nlClose(fp);
-            bLoaded = glLoadTextureBundle(szBundlePath);
+            nlClose(texturefile);
+            swaptextureloaded = glLoadTextureBundle(szBundlePath);
         }
     }
 
-    if (bLoaded)
+    if (swaptextureloaded)
     {
         if (cc == HAMMERBROS)
         {
@@ -364,16 +436,16 @@ cPlayer* CreateSidekick(int nPlayerID, int nTeamID, eCharacterClass cc, eCharact
         {
             nlSNPrintf(szBundlePath, 64, "%s/%s_mario", GetCharacterName(cc), GetCharacterName(cc));
         }
-        pPlayer->m_uNormalTextureID = glGetTexture(szBundlePath);
-        pPlayer->m_uSwapTextureID = glGetTexture(szPlayerPath);
+        pChar->m_uNormalTextureID = glGetTexture(szBundlePath);
+        pChar->m_uSwapTextureID = glGetTexture(szPlayerPath);
     }
     else
     {
-        pPlayer->m_uNormalTextureID = (u32)-1;
-        pPlayer->m_uSwapTextureID = (u32)-1;
+        pChar->m_uNormalTextureID = (u32)-1;
+        pChar->m_uSwapTextureID = (u32)-1;
     }
 
-    return pPlayer;
+    return pChar;
 }
 
 /**
@@ -396,41 +468,41 @@ cPlayer* CreateGoalie(eCharacterClass gcc, bool bForViewer)
 
     cSHierarchy* pHierarchy = g_GoalieTemplate->pHierarchyInventory->Find((char*)g_GoalieTemplateInfo.szHierarchy);
 
-    AnimRetargetList* pAnimRetarget = NULL;
+    AnimRetargetList* pAnimRetargetList = NULL;
     if (g_GoalieTemplate->pAnimRetargetListInventory != NULL)
     {
-        pAnimRetarget = g_GoalieTemplate->pAnimRetargetListInventory->Find(0);
+        pAnimRetargetList = g_GoalieTemplate->pAnimRetargetListInventory->Find(0);
     }
 
     GoalieTweaks* pTweaks = new (nlMalloc(0xF4, 8, false)) GoalieTweaks(g_GoalieTemplateInfo.szTweaksFilename);
 
-    cPlayer* pPlayer;
+    cPlayer* pChar;
     if (!bForViewer)
     {
-        Goalie* pGoalie = new (nlMalloc(0x310, 8, false)) Goalie(
-            gcc, (const int*)g_GoalieTemplate, pHierarchy, g_GoalieTemplate->pAnimInventory, g_GoalieTemplate->pPhysicsData, pTweaks, pAnimRetarget);
-        pPlayer = pGoalie;
+        Goalie* pGoalie = new (nlMalloc(sizeof(Goalie), 8, false)) Goalie(
+            gcc, (const int*)g_GoalieTemplate, pHierarchy, g_GoalieTemplate->pAnimInventory, g_GoalieTemplate->pPhysicsData, pTweaks, pAnimRetargetList);
+        pChar = pGoalie;
     }
     else
     {
-        cPlayer* p = new (nlMalloc(0x1D4, 8, false)) cPlayer(
-            4, gcc, (const int*)g_GoalieTemplate, pHierarchy, g_GoalieTemplate->pAnimInventory, g_GoalieTemplate->pPhysicsData, (PlayerTweaks*)pTweaks, pAnimRetarget, (eClassTypes)3);
-        pPlayer = p;
+        cPlayer* pPlayer = new (nlMalloc(sizeof(cPlayer), 8, false)) cPlayer(
+            4, gcc, (const int*)g_GoalieTemplate, pHierarchy, g_GoalieTemplate->pAnimInventory, g_GoalieTemplate->pPhysicsData, (PlayerTweaks*)pTweaks, pAnimRetargetList, (eClassTypes)3);
+        pChar = pPlayer;
     }
 
-    pPlayer->m_szEffectsName = g_GoalieTemplateInfo.szEffectsName;
-    pPlayer->m_uNormalTextureID = GetHashFromTextureFile(g_GoalieTemplateInfo.szTextureFilename);
-    pPlayer->m_uSwapTextureID = GetHashFromTextureFile(g_GoalieTextureInfo[goalieIdx].szTextureFilename);
+    pChar->m_szEffectsName = g_GoalieTemplateInfo.szEffectsName;
+    pChar->m_uNormalTextureID = GetHashFromTextureFile(g_GoalieTemplateInfo.szTextureFilename);
+    pChar->m_uSwapTextureID = GetHashFromTextureFile(g_GoalieTextureInfo[goalieIdx].szTextureFilename);
 
     if (!AudioLoader::gbDisableAudio)
     {
-        pPlayer->SetSFX(g_GoalieTemplateInfo.pSFXPropAccessor);
+        pChar->SetSFX(g_GoalieTemplateInfo.pSFXPropAccessor);
     }
 
-    return pPlayer;
+    return pChar;
 }
 
-static inline eCharacterClass GetGoalieFromCaptain(eCharacterClass captain)
+static eCharacterClass GetGoalieFromCaptain(eCharacterClass captain)
 {
     switch (captain)
     {
@@ -468,7 +540,7 @@ static inline bool SameCharacterClass(const eCharacterClass* first, const eChara
 }
 
 /**
- * Offset/Address/Size: 0x3DC | 0x80012C3C | size: 0x51C
+ * Offset/Address/Size: 0x954 | 0x80012C3C | size: 0x51C
  */
 void CreateCharacters()
 {

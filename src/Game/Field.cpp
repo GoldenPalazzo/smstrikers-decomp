@@ -73,6 +73,11 @@ float cField::GetSidelineY(unsigned int side)
     return -mv3FieldPosition.f.y;
 }
 
+float cField::GetGroundZ()
+{
+    return mv3FieldPosition.f.z;
+}
+
 /**
  * Offset/Address/Size: 0x14C | 0x80019230 | size: 0x8
  */
@@ -107,6 +112,11 @@ cNet* cField::GetNet(float side)
         return mpNet[1];
     }
     return mpNet[0];
+}
+
+cNet* cField::GetNet(unsigned int index)
+{
+    return mpNet[index];
 }
 
 /**

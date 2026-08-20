@@ -245,25 +245,25 @@ void AudioLoader::SetupCharSoundTypesAVLTree()
 
     do
     {
-        SoundStrToIDNode* p = (SoundStrToIDNode*)nlMalloc(sizeof(SoundStrToIDNode), 8, false);
-        SoundStrToIDNode* newNode = p;
-        p->typeID = -1;
-        p->typeStr = NULL;
-        p->musyxStr = NULL;
-        p->musyxID = -1;
-        p->fVolume = 100.0f;
-        p->fDelay = -1.0f;
-        p->fVolReverb = 100.0f;
-        p->volGrp = -1;
-        p->sfxPriority = 0;
-        p->uHashVal = 0;
-        p->pSoundPropAccessor = NULL;
-        p->bSoundPropTableReloaded = 0;
-        p->pSoundProp = NULL;
-        p->pOwner = NULL;
-        p->lastVoiceID = -1;
-        p->pLastEmitter = NULL;
-        p->m_unk_0x40 = false;
+        SoundStrToIDNode* pNode = (SoundStrToIDNode*)nlMalloc(sizeof(SoundStrToIDNode), 8, false);
+        SoundStrToIDNode* newNode = pNode;
+        pNode->typeID = -1;
+        pNode->typeStr = NULL;
+        pNode->musyxStr = NULL;
+        pNode->musyxID = -1;
+        pNode->fVolume = 100.0f;
+        pNode->fDelay = -1.0f;
+        pNode->fVolReverb = 100.0f;
+        pNode->volGrp = -1;
+        pNode->sfxPriority = 0;
+        pNode->uHashVal = 0;
+        pNode->pSoundPropAccessor = NULL;
+        pNode->bSoundPropTableReloaded = 0;
+        pNode->pSoundProp = NULL;
+        pNode->pOwner = NULL;
+        pNode->lastVoiceID = -1;
+        pNode->pLastEmitter = NULL;
+        pNode->m_unk_0x40 = false;
 
         newNode->typeID = i;
         newNode->typeStr = pSoundTable[i];
@@ -377,56 +377,40 @@ bool AudioLoader::ActivateDPL2(bool bEnableDPL2, bool bLoadSampleFile)
 {
     bool dpl2Result;
 
-    if (bEnableDPL2)
+    if ((bEnableDPL2 && !PlatAudio::gUsingDolbyProLogic2) || (!bEnableDPL2 && PlatAudio::gUsingDolbyProLogic2))
     {
-        if (!PlatAudio::gUsingDolbyProLogic2)
+        if (!gbDisableReverb)
         {
-            goto state_change;
-        }
-    }
-    if (bEnableDPL2)
-    {
-        goto no_change;
-    }
-    if (!PlatAudio::gUsingDolbyProLogic2)
-    {
-        goto no_change;
-    }
-
-state_change:
-    if (!gbDisableReverb)
-    {
-        if (gReverbOn)
-        {
-            nlPrintf("AudioLoader::ActivateDPL2(), shutting down reverb...\n");
-            if (!Audio::ShutdownReverb())
+            if (gReverbOn)
             {
-                nlPrintf("AudioLoader::ActivateDPL2(), Audio::ShutdownReverb() returned false.\n");
-                return false;
+                nlPrintf("AudioLoader::ActivateDPL2(), shutting down reverb...\n");
+                if (!Audio::ShutdownReverb())
+                {
+                    nlPrintf("AudioLoader::ActivateDPL2(), Audio::ShutdownReverb() returned false.\n");
+                    return false;
+                }
             }
         }
+
+        g_pTrackManager->StopAllTracks(0);
+
+        AudioStreamTrack::TrackManagerBase* pTM = g_pTrackManager;
+        pTM->StopAllTracks(0);
+
+        pTM->m_FadeMgr.Clear();
+        pTM->PurgeStreams();
+        pTM->m_StreamPool.FreeBlocks();
+        pTM->m_StreamDeleteList.m_Allocator.FreeBlocks();
+        PlatAudio::ShutdownStreaming();
+        Audio::Silence();
+        Audio::UnloadWorldSFX();
+        PlatAudio::UnloadAllSoundGroups(sebringAudioFileData);
+    }
+    else
+    {
+        return true;
     }
 
-    g_pTrackManager->StopAllTracks(0);
-
-    AudioStreamTrack::TrackManagerBase* pTM = g_pTrackManager;
-    pTM->StopAllTracks(0);
-
-    pTM->m_FadeMgr.Clear();
-    pTM->PurgeStreams();
-    pTM->m_StreamPool.FreeBlocks();
-    pTM->m_StreamDeleteList.m_Allocator.FreeBlocks();
-    PlatAudio::ShutdownStreaming();
-    Audio::Silence();
-    Audio::UnloadWorldSFX();
-    PlatAudio::UnloadAllSoundGroups(sebringAudioFileData);
-
-    goto after_no_change;
-
-no_change:
-    return true;
-
-after_no_change:
     if (bEnableDPL2)
     {
         dpl2Result = PlatAudio::ActivateDPL2();
@@ -648,15 +632,15 @@ bool AudioLoader::IsInited()
     return Audio::IsInited();
 }
 
-/**
- * Offset/Address/Size: 0x31D4 | 0x80146FA0 | size: 0x2F0
- */
 static inline AudioStreamTrack::StreamTrack* GetTrackByName(const char* pTrackName)
 {
     AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
     return pTrackMgr->GetTrack(nlStringLowerHash(pTrackName));
 }
 
+/**
+ * Offset/Address/Size: 0x31D4 | 0x80146FA0 | size: 0x2F0
+ */
 void AudioLoader::StartFEStream(const char* pSoundName, bool bLoop, const char* pTrackName)
 {
     if (gbDisableAudio || !gbStream)
@@ -664,13 +648,13 @@ void AudioLoader::StartFEStream(const char* pSoundName, bool bLoop, const char* 
         return;
     }
 
-    char var_68[64];
-    nlSNPrintf(var_68, 64, "%s/%s", pSoundName, "Volume");
-    float volume = GetConfigFloat(g_FEStreamConfig, var_68, 0.0f);
+    char settingPath[64];
+    nlSNPrintf(settingPath, 64, "%s/%s", pSoundName, "Volume");
+    float volume = GetConfigFloat(g_FEStreamConfig, settingPath, 0.0f);
     volume /= 100.0f;
 
-    nlSNPrintf(var_68, 64, "%s/%s", pSoundName, "FadeIn");
-    unsigned long fadeIn = GetConfigInt(g_FEStreamConfig, var_68, 0);
+    nlSNPrintf(settingPath, 64, "%s/%s", pSoundName, "FadeIn");
+    unsigned long fadeIn = GetConfigInt(g_FEStreamConfig, settingPath, 0);
     unsigned long interruptFadeOut = GetConfigInt(g_FEStreamConfig, "InterruptFadeOut", 0);
 
     if (volume > 0.0f)
@@ -700,13 +684,13 @@ void AudioLoader::PlayFETitleMusicWithFade()
         return;
     }
 
-    char var_68[64];
-    nlSNPrintf(var_68, 64, "%s/%s", "FE_Main_Title_With_Fade_In", "Volume");
-    float volume = GetConfigFloat(g_FEStreamConfig, var_68, 0.0f);
+    char settingPath[64];
+    nlSNPrintf(settingPath, 64, "%s/%s", "FE_Main_Title_With_Fade_In", "Volume");
+    float volume = GetConfigFloat(g_FEStreamConfig, settingPath, 0.0f);
     volume /= 100.0f;
 
-    nlSNPrintf(var_68, 64, "%s/%s", "FE_Main_Title_With_Fade_In", "FadeIn");
-    unsigned long fadeIn = GetConfigInt(g_FEStreamConfig, var_68, 0);
+    nlSNPrintf(settingPath, 64, "%s/%s", "FE_Main_Title_With_Fade_In", "FadeIn");
+    unsigned long fadeIn = GetConfigInt(g_FEStreamConfig, settingPath, 0);
     unsigned long interruptFadeOut = GetConfigInt(g_FEStreamConfig, "InterruptFadeOut", 0);
 
     if (volume > 0.0f)
@@ -738,13 +722,13 @@ void AudioLoader::PlayFEMenuMusic()
         return;
     }
 
-    char var_68[64];
-    nlSNPrintf(var_68, 64, "%s/%s", "FE_Main_Options", "Volume");
-    float volume = GetConfigFloat(g_FEStreamConfig, var_68, 0.0f);
+    char settingPath[64];
+    nlSNPrintf(settingPath, 64, "%s/%s", "FE_Main_Options", "Volume");
+    float volume = GetConfigFloat(g_FEStreamConfig, settingPath, 0.0f);
     volume /= 100.0f;
 
-    nlSNPrintf(var_68, 64, "%s/%s", "FE_Main_Options", "FadeIn");
-    unsigned long fadeIn = GetConfigInt(g_FEStreamConfig, var_68, 0);
+    nlSNPrintf(settingPath, 64, "%s/%s", "FE_Main_Options", "FadeIn");
+    unsigned long fadeIn = GetConfigInt(g_FEStreamConfig, settingPath, 0);
     unsigned long interruptFadeOut = GetConfigInt(g_FEStreamConfig, "InterruptFadeOut", 0);
 
     if (volume > 0.0f)
@@ -790,13 +774,13 @@ void AudioLoader::PlayLoadLoopMusic()
         return;
     }
 
-    char var_68[64];
-    nlSNPrintf(var_68, 64, "%s/%s", "FE_Load_Loop_01", "Volume");
-    float volume = GetConfigFloat(g_FEStreamConfig, var_68, 0.0f);
+    char settingPath[64];
+    nlSNPrintf(settingPath, 64, "%s/%s", "FE_Load_Loop_01", "Volume");
+    float volume = GetConfigFloat(g_FEStreamConfig, settingPath, 0.0f);
     volume /= 100.0f;
 
-    nlSNPrintf(var_68, 64, "%s/%s", "FE_Load_Loop_01", "FadeIn");
-    unsigned long fadeIn = GetConfigInt(g_FEStreamConfig, var_68, 0);
+    nlSNPrintf(settingPath, 64, "%s/%s", "FE_Load_Loop_01", "FadeIn");
+    unsigned long fadeIn = GetConfigInt(g_FEStreamConfig, settingPath, 0);
     unsigned long interruptFadeOut = GetConfigInt(g_FEStreamConfig, "InterruptFadeOut", 0);
 
     if (volume > 0.0f)
@@ -828,13 +812,13 @@ void AudioLoader::PlayPauseMenuMusic()
         return;
     }
 
-    char var_68[64];
-    nlSNPrintf(var_68, 64, "%s/%s", "FE_Pause", "Volume");
-    float volume = GetConfigFloat(g_FEStreamConfig, var_68, 0.0f);
+    char settingPath[64];
+    nlSNPrintf(settingPath, 64, "%s/%s", "FE_Pause", "Volume");
+    float volume = GetConfigFloat(g_FEStreamConfig, settingPath, 0.0f);
     volume /= 100.0f;
 
-    nlSNPrintf(var_68, 64, "%s/%s", "FE_Pause", "FadeIn");
-    unsigned long fadeIn = GetConfigInt(g_FEStreamConfig, var_68, 0);
+    nlSNPrintf(settingPath, 64, "%s/%s", "FE_Pause", "FadeIn");
+    unsigned long fadeIn = GetConfigInt(g_FEStreamConfig, settingPath, 0);
     unsigned long interruptFadeOut = GetConfigInt(g_FEStreamConfig, "InterruptFadeOut", 0);
 
     if (volume > 0.0f)
@@ -1215,10 +1199,10 @@ void AudioLoader::LoadFEButtonSoundGroup()
     PlatAudio::LoadSoundGroup(sebringAudioFileData, 2, 0, true);
 }
 
-static inline void LoadOnePermanentGroup(int g, bool bUseReadFromDiscCallback)
+static inline void LoadOnePermanentGroup(int groupIndex, bool bUseReadFromDiscCallback)
 {
     bool bAlreadyLoaded = false;
-    if (sebringAudioGroups[g].uLoadOrder > -1 && sebringAudioGroups[g].stackEnum > -1)
+    if (sebringAudioGroups[groupIndex].uLoadOrder > -1 && sebringAudioGroups[groupIndex].stackEnum > -1)
     {
         bAlreadyLoaded = true;
     }
@@ -1239,7 +1223,7 @@ static inline void LoadOnePermanentGroup(int g, bool bUseReadFromDiscCallback)
 
             if (isInited)
             {
-                PlatAudio::LoadSoundGroup(AudioLoader::sebringAudioFileData, g, 0, bUseReadFromDiscCallback);
+                PlatAudio::LoadSoundGroup(AudioLoader::sebringAudioFileData, groupIndex, 0, bUseReadFromDiscCallback);
             }
         }
     }
@@ -1420,56 +1404,59 @@ void AudioLoader::SetupPostPhysicsCameraLoad()
         return;
     }
 
-    if (AudioLoader::gbDisableAudio || Audio::IsListenerActive())
-    {
-        goto setupCharStadiumSoundTable;
-    }
-
-    nlVector3 up;
-    nlVector3 heading;
-    nlVector3 cameraPos;
-    nlVector3 targetPos;
-    nlVector3 vel = { { 0.0f, 0.0f, 1.0f } };
-
-    cBaseCamera* camera = nlDLRingGetStart(cCameraManager::m_cameraStack);
-    targetPos = camera->GetTargetPosition();
-
-    camera = nlDLRingGetStart(cCameraManager::m_cameraStack);
-    cameraPos = camera->GetCameraPosition();
-
-    float dx, dy, dz;
-    dy = targetPos.f.y - cameraPos.f.y;
-    dx = targetPos.f.x - cameraPos.f.x;
-    dz = targetPos.f.z - cameraPos.f.z;
-
-    float recipLen = nlRecipSqrt(dx * dx + dy * dy + dz * dz, true);
-
-    heading.f.x = recipLen * dx;
-    heading.f.y = recipLen * dy;
-    heading.f.z = recipLen * dz;
-
-    static const nlVector3 kUpVec = { { 0.0f, 0.0f, 0.0f } };
-    up = kUpVec;
-
-    GameTweaks* tweaks = g_pGame->m_pGameTweaks;
-
-    PlatAudio::Add3DSFXListener(
-        &Audio::gListener,
-        cameraPos,
-        up,
-        heading,
-        vel,
-        tweaks->unk1F0,
-        tweaks->unk1F4,
-        1.0f,
-        tweaks->unk1FC,
-        false,
-        tweaks->unk1F8);
-
-    Audio::SetListenerActive(true);
-
-setupCharStadiumSoundTable:
+    AudioLoader::SetupInGameListener();
     AudioLoader::SetupCharStadiumSoundTable();
+}
+
+void AudioLoader::SetupInGameListener()
+{
+    if (!AudioLoader::gbDisableAudio && !Audio::IsListenerActive())
+    {
+        nlVector3 vDir = { { 0.0f, 0.0f, 1.0f } };
+        nlVector3 vCameraTarg;
+        nlVector3 vCameraPos;
+        nlVector3 vNormHeading;
+        nlVector3 vNormUp;
+
+        cBaseCamera* camera = nlDLRingGetStart(cCameraManager::m_cameraStack);
+        vCameraTarg = camera->GetTargetPosition();
+
+        camera = nlDLRingGetStart(cCameraManager::m_cameraStack);
+        vCameraPos = camera->GetCameraPosition();
+
+        float dz;
+        float dy;
+        float dx;
+        dy = vCameraTarg.f.y - vCameraPos.f.y;
+        dx = vCameraTarg.f.x - vCameraPos.f.x;
+        dz = vCameraTarg.f.z - vCameraPos.f.z;
+
+        float recipLen = nlRecipSqrt(dx * dx + dy * dy + dz * dz, true);
+
+        vNormHeading.f.x = recipLen * dx;
+        vNormHeading.f.y = recipLen * dy;
+        vNormHeading.f.z = recipLen * dz;
+
+        static const nlVector3 kUpVec = { { 0.0f, 0.0f, 0.0f } };
+        vNormUp = kUpVec;
+
+        GameTweaks* tweaks = g_pGame->m_pGameTweaks;
+
+        PlatAudio::Add3DSFXListener(
+            &Audio::gListener,
+            vCameraPos,
+            vNormUp,
+            vNormHeading,
+            vDir,
+            tweaks->fFrontAudibleSurrDist,
+            tweaks->fBackAudibleSurrDist,
+            1.0f,
+            tweaks->fEmitterDistFromListenerMaxVol,
+            false,
+            tweaks->fSpeedOfSoundForDoppler);
+
+        Audio::SetListenerActive(true);
+    }
 }
 
 extern SoundPropAccessor* gpCRITTERWOODSoundPropAccessor;
@@ -1501,8 +1488,6 @@ extern eCharacterClass ConvertToCharacterClass(eSidekickID);
 /**
  * Offset/Address/Size: 0xF90 | 0x80144D5C | size: 0x1E0
  */
-#pragma push
-#pragma dont_inline on
 static SoundPropAccessor* GetSoundPropTableFromPlayerStadium(eStadiumID stadiumId, eCharacterClass charClass)
 {
     switch (stadiumId)
@@ -1553,7 +1538,6 @@ static SoundPropAccessor* GetSoundPropTableFromPlayerStadium(eStadiumID stadiumI
         return NULL;
     }
 }
-#pragma pop
 
 /**
  * Offset/Address/Size: 0xC88 | 0x80144A54 | size: 0x308
@@ -1968,8 +1952,8 @@ bool AudioLoader::LoadInGameAudioData()
     }
 
     {
-        const int g = gLoadedAwayCaptainGroup;
-        bAlreadyLoaded = AudioLoader::IsSoundGroupLoaded(g, 1);
+        const int awayGroup = gLoadedAwayCaptainGroup;
+        bAlreadyLoaded = AudioLoader::IsSoundGroupLoaded(awayGroup, 1);
 
         if (bAlreadyLoaded == false)
         {
@@ -1985,7 +1969,7 @@ bool AudioLoader::LoadInGameAudioData()
                 }
                 else
                 {
-                    loaded = PlatAudio::LoadSoundGroup(sebringAudioFileData, g, 1, true);
+                    loaded = PlatAudio::LoadSoundGroup(sebringAudioFileData, awayGroup, 1, true);
                 }
             }
 
@@ -2131,8 +2115,8 @@ bool AudioLoader::LoadInGameAudioData()
     }
 
     {
-        const int g = gLoadedAwaySidekickGroup;
-        bAlreadyLoaded = AudioLoader::IsSoundGroupLoaded(g, 1);
+        const int awayGroup = gLoadedAwaySidekickGroup;
+        bAlreadyLoaded = AudioLoader::IsSoundGroupLoaded(awayGroup, 1);
 
         if (bAlreadyLoaded == false)
         {
@@ -2148,7 +2132,7 @@ bool AudioLoader::LoadInGameAudioData()
                 }
                 else
                 {
-                    loaded = PlatAudio::LoadSoundGroup(sebringAudioFileData, g, 1, true);
+                    loaded = PlatAudio::LoadSoundGroup(sebringAudioFileData, awayGroup, 1, true);
                 }
             }
 

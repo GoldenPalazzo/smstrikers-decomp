@@ -1,6 +1,4 @@
 #include "types.h"
-#pragma pool_data off
-
 #include "Game/GameTweaks.h"
 
 #include "NL/nlString.h"
@@ -201,20 +199,20 @@ void GameTweaks::Init()
     fStarEffectTime = cfg.Get<float>("On Star Time", 1.25f);
     fStarSpeed = cfg.Get<float>("On Star Speed", 1.5f);
 
-    unk1F0 = cfg.Get<float>("Front Audible Surr Dist", 100.0f);
-    unk1F4 = cfg.Get<float>("Back Audible Surr Dist", 100.0f);
-    unk1F8 = cfg.Get<float>("Speed Of Sound For Doppler", 200.0f);
-    unk1FC = cfg.Get<float>("Emitter Dist From Listener Max Vol", 0.0f);
+    fFrontAudibleSurrDist = cfg.Get<float>("Front Audible Surr Dist", 100.0f);
+    fBackAudibleSurrDist = cfg.Get<float>("Back Audible Surr Dist", 100.0f);
+    fSpeedOfSoundForDoppler = cfg.Get<float>("Speed Of Sound For Doppler", 200.0f);
+    fEmitterDistFromListenerMaxVol = cfg.Get<float>("Emitter Dist From Listener Max Vol", 0.0f);
     unk200 = cfg.Get<float>("Max Aubible Emitter Distance", 100.0f);
     unk204 = cfg.Get<float>("Emitter Vol To Distance Value", 0.0f);
-    unk208 = cfg.Get<float>("Slow Mo Filter Fade In Time", 0.3f);
-    unk20C = cfg.Get<float>("Slow Mo Filter Fade Out Time", 0.2f);
-    unk210 = cfg.Get<float>("Filter Min Freq Pct", 0.0f);
-    unk214 = cfg.Get<float>("Filter Max Freq Pct", 1.0f);
+    fFadeFilterSlowMoInTime = cfg.Get<float>("Slow Mo Filter Fade In Time", 0.3f);
+    fFadeFilterSlowMoOutTime = cfg.Get<float>("Slow Mo Filter Fade Out Time", 0.2f);
+    fFadeFilterFreqMin = cfg.Get<float>("Filter Min Freq Pct", 0.0f);
+    fFadeFilterFreqMax = cfg.Get<float>("Filter Max Freq Pct", 1.0f);
     unk218 = cfg.Get<float>("Filter Dropoff Delay Time", 0.5f);
     unk21C = cfg.Get<float>("Filter Dropoff Time", 6.0f);
-    unk220 = cfg.Get<float>("Dialogue Pitch Min Pct", 0.0f);
-    unk224 = cfg.Get<float>("Dialogue Pitch Max Pct", 1.0f);
+    fFadePitchMin = cfg.Get<float>("Dialogue Pitch Min Pct", 0.0f);
+    fFadePitchMax = cfg.Get<float>("Dialogue Pitch Max Pct", 1.0f);
     unk228 = cfg.Get<float>("Min Bobomb Move SFX Activation Time", 2.5f);
     unk22C = cfg.Get<float>("Perfect Pass SFX Proximity Filter Dist Sq", 16.0f);
     unk230 = cfg.Get<float>("Small Powerup Volume Coefficient", 0.5f);

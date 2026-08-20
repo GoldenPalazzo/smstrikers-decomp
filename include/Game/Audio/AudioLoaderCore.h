@@ -69,6 +69,7 @@ public:
     static unsigned char LoadStadiumSpecificSoundGroups(eStadiumID);
     static void SetupBowserStadiumSoundTable(Bowser*);
     static void SetupCharStadiumSoundTable();
+    static void SetupInGameListener();
     static void SetupPostPhysicsCameraLoad();
     static void UnloadInGame();
     static void LoadInGame();

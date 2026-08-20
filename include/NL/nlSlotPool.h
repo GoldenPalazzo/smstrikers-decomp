@@ -111,6 +111,11 @@ public:
         return out;
     }
 
+    T* New(const T& data)
+    {
+        return new (Allocate()) T(data);
+    }
+
     // Return an entry back to the free list
     void Free(T* entry)
     {

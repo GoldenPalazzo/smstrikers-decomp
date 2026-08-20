@@ -6,7 +6,7 @@
 #include "Game/Game.h"
 #include "Game/Goalie.h"
 #include "Game/Physics/PhysicsNet.h"
-#include "Game/Sys/eventman.h"
+#include "Game/Sys/EventData.h"
 #include "Game/Team.h"
 
 #include "Game/AI/FielderActions.h"
@@ -68,8 +68,6 @@ struct NIS_EVENT_LOOKUP
     operator unsigned long() const { return Hash; }
 };
 
-// Helper to pack an AUDIO_EVENT_RECORD literal (Event in high 16 bits, Team in low 16 bits)
-// into the .4byte slot at offset 0x8 of NIS_EVENT_LOOKUP.
 #define NIS_EVENT_PACK(event, team) \
     { (AudioScriptEventMgr::AUDIO_EVENT)(event), (AudioScriptEventMgr::AUDIO_EVENT_TEAM)(team) }
 
@@ -160,23 +158,6 @@ static inline AudioScriptEventMgr::AUDIO_EVENT_TEAM GetPlayerTeam(cPlayer* pPlay
     return team;
 }
 
-#define GET_EVENT_DATA(T, pData, id)                                       \
-    T* pData;                                                              \
-    if ((s32)pEvent->m_data.GetID() == -1)                                 \
-    {                                                                      \
-        nlPrintf("Error: Trying to get event data on event with none!\n"); \
-        pData = NULL;                                                      \
-    }                                                                      \
-    else if ((s32)pEvent->m_data.GetID() != (id))                          \
-    {                                                                      \
-        nlPrintf("Error: GetData() failed! Data types do not match!\n");   \
-        pData = NULL;                                                      \
-    }                                                                      \
-    else                                                                   \
-    {                                                                      \
-        pData = (T*)&pEvent->m_data;                                       \
-    }
-
 static unsigned char g_InBowserAttack;
 static unsigned char g_InGoal;
 _AudioEventRaiser g_AudioEventRaiser;
@@ -192,25 +173,8 @@ typedef WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEven
 template <typename T>
 static AudioScriptEventMgr::AUDIO_EVENT_TEAM GetEventTeam(Event* pEvent, bool Invert)
 {
-    FORCE_DONT_INLINE;
     T* pEventData;
-    if ((s32)pEvent->m_data.GetID() == -1)
-    {
-        nlPrintf("Error: Trying to get event data on event with none!\n");
-        pEventData = NULL;
-    }
-    else
-    {
-        if ((s32)pEvent->m_data.GetID() != (s32)T::ID)
-        {
-            nlPrintf("Error: GetData() failed! Data types do not match!\n");
-            pEventData = NULL;
-        }
-        else
-        {
-            pEventData = (T*)&pEvent->m_data;
-        }
-    }
+    pEvent->GetData(&pEventData);
 
     AudioScriptEventMgr::AUDIO_EVENT_TEAM team = AudioScriptEventMgr::AET_Home;
     if (pEventData->uTeamIndex != 0)
@@ -221,13 +185,6 @@ static AudioScriptEventMgr::AUDIO_EVENT_TEAM GetEventTeam(Event* pEvent, bool In
     s32 invertMask = Invert ? (s32)AudioScriptEventMgr::AET_Special : 0;
     return (AudioScriptEventMgr::AUDIO_EVENT_TEAM)((s32)team ^ invertMask);
 }
-
-template AudioScriptEventMgr::AUDIO_EVENT_TEAM GetEventTeam<GoalScoredData>(Event*, bool);
-
-/**
- * Offset/Address/Size: 0x2178 | 0x8014B2CC | size: 0xD0
- */
-template AudioScriptEventMgr::AUDIO_EVENT_TEAM GetEventTeam<CollisionBallGoalpostData>(Event*, bool);
 
 /**
  * Offset/Address/Size: 0x1BAC | 0x8014AD00 | size: 0x5CC
@@ -266,24 +223,24 @@ void AudioScriptEventMgr::Purge()
     g_pAudioEventHandler = NULL;
 }
 
+void RaiseEvents();
+
 /**
  * Offset/Address/Size: 0x1A48 | 0x8014AB9C | size: 0xD0
  */
-static inline void RaiseEvents();
-
 void AudioScriptEventMgr::Update()
 {
     Poll();
     RaiseEvents();
-    g_PendingEvents.Clear();
 }
 
-static inline void RaiseEvents()
+void RaiseEvents()
 {
     AudioEventWalkHelper helper;
     helper.m_CBClass = &g_AudioEventRaiser;
     helper.m_CB = &_AudioEventRaiser::RaiseEvent;
     nlWalkList(g_PendingEvents.m_Head, &helper, &AudioEventWalkHelper::Callback);
+    g_PendingEvents.Clear();
 }
 
 /**
@@ -305,44 +262,10 @@ WEAKFUNC void _AudioEventRaiser::RaiseEvent(AUDIO_EVENT_RECORD* pEvent)
 /**
  * Offset/Address/Size: 0x1904 | 0x8014AA58 | size: 0xB4
  */
-static inline void FireEventInline(AudioScriptEventMgr::AUDIO_EVENT Event, AudioScriptEventMgr::AUDIO_EVENT_TEAM Team);
-
 void AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AUDIO_EVENT Event, AudioScriptEventMgr::AUDIO_EVENT_TEAM Team)
 {
-    FORCE_DONT_INLINE;
-    FireEventInline(Event, Team);
-}
-
-// Single mint site for the AUDIO_EVENT_RECORD zero-template const (.sbss2):
-// FireEvent above and the inline expansions in Poll/RecordExcitingEvent all
-// share this body, so MWCC pools one anon const across every site.
-static inline void FireEventInline(AudioScriptEventMgr::AUDIO_EVENT Event, AudioScriptEventMgr::AUDIO_EVENT_TEAM Team)
-{
     AUDIO_EVENT_RECORD aer = { Event, Team };
-    // The record round-trips through an 8-byte align-4 temp with the live
-    // word at +4: MWCC packs these at 0x24+8k, so every access lands on an
-    // 8-aligned slot (0x28..0x58 in Poll) and the region ends at 0x5b,
-    // letting Poll's GoodToShoot FuzzyVariant sret temp pack at sp+0x5c.
-    // (A u64-aligned union reserves 8 bytes at the region top and pushes it
-    // to 0x60; a bare 4-byte temp gets register-promoted and loses the
-    // stw/lwz round-trip.)
-    struct
-    {
-        u32 _pad;
-        AUDIO_EVENT_RECORD val;
-    } temp;
-    temp.val = aer;
-
-    ListEntry<AUDIO_EVENT_RECORD>* entry = NULL;
-    g_PendingEvents.m_Allocator.Allocate(entry);
-
-    if (entry != NULL)
-    {
-        entry->next = NULL;
-        entry->entry = temp.val;
-    }
-
-    nlListAddEnd(&g_PendingEvents.m_Head, &g_PendingEvents.m_Tail, entry);
+    g_PendingEvents.AddEnd(aer);
 }
 
 static inline void RecordExcitingEventInline()
@@ -353,7 +276,7 @@ static inline void RecordExcitingEventInline()
     {
         nlPrintf("END bored\n");
         g_ScriptPollState.AmBored = 0;
-        FireEventInline(AudioScriptEventMgr::AE_BoredEnd, AudioScriptEventMgr::AET_Neutral);
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_BoredEnd, AudioScriptEventMgr::AET_Neutral);
     }
 }
 
@@ -415,7 +338,7 @@ static void Poll()
 
     if (g_ScriptPollState.GameTimeToggle == 1 && event != (AudioScriptEventMgr::AUDIO_EVENT)-1)
     {
-        FireEventInline(event, team);
+        AudioScriptEventMgr::FireEvent(event, team);
     }
 
     cFielder* pBallOwner = g_pBall->GetOwnerFielder();
@@ -441,7 +364,7 @@ static void Poll()
                     eventTeam = AudioScriptEventMgr::AET_Away;
                 }
 
-                FireEventInline(AudioScriptEventMgr::AE_GoodPosition, eventTeam);
+                AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_GoodPosition, eventTeam);
                 RecordExcitingEventInline();
             }
         }
@@ -462,7 +385,7 @@ static void Poll()
                 {
                     eventTeam = AudioScriptEventMgr::AET_Away;
                 }
-                FireEventInline(AudioScriptEventMgr::AE_GotPossession, eventTeam);
+                AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_GotPossession, eventTeam);
             }
 
             g_ScriptPollState.NoOwnerTime = -1.0f;
@@ -479,13 +402,13 @@ static void Poll()
         g_ScriptPollState.AmBored = 1;
         g_ScriptPollState.LastExcitementTime = g_pGame->GetGameTime();
         nlPrintf("START bored %.2f\n", timeSinceExcitement);
-        FireEventInline(AudioScriptEventMgr::AE_BoredStart, AudioScriptEventMgr::AET_Neutral);
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_BoredStart, AudioScriptEventMgr::AET_Neutral);
     }
     else if (timeSinceExcitement > g_ScriptSettings.BoredPeriod && g_ScriptPollState.AmBored)
     {
         g_ScriptPollState.LastExcitementTime = g_pGame->GetGameTime();
         nlPrintf("PERIOD bored %.2f\n", timeSinceExcitement);
-        FireEventInline(AudioScriptEventMgr::AE_BoredPeriod, AudioScriptEventMgr::AET_Neutral);
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_BoredPeriod, AudioScriptEventMgr::AET_Neutral);
     }
 }
 
@@ -500,7 +423,7 @@ WEAKFUNC void RecordExcitingEvent()
     {
         nlPrintf("END bored\n");
         g_ScriptPollState.AmBored = 0;
-        FireEventInline(AudioScriptEventMgr::AE_BoredEnd, AudioScriptEventMgr::AET_Neutral);
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_BoredEnd, AudioScriptEventMgr::AET_Neutral);
     }
 }
 
@@ -533,7 +456,8 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
     {
     case 32:
     {
-        GET_EVENT_DATA(CollisionBallWallData, pData, 0x78);
+        CollisionBallWallData* pData;
+        pEvent->GetData(&pData);
         if (!pData->bIsShot)
         {
             return;
@@ -548,7 +472,8 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
         {
             return;
         }
-        GET_EVENT_DATA(CollisionBallGoalpostData, pData, 0x10E);
+        CollisionBallGoalpostData* pData;
+        pEvent->GetData(&pData);
         nlVector3 vel = pData->v3CollisionVelocity;
         float speed = nlSqrt(vel.f.z * vel.f.z + (vel.f.x * vel.f.x + vel.f.y * vel.f.y), true);
         if (speed > 35.0f)
@@ -628,7 +553,8 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
     }
     case 63:
     {
-        GET_EVENT_DATA(ShotAtGoalData, pData, 0x14A);
+        ShotAtGoalData* pData;
+        pEvent->GetData(&pData);
         if (pData->pShooter->IsCaptain())
         {
             AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_CaptainS2S,
@@ -650,21 +576,24 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
         return;
     case 67:
     {
-        GET_EVENT_DATA(ShotAtGoalData, pData, 0x14A);
+        ShotAtGoalData* pData;
+        pEvent->GetData(&pData);
         AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_HyperStrike,
             (unsigned int)pData->pShooter->m_pTeam->m_nSide != 0 ? AudioScriptEventMgr::AET_Away : AudioScriptEventMgr::AET_Home);
         return;
     }
     case 15:
     {
-        GET_EVENT_DATA(GoalieSaveData, pData, 0x13C);
+        GoalieSaveData* pData;
+        pEvent->GetData(&pData);
         AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_GoalieSave,
             (AudioScriptEventMgr::AUDIO_EVENT_TEAM)(((unsigned int)pData->pGoalie->m_pTeam->m_nSide != 0 ? AudioScriptEventMgr::AET_Away : AudioScriptEventMgr::AET_Home) ^ AudioScriptEventMgr::AET_Special));
         return;
     }
     case 20:
     {
-        GET_EVENT_DATA(ShotAtGoalData, pData, 0x14A);
+        ShotAtGoalData* pData;
+        pEvent->GetData(&pData);
         AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_Shot,
             (unsigned int)pData->pShooter->m_pTeam->m_nSide != 0 ? AudioScriptEventMgr::AET_Away : AudioScriptEventMgr::AET_Home);
         void RecordExcitingEvent();
@@ -674,7 +603,8 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
     case 22:
     case 24:
     {
-        GET_EVENT_DATA(PlayerAttackData, pData, 0x19A);
+        PlayerAttackData* pData;
+        pEvent->GetData(&pData);
         if (pData->pTarget == NULL)
         {
             return;
@@ -686,7 +616,8 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
     case 23:
     case 26:
     {
-        GET_EVENT_DATA(PlayerAttackData, pData, 0x19A);
+        PlayerAttackData* pData;
+        pEvent->GetData(&pData);
         if (pData->pTarget == NULL)
         {
             return;
@@ -697,35 +628,40 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
     }
     case 21:
     {
-        GET_EVENT_DATA(ShotAtGoalData, pData, 0x14A);
+        ShotAtGoalData* pData;
+        pEvent->GetData(&pData);
         AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_WindUp,
             (unsigned int)pData->pShooter->m_pTeam->m_nSide != 0 ? AudioScriptEventMgr::AET_Away : AudioScriptEventMgr::AET_Home);
         return;
     }
     case 69:
     {
-        GET_EVENT_DATA(PassBallData, pData, 0x131);
+        PassBallData* pData;
+        pEvent->GetData(&pData);
         AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_PerfectPass,
             (unsigned int)pData->pPasser->m_pTeam->m_nSide != 0 ? AudioScriptEventMgr::AET_Away : AudioScriptEventMgr::AET_Home);
         return;
     }
     case 71:
     {
-        GET_EVENT_DATA(PassBallData, pData, 0x131);
+        PassBallData* pData;
+        pEvent->GetData(&pData);
         AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_PerfectPassEnd,
             (unsigned int)pData->pPasser->m_pTeam->m_nSide != 0 ? AudioScriptEventMgr::AET_Away : AudioScriptEventMgr::AET_Home);
         return;
     }
     case 51:
     {
-        GET_EVENT_DATA(ShotAtGoalData, pData, 0x14A);
+        ShotAtGoalData* pData;
+        pEvent->GetData(&pData);
         AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_ChainChomp,
             (unsigned int)pData->pShooter->m_pTeam->m_nSide != 0 ? AudioScriptEventMgr::AET_Away : AudioScriptEventMgr::AET_Home);
         return;
     }
     case 52:
     {
-        GET_EVENT_DATA(ShotAtGoalData, pData, 0x14A);
+        ShotAtGoalData* pData;
+        pEvent->GetData(&pData);
         AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_ChainChompEnd,
             (unsigned int)pData->pShooter->m_pTeam->m_nSide != 0 ? AudioScriptEventMgr::AET_Away : AudioScriptEventMgr::AET_Home);
         return;
@@ -799,7 +735,8 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
         return;
     case 29:
     {
-        GET_EVENT_DATA(PowerupUsedEventData, pData, 0x1AF);
+        PowerupUsedEventData* pData;
+        pEvent->GetData(&pData);
         if (pData->Thrower == NULL)
         {
             return;
@@ -815,7 +752,8 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
     }
     case 30:
     {
-        GET_EVENT_DATA(PowerupHitPlayerEventData, pData, 0x1B9);
+        PowerupHitPlayerEventData* pData;
+        pEvent->GetData(&pData);
         AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_PowerUpHit,
             (unsigned int)pData->Target->m_pTeam->m_nSide != 0 ? AudioScriptEventMgr::AET_Away : AudioScriptEventMgr::AET_Home);
         return;
@@ -825,7 +763,8 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
         return;
     case 86:
     {
-        GET_EVENT_DATA(NISData, pData, 0x1A5);
+        NISData* pData;
+        pEvent->GetData(&pData);
         NIS_EVENT_LOOKUP* pFound = nlBSearch<NIS_EVENT_LOOKUP, unsigned long>(
             nlStringLowerHash(pData->Type), g_NisEventLookup, 4);
         AUDIO_EVENT_RECORD* pRecord = pFound != NULL ? &pFound->Event : NULL;

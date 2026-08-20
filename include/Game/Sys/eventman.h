@@ -26,6 +26,9 @@ public:
         , m_nReferenceCount(0)
     {
     }
+
+    template <typename T>
+    void GetData(T**);
 };
 
 typedef void (*EventCallback)(Event*, void*);

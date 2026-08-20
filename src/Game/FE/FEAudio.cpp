@@ -6,6 +6,7 @@
 #include "Game/Game.h"
 #include "Game/Sys/audio.h"
 #include "Game/Sys/eventman.h"
+#include "Game/Sys/EventData.h"
 #include "NL/nlList.h"
 #include "NL/nlAlgorithm.h"
 
@@ -17,6 +18,7 @@ static void* gpLastSoundFromPlayer;
 
 struct FrontEndAnimAudioData : EventData
 {
+    virtual u32 GetID() { return 0x16D; }
     /* 0x04 */ unsigned long audioIdentifier;
 }; // total size: 0x8
 
@@ -391,20 +393,7 @@ void FEAudioEventHandler(Event* pEvent, void*)
     case 0x54:
     {
         FrontEndAnimAudioData* data;
-        if ((s32)pEvent->m_data.GetID() == -1)
-        {
-            nlPrintf("Error: Trying to get event data on event with none!\n");
-            data = NULL;
-        }
-        else if ((s32)pEvent->m_data.GetID() != 0x16D)
-        {
-            nlPrintf("Error: GetData() failed! Data types do not match!\n");
-            data = NULL;
-        }
-        else
-        {
-            data = (FrontEndAnimAudioData*)&pEvent->m_data;
-        }
+        pEvent->GetData(&data);
 
         unsigned long stackHash = data->audioIdentifier;
         AnimAudioEventLookup* result = nlBSearch<AnimAudioEventLookup, unsigned long>(stackHash, gp_AnimAudioEventTable, gNumAnimAudioEvents);

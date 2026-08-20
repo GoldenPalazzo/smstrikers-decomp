@@ -14,28 +14,15 @@
 extern bool g_e3_Build;
 
 const char* AUDIO_DEFAULT_CONFIG_FILE = "DefaultAudioOptions.ini";
+static const char* GAMEPLAY_DEFAULT_CONFIG_FILE = "DefaultGameplayOptions.ini";
 static const char* POWERUPS_DEFAULT_CONFIG_FILE = "DefaultPowerupOptions.ini";
-
-// /**
-//  * Offset/Address/Size: 0xA8 | 0x801907F8 | size: 0x84
-//  */
-// void Config::TagValuePair::Get<BasicString<char, Detail::TempStringAllocator> >() const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80190750 | size: 0xA8
-//  */
-// void Config::Get<BasicString<char, Detail::TempStringAllocator> >(const char*, BasicString<char, Detail::TempStringAllocator>)
-// {
-// }
 
 /**
  * Offset/Address/Size: 0xFE8 | 0x801906F4 | size: 0x5C
  */
 AudioSettings::AudioSettings()
 {
-    memset(this, 0, 0x20);
+    memset(this, 0, sizeof(AudioSettings));
     MusicVolume = 0xA;
     SFXVolume = 0xA;
     VoiceVolume = 0xA;
@@ -191,7 +178,7 @@ void AudioSettings::ApplySettings(bool bApplyMode, bool bUpdateMode)
  */
 GameplaySettings::GameplaySettings()
 {
-    memset(this, 0, 0xC);
+    memset(this, 0, sizeof(GameplaySettings));
 
     SkillLevel = ROOKIE;
     GameTime = 0x12C;
@@ -224,7 +211,7 @@ void GameplaySettings::OnSettingsUpdated() const
  */
 PowerupSettings::PowerupSettings()
 {
-    memset(this, 0, 8);
+    memset(this, 0, sizeof(PowerupSettings));
     RedShells = true;
     GreenShells = true;
     BlueShells = true;
@@ -265,7 +252,7 @@ void PowerupSettings::OnSettingsUpdated() const
  */
 CheatSettings::CheatSettings()
 {
-    memset(this, 0, 8);
+    memset(this, 0, sizeof(CheatSettings));
     mCustomPowerups = CP_OFF;
     mStunnedGoalies = false;
     mInfinitePowerups = false;
@@ -297,7 +284,7 @@ void CheatSettings::OnSettingsUpdated() const
  */
 VisualSettings::VisualSettings()
 {
-    memset(this, 0, 0x0C);
+    memset(this, 0, sizeof(VisualSettings));
     mIsAutoZoomCamera = true;
     mCameraZoomLevel = 0.5f;
     mIsWidescreen = GetConfigBool(Config::Global(), "widescreen", false);

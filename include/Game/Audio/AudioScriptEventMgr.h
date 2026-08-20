@@ -1,17 +1,6 @@
 #ifndef _AUDIOSCRIPTEVENTMGR_H_
 #define _AUDIOSCRIPTEVENTMGR_H_
 
-// void AudioScriptEventHandler(Event*, void*);
-// void RecordExcitingEvent();
-// void Poll();
-// void GetEventTeam<CollisionBallGoalpostData>(Event*, bool);
-// void GetEventTeam<GoalScoredData>(Event*, bool);
-// void nlBSearch<NIS_EVENT_LOOKUP, unsigned long>(const unsigned long&, NIS_EVENT_LOOKUP*, int);
-// void nlQSort<NIS_EVENT_LOOKUP>(NIS_EVENT_LOOKUP*, int, int (*)(const NIS_EVENT_LOOKUP*, const NIS_EVENT_LOOKUP*));
-// void nlDefaultQSortComparer<NIS_EVENT_LOOKUP>(const NIS_EVENT_LOOKUP*, const NIS_EVENT_LOOKUP*);
-// void 0x8014B71C..0x8014B818 | size: 0xFC;
-// void nlListAddEnd<ListEntry<AUDIO_EVENT_RECORD>>(ListEntry<AUDIO_EVENT_RECORD>**, ListEntry<AUDIO_EVENT_RECORD>**, ListEntry<AUDIO_EVENT_RECORD>*);
-
 class AudioScriptEventMgr
 {
 public:
@@ -87,35 +76,5 @@ class _AudioEventRaiser
 public:
     void RaiseEvent(AUDIO_EVENT_RECORD*);
 };
-
-// class WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRaiser>
-// {
-// public:
-//     void Callback(ListEntry<AUDIO_EVENT_RECORD>*);
-// };
-
-// class ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD>>>
-// {
-// public:
-//     void DeleteEntry(ListEntry<AUDIO_EVENT_RECORD>*);
-// };
-
-// class nlListSlotPool<AUDIO_EVENT_RECORD>
-// {
-// public:
-//     void ~nlListSlotPool();
-// };
-
-// class nlWalkList<ListEntry<AUDIO_EVENT_RECORD>, WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRaiser>>(ListEntry<AUDIO_EVENT_RECORD>*, WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRaiser>*, void (WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRaiser>
-// {
-// public:
-//     void *)(ListEntry<AUDIO_EVENT_RECORD>*));
-// };
-
-// class nlWalkList<ListEntry<AUDIO_EVENT_RECORD>, ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD>>>>(ListEntry<AUDIO_EVENT_RECORD>*, ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD>>>*, void (ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD>>>
-// {
-// public:
-//     void *)(ListEntry<AUDIO_EVENT_RECORD>*));
-// };
 
 #endif // _AUDIOSCRIPTEVENTMGR_H_

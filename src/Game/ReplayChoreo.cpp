@@ -556,13 +556,13 @@ void ReplayChoreo::StopWorldSfx(const char* name)
 void ReplayChoreo::FilterOn(float fadeTime)
 {
     GameTweaks* tweaks = g_pGame->m_pGameTweaks;
-    Audio::FadeFilter(tweaks->unk214, tweaks->unk210, fadeTime, 0.0f);
+    Audio::FadeFilter(tweaks->fFadeFilterFreqMax, tweaks->fFadeFilterFreqMin, fadeTime, 0.0f);
 }
 
 void ReplayChoreo::FilterOff(float fadeTime)
 {
     GameTweaks* tweaks = g_pGame->m_pGameTweaks;
-    Audio::FadeFilter(tweaks->unk210, tweaks->unk214, fadeTime, 0.0f);
+    Audio::FadeFilter(tweaks->fFadeFilterFreqMin, tweaks->fFadeFilterFreqMax, fadeTime, 0.0f);
 }
 
 /**

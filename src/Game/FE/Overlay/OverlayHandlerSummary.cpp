@@ -35,62 +35,6 @@ static char* SUMMARY_COL_NAMES[4] = {
     "numeric_column_sm4",
 };
 
-// /**
-//  * Offset/Address/Size: 0x468 | 0x800FF898 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x430 | 0x800FF860 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800FF704 | size: 0x15C
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800FF680 | size: 0x84
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800FF648 | size: 0x38
-//  */
-// void FEFinder<TLTextInstance, 3>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800FF4EC | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800FF468 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800FF430 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x1D88 | 0x800FE928 | size: 0xB08
  */
@@ -379,7 +323,7 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
         unsigned short tempBuffer[32];
         nlStrToWcs(numGamesString.c_str(), tempBuffer, 0x40);
         WideBasicString formatted(Format(unformatted, tempBuffer));
-        memcpy(mTitleBuffer, formatted.c_str(), 0x80);
+        memcpy(mTitleBuffer, formatted.c_str(), sizeof(mTitleBuffer));
 
         TLTextInstance* pTitleText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
@@ -486,7 +430,7 @@ void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
             unsigned short tempBuffer[32];
             nlStrToWcs(numGamesString.c_str(), tempBuffer, 0x40);
             WideBasicString formatted(Format(unformatted, tempBuffer));
-            memcpy(mTitleBuffer, formatted.c_str(), 0x80);
+            memcpy(mTitleBuffer, formatted.c_str(), sizeof(mTitleBuffer));
 
             pTitleText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
                 pSlide,

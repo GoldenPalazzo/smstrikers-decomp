@@ -20,6 +20,35 @@
 
 - **Open-Source Physics:** A noteworthy gem uncovered via the decompilation project is the use of the **Open Dynamics Engine (ODE)**—an early, open-source physics engine written in C/C++ (BSD-licensed)—to power the game's physics simulation.[^3]  
 
+## Decompilation Project — KPI Snapshot
+
+Measured from the configured `G4QE01` linked build on August 20, 2026.
+
+| Metric | Value |
+|---|---:|
+| C/C++ translation units | **730** |
+| Unique headers compiled | **788** |
+| Total source files | **1,518** |
+| Code-only lines | **338,505** |
+| Total physical lines | **409,658** |
+| Linked functions/methods | **8,605** |
+| Code/function match | **100%** |
+| `main.elf` size | **5.68 MB** |
+| Hash verification | **SHA-1 — passes** |
+
+### Source Breakdown
+
+| Type | Files | Code lines | Physical lines |
+|---|---:|---:|---:|
+| Headers | 788 | 51,443 | 64,339 |
+| C | 206 | 66,441 | 79,569 |
+| C++ | 524 | 220,621 | 265,750 |
+| **Total** | **1,518** | **338,505** | **409,658** |
+
+The configured assembly translation unit is excluded from these source-file
+figures. The functions/methods total includes linked C functions, free C++
+functions, and class methods. Generated build headers are excluded.
+
 ##  Voice Actor Fun Fact
 
 - **Bowser's Voice:** The game features the debut performance of **Kenny James** as Bowser (and as part of the Super Team). He has since become the series' regular English voice for Bowser across multiple variants and titles.[^4]

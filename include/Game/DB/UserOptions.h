@@ -121,11 +121,4 @@ public:
     /* 0x1C */ eAudioMode DefaultMode;
 }; // total size: 0x20
 
-// class Config
-// {
-// public:
-//     void TagValuePair::Get<BasicString<char, Detail::TempStringAllocator>>() const;
-//     void Get<BasicString<char, Detail::TempStringAllocator>>(const char*, BasicString<char, Detail::TempStringAllocator>);
-// };
-
 #endif // _USEROPTIONS_H_

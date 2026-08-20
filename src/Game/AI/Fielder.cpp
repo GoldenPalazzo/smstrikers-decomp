@@ -127,27 +127,6 @@ static const LooseBallContactAnimInfo gOneTimerLeadVolleyContactAnims[4] = {
     { 0x4E, 9.5f, 0x2000, 0x6000 },
 };
 
-static LooseBallContactAnimInfo IdleGroundContactAnims[1] = {
-    { 0x37, 3.0f, 0x0000, 0xFFFF }
-};
-
-static LooseBallContactAnimInfo IdleVolleyContactAnims[1] = {
-    { 0x38, 9.0f, 0x0000, 0xFFFF }
-};
-
-static LooseBallContactAnimInfo LeadGroundContactAnims[4] = {
-    { 0x39, 7.0f, 0xE000, 0x2000 },
-    { 0x3A, 7.0f, 0xA000, 0xE000 },
-    { 0x3C, 7.0f, 0x6000, 0xA000 },
-    { 0x3B, 7.0f, 0x2000, 0x6000 }
-};
-
-static LooseBallContactAnimInfo LeadVolleyContactAnims[3] = {
-    { 0x3D, 10.0f, 0xE000, 0x2000 },
-    { 0x3F, 9.0f, 0x2000, 0x8000 },
-    { 0x3E, 9.0f, 0x8000, 0xE000 }
-};
-
 /**
  * Offset/Address/Size: 0xD2E8 | 0x80026624 | size: 0x474
  */
@@ -180,7 +159,7 @@ cFielder::cFielder(int nPlayerID, int nTeamID, eCharacterClass cc, const int* nM
     m_v3DesiredPosition.f.y = 0.0f;
     m_v3DesiredPosition.f.z = 0.0f;
 
-    AIPlay* pAIPlayMem = (AIPlay*)nlMalloc(0x10, 8, false);
+    AIPlay* pAIPlayMem = (AIPlay*)nlMalloc(sizeof(AIPlay), 8, false);
     pAIPlayMem = new (pAIPlayMem) AIPlay(this, AIPLAY_NULL, -1.0f);
     m_pCurrentPlay = pAIPlayMem;
 
@@ -477,7 +456,7 @@ void cFielder::SetMark(cFielder* pMark)
     }
 }
 
-static inline float CalcPenaltyWorth(ePenaltyType eType)
+float CalcPenaltyWorth(ePenaltyType eType)
 {
     float fMinAmount = 0.0f;
     float fMaxAmount = 0.0f;
@@ -1834,7 +1813,6 @@ void cFielder::ShootBallDueToContact(const nlVector3& v3IncomingVelocity)
         return;
     }
     nlVector3 v3ReleaseVelocity;
-    // TODO: Recover the original vector-add expression without changing CollideWithFreezeCallback inlining.
     float fZ = v3IncomingVelocity.f.z + m_v3Velocity.f.z;
     float fY = v3IncomingVelocity.f.y + m_v3Velocity.f.y;
     float fX = v3IncomingVelocity.f.x + m_v3Velocity.f.x;
@@ -3069,12 +3047,47 @@ bool cFielder::GetFormationPosition(nlVector3& v3DestPosition, float fBallPosFor
     return m_pTeam->CalculateFormationPosition(v3DestPosition, this, m_DesireCommonVars.bInPosition, fBallPosFormationWeight);
 }
 
+const LooseBallContactAnimInfo* GetOneTimerIdleGroundContactAnims()
+{
+    return gOneTimerIdleGroundContactAnims;
+}
+
+int GetNumOneTimerIdleGroundContactAnims()
+{
+    return sizeof(gOneTimerIdleGroundContactAnims) / sizeof(gOneTimerIdleGroundContactAnims[0]);
+}
+
+const LooseBallContactAnimInfo* GetOneTimerIdleVolleyContactAnims()
+{
+    return gOneTimerIdleVolleyContactAnims;
+}
+
+int GetNumOneTimerIdleVolleyContactAnims()
+{
+    return sizeof(gOneTimerIdleVolleyContactAnims) / sizeof(gOneTimerIdleVolleyContactAnims[0]);
+}
+
 /**
  * Offset/Address/Size: 0x6D4C | 0x80020088 | size: 0xC
  */
 const LooseBallContactAnimInfo* GetOneTimerLeadGroundContactAnims()
 {
     return gOneTimerLeadGroundContactAnims;
+}
+
+int GetNumOneTimerLeadGroundContactAnims()
+{
+    return sizeof(gOneTimerLeadGroundContactAnims) / sizeof(gOneTimerLeadGroundContactAnims[0]);
+}
+
+const LooseBallContactAnimInfo* GetOneTimerLeadVolleyContactAnims()
+{
+    return gOneTimerLeadVolleyContactAnims;
+}
+
+int GetNumOneTimerLeadVolleyContactAnims()
+{
+    return sizeof(gOneTimerLeadVolleyContactAnims) / sizeof(gOneTimerLeadVolleyContactAnims[0]);
 }
 
 /**
@@ -3138,6 +3151,24 @@ LooseBallContactAnimInfo* cFielder::GetOneTimerBallContactAnimInfo(unsigned shor
  */
 const LooseBallContactAnimInfo* cFielder::GetReceivePassBallContactAnimInfo(cBall* pBall, const nlVector3& rv3Pos, unsigned short aAngle, bool bLeadPass, bool bVolleyPass)
 {
+    static LooseBallContactAnimInfo IdleGroundContactAnims[1] = {
+        { 0x37, 3.0f, 0x0000, 0xFFFF }
+    };
+    static LooseBallContactAnimInfo IdleVolleyContactAnims[1] = {
+        { 0x38, 9.0f, 0x0000, 0xFFFF }
+    };
+    static LooseBallContactAnimInfo LeadGroundContactAnims[4] = {
+        { 0x39, 7.0f, 0xE000, 0x2000 },
+        { 0x3A, 7.0f, 0xA000, 0xE000 },
+        { 0x3C, 7.0f, 0x6000, 0xA000 },
+        { 0x3B, 7.0f, 0x2000, 0x6000 }
+    };
+    static LooseBallContactAnimInfo LeadVolleyContactAnims[3] = {
+        { 0x3D, 10.0f, 0xE000, 0x2000 },
+        { 0x3F, 9.0f, 0x2000, 0x8000 },
+        { 0x3E, 9.0f, 0x8000, 0xE000 }
+    };
+
     const LooseBallContactAnimInfo* pBallContactAnimInfo;
     int nNumContactAnims;
 
@@ -3675,6 +3706,48 @@ void cFielder::CalcPointOnPerimeter(nlVector3& dest, const nlVector3& fromPoint,
     dest.f.z = rz;
 }
 
+void cFielder::CleanActionHit()
+{
+    Audio::gCrowdSFX.Stop((Audio::eWorldSFX)0x9F, cGameSFX::SFX_STOP_FIRST);
+}
+
+void cFielder::CleanActionDeke()
+{
+    m_pCurrentAnimController->m_fPlaybackSpeedScale = 1.0f;
+}
+
+void cFielder::CleanActionElectrocution()
+{
+    m_v3Position.f.z = 0.0f;
+    m_v3Velocity.f.z = 0.0f;
+}
+
+void cFielder::CleanActionLooseBallPass()
+{
+    m_pPhysicsCharacter->m_CanCollideWithWall = true;
+    SetNoPickUpTime(0.0f);
+    mActionLooseBallPassVars.bVolleyPass = false;
+}
+
+void cFielder::CleanActionLooseBallShot()
+{
+    m_pPhysicsCharacter->m_CanCollideWithWall = true;
+    SetNoPickUpTime(0.0f);
+    mActionLooseBallShotVars.bIsChipShot = false;
+}
+
+void cFielder::CleanActionOnetimer()
+{
+    EndBlur();
+    mActionShotVars.bIsChipShot = false;
+}
+
+void cFielder::CleanActionPass()
+{
+    mActionPassingVars.pPassTarget = NULL;
+    mActionPassingVars.bVolleyPass = false;
+}
+
 /**
  * Offset/Address/Size: 0x5DA4 | 0x8001F0E0 | size: 0x4C
  */
@@ -3690,6 +3763,29 @@ void cFielder::ClearTimers()
  */
 void cFielder::ClearVolleyPass()
 {
+}
+
+void cFielder::CleanActionPostWhistle()
+{
+}
+
+void cFielder::CleanActionRunning()
+{
+    mActionRunningVars.eLastStrafeDirection = STRAFE_IDLE;
+}
+
+void cFielder::CleanActionRunningWB()
+{
+    m_eLastPadAction = PAD_NONE;
+}
+
+void cFielder::CleanActionRunningWBTurbo()
+{
+    m_eLastPadAction = PAD_NONE;
+    if (m_ePowerup != POWER_UP_MUSHROOM)
+    {
+        EndBlur();
+    }
 }
 
 /**
@@ -3729,6 +3825,23 @@ void cFielder::CleanActionShootToScore()
 
     ParticleUpdateTask::SetTimeScale(1.0f);
     World::sbIsHyperShootToScoreRenderingEnabled = false;
+}
+
+void cFielder::CleanActionShot()
+{
+    mActionShotVars.bIsChipShot = false;
+}
+
+void cFielder::CleanActionSlideAttack()
+{
+    Audio::gCrowdSFX.Stop((Audio::eWorldSFX)0x9F, cGameSFX::SFX_STOP_FIRST);
+    KillSlideTackleTrail(this);
+    StopSFX(Audio::CHARSFX_SLIDE);
+}
+
+void cFielder::CleanActionSquishReact()
+{
+    KillDaze(this);
 }
 
 /**
@@ -4500,14 +4613,7 @@ void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVect
         }
         if (turboRequest == TR_FORCED_OFF)
         {
-            if (fMaxSpeed <= m_pTweaks->fRunningSpeed)
-            {
-                fMaxSpeed = fMaxSpeed;
-            }
-            else
-            {
-                fMaxSpeed = m_pTweaks->fRunningSpeed;
-            }
+            fMaxSpeed = nlMinEquals(fMaxSpeed, m_pTweaks->fRunningSpeed);
         }
         else if (turboRequest == TR_FORCED_ON || (turboRequest == TR_MOVING_TARGET && IsNearlyZero(fDesiredPositionRateOfChange, fZero)))
         {
@@ -4535,14 +4641,7 @@ void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVect
         }
         if (turboRequest == TR_FORCED_OFF)
         {
-            if (fMaxSpeed <= ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed)
-            {
-                fMaxSpeed = fMaxSpeed;
-            }
-            else
-            {
-                fMaxSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
-            }
+            fMaxSpeed = nlMinEquals(fMaxSpeed, ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed);
         }
         else if (turboRequest == TR_FORCED_ON || (turboRequest == TR_MOVING_TARGET && IsNearlyZero(fDesiredPositionRateOfChange, fZero)))
         {
