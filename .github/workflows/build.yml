@@ -9,7 +9,7 @@ jobs:
     # This is a *private* build container.
     # See docs/github_actions.md for more information.
     # container: ghcr.io/my/game-build:main
-    container: ghcr.io/yannicksuter/sms-decomp-build:main
+    container: ghcr.io/yannicksuter/smstrikers-decomp-build:main
 
     runs-on: ubuntu-latest
     strategy:
