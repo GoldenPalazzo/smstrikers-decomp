@@ -25,8 +25,8 @@ class WorldAnimController
 public:
     WorldAnimController(const char* szAnimSetAndHierarchyName, World* pWorldContext);
     virtual ~WorldAnimController();
-    virtual void Update(float) { };
-    virtual glModel* GetUpdatedModel(unsigned long, void*) { return 0; };
+    virtual void Update(float fTimeDelta) { };
+    virtual glModel* GetUpdatedModel(unsigned long program, void* pLightData) { return 0; };
 
     void SetAnimation(const char* szAnimationName, ePlayMode playMode);
     void SetAnimationTime(float fTime);
@@ -34,20 +34,22 @@ public:
     float GetAnimationDuration();
 
 public:
-    /* 0x4, */ cPoseAccumulator* m_pPoseAccumulator;
-    /* 0x8, */ cPN_SAnimController* m_pPoseTree;
-    /* 0xC, */ float m_fSpeed;
+    /* 0x04 */ cPoseAccumulator* m_pPoseAccumulator;
+    /* 0x08 */ cPN_SAnimController* m_pPoseTree;
+    /* 0x0C */ float m_fSpeed;
     /* 0x10 */ AnimationSet* m_pAnimationSet;
     /* 0x14 */ bool m_bIsGanged;
 }; // total size: 0x18
 
 class TMAnimController : public WorldAnimController
 {
+    friend class World;
+
 public:
     TMAnimController(const char* szAnimSetAndHierarchyName, World* pWorldContext);
     virtual ~TMAnimController();
     virtual void Update(float fTimeDelta);
-    virtual glModel* GetUpdatedModel(); // retail: header-inline (zero-arg overload per DWARF)
+    virtual glModel* GetUpdatedModel();
 
     void ForceFrameRebuild();
     unsigned char BindGeomToAnimNode(const char* szGeomName, const char* szBoneName);
@@ -65,7 +67,7 @@ public:
     SkinnedAnimController(const char* szAnimSetAndHierarchyName, World* pWorldContext);
     virtual ~SkinnedAnimController();
     virtual void Update(float fTimeDelta);
-    virtual glModel* GetUpdatedModel(unsigned long program, void* pLightData); // retail: header-inline
+    virtual glModel* GetUpdatedModel(unsigned long program, void* pLightData);
 
     void UpdateSkinnedMesh(unsigned long program, void* pLightData);
     void UpdateAnimation(float fTimeDelta, const nlMatrix4& worldMatrix);
@@ -94,28 +96,8 @@ public:
     AnimationSet* FindAnimationSet(const char* szAnimationSetName);
     cSAnim* FindAnimation(unsigned long uHashID, const char* szAnimationName);
 
-    /* 0x0 */ cInventory<cSHierarchy>* m_pHierarchyInventory;                                               // offset 0x0, size 0x4
-    /* 0x4 */ nlAVLTree<unsigned long, AnimationSet*, DefaultKeyCompare<unsigned long> > m_animationSetMap; // offset 0x4, size 0x14
+    /* 0x00 */ cInventory<cSHierarchy>* m_pHierarchyInventory;
+    /* 0x04 */ nlAVLTree<unsigned long, AnimationSet*, DefaultKeyCompare<unsigned long> > m_animationSetMap;
 }; // total size: 0x18
-
-// class nlAVLTree<unsigned long, AnimationSet*, DefaultKeyCompare<unsigned long>>
-// {
-// public:
-//     void ~nlAVLTree();
-// };
-
-// class AVLTreeBase<unsigned long, AnimationSet*, NewAdapter<AVLTreeEntry<unsigned long, AnimationSet*>>, DefaultKeyCompare<unsigned long>>
-// {
-// public:
-//     void DeleteEntry(AVLTreeEntry<unsigned long, AnimationSet*>*);
-//     void AllocateEntry(void*, void*);
-//     void CompareKey(void*, AVLTreeNode*);
-//     void CompareNodes(AVLTreeNode*, AVLTreeNode*);
-//     void CastUp(AVLTreeNode*) const;
-//     void PostorderTraversal(AVLTreeEntry<unsigned long, AnimationSet*>*, void (AVLTreeBase<unsigned long, AnimationSet*, NewAdapter<AVLTreeEntry<unsigned long, AnimationSet*>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, AnimationSet*>*));
-//     void DestroyTree(void (AVLTreeBase<unsigned long, AnimationSet*, NewAdapter<AVLTreeEntry<unsigned long, AnimationSet*>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, AnimationSet*>*));
-//     void Clear();
-//     void ~AVLTreeBase();
-// };
 
 #endif // _WORLDANIM_H_

@@ -8,7 +8,7 @@
 class SoundKeyframeTrigger
 {
 public:
-    void Update(float, float);
+    void Update(float previoustime, float currenttime);
 
     /*0x00*/ TLSlide* m_slide; // first word is the slide pointer
 };

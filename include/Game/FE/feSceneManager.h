@@ -34,15 +34,15 @@ struct PackagePushPopMessage
 class FESceneManager : public nlSingleton<FESceneManager>
 {
 public:
-    void Update(float);
+    void Update(float dt);
     void RenderActiveScenes();
     void QueueAllScenesPop();
     void QueueScenePop();
-    void QueueScenePush(BaseSceneHandler*, const char*);
+    void QueueScenePush(BaseSceneHandler* pSceneHandler, const char* szFilename);
     void ProcessPushPopQueue();
-    void LoadScene(const char*, BaseSceneHandler*);
-    static bool IsObjectQueuedForPop(BaseSceneHandler*);
-    BaseSceneHandler* GetSceneHandler(unsigned long);
+    void LoadScene(const char* szFilename, BaseSceneHandler* pHandler);
+    static bool IsObjectQueuedForPop(BaseSceneHandler* pSceneHandler);
+    BaseSceneHandler* GetSceneHandler(unsigned long hashID);
     void ForceImmediateStackProcessing();
     bool AreAllScenesValid();
 

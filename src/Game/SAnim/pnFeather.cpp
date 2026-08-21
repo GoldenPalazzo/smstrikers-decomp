@@ -26,7 +26,7 @@ cPN_Feather::cPN_Feather(cSHierarchy* hierarchy, void (*callback)(unsigned int, 
     m_eFeatherBlendMode = eFEATHER_BLEND_OUT;
     m_pBaseHierarchy = hierarchy;
 
-    m_pFeatherWeights = (float*)nlMalloc(hierarchy->m_nodeCount * sizeof(float), 8, 0);
+    m_pFeatherWeights = (float*)nlMalloc(hierarchy->m_nNumNodes * sizeof(float), 8, 0);
 
     ClearNodeWeights();
 
@@ -47,7 +47,7 @@ cPN_Feather::~cPN_Feather()
  */
 void cPN_Feather::ClearNodeWeights()
 {
-    for (int i = 0; i < m_pBaseHierarchy->m_nodeCount; ++i)
+    for (int i = 0; i < m_pBaseHierarchy->m_nNumNodes; ++i)
     {
         m_pFeatherWeights[i] = 0.0f;
     }

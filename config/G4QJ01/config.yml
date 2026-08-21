@@ -23,3 +23,8 @@ ldscript_template: config/G4QJ01/ldscript.tpl
 block_relocations:
   - source: .rodata:0x8029302C
   - source: .rodata:0x80294104
+  # The world physics chunk ID 0x8001D000 happens to equal
+  # ShouldIStrafe + 0x174. These instructions form the literal chunk ID,
+  # not a code pointer.
+  - source: .text:0x801993EC
+  - source: .text:0x801993F0

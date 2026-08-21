@@ -20,6 +20,7 @@
 #include "NL/glx/glxTexture.h"
 #include "Game/Sys/debug.h"
 #include "Game/Game.h"
+#include "Game/Ball.h"
 #include "Game/Drawable/DrawableObj.h"
 #include "Game/Drawable/DrawableModel.h"
 #include "Game/Drawable/DrawableSkinModel.h"
@@ -78,7 +79,7 @@ World::World(const char* szWorldName)
     , m_animControllerList(0)
 {
     m_WorldNameLength = nlStrLen<char>(szWorldName);
-    nlStrNCpy<char>(m_WorldNamePrefix, szWorldName, 0x40);
+    nlStrNCpy<char>(m_WorldNamePrefix, szWorldName, MAX_NAME_LENGTH);
 
     m_WorldNamePrefix[m_WorldNameLength++] = '/';
 
@@ -162,80 +163,6 @@ World::~World()
     delete m_pPhysicsData;
 }
 
-struct DrawableMapFindHelper
-{
-    char pad[0x8];
-    AVLTreeEntry<unsigned long, DrawableObject*>* m_Root;
-
-    inline bool FindGet(unsigned long key, DrawableObject*** foundValue) const
-    {
-        AVLTreeEntry<unsigned long, DrawableObject*>* node = m_Root;
-        while (node != NULL)
-        {
-            int cmpResult;
-            if (key == node->key)
-                cmpResult = 0;
-            else if (key < node->key)
-                cmpResult = -1;
-            else
-                cmpResult = 1;
-            if (cmpResult == 0)
-            {
-                if (foundValue != NULL)
-                    *foundValue = &node->value;
-                return true;
-            }
-            else
-            {
-                if (cmpResult < 0)
-                    node = (AVLTreeEntry<unsigned long, DrawableObject*>*)node->node.left;
-                else
-                    node = (AVLTreeEntry<unsigned long, DrawableObject*>*)node->node.right;
-            }
-        }
-        return false;
-    }
-
-    struct EqualFirstCompare
-    {
-        inline int operator()(unsigned long key, unsigned long nodeKey) const
-        {
-            if (key == nodeKey)
-                return 0;
-            if (key < nodeKey)
-                return -1;
-            return 1;
-        }
-    };
-
-    inline bool FindGetEqualFirst(unsigned long key, DrawableObject*** foundValue) const
-    {
-        AVLTreeEntry<unsigned long, DrawableObject*>* node = m_Root;
-        while (node != NULL)
-        {
-            int cmpResult = EqualFirstCompare()(key, node->key);
-            if (cmpResult == 0)
-            {
-                if (foundValue != NULL)
-                    *foundValue = &node->value;
-                return true;
-            }
-            else
-            {
-                if (cmpResult < 0)
-                    node = (AVLTreeEntry<unsigned long, DrawableObject*>*)node->node.left;
-                else
-                    node = (AVLTreeEntry<unsigned long, DrawableObject*>*)node->node.right;
-            }
-        }
-        return false;
-    }
-};
-
-class cGame;
-class cBall;
-extern cGame* g_pGame;
-extern cBall* g_pBall;
 struct WorldObjectChunkData
 {
     /* 0x00 */ char m_szName[64];
@@ -325,7 +252,7 @@ bool World::LoadGeometry(const char* szWorldName, bool bMakeDrawables, bool keep
 {
     char buffer[256];
 
-    nlSNPrintf(buffer, 0xFF, "%s.glt", szWorldName);
+    nlSNPrintf(buffer, sizeof(buffer) - 1, "%s.glt", szWorldName);
     tDebugPrintManager::Print(DC_RENDER, "Loading world texture file: %s\n", buffer);
     glLoadTextureBundle(buffer);
 
@@ -361,33 +288,8 @@ static inline float World_SelectBoundingRadius(AABBDimensions& aabb)
  */
 bool World::LoadGeometry(glModel* gModel, unsigned long uNumModels, bool bMakeDrawables, bool keepTransform, unsigned long* pDrawableObjectHashes, int* pNumObjectsLoaded, bool bTrophy)
 {
-    struct WorldObjectDataLocal
-    {
-        unsigned long m_uObjectCreationFlags;
-        unsigned long m_uHashID;
-        unsigned long m_uModelID;
-        unsigned long m_uShadowHashID;
-        unsigned long m_uRenderLayer;
-        nlMatrix4 m_worldMatrix;
-        float m_fRadius;
-        nlVector3 m_v3Offset;
-    };
-
-    struct glModelPacketMatrixRef
-    {
-        char pad[0x24];
-        unsigned long matrix;
-    };
-
-    struct DrawableModelProxy
-    {
-        char pad[0x9C];
-        glModel* m_pModel;
-    };
-
-    WorldObjectDataLocal data;
+    WorldObjectData data;
     AABBDimensions aabb;
-    DrawableObject** foundValue;
     DrawableObject* pObject;
 
     m_pModels = gModel;
@@ -407,7 +309,7 @@ bool World::LoadGeometry(glModel* gModel, unsigned long uNumModels, bool bMakeDr
 
         while (pModel < pEndModel)
         {
-            nlZeroMemory(&data, sizeof(WorldObjectDataLocal));
+            nlZeroMemory(&data, sizeof(WorldObjectData));
 
             data.m_uHashID = pModel->id;
             data.m_uModelID = pModel->id;
@@ -415,7 +317,7 @@ bool World::LoadGeometry(glModel* gModel, unsigned long uNumModels, bool bMakeDr
 
             if (keep)
             {
-                glGetMatrix(((glModelPacketMatrixRef*)pModel->packets)->matrix, *pWorldMtx);
+                glGetMatrix(pModel->packets->state.matrix, *pWorldMtx);
             }
             else
             {
@@ -423,16 +325,9 @@ bool World::LoadGeometry(glModel* gModel, unsigned long uNumModels, bool bMakeDr
             }
 
             data.m_fRadius = radius;
-            HandleObjectCreation((WorldObjectData*)&data);
+            HandleObjectCreation(&data);
 
-            if (((DrawableMapFindHelper*)&m_drawableMap)->FindGetEqualFirst(pModel->id, &foundValue))
-            {
-                pObject = *foundValue;
-            }
-            else
-            {
-                pObject = NULL;
-            }
+            pObject = FindDrawableObject(pModel->id);
 
             pObject->m_uObjectFlags |= 0x4;
 
@@ -441,8 +336,8 @@ bool World::LoadGeometry(glModel* gModel, unsigned long uNumModels, bool bMakeDr
                 DrawableModel* model = pObject->AsDrawableModel();
                 if (model != NULL)
                 {
-                    glModelPacket* pPacket = ((DrawableModelProxy*)model)->m_pModel->packets;
-                    while (pPacket < ((DrawableModelProxy*)model)->m_pModel->packets + ((DrawableModelProxy*)model)->m_pModel->numPackets)
+                    glModelPacket* pPacket = model->m_pModel->packets;
+                    while (pPacket < model->m_pModel->packets + model->m_pModel->numPackets)
                     {
                         if (pPacket->state.texconfig & 0x10)
                         {
@@ -476,24 +371,22 @@ bool World::LoadGeometry(glModel* gModel, unsigned long uNumModels, bool bMakeDr
     return m_pModels != NULL;
 }
 
+GLShadowVolume* World::FindShadowVolumeByID(unsigned long uHashID)
+{
+    return glInventory.GetShadowVolume(uHashID);
+}
+
+glModel* World::FindModelByID(unsigned long uHashID)
+{
+    return glInventory.GetModel(uHashID);
+}
+
 /**
  * Offset/Address/Size: 0x3084 | 0x80197D48 | size: 0x39C
  */
 u8 World::HandleObjectCreation(WorldObjectData* pObjectData)
 {
-    struct WorldObjectDataLocal
-    {
-        unsigned long m_uObjectCreationFlags;
-        unsigned long m_uHashID;
-        unsigned long m_uModelID;
-        unsigned long m_uShadowHashID;
-        unsigned long m_uRenderLayer;
-        nlMatrix4 m_worldMatrix;
-        float m_fRadius;
-        nlVector3 m_v3Offset;
-    };
-
-    WorldObjectDataLocal* pData = (WorldObjectDataLocal*)pObjectData;
+    WorldObjectData* pData = pObjectData;
     DrawableObject* pDrawable = NULL;
     glModel* pModel = glInventory.GetModel(pData->m_uModelID);
 
@@ -632,7 +525,7 @@ bool World::LoadObjectData(const char* szWorldName)
     nlChunk* pChunk;
     void* pWorldData;
 
-    nlSNPrintf(szFullFileName, 255, "art/%s.wld", szWorldName);
+    nlSNPrintf(szFullFileName, sizeof(szFullFileName), "art/%s.wld", szWorldName);
     tDebugPrintManager::Print(DC_RENDER, "Loading world object file: %s\n", szFullFileName);
 
     pWorldData = nlLoadEntireFile(szFullFileName, NULL, 0x20, AllocateEnd);
@@ -898,11 +791,6 @@ void World::CreateLightUserData()
     }
 }
 
-static inline void* World_GetSTSIntensity(const World* pWorld)
-{
-    return pWorld->m_pSTSIntensity;
-}
-
 /**
  * Offset/Address/Size: 0x1B7C | 0x80196840 | size: 0x12C
  */
@@ -911,7 +799,7 @@ void* World::GetCustomSpecularData(glModelPacket* pPacket, bool bPerm)
     GLSpecularUserData* pCursor;
     u32* p32;
     int numLights;
-    void* pSTSIntensity = World_GetSTSIntensity(this);
+    void* pSTSIntensity = GetSTSIntensity();
 
     u8 glossLevel = (u8)glGetTextureState(pPacket->state.texturestate, GLTS_GlossLevel);
 
@@ -959,10 +847,10 @@ void World::CreateHelperObjFromChunk(nlChunk* chunk)
     {
         u32 shift = alignment >> 24;
         u32 alignBytes = 1 << shift;
-        u8* pData = (u8*)chunk;
-        pData = pData + alignBytes;
-        pData = pData + 7;
-        pWorldHelperChunkData = (WorldHelperChunkData*)((u32)pData & ~(alignBytes - 1));
+        u8* pChunkData = (u8*)chunk;
+        pChunkData = pChunkData + alignBytes;
+        pChunkData = pChunkData + 7;
+        pWorldHelperChunkData = (WorldHelperChunkData*)((u32)pChunkData & ~(alignBytes - 1));
     }
     else
     {
@@ -977,7 +865,7 @@ void World::CreateHelperObjFromChunk(nlChunk* chunk)
     flashString = "fx_camera_flash";
     if (nlStrNICmp<char>(substring + 1, flashString, nlStrLen<char>(flashString)) == 0)
     {
-        nlStrNCpy<char>(pHelper->m_szName, substring + 1, 0x40);
+        nlStrNCpy<char>(pHelper->m_szName, substring + 1, sizeof(pHelper->m_szName));
     }
     else
     {
@@ -992,7 +880,7 @@ void World::CreateHelperObjFromChunk(nlChunk* chunk)
         substring = strstr(pWorldHelperChunkData->m_szName, flareTag);
         if (substring != NULL)
         {
-            nlStrNCpy<char>(flareName, substring + flareLen, 0x40);
+            nlStrNCpy<char>(flareName, substring + flareLen, sizeof(flareName));
 
             substring = strstr(flareName, "_");
             if (substring != NULL)
@@ -1013,7 +901,7 @@ void World::CreateHelperObjFromChunk(nlChunk* chunk)
             return;
         }
 
-        nlStrNCpy<char>(pHelper->m_szName, pWorldHelperChunkData->m_szName, 0x40);
+        nlStrNCpy<char>(pHelper->m_szName, pWorldHelperChunkData->m_szName, sizeof(pHelper->m_szName));
     }
 
     m_helperMap.Add(pHelper->m_uHashID, pHelper);
@@ -1021,22 +909,22 @@ void World::CreateHelperObjFromChunk(nlChunk* chunk)
 
 void World::CreateEmitterObjFromChunk(nlChunk* pChunk)
 {
-    WorldEmitterChunkData* wecd;
-    const char* persistentEffectsTag;
+    WorldEmitterChunkData* pEmitterData;
+    const char* pPersistentEffectsTag;
     char fxName[256];
     int i;
-    EffectsGroup* fx;
-    EmissionController* ec;
+    EffectsGroup* pEffectsGroup;
+    EmissionController* pEmissionController;
     HelperObject* pHelper;
 
-    wecd = (WorldEmitterChunkData*)pChunk->GetData();
-    persistentEffectsTag = "fx_persistent_";
-    static int persistentLen = nlStrLen<char>(persistentEffectsTag);
+    pEmitterData = (WorldEmitterChunkData*)pChunk->GetData();
+    pPersistentEffectsTag = "fx_persistent_";
+    static int persistentLen = nlStrLen<char>(pPersistentEffectsTag);
 
-    persistentEffectsTag = strstr(wecd->m_szName, persistentEffectsTag);
-    if (persistentEffectsTag != NULL)
+    pPersistentEffectsTag = strstr(pEmitterData->m_szName, pPersistentEffectsTag);
+    if (pPersistentEffectsTag != NULL)
     {
-        nlStrNCpy<char>(fxName, persistentEffectsTag + persistentLen, 256);
+        nlStrNCpy<char>(fxName, pPersistentEffectsTag + persistentLen, sizeof(fxName));
 
         i = strlen(fxName);
         if (__ctype_map[(unsigned char)fxName[i - 1]] & __digit)
@@ -1053,20 +941,20 @@ void World::CreateEmitterObjFromChunk(nlChunk* pChunk)
             }
         }
 
-        fx = fxGetGroup(fxName);
-        if (fx != NULL)
+        pEffectsGroup = fxGetGroup(fxName);
+        if (pEffectsGroup != NULL)
         {
-            ec = EmissionManager::Create(fx, 0);
-            ec->SetPosition(wecd->m_worldMatrix.GetTranslation());
-            ec->m_uUserData = 0xDEADBEEF;
+            pEmissionController = EmissionManager::Create(pEffectsGroup, 0);
+            pEmissionController->SetPosition(pEmitterData->m_worldMatrix.GetTranslation());
+            pEmissionController->m_uUserData = 0xDEADBEEF;
         }
     }
     else
     {
         pHelper = (HelperObject*)nlMalloc(sizeof(HelperObject), 8, false);
-        pHelper->m_uHashID = wecd->m_uHashID;
-        pHelper->m_worldMatrix = wecd->m_worldMatrix;
-        nlStrNCpy<char>(pHelper->m_szName, wecd->m_szName, 64);
+        pHelper->m_uHashID = pEmitterData->m_uHashID;
+        pHelper->m_worldMatrix = pEmitterData->m_worldMatrix;
+        nlStrNCpy<char>(pHelper->m_szName, pEmitterData->m_szName, sizeof(pHelper->m_szName));
         m_helperMap.Add(pHelper->m_uHashID, pHelper);
     }
 }
@@ -1144,8 +1032,17 @@ void World::Update(float fDeltaT)
 /**
  * Offset/Address/Size: 0x1880 | 0x80196544 | size: 0x4
  */
-void World::UpdateInReplay(float)
+void World::UpdateInReplay(float fTimeDelta)
 {
+}
+
+static void nlPlaneNormalize(nlVector4& in, nlVector4& out)
+{
+    float fMag = nlSqrt(in.x * in.x + in.y * in.y + in.z * in.z, true);
+    out.x = in.x / fMag;
+    out.y = in.y / fMag;
+    out.z = in.z / fMag;
+    out.w = in.w / fMag;
 }
 
 /**
@@ -1269,6 +1166,18 @@ bool World::IsSphereInFrustum(const nlMatrix4& mat, float radius)
     {
         f32 dot = posX * pPlanes[i].x + posY * pPlanes[i].y + posZ * pPlanes[i].z + self->m_frustumPlane[i].w;
         if (dot < negRadius)
+            return false;
+    }
+    return true;
+}
+
+unsigned char World::IsSphereInFrustum(const nlVector4* pPlanes, const nlMatrix4& mWorld, float fRadius)
+{
+    nlVector3 v3Position = mWorld.GetTranslation();
+    f32 negRadius = -fRadius;
+    for (int i = 0; i < 6; i++)
+    {
+        if (nlPlaneDot(pPlanes[i], v3Position) < negRadius)
             return false;
     }
     return true;
@@ -1408,44 +1317,15 @@ void DoTranslucency(DrawableObject* pObject)
  */
 void World::HandleCameraSwitch()
 {
-    typedef AVLTreeEntry<unsigned long, DrawableObject*> Entry;
-
-    struct NodeStack
-    {
-        Entry** data;
-        u32 count;
-    };
-
-    NodeStack* stack;
-    Entry* node;
-
-    stack = (NodeStack*)nlMalloc(sizeof(NodeStack), 8, false);
-    if (stack != NULL)
-    {
-        u32 numElements = m_drawableMap.m_NumElements;
-        node = m_drawableMap.m_Root;
-        stack->data = (Entry**)nlMalloc((numElements + 1) * sizeof(Entry*), 8, false);
-        stack->count = 0;
-
-        if (node != NULL)
-        {
-            while (node->node.left != NULL)
-            {
-                stack->data[stack->count] = node;
-                stack->count++;
-                node = (Entry*)node->node.left;
-            }
-            stack->data[stack->count] = node;
-            stack->count++;
-        }
-    }
+    typedef nlAVLTreeIterator<unsigned long, DrawableObject*, DefaultKeyCompare<unsigned long> > DrawableIterator;
+    DrawableIterator* iterator = m_drawableMap.GetIterator();
 
     f32 maxVal = 1.0f;
     f32 minVal = 0.0f;
 
-    while (stack->count > 0)
+    while (iterator->IsValid())
     {
-        DrawableObject* pObject = stack->data[stack->count - 1]->value;
+        DrawableObject* pObject = iterator->CurrentValue();
 
         pObject->m_translucency = maxVal;
         if (pObject->m_translucency < minVal)
@@ -1457,42 +1337,13 @@ void World::HandleCameraSwitch()
             pObject->m_translucency = maxVal;
         }
 
-        stack->count--;
-
-        Entry* right = (Entry*)stack->data[stack->count]->node.right;
-        if (right != NULL)
-        {
-            while (right->node.left != NULL)
-            {
-                stack->data[stack->count] = right;
-                stack->count++;
-                right = (Entry*)right->node.left;
-            }
-            stack->data[stack->count] = right;
-            stack->count++;
-        }
+        iterator->Next();
     }
 
-    if (stack != NULL)
-    {
-        delete[] stack->data;
-        delete stack;
-    }
+    delete iterator;
 }
 
 void DoTranslucency(DrawableObject* pObject);
-
-static inline u8 World_IsSphereInFrustum(const nlVector4* pPlanes, const nlMatrix4& mWorld, f32 fRadius)
-{
-    nlVector3 v3Position = mWorld.GetTranslation();
-    f32 negRadius = -fRadius;
-    for (int i = 0; i < 6; i++)
-    {
-        if (nlPlaneDot(pPlanes[i], v3Position) < negRadius)
-            return false;
-    }
-    return true;
-}
 
 static inline u8 World_IsSphereInFrustumInline(World* pWorld, const nlMatrix4& mat, f32 radius)
 {
@@ -1522,15 +1373,10 @@ static void RenderBoundingSphere(const nlMatrix4& matWorld, f32 fRadius);
  */
 void World::Render()
 {
-    typedef AVLTreeEntry<unsigned long, DrawableObject*> Entry;
-    struct NodeStack
-    {
-        Entry** data;
-        u32 count;
-    };
+    typedef nlAVLTreeIterator<unsigned long, DrawableObject*, DefaultKeyCompare<unsigned long> > DrawableIterator;
 
-    int nDrawn;
     int nSubmitted;
+    int nDrawn;
     nSubmitted = 0;
     nDrawn = 0;
     u8 bFreezeSide = g_bFreezeSideCam;
@@ -1546,89 +1392,30 @@ void World::Render()
         DrawableCharacter::sSTSLighting = false;
     CreateLightUserData();
 
-    NodeStack* iter;
+    DrawableIterator* iter;
     World* pWorld = this;
     if (!sbIsHyperShootToScoreRenderingEnabled)
     {
-        iter = (NodeStack*)nlMalloc(sizeof(NodeStack), 8, false);
-        if (iter != NULL)
-        {
-            Entry* node = pWorld->m_drawableMap.m_Root;
-            iter->data = (Entry**)nlMalloc((pWorld->m_drawableMap.m_NumElements + 1) * sizeof(Entry*), 8, false);
-            iter->count = 0;
-            if (node != NULL)
-            {
-                while (node->node.left != NULL)
-                {
-                    iter->data[iter->count] = node;
-                    iter->count++;
-                    node = (Entry*)node->node.left;
-                }
-                iter->data[iter->count] = node;
-                iter->count++;
-            }
-        }
+        iter = pWorld->m_drawableMap.GetIterator();
     }
     else
     {
-        iter = (NodeStack*)nlMalloc(sizeof(NodeStack), 8, false);
-        if (iter != NULL)
-        {
-            Entry* node = pWorld->m_hyperSTSDrawableMap.m_Root;
-            iter->data = (Entry**)nlMalloc((pWorld->m_hyperSTSDrawableMap.m_NumElements + 1) * sizeof(Entry*), 8, false);
-            iter->count = 0;
-            if (node != NULL)
-            {
-                while (node->node.left != NULL)
-                {
-                    iter->data[iter->count] = node;
-                    iter->count++;
-                    node = (Entry*)node->node.left;
-                }
-                iter->data[iter->count] = node;
-                iter->count++;
-            }
-        }
+        iter = pWorld->m_hyperSTSDrawableMap.GetIterator();
     }
 
     if (g_bClipToFrustum)
     {
-        while (iter->count > 0)
+        while (iter->IsValid())
         {
-            DrawableObject* pObject = iter->data[iter->count - 1]->value;
+            DrawableObject* pObject = iter->CurrentValue();
             if (sbIsHyperShootToScoreRenderingEnabled)
             {
-                const nlMatrix4& mat = pObject->GetWorldMatrix();
-                if (mat.e2[3][0] < 0.0f)
+                if ((pObject->GetWorldMatrix().e2[3][0] < 0.0f && sbShowPositiveXNetDuringHyperStrike)
+                    || (pObject->GetWorldMatrix().e2[3][0] > 0.0f && !sbShowPositiveXNetDuringHyperStrike))
                 {
-                    if (sbShowPositiveXNetDuringHyperStrike)
-                        goto hyperCull;
+                    iter->Next();
+                    continue;
                 }
-                const nlMatrix4& mat2 = pObject->GetWorldMatrix();
-                if (mat2.e2[3][0] > 0.0f)
-                {
-                    if (!sbShowPositiveXNetDuringHyperStrike)
-                        goto hyperCull;
-                }
-                goto hyperNoCull;
-            hyperCull:
-                iter->count--;
-                {
-                    Entry* right = (Entry*)iter->data[iter->count]->node.right;
-                    if (right != NULL)
-                    {
-                        while (right->node.left != NULL)
-                        {
-                            iter->data[iter->count] = right;
-                            iter->count++;
-                            right = (Entry*)right->node.left;
-                        }
-                        iter->data[iter->count] = right;
-                        iter->count++;
-                    }
-                }
-                continue;
-            hyperNoCull:;
             }
             {
                 bool bHammer = false;
@@ -1640,24 +1427,10 @@ void World::Render()
                     bBall = (pObject->AsDrawableModel()->m_pModel->id == BallModelID);
                 }
                 {
-                    ballDrawable = ((DrawableObject**)g_pBall)[8];
+                    ballDrawable = g_pBall->GetDrawableBall();
                     if ((DrawableObject*)pObject->AsDrawableModel() == ballDrawable)
                     {
-                        iter->count--;
-                        {
-                            Entry* right = (Entry*)iter->data[iter->count]->node.right;
-                            if (right != NULL)
-                            {
-                                while (right->node.left != NULL)
-                                {
-                                    iter->data[iter->count] = right;
-                                    iter->count++;
-                                    right = (Entry*)right->node.left;
-                                }
-                                iter->data[iter->count] = right;
-                                iter->count++;
-                            }
-                        }
+                        iter->Next();
                         continue;
                     }
                 }
@@ -1665,21 +1438,7 @@ void World::Render()
                     u32 objectFlags = pObject->m_uObjectFlags;
                     if (objectFlags & 0x80)
                     {
-                        iter->count--;
-                        {
-                            Entry* right = (Entry*)iter->data[iter->count]->node.right;
-                            if (right != NULL)
-                            {
-                                while (right->node.left != NULL)
-                                {
-                                    iter->data[iter->count] = right;
-                                    iter->count++;
-                                    right = (Entry*)right->node.left;
-                                }
-                                iter->data[iter->count] = right;
-                                iter->count++;
-                            }
-                        }
+                        iter->Next();
                         continue;
                     }
                     u8 bSkybox = 0;
@@ -1687,21 +1446,7 @@ void World::Render()
                         bSkybox = 1;
                     if (sbStadiumRenderingDisabled && !bBall && !bHammer && !bSkybox)
                     {
-                        iter->count--;
-                        {
-                            Entry* right = (Entry*)iter->data[iter->count]->node.right;
-                            if (right != NULL)
-                            {
-                                while (right->node.left != NULL)
-                                {
-                                    iter->data[iter->count] = right;
-                                    iter->count++;
-                                    right = (Entry*)right->node.left;
-                                }
-                                iter->data[iter->count] = right;
-                                iter->count++;
-                            }
-                        }
+                        iter->Next();
                         continue;
                     }
                     if (objectFlags & 0x1)
@@ -1737,28 +1482,14 @@ void World::Render()
                     }
                 }
             }
-            iter->count--;
-            {
-                Entry* right = (Entry*)iter->data[iter->count]->node.right;
-                if (right != NULL)
-                {
-                    while (right->node.left != NULL)
-                    {
-                        iter->data[iter->count] = right;
-                        iter->count++;
-                        right = (Entry*)right->node.left;
-                    }
-                    iter->data[iter->count] = right;
-                    iter->count++;
-                }
-            }
+            iter->Next();
         }
     }
     else
     {
-        while (iter->count > 0)
+        while (iter->IsValid())
         {
-            DrawableObject* pObject = iter->data[iter->count - 1]->value;
+            DrawableObject* pObject = iter->CurrentValue();
             if (pObject->m_uObjectFlags & 0x1)
             {
                 if (pObject->m_uObjectCreationFlags & 0xF000)
@@ -1779,29 +1510,11 @@ void World::Render()
                     pObject->m_translucency = 1.0f;
             }
             nSubmitted++;
-            iter->count--;
-            {
-                Entry* right = (Entry*)iter->data[iter->count]->node.right;
-                if (right != NULL)
-                {
-                    while (right->node.left != NULL)
-                    {
-                        iter->data[iter->count] = right;
-                        iter->count++;
-                        right = (Entry*)right->node.left;
-                    }
-                    iter->data[iter->count] = right;
-                    iter->count++;
-                }
-            }
+            iter->Next();
         }
     }
 
-    if (iter != NULL)
-    {
-        delete[] iter->data;
-        delete iter;
-    }
+    delete iter;
 
     if (g_bDrawCullingInfo)
     {
@@ -1850,14 +1563,14 @@ void World::DrawAdditionalBalls(DrawableObject* pObject)
     }
     pObject->GetWorldMatrix().SetTranslation(otherPosition);
     pObject->Draw();
-    pObject->GetWorldMatrix().SetTranslation(currentPosition);
+    pObject->GetWorldMatrix().GetTranslation() = currentPosition;
 }
 
 void World::DrawCullingInformation(int nNumSubmitted, int nNumDrawn)
 {
     char szBuffer[255];
     f32 drawnPct = 100.0f * ((f32)nNumDrawn / (f32)nNumSubmitted);
-    nlSNPrintf(szBuffer, 255, "%d submitted, %d culled, %d ( %0.2f%% )drawn", nNumSubmitted, nNumSubmitted - nNumDrawn, nNumDrawn, drawnPct);
+    nlSNPrintf(szBuffer, sizeof(szBuffer), "%d submitted, %d culled, %d ( %0.2f%% )drawn", nNumSubmitted, nNumSubmitted - nNumDrawn, nNumDrawn, drawnPct);
     static int x = 10;
     static int y = 0;
     nlColour OtherColour = { 0xFF, 0xFF, 0xFF, 0xFF };
@@ -1878,7 +1591,17 @@ DrawableObject* World::FindDrawableObject(unsigned long uHashID)
     bool found = m_drawableMap.FindGet(uHashID, &foundValue);
     if (found)
         return *foundValue;
-    return nullptr;
+    return NULL;
+}
+
+DrawableObject* World::FindDrawableObject(unsigned long uHashID, unsigned long uOCMask)
+{
+    DrawableObject* pObject = FindDrawableObject(uHashID);
+    if (pObject != NULL && (pObject->m_uObjectCreationFlags & uOCMask) != 0)
+    {
+        return pObject;
+    }
+    return NULL;
 }
 
 /**
@@ -1890,7 +1613,59 @@ HelperObject* World::FindHelperObject(unsigned long uHashID)
     bool found = m_helperMap.FindGet(uHashID, &foundValue);
     if (found)
         return *foundValue;
-    return nullptr;
+    return NULL;
+}
+
+SkinnedAnimController* World::CreateUniqueSkinnedController(const char* szObjName, const char* szHierarchy)
+{
+    SkinnedAnimController* pController = new (nlMalloc(sizeof(SkinnedAnimController), 8, false)) SkinnedAnimController(szHierarchy, this);
+    if (!AssignSkinnedController(pController, szObjName))
+    {
+        return NULL;
+    }
+    m_animControllerList.AddEnd(pController);
+    return pController;
+}
+
+SkinnedAnimController* World::CreateGangedSkinnedController(const char* szHierarchy)
+{
+    SkinnedAnimController* pController = new (nlMalloc(sizeof(SkinnedAnimController), 8, false)) SkinnedAnimController(szHierarchy, this);
+    pController->m_bIsGanged = true;
+    m_animControllerList.AddEnd(pController);
+    return pController;
+}
+
+unsigned char World::AssignSkinnedController(SkinnedAnimController* pController, const char* szObjName)
+{
+    DrawableSkinModel* pSkinModelObj = (DrawableSkinModel*)FindDrawableObject(GetHashIdForGenericName(szObjName));
+    unsigned char result = false;
+    if (pSkinModelObj != NULL && pController != NULL)
+    {
+        pSkinModelObj->m_pAnimController = pController;
+        pController->m_pSkinModel = pSkinModelObj;
+        pController->CreateGLSkinMesh(pSkinModelObj->m_pModel);
+        result = true;
+    }
+    return result;
+}
+
+TMAnimController* World::CreateUniqueTransformController(DrawableObject* pRootObject, const char* szHierarchy)
+{
+    TMAnimController* pController = new (nlMalloc(sizeof(TMAnimController), 8, false)) TMAnimController(szHierarchy, this);
+    pController->m_pRootModel = pRootObject;
+    m_animControllerList.AddEnd(pController);
+    return pController;
+}
+
+TMAnimController* World::CreateUniqueTransformController(const char* szObjName, const char* szHierarchy)
+{
+    DrawableObject* pRootObject = FindDrawableObject(GetHashIdForGenericName(szObjName), 0x20);
+    TMAnimController* pController = NULL;
+    if (pRootObject != NULL && szHierarchy != NULL)
+    {
+        pController = CreateUniqueTransformController(pRootObject, szHierarchy);
+    }
+    return pController;
 }
 
 /**
@@ -1900,7 +1675,7 @@ bool World::AddDrawableObject(unsigned long uHashID, DrawableObject* pDrawableOb
 {
     DrawableObject** ppValue = m_drawableMap.Add(uHashID, pDrawableObject);
 
-    if (ppValue == nullptr)
+    if (ppValue == NULL)
     {
         pDrawableObject->m_pWorldContext = this;
         return true;
@@ -1911,10 +1686,6 @@ bool World::AddDrawableObject(unsigned long uHashID, DrawableObject* pDrawableOb
     }
 }
 
-/**
- * Dead in retail (MAP UNUSED, 0x78). DWARF: static unsigned char
- * World::RemoveDrawableObject(DrawableObject* pObject), Erased.
- */
 unsigned char World::RemoveDrawableObject(DrawableObject* pObject)
 {
     World* pWorld = pObject->m_pWorldContext;
@@ -1937,47 +1708,24 @@ unsigned char World::RemoveDrawableObject(DrawableObject* pObject)
 /**
  * Offset/Address/Size: 0xA0 | 0x80194D64 | size: 0x1F0
  */
-LightObject* World::GetShadowLight(const nlVector3& vPosition, float)
+LightObject* World::GetShadowLight(const nlVector3& vPosition, float fRadius)
 {
-    u32* pStack;
+    typedef nlAVLTreeIterator<unsigned long, LightObject*, DefaultKeyCompare<unsigned long> > LightIterator;
     LightObject* pClosest = NULL;
     float fDistance = 1e30f;
-    AVLTreeEntry<unsigned long, LightObject*>* pNode;
     LightObject* pLight;
 
-    pStack = (u32*)nlMalloc(8, 8, false);
-    if (pStack != NULL)
-    {
-        u32 numElements = m_lightMap.m_NumElements;
-        pNode = m_lightMap.m_Root;
-        pStack[0] = (u32)nlMalloc((numElements + 1) * 4, 8, false);
-        pStack[1] = 0;
+    LightIterator* iterator = m_lightMap.GetIterator();
 
-        if (pNode != NULL)
-        {
-            while (pNode->node.left != NULL)
-            {
-                ((AVLTreeEntry<unsigned long, LightObject*>**)pStack[0])[pStack[1]] = pNode;
-                pStack[1]++;
-                pNode = (AVLTreeEntry<unsigned long, LightObject*>*)pNode->node.left;
-            }
-            ((AVLTreeEntry<unsigned long, LightObject*>**)pStack[0])[pStack[1]] = pNode;
-            pStack[1]++;
-        }
-    }
-
-    while (pStack[1] != 0)
+    while (iterator->IsValid())
     {
-        pNode = ((AVLTreeEntry<unsigned long, LightObject*>**)pStack[0])[pStack[1] - 1];
-        pLight = pNode->value;
+        pLight = iterator->CurrentValue();
 
         if (pLight->m_emitFlags & 1)
         {
-            float dx, dy, dz;
-            dy = vPosition.y - pLight->m_worldPosition.y;
-            dx = vPosition.x - pLight->m_worldPosition.x;
-            dz = vPosition.z - pLight->m_worldPosition.z;
-            float distSq = dx * dx + dy * dy + dz * dz;
+            nlVector3 vDelta;
+            nlVec3Sub(vDelta, vPosition, pLight->m_worldPosition);
+            float distSq = nlVec3LengthSquared(vDelta);
             if (distSq < fDistance)
             {
                 fDistance = distSq;
@@ -1985,31 +1733,10 @@ LightObject* World::GetShadowLight(const nlVector3& vPosition, float)
             }
         }
 
-        pStack[1]--;
-
-        {
-            AVLTreeEntry<unsigned long, LightObject*>* pChild = (AVLTreeEntry<unsigned long, LightObject*>*)((AVLTreeEntry<unsigned long, LightObject*>**)pStack[0])[pStack[1]]->node.right;
-            if (pChild == NULL)
-            {
-                continue;
-            }
-
-            while (pChild->node.left != NULL)
-            {
-                ((AVLTreeEntry<unsigned long, LightObject*>**)pStack[0])[pStack[1]] = pChild;
-                pStack[1]++;
-                pChild = (AVLTreeEntry<unsigned long, LightObject*>*)pChild->node.left;
-            }
-            ((AVLTreeEntry<unsigned long, LightObject*>**)pStack[0])[pStack[1]] = pChild;
-            pStack[1]++;
-        }
+        iterator->Next();
     }
 
-    if (pStack != NULL)
-    {
-        delete[] (u8*)pStack[0];
-        delete (u8*)pStack;
-    }
+    delete iterator;
     return pClosest;
 }
 

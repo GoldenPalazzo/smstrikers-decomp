@@ -13,35 +13,30 @@ StatsTracker* nlSingleton<StatsTracker>::s_pInstance = 0;
 static const char* STATS_FILE = "statsfile.csv";
 
 // /**
-//  * Offset/Address/Size: 0x2C7C | 0x80189818 | size: 0x144
 //  */
 // void Format<BasicString<char, Detail::TempStringAllocator>, const char*, const char*, const char*, const char*, const char*>(const BasicString<char, Detail::TempStringAllocator>&, const char* const&, const char* const&, const char* const&, const char* const&, const char* const&)
 // {
 // }
 
 // /**
-//  * Offset/Address/Size: 0x2B20 | 0x801896BC | size: 0x15C
 //  */
 // void Format<BasicString<char, Detail::TempStringAllocator>, int, int, int, int, int, int, int>(const BasicString<char, Detail::TempStringAllocator>&, const int&, const int&, const int&, const int&, const int&, const int&, const int&)
 // {
 // }
 
 // /**
-//  * Offset/Address/Size: 0x168 | 0x80186D04 | size: 0xD74
 //  */
 // void FormatImpl<BasicString<char, Detail::TempStringAllocator>>::operator%<int>(const int&)
 // {
 // }
 
 // /**
-//  * Offset/Address/Size: 0xBC | 0x801869B8 | size: 0x1E4
 //  */
 // void BasicString<char, Detail::TempStringAllocator>::AppendInPlace<Detail::TempStringAllocator>(const BasicString<char, Detail::TempStringAllocator>&)
 // {
 // }
 
 // /**
-//  * Offset/Address/Size: 0x0 | 0x801868FC | size: 0xBC
 //  */
 // void BasicString<char, Detail::TempStringAllocator>::Append<Detail::TempStringAllocator>(const BasicString<char, Detail::TempStringAllocator>&) const
 // {
@@ -229,7 +224,7 @@ void StatsTracker::DestroyEventHandler()
 /**
  * Offset/Address/Size: 0x4730 | 0x80185C90 | size: 0x818
  */
-void StatsTracker::eventHandler(Event* event, void*)
+void StatsTracker::eventHandler(Event* event, void* userData)
 {
     struct GoalScoredDataExt
     {
@@ -932,9 +927,6 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
     }
 }
 
-/**
- * Offset/Address/Size: 0x3708 | 0x80184C68 | size: 0x7E8
- */
 static inline bool CompareInt(eSortOrder sortOrder, int a, int b)
 {
     if (sortOrder == SORT_DESCENDING)
@@ -944,6 +936,9 @@ static inline bool CompareInt(eSortOrder sortOrder, int a, int b)
     return b < a;
 }
 
+/**
+ * Offset/Address/Size: 0x3708 | 0x80184C68 | size: 0x7E8
+ */
 void StatsTracker::GetSortedStats(PlayerStats* source, int numsource, int* dest, int numelements, ePlayerStats statType, eSortOrder sortOrder)
 {
     int tempsorted[64];
@@ -971,28 +966,28 @@ void StatsTracker::GetSortedStats(PlayerStats* source, int numsource, int* dest,
             {
             case STATS_SHOTS_ON_GOAL:
                 doswap = CompareInt(sortOrder,
-                                    source[tempsorted[i]].mNumShotsOnGoal,
-                                    source[tempsorted[nexti]].mNumShotsOnGoal);
+                    source[tempsorted[i]].mNumShotsOnGoal,
+                    source[tempsorted[nexti]].mNumShotsOnGoal);
                 break;
             case STATS_GOALS_FOR:
                 doswap = CompareInt(sortOrder,
-                                    source[tempsorted[i]].mNumGoalsFor,
-                                    source[tempsorted[nexti]].mNumGoalsFor);
+                    source[tempsorted[i]].mNumGoalsFor,
+                    source[tempsorted[nexti]].mNumGoalsFor);
                 break;
             case STATS_GOALS_AGAINST:
                 doswap = CompareInt(sortOrder,
-                                    source[tempsorted[i]].mNumGoalsAgainst,
-                                    source[tempsorted[nexti]].mNumGoalsAgainst);
+                    source[tempsorted[i]].mNumGoalsAgainst,
+                    source[tempsorted[nexti]].mNumGoalsAgainst);
                 break;
             case STATS_ASSISTS:
                 doswap = CompareInt(sortOrder,
-                                    source[tempsorted[i]].mNumAssists,
-                                    source[tempsorted[nexti]].mNumAssists);
+                    source[tempsorted[i]].mNumAssists,
+                    source[tempsorted[nexti]].mNumAssists);
                 break;
             case STATS_FOULS:
                 doswap = CompareInt(sortOrder,
-                                    source[tempsorted[i]].mNumFouls,
-                                    source[tempsorted[nexti]].mNumFouls);
+                    source[tempsorted[i]].mNumFouls,
+                    source[tempsorted[nexti]].mNumFouls);
                 break;
             case STATS_WIN:
             case STATS_OT_WIN:
@@ -1001,58 +996,58 @@ void StatsTracker::GetSortedStats(PlayerStats* source, int numsource, int* dest,
                 break;
             case STATS_POWERUPS_USED:
                 doswap = CompareInt(sortOrder,
-                                    source[tempsorted[i]].mNumPowerupsUsed,
-                                    source[tempsorted[nexti]].mNumPowerupsUsed);
+                    source[tempsorted[i]].mNumPowerupsUsed,
+                    source[tempsorted[nexti]].mNumPowerupsUsed);
                 break;
             case STATS_POWERUPS_HIT:
                 doswap = CompareInt(sortOrder,
-                                    source[tempsorted[i]].mNumPowerupsHit,
-                                    source[tempsorted[nexti]].mNumPowerupsHit);
+                    source[tempsorted[i]].mNumPowerupsHit,
+                    source[tempsorted[nexti]].mNumPowerupsHit);
                 break;
             case STATS_GOALS_FOR_STS:
                 doswap = CompareInt(sortOrder,
-                                    source[tempsorted[i]].mNumShootToScoreGoals,
-                                    source[tempsorted[nexti]].mNumShootToScoreGoals);
+                    source[tempsorted[i]].mNumShootToScoreGoals,
+                    source[tempsorted[nexti]].mNumShootToScoreGoals);
                 break;
             case STATS_PASSES_MADE:
                 doswap = CompareInt(sortOrder,
-                                    source[tempsorted[i]].mNumPassesMade,
-                                    source[tempsorted[nexti]].mNumPassesMade);
+                    source[tempsorted[i]].mNumPassesMade,
+                    source[tempsorted[nexti]].mNumPassesMade);
                 break;
             case STATS_PASSES_RECEIVED:
                 doswap = CompareInt(sortOrder,
-                                    source[tempsorted[i]].mNumPassesMade,
-                                    source[tempsorted[nexti]].mNumPassesMade);
+                    source[tempsorted[i]].mNumPassesMade,
+                    source[tempsorted[nexti]].mNumPassesMade);
                 break;
             case STATS_PASSES_INTERCEPTED:
                 doswap = CompareInt(sortOrder,
-                                    source[tempsorted[i]].mNumPassesIntercepted,
-                                    source[tempsorted[nexti]].mNumPassesIntercepted);
+                    source[tempsorted[i]].mNumPassesIntercepted,
+                    source[tempsorted[nexti]].mNumPassesIntercepted);
                 break;
             case STATS_POSSESION_TIME:
                 doswap = CompareInt(sortOrder,
-                                    source[tempsorted[i]].mBallPossessionTime,
-                                    source[tempsorted[nexti]].mBallPossessionTime);
+                    source[tempsorted[i]].mBallPossessionTime,
+                    source[tempsorted[nexti]].mBallPossessionTime);
                 break;
             case STATS_GAMES_PLAYED:
                 doswap = CompareInt(sortOrder,
-                                    source[tempsorted[i]].mNumGamesPlayed,
-                                    source[tempsorted[nexti]].mNumGamesPlayed);
+                    source[tempsorted[i]].mNumGamesPlayed,
+                    source[tempsorted[nexti]].mNumGamesPlayed);
                 break;
             case STATS_STEALS:
                 doswap = CompareInt(sortOrder,
-                                    source[tempsorted[i]].mNumSteals,
-                                    source[tempsorted[nexti]].mNumSteals);
+                    source[tempsorted[i]].mNumSteals,
+                    source[tempsorted[nexti]].mNumSteals);
                 break;
             case STATS_BUTTON_PRESSES:
                 doswap = CompareInt(sortOrder,
-                                    source[tempsorted[i]].mNumButtonPresses,
-                                    source[tempsorted[nexti]].mNumButtonPresses);
+                    source[tempsorted[i]].mNumButtonPresses,
+                    source[tempsorted[nexti]].mNumButtonPresses);
                 break;
             case STATS_HITS_MADE:
                 doswap = CompareInt(sortOrder,
-                                    source[tempsorted[i]].mNumHitsMade,
-                                    source[tempsorted[nexti]].mNumHitsMade);
+                    source[tempsorted[i]].mNumHitsMade,
+                    source[tempsorted[nexti]].mNumHitsMade);
                 break;
             }
 
@@ -2127,9 +2122,6 @@ void StatsTracker::AwardCup(eUserGameResult gameResult)
     }
 }
 
-/**
- * Offset/Address/Size: 0x148 | 0x801816A8 | size: 0x2D0
- */
 template <typename StringType, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4>
 void Format(StringType& result,
     const StringType& format,
@@ -2140,7 +2132,7 @@ void Format(StringType& result,
     const Arg4& arg4);
 
 /**
- * Offset/Address/Size: 0x3DC | 0x801816A8 | size: 0x2D0
+ * Offset/Address/Size: 0x148 | 0x801816A8 | size: 0x2D0
  */
 void StatsTracker::WriteCurrentlyPlaying() const
 {

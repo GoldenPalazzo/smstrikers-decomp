@@ -1081,5 +1081,5 @@ SoundDefinesTable SebringSoundDefines[] = {
  */
 u32 GetNumSoundDefines()
 {
-    return 1073;
+    return sizeof(SebringSoundDefines) / sizeof(SoundDefinesTable);
 }

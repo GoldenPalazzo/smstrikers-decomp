@@ -44,7 +44,7 @@ IChooseCaptain::~IChooseCaptain()
 /**
  * Offset/Address/Size: 0x1B4C | 0x800BF4E8 | size: 0x194
  */
-void IChooseCaptain::Initialize(const char* captainfilename, const char*)
+void IChooseCaptain::Initialize(const char* captainfilename, const char* sidekickfilename)
 {
     int i;
 
@@ -111,7 +111,7 @@ void IChooseCaptain::UpdateSound(float dt)
 /**
  * Offset/Address/Size: 0x141C | 0x800BEDB8 | size: 0x694
  */
-UpdateResult IChooseCaptain::Update(float)
+UpdateResult IChooseCaptain::Update(float dt)
 {
     CheckForDisconnectedHumanPlayers();
     FindAliveHumanPlayers();
@@ -655,7 +655,7 @@ void IChooseCaptain::UpdateSinglePlayerState()
 }
 
 /**
- * Offset/Address/Size: 0x3DC | 0x800BDD24 | size: 0x158
+ * Offset/Address/Size: 0x388 | 0x800BDD24 | size: 0x158
  */
 void IChooseCaptain::SetupForLastPhase(eFEINPUT_PAD pad)
 {

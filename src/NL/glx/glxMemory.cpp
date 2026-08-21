@@ -334,7 +334,7 @@ bool glxInitMemory()
 /**
  * Offset/Address/Size: 0x8E4 | 0x801B720C | size: 0x4
  */
-void glx_FreeMemory1(const char*)
+void glx_FreeMemory1(const char* filename)
 {
     // EMPTY
 }

@@ -10,19 +10,15 @@
 
 #include "Game/LightObject.h"
 
-// void DoTranslucency(DrawableObject*);
-// void nlListAddStart<ListEntry<LightObject*>>(ListEntry<LightObject*>**, ListEntry<LightObject*>*, ListEntry<LightObject*>**);
-// void nlDLRingIsEnd<DLListEntry<WorldAnimController*>>(DLListEntry<WorldAnimController*>*, DLListEntry<WorldAnimController*>*);
-// void nlDLRingGetStart<DLListEntry<WorldAnimController*>>(DLListEntry<WorldAnimController*>*);
-// void nlStrChr<char>(const char*, char);
-// void 0x8028D34C..0x8028D350 | size: 0x4;
-
 class WorldAnimManager;
+class TMAnimController;
+class SkinnedAnimController;
 class DrawableObject;
 class DrawableModel;
 class nlChunk;
 class glModelPacket;
 class glModel;
+class GLShadowVolume;
 class WorldObjectData;
 class Event;
 class CharacterPhysicsData;
@@ -48,45 +44,60 @@ public:
     static u32 m_uCurrentFrameCount;
     static bool sbIsHyperShootToScoreRenderingEnabled;
     static bool sbShowPositiveXNetDuringHyperStrike;
+    static const int MAX_NAME_LENGTH = 64;
     static bool sbSkyboxRenderingDisabled;
     static bool sbStadiumRenderingDisabled;
 
-    World(const char*);
+    World(const char* szWorldName);
     bool IsCaptainShootToScorePresentationOn() const;
+    void* GetSTSIntensity() const
+    {
+        return m_pSTSIntensity;
+    }
     /* 0x04 */ virtual ~World();
 
-    /* 0x08 */ virtual eTerrain GetTerrainType(const nlVector3&) const = 0;
-    /* 0x10 */ virtual u8 HandleObjectCreation(WorldObjectData*);
+    /* 0x08 */ virtual eTerrain GetTerrainType(const nlVector3& vPosition) const = 0;
+    /* 0x10 */ virtual u8 HandleObjectCreation(WorldObjectData* pObjectData);
     /* 0x14 */ virtual void Render();
-    /* 0x18 */ virtual void Update(float);
-    /* 0x1C */ virtual void UpdateInReplay(float);
-    /* 0x20 */ virtual void FixedUpdate(float);
-    /* 0x24 */ virtual void HandleEvent(Event*, void*);
-    /* 0x28 */ virtual void CreateHelperObjFromChunk(nlChunk*);
+    /* 0x18 */ virtual void Update(float fDeltaT);
+    /* 0x1C */ virtual void UpdateInReplay(float fTimeDelta);
+    /* 0x20 */ virtual void FixedUpdate(float fTimeDelta);
+    /* 0x24 */ virtual void HandleEvent(Event* pEvent, void* pData);
+    /* 0x28 */ virtual void CreateHelperObjFromChunk(nlChunk* chunk);
     /* 0x2C */ virtual bool DoLoad() = 0;
     /* 0x30 */ virtual bool DoInitialize() = 0;
 
-    int CompareNameToGenericName(const char*, const char*);
-    unsigned long GetHashIdForGenericName(const char*) const;
-    LightObject* GetShadowLight(const nlVector3&, float);
+    int CompareNameToGenericName(const char* objName, const char* genericName);
+    unsigned long GetHashIdForGenericName(const char* name) const;
+    LightObject* GetShadowLight(const nlVector3& vPosition, float fRadius);
     unsigned char RemoveDrawableObject(DrawableObject* pObject);
-    bool AddDrawableObject(unsigned long, DrawableObject*);
-    HelperObject* FindHelperObject(unsigned long uHashId);
-    DrawableObject* FindDrawableObject(unsigned long);
+    bool AddDrawableObject(unsigned long uHashID, DrawableObject* pDrawableObject);
+    TMAnimController* CreateUniqueTransformController(const char* szObjName, const char* szHierarchy);
+    TMAnimController* CreateUniqueTransformController(DrawableObject* pRootObject, const char* szHierarchy);
+    unsigned char AssignSkinnedController(SkinnedAnimController* pController, const char* szObjName);
+    SkinnedAnimController* CreateGangedSkinnedController(const char* szHierarchy);
+    SkinnedAnimController* CreateUniqueSkinnedController(const char* szObjName, const char* szHierarchy);
+    HelperObject* FindHelperObject(unsigned long uHashID);
+    DrawableObject* FindDrawableObject(unsigned long uHashID, unsigned long uOCMask);
+    DrawableObject* FindDrawableObject(unsigned long uHashID);
     void HandleCameraSwitch();
-    bool IsSphereInFrustum(const nlMatrix4&, float);
+    bool IsSphereInFrustum(const nlMatrix4& mat, float radius);
+    static unsigned char IsSphereInFrustum(const nlVector4* pPlanes, const nlMatrix4& mWorld, float fRadius);
     void ExtractFrustumPlanes();
-    void* GetCustomSpecularData(glModelPacket*, bool);
+    void* GetCustomSpecularData(glModelPacket* pPacket, bool bPerm);
     void CreateLightUserData();
     void AssignLightBitmasks();
-    void CreateWorldObjFromChunk(nlChunk*);
-    void CreateLightObjFromChunk(nlChunk*);
-    void CreateEmitterObjFromChunk(nlChunk*);
-    bool LoadPhysicsPrimitives(nlChunk*);
-    bool LoadObjectData(const char*);
-    void AddToHyperSTSDrawables(unsigned long, DrawableModel*);
-    bool LoadGeometry(glModel*, unsigned long, bool, bool, unsigned long*, int*, bool);
-    bool LoadGeometry(const char*, bool, bool, unsigned long*, int*);
+    void CreateWorldObjFromChunk(nlChunk* pChunk);
+    void CreateLightObjFromChunk(nlChunk* pChunk);
+    void CreateEmitterObjFromChunk(nlChunk* pChunk);
+    bool LoadPhysicsPrimitives(nlChunk* pChunk);
+    bool LoadObjectData(const char* szWorldName);
+    static unsigned char LoadShadowVolumes(const char* szFileName);
+    void AddToHyperSTSDrawables(unsigned long key, DrawableModel* pDrawableModel);
+    GLShadowVolume* FindShadowVolumeByID(unsigned long uHashID);
+    glModel* FindModelByID(unsigned long uHashID);
+    bool LoadGeometry(glModel* gModel, unsigned long uNumModels, bool bMakeDrawables, bool keepTransform, unsigned long* pDrawableObjectHashes, int* pNumObjectsLoaded, bool bTrophy);
+    bool LoadGeometry(const char* szWorldName, bool bMakeDrawables, bool keepTransform, unsigned long* pDrawableObjectHashes, int* pNumObjectsLoaded);
     bool Load(bool forfe);
     void DrawCullingInformation(int nNumSubmitted, int nNumDrawn);
     void DrawAdditionalBalls(DrawableObject* pObject);
@@ -103,10 +114,10 @@ public:
     /* 0x03C */ void* m_pIntensityData;
     /* 0x040 */ void* m_pSTSIntensity;
     /* 0x044 */ nlAVLTree<unsigned long, DrawableObject*, DefaultKeyCompare<unsigned long> > m_drawableMap;
-    /* 0x060! */ nlAVLTree<unsigned long, DrawableObject*, DefaultKeyCompare<unsigned long> > m_hyperSTSDrawableMap; // verified
+    /* 0x060! */ nlAVLTree<unsigned long, DrawableObject*, DefaultKeyCompare<unsigned long> > m_hyperSTSDrawableMap;
     /* 0x070 */ nlAVLTree<unsigned long, HelperObject*, DefaultKeyCompare<unsigned long> > m_helperMap;
     /* 0x080 */ nlVector4 m_frustumPlane[6];
-    /* 0x0E0 */ mutable char m_WorldNamePrefix[64];
+    /* 0x0E0 */ mutable char m_WorldNamePrefix[MAX_NAME_LENGTH];
     /* 0x120 */ int m_WorldNameLength;
     /* 0x124 */ u32 m_LightRampTexA;
     /* 0x128 */ u32 m_LightRampTexB;
@@ -116,102 +127,12 @@ public:
     /* 0x138 */ const LightObject* m_pShadowLight;
 }; // total size: 0x13C
 
-inline void World::FixedUpdate(float)
+inline void World::FixedUpdate(float fTimeDelta)
 {
 }
 
-inline void World::HandleEvent(Event*, void*)
+inline void World::HandleEvent(Event* pEvent, void* pData)
 {
 }
-
-// class nlAVLTree<unsigned long, LightObject*, DefaultKeyCompare<unsigned long>>
-// {
-// public:
-//     void ~nlAVLTree();
-// };
-
-// class AVLTreeBase<unsigned long, DrawableObject*, NewAdapter<AVLTreeEntry<unsigned long, DrawableObject*>>, DefaultKeyCompare<unsigned long>>
-// {
-// public:
-//     void DeleteEntry(AVLTreeEntry<unsigned long, DrawableObject*>*);
-//     void ~AVLTreeBase();
-//     void Clear();
-//     void DestroyTree(void (AVLTreeBase<unsigned long, DrawableObject*, NewAdapter<AVLTreeEntry<unsigned long, DrawableObject*>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, DrawableObject*>*));
-//     void PostorderTraversal(AVLTreeEntry<unsigned long, DrawableObject*>*, void (AVLTreeBase<unsigned long, DrawableObject*, NewAdapter<AVLTreeEntry<unsigned long, DrawableObject*>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, DrawableObject*>*));
-//     void CastUp(AVLTreeNode*) const;
-//     void CompareNodes(AVLTreeNode*, AVLTreeNode*);
-//     void CompareKey(void*, AVLTreeNode*);
-//     void AllocateEntry(void*, void*);
-// };
-
-// class AVLTreeBase<unsigned long, LightObject*, NewAdapter<AVLTreeEntry<unsigned long, LightObject*>>, DefaultKeyCompare<unsigned long>>
-// {
-// public:
-//     void ~AVLTreeBase();
-//     void Clear();
-//     void DestroyTree(void (AVLTreeBase<unsigned long, LightObject*, NewAdapter<AVLTreeEntry<unsigned long, LightObject*>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, LightObject*>*));
-//     void PostorderTraversal(AVLTreeEntry<unsigned long, LightObject*>*, void (AVLTreeBase<unsigned long, LightObject*, NewAdapter<AVLTreeEntry<unsigned long, LightObject*>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, LightObject*>*));
-//     void CastUp(AVLTreeNode*) const;
-//     void CompareNodes(AVLTreeNode*, AVLTreeNode*);
-//     void CompareKey(void*, AVLTreeNode*);
-//     void AllocateEntry(void*, void*);
-//     void DeleteEntry(AVLTreeEntry<unsigned long, LightObject*>*);
-// };
-
-// class nlAVLTree<unsigned long, DrawableObject*, DefaultKeyCompare<unsigned long>>
-// {
-// public:
-//     void ~nlAVLTree();
-// };
-
-// class nlAVLTree<unsigned long, HelperObject*, DefaultKeyCompare<unsigned long>>
-// {
-// public:
-//     void ~nlAVLTree();
-// };
-
-// class AVLTreeBase<unsigned long, HelperObject*, NewAdapter<AVLTreeEntry<unsigned long, HelperObject*>>, DefaultKeyCompare<unsigned long>>
-// {
-// public:
-//     void ~AVLTreeBase();
-//     void Clear();
-//     void DestroyTree(void (AVLTreeBase<unsigned long, HelperObject*, NewAdapter<AVLTreeEntry<unsigned long, HelperObject*>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, HelperObject*>*));
-//     void PostorderTraversal(AVLTreeEntry<unsigned long, HelperObject*>*, void (AVLTreeBase<unsigned long, HelperObject*, NewAdapter<AVLTreeEntry<unsigned long, HelperObject*>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, HelperObject*>*));
-//     void CastUp(AVLTreeNode*) const;
-//     void CompareNodes(AVLTreeNode*, AVLTreeNode*);
-//     void CompareKey(void*, AVLTreeNode*);
-//     void AllocateEntry(void*, void*);
-//     void DeleteEntry(AVLTreeEntry<unsigned long, HelperObject*>*);
-// };
-
-// class ListContainerBase<LightObject*, NewAdapter<ListEntry<LightObject*>>>
-// {
-// public:
-//     void DeleteEntry(ListEntry<LightObject*>*);
-// };
-
-// class DLListContainerBase<WorldAnimController*, NewAdapter<DLListEntry<WorldAnimController*>>>
-// {
-// public:
-//     void DeleteEntry(DLListEntry<WorldAnimController*>*);
-// };
-
-// class nlWalkList<ListEntry<LightObject*>, ListContainerBase<LightObject*, NewAdapter<ListEntry<LightObject*>>>>(ListEntry<LightObject*>*, ListContainerBase<LightObject*, NewAdapter<ListEntry<LightObject*>>>*, void (ListContainerBase<LightObject*, NewAdapter<ListEntry<LightObject*>>>
-// {
-// public:
-//     void *)(ListEntry<LightObject*>*));
-// };
-
-// class nlWalkDLRing<DLListEntry<WorldAnimController*>, DLListContainerBase<WorldAnimController*, NewAdapter<DLListEntry<WorldAnimController*>>>>(DLListEntry<WorldAnimController*>*, DLListContainerBase<WorldAnimController*, NewAdapter<DLListEntry<WorldAnimController*>>>*, void (DLListContainerBase<WorldAnimController*, NewAdapter<DLListEntry<WorldAnimController*>>>
-// {
-// public:
-//     void *)(DLListEntry<WorldAnimController*>*));
-// };
-
-// class nlWalkRing<DLListEntry<WorldAnimController*>, DLListContainerBase<WorldAnimController*, NewAdapter<DLListEntry<WorldAnimController*>>>>(DLListEntry<WorldAnimController*>*, DLListContainerBase<WorldAnimController*, NewAdapter<DLListEntry<WorldAnimController*>>>*, void (DLListContainerBase<WorldAnimController*, NewAdapter<DLListEntry<WorldAnimController*>>>
-// {
-// public:
-//     void *)(DLListEntry<WorldAnimController*>*));
-// };
 
 #endif // _WORLD_H_

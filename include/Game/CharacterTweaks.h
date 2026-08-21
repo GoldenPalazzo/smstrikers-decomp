@@ -29,7 +29,7 @@ public:
 class GoalieTweaks : public PlayerTweaks
 {
 public:
-    GoalieTweaks(const char*);
+    GoalieTweaks(const char* name);
     virtual ~GoalieTweaks();
     virtual void Init();
 
@@ -81,7 +81,7 @@ public:
 class FielderTweaks : public PlayerTweaks
 {
 public:
-    FielderTweaks(const char*);
+    FielderTweaks(const char* name);
     virtual ~FielderTweaks();
     virtual void Init();
 

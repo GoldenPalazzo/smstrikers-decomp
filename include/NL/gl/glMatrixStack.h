@@ -6,20 +6,23 @@
 class GLMatrixStack
 {
 public:
-    void GetTop(nlMatrix4&);
+    void GetInverse(nlMatrix4& m, bool bForce);
+    void GetTop(nlMatrix4& m);
     void PopMatrix();
     void PushMatrix();
-    void MultMatrix(const nlMatrix4&);
+    void MultMatrixLocal(const nlMatrix4& m);
+    void MultMatrix(const nlMatrix4& m);
+    void LoadMatrix(const nlMatrix4& m);
     void LoadIdentity();
     ~GLMatrixStack();
-    GLMatrixStack(int);
+    GLMatrixStack(int nLevels);
 
     /* 0x00 */ nlMatrix4 top;
     /* 0x40 */ nlMatrix4 inverse;
     /* 0x80 */ nlMatrix4* stack;
     /* 0x84 */ bool bDirtyInverse;
-    /* 0x88 */ u32 maxStackDepth;
-    /* 0x8C */ u32 stackDepth;
+    /* 0x88 */ int maxStackDepth;
+    /* 0x8C */ int stackDepth;
 }; // total size: 0x90
 
 #endif // _GLMATRIXSTACK_H_

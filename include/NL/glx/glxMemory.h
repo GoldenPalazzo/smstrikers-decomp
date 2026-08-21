@@ -14,15 +14,15 @@ enum eGLMemory
     GLM_Num = 6,
 };
 
-void glplatSetMatrix(unsigned long, const nlMatrix4&);
-void glplatGetMatrix(unsigned long, nlMatrix4&);
+void glplatSetMatrix(unsigned long addr, const nlMatrix4& matrix);
+void glplatGetMatrix(unsigned long addr, nlMatrix4& matrix);
 void glplatFrameAllocNextFrame();
-u32 glplatFrameAlloc(unsigned long, eGLMemory);
-void glplatResourceRelease(unsigned long long);
+u32 glplatFrameAlloc(unsigned long size, eGLMemory mem);
+void glplatResourceRelease(unsigned long long resourceId);
 unsigned long long glplatResourceMark();
-unsigned long glplatResourceAlloc(unsigned long, eGLMemory);
+unsigned long glplatResourceAlloc(unsigned long uSize, eGLMemory eMemory);
 bool glxInitMemory();
-void glx_FreeMemory1(const char*);
+void glx_FreeMemory1(const char* filename);
 void glx_FreeMemory0();
 u32 glx_GetFreeMemory();
 // void 0x8028D514..0x8028D518 | size: 0x4;

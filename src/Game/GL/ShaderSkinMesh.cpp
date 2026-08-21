@@ -86,7 +86,7 @@ void ShaderSkinMesh::SetMorphIDs(const unsigned long* ids)
 /**
  * Offset/Address/Size: 0xB70 | 0x801E11B4 | size: 0x4
  */
-void ShaderSkinMesh::ConnectToPose(cPoseAccumulator*)
+void ShaderSkinMesh::ConnectToPose(cPoseAccumulator* pPoseAccumulator)
 {
     // EMPTY
 }
@@ -375,9 +375,6 @@ void* ShaderSkinMesh::MakeUserData(nlAVLTree<unsigned long, unsigned long, Defau
     return userData;
 }
 
-/**
- * Offset/Address/Size: 0x108 | 0x801E074C | size: 0x1DC
- */
 static inline cSHierarchy* GetPoseHierarchy(cPoseAccumulator* pPoseAccumulator)
 {
     return pPoseAccumulator->m_BaseSHierarchy;
@@ -388,6 +385,9 @@ static inline nlMatrix4* GetPoseNodeMatrixPtr(cPoseAccumulator* pPoseAccumulator
     return &pPoseAccumulator->GetNodeMatrix(i);
 }
 
+/**
+ * Offset/Address/Size: 0x108 | 0x801E074C | size: 0x1DC
+ */
 void ShaderSkinMesh::Pose(cPoseAccumulator* pPoseAccumulator)
 {
     SkinMatrix* foundMatrix;

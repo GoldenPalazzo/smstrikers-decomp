@@ -28,36 +28,48 @@ static dAllocFunction* allocfn = 0;
 static dReallocFunction* reallocfn = 0;
 static dFreeFunction* freefn = 0;
 
+/**
+ * Offset/Address/Size: 0x88 | 0x8021F93C | size: 0x8
+ */
 void dSetAllocHandler(dAllocFunction* fn)
 {
     allocfn = fn;
 }
 
+/**
+ * Offset/Address/Size: 0x80 | 0x8021F934 | size: 0x8
+ */
 void dSetReallocHandler(dReallocFunction* fn)
 {
     reallocfn = fn;
 }
 
+/**
+ * Offset/Address/Size: 0x78 | 0x8021F92C | size: 0x8
+ */
 void dSetFreeHandler(dFreeFunction* fn)
 {
     freefn = fn;
 }
 
-inline dAllocFunction* dGetAllocHandler()
+dAllocFunction* dGetAllocHandler()
 {
     return allocfn;
 }
 
-inline dReallocFunction* dGetReallocHandler()
+dReallocFunction* dGetReallocHandler()
 {
     return reallocfn;
 }
 
-inline dFreeFunction* dGetFreeHandler()
+dFreeFunction* dGetFreeHandler()
 {
     return freefn;
 }
 
+/**
+ * Offset/Address/Size: 0x40 | 0x8021F8F4 | size: 0x38
+ */
 void* dAlloc(size_t size)
 {
     if (allocfn)
@@ -66,12 +78,17 @@ void* dAlloc(size_t size)
         return malloc(size);
 }
 
-// void * dRealloc (void *ptr, size_t oldsize, size_t newsize)
-// {
-//   if (reallocfn) return reallocfn (ptr,oldsize,newsize);
-//   else return realloc (ptr,newsize);
-// }
+void* dRealloc(void* ptr, size_t oldsize, size_t newsize)
+{
+    if (reallocfn)
+        return reallocfn(ptr, oldsize, newsize);
+    else
+        return realloc(ptr, newsize);
+}
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8021F8B4 | size: 0x40
+ */
 void dFree(void* ptr, size_t size)
 {
     if (!ptr)

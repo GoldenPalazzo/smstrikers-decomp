@@ -53,6 +53,9 @@ struct SpaceGeomColliderData
     int skip;
 };
 
+/**
+ * Offset/Address/Size: 0x176C | 0x80215D8C | size: 0x38C
+ */
 static void space_geom_collider(void* data, dxGeom* o1, dxGeom* o2)
 {
     SpaceGeomColliderData* d = (SpaceGeomColliderData*)data;
@@ -64,6 +67,9 @@ static void space_geom_collider(void* data, dxGeom* o1, dxGeom* o2)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x1714 | 0x80215D34 | size: 0x58
+ */
 static int dCollideSpaceGeom(dxGeom* o1, dxGeom* o2, int flags,
     dContactGeom* contact, int skip)
 {
@@ -111,6 +117,9 @@ static void setAllColliders(int i, dColliderFn* fn)
         setCollider(i, j, fn);
 }
 
+/**
+ * Offset/Address/Size: 0x106C | 0x8021568C | size: 0x6A8
+ */
 static void initColliders()
 {
     int i, j;
@@ -153,6 +162,9 @@ static void initColliders()
     setAllColliders(dGeomTransformClass, &dCollideTransform);
 }
 
+/**
+ * Offset/Address/Size: 0xCFC | 0x8021531C | size: 0x370
+ */
 int dCollide(dxGeom* o1, dxGeom* o2, int flags, dContactGeom* contact,
     int skip)
 {
@@ -237,6 +249,9 @@ dxGeom::dxGeom(dSpaceID _space, int is_placeable)
         dSpaceAdd(_space, this);
 }
 
+/**
+ * Offset/Address/Size: 0xB20 | 0x80215140 | size: 0xDC
+ */
 dxGeom::~dxGeom()
 {
     if (parent_space)
@@ -246,6 +261,9 @@ dxGeom::~dxGeom()
     bodyRemove();
 }
 
+/**
+ * Offset/Address/Size: 0x61C | 0x80214C3C | size: 0x50
+ */
 int dxGeom::AABBTest(dxGeom* o, dReal aabb[6])
 {
     return 1;
@@ -275,6 +293,9 @@ void dxGeom::bodyRemove()
 //****************************************************************************
 // misc
 
+/**
+ * Offset/Address/Size: 0xB10 | 0x80215130 | size: 0x8
+ */
 dxGeom* dGeomGetBodyNext(dxGeom* geom)
 {
     return geom->body_next;
@@ -287,24 +308,36 @@ dxGeom* dGeomGetBodyNext(dxGeom* geom)
     dUASSERT(!(space && space->lock_count), \
         "invalid operation for geom in locked space");
 
+/**
+ * Offset/Address/Size: 0xAD8 | 0x802150F8 | size: 0x38
+ */
 void dGeomDestroy(dxGeom* g)
 {
     dAASSERT(g);
     delete g;
 }
 
+/**
+ * Offset/Address/Size: 0xAD0 | 0x802150F0 | size: 0x8
+ */
 void dGeomSetData(dxGeom* g, void* data)
 {
     dAASSERT(g);
     g->data = data;
 }
 
+/**
+ * Offset/Address/Size: 0xAC8 | 0x802150E8 | size: 0x8
+ */
 void* dGeomGetData(dxGeom* g)
 {
     dAASSERT(g);
     return g->data;
 }
 
+/**
+ * Offset/Address/Size: 0x96C | 0x80214F8C | size: 0x15C
+ */
 void dGeomSetBody(dxGeom* g, dxBody* b)
 {
     dAASSERT(g);
@@ -341,12 +374,18 @@ void dGeomSetBody(dxGeom* g, dxBody* b)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x964 | 0x80214F84 | size: 0x8
+ */
 dBodyID dGeomGetBody(dxGeom* g)
 {
     dAASSERT(g);
     return g->body;
 }
 
+/**
+ * Offset/Address/Size: 0x914 | 0x80214F34 | size: 0x50
+ */
 void dGeomSetPosition(dxGeom* g, dReal x, dReal y, dReal z)
 {
     dAASSERT(g);
@@ -366,6 +405,9 @@ void dGeomSetPosition(dxGeom* g, dReal x, dReal y, dReal z)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x8C4 | 0x80214EE4 | size: 0x50
+ */
 void dGeomSetRotation(dxGeom* g, const dMatrix3 R)
 {
     dAASSERT(g && R);
@@ -400,6 +442,9 @@ void dGeomSetQuaternion(dxGeom* g, const dQuaternion quat)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x8BC | 0x80214EDC | size: 0x8
+ */
 const dReal* dGeomGetPosition(dxGeom* g)
 {
     dAASSERT(g);
@@ -407,6 +452,9 @@ const dReal* dGeomGetPosition(dxGeom* g)
     return g->pos;
 }
 
+/**
+ * Offset/Address/Size: 0x8B4 | 0x80214ED4 | size: 0x8
+ */
 const dReal* dGeomGetRotation(dxGeom* g)
 {
     dAASSERT(g);
@@ -446,18 +494,27 @@ int dGeomIsSpace(dxGeom* g)
     return IS_SPACE(g);
 }
 
+/**
+ * Offset/Address/Size: 0x8AC | 0x80214ECC | size: 0x8
+ */
 dSpaceID dGeomGetSpace(dxGeom* g)
 {
     dAASSERT(g);
     return g->parent_space;
 }
 
+/**
+ * Offset/Address/Size: 0x8A4 | 0x80214EC4 | size: 0x8
+ */
 int dGeomGetClass(dxGeom* g)
 {
     dAASSERT(g);
     return g->type;
 }
 
+/**
+ * Offset/Address/Size: 0x89C | 0x80214EBC | size: 0x8
+ */
 void dGeomSetCategoryBits(dxGeom* g, unsigned long bits)
 {
     dAASSERT(g);
@@ -465,6 +522,9 @@ void dGeomSetCategoryBits(dxGeom* g, unsigned long bits)
     g->category_bits = bits;
 }
 
+/**
+ * Offset/Address/Size: 0x894 | 0x80214EB4 | size: 0x8
+ */
 void dGeomSetCollideBits(dxGeom* g, unsigned long bits)
 {
     dAASSERT(g);
@@ -472,24 +532,36 @@ void dGeomSetCollideBits(dxGeom* g, unsigned long bits)
     g->collide_bits = bits;
 }
 
+/**
+ * Offset/Address/Size: 0x88C | 0x80214EAC | size: 0x8
+ */
 unsigned long dGeomGetCategoryBits(dxGeom* g)
 {
     dAASSERT(g);
     return g->category_bits;
 }
 
+/**
+ * Offset/Address/Size: 0x884 | 0x80214EA4 | size: 0x8
+ */
 unsigned long dGeomGetCollideBits(dxGeom* g)
 {
     dAASSERT(g);
     return g->collide_bits;
 }
 
+/**
+ * Offset/Address/Size: 0x874 | 0x80214E94 | size: 0x10
+ */
 void dGeomEnable(dxGeom* g)
 {
     dAASSERT(g);
     g->gflags |= GEOM_ENABLED;
 }
 
+/**
+ * Offset/Address/Size: 0x864 | 0x80214E84 | size: 0x10
+ */
 void dGeomDisable(dxGeom* g)
 {
     dAASSERT(g);
@@ -520,7 +592,13 @@ struct dxUserGeom : public dxGeom
     int AABBTest(dxGeom* o, dReal aabb[6]);
 };
 
+/**
+ * Offset/Address/Size: 0x7DC | 0x80214DFC | size: 0x88
+ */
 dxUserGeom::dxUserGeom(int class_num)
+    /**
+     * Offset/Address/Size: 0xBFC | 0x8021521C | size: 0x100
+     */
     : dxGeom(0, 1)
 {
     type = class_num;
@@ -529,6 +607,9 @@ dxUserGeom::dxUserGeom(int class_num)
     memset(user_data, 0, size);
 }
 
+/**
+ * Offset/Address/Size: 0x6AC | 0x80214CCC | size: 0x130
+ */
 dxUserGeom::~dxUserGeom()
 {
     dGeomClass* c = &user_classes[type - dFirstUserClass];
@@ -537,11 +618,17 @@ dxUserGeom::~dxUserGeom()
     dFree(user_data, c->bytes);
 }
 
+/**
+ * Offset/Address/Size: 0x66C | 0x80214C8C | size: 0x40
+ */
 void dxUserGeom::computeAABB()
 {
     user_classes[type - dFirstUserClass].aabb(this, aabb);
 }
 
+/**
+ * Offset/Address/Size: 0xB18 | 0x80215138 | size: 0x8
+ */
 int dxUserGeom::AABBTest(dxGeom* o, dReal aabb[6])
 {
     dGeomClass* c = &user_classes[type - dFirstUserClass];
@@ -551,6 +638,9 @@ int dxUserGeom::AABBTest(dxGeom* o, dReal aabb[6])
         return 1;
 }
 
+/**
+ * Offset/Address/Size: 0x210 | 0x80214830 | size: 0x40C
+ */
 static int dCollideUserGeomWithGeom(dxGeom* o1, dxGeom* o2, int flags,
     dContactGeom* contact, int skip)
 {
@@ -586,6 +676,9 @@ static int dCollideUserGeomWithGeom(dxGeom* o1, dxGeom* o2, int flags,
     return dCollide(o1, o2, flags, contact, skip);
 }
 
+/**
+ * Offset/Address/Size: 0x50 | 0x80214670 | size: 0x1C0
+ */
 int dCreateGeomClass(const dGeomClass* c)
 {
     dUASSERT(c && c->bytes >= 0 && c->collider && c->aabb, "bad geom class");
@@ -603,6 +696,9 @@ int dCreateGeomClass(const dGeomClass* c)
     return class_number;
 }
 
+/**
+ * Offset/Address/Size: 0x48 | 0x80214668 | size: 0x8
+ */
 void* dGeomGetClassData(dxGeom* g)
 {
     dUASSERT(g && g->type >= dFirstUserClass && g->type <= dLastUserClass, "not a custom class");
@@ -610,6 +706,9 @@ void* dGeomGetClassData(dxGeom* g)
     return user->user_data;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80214620 | size: 0x48
+ */
 dGeomID dCreateGeom(int classnum)
 {
     dUASSERT(classnum >= dFirstUserClass && classnum <= dLastUserClass, "not a custom class");

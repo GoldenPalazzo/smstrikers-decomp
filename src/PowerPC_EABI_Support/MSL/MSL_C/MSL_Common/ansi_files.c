@@ -138,6 +138,9 @@ extern files __files = {
     },
 };
 
+/**
+ * Offset/Address/Size: 0x280 | 0x8022C248 | size: 0x90
+ */
 FILE* __find_unopened_file(void)
 {
     FILE* file = __files._stderr.next_file;
@@ -166,6 +169,9 @@ FILE* __find_unopened_file(void)
     return (NULL);
 }
 
+/**
+ * Offset/Address/Size: 0x1A4 | 0x8022C16C | size: 0xDC
+ */
 void __init_file(FILE* file, file_modes mode, char* buff, size_t size)
 {
     file->handle = 0;
@@ -195,7 +201,9 @@ void __init_file(FILE* file, file_modes mode, char* buff, size_t size)
     file->idle_fn = 0;
 }
 
-/* 8036307C-80363124 35D9BC 00A8+00 0/0 1/1 0/0 .text            __close_all */
+/**
+ * Offset/Address/Size: 0xFC | 0x8022C0C4 | size: 0xA8
+ */
 void __close_all(void)
 {
     FILE* file = &__files._stdin;
@@ -230,6 +238,9 @@ void __close_all(void)
     __end_critical_region(stdin_access);
 }
 
+/**
+ * Offset/Address/Size: 0x8C | 0x8022C054 | size: 0x70
+ */
 unsigned int __flush_all(void)
 {
     unsigned int ret = 0;
@@ -247,6 +258,9 @@ unsigned int __flush_all(void)
     return ret;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8022BFC8 | size: 0x8C
+ */
 int __flush_line_buffered_output_files(void)
 {
     int result = 0;

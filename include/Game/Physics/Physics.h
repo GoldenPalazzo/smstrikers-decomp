@@ -11,10 +11,10 @@ class LoadingManager;
 class CharacterPhysicsData;
 class LoadablePhysicsMesh;
 
-void PhysicsUpdate(PhysicsWorld*, float);
-void ODEFree(void*, unsigned long);
-void* ODERealloc(void*, unsigned long, unsigned long);
-void* ODEAlloc(unsigned long);
+void PhysicsUpdate(PhysicsWorld* pWorld, float fDeltaT);
+void ODEFree(void* ptr, unsigned long size);
+void* ODERealloc(void* oldPtr, unsigned long oldSize, unsigned long newSize);
+void* ODEAlloc(unsigned long size);
 
 // void nlListAddEnd<ListEntry<PhysicsObject*>>(ListEntry<PhysicsObject*>**, ListEntry<PhysicsObject*>**, ListEntry<PhysicsObject*>*);
 
@@ -22,8 +22,8 @@ class PhysicsLoader : public Loader
 {
 public:
     void DestroyPhysics();
-    void ConstructStaticPhysicsPrimitives(CharacterPhysicsData*);
-    bool StartLoad(LoadingManager*);
+    void ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhysicsData);
+    bool StartLoad(LoadingManager* manager);
 };
 
 // class PhysicsRoundedCorner : public PhysicsObject

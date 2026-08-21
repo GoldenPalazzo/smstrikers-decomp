@@ -2,7 +2,7 @@
 #define _FEAUDIO_H_
 
 class Event;
-void FEAudioEventHandler(Event*, void*);
+void FEAudioEventHandler(Event* pEvent, void* userData);
 
 struct AnimAudioEventLookup
 {
@@ -18,12 +18,12 @@ extern unsigned long gNumAnimAudioEvents;
 class FEAudio
 {
 public:
-    static void EnableSounds(bool);
+    static void EnableSounds(bool enable);
     static void ResetRandomVoiceToggleSFX();
     static void PlayRandomVoiceToggleSFX();
-    static long PlayAnimAudioEvent(unsigned long, bool);
-    static void StopAnimAudioEvent(const char*);
-    static long PlayAnimAudioEvent(const char*, bool);
+    static long PlayAnimAudioEvent(unsigned long incomingHash, bool value);
+    static void StopAnimAudioEvent(const char* incomingstring);
+    static long PlayAnimAudioEvent(const char* incomingstring, bool value);
     static void BuildAnimAudioEventLookup();
 };
 

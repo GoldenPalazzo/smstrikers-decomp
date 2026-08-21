@@ -121,26 +121,26 @@ class StatsTracker : public nlSingleton<StatsTracker>
 {
 public:
     StatsTracker();
-    void SetBasicGameInfoPointer(BasicGameInfo*, bool);
+    void SetBasicGameInfoPointer(BasicGameInfo* pGameInfo, bool initializeStats);
     void ResetCurrentStats();
     void CreateEventHandler();
     void DestroyEventHandler();
-    static void eventHandler(Event*, void*);
-    void TrackStat(ePlayerStats, int, int, int, int, int, int);
+    static void eventHandler(Event* event, void* userData);
+    void TrackStat(ePlayerStats stat, int homeaway, int playerindex, int param0, int param1, int param2, int param3);
     static void Track(ePlayerStats, int, int, int, int, int, int);
-    void GetSortedStats(PlayerStats*, int, int*, int, ePlayerStats, eSortOrder);
-    void GetSortedTeamStats(TeamStats*, int, int*, int);
+    void GetSortedStats(PlayerStats* source, int numsource, int* dest, int numelements, ePlayerStats statType, eSortOrder sortOrder);
+    void GetSortedTeamStats(TeamStats* source, int numsource, int* dest, int numelements);
     void CompileEndOfGameStats();
     void SimulateRemainingGames();
     void SimulateGame();
-    void AddStat(ePlayerStats, int, int, int);
-    void AddUserStatByPad(ePlayerStats, int, int);
-    void AddMilestoneUserStat(ePlayerStats, int);
-    void TrackWinner(int);
-    void WriteStats(float, float, const char*);
-    void AwardCup(eUserGameResult);
+    void AddStat(ePlayerStats stat, int team, int player, int value);
+    void AddUserStatByPad(ePlayerStats stat, int pad, int amount);
+    void AddMilestoneUserStat(ePlayerStats stat, int amount);
+    void TrackWinner(int forfeitSide);
+    void WriteStats(float gameTime, float gameDuration, const char* filename);
+    void AwardCup(eUserGameResult gameResult);
     void WriteCurrentlyPlaying() const;
-    bool MoveTeamBUp(TeamStats, TeamStats);
+    bool MoveTeamBUp(TeamStats b, TeamStats a);
     bool IsOvertime() { return mIsOvertime; }
 
     /* 0x000 */ BasicGameInfo* mBasicGameInfo;

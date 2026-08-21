@@ -22,8 +22,8 @@ public:
         m_BlurHandlerSlotPool.m_FreeList = (SlotPoolEntry*)p;
     }
 
-    void RenderMesh(unsigned long);
-    void Die(float);
+    void RenderMesh(unsigned long uTexID);
+    void Die(float timeToDie);
     void AddViewOrientedPoint(const nlVector3& position, const nlVector3& forwardVector);
     bool ConstructViewOrientedPoints(nlVector3& topPoint, nlVector3& bottomPoint, nlVector3 position, const nlVector3& forwardVector);
 
@@ -50,9 +50,9 @@ class BlurManager
 {
 public:
     static void Shutdown();
-    static void Update(float);
-    static void DestroyHandler(BlurHandler*, float);
-    static BlurHandler* GetNewHandler(const char*, float, int, bool);
+    static void Update(float deltaTime);
+    static void DestroyHandler(BlurHandler* handler, float timeToDie);
+    static BlurHandler* GetNewHandler(const char* szTextureName, float fLineWidth, int maxPositionEntries, bool bAdditive);
 
     static BlurHandler* m_activeBlurHandler;
 };

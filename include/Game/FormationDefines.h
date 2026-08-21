@@ -4,8 +4,8 @@
 #include "NL/nlMath.h"
 #include "Game/Team.h"
 
-void AILocToFieldLoc(nlVector3&, const nlVector3&, eTeamSide);
-void FieldLocToAILoc(nlVector3&, const nlVector3&, eTeamSide);
+void AILocToFieldLoc(nlVector3& result, const nlVector3& input, eTeamSide side);
+void FieldLocToAILoc(nlVector3& dest, const nlVector3& field_location, eTeamSide nTeamSide);
 
 class FormationSpec;
 
@@ -18,7 +18,7 @@ public:
         m_Location.y = 0.0f;
         m_CaptainPreference = 0.0f;
     }
-    void GetLocationForTeam(nlVector2&, int) const;
+    void GetLocationForTeam(nlVector2& dest, int teamId) const;
 
     nlVector2 m_Location;      // offset 0x0, size 0x8
     float m_CaptainPreference; // offset 0x8, size 0x4
@@ -31,10 +31,10 @@ public:
     {
         m_ID = -1;
     }
-    void Init(int, int, const char*);
-    void SetName(const char*);
+    void Init(int id, int iKeyIndex, const char* name);
+    void SetName(const char* name);
     nlVector2& GetKeyLocation() const;
-    void CalculateExtents(nlVector2&, nlVector2&, const nlVector2&) const;
+    void CalculateExtents(nlVector2& minOut, nlVector2& maxOut, const nlVector2& input) const;
 
     /* 0x00 */ s32 m_ID;
     /* 0x04 */ s32 m_iKeyIndex;
@@ -66,11 +66,11 @@ public:
         }
     }
 
-    void Init(int, FormationSpec*, int, bool);
+    void Init(int id, FormationSpec* formationArray, int numFormations, bool bCreateCopy);
 
-    FormationSpec* GetFormationSpec(int) const;
-    FormationSpec* GetFormationSpecFromID(int) const;
-    static FormationSet* LoadFormationSets(const char*, int&);
+    FormationSpec* GetFormationSpec(int index) const;
+    FormationSpec* GetFormationSpecFromID(int formationID) const;
+    static FormationSet* LoadFormationSets(const char* filename, int& out_numsets);
 
     /* 0x0 */ bool m_AutoDelete;
     /* 0x4 */ int m_ID;

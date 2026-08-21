@@ -324,7 +324,7 @@ typedef double dReal;
      */
 
     void dGeomMoved(dGeomID);
-    dGeomID dGeomGetBodyNext(dGeomID);
+    dGeomID dGeomGetBodyNext(dGeomID geom);
 
 #ifdef __cplusplus
 }

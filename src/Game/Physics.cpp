@@ -89,7 +89,7 @@ void ODEFree(void* ptr, unsigned long size)
 /**
  * Offset/Address/Size: 0x728 | 0x80133238 | size: 0x2C0
  */
-bool PhysicsLoader::StartLoad(LoadingManager*)
+bool PhysicsLoader::StartLoad(LoadingManager* manager)
 {
     const char* pBaseName;
 
@@ -338,15 +338,11 @@ void PhysicsUpdate(PhysicsWorld* pWorld, float fDeltaT)
 }
 
 // /**
-//  * Offset/Address/Size: 0x0 | 0x801335B0 | size: 0x8
 //  */
 // void PhysicsRoundedCorner::GetObjectType() const
 // {
 // }
 
-/**
- * Offset/Address/Size: 0x0 | 0x801335B8 | size: 0x68
- */
 // void nlWalkList<ListEntry<LoadablePhysicsMesh*>, ListContainerBase<LoadablePhysicsMesh*,
 // NewAdapter<ListEntry<LoadablePhysicsMesh*>>>>(ListEntry<LoadablePhysicsMesh*>*, ListContainerBase<LoadablePhysicsMesh*,
 // NewAdapter<ListEntry<LoadablePhysicsMesh*>>>*, void (ListContainerBase<LoadablePhysicsMesh*,
@@ -354,9 +350,6 @@ void PhysicsUpdate(PhysicsWorld* pWorld, float fDeltaT)
 // {
 // }
 
-/**
- * Offset/Address/Size: 0x68 | 0x80133620 | size: 0x68
- */
 // void nlWalkList<ListEntry<PhysicsObject*>, ListContainerBase<PhysicsObject*,
 // NewAdapter<ListEntry<PhysicsObject*>>>>(ListEntry<PhysicsObject*>*, ListContainerBase<PhysicsObject*,
 // NewAdapter<ListEntry<PhysicsObject*>>>*, void (ListContainerBase<PhysicsObject*,
@@ -364,30 +357,18 @@ void PhysicsUpdate(PhysicsWorld* pWorld, float fDeltaT)
 // {
 // }
 
-/**
- * Offset/Address/Size: 0xD0 | 0x80133688 | size: 0x2C
- */
 // void nlListAddEnd<ListEntry<PhysicsObject*>>(ListEntry<PhysicsObject*>**, ListEntry<PhysicsObject*>**, ListEntry<PhysicsObject*>*)
 // {
 // }
 
-/**
- * Offset/Address/Size: 0x0 | 0x801336B4 | size: 0x24
- */
 // void ListContainerBase<PhysicsObject*, NewAdapter<ListEntry<PhysicsObject*>>>::DeleteEntry(ListEntry<PhysicsObject*>*)
 // {
 // }
 
-/**
- * Offset/Address/Size: 0x24 | 0x801336D8 | size: 0x24
- */
 // void ListContainerBase<LoadablePhysicsMesh*, NewAdapter<ListEntry<LoadablePhysicsMesh*>>>::DeleteEntry(ListEntry<LoadablePhysicsMesh*>*)
 // {
 // }
 
-/**
- * Offset/Address/Size: 0xF4 | 0x801337A8 | size: 0xAC
- */
 // void nlListContainer<PhysicsObject*>::~nlListContainer()
 // {
 // }

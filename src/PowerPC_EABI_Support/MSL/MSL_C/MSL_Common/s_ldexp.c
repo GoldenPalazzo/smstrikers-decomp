@@ -19,6 +19,9 @@ static const double
     twom54 = 5.55111512312578270212e-17, /* 0x3C900000, 0x00000000 */
     big = 1.0e+300, tiny = 1.0e-300;
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802398E0 | size: 0x1C4
+ */
 double ldexp(double x, int n)
 {
     long k, hx, lx; /*- cc 020130 -*/

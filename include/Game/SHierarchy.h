@@ -12,35 +12,35 @@ class cSHierarchy : public cIdentifier
 public:
     typedef char* MemType;
 
-    bool PreserveBoneLength(int) const;
-    nlVector3* GetTranslationOffset(int) const;
-    s32 GetParent(int) const;
-    s32 GetPushPop(int) const;
-    s32 GetMirroredNode(int) const;
-    s32 GetNumChildren(int) const;
-    u32 GetNodeID(int) const;
-    s32 GetNodeIndexByID(unsigned int) const;
-    s32 GetChild(int, int) const;
-    void BuildPushPopFlags(int, int, int&);
-    static cSHierarchy* Initialize(nlChunk*);
+    bool PreserveBoneLength(int i) const;
+    nlVector3& GetTranslationOffset(int i) const;
+    s32 GetParent(int i) const;
+    s32 GetPushPop(int i) const;
+    s32 GetMirroredNode(int i) const;
+    s32 GetNumChildren(int i) const;
+    u32 GetNodeID(int i) const;
+    s32 GetNodeIndexByID(unsigned int id) const;
+    s32 GetChild(int i, int j) const;
+    void BuildPushPopFlags(int nNode, int nParentDepth, int& nCurrentDepth);
+    static cSHierarchy* Initialize(nlChunk* pChunk);
     static bool IsValidChunkID(u32 id)
     {
         return (id & 0x80FFFFFF) == 0x80018000;
     }
-    inline u32* GetNodeIDs() const { return m_nodeIDs; }
-    inline s32 GetNodeCount() const { return m_nodeCount; }
+    inline u32* GetNodeIDs() const { return m_pNodeID; }
+    inline s32 GetNodeCount() const { return m_nNumNodes; }
 
-    /* 0x08 */ s32 m_nodeCount;
-    /* 0x0C */ u32* m_nodeIDs;
-    /* 0x10 */ s32* m_parentIndices;
-    /* 0x14 */ s32* m_childCounts;
-    /* 0x18 */ s32** m_childArrays;
-    /* 0x1C */ s32* m_pushPopFlags;
-    /* 0x20 */ s32* m_mirroredNodeIndices;
+    /* 0x08 */ s32 m_nNumNodes;
+    /* 0x0C */ u32* m_pNodeID;
+    /* 0x10 */ s32* m_pParent;
+    /* 0x14 */ s32* m_pNumChildren;
+    /* 0x18 */ s32** m_pChildren;
+    /* 0x1C */ s32* m_pPushPop;
+    /* 0x20 */ s32* m_pMirrorTable;
     /* 0x24 */ s32 m_nPelvisNodeIndex;
     /* 0x28 */ s32 m_nSpineNodeIndex;
-    /* 0x2C */ nlVector3* m_translationOffsets;
-    /* 0x30 */ u8* m_boneLengthFlags;
+    /* 0x2C */ nlVector3* m_pV3TranslationOffset;
+    /* 0x30 */ u8* m_pPreserveBoneLength;
 };
 
 #endif // _SHIERARCHY_H_

@@ -132,7 +132,7 @@ long labs(long n);
     double log(double x);
     double exp(double x);
 
-    double ldexp(double x, int exp);
+    double ldexp(double x, int n);
 
     double copysign(double x, double y);
     float copysignf(float mag, float sgn);

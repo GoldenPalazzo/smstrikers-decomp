@@ -178,10 +178,10 @@ void cPN_SAnimController::Evaluate(int nodeIndex, float weight, cPoseAccumulator
         return;
     }
 
-    nlVector3* pTranslationOffset = pAccumulator->m_BaseSHierarchy->GetTranslationOffset(nodeIndex);
+    nlVector3& translationOffset = pAccumulator->m_BaseSHierarchy->GetTranslationOffset(nodeIndex);
     pAccumulator->BlendRotIdentity(nodeIndex, weight);
     pAccumulator->BlendScaleIdentity(nodeIndex, weight);
-    pAccumulator->m_trans.mData[nodeIndex].t = *pTranslationOffset;
+    pAccumulator->m_trans.mData[nodeIndex].t = translationOffset;
 }
 
 /**

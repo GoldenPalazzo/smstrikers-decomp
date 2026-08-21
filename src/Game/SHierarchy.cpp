@@ -4,67 +4,67 @@
 /**
  * Offset/Address/Size: 0x0 | 0x801EDFEC | size: 0x18
  */
-bool cSHierarchy::PreserveBoneLength(int nodeIndex) const
+bool cSHierarchy::PreserveBoneLength(int i) const
 {
-    return m_boneLengthFlags[nodeIndex] ? true : false;
+    return m_pPreserveBoneLength[i] ? true : false;
 }
 
 /**
  * Offset/Address/Size: 0x18 | 0x801EE004 | size: 0x10
  */
-nlVector3* cSHierarchy::GetTranslationOffset(int nodeIndex) const
+nlVector3& cSHierarchy::GetTranslationOffset(int i) const
 {
-    return &m_translationOffsets[nodeIndex];
+    return m_pV3TranslationOffset[i];
 }
 
 /**
  * Offset/Address/Size: 0x28 | 0x801EE014 | size: 0x10
  */
-s32 cSHierarchy::GetParent(int nodeIndex) const
+s32 cSHierarchy::GetParent(int i) const
 {
-    return m_parentIndices[nodeIndex];
+    return m_pParent[i];
 }
 
 /**
  * Offset/Address/Size: 0x38 | 0x801EE024 | size: 0x10
  */
-s32 cSHierarchy::GetPushPop(int nodeIndex) const
+s32 cSHierarchy::GetPushPop(int i) const
 {
-    return m_pushPopFlags[nodeIndex];
+    return m_pPushPop[i];
 }
 
 /**
  * Offset/Address/Size: 0x48 | 0x801EE034 | size: 0x10
  */
-s32 cSHierarchy::GetMirroredNode(int nodeIndex) const
+s32 cSHierarchy::GetMirroredNode(int i) const
 {
-    return m_mirroredNodeIndices[nodeIndex];
+    return m_pMirrorTable[i];
 }
 
 /**
  * Offset/Address/Size: 0x58 | 0x801EE044 | size: 0x10
  */
-s32 cSHierarchy::GetNumChildren(int nodeIndex) const
+s32 cSHierarchy::GetNumChildren(int i) const
 {
-    return m_childCounts[nodeIndex];
+    return m_pNumChildren[i];
 }
 
 /**
  * Offset/Address/Size: 0x68 | 0x801EE054 | size: 0x10
  */
-u32 cSHierarchy::GetNodeID(int nodeIndex) const
+u32 cSHierarchy::GetNodeID(int i) const
 {
-    return m_nodeIDs[nodeIndex];
+    return m_pNodeID[i];
 }
 
 /**
  * Offset/Address/Size: 0x78 | 0x801EE064 | size: 0x40
  */
-s32 cSHierarchy::GetNodeIndexByID(unsigned int nodeID) const
+s32 cSHierarchy::GetNodeIndexByID(unsigned int id) const
 {
-    for (int i = 0; i < m_nodeCount; i++)
+    for (int i = 0; i < m_nNumNodes; i++)
     {
-        if (nodeID == m_nodeIDs[i])
+        if (id == m_pNodeID[i])
         {
             return i;
         }
@@ -75,9 +75,9 @@ s32 cSHierarchy::GetNodeIndexByID(unsigned int nodeID) const
 /**
  * Offset/Address/Size: 0xB8 | 0x801EE0A4 | size: 0x18
  */
-s32 cSHierarchy::GetChild(int parentIndex, int childIndex) const
+s32 cSHierarchy::GetChild(int i, int j) const
 {
-    return m_childArrays[parentIndex][childIndex];
+    return m_pChildren[i][j];
 }
 
 static inline void BuildPushPopFlagsChild(cSHierarchy* hierarchy, int nodeIndex, int currentDepth, int& stackDepth)
@@ -96,31 +96,31 @@ static inline void BuildPushPopFlagsChild(cSHierarchy* hierarchy, int nodeIndex,
 
     if (currentDepth != stackDepth)
     {
-        hierarchy->m_pushPopFlags[nodeIndex - 1] = currentDepth - stackDepth;
+        hierarchy->m_pPushPop[nodeIndex - 1] = currentDepth - stackDepth;
         stackDepth = currentDepth;
     }
 
-    childCount = hierarchy->m_childCounts[nodeIndex];
+    childCount = hierarchy->m_pNumChildren[nodeIndex];
     if (childCount != 0)
     {
-        hierarchy->m_pushPopFlags[nodeIndex] = 1;
+        hierarchy->m_pPushPop[nodeIndex] = 1;
         stackDepth += 1;
         newSD1 = stackDepth;
 
         for (j = 0; j < childCount; j++)
         {
-            gchild = hierarchy->m_childArrays[nodeIndex][j];
+            gchild = hierarchy->m_pChildren[nodeIndex][j];
 
             if (newSD1 != stackDepth)
             {
-                hierarchy->m_pushPopFlags[gchild - 1] = newSD1 - stackDepth;
+                hierarchy->m_pPushPop[gchild - 1] = newSD1 - stackDepth;
                 stackDepth = newSD1;
             }
 
-            cc2 = hierarchy->m_childCounts[gchild];
+            cc2 = hierarchy->m_pNumChildren[gchild];
             if (cc2 != 0)
             {
-                hierarchy->m_pushPopFlags[gchild] = 1;
+                hierarchy->m_pPushPop[gchild] = 1;
                 stackDepth += 1;
                 newSD2 = stackDepth;
 
@@ -130,14 +130,14 @@ static inline void BuildPushPopFlagsChild(cSHierarchy* hierarchy, int nodeIndex,
 
                     if (newSD2 != stackDepth)
                     {
-                        hierarchy->m_pushPopFlags[ggchild - 1] = newSD2 - stackDepth;
+                        hierarchy->m_pPushPop[ggchild - 1] = newSD2 - stackDepth;
                         stackDepth = newSD2;
                     }
 
-                    cc3 = hierarchy->m_childCounts[ggchild];
+                    cc3 = hierarchy->m_pNumChildren[ggchild];
                     if (cc3 != 0)
                     {
-                        hierarchy->m_pushPopFlags[ggchild] = 1;
+                        hierarchy->m_pPushPop[ggchild] = 1;
                         stackDepth += 1;
                         newSD3 = stackDepth;
 
@@ -148,53 +148,53 @@ static inline void BuildPushPopFlagsChild(cSHierarchy* hierarchy, int nodeIndex,
                     }
                     else
                     {
-                        hierarchy->m_pushPopFlags[ggchild] = 0;
+                        hierarchy->m_pPushPop[ggchild] = 0;
                     }
                 }
             }
             else
             {
-                hierarchy->m_pushPopFlags[gchild] = 0;
+                hierarchy->m_pPushPop[gchild] = 0;
             }
         }
     }
     else
     {
-        hierarchy->m_pushPopFlags[nodeIndex] = 0;
+        hierarchy->m_pPushPop[nodeIndex] = 0;
     }
 }
 
 /**
  * Offset/Address/Size: 0xD0 | 0x801EE0BC | size: 0x284
  */
-void cSHierarchy::BuildPushPopFlags(int nodeIndex, int currentDepth, int& stackDepth)
+void cSHierarchy::BuildPushPopFlags(int nNode, int nParentDepth, int& nCurrentDepth)
 {
     int child;
     int i;
-    int childCount;
+    int nNumChildren;
 
-    if (currentDepth != stackDepth)
+    if (nParentDepth != nCurrentDepth)
     {
-        m_pushPopFlags[nodeIndex - 1] = currentDepth - stackDepth;
-        stackDepth = currentDepth;
+        m_pPushPop[nNode - 1] = nParentDepth - nCurrentDepth;
+        nCurrentDepth = nParentDepth;
     }
 
-    childCount = m_childCounts[nodeIndex];
-    if (childCount != 0)
+    nNumChildren = m_pNumChildren[nNode];
+    if (nNumChildren != 0)
     {
-        m_pushPopFlags[nodeIndex] = 1;
-        stackDepth += 1;
-        currentDepth = stackDepth;
+        m_pPushPop[nNode] = 1;
+        nCurrentDepth += 1;
+        nParentDepth = nCurrentDepth;
 
-        for (i = 0; i < childCount; i++)
+        for (i = 0; i < nNumChildren; i++)
         {
-            child = m_childArrays[nodeIndex][i];
-            BuildPushPopFlagsChild(this, child, currentDepth, stackDepth);
+            child = m_pChildren[nNode][i];
+            BuildPushPopFlagsChild(this, child, nParentDepth, nCurrentDepth);
         }
     }
     else
     {
-        m_pushPopFlags[nodeIndex] = 0;
+        m_pPushPop[nNode] = 0;
     }
 }
 
@@ -210,47 +210,47 @@ cSHierarchy* cSHierarchy::Initialize(nlChunk* pChunk)
     pRetval->m_szName = (const char*)pChunk->GetData();
 
     pChunk = pChunk->GetNextChunk();
-    pRetval->m_nodeIDs = (u32*)pChunk->GetData();
+    pRetval->m_pNodeID = (u32*)pChunk->GetData();
 
     pChunk = pChunk->GetNextChunk();
-    pRetval->m_parentIndices = (s32*)pChunk->GetData();
+    pRetval->m_pParent = (s32*)pChunk->GetData();
 
     pChunk = pChunk->GetNextChunk();
-    pRetval->m_childCounts = (s32*)pChunk->GetData();
+    pRetval->m_pNumChildren = (s32*)pChunk->GetData();
 
     pChunk = pChunk->GetNextChunk();
-    pRetval->m_childArrays = (s32**)pChunk->GetData();
+    pRetval->m_pChildren = (s32**)pChunk->GetData();
 
     pChunk = pChunk->GetNextChunk();
-    pRetval->m_pushPopFlags = (s32*)pChunk->GetData();
+    pRetval->m_pPushPop = (s32*)pChunk->GetData();
 
     pChunk = pChunk->GetNextChunk();
     s32* pChild = (s32*)pChunk->GetData();
 
-    for (int i = 0; i < pRetval->m_nodeCount; i++)
+    for (int i = 0; i < pRetval->m_nNumNodes; i++)
     {
-        if (pRetval->m_childCounts[i] > 0)
+        if (pRetval->m_pNumChildren[i] > 0)
         {
-            pRetval->m_childArrays[i] = pChild;
+            pRetval->m_pChildren[i] = pChild;
         }
         else
         {
-            pRetval->m_childArrays[i] = 0;
+            pRetval->m_pChildren[i] = 0;
         }
-        pChild += pRetval->m_childCounts[i];
+        pChild += pRetval->m_pNumChildren[i];
     }
 
     int nCurrentDepth = 0;
     pRetval->BuildPushPopFlags(0, 0, nCurrentDepth);
 
     pChunk = pChunk->GetNextChunk();
-    pRetval->m_mirroredNodeIndices = (s32*)pChunk->GetData();
+    pRetval->m_pMirrorTable = (s32*)pChunk->GetData();
 
     pChunk = pChunk->GetNextChunk();
-    pRetval->m_translationOffsets = (nlVector3*)pChunk->GetData();
+    pRetval->m_pV3TranslationOffset = (nlVector3*)pChunk->GetData();
 
     pChunk = pChunk->GetNextChunk();
-    pRetval->m_boneLengthFlags = (u8*)pChunk->GetData();
+    pRetval->m_pPreserveBoneLength = (u8*)pChunk->GetData();
 
     return pRetval;
 }

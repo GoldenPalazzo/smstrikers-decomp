@@ -26,7 +26,7 @@ struct GLSkinUserData
 class UserDataBuilder
 {
 public:
-    void AddEntry(const unsigned long&, unsigned long*);
+    void AddEntry(const unsigned long& boneID, unsigned long* registerIndex);
 
     /* 0x00 */ GLSkinUserData* m_Bone;
     /* 0x04 */ nlAVLTree<unsigned long, SkinMatrix, DefaultKeyCompare<unsigned long> >* m_PoseMatrices;
@@ -48,7 +48,7 @@ public:
     {
     }
     virtual ~GLSkinMesh() { };
-    virtual void ConnectToPose(cPoseAccumulator*) = 0;
+    virtual void ConnectToPose(cPoseAccumulator* pPoseAccumulator) = 0;
     virtual void Pose(cPoseAccumulator*) = 0;
     virtual void PrepareToRender(unsigned long, const nlMatrix4*) = 0;
     virtual nlMatrix4& GetPoseMatrix(unsigned long) = 0;
@@ -63,22 +63,22 @@ class ShaderSkinMesh : public GLSkinMesh
 public:
     ShaderSkinMesh();
     virtual ~ShaderSkinMesh();
-    virtual void ConnectToPose(cPoseAccumulator*);
-    virtual void Pose(cPoseAccumulator*);
-    virtual void PrepareToRender(unsigned long, const nlMatrix4*);
-    virtual nlMatrix4& GetPoseMatrix(unsigned long);
-    virtual void GetPoseMatrices(GLSkinMeshMatrix*);
-    virtual void SetPoseMatrices(int, GLSkinMeshMatrix*);
+    virtual void ConnectToPose(cPoseAccumulator* pPoseAccumulator);
+    virtual void Pose(cPoseAccumulator* pPoseAccumulator);
+    virtual void PrepareToRender(unsigned long flags, const nlMatrix4* pMatrix);
+    virtual nlMatrix4& GetPoseMatrix(unsigned long boneID);
+    virtual void GetPoseMatrices(GLSkinMeshMatrix* pMatrices);
+    virtual void SetPoseMatrices(int num, GLSkinMeshMatrix* pMatrices);
 
     void CreateMorphBuffer();
-    void SetMorphIDs(const unsigned long*);
-    void SetBoneMatrix(unsigned long, const nlMatrix4*);
-    void AppendSkinPairList(int, const SkinPair*);
-    void SetSoftwareVertices(int, const SkinVertex*);
-    void AppendStitchingInfo(int, int, int, const unsigned char*);
-    void* MakeUserData(nlAVLTree<unsigned long, unsigned long, DefaultKeyCompare<unsigned long> >*);
-    void SetMorphNumDeltas(const unsigned long*);
-    void SetMorphDeltas(int, const MorphDelta*);
+    void SetMorphIDs(const unsigned long* ids);
+    void SetBoneMatrix(unsigned long boneID, const nlMatrix4* matrix);
+    void AppendSkinPairList(int numPairs, const SkinPair* pairs);
+    void SetSoftwareVertices(int num, const SkinVertex* skinVertices);
+    void AppendStitchingInfo(int packetIndex, int _numPackets, int num, const unsigned char* pIndices);
+    void* MakeUserData(nlAVLTree<unsigned long, unsigned long, DefaultKeyCompare<unsigned long> >* boneMap);
+    void SetMorphNumDeltas(const unsigned long* numDeltas);
+    void SetMorphDeltas(int numDeltas, const MorphDelta* p);
 
     void StitchModel();
     void AttachSkinData(unsigned long, const nlMatrix4*);

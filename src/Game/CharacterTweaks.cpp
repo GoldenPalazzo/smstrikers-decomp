@@ -62,8 +62,8 @@ void PlayerTweaks::Init()
 /**
  * Offset/Address/Size: 0x2E1C | 0x8001780C | size: 0x80
  */
-FielderTweaks::FielderTweaks(const char* arg0)
-    : PlayerTweaks(arg0)
+FielderTweaks::FielderTweaks(const char* name)
+    : PlayerTweaks(name)
 {
     Init();
 }
@@ -152,8 +152,8 @@ void FielderTweaks::Init()
 /**
  * Offset/Address/Size: 0x1974 | 0x80016364 | size: 0x80
  */
-GoalieTweaks::GoalieTweaks(const char* arg0)
-    : PlayerTweaks(arg0)
+GoalieTweaks::GoalieTweaks(const char* name)
+    : PlayerTweaks(name)
 {
     Init();
 }

@@ -8,6 +8,7 @@ extern "C" {
 #endif
 
 extern void* malloc(size_t size);
+extern void* realloc(void* ptr, size_t size);
 extern void free(void* ptr);
 
 extern void MallocInit(void* base, size_t len);

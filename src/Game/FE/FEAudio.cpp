@@ -88,9 +88,9 @@ void FEAudio::BuildAnimAudioEventLookup()
 /**
  * Offset/Address/Size: 0x738 | 0x8009F4E4 | size: 0xBC
  */
-long FEAudio::PlayAnimAudioEvent(const char* eventName, bool)
+long FEAudio::PlayAnimAudioEvent(const char* incomingstring, bool value)
 {
-    unsigned long hash = nlStringLowerHash(eventName);
+    unsigned long hash = nlStringLowerHash(incomingstring);
 
     if (!AudioLoader::IsInited())
     {
@@ -125,14 +125,14 @@ long FEAudio::PlayAnimAudioEvent(const char* eventName, bool)
 /**
  * Offset/Address/Size: 0x6A8 | 0x8009F454 | size: 0x90
  */
-void FEAudio::StopAnimAudioEvent(const char* eventName)
+void FEAudio::StopAnimAudioEvent(const char* incomingstring)
 {
     if (!AudioLoader::IsInited())
     {
         return;
     }
 
-    unsigned long hash = nlStringLowerHash(eventName);
+    unsigned long hash = nlStringLowerHash(incomingstring);
 
     if (!AudioLoader::IsInited())
     {
@@ -160,7 +160,7 @@ void FEAudio::StopAnimAudioEvent(const char* eventName)
 /**
  * Offset/Address/Size: 0x5F0 | 0x8009F39C | size: 0xB8
  */
-long FEAudio::PlayAnimAudioEvent(unsigned long uHash, bool)
+long FEAudio::PlayAnimAudioEvent(unsigned long incomingHash, bool value)
 {
     if (!AudioLoader::IsInited())
     {
@@ -172,7 +172,7 @@ long FEAudio::PlayAnimAudioEvent(unsigned long uHash, bool)
         return -1;
     }
 
-    unsigned long stackHash = uHash;
+    unsigned long stackHash = incomingHash;
     AnimAudioEventLookup* result = nlBSearch<AnimAudioEventLookup, unsigned long>(stackHash, gp_AnimAudioEventTable, gNumAnimAudioEvents);
     AnimAudioEventLookup* event;
     if (result)
@@ -350,7 +350,7 @@ void FEAudio::ResetRandomVoiceToggleSFX()
 /**
  * Offset/Address/Size: 0x8 | 0x8009EDB4 | size: 0x27C
  */
-void FEAudioEventHandler(Event* pEvent, void*)
+void FEAudioEventHandler(Event* pEvent, void* userData)
 {
     if (!AudioLoader::IsInited())
     {

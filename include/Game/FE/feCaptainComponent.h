@@ -66,24 +66,24 @@ public:
 
     IChooseCaptain();
     ~IChooseCaptain();
-    void Initialize(const char*, const char*);
-    void UpdateSound(float);
-    UpdateResult Update(float);
+    void Initialize(const char* captainfilename, const char* sidekickfilename);
+    void UpdateSound(float dt);
+    UpdateResult Update(float dt);
     void UpdateAsyncImages();
-    void SceneCreated(FEPresentation*);
-    void SetupCaptainComponent(TLComponentInstance*, int);
-    void StartSidekickMiniHead(int, eSidekickID);
+    void SceneCreated(FEPresentation* presentation);
+    void SetupCaptainComponent(TLComponentInstance* compinstance, int homeaway);
+    void StartSidekickMiniHead(int homeaway, eSidekickID sidekick);
     void CheckForDisconnectedHumanPlayers();
     void FindAliveHumanPlayers();
     void UpdateSinglePlayerState();
-    int GetSide(int);
-    void SetupForLastPhase(eFEINPUT_PAD);
-    void PushPlayer(eFEINPUT_PAD, int);
-    void PopPlayer(eFEINPUT_PAD);
+    int GetSide(int padid);
+    void SetupForLastPhase(eFEINPUT_PAD pad);
+    void PushPlayer(eFEINPUT_PAD pad, int side);
+    void PopPlayer(eFEINPUT_PAD pad);
     void ResetPushPlayerData();
     void PushPlayerWithGameInfoDB();
-    void MoveHighlightToCurrentCaptain(int);
-    void SetupNameComponentToCurrentCaptain(int);
+    void MoveHighlightToCurrentCaptain(int which);
+    void SetupNameComponentToCurrentCaptain(int slot);
 
     void SetPhaseReady(int homeaway)
     {
