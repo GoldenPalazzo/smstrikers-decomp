@@ -1,14 +1,14 @@
 #ifndef _PARTICLESYSTEM_H_
 #define _PARTICLESYSTEM_H_
 
-// void 0x8028D560..0x8028D564 | size: 0x4;
-
 #include "NL/nlMath.h"
 #include "NL/nlColour.h"
 #include "Game/Effects/efList.h"
 #include "Game/Effects/EffectsTemplate.h"
 #include "Game/Effects/EffectsGroup.h"
 #include "NL/gl/gl.h"
+
+class EffectsLight;
 
 struct ParticleReturn
 {
@@ -41,17 +41,19 @@ public:
 class ParticleSystem : public efNode
 {
 public:
-    ParticleSystem(EffectsTemplate*, EffectsSpec*);
+    ParticleSystem(EffectsTemplate* pTemplate, EffectsSpec* spec);
     ~ParticleSystem();
     static void ClearViews();
-    static void AddView(eGLView);
+    static void AddView(eGLView view);
     void UpdateCoordSys();
-    void UpdateCoordSys(nlMatrix4&);
-    void CreateNewParticles(int);
-    static void UpdateParticle(ParticleReturn*, Particle*, EffectsTemplate*, const nlVector3&, const nlVector3&, const nlMatrix4*);
-    void RenderAllParticles(eGLView);
+    void UpdateCoordSys(nlMatrix4& mCoordSys);
+    void CreateNewParticles(int numParticles);
+    void UpdateAllParticles(float dt);
+    static void UpdateLight(EffectsLight* pLight, Particle* pPart, EffectsTemplate* pTemplate, const nlVector3& viewRight, const nlVector3& viewUp, const nlMatrix4* pCoordSys);
+    static void UpdateParticle(ParticleReturn* pReturn, Particle* pPart, EffectsTemplate* pTemplate, const nlVector3& viewRight, const nlVector3& viewUp, const nlMatrix4* pCoordSys);
+    void RenderAllParticles(eGLView view);
     void Die();
-    bool Update(float);
+    bool Update(float dt);
     float GetRemainingTime() const;
 
     /* 0x08 */ EffectsSpec* m_pSpec;          // offset 0x8, size 0x4
@@ -80,10 +82,6 @@ public:
 }; // total size: 0x70
 
 bool fxParticleShutdown();
-bool fxParticleStartup(int numParticles);
-void BuildFrameTable();
-void EmitHemisphericalPosition(nlVector3&, nlVector3&, EffectsTemplate*, EffectsSpec*, const nlMatrix4&);
-void EmitSphericalPosition(nlVector3&, nlVector3&, EffectsTemplate*, EffectsSpec*, const nlMatrix4&);
-void EmitCircularPosition(nlVector3&, nlVector3&, EffectsTemplate*, EffectsSpec*, const nlMatrix4&);
+bool fxParticleStartup(int maxNumParticles);
 
 #endif // _PARTICLESYSTEM_H_

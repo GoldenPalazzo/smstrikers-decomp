@@ -16,3 +16,10 @@ fill_gaps: false # Alignments known
 
 write_asm: true
 ldscript_template: config/G4QJ01/ldscript.tpl
+
+# Suppress dtk false-positive relocations in LidOpenMessage image data. These
+# words are compressed-image bytes that happen to equal BuildFrameTable + 0x510,
+# not pointers into ParticleSystem.
+block_relocations:
+  - source: .rodata:0x8029302C
+  - source: .rodata:0x80294104

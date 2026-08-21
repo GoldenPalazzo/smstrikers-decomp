@@ -9,7 +9,7 @@ public:
     LoadingTransitionScene();
     virtual ~LoadingTransitionScene();
     virtual void SceneCreated();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
 };
 
 #endif // _SHLOADINGTRANSITION_H_

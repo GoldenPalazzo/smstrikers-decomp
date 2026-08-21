@@ -48,22 +48,22 @@ struct TransAccum
 class cPoseAccumulator
 {
 public:
-    cPoseAccumulator(cSHierarchy* hierarchy, bool withSecondary);
-    void Pose(const cPoseNode&, const nlMatrix4&);
+    cPoseAccumulator(cSHierarchy* pSHierarchy, bool bStorePrevNodeMatrices);
+    void Pose(const cPoseNode& pPoseTree, const nlMatrix4& pWorldMatrix);
     void InitAccumulators();
-    void BuildNodeMatrices(const nlMatrix4&);
-    void BlendRot(int, const nlQuaternion*, float, bool);
-    void BlendRotAroundZ(int, unsigned short, float);
-    void BlendScale(int, const nlVector3*, float, bool);
-    void BlendTrans(int, const nlVector3*, float, bool);
-    void BlendRotIdentity(int, float);
-    void BlendScaleIdentity(int, float);
-    void BlendTransIdentity(int, float);
-    nlMatrix4& GetNodeMatrix(int) const;
-    nlMatrix4& GetNodeMatrixByHashID(unsigned int) const;
+    void BuildNodeMatrices(const nlMatrix4& pWorldMatrix);
+    void BlendRot(int nNode, const nlQuaternion* pRot, float fWeight, bool bMirror);
+    void BlendRotAroundZ(int nNode, unsigned short rot, float fWeight);
+    void BlendScale(int nNode, const nlVector3* pScale, float fWeight, bool bMirror);
+    void BlendTrans(int nNode, const nlVector3* pTrans, float fWeight, bool bMirror);
+    void BlendRotIdentity(int nNode, float fWeight);
+    void BlendScaleIdentity(int nNode, float fWeight);
+    void BlendTransIdentity(int nNode, float fWeight);
+    nlMatrix4& GetNodeMatrix(int nNode) const;
+    nlMatrix4& GetNodeMatrixByHashID(unsigned int nHashID) const;
     s32 GetNumNodes() const;
-    void MultNodeMatrices(const nlMatrix4*);
-    void SetBuildNodeMatrixCallback(int, BuildNodeMatrixFn, unsigned int, unsigned int);
+    void MultNodeMatrices(const nlMatrix4* pMatrix);
+    void SetBuildNodeMatrixCallback(int nNode, BuildNodeMatrixFn funcCallback, unsigned int nParam1, unsigned int nParam2);
 
     /* 0x00 */ cSHierarchy* m_BaseSHierarchy;
     /* 0x04 */ Vector<nlMatrix4, DefaultAllocator> m_NodeMatrices;

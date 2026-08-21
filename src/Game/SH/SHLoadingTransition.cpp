@@ -3,6 +3,7 @@
 #include "Game/GameInfo.h"
 #include "Game/FE/feInput.h"
 #include "Game/SH/SHLoading.h"
+#include "Game/TrophyTextures.h"
 
 extern bool g_e3_Build;
 extern FEInput* g_pFEInput;
@@ -34,9 +35,9 @@ void LoadingTransitionScene::SceneCreated()
 /**
  * Offset/Address/Size: 0x0 | 0x800DA0BC | size: 0xCC
  */
-void LoadingTransitionScene::Update(float dt)
+void LoadingTransitionScene::Update(float fDeltaT)
 {
-    BaseSceneHandler::Update(dt);
+    BaseSceneHandler::Update(fDeltaT);
 
     TLSlide* slide = m_pFEPresentation->m_currentSlide;
 

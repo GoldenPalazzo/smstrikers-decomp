@@ -117,6 +117,9 @@ namespace Detail
 class SwitchToStartScreenLoader : public Loader
 {
 public:
+    /**
+     * Offset/Address/Size: 0x1BF4 | 0x801731C4 | size: 0x28
+     */
     virtual bool StartLoad(LoadingManager*)
     {
         FrontEnd::EnterStartScreen(false);
@@ -127,100 +130,97 @@ public:
 static SwitchToStartScreenLoader switchToStartScreen;
 } // namespace Detail
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801731FC | size: 0x10
-//  */
-// void 0x8028D338..0x8028D33C | size : 0x4
-// {
-// }
-
-/**
- * Offset/Address/Size: 0xC | 0x801731F8 | size: 0x4
- */
-// void TransitionTask::Run(float)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801731EC | size: 0xC
-//  */
-// void TransitionTask::GetName()
-// {
-// }
-
-// Detail::SwitchToStartScreenLoader::StartLoad defined in header (weak)
+#if defined(VERSION_G4QJ01)
+static inline void MarkFontAsJapanese(const char* fontName)
+{
+    FontManager* fontManager = nlSingleton<FontManager>::s_pInstance;
+    nlFont* font = fontManager->GetFontByHashID(nlStringLowerHash(fontName));
+    font->SetIsJapanese(true);
+}
+#endif
 
 /**
  * Offset/Address/Size: 0x1A10 | 0x80172FE0 | size: 0x1E4
  */
 static void LoadFonts()
 {
-    const char* fontFileName1 = "fot-rodinprob18";
-    const char* fontFileName2 = "cepoitalic24";
-    char langCode[4] = "eng";
+    const char* TEXT_FONT_NAME = "fot-rodinprob18";
+    const char* HEADING_FONT_NAME = "cepoitalic24";
+    char langprefix[4] = "eng";
 
-    unsigned long lang = g_pLocalization->m_CurrentLanguage;
-    switch (lang)
+    switch (g_pLocalization->m_CurrentLanguage)
     {
     case 1:
-        langCode[0] = 'f';
-        langCode[1] = 'r';
-        langCode[2] = 'e';
+        langprefix[0] = 'f';
+        langprefix[1] = 'r';
+        langprefix[2] = 'e';
         break;
     case 2:
-        langCode[0] = 'd';
-        langCode[1] = 'e';
-        langCode[2] = 'u';
+        langprefix[0] = 'd';
+        langprefix[1] = 'e';
+        langprefix[2] = 'u';
         break;
     case 4:
-        langCode[0] = 'i';
-        langCode[1] = 't';
-        langCode[2] = 'a';
+        langprefix[0] = 'i';
+        langprefix[1] = 't';
+        langprefix[2] = 'a';
         break;
     case 5:
-        langCode[0] = 'j';
-        langCode[1] = 'p';
-        langCode[2] = 'n';
+        langprefix[0] = 'j';
+        langprefix[1] = 'p';
+        langprefix[2] = 'n';
         break;
     case 3:
-        langCode[0] = 's';
-        langCode[1] = 'p';
-        langCode[2] = 'a';
+        langprefix[0] = 's';
+        langprefix[1] = 'p';
+        langprefix[2] = 'a';
         break;
     case 6:
-        langCode[0] = 'u';
-        langCode[1] = 'k';
-        langCode[2] = 'e';
+        langprefix[0] = 'u';
+        langprefix[1] = 'k';
+        langprefix[2] = 'e';
         break;
     case 8:
-        langCode[0] = 'b';
-        langCode[1] = 'o';
-        langCode[2] = 'b';
+        langprefix[0] = 'b';
+        langprefix[1] = 'o';
+        langprefix[2] = 'b';
         break;
     case 7:
-        langCode[0] = 'l';
-        langCode[1] = 'n';
-        langCode[2] = 'g';
+        langprefix[0] = 'l';
+        langprefix[1] = 'n';
+        langprefix[2] = 'g';
         break;
     case 0:
         break;
     }
 
-    char bundlePath1[64];
-    char fontName1[64];
-    char bundlePath2[64];
-    char fontName2[64];
+    char textfontbundlename[64];
+    char textfontfilename[64];
+    char headingfontbundlename[64];
+    char headingfontfilename[64];
 
-    nlSNPrintf(bundlePath1, 64, "art/fe/fonts/%sfonttext18.res", langCode);
-    nlSNPrintf(fontName1, 64, "fe/fonts/%sfonttext18", langCode);
-    nlSNPrintf(bundlePath2, 64, "art/fe/fonts/%sfontheading24.res", langCode);
-    nlSNPrintf(fontName2, 64, "fe/fonts/%sfontheading24", langCode);
+    nlSNPrintf(textfontbundlename, 64, "art/fe/fonts/%sfonttext18.res", langprefix);
+    nlSNPrintf(textfontfilename, 64, "fe/fonts/%sfonttext18", langprefix);
+    nlSNPrintf(headingfontbundlename, 64, "art/fe/fonts/%sfontheading24.res", langprefix);
+    nlSNPrintf(headingfontfilename, 64, "fe/fonts/%sfontheading24", langprefix);
 
-    nlSingleton<FontManager>::s_pInstance->LoadFont(bundlePath1, fontName1, fontFileName1);
-    nlSingleton<FontManager>::s_pInstance->LoadFont(bundlePath2, fontName2, fontFileName2);
+    nlSingleton<FontManager>::s_pInstance->LoadFont(textfontbundlename, textfontfilename, TEXT_FONT_NAME);
+#if defined(VERSION_G4QJ01)
+    if (g_pLocalization->m_CurrentLanguage == nlLocalization::LangJapanese)
+    {
+        MarkFontAsJapanese(TEXT_FONT_NAME);
+    }
+#endif
+    nlSingleton<FontManager>::s_pInstance->LoadFont(headingfontbundlename, headingfontfilename, HEADING_FONT_NAME);
+#if defined(VERSION_G4QJ01)
+    if (g_pLocalization->m_CurrentLanguage == nlLocalization::LangJapanese)
+    {
+        MarkFontAsJapanese(HEADING_FONT_NAME);
+    }
+#endif
 }
 
-static inline void LoadFontsJapaneseInGame()
+static void LoadFontsJapaneseInGame()
 {
     const char* TEXT_FONT_NAME = "fot-rodinprob18";
     const char* HEADING_FONT_NAME = "cepoitalic24";
@@ -235,10 +235,16 @@ static inline void LoadFontsJapaneseInGame()
     nlSNPrintf(headingfontbundlename, 64, "art/fe/fonts/%sfontheadingingame24.res", langprefix);
     nlSNPrintf(headingfontfilename, 64, "fe/fonts/%sfontheadingingame24", langprefix);
     nlSingleton<FontManager>::s_pInstance->LoadFont(textfontbundlename, textfontfilename, TEXT_FONT_NAME);
+#if defined(VERSION_G4QJ01)
+    MarkFontAsJapanese(TEXT_FONT_NAME);
+#endif
     nlSingleton<FontManager>::s_pInstance->LoadFont(headingfontbundlename, headingfontfilename, HEADING_FONT_NAME);
+#if defined(VERSION_G4QJ01)
+    MarkFontAsJapanese(HEADING_FONT_NAME);
+#endif
 }
 
-static inline void LoadFontsJapanese101()
+static void LoadFontsJapanese101()
 {
     const char* TEXT_FONT_NAME = "fot-rodinprob18";
     const char* HEADING_FONT_NAME = "cepoitalic24";
@@ -253,7 +259,13 @@ static inline void LoadFontsJapanese101()
     nlSNPrintf(headingfontbundlename, 64, "art/fe/fonts/%sfontheading10124.res", langprefix);
     nlSNPrintf(headingfontfilename, 64, "fe/fonts/%sfontheading10124", langprefix);
     nlSingleton<FontManager>::s_pInstance->LoadFont(textfontbundlename, textfontfilename, TEXT_FONT_NAME);
+#if defined(VERSION_G4QJ01)
+    MarkFontAsJapanese(TEXT_FONT_NAME);
+#endif
     nlSingleton<FontManager>::s_pInstance->LoadFont(headingfontbundlename, headingfontfilename, HEADING_FONT_NAME);
+#if defined(VERSION_G4QJ01)
+    MarkFontAsJapanese(HEADING_FONT_NAME);
+#endif
 }
 
 /**
@@ -299,7 +311,7 @@ static inline void ClearCharacterEffectsAndResetPowerups()
     g_pGame->ResetPowerups(false);
 }
 
-static inline void EnablePersistentEffects(bool bEnable)
+static void EnablePersistentEffects(bool bEnable)
 {
     efList* controllers;
     EmissionController* p;
@@ -312,14 +324,13 @@ static inline void EnablePersistentEffects(bool bEnable)
         {
             if (p->m_uUserData == 0xDEADBEEF)
             {
+                p->m_bDisabled = !bEnable;
                 if (bEnable)
                 {
-                    p->m_bDisabled = false;
                     SidelineExplodableManager::AssociateEffectWithNearbyFloatingCamera(p);
                 }
                 else
                 {
-                    p->m_bDisabled = true;
                     SidelineExplodableManager::UnAssociateEffectWithNearbyFloatingCamera(p);
                 }
             }
@@ -328,7 +339,27 @@ static inline void EnablePersistentEffects(bool bEnable)
     }
 }
 
-static inline void ClearCharacterEffectsTexturing()
+static void WaitForAllScenesValid()
+{
+    while (!nlSingleton<FESceneManager>::s_pInstance->AreAllScenesValid())
+    {
+        nlServiceFileSystem();
+        nlSingleton<FESceneManager>::s_pInstance->Update(0.0f);
+        nlSingleton<FEResourceManager>::s_pInstance->Run(0.0f);
+    }
+}
+
+static void WaitForFELoadsToFinish(BaseSceneHandler* pFinalScene)
+{
+    do
+    {
+        nlServiceFileSystem();
+        nlSingleton<FEResourceManager>::s_pInstance->Run(0.0f);
+        nlSingleton<FESceneManager>::s_pInstance->Update(0.0f);
+    } while (!pFinalScene->m_pFEScene->m_bValid);
+}
+
+static void ClearCharacterEffectsTexturing()
 {
     int i;
     cFielder* pFielder;
@@ -357,31 +388,31 @@ static inline void ClearCharacterEffectsTexturing()
  */
 void TransitionTask::StateTransition(unsigned int from, unsigned int to)
 {
-    bool showLoading = false;
+    bool bLoadingIndicator = false;
     int i;
 
     if (to == 4 || to == 2)
     {
         glxSwapLoading(true, false);
-        showLoading = true;
+        bLoadingIndicator = true;
     }
 
     nlTaskManager::m_pInstance->m_Locked = true;
 
-    bool cameraRelLighting;
+    bool bNISLighting;
     if (to & 0x100)
     {
-        cameraRelLighting = true;
+        bNISLighting = true;
     }
     else if (to == 1 && (from & 0x100))
     {
-        cameraRelLighting = true;
+        bNISLighting = true;
     }
     else
     {
-        cameraRelLighting = false;
+        bNISLighting = false;
     }
-    DrawableCharacter::sCameraRelativeLighting = cameraRelLighting;
+    DrawableCharacter::sCameraRelativeLighting = bNISLighting;
 
     if (to == 0x80000)
     {
@@ -390,9 +421,7 @@ void TransitionTask::StateTransition(unsigned int from, unsigned int to)
         glxSwapSetBlack(false);
         glxSwapLoading(true, true);
 
-        m_TransitionState = eTS_Destroying;
         DestroyFEFast();
-        m_TransitionState = eTS_Unknown;
         InitializeFEState();
         glxSwapLoading(false, false);
         nlTaskManager::SetNextState(4);
@@ -410,11 +439,7 @@ void TransitionTask::StateTransition(unsigned int from, unsigned int to)
         if (from == 0x10000)
         {
             AudioLoader::LoadFE(false);
-            m_TransitionState = eTS_Initializing;
-
             InitializeFEFast();
-
-            m_TransitionState = eTS_InState;
         }
         else
         {
@@ -428,9 +453,7 @@ void TransitionTask::StateTransition(unsigned int from, unsigned int to)
 
         if (from == 4)
         {
-            m_TransitionState = eTS_Destroying;
             DestroyFEState();
-            m_TransitionState = eTS_Unknown;
         }
 
         if (g_pGame == NULL)
@@ -479,8 +502,8 @@ void TransitionTask::StateTransition(unsigned int from, unsigned int to)
         if (from != 1 && to != 0x20000)
         {
             {
-                Presentation& p = Presentation::Instance();
-                p.mLetterBoxEnabled = true;
+                Presentation& presentation = Presentation::Instance();
+                presentation.mLetterBoxEnabled = true;
             }
 
             for (i = 0; i < 2; i++)
@@ -501,9 +524,9 @@ void TransitionTask::StateTransition(unsigned int from, unsigned int to)
         {
             if (to != 1 && to != 4)
             {
-                Presentation& pres = Presentation::Instance();
-                pres.mLetterBoxEnabled = false;
-                pres.mLetterBoxDuration = 0.0f;
+                Presentation& presentation = Presentation::Instance();
+                presentation.mLetterBoxEnabled = false;
+                presentation.mLetterBoxDuration = 0.0f;
 
                 ClearCharacterEffectsTexturing();
 
@@ -523,7 +546,7 @@ void TransitionTask::StateTransition(unsigned int from, unsigned int to)
 
     nlTaskManager::m_pInstance->m_Locked = false;
 
-    if (showLoading)
+    if (bLoadingIndicator)
     {
         glxSwapLoading(false, false);
     }
@@ -598,14 +621,14 @@ void TransitionTask::InitializeGameState()
     ReplayManager::Instance()->InitializeSnapshots();
 
     s_FontResourceMark = glResourceMark();
-    ((nlLocalization*)g_pLocalization)->Load(g_Language, false);
+    g_pLocalization->Load(g_Language, false);
 
     if (nlSingleton<FontManager>::s_pInstance == NULL)
     {
         nlSingleton<FontManager>::s_pInstance = new (nlMalloc(sizeof(FontManager), 8, false)) FontManager();
     }
 
-    if ((int)g_pLocalization->m_CurrentLanguage == 5)
+    if (g_pLocalization->m_CurrentLanguage == nlLocalization::LangJapanese)
     {
         if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
         {
@@ -643,7 +666,9 @@ void TransitionTask::InitializeGameState()
     }
 
     nlSingleton<OverlayManager>::s_pInstance->Push(OVERLAY_TEXT, (ScreenMovement)0, false);
-    nlSingleton<OverlayManager>::s_pInstance->Push(OVERLAY_HUD, (ScreenMovement)0, false)->SetVisible(false);
+    BaseSceneHandler* newscene
+        = nlSingleton<OverlayManager>::s_pInstance->Push(OVERLAY_HUD, (ScreenMovement)0, false);
+    newscene->SetVisible(false);
 
     if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
     {
@@ -653,7 +678,9 @@ void TransitionTask::InitializeGameState()
         pres.mLetterBoxDuration = 0.0f;
     }
 
-    nlSingleton<OverlayManager>::s_pInstance->Push(OVERLAY_GOAL, (ScreenMovement)0, false)->SetVisible(false);
+    BaseSceneHandler* goalOverlay
+        = nlSingleton<OverlayManager>::s_pInstance->Push(OVERLAY_GOAL, (ScreenMovement)0, false);
+    goalOverlay->SetVisible(false);
 
     GameInfoManager::eGameModes mode = nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode;
     if (!(mode >= GameInfoManager::GM_MUSHROOM_CUP && mode <= GameInfoManager::GM_TOURNAMENT))
@@ -666,32 +693,22 @@ void TransitionTask::InitializeGameState()
 
     nlSingleton<OverlayManager>::s_pInstance->Push((SceneList)0x4D, (ScreenMovement)0, false);
 
-    while (!nlSingleton<FESceneManager>::s_pInstance->AreAllScenesValid())
-    {
-        nlServiceFileSystem();
-        nlSingleton<FESceneManager>::s_pInstance->Update(0.0f);
-        nlSingleton<FEResourceManager>::s_pInstance->Run(0.0f);
-    }
+    WaitForAllScenesValid();
 
-    SuperLoadingScene* pLoading = (SuperLoadingScene*)nlSingleton<OverlayManager>::s_pInstance->Push(SCENE_SUPER_LOADING, (ScreenMovement)0, false);
-    pLoading->mType = SuperLoadingScene::TT_OUT;
+    SuperLoadingScene* loadingscene = (SuperLoadingScene*)nlSingleton<OverlayManager>::s_pInstance->Push(SCENE_SUPER_LOADING, (ScreenMovement)0, false);
+    loadingscene->mType = SuperLoadingScene::TT_OUT;
     nlSingleton<FESceneManager>::s_pInstance->Update(0.0f);
 
     do
     {
         nlServiceFileSystem();
         nlSingleton<FEResourceManager>::s_pInstance->Run(0.0f);
-    } while (!pLoading->m_pFEScene->m_bValid);
+    } while (!loadingscene->m_pFEScene->m_bValid);
 
     PauseMenuScene::mLastSelectedIndex = 0;
 
-    const GameplaySettings& opts = nlSingleton<GameInfoManager>::s_pInstance->GetGameplayOptions();
-    bool disableRumble = opts.RumbleEnabled == false;
-    if (!disableRumble)
-    {
-        disableRumble = GetConfigBool(Config::Global(), "no_pad_rumble", false);
-    }
-    cPlatPad::m_bDisableRumble = disableRumble;
+    cPlatPad::m_bDisableRumble = !nlSingleton<GameInfoManager>::s_pInstance->GetGameplayOptions().RumbleEnabled
+                              || GetConfigBool(Config::Global(), "no_pad_rumble", false);
 
     AudioLoader::StopStreaming();
 
@@ -733,12 +750,7 @@ void TransitionTask::DestroyGameState()
 
     DestroyTimeRegions();
 
-    while (!nlSingleton<FESceneManager>::s_pInstance->AreAllScenesValid())
-    {
-        nlServiceFileSystem();
-        nlSingleton<FESceneManager>::s_pInstance->Update(0.0f);
-        nlSingleton<FEResourceManager>::s_pInstance->Run(0.0f);
-    }
+    WaitForAllScenesValid();
 
     nlSingleton<OverlayManager>::s_pInstance->PopEntireStack();
     nlSingleton<FESceneManager>::s_pInstance->ForceImmediateStackProcessing();
@@ -749,12 +761,7 @@ void TransitionTask::DestroyGameState()
 
     nlSingleton<FESceneManager>::s_pInstance->ForceImmediateStackProcessing();
 
-    while (!nlSingleton<FESceneManager>::s_pInstance->AreAllScenesValid())
-    {
-        nlServiceFileSystem();
-        nlSingleton<FESceneManager>::s_pInstance->Update(0.0f);
-        nlSingleton<FEResourceManager>::s_pInstance->Run(0.0f);
-    }
+    WaitForAllScenesValid();
 
     for (int i = 0; i < 2; i++)
     {
@@ -779,12 +786,7 @@ void TransitionTask::DestroyGameState()
 
     glx_SetFog(-1);
 
-    while (!nlSingleton<FESceneManager>::s_pInstance->AreAllScenesValid())
-    {
-        nlServiceFileSystem();
-        nlSingleton<FESceneManager>::s_pInstance->Update(0.0f);
-        nlSingleton<FEResourceManager>::s_pInstance->Run(0.0f);
-    }
+    WaitForAllScenesValid();
 
     if (nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode != 0)
     {
@@ -868,8 +870,6 @@ void TransitionTask::DestroyGameState()
 
     CompactSlotPools();
 
-    glViewCompact();
-
     m_TransitionState = eTS_Unknown;
 }
 
@@ -886,7 +886,7 @@ void TransitionTask::InitializeFEState()
     tDebugPrintManager::Print(DC_MEMORY, "-----------------------------------------\n\n");
 
     s_FontResourceMark = glResourceMark();
-    ((nlLocalization*)g_pLocalization)->Load(g_Language, false);
+    g_pLocalization->Load(g_Language, false);
     EnableAutoPressed();
 
     if (nlSingleton<FontManager>::s_pInstance == NULL)
@@ -1018,14 +1018,11 @@ void TransitionTask::InitializeFEState()
 
 void TransitionTask::DestroyFEState()
 {
+    m_TransitionState = eTS_Destroying;
+
     g_pFEInput->Reset();
 
-    while (!nlSingleton<FESceneManager>::s_pInstance->AreAllScenesValid())
-    {
-        nlServiceFileSystem();
-        nlSingleton<FESceneManager>::s_pInstance->Update(0.0f);
-        nlSingleton<FEResourceManager>::s_pInstance->Run(0.0f);
-    }
+    WaitForAllScenesValid();
 
     nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
 
@@ -1067,11 +1064,13 @@ void TransitionTask::DestroyFEState()
 
     CompactSlotPools();
 
-    glViewCompact();
+    m_TransitionState = eTS_Unknown;
 }
 
 void TransitionTask::InitializeFEFast()
 {
+    m_TransitionState = eTS_Initializing;
+
     tDebugPrintManager::Print(DC_MEMORY, "-- Memory upon Entering InitializeFEFast ----------\n");
     tDebugPrintManager::Print(DC_MEMORY, "Free Memory: %u\n", StandardAllocator.TotalFreeMemory());
     tDebugPrintManager::Print(DC_MEMORY, "Largest Free Block: %u\n", StandardAllocator.LargestFreeBlock());
@@ -1105,18 +1104,17 @@ void TransitionTask::InitializeFEFast()
     tDebugPrintManager::Print(DC_MEMORY, "Free Memory: %u\n", StandardAllocator.TotalFreeMemory());
     tDebugPrintManager::Print(DC_MEMORY, "Largest Free Block: %u\n", StandardAllocator.LargestFreeBlock());
     tDebugPrintManager::Print(DC_MEMORY, "-----------------------------------------\n\n");
+
+    m_TransitionState = eTS_InState;
 }
 
 void TransitionTask::DestroyFEFast()
 {
+    m_TransitionState = eTS_Destroying;
+
     g_pFEInput->Reset();
 
-    while (!nlSingleton<FESceneManager>::s_pInstance->AreAllScenesValid())
-    {
-        nlServiceFileSystem();
-        nlSingleton<FESceneManager>::s_pInstance->Update(0.0f);
-        nlSingleton<FEResourceManager>::s_pInstance->Run(0.0f);
-    }
+    WaitForAllScenesValid();
 
     nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
 
@@ -1142,20 +1140,22 @@ void TransitionTask::DestroyFEFast()
 
     CompactSlotPools();
 
-    glViewCompact();
+    m_TransitionState = eTS_Unknown;
 }
 
 void TransitionTask::CompactSlotPools()
 {
-    SlotPoolBase::BaseFreeBlocks(&cPN_SAnimController::m_SAnimControllerSlotPool, 0x54);
-    SlotPoolBase::BaseFreeBlocks(&cPN_Blender::m_BlenderSlotPool, 0x1c);
-    SlotPoolBase::BaseFreeBlocks(&cPN_SingleAxisBlender::m_SingleAxisBlenderSlotPool, 0x28);
-    SlotPoolBase::BaseFreeBlocks(&cPN_Feather::m_FeatherSlotPool, 0x30);
+    cPN_SAnimController::m_SAnimControllerSlotPool.FreeBlocks();
+    cPN_Blender::m_BlenderSlotPool.FreeBlocks();
+    cPN_SingleAxisBlender::m_SingleAxisBlenderSlotPool.FreeBlocks();
+    cPN_Feather::m_FeatherSlotPool.FreeBlocks();
+
+    glViewCompact();
 }
 
 void TransitionTask::DisplayFirstScreen()
 {
-    bool isPressed = g_pFEInput->IsPressed(FE_ALL_PADS, 0x200, false, NULL);
+    bool isBPressed = g_pFEInput->IsPressed(FE_ALL_PADS, 0x200, false, NULL);
 
     if (VIGetTvFormat() == 5)
     {
@@ -1166,7 +1166,7 @@ void TransitionTask::DisplayFirstScreen()
     {
         if (VIGetTvFormat() == 0)
         {
-            if (VIGetDTVStatus() != 0 && (OSGetProgressiveMode() == 1 || isPressed))
+            if (VIGetDTVStatus() != 0 && (OSGetProgressiveMode() == 1 || isBPressed))
             {
                 nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_PROGRESSIVE_SCAN, (ScreenMovement)0, false);
                 break;

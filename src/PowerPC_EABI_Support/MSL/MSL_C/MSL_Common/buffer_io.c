@@ -3,14 +3,17 @@
 #include "buffer_io.h"
 #include "critical_regions.h"
 
-inline void __convert_from_newlines(unsigned char* buf, size_t* n)
+void __convert_from_newlines(unsigned char* buf, size_t* n)
 {
 }
 
-inline void __convert_to_newlines(unsigned char* buf, size_t* n)
+void __convert_to_newlines(unsigned char* buf, size_t* n)
 {
 }
 
+/**
+ * Offset/Address/Size: 0x338 | 0x8022FBFC | size: 0x34
+ */
 void __prep_buffer(FILE* file)
 {
     file->buffer_ptr = file->buffer;
@@ -19,6 +22,9 @@ void __prep_buffer(FILE* file)
     file->buffer_position = file->position;
 }
 
+/**
+ * Offset/Address/Size: 0x228 | 0x8022FAEC | size: 0x110
+ */
 int __load_buffer(FILE* file, size_t* bytes_loaded, int alignment)
 {
     FILE* f;
@@ -73,6 +79,9 @@ int __load_buffer(FILE* file, size_t* bytes_loaded, int alignment)
     return __no_io_error;
 }
 
+/**
+ * Offset/Address/Size: 0x164 | 0x8022FA28 | size: 0xC4
+ */
 int __flush_buffer(FILE* file, size_t* bytes_flushed)
 {
     size_t buffer_len;
@@ -103,6 +112,9 @@ int __flush_buffer(FILE* file, size_t* bytes_flushed)
     return 0;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8022F8C4 | size: 0x164
+ */
 int setvbuf(FILE* file, char* buff, int mode, size_t size)
 {
     int kind;

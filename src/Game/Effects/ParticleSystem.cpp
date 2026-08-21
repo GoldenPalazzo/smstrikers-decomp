@@ -34,10 +34,42 @@ static unsigned short hackyFacingAngle;
 float ParticleSystem::m_fAspect = 1.0f;
 u8 ParticleSystem::m_AllowInFront = 1;
 
+static void AllocateParticles()
+{
+    int i;
+    const int count = MaxNumParticles;
+
+    particleMemory = new (nlMalloc(count * (int)sizeof(Particle) + 0x10, 8, false)) Particle[count];
+
+    tDebugPrintManager::Print(DC_RENDER, "%dKB used by Particle pool\n", (unsigned)(MaxNumParticles * sizeof(Particle)) >> 10);
+
+    for (i = 0; i < MaxNumParticles; i++)
+    {
+        freeParticles.Insert(&particleMemory[i]);
+    }
+}
+
+static void FreeParticles()
+{
+    while (freeParticles.m_headNode != nullptr)
+    {
+        freeParticles.Remove();
+    }
+
+    if (particleMemory != nullptr)
+    {
+        if (particleMemory != nullptr)
+        {
+            delete[] ((u8*)particleMemory - 0x10);
+        }
+        particleMemory = nullptr;
+    }
+}
+
 /**
  * Offset/Address/Size: 0x26F0 | 0x801F7848 | size: 0x90
  */
-ParticleSystem::ParticleSystem(EffectsTemplate* pTemplate, EffectsSpec* pSpec)
+ParticleSystem::ParticleSystem(EffectsTemplate* pTemplate, EffectsSpec* spec)
 {
     m_NumInstances++;
 
@@ -46,7 +78,7 @@ ParticleSystem::ParticleSystem(EffectsTemplate* pTemplate, EffectsSpec* pSpec)
     m_Mirror.z = 1.0f;
 
     m_pTemplate = pTemplate;
-    m_pSpec = pSpec;
+    m_pSpec = spec;
 
     m_fElapsedTime = 0.0f;
     m_fNumParticlesToCreate = 0.0f;
@@ -162,7 +194,7 @@ void ParticleSystem::UpdateCoordSys(nlMatrix4& mCoordSys)
 /**
  * Offset/Address/Size: 0x22F4 | 0x801F744C | size: 0x110
  */
-void EmitCircularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld)
+static void EmitCircularPosition(nlVector3& pos, nlVector3& dir, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld)
 {
     float randomAngle = RandomizedValue(0.0f, 6.2831855f);
 
@@ -170,7 +202,7 @@ void EmitCircularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTe
     float cosVal;
     nlSinCos(&sinVal, &cosVal, (unsigned short)(int)(10430.378f * randomAngle));
 
-    float radius = RandomizedValue(pTemplate->m_rRadius.base, pTemplate->m_rRadius.range);
+    float radius = RandomizedValue(pTemplate->m_rRadius);
 
     nlVector3 localPos;
     localPos.x = cosVal * radius;
@@ -187,18 +219,18 @@ void EmitCircularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTe
 
     if (pTemplate->m_bLocalSpace)
     {
-        vPosition = localPos;
+        pos = localPos;
     }
     else
     {
-        nlMultPosVectorMatrix(vPosition, localPos, mLocalToWorld);
+        nlMultPosVectorMatrix(pos, localPos, mLocalToWorld);
     }
 }
 
 /**
  * Offset/Address/Size: 0x2168 | 0x801F72C0 | size: 0x18C
  */
-void EmitSphericalPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld)
+static void EmitSphericalPosition(nlVector3& pos, nlVector3& dir, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld)
 {
     float randomZ = RandomizedValue(0.0f, 2.0f);
     float randomAngleValue = RandomizedValue(6.2831855f);
@@ -216,7 +248,7 @@ void EmitSphericalPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsT
     float y = xyRadius * sinVal;
     float z = randomZ;
 
-    float radius = RandomizedValue(pTemplate->m_rRadius.base, pTemplate->m_rRadius.range);
+    float radius = RandomizedValue(pTemplate->m_rRadius);
 
     nlVec3Set(localDir, x, y, z);
     nlVec3Set(localPos, radius * localDir.x, radius * localDir.y, radius * localDir.z);
@@ -231,20 +263,20 @@ void EmitSphericalPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsT
 
     if (pTemplate->m_bLocalSpace)
     {
-        vPosition = localPos;
-        vDirection = localDir;
+        pos = localPos;
+        dir = localDir;
     }
     else
     {
-        nlMultPosVectorMatrix(vPosition, localPos, mLocalToWorld);
-        nlMultDirVectorMatrix(vDirection, localDir, mLocalToWorld);
+        nlMultPosVectorMatrix(pos, localPos, mLocalToWorld);
+        nlMultDirVectorMatrix(dir, localDir, mLocalToWorld);
     }
 }
 
 /**
  * Offset/Address/Size: 0x1FDC | 0x801F7134 | size: 0x18C
  */
-void EmitHemisphericalPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld)
+static void EmitHemisphericalPosition(nlVector3& pos, nlVector3& dir, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld)
 {
     float randomZ = RandomizedValue(-0.5f, 1.0f);
     float randomAngleValue = RandomizedValue(6.2831855f);
@@ -262,7 +294,7 @@ void EmitHemisphericalPosition(nlVector3& vPosition, nlVector3& vDirection, Effe
     float y = xyRadius * sinVal;
     float z = randomZ;
 
-    float radius = RandomizedValue(pTemplate->m_rRadius.base, pTemplate->m_rRadius.range);
+    float radius = RandomizedValue(pTemplate->m_rRadius);
 
     nlVec3Set(localDir, x, y, z);
     nlVec3Set(localPos, radius * localDir.x, radius * localDir.y, radius * localDir.z);
@@ -277,17 +309,17 @@ void EmitHemisphericalPosition(nlVector3& vPosition, nlVector3& vDirection, Effe
 
     if (pTemplate->m_bLocalSpace)
     {
-        vPosition = localPos;
-        vDirection = localDir;
+        pos = localPos;
+        dir = localDir;
     }
     else
     {
-        nlMultPosVectorMatrix(vPosition, localPos, mLocalToWorld);
-        nlMultDirVectorMatrix(vDirection, localDir, mLocalToWorld);
+        nlMultPosVectorMatrix(pos, localPos, mLocalToWorld);
+        nlMultDirVectorMatrix(dir, localDir, mLocalToWorld);
     }
 }
 
-static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld);
+static void EmitSpindularPosition(nlVector3& pos, nlVector3& dir, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld);
 
 static inline void RotateXZInPlace(nlVector3& v, float sn, float cs)
 {
@@ -306,7 +338,7 @@ static inline void RotateXYInPlace(nlVector3& v, float sn, float cs)
 /**
  * Offset/Address/Size: 0x1C90 | 0x801F6DE8 | size: 0x34C
  */
-static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld)
+static void EmitSpindularPosition(nlVector3& pos, nlVector3& dir, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld)
 {
     nlVector3 localPos;
     nlVector3 localDir;
@@ -316,13 +348,13 @@ static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, E
 
     nlSinCos(&sin, &cos, (unsigned short)(int)(10430.378f * randomAngle));
 
-    float radius = RandomizedValue(pTemplate->m_rRadius.base, pTemplate->m_rRadius.range);
+    float radius = RandomizedValue(pTemplate->m_rRadius);
 
     localPos.x = cos * radius;
     localPos.y = -sin * radius;
     localPos.z = 0.0f;
 
-    float tilt = RandomizedValue(pTemplate->m_rAngle.base, pTemplate->m_rAngle.range);
+    float tilt = RandomizedValue(pTemplate->m_rAngle);
     if (tilt <= -90.0f)
     {
         tilt = -89.9f;
@@ -344,7 +376,7 @@ static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, E
         length * localDir.y,
         length * localDir.z);
 
-    float tiltRotation = RandomizedValue(pTemplate->m_rTilt.base, pTemplate->m_rTilt.range);
+    float tiltRotation = RandomizedValue(pTemplate->m_rTilt);
     tiltRotation = -tiltRotation * 3.14159265f / 180.0f;
 
     if (tiltRotation != 0.0f)
@@ -365,33 +397,32 @@ static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, E
 
     if (pTemplate->m_bLocalSpace)
     {
-        vPosition = localPos;
-        vDirection = localDir;
+        pos = localPos;
+        dir = localDir;
     }
     else
     {
-        nlMultDirVectorMatrix(vPosition, localPos, mLocalToWorld);
-        nlMultDirVectorMatrix(vDirection, localDir, mLocalToWorld);
+        nlMultDirVectorMatrix(pos, localPos, mLocalToWorld);
+        nlMultDirVectorMatrix(dir, localDir, mLocalToWorld);
 
         if (hackyFacingAngle != 0)
         {
             nlSinCos(&sin, &cos, hackyFacingAngle);
 
-            RotateXYInPlace(vDirection, sin, cos);
-            RotateXYInPlace(vPosition, sin, cos);
+            RotateXYInPlace(dir, sin, cos);
+            RotateXYInPlace(pos, sin, cos);
         }
 
-        nlVec3Set(vPosition,
-            vPosition.x + mLocalToWorld.e2[3][0],
-            vPosition.y + mLocalToWorld.e2[3][1],
-            vPosition.z + mLocalToWorld.e2[3][2]);
+        nlVec3Set(pos,
+            pos.x + mLocalToWorld.e2[3][0],
+            pos.y + mLocalToWorld.e2[3][1],
+            pos.z + mLocalToWorld.e2[3][2]);
     }
 }
 
 /**
  * Offset/Address/Size: 0x1900 | 0x801F6A58 | size: 0x390
  */
-#pragma opt_common_subs off
 void ParticleSystem::CreateNewParticles(int numParticles)
 {
     void (*emit)(nlVector3&, nlVector3&, EffectsTemplate*, EffectsSpec*, const nlMatrix4&);
@@ -446,9 +477,9 @@ void ParticleSystem::CreateNewParticles(int numParticles)
         pPart->position.x += m_vSourcePosition.x;
         pPart->position.y += m_vSourcePosition.y;
         pPart->position.z += m_vSourcePosition.z;
-        pPart->lifeSpan = RandomizedValue(m_pTemplate->m_rParticleLife.base, m_pTemplate->m_rParticleLife.range);
+        pPart->lifeSpan = RandomizedValue(m_pTemplate->m_rParticleLife);
         oneOverLife = 1.0f / pPart->lifeSpan;
-        pPart->dRot = RandomizedValue(m_pTemplate->m_rRotation.base, m_pTemplate->m_rRotation.range);
+        pPart->dRot = RandomizedValue(m_pTemplate->m_rRotation);
         {
             f32 rot;
             if (pPart->dRot == 0.0f)
@@ -461,16 +492,16 @@ void ParticleSystem::CreateNewParticles(int numParticles)
             }
             pPart->rot = rot;
         }
-        pPart->mass = RandomizedValue(m_pTemplate->m_rMass.base, m_pTemplate->m_rMass.range);
+        pPart->mass = RandomizedValue(m_pTemplate->m_rMass);
         EffectsTemplate* pTemplate = m_pTemplate;
-        float sizeBegin = RandomizedValue(pTemplate->m_rSizeBegin.base, pTemplate->m_rSizeBegin.range);
-        float sizeEnd = RandomizedValue(pTemplate->m_rSizeEnd.base, pTemplate->m_rSizeEnd.range);
+        float sizeBegin = RandomizedValue(pTemplate->m_rSizeBegin);
+        float sizeEnd = RandomizedValue(pTemplate->m_rSizeEnd);
         pPart->size = sizeBegin;
         pPart->dSize = oneOverLife * (sizeEnd - sizeBegin);
-        float inheritVelocity = RandomizedValue(m_pTemplate->m_rInheritVelocity.base, m_pTemplate->m_rInheritVelocity.range);
+        float inheritVelocity = RandomizedValue(m_pTemplate->m_rInheritVelocity);
         nlVector3 velocity;
         nlVec3Scale(velocity, m_vVelocity, inheritVelocity);
-        float vel = RandomizedValue(m_pTemplate->m_rVelocity.base, m_pTemplate->m_rVelocity.range);
+        float vel = RandomizedValue(m_pTemplate->m_rVelocity);
         nlVec3ScaleAdd(velocity, vel, dir, velocity);
         float speedSquared = nlVec3LengthSquared(velocity);
         pPart->velocity = nlSqrt(speedSquared, true);
@@ -483,12 +514,47 @@ void ParticleSystem::CreateNewParticles(int numParticles)
             float invSpeed = nlRecipSqrt(speedSquared, true);
             nlVec3Scale(pPart->velDir, velocity, invSpeed);
         }
-        pPart->acceleration = RandomizedValue(m_pTemplate->m_rAcceleration.base, m_pTemplate->m_rAcceleration.range);
+        pPart->acceleration = RandomizedValue(m_pTemplate->m_rAcceleration);
         pPart->frame = 0.0f;
-        pPart->FPS = RandomizedValue(m_pTemplate->m_rFPS.base, m_pTemplate->m_rFPS.range);
+        pPart->FPS = RandomizedValue(m_pTemplate->m_rFPS);
     }
 }
-#pragma opt_common_subs reset
+void ParticleSystem::UpdateAllParticles(float dt)
+{
+    Particle* p = (Particle*)m_Particles.m_headNode;
+    while (p != nullptr)
+    {
+        Particle* next = (Particle*)p->m_nextNode;
+        p->timeElapsed += dt;
+        if (p->timeElapsed >= p->lifeSpan)
+        {
+            m_Particles.Remove(p);
+            freeParticles.Append(p);
+        }
+        p = next;
+    }
+}
+
+void ParticleSystem::UpdateLight(EffectsLight* pLight, Particle* pPart, EffectsTemplate* pTemplate, const nlVector3& viewRight, const nlVector3& viewUp, const nlMatrix4* pCoordSys)
+{
+    int colourIndex = (int)(24.5f * (pPart->timeElapsed / pPart->lifeSpan));
+    pLight->m_Colour = pTemplate->m_cColour[colourIndex];
+    pLight->m_fRadius = 0.5f * ((pPart->dSize * pPart->timeElapsed) + pPart->size);
+
+    float d = pPart->timeElapsed * (((0.5f * pPart->acceleration) * pPart->timeElapsed) + pPart->velocity);
+    nlVector3 position;
+    nlVec3Set(position,
+        (d * pPart->velDir.x) + pPart->position.x,
+        (d * pPart->velDir.y) + pPart->position.y,
+        (d * pPart->velDir.z) + pPart->position.z);
+    if (pCoordSys != nullptr)
+    {
+        nlMultPosVectorMatrix(position, position, *pCoordSys);
+    }
+    position.z += pPart->mass * ((-9.81f * pPart->timeElapsed) * pPart->timeElapsed);
+
+    pLight->m_v3Position = position;
+}
 
 /**
  * Offset/Address/Size: 0x15AC | 0x801F6704 | size: 0x354
@@ -572,7 +638,7 @@ void ParticleSystem::UpdateParticle(ParticleReturn* pReturn, Particle* pPart, Ef
     pReturn->position[3].z = (position.z + z0) - z1;
 }
 
-static inline void RenderLightOnField(const EffectsLight& light)
+static void RenderLightOnField(const EffectsLight& light)
 {
     float heightFrac = 1.0f - (light.m_v3Position.z / light.m_fRadius);
     if (!(heightFrac <= 0.0f))
@@ -614,8 +680,6 @@ static inline void RenderLightOnField(const EffectsLight& light)
 void ParticleSystem::RenderAllParticles(eGLView view)
 {
     static int _tris[6] = { 0, 1, 2, 0, 2, 3 };
-    static u32 WhiteTexture;
-    static s8 init;
 
     ParticleReturn ret;
     GLMeshWriter mesh;
@@ -688,11 +752,7 @@ void ParticleSystem::RenderAllParticles(eGLView view)
     glSetRasterState(GLS_AlphaTest, 1);
     glSetCurrentRasterState(glHandleizeRasterState());
 
-    if (!init)
-    {
-        WhiteTexture = glGetTexture("global/white");
-        init = 1;
-    }
+    static u32 WhiteTexture = glGetTexture("global/white");
 
     glSetCurrentTexture(m_pTemplate->m_hTexture, GLTT_Diffuse);
     glSetCurrentProgram(glGetProgram("3d unlit"));
@@ -783,8 +843,8 @@ void ParticleSystem::RenderAllParticles(eGLView view)
             void* pUserData = glUserAlloc(GLUD_ConstantColour, 4, false);
             if (pUserData != nullptr)
             {
-                u32* pDst = (u32*)glUserGetData(pUserData);
-                *pDst = *(u32*)&ret.c;
+                nlColour* pColour = (nlColour*)glUserGetData(pUserData);
+                *pColour = ret.c;
             }
 
             u32 hMatrix = glAllocMatrix();
@@ -961,7 +1021,7 @@ bool ParticleSystem::Update(float dt)
             {
                 m_bAmDying = true;
             }
-            m_fNumParticlesToCreate += RandomizedValue(m_pTemplate->m_rNumber.base, m_pTemplate->m_rNumber.range);
+            m_fNumParticlesToCreate += RandomizedValue(m_pTemplate->m_rNumber);
         }
     }
     else if (m_fElapsedTime >= fountainLife)
@@ -971,7 +1031,7 @@ bool ParticleSystem::Update(float dt)
     }
     else
     {
-        m_fNumParticlesToCreate += dt * RandomizedValue(m_pTemplate->m_rNumber.base, m_pTemplate->m_rNumber.range);
+        m_fNumParticlesToCreate += dt * RandomizedValue(m_pTemplate->m_rNumber);
     }
 
     int numParticles = (int)m_fNumParticlesToCreate;
@@ -1015,7 +1075,7 @@ float ParticleSystem::GetRemainingTime() const
     return m_pTemplate->m_fFountainLife - m_fElapsedTime;
 }
 
-static inline TextureFrame* BuildFrameLookup(int numFrames, float inc)
+static TextureFrame* BuildFrameLookup(int numFrames, float inc)
 {
     TextureFrame* p = (TextureFrame*)nlMalloc(numFrames * sizeof(TextureFrame), 8, false);
     float u = 0.0f;
@@ -1047,7 +1107,7 @@ static inline TextureFrame* BuildFrameLookup(int numFrames, float inc)
 /**
  * Offset/Address/Size: 0x188 | 0x801F52E0 | size: 0x558
  */
-void BuildFrameTable()
+static void BuildFrameTable()
 {
     textureFrames[0] = (TextureFrame*)nlMalloc(sizeof(TextureFrame), 8, false);
     ((TextureFrame*)textureFrames[0])->su = 0;
@@ -1067,21 +1127,6 @@ void BuildFrameTable()
  */
 inline Particle::Particle()
 {
-}
-
-static inline void AllocateParticles()
-{
-    int i;
-    const int count = MaxNumParticles;
-
-    particleMemory = new (nlMalloc(count * 0x4C + 0x10, 8, false)) Particle[count];
-
-    tDebugPrintManager::Print(DC_RENDER, "%dKB used by Particle pool\n", (unsigned)(MaxNumParticles * 0x4C) >> 10);
-
-    for (i = 0; i < MaxNumParticles; i++)
-    {
-        freeParticles.Insert(&particleMemory[i]);
-    }
 }
 
 /**
@@ -1109,18 +1154,11 @@ bool fxParticleShutdown()
         }
     }
 
-    while (freeParticles.m_headNode != nullptr)
-    {
-        freeParticles.Remove();
-    }
-
-    if (particleMemory != nullptr)
-    {
-        if (particleMemory != nullptr)
-        {
-            delete[] ((u8*)particleMemory - 0x10);
-        }
-        particleMemory = nullptr;
-    }
+    FreeParticles();
     return true;
+}
+
+static int fxNumParticlesActive()
+{
+    return MaxNumParticles - freeParticles.m_numNodes;
 }

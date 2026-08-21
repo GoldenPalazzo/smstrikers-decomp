@@ -1,6 +1,6 @@
 #include "superconcretesoundproperties.h"
 
-static SoundProperties SUPERCONCRETESoundProperties[] = { { "CHARSFX_RUN_01", "SFXCHAR_GEN_Run_Concrete_01", 5.0f, 0.0f, 0.5f, 1, 0 },
+SoundProperties SUPERCONCRETESoundProperties[] = { { "CHARSFX_RUN_01", "SFXCHAR_GEN_Run_Concrete_01", 5.0f, 0.0f, 0.5f, 1, 0 },
     { "CHARSFX_RUN_02", "SFXCHAR_GEN_Run_Concrete_02", 5.0f, 0.0f, 0.5f, 1, 0 },
     { "CHARSFX_RUN_03", "SFXCHAR_GEN_Run_Concrete_03", 5.0f, 0.0f, 0.5f, 1, 0 },
     { "CHARSFX_RUN_04", "SFXCHAR_GEN_Run_Concrete_04", 5.0f, 0.0f, 0.5f, 1, 0 },
@@ -18,7 +18,7 @@ static SoundProperties SUPERCONCRETESoundProperties[] = { { "CHARSFX_RUN_01", "S
     { "CHARSFX_DEKE_RIGHT", "SFXCHAR_SUPER_Deek_Right", 0.5f, 0.0f, 0.5f, 1, 0 },
     { "CHARSFX_BODYFALL", "SFXCHAR_SUPER_Bodyfall", 0.5f, 0.0f, 0.5f, 1, 0 } };
 
-SUPERCONCRETESoundPropAccessor gSUPERCONCRETESoundPropAccessor;
+static SUPERCONCRETESoundPropAccessor gSUPERCONCRETESoundPropAccessor;
 SoundPropAccessor* gpSUPERCONCRETESoundPropAccessor = &gSUPERCONCRETESoundPropAccessor;
 
 /**
@@ -34,7 +34,7 @@ void SUPERCONCRETESoundPropAccessor::ResetSoundPropTable()
  */
 bool SUPERCONCRETESoundPropAccessor::IsUsingOrigTable() const
 {
-    return (m_pTable == SUPERCONCRETESoundProperties) ? true : false;
+    return m_pTable == SUPERCONCRETESoundProperties;
 }
 
 /**

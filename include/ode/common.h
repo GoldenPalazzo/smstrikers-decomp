@@ -141,7 +141,7 @@ typedef double dReal;
 #define dRecip(x) ((float)(1.0f / (x)))           /* reciprocal */
 #define dSqrt(x)  ((float)nlSqrt(float(x), true)) /* reciprocal */
 // #define dSqrt(x)        ((float)sqrtf(float(x)))            /* square root */
-#define dRecipSqrt(x)   ((float)(1.0f / sqrtf(float(x))))   /* reciprocal square root */
+#define dRecipSqrt(x)   ((float)(1.0f / dSqrt(float(x))))   /* reciprocal square root */
 #define dSin(x)         ((float)sinf(float(x)))             /* sine */
 #define dCos(x)         ((float)cosf(float(x)))             /* cosine */
 #define dFabs(x)        ((float)fabsf(float(x)))            /* absolute value */

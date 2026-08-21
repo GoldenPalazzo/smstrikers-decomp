@@ -10,49 +10,49 @@ static unsigned long gl_IdentityMatrix = 0xFFFFFFFF;
 /**
  * Offset/Address/Size: 0x0 | 0x801D8A74 | size: 0x20
  */
-void glMatrixLookAt(nlMatrix4& matrix, const nlVector3& eyePos, const nlVector3& targetPos, const nlVector3& upVector)
+void glMatrixLookAt(nlMatrix4& m, const nlVector3& peye, const nlVector3& pat, const nlVector3& vup)
 {
-    glplatMatrixLookAt(matrix, eyePos, targetPos, upVector);
+    glplatMatrixLookAt(m, peye, pat, vup);
 }
 
 /**
  * Offset/Address/Size: 0x20 | 0x801D8A94 | size: 0x20
  */
-void glMatrixPerspective(nlMatrix4& matrix, float fovY, float aspect, float near, float far)
+void glMatrixPerspective(nlMatrix4& m, float fovRad, float aspect, float nearPlane, float farPlane)
 {
-    glplatMatrixPerspective(matrix, fovY, aspect, near, far);
+    glplatMatrixPerspective(m, fovRad, aspect, nearPlane, farPlane);
 }
 
 /**
  * Offset/Address/Size: 0x40 | 0x801D8AB4 | size: 0x20
  */
-void glMatrixOrthographicCentered(nlMatrix4& matrix, float width, float height, float near, float far)
+void glMatrixOrthographicCentered(nlMatrix4& m, float width, float height, float nearPlane, float farPlane)
 {
-    glplatMatrixOrthographicCentered(matrix, width, height, near, far);
+    glplatMatrixOrthographicCentered(m, width, height, nearPlane, farPlane);
 }
 
 /**
  * Offset/Address/Size: 0x60 | 0x801D8AD4 | size: 0x20
  */
-void glMatrixOrthographic(nlMatrix4& matrix, float width, float height)
+void glMatrixOrthographic(nlMatrix4& m, float width, float height)
 {
-    glplatMatrixOrthographic(matrix, width, height);
+    glplatMatrixOrthographic(m, width, height);
 }
 
 /**
  * Offset/Address/Size: 0x80 | 0x801D8AF4 | size: 0x20
  */
-void glSetMatrix(unsigned long arg0, const nlMatrix4& matrix)
+void glSetMatrix(unsigned long matrix, const nlMatrix4& m)
 {
-    glplatSetMatrix(arg0, matrix);
+    glplatSetMatrix(matrix, m);
 }
 
 /**
  * Offset/Address/Size: 0xA0 | 0x801D8B14 | size: 0x20
  */
-void glGetMatrix(unsigned long arg0, nlMatrix4& matrix)
+void glGetMatrix(unsigned long matrix, nlMatrix4& m)
 {
-    glplatGetMatrix(arg0, matrix);
+    glplatGetMatrix(matrix, m);
 }
 
 /**
@@ -60,12 +60,12 @@ void glGetMatrix(unsigned long arg0, nlMatrix4& matrix)
  */
 u32 glAllocMatrix()
 {
-    u32 var_r3 = glplatFrameAlloc(0x40, (eGLMemory)1);
-    if (var_r3 == 0U)
+    u32 p = glplatFrameAlloc(sizeof(nlMatrix4), GLM_Matrix);
+    if (p == 0U)
     {
-        var_r3 = -1U;
+        p = -1U;
     }
-    return var_r3;
+    return p;
 }
 
 /**
@@ -73,7 +73,7 @@ u32 glAllocMatrix()
  */
 unsigned long glGetIdentityMatrix()
 {
-    return gl_IdentityMatrix; // probably a pointer to a matrix
+    return gl_IdentityMatrix;
 }
 
 /**
@@ -81,24 +81,24 @@ unsigned long glGetIdentityMatrix()
  */
 void gl_MatrixStartup()
 {
-    nlMatrix4 matrix;
-    matrix.SetIdentity();
-    gl_IdentityMatrix = (unsigned long)glplatResourceAlloc(0x40, (eGLMemory)1);
-    glplatSetMatrix(gl_IdentityMatrix, matrix);
+    nlMatrix4 m;
+    m.SetIdentity();
+    gl_IdentityMatrix = (unsigned long)glplatResourceAlloc(sizeof(nlMatrix4), GLM_Matrix);
+    glplatSetMatrix(gl_IdentityMatrix, m);
 }
 
 /**
  * Offset/Address/Size: 0x138 | 0x801D8BAC | size: 0x24
  */
-void GLMatrix::Set(const nlMatrix4& matrix)
+void GLMatrix::Set(const nlMatrix4& m)
 {
-    memcpy(&m_matrix, &matrix, 0x40);
+    memcpy(&matrix, &m, sizeof(nlMatrix4));
 }
 
 /**
  * Offset/Address/Size: 0x15C | 0x801D8BD0 | size: 0x30
  */
-void GLMatrix::Get(nlMatrix4& matrix) const
+void GLMatrix::Get(nlMatrix4& m) const
 {
-    memcpy(&matrix, &m_matrix, 0x40);
+    memcpy(&m, &matrix, sizeof(nlMatrix4));
 }

@@ -3,6 +3,9 @@
 // prototypes
 static void DeleteCallback(s32 chan, s32 result);
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80243AE0 | size: 0xA4
+ */
 static void DeleteCallback(s32 chan, s32 result)
 {
     CARDControl* card;
@@ -12,15 +15,15 @@ static void DeleteCallback(s32 chan, s32 result)
     callback = card->apiCallback;
     card->apiCallback = NULL;
 
-    if (result < 0)
-        goto error;
+    if (result >= 0)
+    {
+        result = __CARDFreeBlock(chan, card->startBlock, callback);
+        if (result >= 0)
+        {
+            return;
+        }
+    }
 
-    result = __CARDFreeBlock(chan, card->startBlock, callback);
-    if (result < 0)
-        goto error;
-    return;
-
-error:
     __CARDPutControlBlock(card, result);
     if (callback)
         callback(chan, result);
@@ -73,6 +76,9 @@ s32 CARDFastDelete(s32 chan, s32 fileNo)
     return __CARDSync(chan);
 }
 
+/**
+ * Offset/Address/Size: 0xA4 | 0x80243B84 | size: 0x110
+ */
 s32 CARDDeleteAsync(s32 chan, const char* fileName, CARDCallback callback)
 {
     CARDControl* card;

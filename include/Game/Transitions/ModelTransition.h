@@ -26,8 +26,8 @@ public:
     ModeledScreenTransition();
 
     virtual ~ModeledScreenTransition();
-    virtual void Update(float);
-    virtual void Render(eGLView);
+    virtual void Update(float deltaTime);
+    virtual void Render(eGLView view);
     virtual bool IsFinished();
     virtual float Time() const;
     virtual void Reset();
@@ -36,7 +36,10 @@ public:
 
     void DoSanityCheck();
     void RenderOutline() const;
-    ModeledScreenTransition* LoadFromParser(SimpleParser*);
+    ModeledScreenTransition* LoadFromParser(SimpleParser* parser);
+    void CreateInstance(TransitionModelStore& modelInfo);
+    void Load(const char* szName);
+    void FixupModel();
 
     /* 0x04 */ glModel* m_pModels;                   // offset 0x4, size 0x4
     /* 0x08 */ u32 m_nModels;                        // offset 0x8, size 0x4

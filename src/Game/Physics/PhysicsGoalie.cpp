@@ -7,7 +7,7 @@
 #include "NL/utility.h"
 #include "types.h"
 
-static f32 CANT_COLLIDE = *(f32*)__float_max;
+static f32 CANT_COLLIDE = HUGE_VALF;
 
 static float ballMaxMotionPerTick = PhysicsBall::GetBallMaxVelocity() * FixedUpdateTask::GetPhysicsUpdateTick();
 
@@ -32,28 +32,13 @@ bool PhysicsGoalie::SweepTestForBallContact(const nlVector3& ballPrevPosition, c
     GetPosition(&goaliePos);
     goaliePos.z = (2.0 * m_CentreOfMassHeight) + goaliePos.z;
 
-    nlVector3 ballToGoalie;
-    nlVec3Set(ballToGoalie, ballPrevPosition.x - goaliePos.x, ballPrevPosition.y - goaliePos.y, ballPrevPosition.z - goaliePos.z);
-
-    if ((nlSqrt((ballToGoalie.x * ballToGoalie.x) + (ballToGoalie.y * ballToGoalie.y) + (ballToGoalie.z * ballToGoalie.z), true) - (goalieRadius + (ballRadius + ballMaxMotionPerTick))) <= 0.0f)
+    if (IsBallNearGoalie(goalieRadius, ballRadius, goaliePos, ballPrevPosition))
     {
         testsPassed = 1;
-        float sweepResult = SweepSpheres(ballRadius, ballPrevPosition, ballCurrentPosition, goalieRadius, goaliePos, goaliePos);
-
-        bool isValidSweep = false;
-        if ((sweepResult == CANT_COLLIDE) || (sweepResult < 0.0f) || (sweepResult > 1.0f))
-        {
-            isValidSweep = 0;
-        }
-        else
-        {
-            isValidSweep = 1;
-        }
-
-        if (isValidSweep != 0)
+        if (BigBallSweepTest(goalieRadius, ballRadius, goaliePos, ballPrevPosition, ballCurrentPosition))
         {
             testsPassed = 2;
-            if (SweepTestEveryBone(ballRadius, ballPrevPosition, ballCurrentPosition, contactNormal, positionWhenHit) != 0)
+            if (SweepTestEveryBone(ballRadius, ballPrevPosition, ballCurrentPosition, contactNormal, positionWhenHit))
             {
                 testsPassed = 3;
             }
@@ -61,6 +46,22 @@ bool PhysicsGoalie::SweepTestForBallContact(const nlVector3& ballPrevPosition, c
     }
 
     return testsPassed == 3;
+}
+
+bool PhysicsGoalie::IsBallNearGoalie(float goalieRadius, float ballRadius, const nlVector3& goaliePos, const nlVector3& ballPrevPosition)
+{
+    return (nlSqrt(nlGetLengthSquared3D(ballPrevPosition.x - goaliePos.x, ballPrevPosition.y - goaliePos.y, ballPrevPosition.z - goaliePos.z), true) - (goalieRadius + (ballRadius + ballMaxMotionPerTick))) <= 0.0f;
+}
+
+bool PhysicsGoalie::BigBallSweepTest(float goalieRadius, float ballRadius, const nlVector3& goaliePos, const nlVector3& ballPrevPosition, const nlVector3& ballCurrentPosition)
+{
+    float time = SweepSpheres(ballRadius, ballPrevPosition, ballCurrentPosition, goalieRadius, goaliePos, goaliePos);
+
+    if ((time == CANT_COLLIDE) || (time < 0.0f) || (time > 1.0f))
+    {
+        return false;
+    }
+    return true;
 }
 
 /**

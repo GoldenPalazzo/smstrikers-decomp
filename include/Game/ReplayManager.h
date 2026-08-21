@@ -10,6 +10,8 @@ class ReplayManager
 {
     ReplayManager();
     void SwapPreviousAndCurrent();
+    void DoPotentialDebugReplay(float& deltaTime);
+    void DoPotentialAutoReplay(float deltaTime);
 
 public:
     ~ReplayManager();
@@ -22,10 +24,10 @@ public:
     void Flush();
     void ResetSnapshots();
     void PrepareForRecording();
-    void SetCurrentTime(float);
-    void EventHandler(Event*);
+    void SetCurrentTime(float time);
+    void EventHandler(Event* event);
     static void EventHandler(Event* event, void* userData) { ((ReplayManager*)userData)->EventHandler(event); }
-    void RenderSnapshotAt(float);
+    void RenderSnapshotAt(float deltaTime);
 
     /* 0x0000 */ RenderSnapshot mSnapshots[3]; // size: 0x5040
     /* 0x5040 */ RenderSnapshot* mCurrent;

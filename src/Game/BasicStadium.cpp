@@ -1,5 +1,3 @@
-#pragma pool_data off
-
 #include "Game/BasicStadium.h"
 #include "Game/AI/Powerups.h"
 #include "Game/Render/NetMesh.h"
@@ -24,6 +22,7 @@
 #include "Game/World/WorldLoader.h"
 #include "Game/Physics/PhysicsNet.h"
 #include "Game/Effects/EmissionManager.h"
+#include "Game/TrophyTextures.h"
 
 extern const unsigned long eOC_OPTIMIZE_OUT_FROM_GAMEPLAY;
 static float g_fSkyboxRotationTime = 1420.0f;
@@ -50,7 +49,7 @@ extern unsigned int nlDefaultSeed;
 /**
  * Offset/Address/Size: 0x2D70 | 0x8019EAF0 | size: 0x44
  */
-void BasicStadium::BasicStadiumEventHandler(Event* pEvent, void*)
+void BasicStadium::BasicStadiumEventHandler(Event* pEvent, void* pUserData)
 {
     switch (pEvent->m_uEventID)
     {
@@ -69,8 +68,8 @@ void BasicStadium::BasicStadiumEventHandler(Event* pEvent, void*)
 /**
  * Offset/Address/Size: 0x2B64 | 0x8019E8E4 | size: 0x20C
  */
-BasicStadium::BasicStadium(const char* name)
-    : World(name)
+BasicStadium::BasicStadium(const char* szBaseName)
+    : World(szBaseName)
 {
     m_CameraFlashPositions = NULL;
     m_NumCameraFlashPositions = 0;
@@ -82,7 +81,7 @@ BasicStadium::BasicStadium(const char* name)
 
     m_pEventHandler = g_pEventManager->AddEventHandler(BasicStadium::BasicStadiumEventHandler, NULL, 4);
 
-    nlStrNCpy<char>(m_szBaseName, name, 0x20);
+    nlStrNCpy<char>(m_szBaseName, szBaseName, 0x20);
     nlToLower<char>(m_szBaseName);
     if (strstr(m_szBaseName, "mario_") != 0)
     {
@@ -532,15 +531,15 @@ bool BasicStadium::DoInitialize()
 /**
  * Offset/Address/Size: 0x8C | 0x8019BE0C | size: 0x25C
  */
-void BasicStadium::Update(float dt)
+void BasicStadium::Update(float fTimeDelta)
 {
     nlMatrix4 mWorld;
     nlMatrix4 mRot;
 
-    World::Update(dt);
+    World::Update(fTimeDelta);
 
-    m_fSkyboxRotationAng += dt * (6.2831855f / g_fSkyboxRotationTime);
-    m_fCloudRotationAng += dt * (6.2831855f / g_fCloudRotationTime);
+    m_fSkyboxRotationAng += fTimeDelta * (6.2831855f / g_fSkyboxRotationTime);
+    m_fCloudRotationAng += fTimeDelta * (6.2831855f / g_fCloudRotationTime);
 
     if (m_fSkyboxRotationAng > 6.2831855f)
     {
@@ -568,17 +567,17 @@ void BasicStadium::Update(float dt)
 
     if (m_bCameraFlashesEnabled)
     {
-        UpdateCameraFlashes(dt);
+        UpdateCameraFlashes(fTimeDelta);
     }
 }
 
 /**
  * Offset/Address/Size: 0x48 | 0x8019BDC8 | size: 0x44
  */
-void BasicStadium::UpdateInReplay(float dt)
+void BasicStadium::UpdateInReplay(float fTimeDelta)
 {
-    World::UpdateInReplay(dt);
-    mpNPCManager->UpdateNPCs(dt);
+    World::UpdateInReplay(fTimeDelta);
+    mpNPCManager->UpdateNPCs(fTimeDelta);
 }
 
 /**
@@ -593,12 +592,21 @@ void BasicStadium::Render()
     }
 }
 
-void BasicStadium::UpdateCameraFlashes(float dt)
+void BasicStadium::ResetObjectsForNewGame()
+{
+}
+
+void BasicStadium::StartCameraFlashes()
+{
+    m_fTimeUntilNextCameraFlash = 0.0f;
+}
+
+void BasicStadium::UpdateCameraFlashes(float fTimeDelta)
 {
     if (m_NumCameraFlashPositions != 0)
     {
         u32 randomValue = nlRandom(m_NumCameraFlashPositions, &nlDefaultSeed);
-        m_fTimeUntilNextCameraFlash -= dt;
+        m_fTimeUntilNextCameraFlash -= fTimeDelta;
         if (m_fTimeUntilNextCameraFlash < 0.0f)
         {
             EmitCameraFlash(m_CameraFlashPositions[randomValue]);

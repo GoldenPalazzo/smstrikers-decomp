@@ -6,8 +6,6 @@
 #include "Game/Loader.h"
 #include "Game/FE/feManager.h"
 
-// void 0x8028D338..0x8028D33C | size: 0x4;
-
 enum TRANSITION_STATE
 {
     eTS_Unknown = 0,
@@ -27,18 +25,18 @@ public:
     virtual const char* GetName() { return "Transition Manager"; };
     virtual void Run(float) { };
 
-    static void DestroyFEFast();
+    void DestroyFEFast();
 
-    static void InitializeFEFast();
+    void InitializeFEFast();
 
     static void DisplayFirstScreen();
 
     static void CompactSlotPools();
 
-    static void DestroyFEState();
+    void DestroyFEState();
 
-    void Initialize(LoadingManager&);
-    void StateTransition(unsigned int, unsigned int);
+    void Initialize(LoadingManager& loadingManager);
+    void StateTransition(unsigned int from, unsigned int to);
     void InitializeGameState();
     void DestroyGameState();
     void InitializeFEState();

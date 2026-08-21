@@ -686,14 +686,14 @@ config.libs = [
     RuntimeLib_MSL_C(
         "MSL_C.PPCEABI.bare.H",
         [
-            Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/extras.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/extras.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/alloc.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/ansi_files.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/abort_exit.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/errno.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/ansi_fp.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/arith.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/buffer_io.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/buffer_io.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/ctype.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/locale.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/direct_io.c", extra_cflags=["-inline auto"]),
@@ -783,7 +783,7 @@ config.libs = [
             Object(MatchingFor("G4QE01"), "Game/Transitions/ScriptedTransition.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/Transitions/TransLight.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/Transitions/TransitionSequence.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(MatchingFor("G4QE01"), "Game/Transitions/ModelTransition.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "Game/Transitions/ModelTransition.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Camera
             Object(MatchingFor("G4QE01"), "Game/CameraLoader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -804,7 +804,7 @@ config.libs = [
 
             Object(MatchingFor("G4QE01"), "Game/Replay.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/ReplayChoreo.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(MatchingFor("G4QE01"), "Game/ReplayManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "Game/ReplayManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/RenderSnapshot.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             Object(MatchingFor("G4QE01"), "Game/Ball.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -846,7 +846,7 @@ config.libs = [
 
             # related to character (should probably be in Game/Render)
             Object(MatchingFor("G4QE01"), "Game/PoseNode.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(MatchingFor("G4QE01"), "Game/PoseAccumulator.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "Game/PoseAccumulator.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/SHierarchy.cpp", extra_cflags=["-inline auto"]),
 
             Object(MatchingFor("G4QE01"), "Game/SAnim.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -910,12 +910,12 @@ config.libs = [
             Object(MatchingFor("G4QE01"), "Game/Physics/CharacterPhysicsElement.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/Physics/PhysicsNet.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/Physics/PhysicsBanana.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(MatchingFor("G4QE01"), "Game/Physics/PhysicsGoalie.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "Game/Physics/PhysicsGoalie.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # World
             Object(MatchingFor("G4QE01"), "Game/world.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/WorldManager.cpp", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01"), "Game/BasicStadium.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "Game/BasicStadium.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/World/WorldLoader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/World/worldanim.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
@@ -932,7 +932,7 @@ config.libs = [
             Object(MatchingFor("G4QE01"), "Game/FixedUpdateTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/DispatchEventsTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/ResetTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(MatchingFor("G4QE01"), "Game/TransitionTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "Game/TransitionTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/BeginFrameTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/EndFrameTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
@@ -1068,7 +1068,7 @@ config.libs = [
             Object(MatchingFor("G4QE01"), "Game/SH/SHLesson.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/SH/SHLessonSelect.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/SH/SHLoading.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(MatchingFor("G4QE01"), "Game/SH/SHLoadingTransition.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "Game/SH/SHLoadingTransition.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/SH/SHMainMenu.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/SH/SHMilestoneTrophy.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/SH/SHMoviePlayer.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -1195,7 +1195,7 @@ config.libs = [
 
             Object(MatchingFor("G4QE01"), "Game/SoundProps/supergensoundproperties.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/SoundProps/supergrasssoundproperties.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(MatchingFor("G4QE01"), "Game/SoundProps/superconcretesoundproperties.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "Game/SoundProps/superconcretesoundproperties.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/SoundProps/supermetalsoundproperties.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/SoundProps/superrubbersoundproperties.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/SoundProps/superwoodsoundproperties.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -1225,7 +1225,7 @@ config.libs = [
             Object(MatchingFor("G4QE01"), "Game/SoundProps/yoshigensoundproperties.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/SoundProps/yoshigrasssoundproperties.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/SoundProps/yoshimetalsoundproperties.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(MatchingFor("G4QE01"), "Game/SoundProps/yoshirubbersoundproperties.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "Game/SoundProps/yoshirubbersoundproperties.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/SoundProps/yoshiwoodsoundproperties.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             Object(MatchingFor("G4QE01"), "Game/SoundProps/stadbattlesoundproperties.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -1250,7 +1250,7 @@ config.libs = [
             Object(MatchingFor("G4QE01"), "Game/Effects/efList.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/Effects/EffectsTemplate.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/Effects/EffectsGroup.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(MatchingFor("G4QE01"), "Game/Effects/ParticleSystem.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "Game/Effects/ParticleSystem.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/Effects/EmissionController.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/Effects/EmissionManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/Effects/PhotoFlashEffect.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -1329,7 +1329,7 @@ config.libs = [
             Object(MatchingFor("G4QE01"), "NL/gl/glDraw2.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "NL/gl/glDraw3.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "NL/gl/glFont.cpp", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01"), "NL/gl/glMatrix.cpp", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "NL/gl/glMatrix.cpp", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "NL/gl/glMatrixStack.cpp", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "NL/gl/glMemory.cpp", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "NL/gl/glModify.cpp", extra_cflags=["-inline auto"]),
@@ -1365,7 +1365,7 @@ config.libs = [
             Object(MatchingFor("G4QE01"), "ode/mass.cpp", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "ode/obstack.cpp", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "ode/quickstep.cpp", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01"), "ode/rotation.cpp", extra_cflags=["-inline auto", "-inline off"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "ode/rotation.cpp", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "ode/util.cpp", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "ode/ext/dColumn.cpp", extra_cflags=["-inline auto", "-inline off"]),
             Object(MatchingFor("G4QE01"), "ode/ext/dFinitePlane.cpp", extra_cflags=["-inline auto"]),
@@ -1428,17 +1428,17 @@ config.libs = [
             # Dolphin/CARD
             Object(MatchingFor("G4QE01"), "Dolphin/card/CARDBios.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "Dolphin/card/CARDUnlock.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01"), "Dolphin/card/CARDRdwr.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/card/CARDRdwr.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "Dolphin/card/CARDBlock.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "Dolphin/card/CARDDir.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "Dolphin/card/CARDCheck.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "Dolphin/card/CARDMount.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "Dolphin/card/CARDFormat.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "Dolphin/card/CARDOpen.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01"), "Dolphin/card/CARDCreate.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/card/CARDCreate.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "Dolphin/card/CARDRead.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "Dolphin/card/CARDWrite.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01"), "Dolphin/card/CARDDelete.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/card/CARDDelete.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "Dolphin/card/CARDStat.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "Dolphin/card/CARDNet.c", extra_cflags=["-inline auto"]),
 
@@ -1501,7 +1501,7 @@ config.libs = [
         "VM",
         [
             # Dolphin/vm.a
-            Object(MatchingFor("G4QE01"), "Dolphin/vm.a/VM.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/vm.a/VM.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "Dolphin/vm.a/VMPageReplacement.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "Dolphin/vm.a/VMMapping.c", extra_cflags=["-inline auto", "-O4,s"]),
             Object(MatchingFor("G4QE01"), "Dolphin/vm.a/VMBase.c", extra_cflags=["-inline auto"]),

@@ -8,6 +8,9 @@ static nlQuaternion qRotIdentity = { 0.0f, 0.0f, 0.0f, 1.0f };
 static nlVector3 v3ScaleIdentity = { 1.0f, 1.0f, 1.0f };
 static nlVector3 v3TransIdentity = { 0.0f, 0.0f, 0.0f };
 
+/**
+ * Offset/Address/Size: 0xCD8 | 0x801EC278 | size: 0x1D74
+ */
 cPoseAccumulator::cPoseAccumulator(cSHierarchy* pSHierarchy, bool bStorePrevNodeMatrices)
     : m_BaseSHierarchy(pSHierarchy)
     , m_NodeMatrices(pSHierarchy->m_nodeCount + 1, 0)
@@ -18,8 +21,6 @@ cPoseAccumulator::cPoseAccumulator(cSHierarchy* pSHierarchy, bool bStorePrevNode
     , m_cb(pSHierarchy->m_nodeCount, 0)
     , m_MorphWeights(8, 0)
 {
-    FORCE_DONT_INLINE;
-
     int i;
 
     for (i = 0; i < m_BaseSHierarchy->m_nodeCount; ++i)
@@ -80,14 +81,14 @@ static inline void PoseAccumulatorClearMorphWeights(cPoseAccumulator* pose)
 /**
  * Offset/Address/Size: 0xB7C | 0x801EC11C | size: 0x15C
  */
-void cPoseAccumulator::Pose(const cPoseNode& node, const nlMatrix4& mat)
+void cPoseAccumulator::Pose(const cPoseNode& pPoseTree, const nlMatrix4& pWorldMatrix)
 {
     PoseAccumulatorInitNodeAccumulators(this);
     PoseAccumulatorClearMorphWeights(this);
 
-    node.Evaluate(1.0f, this);
+    pPoseTree.Evaluate(1.0f, this);
 
-    BuildNodeMatrices(mat);
+    BuildNodeMatrices(pWorldMatrix);
 }
 
 /**
@@ -134,7 +135,7 @@ void cPoseAccumulator::InitAccumulators()
 /**
  * Offset/Address/Size: 0x644 | 0x801EBBE4 | size: 0x3F4
  */
-void cPoseAccumulator::BuildNodeMatrices(const nlMatrix4& world)
+void cPoseAccumulator::BuildNodeMatrices(const nlMatrix4& pWorldMatrix)
 {
     if (m_PrevNodeMatrices.mSize == m_NodeMatrices.mSize)
     {
@@ -202,7 +203,7 @@ void cPoseAccumulator::BuildNodeMatrices(const nlMatrix4& world)
             nlMultMatrices(pNodeMatrices[i], *pLocalMatrix, *pParentMatrix);
         }
         else
-            nlMultMatrices(m_NodeMatrices.mData[i], *pLocalMatrix, world);
+            nlMultMatrices(m_NodeMatrices.mData[i], *pLocalMatrix, pWorldMatrix);
         int nPushPop = m_BaseSHierarchy->GetPushPop(i);
         nStackIndex += nPushPop;
 
@@ -235,52 +236,52 @@ void cPoseAccumulator::BuildNodeMatrices(const nlMatrix4& world)
 /**
  * Offset/Address/Size: 0x4FC | 0x801EBA9C | size: 0x148
  */
-void cPoseAccumulator::BlendRot(int idx, const nlQuaternion* q, float w, bool flip)
+void cPoseAccumulator::BlendRot(int nNode, const nlQuaternion* pRot, float fWeight, bool bMirror)
 {
-    RotAccum* e = m_rot.mData + idx;
+    RotAccum* e = m_rot.mData + nNode;
 
-    if ((float)fabsf(w) < 0.001f)
+    if ((float)fabsf(fWeight) < 0.001f)
         return;
 
     nlQuaternion qtemp;
 
-    if (flip)
+    if (bMirror)
     {
         cSHierarchy* h = m_BaseSHierarchy;
 
-        if (idx == h->m_nSpineNodeIndex || idx == h->m_nPelvisNodeIndex)
+        if (nNode == h->m_nSpineNodeIndex || nNode == h->m_nPelvisNodeIndex)
         {
-            qtemp.x = -q->w;
-            qtemp.y = q->z;
-            qtemp.z = q->y;
-            qtemp.w = -q->x;
+            qtemp.x = -pRot->w;
+            qtemp.y = pRot->z;
+            qtemp.z = pRot->y;
+            qtemp.w = -pRot->x;
         }
-        else if (idx < h->m_nPelvisNodeIndex)
+        else if (nNode < h->m_nPelvisNodeIndex)
         {
-            qtemp.x = -q->x;
-            qtemp.y = q->y;
-            qtemp.z = -q->z;
-            qtemp.w = q->w;
+            qtemp.x = -pRot->x;
+            qtemp.y = pRot->y;
+            qtemp.z = -pRot->z;
+            qtemp.w = pRot->w;
         }
         else
         {
-            qtemp.x = -q->x;
-            qtemp.y = -q->y;
-            qtemp.z = q->z;
-            qtemp.w = q->w;
+            qtemp.x = -pRot->x;
+            qtemp.y = -pRot->y;
+            qtemp.z = pRot->z;
+            qtemp.w = pRot->w;
         }
 
-        q = &qtemp;
+        pRot = &qtemp;
     }
 
-    e->quatAccumulatedWeight += w;
+    e->quatAccumulatedWeight += fWeight;
 
-    float t = w / e->quatAccumulatedWeight;
+    float t = fWeight / e->quatAccumulatedWeight;
 
     nlQuaternion tmp = e->q;
-    nlQuatNLerp(e->q, tmp, *q, t);
+    nlQuatNLerp(e->q, tmp, *pRot, t);
 
-    e = m_rot.mData + idx;
+    e = m_rot.mData + nNode;
     e->bIdentity = false;
 }
 
@@ -292,22 +293,22 @@ static inline RotAccum* GetRotAccum(RotAccum* data, int idx)
 /**
  * Offset/Address/Size: 0x468 | 0x801EBA08 | size: 0x94
  */
-void cPoseAccumulator::BlendRotAroundZ(int idx, unsigned short angle, float w)
+void cPoseAccumulator::BlendRotAroundZ(int nNode, unsigned short rot, float fWeight)
 {
-    if (fabsf(w) < 0.001f)
+    if (fabsf(fWeight) < 0.001f)
         return;
 
-    RotAccum* e = GetRotAccum(m_rot.mData, idx);
+    RotAccum* e = GetRotAccum(m_rot.mData, nNode);
 
-    e->rotAroundZAccumulatedWeight += w;
-    float t = w / e->rotAroundZAccumulatedWeight;
+    e->rotAroundZAccumulatedWeight += fWeight;
+    float t = fWeight / e->rotAroundZAccumulatedWeight;
 
-    short delta = (short)(angle - e->rotAroundZ);
+    short delta = (short)(rot - e->rotAroundZ);
     delta = (short)(t * delta);
 
     e->rotAroundZ = e->rotAroundZ + (short)delta;
 
-    e = GetRotAccum(m_rot.mData, idx);
+    e = GetRotAccum(m_rot.mData, nNode);
     e->bIdentity = false;
 }
 
@@ -324,83 +325,83 @@ static inline TransAccum* GetTransAccum(TransAccum* data, int idx)
 /**
  * Offset/Address/Size: 0x3DC | 0x801EB97C | size: 0x8C
  */
-void cPoseAccumulator::BlendScale(int idx, const nlVector3* v, float w, bool)
+void cPoseAccumulator::BlendScale(int nNode, const nlVector3* pScale, float fWeight, bool bMirror)
 {
-    if (fabsf(w) < 0.001f)
+    if (fabsf(fWeight) < 0.001f)
         return;
 
-    ScaleAccum* e = GetScaleAccum(m_scale.mData, idx);
-    e->fAccumulatedWeight += w;
+    ScaleAccum* e = GetScaleAccum(m_scale.mData, nNode);
+    e->fAccumulatedWeight += fWeight;
 
-    float t = w / e->fAccumulatedWeight;
+    float t = fWeight / e->fAccumulatedWeight;
     float inv = 1.0f - t;
 
-    e->s.x = inv * e->s.x + t * v->x;
-    e->s.y = inv * e->s.y + t * v->y;
-    e->s.z = inv * e->s.z + t * v->z;
+    e->s.x = inv * e->s.x + t * pScale->x;
+    e->s.y = inv * e->s.y + t * pScale->y;
+    e->s.z = inv * e->s.z + t * pScale->z;
 
-    e = GetScaleAccum(m_scale.mData, idx);
+    e = GetScaleAccum(m_scale.mData, nNode);
     e->bIdentity = false;
 }
 
 /**
  * Offset/Address/Size: 0x2E4 | 0x801EB884 | size: 0xF8
  */
-void cPoseAccumulator::BlendTrans(int idx, const nlVector3* v, float w, bool flip)
+void cPoseAccumulator::BlendTrans(int nNode, const nlVector3* pTrans, float fWeight, bool bMirror)
 {
-    if (fabsf(w) < 0.001f)
+    if (fabsf(fWeight) < 0.001f)
         return;
 
-    if (flip)
+    if (bMirror)
     {
         cSHierarchy* h = m_BaseSHierarchy;
 
         nlVector3 vtemp;
-        if (idx <= h->m_nPelvisNodeIndex || idx == h->m_nSpineNodeIndex)
+        if (nNode <= h->m_nPelvisNodeIndex || nNode == h->m_nSpineNodeIndex)
         {
-            vtemp.x = v->x;
-            vtemp.y = -v->y;
-            vtemp.z = v->z;
+            vtemp.x = pTrans->x;
+            vtemp.y = -pTrans->y;
+            vtemp.z = pTrans->z;
         }
         else
         {
-            vtemp.x = v->x;
-            vtemp.y = v->y;
-            vtemp.z = -v->z;
+            vtemp.x = pTrans->x;
+            vtemp.y = pTrans->y;
+            vtemp.z = -pTrans->z;
         }
 
-        v = &vtemp;
+        pTrans = &vtemp;
     }
 
-    TransAccum* e = GetTransAccum(m_trans.mData, idx);
-    e->fAccumulatedWeight += w;
+    TransAccum* e = GetTransAccum(m_trans.mData, nNode);
+    e->fAccumulatedWeight += fWeight;
 
-    float t = w / e->fAccumulatedWeight;
+    float t = fWeight / e->fAccumulatedWeight;
     float inv = 1.0f - t;
 
-    e->t.x = inv * e->t.x + t * v->x;
-    e->t.y = inv * e->t.y + t * v->y;
-    e->t.z = inv * e->t.z + t * v->z;
+    e->t.x = inv * e->t.x + t * pTrans->x;
+    e->t.y = inv * e->t.y + t * pTrans->y;
+    e->t.z = inv * e->t.z + t * pTrans->z;
 
-    e = GetTransAccum(m_trans.mData, idx);
+    e = GetTransAccum(m_trans.mData, nNode);
     e->bIdentity = false;
 }
 
 /**
  * Offset/Address/Size: 0x258 | 0x801EB7F8 | size: 0x8C
  */
-void cPoseAccumulator::BlendRotIdentity(int idx, float w)
+void cPoseAccumulator::BlendRotIdentity(int nNode, float fWeight)
 {
-    if (fabsf(w) < 0.001f)
+    if (fabsf(fWeight) < 0.001f)
         return;
 
-    RotAccum* a = &m_rot.mData[idx];
-    a->quatAccumulatedWeight += w;
+    RotAccum* a = &m_rot.mData[nNode];
+    a->quatAccumulatedWeight += fWeight;
 
     if (a->bIdentity)
         return;
 
-    const float t = w / a->quatAccumulatedWeight;
+    const float t = fWeight / a->quatAccumulatedWeight;
 
     nlQuaternion tmp = a->q;
     nlQuatNLerp(a->q, tmp, qRotIdentity, t);
@@ -409,18 +410,18 @@ void cPoseAccumulator::BlendRotIdentity(int idx, float w)
 /**
  * Offset/Address/Size: 0x1CC | 0x801EB76C | size: 0x8C
  */
-void cPoseAccumulator::BlendScaleIdentity(int idx, float w)
+void cPoseAccumulator::BlendScaleIdentity(int nNode, float fWeight)
 {
-    if (fabsf(w) < 0.001f)
+    if (fabsf(fWeight) < 0.001f)
         return;
 
-    ScaleAccum* e = &m_scale.mData[idx];
-    e->fAccumulatedWeight += w;
+    ScaleAccum* e = &m_scale.mData[nNode];
+    e->fAccumulatedWeight += fWeight;
 
     if (e->bIdentity)
         return;
 
-    float f3 = w / e->fAccumulatedWeight;
+    float f3 = fWeight / e->fAccumulatedWeight;
     float f2 = 1.0f - f3;
 
     e->s.x = f2 * e->s.x + f3 * v3ScaleIdentity.x;
@@ -431,18 +432,18 @@ void cPoseAccumulator::BlendScaleIdentity(int idx, float w)
 /**
  * Offset/Address/Size: 0x140 | 0x801EB6E0 | size: 0x8C
  */
-void cPoseAccumulator::BlendTransIdentity(int idx, float w)
+void cPoseAccumulator::BlendTransIdentity(int nNode, float fWeight)
 {
-    if (fabsf(w) < 0.001f)
+    if (fabsf(fWeight) < 0.001f)
         return;
 
-    TransAccum* e = &m_trans.mData[idx];
-    e->fAccumulatedWeight += w;
+    TransAccum* e = &m_trans.mData[nNode];
+    e->fAccumulatedWeight += fWeight;
 
     if (e->bIdentity)
         return;
 
-    const float f3 = w / e->fAccumulatedWeight;
+    const float f3 = fWeight / e->fAccumulatedWeight;
     const float f2 = 1.0f - f3;
 
     e->t.x = f2 * e->t.x + f3 * v3TransIdentity.x;
@@ -453,15 +454,15 @@ void cPoseAccumulator::BlendTransIdentity(int idx, float w)
 /**
  * Offset/Address/Size: 0x130 | 0x801EB6D0 | size: 0x10
  */
-nlMatrix4& cPoseAccumulator::GetNodeMatrix(int i) const
+nlMatrix4& cPoseAccumulator::GetNodeMatrix(int nNode) const
 {
-    return m_NodeMatrices.mData[i];
+    return m_NodeMatrices.mData[nNode];
 }
 
 /**
  * Offset/Address/Size: 0xB0 | 0x801EB650 | size: 0x80
  */
-nlMatrix4& cPoseAccumulator::GetNodeMatrixByHashID(unsigned int hash) const
+nlMatrix4& cPoseAccumulator::GetNodeMatrixByHashID(unsigned int nHashID) const
 {
     cSHierarchy* hierarchy = m_BaseSHierarchy; // r3->0x00
     int index = 0;                             // r30 = 0
@@ -469,7 +470,7 @@ nlMatrix4& cPoseAccumulator::GetNodeMatrixByHashID(unsigned int hash) const
     while (index < hierarchy->m_nodeCount)
     {
         unsigned int nodeID = hierarchy->GetNodeID(index);
-        if (hash == nodeID)
+        if (nHashID == nodeID)
         {
             break;
         }
@@ -490,22 +491,22 @@ s32 cPoseAccumulator::GetNumNodes() const
 /**
  * Offset/Address/Size: 0x28 | 0x801EB5C8 | size: 0x7C
  */
-void cPoseAccumulator::MultNodeMatrices(const nlMatrix4* arg0)
+void cPoseAccumulator::MultNodeMatrices(const nlMatrix4* pMatrix)
 {
     for (int i = 0; i < m_BaseSHierarchy->m_nodeCount; i++)
     {
-        nlMatrix4* temp_r3 = &m_NodeMatrices.mData[i];
-        nlMultMatrices(*temp_r3, *temp_r3, *arg0);
+        nlMatrix4* pNodeMatrix = &m_NodeMatrices.mData[i];
+        nlMultMatrices(*pNodeMatrix, *pNodeMatrix, *pMatrix);
     }
 }
 
 /**
  * Offset/Address/Size: 0x0 | 0x801EB5A0 | size: 0x28
  */
-void cPoseAccumulator::SetBuildNodeMatrixCallback(int idx, BuildNodeMatrixFn fn, unsigned int a, unsigned int b)
+void cPoseAccumulator::SetBuildNodeMatrixCallback(int nNode, BuildNodeMatrixFn funcCallback, unsigned int nParam1, unsigned int nParam2)
 {
-    int offset = idx * (int)sizeof(cBuildNodeMatrixCallbackInfo);
-    *(BuildNodeMatrixFn*)((char*)m_cb.mData + offset) = fn;
-    *(unsigned int*)((char*)m_cb.mData + offset + 4) = a;
-    *(unsigned int*)((char*)m_cb.mData + offset + 8) = b;
+    int offset = nNode * (int)sizeof(cBuildNodeMatrixCallbackInfo);
+    *(BuildNodeMatrixFn*)((char*)m_cb.mData + offset) = funcCallback;
+    *(unsigned int*)((char*)m_cb.mData + offset + 4) = nParam1;
+    *(unsigned int*)((char*)m_cb.mData + offset + 8) = nParam2;
 }

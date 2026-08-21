@@ -17,6 +17,9 @@
  */
 nlFont::nlFont()
 {
+#if defined(VERSION_G4QJ01)
+    m_bIsJapanese = false;
+#endif
     memset(m_GlyphLookup, 0xFF, sizeof(m_GlyphLookup));
 }
 

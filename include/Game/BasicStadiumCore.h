@@ -10,20 +10,22 @@
 class BasicStadium : public World
 {
 public:
-    BasicStadium(const char*);
+    BasicStadium(const char* szBaseName);
     /* 0x04 */ virtual ~BasicStadium();
     /* 0x08 */ virtual eTerrain GetTerrainType(const nlVector3&) const { return m_TerrainType; };
     /* 0x14 */ virtual void Render();
-    /* 0x18 */ virtual void Update(float);
-    /* 0x1C */ virtual void UpdateInReplay(float);
+    /* 0x18 */ virtual void Update(float fTimeDelta);
+    /* 0x1C */ virtual void UpdateInReplay(float fTimeDelta);
     /* 0x2C */ virtual bool DoLoad();
     /* 0x30 */ virtual bool DoInitialize();
 
-    void HyperStrikeModelAddHelper(unsigned long);
-    void UpdateCameraFlashes(float);
+    void HyperStrikeModelAddHelper(unsigned long hash);
+    void ResetObjectsForNewGame();
+    void StartCameraFlashes();
+    void UpdateCameraFlashes(float fTimeDelta);
     void LoadListOfGameplayInvisibleModels();
 
-    static void BasicStadiumEventHandler(Event*, void*);
+    static void BasicStadiumEventHandler(Event* pEvent, void* pUserData);
     static BasicStadium* GetCurrentStadium();
 
     const char* GetBaseName() const

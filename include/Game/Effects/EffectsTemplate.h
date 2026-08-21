@@ -76,4 +76,9 @@ bool fxLoadTemplateBundle(const char*);
 float RandomizedValue(float, float);
 float RandomizedValue(float);
 
+inline float RandomizedValue(const fxRange& value)
+{
+    return RandomizedValue(value.base, value.range);
+}
+
 #endif // _EFFECTSTEMPLATE_H_

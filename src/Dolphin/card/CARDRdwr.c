@@ -4,6 +4,9 @@
 static void BlockReadCallback(s32 chan, s32 result);
 static void BlockWriteCallback(s32 chan, s32 result);
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8023FF58 | size: 0xDC
+ */
 static void BlockReadCallback(s32 chan, s32 result)
 {
     CARDControl* card;
@@ -11,11 +14,11 @@ static void BlockReadCallback(s32 chan, s32 result)
 
     card = &__CARDBlock[chan];
 
-    if ((result >= 0))
+    if (result >= 0)
     {
-        card->xferred += 0x200;
-        card->addr += 0x200;
-        ((u8*)card->buffer) += 0x200;
+        card->xferred += CARD_SEG_SIZE;
+        card->addr += CARD_SEG_SIZE;
+        ((u8*)card->buffer) += CARD_SEG_SIZE;
 
         if (--card->repeat > 0)
         {
@@ -40,6 +43,9 @@ static void BlockReadCallback(s32 chan, s32 result)
     }
 }
 
+/**
+ * Offset/Address/Size: 0xDC | 0x80240034 | size: 0x64
+ */
 s32 __CARDRead(s32 chan, u32 addr, s32 length, void* dst, CARDCallback callback)
 {
     CARDControl* card;
@@ -53,12 +59,15 @@ s32 __CARDRead(s32 chan, u32 addr, s32 length, void* dst, CARDCallback callback)
         return CARD_RESULT_NOCARD;
     }
     card->xferCallback = callback;
-    card->repeat = (length / 512u);
+    card->repeat = (length / CARD_SEG_SIZE);
     card->addr = addr;
     card->buffer = dst;
     return __CARDReadSegment(chan, BlockReadCallback);
 }
 
+/**
+ * Offset/Address/Size: 0x140 | 0x80240098 | size: 0xE8
+ */
 static void BlockWriteCallback(s32 chan, s32 result)
 {
     CARDControl* card;
@@ -94,6 +103,9 @@ static void BlockWriteCallback(s32 chan, s32 result)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x228 | 0x80240180 | size: 0x68
+ */
 s32 __CARDWrite(s32 chan, u32 addr, s32 length, void* dst, CARDCallback callback)
 {
     CARDControl* card;
@@ -113,6 +125,9 @@ s32 __CARDWrite(s32 chan, u32 addr, s32 length, void* dst, CARDCallback callback
     return __CARDWritePage(chan, BlockWriteCallback);
 }
 
+/**
+ * Offset/Address/Size: 0x290 | 0x802401E8 | size: 0x18
+ */
 s32 CARDGetXferredBytes(s32 chan)
 {
     ASSERTLINE(183, 0 <= chan && chan < 2);

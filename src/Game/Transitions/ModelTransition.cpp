@@ -23,120 +23,8 @@
 #include "NL/glx/glxDisplayList.h"
 #include "Game/GL/gluMeshWriter.h"
 
-static inline void CreateInstance(ModeledScreenTransition* self, TransitionModelStore& modelInfo)
-{
-    self->m_nModels = modelInfo.nModels;
-    self->m_pModels = (glModel*)glModelDupArrayNoStreams(modelInfo.pModels, modelInfo.nModels, false, true);
-
-    for (unsigned long j = 0; j < self->m_nModels; j++)
-    {
-        for (unsigned long i = 0; i < self->m_pModels[i].numPackets; i++)
-        {
-            self->m_pModels[j].packets[i].userData = 0;
-        }
-    }
-}
-
 eGLView ModeledScreenTransition::s_3DView = GLV_Transitions;
 nlAVLTree<unsigned long, TransitionModelStore, DefaultKeyCompare<unsigned long> > ModeledScreenTransition::g_ModelInventory;
-
-// /**
-//  * Offset/Address/Size: 0xA04 | 0x80204CA0 | size: 0x24
-//  */
-// void AVLTreeBase<unsigned long, TransitionModelStore, NewAdapter<AVLTreeEntry<unsigned long, TransitionModelStore> >, DefaultKeyCompare<unsigned long> >::DeleteEntry(AVLTreeEntry<unsigned long, TransitionModelStore>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x998 | 0x80204C34 | size: 0x6C
-//  */
-// void AVLTreeBase<unsigned long, TransitionModelStore, NewAdapter<AVLTreeEntry<unsigned long, TransitionModelStore> >, DefaultKeyCompare<unsigned long> >::AllocateEntry(void*, void*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x96C | 0x80204C08 | size: 0x2C
-//  */
-// void AVLTreeBase<unsigned long, TransitionModelStore, NewAdapter<AVLTreeEntry<unsigned long, TransitionModelStore> >, DefaultKeyCompare<unsigned long> >::CompareKey(void*, AVLTreeNode*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x940 | 0x80204BDC | size: 0x2C
-//  */
-// void AVLTreeBase<unsigned long, TransitionModelStore, NewAdapter<AVLTreeEntry<unsigned long, TransitionModelStore> >, DefaultKeyCompare<unsigned long> >::CompareNodes(AVLTreeNode*, AVLTreeNode*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x938 | 0x80204BD4 | size: 0x8
-//  */
-// void AVLTreeBase<unsigned long, TransitionModelStore, NewAdapter<AVLTreeEntry<unsigned long, TransitionModelStore> >, DefaultKeyCompare<unsigned long> >::CastUp(AVLTreeNode*) const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x1E0 | 0x8020447C | size: 0x758
-//  */
-// void AVLTreeBase<unsigned long, TransitionModelStore, NewAdapter<AVLTreeEntry<unsigned long, TransitionModelStore> >, DefaultKeyCompare<unsigned long> >::PostorderTraversal(AVLTreeEntry<unsigned long, TransitionModelStore>*, void (AVLTreeBase<unsigned long, TransitionModelStore, NewAdapter<AVLTreeEntry<unsigned long, TransitionModelStore> >, DefaultKeyCompare<unsigned long> >::*)(AVLTreeEntry<unsigned long, TransitionModelStore>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x17C | 0x80204418 | size: 0x64
-//  */
-// void AVLTreeBase<unsigned long, TransitionModelStore, NewAdapter<AVLTreeEntry<unsigned long, TransitionModelStore> >, DefaultKeyCompare<unsigned long> >::DestroyTree(void (AVLTreeBase<unsigned long, TransitionModelStore, NewAdapter<AVLTreeEntry<unsigned long, TransitionModelStore> >, DefaultKeyCompare<unsigned long> >::*)(AVLTreeEntry<unsigned long, TransitionModelStore>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x124 | 0x802043C0 | size: 0x58
-//  */
-// void AVLTreeBase<unsigned long, TransitionModelStore, NewAdapter<AVLTreeEntry<unsigned long, TransitionModelStore> >, DefaultKeyCompare<unsigned long> >::Clear()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xC8 | 0x80204364 | size: 0x5C
-//  */
-// void AVLTreeBase<unsigned long, TransitionModelStore, NewAdapter<AVLTreeEntry<unsigned long, TransitionModelStore> >, DefaultKeyCompare<unsigned long> >::~AVLTreeBase()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x68 | 0x80204304 | size: 0x60
-//  */
-// void nlAVLTree<unsigned long, TransitionModelStore, DefaultKeyCompare<unsigned long> >::~nlAVLTree()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80204294 | size: 0x8
-//  */
-// void nlMatrix4::GetTranslation() const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x50 | 0x80204290 | size: 0x4
-//  */
-// void ScreenTransition::DoSanityCheck()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x8 | 0x80204248 | size: 0x48
-//  */
-// ScreenTransition::~ScreenTransition()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80204240 | size: 0x8
-//  */
-// void ScreenTransition::CutTime() const
-// {
-// }
 
 /**
  * Offset/Address/Size: 0x1E60 | 0x80203F24 | size: 0x31C
@@ -334,7 +222,7 @@ void ModeledScreenTransition::DoSanityCheck()
 /**
  * Offset/Address/Size: 0x1520 | 0x802035E4 | size: 0xA4
  */
-void ModeledScreenTransition::Update(float dt)
+void ModeledScreenTransition::Update(float deltaTime)
 {
     if (m_pPoseTree != NULL)
     {
@@ -346,7 +234,7 @@ void ModeledScreenTransition::Update(float dt)
 
         if (!skipUpdate)
         {
-            m_pPoseTree->Update(dt);
+            m_pPoseTree->Update(deltaTime);
             m_pPoseAccumulator->Pose(*m_pPoseTree, m_mWorldMatrix);
         }
     }
@@ -370,7 +258,7 @@ static inline u32 glAllocSetMatrix(const nlMatrix4& matrix)
 /**
  * Offset/Address/Size: 0x13EC | 0x802034B0 | size: 0x134
  */
-void ModeledScreenTransition::Render(eGLView)
+void ModeledScreenTransition::Render(eGLView view)
 {
     if (m_pLight != NULL && m_pPoseTree != NULL)
     {
@@ -494,7 +382,7 @@ void ModeledScreenTransition::RenderOutline() const
 
                 if (stream.stride == 12)
                 {
-                    memcpy(&current, (const void*)((u8*)stream.address + index * stream.stride), 12);
+                    memcpy(&current, (const void*)((u8*)stream.address + index * stream.stride), sizeof(nlVector3));
                 }
                 else
                 {
@@ -640,7 +528,7 @@ void ModeledScreenTransition::Cancel()
     m_Effects = NULL;
 }
 
-static inline unsigned long GetParsedProgram(const char* pToken)
+static unsigned long GetParsedProgram(const char* pToken)
 {
     char name[128];
     int i;
@@ -653,91 +541,6 @@ static inline unsigned long GetParsedProgram(const char* pToken)
             name[i] = ' ';
     }
     return glGetProgram(name);
-}
-
-static inline void LoadModelTransition(ModeledScreenTransition* self, char* pToken)
-{
-    u32 fileSize = 0;
-    TransitionModelStore* pModelStore;
-    u32 hash;
-    TransitionModelStore newStore;
-    char buf[128];
-    hash = glHash(pToken);
-
-    if (ModeledScreenTransition::g_ModelInventory.FindGet(hash, &pModelStore))
-    {
-        CreateInstance(self, *pModelStore);
-    }
-    else
-    {
-        glSetIgnoreDuplicateModels(true);
-
-        nlSNPrintf(buf, 128, "transitions/%s.glg", pToken);
-        self->m_pModels = glLoadModel(buf, &self->m_nModels);
-
-        glSetIgnoreDuplicateModels(false);
-
-        newStore.pModels = self->m_pModels;
-        newStore.nModels = self->m_nModels;
-        ModeledScreenTransition::g_ModelInventory.Add(hash, newStore);
-    }
-
-    nlSNPrintf(buf, 128, "art/transitions/%s.sanim", pToken);
-    self->m_pAnimFile = (char*)nlLoadEntireFile(buf, &fileSize, 0x20, AllocateStart);
-    self->m_pAnim = cSAnim::Initialize((nlChunk*)self->m_pAnimFile);
-
-    nlSNPrintf(buf, 128, "art/transitions/%s.shier", pToken);
-    self->m_pSkelFile = (char*)nlLoadEntireFile(buf, &fileSize, 0x20, AllocateStart);
-    self->m_pSkeleton = cSHierarchy::Initialize((nlChunk*)self->m_pSkelFile);
-
-    self->m_pModelMap = (int*)nlMalloc(self->m_nModels * 4, 8, false);
-    for (u32 i = 0; i < self->m_nModels; i++)
-    {
-        self->m_pModelMap[i] = self->m_pSkeleton->GetNodeIndexByID(self->m_pModels[i].id);
-    }
-}
-
-static inline void FixupModelTransition(ModeledScreenTransition* self)
-{
-    u64 savedTextureState = glGetCurrentTextureState();
-    u32 savedRasterState = glGetCurrentRasterState();
-
-    for (u32 i = 0; i < self->m_nModels; i++)
-    {
-        if (self->m_pLight != NULL)
-        {
-            self->m_pLight->AttachToModel(&self->m_pModels[i]);
-        }
-
-        for (u32 j = 0; j < self->m_pModels[i].numPackets; j++)
-        {
-            glSetCurrentTextureState(self->m_pModels[i].packets[j].state.texturestate);
-            glSetTextureState(GLTS_DiffuseWrap, 3);
-
-            glSetCurrentRasterState(self->m_pModels[i].packets[j].state.raster);
-            glSetRasterState(GLS_AlphaBlend, 0);
-            glSetRasterState(GLS_Culling, 0);
-            glSetRasterState(GLS_DepthTest, 1);
-            glSetRasterState(GLS_DepthWrite, 1);
-
-            glSetCurrentProgram(self->m_nProgram);
-
-            if (self->m_nTexture != 0xFFFFFFFF)
-            {
-                self->m_pModels[i].packets[j].state.texture[0] = self->m_nTexture;
-            }
-
-            self->m_pModels[i].packets[j].state.raster = glHandleizeRasterState();
-
-            u64 texHandle = glHandleizeTextureState();
-            self->m_pModels[i].packets[j].state.texturestate = texHandle;
-
-            self->m_pModels[i].packets[j].state.program = self->m_nProgram;
-        }
-    }
-
-    glSetCurrentTextureState(savedTextureState);
-    glSetCurrentRasterState(savedRasterState);
 }
 
 /**
@@ -756,7 +559,7 @@ ModeledScreenTransition* ModeledScreenTransition::LoadFromParser(SimpleParser* p
         else if (nlStrCmp(pToken, "name") == 0)
         {
             pToken = parser->NextTokenOnLine(true);
-            LoadModelTransition(this, pToken);
+            Load(pToken);
         }
         else if (nlStrCmp(pToken, "screengrab") == 0)
         {
@@ -795,9 +598,108 @@ ModeledScreenTransition* ModeledScreenTransition::LoadFromParser(SimpleParser* p
         pToken = parser->NextToken(true);
     }
 
-    m_pPoseAccumulator = new (nlMalloc(0x58, 8, false)) cPoseAccumulator(m_pSkeleton, false);
+    m_pPoseAccumulator = new (nlMalloc(sizeof(cPoseAccumulator), 8, false)) cPoseAccumulator(m_pSkeleton, false);
 
-    FixupModelTransition(this);
+    FixupModel();
+}
+
+void ModeledScreenTransition::CreateInstance(TransitionModelStore& modelInfo)
+{
+    m_nModels = modelInfo.nModels;
+    m_pModels = (glModel*)glModelDupArrayNoStreams(modelInfo.pModels, modelInfo.nModels, false, true);
+
+    for (unsigned long j = 0; j < m_nModels; j++)
+    {
+        for (unsigned long i = 0; i < m_pModels[i].numPackets; i++)
+        {
+            m_pModels[j].packets[i].userData = 0;
+        }
+    }
+}
+
+void ModeledScreenTransition::Load(const char* szName)
+{
+    u32 fileSize = 0;
+    TransitionModelStore* pModelStore;
+    u32 hash;
+    TransitionModelStore newStore;
+    char buf[128];
+    hash = glHash(szName);
+
+    if (ModeledScreenTransition::g_ModelInventory.FindGet(hash, &pModelStore))
+    {
+        CreateInstance(*pModelStore);
+    }
+    else
+    {
+        glSetIgnoreDuplicateModels(true);
+
+        nlSNPrintf(buf, 128, "transitions/%s.glg", szName);
+        m_pModels = glLoadModel(buf, &m_nModels);
+
+        glSetIgnoreDuplicateModels(false);
+
+        newStore.pModels = m_pModels;
+        newStore.nModels = m_nModels;
+        ModeledScreenTransition::g_ModelInventory.Add(hash, newStore);
+    }
+
+    nlSNPrintf(buf, 128, "art/transitions/%s.sanim", szName);
+    m_pAnimFile = (char*)nlLoadEntireFile(buf, &fileSize, 0x20, AllocateStart);
+    m_pAnim = cSAnim::Initialize((nlChunk*)m_pAnimFile);
+
+    nlSNPrintf(buf, 128, "art/transitions/%s.shier", szName);
+    m_pSkelFile = (char*)nlLoadEntireFile(buf, &fileSize, 0x20, AllocateStart);
+    m_pSkeleton = cSHierarchy::Initialize((nlChunk*)m_pSkelFile);
+
+    m_pModelMap = (int*)nlMalloc(m_nModels * 4, 8, false);
+    for (u32 i = 0; i < m_nModels; i++)
+    {
+        m_pModelMap[i] = m_pSkeleton->GetNodeIndexByID(m_pModels[i].id);
+    }
+}
+
+void ModeledScreenTransition::FixupModel()
+{
+    u64 savedTextureState = glGetCurrentTextureState();
+    u32 savedRasterState = glGetCurrentRasterState();
+
+    for (u32 i = 0; i < m_nModels; i++)
+    {
+        if (m_pLight != NULL)
+        {
+            m_pLight->AttachToModel(&m_pModels[i]);
+        }
+
+        for (u32 j = 0; j < m_pModels[i].numPackets; j++)
+        {
+            glSetCurrentTextureState(m_pModels[i].packets[j].state.texturestate);
+            glSetTextureState(GLTS_DiffuseWrap, 3);
+
+            glSetCurrentRasterState(m_pModels[i].packets[j].state.raster);
+            glSetRasterState(GLS_AlphaBlend, 0);
+            glSetRasterState(GLS_Culling, 0);
+            glSetRasterState(GLS_DepthTest, 1);
+            glSetRasterState(GLS_DepthWrite, 1);
+
+            glSetCurrentProgram(m_nProgram);
+
+            if (m_nTexture != 0xFFFFFFFF)
+            {
+                m_pModels[i].packets[j].state.texture[0] = m_nTexture;
+            }
+
+            m_pModels[i].packets[j].state.raster = glHandleizeRasterState();
+
+            u64 texHandle = glHandleizeTextureState();
+            m_pModels[i].packets[j].state.texturestate = texHandle;
+
+            m_pModels[i].packets[j].state.program = m_nProgram;
+        }
+    }
+
+    glSetCurrentTextureState(savedTextureState);
+    glSetCurrentRasterState(savedRasterState);
 }
 
 /**

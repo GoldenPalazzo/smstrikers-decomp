@@ -98,6 +98,9 @@ public:
     void DrawString(eGLView, const FontCharString&, const nlVector2&, const nlColour&, const nlColour&, int, nlFont::TextPass, bool, unsigned long*, nlColour*) const;
     unsigned char Load(const char*, char*, unsigned long);
     void Unload();
+#if defined(VERSION_G4QJ01)
+    void SetIsJapanese(bool isJapanese) { m_bIsJapanese = isJapanese; }
+#endif
 
     ~nlFont();
     nlFont();
@@ -119,7 +122,11 @@ public:
     /* 0x6D0 */ unsigned long m_ExtendedGlyphCount;
     /* 0x6D4 */ KernPair* m_pKernTable;
     /* 0x6D8 */ unsigned long m_KernTableSize;
-}; // total size: 0x6DC
+#if defined(VERSION_G4QJ01)
+private:
+    /* 0x6DC */ bool m_bIsJapanese;
+#endif
+}; // total size: 0x6DC (G4QE01), 0x6E0 (G4QJ01)
 
 class FontCharString
 {

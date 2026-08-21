@@ -3,6 +3,9 @@
 // prototypes
 static void CreateCallbackFat(s32 chan, s32 result);
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80243030 | size: 0x130
+ */
 static void CreateCallbackFat(s32 chan, s32 result)
 {
     CARDControl* card;
@@ -36,22 +39,22 @@ static void CreateCallbackFat(s32 chan, s32 result)
         card->fileInfo->iBlock = ent->startBlock;
         ent->time = OSTicksToSeconds(OSGetTime());
         result = __CARDUpdateDir(chan, callback);
-        if (result < 0)
+        if (result >= 0)
         {
-            goto after;
+            return;
         }
     }
-    else
+
+    __CARDPutControlBlock(card, result);
+    if (callback)
     {
-    after:;
-        __CARDPutControlBlock(card, result);
-        if (callback)
-        {
-            callback(chan, result);
-        }
+        callback(chan, result);
     }
 }
 
+/**
+ * Offset/Address/Size: 0x130 | 0x80243160 | size: 0x220
+ */
 s32 CARDCreateAsync(s32 chan, const char* fileName, u32 size, CARDFileInfo* fileInfo, CARDCallback callback)
 {
     CARDControl* card;
