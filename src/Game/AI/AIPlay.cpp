@@ -32,14 +32,36 @@ void AIPlay::ClearPlay()
     }
 }
 
+bool AIPlay::IsPlayActive()
+{
+    return meCurrentPlay != AIPLAY_NULL;
+}
+
+void AIPlay::SetDuration(float fNewDuration)
+{
+    mfPlayDuration = fNewDuration;
+    if (mfPlayDuration < 0.0f)
+    {
+        mfPlayDuration = 0.0f;
+        meCurrentPlay = AIPLAY_NULL;
+        mpPlayDE = NULL;
+    }
+}
+
+void AIPlay::SetPlayType(eAIPlay eNewAIPlay)
+{
+    meCurrentPlay = eNewAIPlay;
+    mpPlayDE = GetDecisionEntity(DECISION_ENTITY_PLAY, eNewAIPlay);
+}
+
 /**
  * Offset/Address/Size: 0x7C | 0x80005910 | size: 0x11C
  */
 void AIPlay::Update(float fDeltaT)
 {
-    bool bGetNewPlay;                       // r5
-    class cDecisionEntity* decision_entity; // r31
-    float fDuration;                        // f1
+    bool bGetNewPlay;
+    class cDecisionEntity* decision_entity;
+    float fDuration;
 
     mfPlayDuration -= fDeltaT;
     if (mfPlayDuration < 0.0f)

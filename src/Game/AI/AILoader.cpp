@@ -11,15 +11,9 @@ AILoader TheAILoader;
 /**
  * Offset/Address/Size: 0x0 | 0x800056C0 | size: 0x50
  */
-bool AILoader::StartLoad(LoadingManager*)
+bool AILoader::StartLoad(LoadingManager* manager)
 {
-    FakeBallWorld* temp_ret_2;
-    cBall* temp_r3;
-    cBall* temp_ret;
-    cBall* var_r0;
-    u32 var_r4;
-
-    g_pBall = new (nlMalloc(0xACU, 8U, 0)) cBall();
+    g_pBall = new (nlMalloc(sizeof(cBall), 8, false)) cBall();
 
     FakeBallWorld::Init(g_pBall);
 

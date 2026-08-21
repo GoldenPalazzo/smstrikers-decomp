@@ -19,6 +19,16 @@ public:
     float* m_pVal;
 };
 
+inline float FMIN(float f1, float f2)
+{
+    return (f1 <= f2) ? f1 : f2;
+}
+
+inline float FMAX(float f1, float f2)
+{
+    return (f1 >= f2) ? f1 : f2;
+}
+
 float FLESS(float f1, float f2);
 float FGREATER(float f1, float f2);
 float RandomChance(float fChance);

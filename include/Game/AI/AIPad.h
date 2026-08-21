@@ -7,15 +7,16 @@
 class cAIPad
 {
 public:
-    cAIPad() { m_pPad = NULL; };
+    cAIPad() { m_pGlobalPad = NULL; };
 
     bool IsTurboPressed();
+    u16 GetMovementStickDirectionNoRemap();
     u16 GetCStickMovementStickDirection();
     f32 GetCStickMovementStickMagnitude();
     u16 GetMovementStickDirection();
     f32 GetMovementStickMagnitude();
 
-    cGlobalPad* m_pPad; // 0x00
+    cGlobalPad* m_pGlobalPad; // 0x00
 };
 
 struct AIPadManager

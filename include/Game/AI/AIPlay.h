@@ -57,10 +57,13 @@ class cDecisionEntity;
 class AIPlay
 {
 public:
-    AIPlay(cFielder*, eAIPlay, float);
+    AIPlay(cFielder* pFielder, eAIPlay eplayType, float fPlayDuration);
     ~AIPlay();
     void ClearPlay();
-    void Update(float);
+    bool IsPlayActive();
+    void SetDuration(float fNewDuration);
+    void SetPlayType(eAIPlay eNewAIPlay);
+    void Update(float fDeltaT);
     void CalculateNewDesire();
 
     /* 0x0 */ eAIPlay meCurrentPlay;

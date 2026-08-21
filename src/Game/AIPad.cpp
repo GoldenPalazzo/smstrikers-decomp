@@ -11,7 +11,7 @@ cAIPad AIPadManager::mAIPads[4];
  */
 f32 cAIPad::GetMovementStickMagnitude()
 {
-    f32 mag = m_pPad->m_polarAnalogLeft.r;
+    f32 mag = m_pGlobalPad->m_polarAnalogLeft.r;
     f32 dz = g_fMovementDeadZone;
     return (mag - dz) / (1.0f - dz);
 }
@@ -21,7 +21,7 @@ f32 cAIPad::GetMovementStickMagnitude()
  */
 u16 cAIPad::GetMovementStickDirection()
 {
-    return (u16)(cCameraManager::m_aJoystickRemap - 0x4000) + m_pPad->m_polarAnalogLeft.a;
+    return (u16)(cCameraManager::m_aJoystickRemap - 0x4000) + m_pGlobalPad->m_polarAnalogLeft.a;
 }
 
 /**
@@ -29,8 +29,7 @@ u16 cAIPad::GetMovementStickDirection()
  */
 f32 cAIPad::GetCStickMovementStickMagnitude()
 {
-    // (mag - deadzone) / (1.0f - deadzone)
-    f32 mag = m_pPad->m_polarAnalogRight.r;
+    f32 mag = m_pGlobalPad->m_polarAnalogRight.r;
     f32 dz = g_fCStickDeadZone;
     return (mag - dz) / (1.0f - dz);
 }
@@ -40,7 +39,12 @@ f32 cAIPad::GetCStickMovementStickMagnitude()
  */
 u16 cAIPad::GetCStickMovementStickDirection()
 {
-    return (u16)(cCameraManager::m_aJoystickRemap - 0x4000) + m_pPad->m_polarAnalogRight.a;
+    return (u16)(cCameraManager::m_aJoystickRemap - 0x4000) + m_pGlobalPad->m_polarAnalogRight.a;
+}
+
+u16 cAIPad::GetMovementStickDirectionNoRemap()
+{
+    return m_pGlobalPad->m_polarAnalogLeft.a;
 }
 
 /**
@@ -48,7 +52,7 @@ u16 cAIPad::GetCStickMovementStickDirection()
  */
 bool cAIPad::IsTurboPressed()
 {
-    return (m_pPad->GetPressure(0x14, true) > 0.2f);
+    return (m_pGlobalPad->GetPressure(0x14, true) > 0.2f);
 }
 
 /**
@@ -59,6 +63,6 @@ void AIPadManager::Startup()
     int i;
     for (i = 0; i < 4; ++i)
     {
-        mAIPads[i].m_pPad = cPadManager::GetPad(i);
+        mAIPads[i].m_pGlobalPad = cPadManager::GetPad(i);
     }
 }

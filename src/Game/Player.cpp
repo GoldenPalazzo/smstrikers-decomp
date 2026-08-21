@@ -361,7 +361,7 @@ u8 cPlayer::SwapController()
         if (g_pBall->m_pPassTarget == NULL || g_pBall->m_pPassTarget != this)
         {
             pSwapPlayer = NULL;
-            iPadID = ((m_pController != NULL) ? m_pController->m_pPad : NULL)->m_padIndex;
+            iPadID = ((m_pController != NULL) ? m_pController->m_pGlobalPad : NULL)->m_padIndex;
 
             for (i = 0; i < 4; i++)
             {
@@ -369,7 +369,7 @@ u8 cPlayer::SwapController()
                 if (pPotentialSwapPlayer != this)
                 {
                     cGlobalPad* pPotentialSwapPad = (pPotentialSwapPlayer->m_pController != NULL)
-                                                      ? pPotentialSwapPlayer->m_pController->m_pPad
+                                                      ? pPotentialSwapPlayer->m_pController->m_pGlobalPad
                                                       : NULL;
                     if (pPotentialSwapPad == NULL)
                     {
@@ -413,7 +413,8 @@ u8 cPlayer::SwapController()
 
                     if (pCandidate != this)
                     {
-                        cGlobalPad* pCandidatePad = (pCandidate->m_pController != NULL) ? pCandidate->m_pController->m_pPad : NULL;
+                        cGlobalPad* pCandidatePad =
+                            (pCandidate->m_pController != NULL) ? pCandidate->m_pController->m_pGlobalPad : NULL;
                         if (pCandidatePad == NULL && fDist < fBestDist)
                         {
                             pSwapPlayer = pCandidate;
@@ -629,13 +630,13 @@ void cPlayer::PickupBall(cBall* pBall)
     }
     else
     {
-        cGlobalPad* hasPad = (m_pController != NULL) ? m_pController->m_pPad : NULL;
+        cGlobalPad* hasPad = (m_pController != NULL) ? m_pController->m_pGlobalPad : NULL;
         if (hasPad == NULL)
         {
             cPlayer* closest = NULL;
 
             cAIPad* goalieCtrl = m_pTeam->GetGoalie()->m_pController;
-            cGlobalPad* goaliePad = (goalieCtrl != NULL) ? goalieCtrl->m_pPad : NULL;
+            cGlobalPad* goaliePad = (goalieCtrl != NULL) ? goalieCtrl->m_pGlobalPad : NULL;
             if (goaliePad != NULL)
             {
                 closest = m_pTeam->GetGoalie();
@@ -646,7 +647,8 @@ void cPlayer::PickupBall(cBall* pBall)
                 for (s32 i = 0; i < 4; i++)
                 {
                     cPlayer* player = m_pTeam->GetPlayer(i);
-                    cGlobalPad* playerPad = (player->m_pController != NULL) ? player->m_pController->m_pPad : NULL;
+                    cGlobalPad* playerPad =
+                        (player->m_pController != NULL) ? player->m_pController->m_pGlobalPad : NULL;
                     if (playerPad == NULL)
                         continue;
 
@@ -986,7 +988,7 @@ cGlobalPad* cPlayer::GetGlobalPad()
 {
     if (m_pController != NULL)
     {
-        return m_pController->m_pPad;
+        return m_pController->m_pGlobalPad;
     }
     return NULL;
 }
@@ -1314,11 +1316,11 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
             PassBallData* pData = new (&pEvent->m_data) PassBallData();
             pData->pPasser = this;
             pData->pTarget = pPassTarget;
-            cGlobalPad* pPad = (m_pController != NULL) ? m_pController->m_pPad : NULL;
+            cGlobalPad* pPad = (m_pController != NULL) ? m_pController->m_pGlobalPad : NULL;
             int controllerID;
             if (pPad != NULL)
             {
-                pPad = (m_pController != NULL) ? m_pController->m_pPad : NULL;
+                pPad = (m_pController != NULL) ? m_pController->m_pGlobalPad : NULL;
                 controllerID = pPad->m_padIndex;
             }
             else

@@ -3,8 +3,6 @@
 
 #include "Game/AI/Variant.h"
 
-// void 0x8028D28C..0x8028D290 | size: 0x4;
-
 class FuzzyVariant : public Variant
 {
 public:

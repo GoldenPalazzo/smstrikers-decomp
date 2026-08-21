@@ -2987,8 +2987,8 @@ void cFielder::DoDebugShooting()
     }
     else
     {
-        float x = m_pController->m_pPad->AnalogLeftX();
-        float y = m_pController->m_pPad->AnalogLeftY();
+        float x = m_pController->m_pGlobalPad->AnalogLeftX();
+        float y = m_pController->m_pGlobalPad->AnalogLeftY();
         nlVec3Set(v3BallVelocity, sfDebugShotVelocity * x, sfDebugShotVelocity * y, sfDebugShotHeight);
         nlVec3Add(v3Target, g_pBall->m_v3Position, v3BallVelocity);
     }

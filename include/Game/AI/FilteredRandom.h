@@ -8,7 +8,7 @@ class FilteredRandomRange
 public:
     FilteredRandomRange();
     ~FilteredRandomRange() { }
-    int genrand(int);
+    int genrand(int range);
 
     /* 0x00 */ u32 m_repeatingRunLength; // size 0x4
     /* 0x04 */ s32 m_hist[10];           // size 0x28
@@ -19,7 +19,7 @@ class FilteredRandomChance
 public:
     FilteredRandomChance();
     ~FilteredRandomChance() { }
-    bool genrand(float);
+    bool genrand(float chance);
 
     /* 0x00 */ u8 m_hist[20]; // size 0x14
 }; // total size: 0x14

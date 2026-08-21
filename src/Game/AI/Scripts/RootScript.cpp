@@ -6,14 +6,7 @@
 extern cFielder* g_pScriptCurrentFielder;
 extern cTeam* g_pScriptCurrentTeam;
 
-template <>
-FuzzyVariant::FuzzyVariant(const float& var)
-    : Variant(VariantTypeOf(var), var)
-{
-    ExtraData.Reset();
-    Confidence = 0.0f;
-    SelectionChance = 1.0f;
-}
+#include "TestCases.cpp"
 
 namespace Fuzzy
 {
@@ -97,58 +90,49 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
             {
                 float fTrueConfidence = Offensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_STRIKER_AGGRESSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_STRIKER_AGGRESSIVE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Defensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_STRIKER_AGGRESSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_STRIKER_AGGRESSIVE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Loose(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_LOOSE_STRIKER_AGGRESSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_LOOSE_STRIKER_AGGRESSIVE, fConfidence, -1.0f);
                 }
             }
         }
@@ -157,58 +141,49 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
             {
                 float fTrueConfidence = Offensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_STRIKER_MODERATE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_STRIKER_MODERATE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Defensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_STRIKER_MODERATE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_STRIKER_MODERATE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Loose(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_LOOSE_STRIKER_MODERATE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_LOOSE_STRIKER_MODERATE, fConfidence, -1.0f);
                 }
             }
         }
@@ -217,58 +192,49 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
             {
                 float fTrueConfidence = Offensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_STRIKER_PASSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_STRIKER_PASSIVE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Defensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_STRIKER_PASSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_STRIKER_PASSIVE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Loose(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_LOOSE_STRIKER_PASSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_LOOSE_STRIKER_PASSIVE, fConfidence, -1.0f);
                 }
             }
         }
@@ -281,58 +247,49 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
             {
                 float fTrueConfidence = Offensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_WINGER_AGGRESSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_WINGER_AGGRESSIVE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Defensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_WINGER_AGGRESSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_WINGER_AGGRESSIVE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Loose(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_LOOSE_WINGER_AGGRESSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_LOOSE_WINGER_AGGRESSIVE, fConfidence, -1.0f);
                 }
             }
         }
@@ -341,58 +298,49 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
             {
                 float fTrueConfidence = Offensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_WINGER_MODERATE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_WINGER_MODERATE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Defensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_WINGER_MODERATE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_WINGER_MODERATE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Loose(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_LOOSE_WINGER_MODERATE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_LOOSE_WINGER_MODERATE, fConfidence, -1.0f);
                 }
             }
         }
@@ -401,58 +349,49 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
             {
                 float fTrueConfidence = Offensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_WINGER_PASSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_WINGER_PASSIVE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Defensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_WINGER_PASSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_WINGER_PASSIVE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Loose(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_LOOSE_WINGER_PASSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_LOOSE_WINGER_PASSIVE, fConfidence, -1.0f);
                 }
             }
         }
@@ -465,58 +404,49 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
             {
                 float fTrueConfidence = Offensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_MIDFIELD_AGGRESSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_MIDFIELD_AGGRESSIVE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Defensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_MIDFIELD_AGGRESSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_MIDFIELD_AGGRESSIVE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Loose(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_LOOSE_MIDFIELD_AGGRESSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_LOOSE_MIDFIELD_AGGRESSIVE, fConfidence, -1.0f);
                 }
             }
         }
@@ -525,58 +455,49 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
             {
                 float fTrueConfidence = Offensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_MIDFIELD_MODERATE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_MIDFIELD_MODERATE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Defensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_MIDFIELD_MODERATE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_MIDFIELD_MODERATE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Loose(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_LOOSE_MIDFIELD_MODERATE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_LOOSE_MIDFIELD_MODERATE, fConfidence, -1.0f);
                 }
             }
         }
@@ -585,58 +506,49 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
             {
                 float fTrueConfidence = Offensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_MIDFIELD_PASSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_MIDFIELD_PASSIVE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Defensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_MIDFIELD_PASSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_MIDFIELD_PASSIVE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Loose(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_LOOSE_MIDFIELD_PASSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_LOOSE_MIDFIELD_PASSIVE, fConfidence, -1.0f);
                 }
             }
         }
@@ -649,58 +561,49 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
             {
                 float fTrueConfidence = Offensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_DEFENDER_AGGRESSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_DEFENDER_AGGRESSIVE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Defensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_DEFENDER_AGGRESSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_DEFENDER_AGGRESSIVE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Loose(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_LOOSE_DEFENDER_AGGRESSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_LOOSE_DEFENDER_AGGRESSIVE, fConfidence, -1.0f);
                 }
             }
         }
@@ -709,58 +612,49 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
             {
                 float fTrueConfidence = Offensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_DEFENDER_MODERATE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_DEFENDER_MODERATE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Defensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_DEFENDER_MODERATE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_DEFENDER_MODERATE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Loose(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_LOOSE_DEFENDER_MODERATE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_LOOSE_DEFENDER_MODERATE, fConfidence, -1.0f);
                 }
             }
         }
@@ -769,58 +663,49 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
             {
                 float fTrueConfidence = Offensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_DEFENDER_PASSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_DEFENDER_PASSIVE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Defensive(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_DEFENDER_PASSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_DEFENDER_PASSIVE, fConfidence, -1.0f);
                 }
             }
             {
                 float fTrueConfidence = Loose(g_pScriptCurrentTeam);
                 float fFalseConfidence = 1.0f - fTrueConfidence;
-                float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                float fMin = FMIN(fTrueConfidence, fFalseConfidence);
+                float fMax = FMAX(fTrueConfidence, fFalseConfidence);
                 float fBranchRatio = fMin / fMax;
                 if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    fConfidence = FMIN(fConfidence, fTrueConfidence);
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
-                    {
-                        const float fLocalConf = fConfidence;
-                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
-                        pDecision->QueueActionSetPlay(AIPLAY_LOOSE_DEFENDER_PASSIVE, fLocalConf, -1.0f);
-                    }
+                    fBestConfidence = FMAX(fBestConfidence, fConfidence);
+                    pDecision->QueueActionSetPlay(AIPLAY_LOOSE_DEFENDER_PASSIVE, fConfidence, -1.0f);
                 }
             }
         }

@@ -6,7 +6,7 @@
 class AILoader : public Loader
 {
 public:
-    virtual bool StartLoad(LoadingManager*);
+    virtual bool StartLoad(LoadingManager* manager);
 };
 
 #endif // _AILOADER_H_
