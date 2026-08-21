@@ -6,12 +6,11 @@
 #include "NL/nlMemory.h"
 #include "NL/globalpad.h"
 #include "PowerPC_EABI_Support/Runtime/MWCPlusLib.h"
+#include "Game/main.h"
 
 extern float g_fSimulationTick;
 extern float g_fFixedUpdateTick;
 extern bool g_bEnableGamecubePadMonkey;
-extern bool g_bTweaking;
-extern bool g_bProfiling;
 
 template <>
 bool LexicalCast<bool, bool>(const bool& value);

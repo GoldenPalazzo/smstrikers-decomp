@@ -6,6 +6,9 @@
 
 void SetupMatrices();
 
+extern bool g_bFrameSmiler;
+extern bool g_bFrameStatsOnScreen;
+
 enum eModelSkinMethod
 {
     eModelSkin_Rigid = 0,

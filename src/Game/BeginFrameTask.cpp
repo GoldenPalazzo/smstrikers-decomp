@@ -800,7 +800,7 @@ void BeginFrameTask::Run(float dt)
     {
         glFontBegin(false);
         nlColour white = { 0xFF, 0xFF, 0xFF, 0xFF };
-        glFontPrintf((eGLView)0x21, 1, 1, white, "Region %d", *(int*)GetRegion());
+        glFontPrintf((eGLView)0x21, 1, 1, white, "Region %d", *GetRegion());
         glFontEnd();
     }
 }

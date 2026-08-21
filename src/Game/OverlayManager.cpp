@@ -16,8 +16,7 @@
 #include "Game/FE/Overlay/OverlayHandlerSummary.h"
 #include "Game/Goalie.h"
 #include "NL/nlConfig.h"
-
-extern bool g_e3_Build;
+#include "Game/main.h"
 
 template <>
 OverlayManager* nlSingleton<OverlayManager>::s_pInstance = 0;

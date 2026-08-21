@@ -41,4 +41,7 @@ public:
     /* 0x18 */ bool m_Locked;
 }; // total size: 0x1C
 
+extern u8 g_DoStackWatermarkTests;
+extern u8 g_StackWatermarkFiller;
+
 #endif // _NLTASK_H_

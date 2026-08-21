@@ -1,32 +1,12 @@
+#include "PowerPC_EABI_Support/Runtime/NMWException.h"
+#include "PowerPC_EABI_Support/Runtime/__init_cpp_exceptions.h"
+
 static int fragmentID = -2;
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-    typedef struct __eti_init_info
-    {
-        void* eti_start;
-        void* eti_end;
-        void* code_start;
-        unsigned long code_size;
-    } __eti_init_info;
-
-    __declspec(section ".init") extern __eti_init_info _eti_init_info[];
-
-    extern void __init_cpp_exceptions(void);
-    extern void __fini_cpp_exceptions(void);
-    extern void suspend(void);
-    extern void __unregister_fragment(int fragmentID);
-    extern int __register_fragment(void* _eti_init_info, char* TOC);
-    extern void __destroy_global_chain(void);
-
-#ifdef __cplusplus
-}
-#endif
-
-asm char* GetR2(void)
+/**
+ * Offset/Address/Size: 0x0 | 0x8023AC94 | size: 0x8
+ */
+static asm char* GetR2(void)
 {
     // clang-format off
     nofralloc
@@ -35,7 +15,10 @@ asm char* GetR2(void)
     // clang-format on
 }
 
-extern void __fini_cpp_exceptions(void)
+/**
+ * Offset/Address/Size: 0x8 | 0x8023AC9C | size: 0x34
+ */
+void __fini_cpp_exceptions(void)
 {
     if (fragmentID != -2)
     {
@@ -44,11 +27,14 @@ extern void __fini_cpp_exceptions(void)
     }
 }
 
-extern void __init_cpp_exceptions(void)
+/**
+ * Offset/Address/Size: 0x3C | 0x8023ACD0 | size: 0x40
+ */
+void __init_cpp_exceptions(void)
 {
     if (fragmentID == -2)
     {
-        fragmentID = __register_fragment(&_eti_init_info, GetR2());
+        fragmentID = __register_fragment(_eti_init_info, GetR2());
     }
 }
 

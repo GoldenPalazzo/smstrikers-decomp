@@ -7,6 +7,9 @@ typedef struct DestructorChain
 
 DestructorChain* __global_destructor_chain;
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8023A154 | size: 0x48
+ */
 void __destroy_global_chain(void)
 {
     DestructorChain* gdc;
@@ -18,6 +21,9 @@ void __destroy_global_chain(void)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x48 | 0x8023A19C | size: 0x18
+ */
 void* __register_global_object(void* object, void* destructor, void* regmem)
 {
     ((DestructorChain*)regmem)->next = __global_destructor_chain;

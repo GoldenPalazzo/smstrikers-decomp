@@ -27,4 +27,6 @@ public:
     static float mTimeScale;
 };
 
+extern bool g_bRunSimAndRenderInLockStep;
+
 #endif // _FIXEDUPDATETASK_H_

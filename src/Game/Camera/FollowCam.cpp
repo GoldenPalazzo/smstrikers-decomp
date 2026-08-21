@@ -6,10 +6,9 @@
 #include "Game/ReplayManager.h"
 
 #include "NL/gl/glMatrix.h"
+#include "Game/main.h"
 
 extern cTeam* g_pTeams[2];
-extern u8 g_bProfiling;
-extern u8 g_bTweaking;
 
 static f32 g_fDistanceSeek = 0.5f;
 static f32 g_fMaxDistance = 40.0f;

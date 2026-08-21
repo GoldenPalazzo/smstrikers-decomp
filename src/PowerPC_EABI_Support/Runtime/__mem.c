@@ -1,12 +1,18 @@
 #include "PowerPC_EABI_Support/Runtime/__mem.h"
 
-__declspec(section ".init") void* memset(void* dst, int val, size_t size)
+/**
+ * Offset/Address/Size: 0x0 | 0x800050B4 | size: 0x30
+ */
+__declspec(section ".init") void* memset(void* dst, int val, size_t n)
 {
-    __fill_mem(dst, val, size);
+    __fill_mem(dst, val, n);
 
     return dst;
 }
 
+/**
+ * Offset/Address/Size: 0x30 | 0x800050E4 | size: 0xB8
+ */
 __declspec(section ".init") void __fill_mem(void* dst, int val, size_t n)
 {
     u32 v = (u8)val;
@@ -74,7 +80,10 @@ __declspec(section ".init") void __fill_mem(void* dst, int val, size_t n)
     return;
 }
 
-__declspec(section ".init") void* memcpy(void* dst, const void* src, size_t size)
+/**
+ * Offset/Address/Size: 0xE8 | 0x8000519C | size: 0x50
+ */
+__declspec(section ".init") void* memcpy(void* dst, const void* src, size_t n)
 {
     const u8* s;
     u8* d;
@@ -83,18 +92,18 @@ __declspec(section ".init") void* memcpy(void* dst, const void* src, size_t size
     {
         s = (const u8*)src - 1;
         d = (u8*)dst - 1;
-        size++;
-        while (--size != 0)
+        n++;
+        while (--n != 0)
         {
             *++d = *++s;
         }
     }
     else
     {
-        s = (const u8*)src + size;
-        d = (u8*)dst + size;
-        size++;
-        while (--size != 0)
+        s = (const u8*)src + n;
+        d = (u8*)dst + n;
+        n++;
+        while (--n != 0)
         {
             *--d = *--s;
         }

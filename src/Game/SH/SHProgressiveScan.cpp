@@ -4,6 +4,7 @@
 #include "Game/GameSceneManager.h"
 #include "NL/gl/glPlat.h"
 #include "dolphin/os/OSRtc.h"
+#include "Game/main.h"
 
 /**
  * Offset/Address/Size: 0x1148 | 0x80111618 | size: 0x148
@@ -54,7 +55,6 @@ ProgressiveScanScene::~ProgressiveScanScene()
 
 extern unsigned long nlStringLowerHash(const char*);
 extern int nlSNPrintf(char*, unsigned long, const char*, ...);
-extern int g_Language;
 
 /**
  * Offset/Address/Size: 0xD08 | 0x801111D8 | size: 0x374

@@ -49902,7 +49902,7 @@ void DisplayDVDMessageSebring(int arg)
     ResetTask::s_resetPaused = 0;
     OpenCloseRefCount++;
 
-    int region = *(int*)GetRegion();
+    int region = *GetRegion();
     switch (region)
     {
     case 0:

@@ -80,11 +80,12 @@
 #include "Game/SH/SHCupHub.h"
 #include "Game/Sys/debug.h"
 #include "dolphin/os.h"
+#include "Game/main.h"
 
 int nlSNPrintf(char*, unsigned long, const char*, ...);
 
 TransitionTask* TransitionTask::sm_pGlobalTask;
-unsigned char g_bFrameStatsOnDisk;
+bool g_bFrameStatsOnDisk;
 extern nlLocalization* g_pLocalization;
 static unsigned long long s_FontResourceMark = -1;
 extern unsigned char gSebringLoadPackageToVirtualMemory;
@@ -96,8 +97,6 @@ bool fxUnloadGroups();
 bool fxUnloadTemplates();
 void glResourceRelease(unsigned long long);
 
-extern nlLocalization::nlLanguage g_Language;
-extern bool g_e3_Build;
 extern unsigned char g_JaapAndJacksNastyHackBecauseWeDoNotKnowDifferenceBetweenPausePauseAndPostGamePause;
 
 void PrintAvailableARAMMemory();

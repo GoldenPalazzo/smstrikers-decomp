@@ -8,8 +8,7 @@
 #include "Game/Audio/WorldAudio.h"
 #include "Game/FE/feHelpFuncs.h"
 #include "Game/World/WorldLoader.h"
-
-extern bool g_e3_Build;
+#include "Game/main.h"
 
 template <>
 bool LexicalCast<bool, bool>(const bool& value);

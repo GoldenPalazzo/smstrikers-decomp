@@ -33,6 +33,7 @@ using TakeGameMemSnapshot::LexicalCast;
 #include "NL/nlBasicString.h"
 #include "NL/MemAlloc.h"
 #include "PowerPC_EABI_Support/MSL_C/MSL_Common/direct_io.h"
+#include "Game/main.h"
 
 namespace DoubleHighlite
 {
@@ -47,22 +48,6 @@ static const char* SLIDE_IN = "in";
 static const char* SLIDE_OUT = "out";
 bool TEMPDISABLESOUND;
 } // namespace SingleHighlite
-
-enum nlLanguage
-{
-    LangEnglish = 0,
-    LangFrench = 1,
-    LangGerman = 2,
-    LangSpanish = 3,
-    LangItalian = 4,
-    LangJapanese = 5,
-    LangUKEnglish = 6,
-    LangLongestStrings = 7,
-    LangBob = 8,
-    LangEnd = 9,
-};
-
-extern nlLanguage g_Language;
 
 static unsigned long CCToStringName[13] = {
     0x35D90F6F,
@@ -806,9 +791,9 @@ const char* GetMemCardTitle()
 {
     switch (g_Language)
     {
-    case LangEnglish:
+    case nlLocalization::LangEnglish:
         return "Super Mario Strikers";
-    case LangJapanese:
+    case nlLocalization::LangJapanese:
         return "Super Mario Strikers";
     default:
         return "Mario Smash Football";
@@ -822,19 +807,19 @@ const char* GetMemCardDescription()
 {
     switch (g_Language)
     {
-    case LangEnglish:
+    case nlLocalization::LangEnglish:
         return "Save File";
-    case LangFrench:
+    case nlLocalization::LangFrench:
         return "Fichier de Sauvegarde";
-    case LangGerman:
+    case nlLocalization::LangGerman:
         return "Spieldatei";
-    case LangSpanish:
+    case nlLocalization::LangSpanish:
         return "Archivo Guardado";
-    case LangItalian:
+    case nlLocalization::LangItalian:
         return "File di Dati";
-    case LangJapanese:
+    case nlLocalization::LangJapanese:
         return "\x83\x74\x83\x40\x83\x8B\x82\xF0\x8F\x9C\x82\xAF\x82\xCE\0"; // Japanese (SJIS): "Save File"
-    case LangUKEnglish:
+    case nlLocalization::LangUKEnglish:
         return "Save File";
     default:
         return "Save File";

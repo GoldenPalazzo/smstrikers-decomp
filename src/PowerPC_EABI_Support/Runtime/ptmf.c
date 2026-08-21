@@ -12,6 +12,9 @@ typedef struct PTMF
 
 const PTMF __ptmf_null = { 0, 0, 0 };
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8023A560 | size: 0x30
+ */
 /* clang-format off */
 asm void __ptmf_test(register PTMF* ptmf) {
   nofralloc
@@ -30,6 +33,29 @@ asm void __ptmf_test(register PTMF* ptmf) {
   blr
 }
 
+asm void __ptmf_cmpr(register PTMF* lhs, register PTMF* rhs) {
+  nofralloc
+
+  lwz r5, PTMF.this_delta(lhs)
+  lwz r6, PTMF.this_delta(rhs)
+  lwz r7, PTMF.vtbl_offset(lhs)
+  lwz r8, PTMF.vtbl_offset(rhs)
+  lwz r9, PTMF.func_data(lhs)
+  lwz r10, PTMF.func_data(rhs)
+  li r3, 1
+  cmpw r5, r6
+  cmpw cr6, r7, r8
+  cmpw cr7, r9, r10
+  bnelr
+  bnelr cr6
+  bnelr cr7
+  li r3, 0
+  blr
+}
+
+/**
+ * Offset/Address/Size: 0x30 | 0x8023A590 | size: 0x28
+ */
 asm void __ptmf_scall(...) {
   nofralloc
   lwz r0, PTMF.this_delta(r12)
@@ -44,4 +70,4 @@ asm void __ptmf_scall(...) {
   mtctr r12
   bctr
 }
-/* clang-format - on*/
+/* clang-format on */

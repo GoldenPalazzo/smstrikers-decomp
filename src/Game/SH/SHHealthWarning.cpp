@@ -8,8 +8,7 @@
 #include "NL/nlMemory.h"
 #include "NL/nlString.h"
 #include "NL/nlTask.h"
-
-extern int g_Language;
+#include "Game/main.h"
 
 /**
  * Offset/Address/Size: 0x5C8 | 0x8010D6F8 | size: 0xDC

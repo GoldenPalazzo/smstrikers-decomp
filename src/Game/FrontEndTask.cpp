@@ -16,13 +16,13 @@
 #include "NL/gl/gl.h"
 #include "dolphin/pad.h"
 #include <math.h>
+#include "Game/main.h"
 
 float g_fUpTime;
 float g_fIdleGameTime;
 
 extern FrontEnd* g_pFrontEnd;
 extern FEInput* g_pFEInput;
-extern bool g_e3_Build;
 
 // TODO: missing header, Forward declaration
 namespace TakeGameMemSnapshot

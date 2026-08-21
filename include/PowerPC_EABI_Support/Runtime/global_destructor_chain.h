@@ -3,6 +3,7 @@
 
 #include "types.h"
 
+/* clang-format off */
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -23,7 +24,7 @@ typedef struct DestructorChain {
 	void* object;
 } DestructorChain;
 
-void* __register_global_object(void* object, void* destructor, void* registration);
+void* __register_global_object(void* object, void* destructor, void* regmem);
 
 void __destroy_global_chain(void);
 
@@ -32,5 +33,6 @@ int __register_atexit(void (*)(void));
 #ifdef __cplusplus
 }
 #endif
+/* clang-format on */
 
 #endif

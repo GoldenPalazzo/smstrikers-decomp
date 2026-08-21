@@ -672,15 +672,15 @@ config.libs = [
     RuntimeLib(
         "Runtime.PPCEABI.H",
         [
-            Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/Runtime/__init_cpp_exceptions.cpp", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/Runtime/__mem.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/Runtime/__va_arg.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/Runtime/global_destructor_chain.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/Runtime/ptmf.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/Runtime/runtime.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/Runtime/Gecko_ExceptionPPC.cpp", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/Runtime/NMWException.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(MatchingFor("G4QE01"), "PowerPC_EABI_Support/Runtime/GCN_mem_alloc.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "PowerPC_EABI_Support/Runtime/__init_cpp_exceptions.cpp", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "PowerPC_EABI_Support/Runtime/__mem.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "PowerPC_EABI_Support/Runtime/__va_arg.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "PowerPC_EABI_Support/Runtime/global_destructor_chain.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "PowerPC_EABI_Support/Runtime/ptmf.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "PowerPC_EABI_Support/Runtime/runtime.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "PowerPC_EABI_Support/Runtime/Gecko_ExceptionPPC.cpp", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "PowerPC_EABI_Support/Runtime/NMWException.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "PowerPC_EABI_Support/Runtime/GCN_mem_alloc.c", extra_cflags=["-inline auto"]),
         ],
     ),
     RuntimeLib_MSL_C(
@@ -749,7 +749,7 @@ config.libs = [
     GameLib(
         "SMS (Super Mario Strikers)",
         [
-            Object(MatchingFor("G4QE01"), "Game/main.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "Game/main.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/ComUpdateTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/FrontEndTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/GameRenderTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -1348,15 +1348,6 @@ config.libs = [
         ],
     ),
 
-    GameLib(
-        "NL (Next Level Library)",
-        [
-            # Object(MatchingFor("G4QE01"), "Game/Drawable/DrawableObj.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            # Object(MatchingFor("G4QE01"), "Game/Drawable/DrawableTmModel.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            # Object(MatchingFor("G4QE01"), "Game/Drawable/DrawableSkinModel.cpp", extra_cflags=["-inline auto"]),
-        ],
-    ),
-
     ODELib(
         "Open Dynamics Engine (ODE)",
         [
@@ -1376,11 +1367,9 @@ config.libs = [
             Object(MatchingFor("G4QE01"), "ode/quickstep.cpp", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "ode/rotation.cpp", extra_cflags=["-inline auto", "-inline off"]),
             Object(MatchingFor("G4QE01"), "ode/util.cpp", extra_cflags=["-inline auto"]),
-
             Object(MatchingFor("G4QE01"), "ode/ext/dColumn.cpp", extra_cflags=["-inline auto", "-inline off"]),
             Object(MatchingFor("G4QE01"), "ode/ext/dFinitePlane.cpp", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "ode/ext/dRoundedCorner.cpp", extra_cflags=["-inline auto"]),
-
             Object(MatchingFor("G4QE01"), "ode/odemath.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
         ],
     ),

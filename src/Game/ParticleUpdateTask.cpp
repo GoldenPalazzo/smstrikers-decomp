@@ -1,10 +1,9 @@
 #include "Game/ParticleUpdateTask.h"
 #include "Game/GameRenderTask.h"
 #include "Game/Effects/EmissionManager.h"
+#include "Game/main.h"
 
 float ParticleUpdateTask::sfTimeScale = 1.0f;
-
-extern bool g_e3_Build;
 
 /**
  * Offset/Address/Size: 0x64 | 0x80170B4C | size: 0x8

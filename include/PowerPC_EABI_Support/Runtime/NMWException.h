@@ -27,7 +27,7 @@ typedef struct DestructorChain {
 	void* object;
 } DestructorChain;
 
-extern void* __register_global_object(void* object, void* destructor, void* registration);
+extern void* __register_global_object(void* object, void* destructor, void* regmem);
 extern void __destroy_global_chain(void);
 
 extern void __end__catch(CatchInfo* catchinfo);

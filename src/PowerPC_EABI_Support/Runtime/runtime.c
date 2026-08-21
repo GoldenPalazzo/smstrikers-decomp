@@ -136,6 +136,9 @@ static const unsigned long long __constants[] = {
 };
 
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8023A5B8 | size: 0x5C
+ */
 asm unsigned long __cvt_fp2unsigned(register double d) {
   nofralloc 
   stwu r1, -0x10(r1)
@@ -166,6 +169,9 @@ lbl_803899A8:
 }
 
 
+/**
+ * Offset/Address/Size: 0x5C | 0x8023A614 | size: 0x4C
+ */
 asm void __save_fpr() {
   ENTRY_SAVE_FPR(14)
 	ENTRY_SAVE_FPR2(14)
@@ -224,6 +230,9 @@ asm void __save_fpr() {
 		blr
 }
 
+/**
+ * Offset/Address/Size: 0xA8 | 0x8023A660 | size: 0x4C
+ */
 asm void __restore_fpr(void) {
   nofralloc
   ENTRY_RESTORE_FPR(14)
@@ -283,6 +292,9 @@ asm void __restore_fpr(void) {
   blr
 }
 
+/**
+ * Offset/Address/Size: 0xF4 | 0x8023A6AC | size: 0x4C
+ */
 asm void __save_gpr(void) {
 	nofralloc
   ENTRY_SAVE_GPR(14)
@@ -324,6 +336,9 @@ asm void __save_gpr(void) {
   blr
 }
 
+/**
+ * Offset/Address/Size: 0x140 | 0x8023A6F8 | size: 0x4C
+ */
 asm void __restore_gpr(void) {
   nofralloc
   ENTRY_RESTORE_GPR(14)
@@ -365,6 +380,9 @@ asm void __restore_gpr(void) {
   blr
 }
 
+/**
+ * Offset/Address/Size: 0x18C | 0x8023A744 | size: 0xEC
+ */
 asm void __div2u(void) {
   nofralloc
   cmpwi r3, 0
@@ -437,6 +455,9 @@ lbl_80389BC0:
   blr
 }
 
+/**
+ * Offset/Address/Size: 0x278 | 0x8023A830 | size: 0x138
+ */
 asm void __div2i(void) {
   nofralloc
   stwu r1, -0x10(r1)
@@ -531,6 +552,9 @@ lbl_80389CFC:
   blr
 }
 
+/**
+ * Offset/Address/Size: 0x3B0 | 0x8023A968 | size: 0xE4
+ */
 asm void __mod2u() {
   nofralloc
   cmpwi r3, 0
@@ -600,6 +624,9 @@ lbl_80389DD4:
   blr
 }
 
+/**
+ * Offset/Address/Size: 0x494 | 0x8023AA4C | size: 0x10C
+ */
 asm void __mod2i(void) {
   nofralloc
   cmpwi cr7, r3, 0
@@ -682,6 +709,9 @@ lbl_80389EE4:
   blr
 }
 
+/**
+ * Offset/Address/Size: 0x5A0 | 0x8023AB58 | size: 0x24
+ */
 asm void __shl2i() {
   nofralloc
   subfic r8, r5, 0x20
@@ -695,6 +725,9 @@ asm void __shl2i() {
   blr
 }
 
+/**
+ * Offset/Address/Size: 0x5C4 | 0x8023AB7C | size: 0x24
+ */
 asm void __shr2u() {
   nofralloc
   subfic r8, r5, 0x20
@@ -708,6 +741,9 @@ asm void __shr2u() {
   blr
 }
 
+/**
+ * Offset/Address/Size: 0x5E8 | 0x8023ABA0 | size: 0x28
+ */
 asm void __shr2i() {
   nofralloc
   subfic r8, r5, 0x20
@@ -723,59 +759,9 @@ lbl_80389F5C:
   blr
 }
 
-// asm void __cvt_sll_flt(void) {
-//   nofralloc
-//   stwu r1, -0x10(r1)
-//   rlwinm. r5, r3, 0, 0, 0
-//   beq lbl_80389F78
-//   subfic r4, r4, 0
-//   subfze r3, r3
-// lbl_80389F78:
-//   or. r7, r3, r4
-//   li r6, 0
-//   beq lbl_8038A000
-//   cntlzw r7, r3
-//   cntlzw r8, r4
-//   rlwinm r9, r7, 0x1a, 0, 4
-//   srawi r9, r9, 0x1f
-//   and r9, r9, r8
-//   add r7, r7, r9
-//   subfic r8, r7, 0x20
-//   addic r9, r7, -32
-//   slw r3, r3, r7
-//   srw r10, r4, r8
-//   or r3, r3, r10
-//   slw r10, r4, r9
-//   or r3, r3, r10
-//   slw r4, r4, r7
-//   subf r6, r7, r6
-//   clrlwi r7, r4, 0x15
-//   cmpwi r7, 0x400
-//   addi r6, r6, 0x43e
-//   blt lbl_80389FE8
-//   bgt lbl_80389FDC
-//   rlwinm. r7, r4, 0, 0x14, 0x14
-//   beq lbl_80389FE8
-// lbl_80389FDC:
-//   addic r4, r4, 0x800
-//   addze r3, r3
-//   addze r6, r6
-// lbl_80389FE8:
-//   rotlwi r4, r4, 0x15
-//   rlwimi r4, r3, 0x15, 0, 0xa
-//   rlwinm r3, r3, 0x15, 0xc, 0x1f
-//   slwi r6, r6, 0x14
-//   or r3, r6, r3
-//   or r3, r5, r3
-// lbl_8038A000:
-//   stw r3, 8(r1)
-//   stw r4, 0xc(r1)
-//   lfd f1, 8(r1)
-//   frsp f1, f1
-//   addi r1, r1, 0x10
-//   blr
-// }
-
+/**
+ * Offset/Address/Size: 0x610 | 0x8023ABC8 | size: 0xCC
+ */
 asm unsigned long __cvt_dbl_usll(register double d) {
   nofralloc
   stwu r1, -0x10(r1)

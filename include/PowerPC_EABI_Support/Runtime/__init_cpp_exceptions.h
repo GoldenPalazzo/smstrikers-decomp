@@ -3,6 +3,7 @@
 
 #include "types.h"
 
+/* clang-format off */
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -13,5 +14,6 @@ void __fini_cpp_exceptions(void);
 #ifdef __cplusplus
 }
 #endif
+/* clang-format on */
 
 #endif

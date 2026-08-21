@@ -1,8 +1,8 @@
 #include "Game/TweakerTask.h"
 
 #include "NL/globalpad.h"
+#include "Game/main.h"
 
-extern bool g_bTweaking;
 extern bool g_bEnableGamecubePadMonkey;
 
 /**

@@ -1,6 +1,6 @@
 #include "dolphin/os.h"
 
-inline static void InitDefaultHeap(void)
+static void InitDefaultHeap(void)
 {
     void* arenaLo;
     void* arenaHi;
@@ -21,6 +21,9 @@ inline static void InitDefaultHeap(void)
     OSSetArenaLo(arenaLo = arenaHi);
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8023AD78 | size: 0xB8
+ */
 void __sys_free(void* p)
 {
     if (__OSCurrHeap == -1)
@@ -31,12 +34,15 @@ void __sys_free(void* p)
     OSFreeToHeap(__OSCurrHeap, p);
 }
 
-void __sys_alloc(int a)
+/**
+ * Offset/Address/Size: 0xB8 | 0x8023AE30 | size: 0xB8
+ */
+void* __sys_alloc(u32 size)
 {
     if (__OSCurrHeap == -1)
     {
         InitDefaultHeap();
     }
 
-    OSAllocFromHeap(__OSCurrHeap, a);
+    return OSAllocFromHeap(__OSCurrHeap, size);
 }

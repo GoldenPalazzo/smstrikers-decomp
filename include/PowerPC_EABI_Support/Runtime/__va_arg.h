@@ -3,6 +3,7 @@
 
 #include "types.h"
 
+/* clang-format off */
 typedef struct {
   char gpr;
   char fpr;
@@ -17,5 +18,6 @@ typedef enum {
   DOUBLEWORD,
   REAL,
 } _va_arg_type;
+/* clang-format on */
 
 #endif

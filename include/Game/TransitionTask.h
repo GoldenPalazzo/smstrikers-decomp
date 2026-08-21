@@ -52,4 +52,6 @@ public:
     static TransitionTask* sm_pGlobalTask;
 }; // total size: 0x30
 
+extern bool g_bFrameStatsOnDisk;
+
 #endif // _TRANSITIONTASK_H_

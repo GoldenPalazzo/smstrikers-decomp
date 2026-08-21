@@ -72,33 +72,16 @@
 #include "dolphin/si.h"
 #include "dolphin/card.h"
 
-extern u8 g_DoStackWatermarkTests;
-extern u8 g_StackWatermarkFiller;
-extern bool g_bFrameSmiler;
-extern bool g_bFrameStatsOnScreen;
-extern u8 g_bFrameStatsOnDisk;
-extern bool g_bRunSimAndRenderInLockStep;
-extern ResetTask resetTask;
-extern BeginFrameTask beginFrameTask;
-extern DispatchEventsTask dispatchEventsTask;
-extern PlatPadUpdateTask platPadUpdateTask;
-extern FixedUpdateTask fixedUpdateTask;
-extern WorldUpdateTask worldUpdateTask;
-extern GameRenderTask gameRenderTask;
-extern FrontEndTask frontEndTask;
-extern ParticleUpdateTask particleUpdateTask;
-extern TweakerTask tweakerTask;
-extern EndFrameTask endFrameTask;
-extern TransitionTask transitionTask;
-extern ComUpdateTask comUpdateTask;
-extern TestTask testTask;
-extern GLInventory glInventory;
-extern ShapeRender g_ShapeRenderer;
-
 class AudioUpdateTask : public nlTask
 {
 public:
+    /**
+     * Offset/Address/Size: 0x1BB4 | 0x801750C4 | size: 0x8
+     */
     virtual const char* GetName() { return "Audio"; }
+    /**
+     * Offset/Address/Size: 0x1BBC | 0x801750CC | size: 0x20
+     */
     virtual void Run(float dt)
     {
         Audio::Update(dt);
@@ -108,7 +91,13 @@ public:
 class ClockUpdateTask : public nlTask
 {
 public:
+    /**
+     * Offset/Address/Size: 0x1BDC | 0x801750EC | size: 0x8
+     */
     virtual const char* GetName() { return "Clock"; }
+    /**
+     * Offset/Address/Size: 0x1BE4 | 0x801750F4 | size: 0x20
+     */
     virtual void Run(float dt)
     {
         ClockManager::Update(dt);
@@ -119,29 +108,29 @@ bool g_bProfiling = false;
 bool g_bTweaking = false;
 bool g_e3_Build = false;
 bool g_Europe = false;
-static bool g_bFranticPausing = false;
-int g_Language = 0;
-static void* g_pTheLoadingManagerTask = nullptr;
+bool g_bFranticPausing = false;
+nlLocalization::nlLanguage g_Language = nlLocalization::LangEnglish;
+LoadingManager* g_pTheLoadingManagerTask = nullptr;
 
 FrameCounter g_FrameCounter("frame", "send");
 
-ComUpdateTask comUpdateTask;
-TransitionTask transitionTask;
-DispatchEventsTask dispatchEventsTask;
-PlatPadUpdateTask platPadUpdateTask;
-FrontEndTask frontEndTask;
-WorldUpdateTask worldUpdateTask;
-GameRenderTask gameRenderTask;
-ParticleUpdateTask particleUpdateTask;
+static ComUpdateTask comUpdateTask;
+static TransitionTask transitionTask;
+static DispatchEventsTask dispatchEventsTask;
+static PlatPadUpdateTask platPadUpdateTask;
+static FrontEndTask frontEndTask;
+static WorldUpdateTask worldUpdateTask;
+static GameRenderTask gameRenderTask;
+static ParticleUpdateTask particleUpdateTask;
 static ClockUpdateTask clockUpdateTask;
-BeginFrameTask beginFrameTask;
+static BeginFrameTask beginFrameTask;
 static AudioUpdateTask audioUpdateTask;
-EndFrameTask endFrameTask;
-TweakerTask tweakerTask;
-FixedUpdateTask fixedUpdateTask;
+static EndFrameTask endFrameTask;
+static TweakerTask tweakerTask;
+static FixedUpdateTask fixedUpdateTask;
 
-TestTask testTask;
-ResetTask resetTask;
+static TestTask testTask;
+static ResetTask resetTask;
 
 static void Initialize();
 static void SetupViews();
@@ -149,10 +138,17 @@ static void AddTasks();
 static void PreInitFS();
 static void DoMemCheck();
 
-int GetRegion()
+/**
+ * Offset/Address/Size: 0x1BAC | 0x801750BC | size: 0x8
+ */
+const int* GetRegion()
 {
+#if defined(VERSION_G4QJ01)
+    static const int g_Region = 2;
+#else
     static const int g_Region = 0;
-    return (int)&g_Region;
+#endif
+    return &g_Region;
 }
 
 static void PreInitFS()
@@ -170,12 +166,14 @@ static void Initialize()
         Bind<void>(MemFun<ResetTask, void>(&ResetTask::FSCheckForReset), &resetTask)));
 
     nlInit();
-    if (!glStartup())
+    bool glStartupSuccessful = glStartup();
+    if (!glStartupSuccessful)
     {
         nlBreak();
     }
     nlSetRandomSeed(OSGetTick(), &nlDefaultSeed);
-    if (!glLoadTextureBundle("global.glt"))
+    bool globalTexturesLoaded = glLoadTextureBundle("global.glt");
+    if (!globalTexturesLoaded)
     {
         nlBreak();
     }
@@ -251,42 +249,41 @@ static void Initialize()
     }
 
     TransitionTask::sm_pGlobalTask = &transitionTask;
-    transitionTask.Initialize(*(LoadingManager*)g_pTheLoadingManagerTask);
+    transitionTask.Initialize(*g_pTheLoadingManagerTask);
 
     testTask.Initialize();
     nlLocalization::Initialize();
 
-    const char* diskId = (const char*)DVDGetCurrentDiskID();
-    if (diskId[0] == 'G' && diskId[1] == '4' && diskId[2] == 'Q' && diskId[3] == 'P')
+    DVDDiskID* diskid = DVDGetCurrentDiskID();
+    if (diskid->gameName[0] == 'G' && diskid->gameName[1] == '4' && diskid->gameName[2] == 'Q' && diskid->gameName[3] == 'P')
     {
-        u8 lang = (u8)OSGetLanguage();
-        switch (lang)
+        switch (OSGetLanguage())
         {
         case 1:
-            g_Language = 2;
+            g_Language = nlLocalization::LangGerman;
             break;
         case 2:
-            g_Language = 1;
+            g_Language = nlLocalization::LangFrench;
             break;
         case 3:
-            g_Language = 3;
+            g_Language = nlLocalization::LangSpanish;
             break;
         case 4:
-            g_Language = 4;
+            g_Language = nlLocalization::LangItalian;
             break;
         default:
-            g_Language = 6;
+            g_Language = nlLocalization::LangUKEnglish;
             break;
         }
         g_Europe = true;
     }
-    else if (diskId[0] == 'G' && diskId[1] == '4' && diskId[2] == 'Q' && diskId[3] == 'J')
+    else if (diskid->gameName[0] == 'G' && diskid->gameName[1] == '4' && diskid->gameName[2] == 'Q' && diskid->gameName[3] == 'J')
     {
-        g_Language = 5;
+        g_Language = nlLocalization::LangJapanese;
     }
-    else if (diskId[0] == 'G' && diskId[1] == '4' && diskId[2] == 'Q' && diskId[3] == 'E')
+    else if (diskid->gameName[0] == 'G' && diskid->gameName[1] == '4' && diskid->gameName[2] == 'Q' && diskid->gameName[3] == 'E')
     {
-        g_Language = 0;
+        g_Language = nlLocalization::LangEnglish;
     }
     else
     {
@@ -295,35 +292,35 @@ static void Initialize()
 
         if (nlStrICmp(userlanguage.c_str(), "eng") == 0)
         {
-            g_Language = 0;
+            g_Language = nlLocalization::LangEnglish;
         }
         else if (nlStrICmp(userlanguage.c_str(), "jpn") == 0)
         {
-            g_Language = 5;
+            g_Language = nlLocalization::LangJapanese;
         }
         else if (nlStrICmp(userlanguage.c_str(), "deu") == 0)
         {
-            g_Language = 2;
+            g_Language = nlLocalization::LangGerman;
         }
         else if (nlStrICmp(userlanguage.c_str(), "fre") == 0)
         {
-            g_Language = 1;
+            g_Language = nlLocalization::LangFrench;
         }
         else if (nlStrICmp(userlanguage.c_str(), "ita") == 0)
         {
-            g_Language = 4;
+            g_Language = nlLocalization::LangItalian;
         }
         else if (nlStrICmp(userlanguage.c_str(), "spa") == 0)
         {
-            g_Language = 3;
+            g_Language = nlLocalization::LangSpanish;
         }
         else if (nlStrICmp(userlanguage.c_str(), "uke") == 0)
         {
-            g_Language = 6;
+            g_Language = nlLocalization::LangUKEnglish;
         }
         else if (nlStrICmp(userlanguage.c_str(), "longest") == 0)
         {
-            g_Language = 7;
+            g_Language = nlLocalization::LangLongestStrings;
         }
     }
 
@@ -391,7 +388,7 @@ static void AddTasks()
     nlTaskManager::AddTask(&audioUpdateTask, 0xe, -1);
     nlTaskManager::AddTask(&endFrameTask, 0xf, -1);
     nlTaskManager::AddTask(&transitionTask, 1, -1);
-    nlTaskManager::AddTask((nlTask*)g_pTheLoadingManagerTask, 6, -1);
+    nlTaskManager::AddTask(g_pTheLoadingManagerTask, 6, -1);
 
     if (!GetConfigBool(Config::Global(), "DisableComListener", false))
     {
@@ -403,6 +400,9 @@ static void AddTasks()
     }
 }
 
+/**
+ * Offset/Address/Size: 0x224 | 0x80173734 | size: 0x130
+ */
 static void SetupViews()
 {
     static eGLView sort_none[] = {
@@ -413,22 +413,22 @@ static void SetupViews()
         GLV_ShadowBlend0, GLV_ShadowBlend1, GLV_ScreenBlur, GLV_ScreenBlur2
     };
 
-    for (s32 i = 0; i < GLV_Num; i++)
+    for (int iview = 0; iview < GLV_Num; iview++)
     {
-        glViewSetTarget((eGLView)i, GLTG_Main);
+        glViewSetTarget((eGLView)iview, GLTG_Main);
     }
 
     glViewSetSortMode(GLV_FrontEnd, GLVSort_TransformedDepth);
     glViewSetSortMode(GLV_Anark, GLVSort_Reverse);
 
-    for (u32 j = 0; j < 12; j++)
+    for (int iview = 0; iview < sizeof(sort_none) / sizeof(eGLView); iview++)
     {
-        glViewSetSortMode(sort_none[j], GLVSort_None);
+        glViewSetSortMode(sort_none[iview], GLVSort_None);
     }
 
-    for (u32 j = 0; j < 4; j++)
+    for (int iview = 0; iview < sizeof(disabled_views) / sizeof(eGLView); iview++)
     {
-        glViewSetEnable(disabled_views[j], false);
+        glViewSetEnable(disabled_views[iview], false);
     }
 
     u32 uWarbleTexture = glGetTexture("target/warble");
@@ -455,7 +455,10 @@ static void DoMemCheck()
 {
 }
 
-int main(void)
+/**
+ * Offset/Address/Size: 0x0 | 0x80173510 | size: 0x224
+ */
+int main()
 {
     if (g_DoStackWatermarkTests)
     {
@@ -466,17 +469,14 @@ int main(void)
 
     fopen("flushfile.txt", "r");
 
-    bool skipfe = GetConfigBool(Config::Global(), "skipfe", false);
-    nlTaskManager::SetNextState(skipfe ? 2 : 4);
+    nlTaskManager::SetNextState(GetConfigBool(Config::Global(), "skipfe", false) ? 2 : 4);
 
-    bool enableFPE = GetConfigBool(Config::Global(), "enableFloatingPointExceptions", false);
-    if (enableFPE)
+    if (GetConfigBool(Config::Global(), "enableFloatingPointExceptions", false))
     {
         InstallFloatingPointExceptionHandler();
     }
 
-    bool enableCSD = GetConfigBool(Config::Global(), "callStackDumper", false);
-    if (enableCSD)
+    if (GetConfigBool(Config::Global(), "callStackDumper", false))
     {
         InstallCallStackDumper();
     }
