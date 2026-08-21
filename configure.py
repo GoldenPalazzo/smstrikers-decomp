@@ -1351,7 +1351,7 @@ config.libs = [
     ODELib(
         "Open Dynamics Engine (ODE)",
         [
-            Object(MatchingFor("G4QE01"), "ode/NLGAdditions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "ode/NLGAdditions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "ode/collision_kernel.cpp", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "ode/collision_space.cpp", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "ode/collision_std.cpp", extra_cflags=["-inline auto", "-fp_contract on"]),

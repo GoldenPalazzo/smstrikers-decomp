@@ -2,49 +2,49 @@
 
 #include "NL/nlMath.h"
 #include "ode/matrix.h"
+#include "ode/odemath.h"
 #include "objects.h"
 #include "collision_kernel.h"
-
-extern dxJoint* createJoint(dWorldID w, dJointGroupID group, dxJoint::Vtable* vtable);
+#include "collision_space_internal.h"
 
 /**
  * Offset/Address/Size: 0x5C0 | 0x80224888 | size: 0x38
  */
-void dBodySetUpdateMode(dxBody* body, int arg1, int arg2)
+void dBodySetUpdateMode(dxBody* b, int updateLinear, int updateAngular)
 {
-    body->flags = (s32)(body->flags & 0xFFFFFF9F);
-    if (arg1 == 0)
+    b->flags &= ~0x60;
+    if (updateLinear == 0)
     {
-        body->flags = (s32)(body->flags | 0x20);
+        b->flags |= 0x20;
     }
-    if (arg2 == 0)
+    if (updateAngular == 0)
     {
-        body->flags = (s32)(body->flags | 0x40);
+        b->flags |= 0x40;
     }
 }
 
 /**
  * Offset/Address/Size: 0x5B8 | 0x80224880 | size: 0x8
  */
-dxBody* dWorldGetFirstBody(dxWorld* world)
+dxBody* dWorldGetFirstBody(dxWorld* w)
 {
-    return world->firstbody;
+    return w->firstbody;
 }
 
 /**
  * Offset/Address/Size: 0x5B0 | 0x80224878 | size: 0x8
  */
-dxBody* dBodyGetNextBody(dxBody* body)
+dxBody* dBodyGetNextBody(dxBody* b)
 {
-    return (dxBody*)body->next;
+    return (dxBody*)b->next;
 }
 
 /**
  * Offset/Address/Size: 0x5A8 | 0x80224870 | size: 0x8
  */
-void dWorldSetClearAccumulators(dxWorld* world, int flags)
+void dWorldSetClearAccumulators(dxWorld* w, int doClear)
 {
-    world->clear_accumulators = flags;
+    w->clear_accumulators = doClear;
 }
 
 /**
@@ -57,25 +57,20 @@ void dClearCachedData()
 /**
  * Offset/Address/Size: 0x590 | 0x80224858 | size: 0x14
  */
-static void characterInit(dxJointCharacter* character)
+static void characterInit(dxJointCharacter* j)
 {
-    character->direction[0] = 0.f;
-    character->direction[1] = 0.f;
-    character->direction[2] = 0.f;
+    j->direction[0] = 0.f;
+    j->direction[1] = 0.f;
+    j->direction[2] = 0.f;
 }
 
 /**
  * Offset/Address/Size: 0x57C | 0x80224844 | size: 0x14
  */
-static void characterGetInfo1(dxJointCharacter* joint, dxJoint::Info1* info)
+static void characterGetInfo1(dxJointCharacter* j, dxJoint::Info1* info)
 {
     info->m = 4;
     info->nub = 0;
-}
-
-static inline dReal nlgDot(const dReal* a, const dReal* b)
-{
-    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
 /**
@@ -83,13 +78,11 @@ static inline dReal nlgDot(const dReal* a, const dReal* b)
  */
 static void characterGetInfo2(dxJointCharacter* j, dxJoint::Info2* info)
 {
-    // Row 0: angular identity
     info->J1a[0] = 1;
     info->c[0] = 0;
     info->lo[0] = -dInfinity;
     info->hi[0] = dInfinity;
 
-    // Row 1
     {
         int row = info->rowskip + 1;
         info->J1a[row] = 1;
@@ -98,7 +91,6 @@ static void characterGetInfo2(dxJointCharacter* j, dxJoint::Info2* info)
     info->lo[1] = -dInfinity;
     info->hi[1] = dInfinity;
 
-    // Row 2
     {
         int row = info->rowskip * 2 + 2;
         info->J1a[row] = 1;
@@ -107,14 +99,12 @@ static void characterGetInfo2(dxJointCharacter* j, dxJoint::Info2* info)
     info->lo[2] = -dInfinity;
     info->hi[2] = dInfinity;
 
-    // Row 3: linear Jacobian = body R * direction
-    dxBody* body = ((dxJoint*)j)->node[0].body;
-    dReal* R = (dReal*)((u8*)body + 0xB8);
+    dReal* R = ((dxJoint*)j)->node[0].body->R;
     unsigned int jStart = info->rowskip * 3;
 
-    dReal v0 = nlgDot(R, j->direction);
-    dReal v1 = nlgDot(R + 4, j->direction);
-    dReal v2 = nlgDot(R + 8, j->direction);
+    dReal v0 = dDOT(R, j->direction);
+    dReal v1 = dDOT(R + 4, j->direction);
+    dReal v2 = dDOT(R + 8, j->direction);
 
     info->J1l[jStart] = v0;
     {
@@ -142,36 +132,161 @@ dxJoint::Vtable __dcharacter_vtable = {
 /**
  * Offset/Address/Size: 0x3F4 | 0x802246BC | size: 0x28
  */
-dxJoint* dJointCreateCharacter(dxWorld* world, dxJointGroup* jointGroup)
+dxJoint* dJointCreateCharacter(dxWorld* w, dxJointGroup* group)
 {
-    return createJoint(world, jointGroup, &__dcharacter_vtable);
+    return createJoint(w, group, &__dcharacter_vtable);
 }
 
 /**
  * Offset/Address/Size: 0x3D8 | 0x802246A0 | size: 0x1C
  */
-void dJointSetCharacterNoMotionDirection(dxJoint* joint, float* v3)
+void dJointSetCharacterNoMotionDirection(dxJoint* id, float* dir)
 {
-    dxJointCharacter* c = (dxJointCharacter*)joint;
-    c->direction[0] = v3[0];
-    c->direction[1] = v3[1];
-    c->direction[2] = v3[2];
+    dxJointCharacter* joint = (dxJointCharacter*)id;
+    joint->direction[0] = dir[0];
+    joint->direction[1] = dir[1];
+    joint->direction[2] = dir[2];
+}
+
+static void dGeomGetPosition(dxGeom* g, dReal* out)
+{
+    out[0] = g->pos[0];
+    out[1] = g->pos[1];
+    out[2] = g->pos[2];
+    out[3] = g->pos[3];
+}
+
+static void dGeomGetRotation(dxGeom* g, dReal* out)
+{
+    int i;
+
+    for (i = 0; i < 12; i++)
+    {
+        out[i] = g->R[i];
+    }
+}
+
+static bool dGeomIsPlaceable(dxGeom* g)
+{
+    return (g->gflags & GEOM_PLACEABLE) != 0;
 }
 
 /**
  * Offset/Address/Size: 0x3D0 | 0x80224698 | size: 0x8
  */
-int dGeomGetGFlags(dxGeom* geom)
+int dGeomGetGFlags(dxGeom* g)
 {
-    return geom->gflags;
+    return g->gflags;
 }
 
 /**
  * Offset/Address/Size: 0x3C8 | 0x80224690 | size: 0x8
  */
-void dGeomSetGFlags(dxGeom* geom, int flags)
+void dGeomSetGFlags(dxGeom* g, int gflags)
 {
-    geom->gflags = flags;
+    g->gflags = gflags;
+}
+
+static int dBodyGetFlags(dxBody* b)
+{
+    return b->flags;
+}
+
+static void dBodySetFlags(dxBody* b, int flags)
+{
+    b->flags = flags;
+}
+
+static void dBodyGetRotation(dxBody* b, dReal* out)
+{
+    int i;
+
+    for (i = 0; i < 12; i++)
+    {
+        out[i] = b->R[i];
+    }
+}
+
+static int dBodyGetAutoDisableStepsRemain(dxBody* b)
+{
+    return b->adis_stepsleft;
+}
+
+static void dBodySetAutoDisableStepsRemain(dxBody* b, int steps_remain)
+{
+    b->adis_stepsleft = steps_remain;
+}
+
+static dReal dBodyGetAutoDisableTimeRemain(dxBody* b)
+{
+    return b->adis_timeleft;
+}
+
+static void dBodySetAutoDisableTimeRemain(dxBody* b, dReal time_remain)
+{
+    b->adis_timeleft = time_remain;
+}
+
+static void dMassGetParameters(dMass* m, dReal& themass, dReal& cgx, dReal& cgy, dReal& cgz,
+    dReal& I11, dReal& I22, dReal& I33, dReal& I12, dReal& I13,
+    dReal& I23)
+{
+    themass = m->mass;
+    cgx = m->c[0];
+    cgy = m->c[1];
+    cgz = m->c[2];
+    I11 = m->I[0];
+    I22 = m->I[5];
+    I33 = m->I[10];
+    I12 = m->I[1];
+    I13 = m->I[2];
+    I23 = m->I[6];
+}
+
+static void dWorldGetParameters(dxWorld* w, dReal* gravity, dReal& global_erp, dReal& global_cfm,
+    dReal& adis_linear_threshold, dReal& adis_angular_threshold,
+    dReal& adis_idle_time, int& adis_idle_steps, int& adis_flag,
+    int& qs_num_iterations, dReal& qs_w, dReal& contact_max_vel,
+    dReal& contact_min_depth, int& clear_accumulators)
+{
+    gravity[0] = w->gravity[0];
+    gravity[1] = w->gravity[1];
+    gravity[2] = w->gravity[2];
+    global_erp = w->global_erp;
+    global_cfm = w->global_cfm;
+    adis_linear_threshold = w->adis.linear_threshold;
+    adis_angular_threshold = w->adis.angular_threshold;
+    adis_idle_time = w->adis.idle_time;
+    adis_idle_steps = w->adis.idle_steps;
+    adis_flag = w->adis_flag;
+    qs_num_iterations = w->qs.num_iterations;
+    qs_w = w->qs.w;
+    contact_max_vel = w->contactp.max_vel;
+    contact_min_depth = w->contactp.min_depth;
+    clear_accumulators = w->clear_accumulators;
+}
+
+static void dWorldSetParameters(dxWorld* w, dReal* gravity, dReal global_erp, dReal global_cfm,
+    dReal adis_linear_threshold, dReal adis_angular_threshold,
+    dReal adis_idle_time, int adis_idle_steps, int adis_flag,
+    int qs_num_iterations, dReal qs_w, dReal contact_max_vel,
+    dReal contact_min_depth, int clear_accumulators)
+{
+    w->gravity[0] = gravity[0];
+    w->gravity[1] = gravity[1];
+    w->gravity[2] = gravity[2];
+    w->global_erp = global_erp;
+    w->global_cfm = global_cfm;
+    w->adis.linear_threshold = adis_linear_threshold;
+    w->adis.angular_threshold = adis_angular_threshold;
+    w->adis.idle_time = adis_idle_time;
+    w->adis.idle_steps = adis_idle_steps;
+    w->adis_flag = adis_flag;
+    w->qs.num_iterations = qs_num_iterations;
+    w->qs.w = qs_w;
+    w->contactp.max_vel = contact_max_vel;
+    w->contactp.min_depth = contact_min_depth;
+    w->clear_accumulators = clear_accumulators;
 }
 
 /**
@@ -192,9 +307,17 @@ void dMultiplyMatrix3Vector3(float* result, const float* R, const float* v, bool
 /**
  * Offset/Address/Size: 0x314 | 0x802245DC | size: 0x2C
  */
-void dMultiplyMatrix4Vector4(float* m1, const float* m2, const float* m3)
+void dMultiplyMatrix4Vector4(float* result, const float* T, const float* v)
 {
-    dMultiply0(m1, m2, m3, 4, 4, 1);
+    dMultiply0(result, T, v, 4, 4, 1);
+}
+
+static void dInvertRigidTransformation(dReal* TInv, const dReal* T)
+{
+    dVector3 p;
+
+    dExtractColumn3(p, T, 3);
+    dInvertRigidTransformation(TInv, T, p);
 }
 
 /**
@@ -202,33 +325,20 @@ void dMultiplyMatrix4Vector4(float* m1, const float* m2, const float* m3)
  */
 void dInvertRigidTransformation(dReal* TInv, const dReal* R, const dReal* p)
 {
-    dReal a = R[0];
-    dReal b = R[4];
     dVector3 temp;
 
-    TInv[0] = a;
-    a = R[8];
-    TInv[1] = b;
-    b = R[1];
-    TInv[2] = a;
-    a = R[5];
-    TInv[4] = b;
-    b = R[9];
-    TInv[5] = a;
-    a = R[2];
-    TInv[6] = b;
-    b = R[6];
-    TInv[8] = a;
-    a = R[10];
-    TInv[9] = b;
-    TInv[10] = a;
+    TInv[0] = R[0];
+    TInv[1] = R[4];
+    TInv[2] = R[8];
+    TInv[4] = R[1];
+    TInv[5] = R[5];
+    TInv[6] = R[9];
+    TInv[8] = R[2];
+    TInv[9] = R[6];
+    TInv[10] = R[10];
 
     dMultiply0(temp, TInv, p, 3, 3, 1);
-
-    dReal neg = REAL(-1.0);
-    temp[0] *= neg;
-    temp[1] *= neg;
-    temp[2] *= neg;
+    dVectorScale(temp, REAL(-1.0));
 
     TInv[3] = temp[0];
     TInv[7] = temp[1];
@@ -242,15 +352,54 @@ void dInvertRigidTransformation(dReal* TInv, const dReal* R, const dReal* p)
 /**
  * Offset/Address/Size: 0x214 | 0x802244DC | size: 0x24
  */
-void dExtractColumn3(float* __restrict arg0, const float* __restrict arg1, int col)
+void dExtractColumn3(float* __restrict v, const float* __restrict M, int columnIndex)
 {
-    float v0;
+    v[0] = M[columnIndex];
+    v[1] = M[columnIndex + 4];
+    v[2] = M[columnIndex + 8];
+}
 
-    v0 = arg1[col];
-    arg1 += col;
-    arg0[0] = v0;
-    arg0[1] = arg1[4];
-    arg0[2] = arg1[8];
+static void dExtractColumn4(dReal* v, const dReal* M, int columnIndex)
+{
+    v[0] = M[columnIndex];
+    v[1] = M[columnIndex + 4];
+    v[2] = M[columnIndex + 8];
+    v[3] = M[columnIndex + 12];
+}
+
+static void dSetColumn3(dReal* M, const dReal* v, int columnIndex)
+{
+    M[columnIndex] = v[0];
+    M[columnIndex + 4] = v[1];
+    M[columnIndex + 8] = v[2];
+}
+
+static void dSetColumn4(dReal* M, const dReal* v, int columnIndex)
+{
+    M[columnIndex] = v[0];
+    M[columnIndex + 4] = v[1];
+    M[columnIndex + 8] = v[2];
+    M[columnIndex + 12] = v[3];
+}
+
+static void dConstructMatrix3(dReal* R, const dReal* v1, const dReal* v2, const dReal* v3)
+{
+    dSetColumn3(R, v1, 0);
+    dSetColumn3(R, v2, 1);
+    dSetColumn3(R, v3, 2);
+}
+
+static void dConstructMatrix4(dReal* T, const dReal* v1, const dReal* v2, const dReal* v3,
+    const dReal* p)
+{
+    dSetColumn3(T, v1, 0);
+    dSetColumn3(T, v2, 1);
+    dSetColumn3(T, v3, 2);
+    dSetColumn3(T, p, 3);
+    T[12] = REAL(0.0);
+    T[13] = REAL(0.0);
+    T[14] = REAL(0.0);
+    T[15] = REAL(1.0);
 }
 
 /**
@@ -277,80 +426,54 @@ void dVector4Set(float* v, float x, float y, float z, float w)
 /**
  * Offset/Address/Size: 0x1C8 | 0x80224490 | size: 0x28
  */
-void dVectorScale(float* v1, float arg8)
+void dVectorScale(float* v, float scale)
 {
-    v1[0] = (f32)(v1[0] * arg8);
-    v1[1] = (f32)(v1[1] * arg8);
-    v1[2] = (f32)(v1[2] * arg8);
+    v[0] *= scale;
+    v[1] *= scale;
+    v[2] *= scale;
 }
 
 /**
  * Offset/Address/Size: 0x194 | 0x8022445C | size: 0x34
  */
-void dVector3Add(float* __restrict v1, const float* __restrict v2)
+void dVector3Add(float* __restrict v, const float* __restrict x)
 {
-    v1[0] += v2[0];
-    v1[1] += v2[1];
-    v1[2] += v2[2];
+    v[0] += x[0];
+    v[1] += x[1];
+    v[2] += x[2];
+}
+
+static void dGeomSetPosition(dxGeom* g, const dReal* p)
+{
+    dReal* pos = g->pos;
+
+    pos[0] = p[0];
+    pos[1] = p[1];
+    pos[2] = p[2];
+    g->gflags |= GEOM_DIRTY | GEOM_AABB_BAD;
 }
 
 /**
  * Offset/Address/Size: 0x150 | 0x80224418 | size: 0x44
  */
-void dGeomComputeAABB(dxGeom* geomID)
+void dGeomComputeAABB(dxGeom* g)
 {
-    geomID->computeAABB();
-    geomID->gflags = (s32)(geomID->gflags & 0xFFFFFFFC);
+    g->computeAABB();
+    g->gflags &= ~(GEOM_DIRTY | GEOM_AABB_BAD);
 }
 
 /**
  * Offset/Address/Size: 0x140 | 0x80224408 | size: 0x10
  */
-void dGeomMarkAABBAsValid(dxGeom* geomID)
+void dGeomMarkAABBAsValid(dxGeom* g)
 {
-    geomID->gflags = geomID->gflags & 0xFFFFFFFC;
+    g->gflags &= ~(GEOM_DIRTY | GEOM_AABB_BAD);
 }
 
 /**
  * Offset/Address/Size: 0x0 | 0x802242C8 | size: 0x140
  */
-void dGeomCollideAABBs(dxGeom* arg0, dxGeom* arg1, void* arg2, void (*arg3)(void*, dxGeom*, dxGeom*))
+void dGeomCollideAABBs(dxGeom* g1, dxGeom* g2, void* userData, dNearCallback* callback)
 {
-    u8 var_r4;
-    dBodyID temp_r3;
-    float* aabb_0;
-    float* aabb_1;
-
-    temp_r3 = arg0->body;
-    if ((temp_r3 != arg1->body) || (temp_r3 == 0U))
-    {
-        var_r4 = 0;
-        if ((arg0->category_bits & arg1->collide_bits) || (arg1->category_bits & arg0->collide_bits))
-        {
-            var_r4 = 1;
-        }
-        if (var_r4 != 0)
-        {
-            aabb_0 = arg0->aabb;
-            aabb_1 = arg1->aabb;
-            if (!(aabb_0[0] > aabb_1[1])
-                && !(aabb_0[1] < aabb_1[0])
-                && !(aabb_0[2] > aabb_1[3])
-                && !(aabb_0[3] < aabb_1[2])
-                && !(aabb_0[4] > aabb_1[5])
-                && !(aabb_0[5] < aabb_1[4])
-                && (arg0->AABBTest(arg1, aabb_1) != 0)
-                && (arg1->AABBTest(arg0, aabb_0) != 0))
-            {
-                arg3(arg2, arg0, arg1);
-            }
-        }
-    }
-}
-
-void NLGAdditions_stub(float* p0, float* p1, float* p2)
-{
-    *p0 = 0.0f;
-    *p1 = 1.0f;
-    *p2 = -1.0f;
+    collideAABBs(g1, g2, userData, callback);
 }

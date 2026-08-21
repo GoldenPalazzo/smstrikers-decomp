@@ -6,8 +6,6 @@
 
 #include <joint.h>
 
-static dxJoint* createJoint(dWorldID w, dJointGroupID group, dxJoint::Vtable* vtable);
-
 /**
  * Offset/Address/Size: 0x14C | 0x801FE9D4 | size: 0x60
  */
