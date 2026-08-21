@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         # CI and decomp.dev reporting intentionally track the completed USA target.
-        version: [G4QE01]
+        version: [G4QE01, G4QJ01]
 
     steps:
     # Checkout the repository
