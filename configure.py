@@ -30,7 +30,7 @@ from tools.project import (
 
 # Game versions
 DEFAULT_VERSION = 0
-VERSIONS = ["G4QE01"]
+VERSIONS = ["G4QE01", "G4QJ01"]
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -654,7 +654,8 @@ def MusyxLib(lib_name: str, objects: Objects, debug=False, major=2, minor=0, pat
     )
 
 
-Matching = True                   # Object matches and should be linked
+# Source currently matches only the USA version.
+Matching = config.version == "G4QE01"
 NonMatching = False               # Object does not match and should not be linked
 Equivalent = config.non_matching  # Object should be linked when configured with --non-matching
 

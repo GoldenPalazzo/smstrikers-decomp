@@ -1,0 +1,18 @@
+# See config.example.yml for documentation.
+name: main
+object_base: orig/G4QJ01
+object: sys/main.dol
+
+# map: orig/G4QJ01/files/MarioSoccerZ.MAP
+
+hash: d116f02b778a4f69725fd1c00656012d16ebf94a
+
+symbols: config/G4QJ01/symbols.txt
+splits: config/G4QJ01/splits.txt
+
+mw_comment_version: 10 # GC Linker 2.6
+symbols_known: true # Very fast analysis
+fill_gaps: false # Alignments known
+
+write_asm: true
+ldscript_template: config/G4QJ01/ldscript.tpl

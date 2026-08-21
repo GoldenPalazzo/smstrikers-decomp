@@ -1,5 +1,5 @@
 Super Mario Strikers  
-[![Build Status]][actions] [![Code Progress]][progress] [![Data Progress]][progress] [![Link Progress]][progress] [![Discord Badge]][discord]
+[![Build Status]][actions] [![Code Progress]][progress] [![Link Progress]][progress] [![Discord Badge]][discord]
 =============
 
 <!--
@@ -12,7 +12,6 @@ decomp.dev progress badges
 See https://decomp.dev/api for an API overview.
 -->
 [Code Progress]: https://decomp.dev/yannicksuter/smstrikers-decomp.svg?mode=shield&measure=code&label=Code
-[Data Progress]: https://decomp.dev/yannicksuter/smstrikers-decomp.svg?mode=shield&measure=data&label=Data
 [Link Progress]: https://decomp.dev/yannicksuter/smstrikers-decomp.svg?mode=shield&measure=complete_code_percent&label=Linked
 [Fuzzy Progress]: https://decomp.dev/yannicksuter/smstrikers-decomp.svg?mode=shield&measure=fuzzy_match_percent&label=Fuzzy
 [progress]: https://decomp.dev/yannicksuter/smstrikers-decomp
@@ -22,13 +21,19 @@ Replace with your Discord server's ID and invite URL.
 [Discord Badge]: https://img.shields.io/discord/727908905392275526?color=%237289DA&logo=discord&logoColor=%23FFFFFF
 [discord]: https://discord.gg/hKx3FJJgrV
 
+> [!IMPORTANT]
+> This repository does **not** provide a new way to play *Super Mario Strikers*. It is not a modern recompilation ("recomp") or a port. Its 100% code and linking status refers to a high-fidelity reconstruction of what the original source code may have looked like—one that compiles into an executable byte-for-byte identical to the original retail GameCube release.
+>
+> Recompilations and ports may emerge elsewhere from this work—and we look forward to seeing them—but they are outside the scope of this repository. Please do not ask for recompilations or ports in the decompilation Discord, as producing and supporting them is not the focus of this community.
+
 A work-in-progress decompilation of Super Mario Strikers for GameCube.
 
 This repository does **not** contain any game assets or assembly whatsoever. An existing copy of the game is required.
 
 Supported versions:
 
-- `G4QE01`: Rev 0 (USA)
+- ✅ `G4QE01`: Rev 0 (USA) — `main.dol` SHA-1: `376d699c99b6b0949abe1b4ceccefdef7828d2b5`
+- ❌ `G4QJ01`: Rev 0 (Japan) — In progress (94.72% code matched) — `main.dol` SHA-1: `d116f02b778a4f69725fd1c00656012d16ebf94a`
 
 Decompilation
 =============
@@ -117,7 +122,8 @@ Building
   git pull --recurse-submodules
   ```
 
-- Copy your game's disc image to `orig/G4QE01`.
+- Copy your game's disc image to `orig/<version>` (for example, `orig/G4QE01`
+  or `orig/G4QJ01`).
   - Supported formats: ISO (GCM), RVZ, WIA, WBFS, CISO, NFS, GCZ, TGC
   - After the initial build, the disc image can be deleted to save space.
 
@@ -134,6 +140,32 @@ Building
   ```sh
   ninja
   ```
+
+### Building a specific version
+
+`G4QE01` (USA, Rev 0) is the default. To select another version, pass its game
+ID to `configure.py`:
+
+```sh
+# USA (default)
+python configure.py
+ninja
+
+# Japan
+python configure.py --version G4QJ01
+ninja
+```
+
+Build outputs are kept separately in `build/G4QE01` and `build/G4QJ01`. To
+switch versions, rerun `configure.py` with the other game ID; cleaning the build
+directory is not necessary. Add `--map` to the configure command to generate a
+linker map.
+
+The USA version builds entirely from matching source. The Japanese version is
+still in progress and currently uses extracted retail objects for the final
+link, while still verifying the resulting `main.dol` against its expected
+SHA-1. GitHub Actions and decomp.dev progress reporting currently remain on the
+completed USA version.
 
 Diffing
 =======

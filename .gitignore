@@ -10,13 +10,16 @@ __pycache__
 # Original files
 orig/*/*
 !orig/*/.gitkeep
-!orig/*/files/MarioSoccerZ.MAP
+!orig/*/files/
+orig/*/files/*
 *.dol
 *.rel
 *.elf
+*.rvz
 *.o
 *.map
 *.MAP
+!orig/*/files/MarioSoccerZ.MAP
 *.d
 
 # Build files

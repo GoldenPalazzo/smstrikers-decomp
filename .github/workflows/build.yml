@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Add game versions here
+        # CI and decomp.dev reporting intentionally track the completed USA target.
         version: [G4QE01]
 
     steps:
