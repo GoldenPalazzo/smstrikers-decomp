@@ -12,7 +12,6 @@
 
 typedef Detail::MemFunImpl<void, void (TournTeamSetupSceneV2::*)(int)> MemFunImpl_Tourn_t;
 typedef BindExp2<void, MemFunImpl_Tourn_t, TournTeamSetupSceneV2*, int> BindExp2_Tourn_t;
-typedef Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Tourn_t> FunctorImpl_Tourn_t;
 
 namespace DoubleHighlite
 {
@@ -23,45 +22,6 @@ static const char* SLIDE_OUT = "out";
 static unsigned long TOURN_CAPTAIN_DESCRIPTIONS[] = {
     0xFF68ABBA, 0xE2D37C19, 0x000465BA, 0x000BAD38, 0x0043DF21, 0x330C3072, 0x00C0A242, 0x00EC84AC, 0x69BFAF9D
 };
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800E7710 | size: 0x40
-//  */
-// void Bind<void, Detail::MemFunImpl<void, void (TournTeamSetupSceneV2::*)(int)>, TournTeamSetupSceneV2*, int>(Detail::MemFunImpl<void,
-// void (TournTeamSetupSceneV2::*)(int)>, TournTeamSetupSceneV2* const&, const int&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800E76F4 | size: 0x1C
-//  */
-// void MemFun<TournTeamSetupSceneV2, void, int>(void (TournTeamSetupSceneV2::*)(int))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800E7698 | size: 0x5C
-//  */
-// void Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2<void, Detail::MemFunImpl<void, void (TournTeamSetupSceneV2::*)(int)>,
-// TournTeamSetupSceneV2*, int>>::~FunctorImpl()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x80 | 0x800E7664 | size: 0x34
-//  */
-// void Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2<void, Detail::MemFunImpl<void, void (TournTeamSetupSceneV2::*)(int)>,
-// TournTeamSetupSceneV2*, int>>::operator()(TLComponentInstance*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800E75E4 | size: 0x80
-//  */
-// void Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2<void, Detail::MemFunImpl<void, void (TournTeamSetupSceneV2::*)(int)>,
-// TournTeamSetupSceneV2*, int>>::Clone() const
-// {
-// }
 
 /**
  * Offset/Address/Size: 0x4DBC | 0x800E6C60 | size: 0x124
@@ -219,10 +179,10 @@ void TournTeamSetupSceneV2::SceneCreated()
 
         UpdateCaptainName();
 
-        mCaptainGrid = new (nlMalloc(0x1C, 8, false)) ICaptainGridComponent(mComponents[1], false);
+        mCaptainGrid = new (nlMalloc(sizeof(ICaptainGridComponent), 8, false)) ICaptainGridComponent(mComponents[1], false);
         mCaptainGrid->BuildMapMenu();
 
-        mSKGrid = new (nlMalloc(0x1C, 8, false)) ISidekickGridComponent(mComponents[2], false);
+        mSKGrid = new (nlMalloc(sizeof(ISidekickGridComponent), 8, false)) ISidekickGridComponent(mComponents[2], false);
         mSKGrid->BuildMapMenu();
 
         TLComponentInstance* tempComponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
@@ -236,7 +196,7 @@ void TournTeamSetupSceneV2::SceneCreated()
             InlineHasher(nlStringLowerHash("TickerText")));
 
         gl_ScreenInfo* screenInfo = glGetScreenInfo();
-        mTicker = new (nlMalloc(0x22C, 0x20, true)) FEScrollText(scrollText, 0, screenInfo->ScreenWidth + 0x32);
+        mTicker = new (nlMalloc(sizeof(FEScrollText), 0x20, true)) FEScrollText(scrollText, 0, screenInfo->ScreenWidth + 0x32);
         mTicker->SetDisplayMessage("CHOOSE_CAPTAIN_CUSTOM_TOURNAMENT");
 
         mPressStartComponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
@@ -282,7 +242,15 @@ void TournTeamSetupSceneV2::SceneCreated()
         tempComponent->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("arrow")));
 
-    if (mCurrentRow == 0)
+#if defined(VERSION_G4QJ01)
+    if (mCurrentState == STATE_CAPTAIN || mCurrentState == STATE_SIDEKICK)
+    {
+        mUpArrow->m_bVisible = false;
+        mDownArrow->m_bVisible = false;
+    }
+    else
+#endif
+        if (mCurrentRow == 0)
     {
         mUpArrow->m_bVisible = false;
         mDownArrow->m_bVisible = true;
@@ -527,16 +495,16 @@ void TournTeamSetupSceneV2::Update(float fDeltaT)
 /**
  * Offset/Address/Size: 0x2FB4 | 0x800E4E58 | size: 0x340
  */
-void TournTeamSetupSceneV2::UpdateControllerIcon(int arg)
+void TournTeamSetupSceneV2::UpdateControllerIcon(int onScreenRow)
 {
     int nlSNPrintf(char*, unsigned long, const char*, ...);
 
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
-    int row = arg + mRowOffset;
+    int row = onScreenRow + mRowOffset;
 
     char menuName[68];
 
-    nlSNPrintf(menuName, 64, "MENU ITEM%d", arg + 1);
+    nlSNPrintf(menuName, 64, "MENU ITEM%d", onScreenRow + 1);
 
     TLComponentInstance* item = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         presentation->m_currentSlide,
@@ -897,9 +865,9 @@ void TournTeamSetupSceneV2::ChangeState(TournTeamSetupSceneV2::eTeamChooserState
 /**
  * Offset/Address/Size: 0x1EC4 | 0x800E3D68 | size: 0x6C
  */
-void TournTeamSetupSceneV2::StartChooseCaptain(int arg)
+void TournTeamSetupSceneV2::StartChooseCaptain(int onScreenRow)
 {
-    mCurrentRow = arg + mRowOffset;
+    mCurrentRow = onScreenRow + mRowOffset;
 
     if (!mTeamData[mCurrentRow].isEmpty)
     {
@@ -986,7 +954,7 @@ void TournTeamSetupSceneV2::UpdateSKName()
     teamComp->SetActiveSlide(GetTeamName(mCurrentCaptain));
 }
 
-inline void TournTeamSetupSceneV2::SetTeam()
+void TournTeamSetupSceneV2::SetTeam()
 {
     mTeamData[mCurrentRow].captain = mCurrentCaptain;
     mTeamData[mCurrentRow].sidekick = mCurrentSK;
@@ -994,7 +962,7 @@ inline void TournTeamSetupSceneV2::SetTeam()
     mCaptainGrid->SetValid(mCurrentCaptain, false);
 }
 
-inline void TournTeamSetupSceneV2::UpdateAllRows()
+void TournTeamSetupSceneV2::UpdateAllRows()
 {
     int i = 0;
     int numRows = ((u32)(3 - (u32)mTournInfo.m_numTeams) >> 31) + 3;
@@ -1004,7 +972,7 @@ inline void TournTeamSetupSceneV2::UpdateAllRows()
     }
 }
 
-inline int TournTeamSetupSceneV2::CanProceed() const
+int TournTeamSetupSceneV2::CanProceed() const
 {
     int numHumans = 0;
 
@@ -1113,9 +1081,9 @@ void TournTeamSetupSceneV2::Proceed()
     pHubScene->mDoAutoSave = true;
 }
 
-inline void TournTeamSetupSceneV2::CreateLeagueLineup()
+void TournTeamSetupSceneV2::CreateLeagueLineup()
 {
-    GameInfoManager* pTournamentInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    GameInfoManager* pTournamentInfo = GameInfoManager::Instance();
     int numPlayingTeams = pTournamentInfo->GetNumPlayingTeams();
 
     eTeamID lineup[8];
@@ -1131,9 +1099,9 @@ inline void TournTeamSetupSceneV2::CreateLeagueLineup()
     pTournamentInfo->SetupRoundRobinSchedule(lineup, sklineup);
 }
 
-inline void TournTeamSetupSceneV2::CreateKnockout()
+void TournTeamSetupSceneV2::CreateKnockout()
 {
-    GameInfoManager* pTournamentInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    GameInfoManager* pTournamentInfo = GameInfoManager::Instance();
     int numPlayingTeams = pTournamentInfo->GetNumPlayingTeams();
 
     eTeamID lineup[8];
@@ -1152,7 +1120,6 @@ inline void TournTeamSetupSceneV2::CreateKnockout()
 /**
  * Offset/Address/Size: 0xC34 | 0x800E2AD8 | size: 0x9C0
  */
-#pragma optimization_level 2
 BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindCaptainSlideName(eTeamID captain)
 {
     BasicString<char, Detail::TempStringAllocator> returnValue;
@@ -1190,9 +1157,10 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindCaptai
 
     return returnValue;
 }
-#pragma optimization_level 4
 
-#pragma optimization_level 2
+/**
+ * Offset/Address/Size: 0x76C | 0x800E2610 | size: 0x4C8
+ */
 BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSidekickSlideName(eSidekickID sidekick)
 {
     BasicString<char, Detail::TempStringAllocator> returnValue;
@@ -1215,9 +1183,8 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSideki
 
     return returnValue;
 }
-#pragma optimization_level 4
 
-inline bool TournTeamSetupSceneV2::CanAutoFill() const
+bool TournTeamSetupSceneV2::CanAutoFill() const
 {
     for (int i = 0; i < mTournInfo.m_numTeams; i++)
     {
@@ -1285,7 +1252,7 @@ void TournTeamSetupSceneV2::AutoFill()
     }
 }
 
-inline unsigned char TournTeamSetupSceneV2::IsAlreadySelected(eTeamID captain) const
+unsigned char TournTeamSetupSceneV2::IsAlreadySelected(eTeamID captain) const
 {
     for (int i = 0; i < mTournInfo.m_numTeams; i++)
     {
@@ -1313,9 +1280,17 @@ void TournTeamSetupSceneV2::UpdateForCurrentRow()
     UpdateCaptainName();
 }
 
-inline void TournTeamSetupSceneV2::UpdateArrowVisibility()
+void TournTeamSetupSceneV2::UpdateArrowVisibility()
 {
-    if (mCurrentRow == 0)
+#if defined(VERSION_G4QJ01)
+    if (mCurrentState == STATE_CAPTAIN || mCurrentState == STATE_SIDEKICK)
+    {
+        mUpArrow->m_bVisible = false;
+        mDownArrow->m_bVisible = false;
+    }
+    else
+#endif
+        if (mCurrentRow == 0)
     {
         mUpArrow->m_bVisible = false;
         mDownArrow->m_bVisible = true;
@@ -1350,22 +1325,17 @@ void TournTeamSetupSceneV2::ScrollUp(bool bPlaySound)
     FEAudio::EnableSounds(false);
 
     doUpdate = true;
-    if (result == RES_NOT_CHANGED)
+    if (result == RES_NOT_CHANGED && mRowOffset > 0)
     {
-        if (mRowOffset > 0)
-        {
-            mRowOffset--;
-            mCurrentRow = mRowOffset + mMenuItems.GetActiveItemIndex();
-            goto check_update;
-        }
+        mRowOffset--;
+        mCurrentRow = mRowOffset + mMenuItems.GetActiveItemIndex();
     }
-    if (result == RES_NOT_CHANGED)
+    else if (result == RES_NOT_CHANGED)
     {
         doUpdate = false;
         FEAudio::PlayAnimAudioEvent("sfx_deny", false);
     }
 
-check_update:
     if (doUpdate)
     {
         if (result == RES_NOT_CHANGED)
@@ -1396,22 +1366,17 @@ void TournTeamSetupSceneV2::ScrollDown(bool bPlaySound)
     FEAudio::EnableSounds(false);
 
     doUpdate = true;
-    if (result == RES_NOT_CHANGED)
+    if (result == RES_NOT_CHANGED && mRowOffset + 3 < (int)mTournInfo.m_numTeams - 1)
     {
-        if (mRowOffset + 3 < (int)mTournInfo.m_numTeams - 1)
-        {
-            mRowOffset++;
-            mCurrentRow = mRowOffset + mMenuItems.GetActiveItemIndex();
-            goto check_update;
-        }
+        mRowOffset++;
+        mCurrentRow = mRowOffset + mMenuItems.GetActiveItemIndex();
     }
-    if (result == RES_NOT_CHANGED)
+    else if (result == RES_NOT_CHANGED)
     {
         doUpdate = false;
         FEAudio::PlayAnimAudioEvent("sfx_deny", false);
     }
 
-check_update:
     if (doUpdate)
     {
         if (result == RES_NOT_CHANGED)
@@ -1424,7 +1389,7 @@ check_update:
     FEAudio::EnableSounds(true);
 }
 
-inline void TournTeamSetupSceneV2::AutoTagCurrentRowAsHumanPlayer()
+void TournTeamSetupSceneV2::AutoTagCurrentRowAsHumanPlayer()
 {
     if (!mHasTaggedHumanPlayer)
     {
@@ -1433,7 +1398,7 @@ inline void TournTeamSetupSceneV2::AutoTagCurrentRowAsHumanPlayer()
     }
 }
 
-inline void TournTeamSetupSceneV2::SetupButtonsBasedOnState(eTeamChooserState state)
+void TournTeamSetupSceneV2::SetupButtonsBasedOnState(eTeamChooserState state)
 {
     switch (state)
     {

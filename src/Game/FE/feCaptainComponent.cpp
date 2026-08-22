@@ -360,9 +360,9 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
 
     {
         int team0 = mHomeAwayTeam[0];
-        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filenameC0, 0x80, team0, 0);
-        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filenameC1, 0x80, team0, 0);
-        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filenameC2, 0x80, team0, 0);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN, filenameC0, 0x80, team0, 0);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN_OUTLINE, filenameC1, 0x80, team0, 0);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN_FLASH, filenameC2, 0x80, team0, 0);
     }
     mAsyncImage[0][0]->QueueLoad(filenameC0, true);
     mAsyncImage[0][1]->QueueLoad(filenameC1, true);
@@ -371,9 +371,9 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
 
     {
         int team1 = mHomeAwayTeam[1];
-        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filenameS0, 0x80, team1, 1);
-        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filenameS1, 0x80, team1, 1);
-        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filenameS2, 0x80, team1, 1);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN, filenameS0, 0x80, team1, 1);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN_OUTLINE, filenameS1, 0x80, team1, 1);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN_FLASH, filenameS2, 0x80, team1, 1);
     }
     mAsyncImage[1][0]->QueueLoad(filenameS0, true);
     mAsyncImage[1][1]->QueueLoad(filenameS1, true);

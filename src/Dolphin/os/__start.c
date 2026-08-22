@@ -1,45 +1,45 @@
 #include "dol2asm.h"
-#include <dolphin.h>
+#include "dolphin/os/__start.h"
 #include "PowerPC_EABI_Support/Runtime/__ppc_eabi_linker.h"
 
-extern void InitMetroTRK();
-extern void exit(int);
-extern int main(int argc, char* argv[]);
-extern void __init_user(void);
 extern void InitMetroTRK_BBA(void);
-extern void DBInit();
 
-SECTION_INIT extern void __check_pad3(void);
 SECTION_INIT extern void __set_debug_bba(void);
 SECTION_INIT extern u8 __get_debug_bba(void);
-SECTION_INIT extern void __start(void);
-SECTION_INIT extern void __init_registers(void);
-SECTION_INIT extern void __init_data(void);
-SECTION_INIT extern void __init_hardware(void);
-SECTION_INIT extern void __flush_cache(void* addr, u32 size);
+SECTION_INIT __declspec(weak) extern void __start(void);
 
-static u8 Debug_BBA;
-
+/**
+ * Offset/Address/Size: 0x0 | 0x800051EC | size: 0x40
+ */
 SECTION_INIT void __check_pad3(void)
 {
-    if ((*(u16*)0x800030E4 & 0xEEF) == 0xEEF)
+    if ((Pad3Button & 0xEEF) == 0xEEF)
     {
-        OSResetSystem(0, 0, 0);
+        OSResetSystem(OS_RESET_RESTART, 0, FALSE);
     }
 }
 
+/**
+ * Offset/Address/Size: 0x40 | 0x8000522C | size: 0xC
+ */
 void __set_debug_bba(void)
 {
     Debug_BBA = 1;
 }
 
+/**
+ * Offset/Address/Size: 0x4C | 0x80005238 | size: 0x8
+ */
 SECTION_INIT u8 __get_debug_bba(void)
 {
     return Debug_BBA;
 }
 
 // clang-format off
-SECTION_INIT asm void __start(void) 
+/**
+ * Offset/Address/Size: 0x54 | 0x80005240 | size: 0x15C
+ */
+SECTION_INIT asm void __start(void)
 {
     nofralloc
     bl __init_registers
@@ -50,100 +50,100 @@ SECTION_INIT asm void __start(void)
     stw r0, 0(r1)
     bl __init_data
     li r0, 0
-    lis r6, 0x8000
-    addi r6, r6, 0x0044
+    lis r6, EXCEPTIONMASK_ADDR@ha
+    addi r6, r6, EXCEPTIONMASK_ADDR@l
     stw r0, 0(r6)
-    lis r6, 0x8000
-    addi r6, r6, 0x00F4
+    lis r6, BOOTINFO2_ADDR@ha
+    addi r6, r6, BOOTINFO2_ADDR@l
     lwz r6, 0(r6)
     cmplwi r6, 0
-    beq lbl_8000319C
+    beq _load_lomem_debug_flag
     lwz r7, 0xc(r6)
-    b lbl_800031BC
+    b _check_debug_flag
 
-lbl_8000319C:
-    lis r5, 0x8000
-    addi r5, r5, 0x0034
+_load_lomem_debug_flag:
+    lis r5, ARENAHI_ADDR@ha
+    addi r5, r5, ARENAHI_ADDR@l
     lwz r5, 0(r5)
     cmplwi r5, 0
-    beq lbl_800031F8
-    lis r7, 0x8000
-    addi r7, r7, 0x30E8
+    beq _start_main
+    lis r7, DEBUGFLAG_ADDR@ha
+    addi r7, r7, DEBUGFLAG_ADDR@l
     lwz r7, 0(r7)
 
-lbl_800031BC:
+_check_debug_flag:
     li r5, 0
     cmplwi r7, 2
-    beq lbl_800031E8
+    beq _init_trk
     cmplwi r7, 3
     li r5, 1
-    beq lbl_800031E8
+    beq _init_trk
     cmplwi r7, 4
-    bne lbl_800031F8
+    bne _start_main
     li r5, 2
     bl __set_debug_bba
-    b lbl_800031F8
+    b _start_main
 
-lbl_800031E8:
+_init_trk:
     lis r6, InitMetroTRK@ha
     addi r6, r6, InitMetroTRK@l
     mtlr r6
-    blrl 
+    blrl
 
-lbl_800031F8:
-    lis r6, 0x8000
-    addi r6, r6, 0x00F4
+_start_main:
+    lis r6, BOOTINFO2_ADDR@ha
+    addi r6, r6, BOOTINFO2_ADDR@l
     lwz r5, 0(r6)
     cmplwi r5, 0
-    beq+ lbl_80003258
+    beq+ _no_args
     lwz r6, 8(r5)
     cmplwi r6, 0
-    beq+ lbl_80003258
+    beq+ _no_args
     add r6, r5, r6
     lwz r14, 0(r6)
     cmplwi r14, 0
-    beq lbl_80003258
+    beq _no_args
     addi r15, r6, 4
     mtctr r14
 
-lbl_80003230:
+_parse_args_loop:
     addi r6, r6, 4
     lwz r7, 0(r6)
     add r7, r7, r5
     stw r7, 0(r6)
-    bdnz lbl_80003230
-    lis r5, 0x8000
-    addi r5, r5, 0x0034
+    bdnz _parse_args_loop
+    lis r5, ARENAHI_ADDR@ha
+    addi r5, r5, ARENAHI_ADDR@l
     rlwinm r7, r15, 0, 0, 0x1a
     stw r7, 0(r5)
-    b lbl_80003260
-    
-lbl_80003258:
+    b _end_parse_args
+
+_no_args:
     li r14, 0
     li r15, 0
-    
-lbl_80003260:
+
+_end_parse_args:
     bl DBInit
     bl OSInit
-    lis r4, 0x8000
-    addi r4, r4, 0x30E6
+    lis r4, DVD_DEVICECODE_ADDR@ha
+    addi r4, r4, DVD_DEVICECODE_ADDR@l
     lhz r3, 0(r4)
     andi. r5, r3, 0x8000
-    beq lbl_80003288
+    beq _check_pad3
     andi. r3, r3, 0x7fff
     cmplwi r3, 1
-    bne lbl_8000328C
-    
-lbl_80003288:
+    bne _skip_crc
+
+_check_pad3:
     bl __check_pad3
-    
-lbl_8000328C:
+
+_skip_crc:
     bl __get_debug_bba
     cmplwi r3, 1
-    bne lbl_8000329C
+    bne _skip_init_bba
     bl InitMetroTRK_BBA
-    
-lbl_8000329C:
+
+_skip_init_bba:
     bl __init_user
     mr r3, r14
     mr r4, r15
@@ -152,8 +152,28 @@ lbl_8000329C:
 }
 // clang-format on
 
+SECTION_INIT static void __copy_rom_section(void* dst, const void* src, u32 size)
+{
+    if (size && (dst != src))
+    {
+        memcpy(dst, src, size);
+        __flush_cache(dst, size);
+    }
+}
+
+SECTION_INIT static void __init_bss_section(void* dst, u32 size)
+{
+    if (size)
+    {
+        memset(dst, 0, size);
+    }
+}
+
 // clang-format off
-SECTION_INIT asm void __init_registers(void) 
+/**
+ * Offset/Address/Size: 0x1B0 | 0x8000539C | size: 0x90
+ */
+SECTION_INIT asm void __init_registers(void)
 {
     nofralloc
     li r0, 0
@@ -185,35 +205,19 @@ SECTION_INIT asm void __init_registers(void)
     li r29, 0
     li r30, 0
     li r31, 0
-    lis r1,  0x80380000@h
-    ori r1, r1,  0x8000@l
-    // lis r1,  _stack_addr@h
-    // ori r1, r1,  _stack_addr@l
+    lis r1, _stack_addr@h
+    ori r1, r1, _stack_addr@l
     lis r2, _SDA2_BASE_@h
     ori r2, r2, _SDA2_BASE_@l
     lis r13, _SDA_BASE_@h
     ori r13, r13, _SDA_BASE_@l
-    blr 
+    blr
 }
 // clang-format on
 
-inline static void __copy_rom_section(void* dst, const void* src, u32 size)
-{
-    if (size && (dst != src))
-    {
-        memcpy(dst, src, size);
-        __flush_cache(dst, size);
-    }
-}
-
-inline static void __init_bss_section(void* dst, u32 size)
-{
-    if (size)
-    {
-        memset(dst, 0, size);
-    }
-}
-
+/**
+ * Offset/Address/Size: 0x240 | 0x8000542C | size: 0xC0
+ */
 SECTION_INIT void __init_data()
 {
     __rom_copy_info* dci;

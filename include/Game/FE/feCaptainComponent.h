@@ -208,9 +208,9 @@ inline void IChooseCaptain::ComponentState::GotoNextPhase()
             IChooseCaptain* parent = mParent;
             int homeaway = mHomeAway;
 
-            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filenameC0, 0x80, teamID, homeaway);
-            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filenameC1, 0x80, teamID, homeaway);
-            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filenameC2, 0x80, teamID, homeaway);
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN, filenameC0, 0x80, teamID, homeaway);
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN_OUTLINE, filenameC1, 0x80, teamID, homeaway);
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN_FLASH, filenameC2, 0x80, teamID, homeaway);
 
             parent->mAsyncImage[homeaway][0]->QueueLoad(filenameC0, false);
             parent->mAsyncImage[homeaway][1]->QueueLoad(filenameC1, false);
@@ -247,9 +247,9 @@ inline void IChooseCaptain::ComponentState::GotoNextPhase()
             int homeaway = mHomeAway;
             int teamID = parent->mHomeAwayTeam[homeaway];
 
-            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filenameS0, 0x80, teamID, homeaway);
-            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filenameS1, 0x80, teamID, homeaway);
-            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filenameS2, 0x80, teamID, homeaway);
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN, filenameS0, 0x80, teamID, homeaway);
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN_OUTLINE, filenameS1, 0x80, teamID, homeaway);
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN_FLASH, filenameS2, 0x80, teamID, homeaway);
 
             parent->mAsyncImage[homeaway][0]->QueueLoad(filenameS0, false);
             parent->mAsyncImage[homeaway][1]->QueueLoad(filenameS1, false);
@@ -555,9 +555,9 @@ inline void IChooseCaptain::ComponentState::SetCurrentPhase(Phase phase)
         teamID = mParent->mHomeAwayTeam[mHomeAway];
         parent = mParent;
         homeaway = mHomeAway;
-        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filename0, 0x80, teamID, homeaway);
-        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filename1, 0x80, teamID, homeaway);
-        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filename2, 0x80, teamID, homeaway);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN, filename0, 0x80, teamID, homeaway);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN_OUTLINE, filename1, 0x80, teamID, homeaway);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN_FLASH, filename2, 0x80, teamID, homeaway);
         parent->mAsyncImage[homeaway][0]->QueueLoad(filename0, true);
         parent->mAsyncImage[homeaway][1]->QueueLoad(filename1, true);
         parent->mAsyncImage[homeaway][2]->QueueLoad(filename2, true);

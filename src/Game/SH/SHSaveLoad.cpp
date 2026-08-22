@@ -7,6 +7,7 @@
 #include "Game/GameSceneManager.h"
 #include "Game/DB/SaveLoad.h"
 #include "Game/FE/feFinder.h"
+#include "Game/FE/feHelpFuncs.h"
 #include "Game/FE/tlSlide.h"
 #include "Game/FE/feInput.h"
 #include "Game/FE/fePopupMenu.h"
@@ -15,81 +16,31 @@
 #include "Game/ResetTask.h"
 #include "Game/SH/SHMoviePlayer.h"
 #include "Game/Sys/gcmemcard.h"
+#include "Game/TrophyTextures.h"
 #include "NL/nlConfig.h"
 #include "types.h"
 
-enum eSaveLoad
-{
-    ST_INVALID = -1,
-    ST_SAVE = 0,
-    ST_LOAD = 1,
-    ST_GAMESAVEIDTEST = 2,
-    ST_DELETE = 3,
-    ST_FORMAT = 4,
-    ST_ASK_SAVE = 5,
-    ST_ASK_LOAD = 6,
-    ST_CHECKING = 7,
-    ST_ABOUT_AUTOSAVE = 8,
-    ST_CONFIRM_FORMAT = 9,
-    ST_SHOULD_LOAD_OR_SAVE = 10,
-};
-
 extern bool g_e3_Build;
 
-// File-static and class-static globals owned by this TU.
-// Declaration order below reproduces the target .sbss/.sdata/.bss byte layout
-// (static-variable slots are allocated at parse time, top-to-bottom).
-bool SaveLoadScene::mLastSaveLoadSuccess;        // .sbss:0x0
-static u8 WasCardRemoved;                        // .sbss:0x1
-static bool PreviousNoCardInSlotState;           // .sbss:0x2
-SaveLoadScene* SaveLoadScene::mInstance;         // .sbss:0x4
-static int gSceneTypeStackDepth;                 // .sbss:0x8
-static float gSceneTime;                         // .sbss:0xC
-static bool gSaveLoadStarted;                    // .sbss:0x10
-static bool gSaveLoadFinished;                   // .sbss:0x11
-static bool gCallbackMade;                       // .sbss:0x12
-static bool gIgnoreMinWait;                      // .sbss:0x13
-static bool gContinueWithoutOperation;           // .sbss:0x14
-static float gRetryTimerDelay;                   // .sbss:0x18
-static bool gSaveLoadEnabled = true;             // .sdata:0x0
-bool SaveLoadScene::mIsFirstTimeAboutIPL = true; // .sdata:0x1
-static long gResult = -1;                        // .sdata:0x4
-static enum eSaveLoad gSceneTypeStack[4];        // .bss:0x0
+bool SaveLoadScene::mLastSaveLoadSuccess;
+bool SaveLoadScene::mUltimateGoalIsToSave;
+static u8 WasCardRemoved;
+static bool PreviousNoCardInSlotState;
+SaveLoadScene* SaveLoadScene::mInstance;
+static int gSceneTypeStackDepth;
+static float gSceneTime;
+static bool gSaveLoadStarted;
+static bool gSaveLoadFinished;
+static bool gCallbackMade;
+static bool gIgnoreMinWait;
+static bool gContinueWithoutOperation;
+static float gRetryTimerDelay;
+static bool gSaveLoadEnabled = true;
+bool SaveLoadScene::mIsFirstTimeAboutIPL = true;
+static long gResult = -1;
+static SaveLoadScene::eSaveLoad gSceneTypeStack[4];
 
 static void CheckResults();
-
-static inline void PopSceneType()
-{
-    int stackIndex = --gSceneTypeStackDepth;
-    gSaveLoadStarted = false;
-    eSaveLoad prevScene = gSceneTypeStack[stackIndex];
-    gSaveLoadFinished = false;
-    if (prevScene == 0)
-    {
-        ResetTask::s_resetPaused = true;
-    }
-    else
-    {
-        ResetTask::s_resetPaused = false;
-    }
-}
-
-static inline void PushSceneType(eSaveLoad type)
-{
-    gSceneTypeStack[gSceneTypeStackDepth++] = type;
-    gSaveLoadStarted = false;
-    gSaveLoadFinished = false;
-    gCallbackMade = false;
-    gSceneTime = 0.0f;
-    ResetTask::s_resetPaused = false;
-}
-
-#pragma dont_inline on
-
-/**
- * Offset/Address/Size: 0x2BB8 | 0x800B3140 | size: 0x84
- */
-#pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0x28D0 | 0x800B2E58 | size: 0x14
@@ -106,6 +57,52 @@ void ResetEnableSaveLoadFlag()
 {
     gSaveLoadEnabled = true;
 }
+
+static SaveLoadScene::eSaveLoad GetSceneType()
+{
+    return gSceneTypeStack[gSceneTypeStackDepth - 1];
+}
+
+static void PushSceneType(SaveLoadScene::eSaveLoad type)
+{
+    gSceneTypeStack[gSceneTypeStackDepth++] = type;
+    gSaveLoadStarted = false;
+    gSaveLoadFinished = false;
+    gCallbackMade = false;
+    gSceneTime = 0.0f;
+    ResetTask::s_resetPaused = (type == SaveLoadScene::ST_SAVE);
+}
+
+static void PopSceneType()
+{
+    int stackIndex = --gSceneTypeStackDepth;
+    gSaveLoadStarted = false;
+    SaveLoadScene::eSaveLoad prevScene = gSceneTypeStack[stackIndex];
+    gSaveLoadFinished = false;
+    if (prevScene == 0)
+    {
+        ResetTask::s_resetPaused = true;
+    }
+    else
+    {
+        ResetTask::s_resetPaused = false;
+    }
+}
+
+#if defined(VERSION_G4QJ01)
+static bool IsFormatSceneOnStack()
+{
+    for (int i = 0; i <= gSceneTypeStackDepth - 1; ++i)
+    {
+        if (gSceneTypeStack[i] == SaveLoadScene::ST_FORMAT)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+#endif
 
 /**
  * Offset/Address/Size: 0x28B4 | 0x800B2E3C | size: 0x10
@@ -129,10 +126,7 @@ void ContinueWithoutSavingCB()
     gSaveLoadEnabled = false;
     gContinueWithoutOperation = true;
     SaveLoadScene::mLastSaveLoadSuccess = false;
-    if (instance->m_displayText != nullptr)
-    {
-        instance->m_displayText->m_bVisible = false;
-    }
+    instance->ShowText(false);
 }
 
 /**
@@ -147,10 +141,7 @@ void ContinueWithoutLoadingCB()
     gSaveLoadStarted = true;
     gContinueWithoutOperation = true;
     SaveLoadScene::mLastSaveLoadSuccess = false;
-    if (instance->m_displayText != nullptr)
-    {
-        instance->m_displayText->m_bVisible = false;
-    }
+    instance->ShowText(false);
 }
 
 /**
@@ -159,16 +150,8 @@ void ContinueWithoutLoadingCB()
 void ContinueLoadingCB()
 {
     gCallbackMade = false;
-    int stackIndex = --gSceneTypeStackDepth;
-    gSaveLoadStarted = false;
-    gSaveLoadFinished = false;
-    ResetTask::s_resetPaused = (gSceneTypeStack[stackIndex] == 0);
-    gSceneTypeStack[gSceneTypeStackDepth++] = ST_LOAD;
-    gSaveLoadStarted = false;
-    gSaveLoadFinished = false;
-    gCallbackMade = false;
-    gSceneTime = 0.0f;
-    ResetTask::s_resetPaused = false;
+    PopSceneType();
+    PushSceneType(SaveLoadScene::ST_LOAD);
 }
 
 /**
@@ -181,59 +164,28 @@ void RetryCB()
     switch (SaveLoadScene::mInstance->mSaveLoadMode)
     {
     case SaveLoadScene::SLM_AT_BOOT:
-        gSceneTypeStack[gSceneTypeStackDepth++] = ST_SHOULD_LOAD_OR_SAVE;
-        gSaveLoadStarted = false;
-        gSaveLoadFinished = false;
-        gCallbackMade = false;
-        gSceneTime = 0.0f;
-        ResetTask::s_resetPaused = false;
+        PushSceneType(SaveLoadScene::ST_SHOULD_LOAD_OR_SAVE);
         break;
 
     case SaveLoadScene::SLM_SAVING:
-        gSaveLoadStarted = false;
-        gSceneTypeStack[gSceneTypeStackDepth++] = ST_SAVE;
-        gSaveLoadFinished = false;
-        gCallbackMade = false;
-        gSceneTime = 0.0f;
-        ResetTask::s_resetPaused = true;
-
-        gSceneTypeStack[gSceneTypeStackDepth++] = ST_GAMESAVEIDTEST;
-        gSaveLoadStarted = false;
-        gSaveLoadFinished = false;
-        gCallbackMade = false;
-        gSceneTime = 0.0f;
-        ResetTask::s_resetPaused = false;
+        PushSceneType(SaveLoadScene::ST_SAVE);
+        PushSceneType(SaveLoadScene::ST_GAMESAVEIDTEST);
         break;
 
     case SaveLoadScene::SLM_LOADING:
-        gSceneTypeStack[gSceneTypeStackDepth++] = ST_LOAD;
-        gSaveLoadStarted = false;
-        gSaveLoadFinished = false;
-        gCallbackMade = false;
-        gSceneTime = 0.0f;
-        ResetTask::s_resetPaused = false;
+        PushSceneType(SaveLoadScene::ST_LOAD);
         break;
 
     case SaveLoadScene::SLM_ASK_BEFORE_SAVING:
-        gSceneTypeStack[gSceneTypeStackDepth++] = ST_ASK_SAVE;
-        gSaveLoadStarted = false;
-        gSaveLoadFinished = false;
-        gCallbackMade = false;
-        gSceneTime = 0.0f;
-        ResetTask::s_resetPaused = false;
+        PushSceneType(SaveLoadScene::ST_ASK_SAVE);
         break;
 
     case SaveLoadScene::SLM_ASK_BEFORE_LOADING:
-        gSceneTypeStack[gSceneTypeStackDepth++] = ST_ASK_LOAD;
-        gSaveLoadStarted = false;
-        gSaveLoadFinished = false;
-        gCallbackMade = false;
-        gSceneTime = 0.0f;
-        ResetTask::s_resetPaused = false;
+        PushSceneType(SaveLoadScene::ST_ASK_LOAD);
         break;
     }
 
-    gSceneTypeStack[gSceneTypeStackDepth++] = ST_CHECKING;
+    gSceneTypeStack[gSceneTypeStackDepth++] = SaveLoadScene::ST_CHECKING;
     gCallbackMade = false;
     ResetTask::s_resetPaused = false;
     gSaveLoadStarted = true;
@@ -242,10 +194,7 @@ void RetryCB()
     gSceneTime = 0.0f;
     gContinueWithoutOperation = false;
 
-    if (SaveLoadScene::mInstance->m_displayText != nullptr)
-    {
-        SaveLoadScene::mInstance->m_displayText->m_bVisible = true;
-    }
+    SaveLoadScene::mInstance->ShowText(true);
 
     gRetryTimerDelay = 1.0f;
     SaveLoadScene::mInstance->SceneCreated();
@@ -256,12 +205,7 @@ void RetryCB()
  */
 void DeleteFileCB()
 {
-    gSceneTypeStack[gSceneTypeStackDepth++] = ST_DELETE;
-    gSaveLoadStarted = false;
-    gSaveLoadFinished = false;
-    gCallbackMade = false;
-    gSceneTime = 0.0f;
-    ResetTask::s_resetPaused = false;
+    PushSceneType(SaveLoadScene::ST_DELETE);
 }
 
 /**
@@ -270,11 +214,7 @@ void DeleteFileCB()
 void FormatConfirmCB()
 {
     SaveLoad::RememberCurrentMemCardSerialID(0);
-    gSceneTypeStack[gSceneTypeStackDepth++] = ST_CONFIRM_FORMAT;
-    gSaveLoadStarted = false;
-    gSaveLoadFinished = false;
-    gCallbackMade = false;
-    ResetTask::s_resetPaused = false;
+    PushSceneType(SaveLoadScene::ST_CONFIRM_FORMAT);
     gSceneTime = 999.9f;
 }
 
@@ -283,12 +223,15 @@ void FormatConfirmCB()
  */
 void FormatCB()
 {
-    gSceneTypeStack[gSceneTypeStackDepth++] = ST_FORMAT;
+    PushSceneType(SaveLoadScene::ST_FORMAT);
+}
+
+static void DiffCardProceedAnywayCB()
+{
+    SaveLoad::RememberCurrentMemCardSerialID(0);
+    gSceneTypeStackDepth = 1;
     gSaveLoadStarted = false;
-    gSaveLoadFinished = false;
-    gCallbackMade = false;
-    gSceneTime = 0.0f;
-    ResetTask::s_resetPaused = false;
+    gSaveLoadFinished = true;
 }
 
 /**
@@ -311,7 +254,7 @@ void OverwriteFileAndContinueCB()
     gSaveLoadFinished = false;
     ResetTask::s_resetPaused = (gSceneTypeStack[stackIndex] == 0);
     gSceneTypeStackDepth = stackIndex + 1;
-    gSceneTypeStack[stackIndex] = ST_SAVE;
+    gSceneTypeStack[stackIndex] = SaveLoadScene::ST_SAVE;
     gSaveLoadStarted = false;
     gSaveLoadFinished = false;
     gCallbackMade = false;
@@ -338,37 +281,39 @@ void CreateFileAndSaveCB()
  */
 static void CheckResults()
 {
-    eSaveLoad sceneType = gSceneTypeStack[gSceneTypeStackDepth - 1];
+    SaveLoadScene::eSaveLoad sceneType = GetSceneType();
 
-    if (sceneType == ST_FORMAT || sceneType == ST_DELETE)
+    if (sceneType == SaveLoadScene::ST_FORMAT || sceneType == SaveLoadScene::ST_DELETE)
     {
         long result = gResult;
-        if (result != 0 && result != -1 && (sceneType != ST_FORMAT || result != -3) && result != -1001 && result != -2)
+        if (result != 0 && result != -1 && (sceneType != SaveLoadScene::ST_FORMAT || result != -3) && result != -1001 && result != -2)
         {
             gResult = -5;
         }
     }
-    else if (sceneType == ST_CONFIRM_FORMAT)
+    else if (sceneType == SaveLoadScene::ST_CONFIRM_FORMAT)
     {
+#if defined(VERSION_G4QJ01)
+        SaveLoad::RememberCurrentMemCardSerialID(0);
+#endif
         FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
-        pPopup->Create((ePopupMenu)0x1F, ContinueWithoutSavingCB, FormatCB);
+        pPopup->Create(POPUP_MEMCARD_CONFIRM_FORMAT, ContinueWithoutSavingCB, FormatCB);
+#if !defined(VERSION_G4QJ01)
         SaveLoad::RememberCurrentMemCardSerialID(0);
+#endif
         return;
     }
 
-    if (SaveLoadScene::mInstance->m_displayText != NULL)
-    {
-        SaveLoadScene::mInstance->m_displayText->m_bVisible = true;
-    }
+    SaveLoadScene::mInstance->ShowText(true);
 
     switch (gResult)
     {
     case 0:
     {
-        sceneType = gSceneTypeStack[gSceneTypeStackDepth - 1];
+        sceneType = GetSceneType();
 
-        if (sceneType == ST_ASK_SAVE)
+        if (sceneType == SaveLoadScene::ST_ASK_SAVE)
         {
             FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
@@ -376,11 +321,11 @@ static void CheckResults()
             return;
         }
 
-        if (sceneType == ST_ASK_LOAD)
+        if (sceneType == SaveLoadScene::ST_ASK_LOAD)
         {
             FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
-            pPopup->Create((ePopupMenu)0x1D, ContinueWithoutLoadingCB, ContinueLoadingCB);
+            pPopup->Create(POPUP_MEMCARD_ASK_LOAD_OVERWRITE, ContinueWithoutLoadingCB, ContinueLoadingCB);
             return;
         }
 
@@ -401,12 +346,12 @@ static void CheckResults()
     {
         FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
-        sceneType = gSceneTypeStack[gSceneTypeStackDepth - 1];
-        if (sceneType != ST_ASK_SAVE)
+        sceneType = GetSceneType();
+        if (sceneType != SaveLoadScene::ST_ASK_SAVE)
         {
-            if (sceneType < ST_ASK_SAVE)
+            if (sceneType < SaveLoadScene::ST_ASK_SAVE)
             {
-                if (sceneType >= ST_DELETE || sceneType < ST_SAVE)
+                if (sceneType >= SaveLoadScene::ST_DELETE || sceneType < SaveLoadScene::ST_SAVE)
                 {
                     return;
                 }
@@ -415,7 +360,7 @@ static void CheckResults()
             {
                 switch (sceneType)
                 {
-                case ST_SHOULD_LOAD_OR_SAVE:
+                case SaveLoadScene::ST_SHOULD_LOAD_OR_SAVE:
                     break;
                 default:
                     return;
@@ -470,6 +415,9 @@ static void CheckResults()
     case -1000:
     case -11:
     {
+#if defined(VERSION_G4QJ01)
+        SaveLoad::RememberCurrentMemCardSerialID(0);
+#endif
         FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
         pPopup->Create(POPUP_FILE_CORRUPTED, RetryCB, ContinueWithoutSavingCB, DeleteFileCB);
@@ -478,25 +426,31 @@ static void CheckResults()
 
     case -4:
     {
-        sceneType = gSceneTypeStack[gSceneTypeStackDepth - 1];
+        sceneType = GetSceneType();
 
-        if (sceneType == ST_LOAD)
+        if (sceneType == SaveLoadScene::ST_LOAD)
         {
+#if defined(VERSION_G4QJ01)
+            SaveLoad::RememberCurrentMemCardSerialID(0);
+#endif
             FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
-            pPopup->Create((ePopupMenu)0x1E, CreateFileAndSaveCB, ContinueWithoutSavingCB);
+            pPopup->Create(POPUP_MEMCARD_ASK_SAVE_NO_FILE, CreateFileAndSaveCB, ContinueWithoutSavingCB);
             return;
         }
 
-        if (sceneType == ST_ASK_SAVE || sceneType == ST_ASK_LOAD)
+        if (sceneType == SaveLoadScene::ST_ASK_SAVE || sceneType == SaveLoadScene::ST_ASK_LOAD)
         {
+#if defined(VERSION_G4QJ01)
+            SaveLoad::RememberCurrentMemCardSerialID(0);
+#endif
             FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
-            pPopup->Create((ePopupMenu)0x1E, CreateFileAndSaveCB, ContinueWithoutSavingCB);
+            pPopup->Create(POPUP_MEMCARD_ASK_SAVE_NO_FILE, CreateFileAndSaveCB, ContinueWithoutSavingCB);
             return;
         }
 
-        if (sceneType == ST_SHOULD_LOAD_OR_SAVE)
+        if (sceneType == SaveLoadScene::ST_SHOULD_LOAD_OR_SAVE)
         {
             if (!SaveLoad::HasEnoughFreeSpace(0))
             {
@@ -505,13 +459,16 @@ static void CheckResults()
                 return;
             }
 
+#if defined(VERSION_G4QJ01)
+            SaveLoad::RememberCurrentMemCardSerialID(0);
+#endif
             FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
-            pPopup->Create((ePopupMenu)0x1E, CreateFileAndSaveCB, ContinueWithoutSavingCB);
+            pPopup->Create(POPUP_MEMCARD_ASK_SAVE_NO_FILE, CreateFileAndSaveCB, ContinueWithoutSavingCB);
             return;
         }
 
-        if (sceneType == ST_GAMESAVEIDTEST)
+        if (sceneType == SaveLoadScene::ST_GAMESAVEIDTEST)
         {
             gSaveLoadFinished = true;
         }
@@ -536,12 +493,48 @@ static void CheckResults()
     }
 }
 
-/**
- * Offset/Address/Size: 0x1408 | 0x800B1990 | size: 0x1DC
- * TODO: 100.0% match - call symbol still differs at Create(..., Function, Function) vs
- * Create(..., Function&, Function&).
- */
-static bool PushNoCardMessage()
+static void TrySaveLoad()
+{
+    gSaveLoadFinished = false;
+    gCallbackMade = false;
+
+    switch (GetSceneType())
+    {
+    case SaveLoadScene::ST_SAVE:
+        gResult = SaveLoad::StartSave(0, SaveLoadCallback);
+        break;
+    case SaveLoadScene::ST_LOAD:
+        gResult = SaveLoad::StartLoad(0, SaveLoadCallback, true, false);
+        break;
+    case SaveLoadScene::ST_GAMESAVEIDTEST:
+        gResult = SaveLoad::StartMemoryCardIDCheck(0, SaveLoadCallback);
+        break;
+    case SaveLoadScene::ST_DELETE:
+        gResult = SaveLoad::StartDelete(0, SaveLoadCallback);
+        break;
+    case SaveLoadScene::ST_FORMAT:
+        gResult = SaveLoad::StartFormat(0, SaveLoadCallback);
+        break;
+    case SaveLoadScene::ST_ASK_SAVE:
+        gResult = SaveLoad::StartFileExistsCheck(0, SaveLoadCallback);
+        break;
+    case SaveLoadScene::ST_ASK_LOAD:
+        gResult = SaveLoad::StartLoad(0, SaveLoadCallback, false, false);
+        break;
+    case SaveLoadScene::ST_CHECKING:
+    case SaveLoadScene::ST_ABOUT_AUTOSAVE:
+        break;
+    case SaveLoadScene::ST_CONFIRM_FORMAT:
+        gSaveLoadFinished = true;
+        gCallbackMade = false;
+        break;
+    case SaveLoadScene::ST_SHOULD_LOAD_OR_SAVE:
+        gResult = SaveLoad::StartFileExistsCheck(0, SaveLoadCallback);
+        break;
+    }
+}
+
+static bool NoCardInSlot()
 {
     MemCard* memCard = g_MemCards[0];
     s32 result = CARDProbeEx(memCard->m_Slot, &memCard->m_CardInfo.CardSize, &memCard->m_CardInfo.SectorSize);
@@ -552,7 +545,15 @@ static bool PushNoCardMessage()
         memCard->m_CardState = CS_IDLE;
     }
 
-    if (result == CARD_RESULT_NOCARD || WasCardRemoved)
+    return result == CARD_RESULT_NOCARD;
+}
+
+/**
+ * Offset/Address/Size: 0x1408 | 0x800B1990 | size: 0x1DC
+ */
+static bool PushNoCardMessage()
+{
+    if (NoCardInSlot() || WasCardRemoved)
     {
         BaseSceneHandler* handler;
         if (nlSingleton<GameSceneManager>::s_pInstance->mCurrentStackDepth != 0)
@@ -586,7 +587,7 @@ static bool PushNoCardMessage()
         popup->Create(
             POPUP_NO_MEMCARD,
             RetryCB,
-            (gSceneTypeStack[gSceneTypeStackDepth - 1] == ST_LOAD) ? ContinueWithoutLoadingCB : ContinueWithoutSavingCB);
+            (GetSceneType() == SaveLoadScene::ST_LOAD) ? ContinueWithoutLoadingCB : ContinueWithoutSavingCB);
 
         return true;
     }
@@ -613,62 +614,31 @@ SaveLoadScene::SaveLoadScene(SaveLoadScene::eSaveLoadMode saveLoadMode)
     switch (mSaveLoadMode)
     {
     case SLM_SAVING:
-        gSaveLoadStarted = false;
-        gSaveLoadFinished = false;
-        gSceneTypeStack[gSceneTypeStackDepth++] = ST_SAVE;
-        gCallbackMade = false;
-        gSceneTime = 0.0f;
-        ResetTask::s_resetPaused = true;
-
-        gSceneTypeStack[gSceneTypeStackDepth++] = ST_GAMESAVEIDTEST;
-        gSaveLoadStarted = false;
-        gSaveLoadFinished = false;
-        gCallbackMade = false;
-        gSceneTime = 0.0f;
-        ResetTask::s_resetPaused = false;
+        PushSceneType(SaveLoadScene::ST_SAVE);
+        PushSceneType(SaveLoadScene::ST_GAMESAVEIDTEST);
         break;
 
     case SLM_LOADING:
         savingorloading = SCENE_LOAD;
-        gSceneTypeStack[gSceneTypeStackDepth++] = ST_LOAD;
-        gSaveLoadStarted = false;
-        gSaveLoadFinished = false;
-        gCallbackMade = false;
-        gSceneTime = 0.0f;
-        ResetTask::s_resetPaused = false;
+        PushSceneType(SaveLoadScene::ST_LOAD);
         break;
 
     case SLM_ASK_BEFORE_SAVING:
-        gSceneTypeStack[gSceneTypeStackDepth++] = ST_ASK_SAVE;
-        gSaveLoadStarted = false;
-        gSaveLoadFinished = false;
-        gCallbackMade = false;
-        gSceneTime = 0.0f;
-        ResetTask::s_resetPaused = false;
+        PushSceneType(SaveLoadScene::ST_ASK_SAVE);
         break;
 
     case SLM_ASK_BEFORE_LOADING:
         savingorloading = SCENE_LOAD;
-        gSceneTypeStack[gSceneTypeStackDepth++] = ST_ASK_LOAD;
-        gSaveLoadStarted = false;
-        gSaveLoadFinished = false;
-        gCallbackMade = false;
-        gSceneTime = 0.0f;
-        ResetTask::s_resetPaused = false;
+        PushSceneType(SaveLoadScene::ST_ASK_LOAD);
         break;
 
     case SLM_AT_BOOT:
         savingorloading = SCENE_LOAD;
-        gSceneTypeStack[gSceneTypeStackDepth++] = ST_SHOULD_LOAD_OR_SAVE;
-        gSaveLoadStarted = false;
-        gSaveLoadFinished = false;
-        gCallbackMade = false;
-        gSceneTime = 0.0f;
-        ResetTask::s_resetPaused = false;
+        PushSceneType(SaveLoadScene::ST_SHOULD_LOAD_OR_SAVE);
         break;
     }
 
-    gSceneTypeStack[gSceneTypeStackDepth++] = ST_CHECKING;
+    gSceneTypeStack[gSceneTypeStackDepth++] = SaveLoadScene::ST_CHECKING;
     gCallbackMade = false;
     ResetTask::s_resetPaused = false;
     gSaveLoadStarted = true;
@@ -723,40 +693,45 @@ void SaveLoadScene::SceneCreated()
         pres,
         InlineHasher(nlStringLowerHash("Slide3")));
 
+    UpdateText();
+}
+
+void SaveLoadScene::UpdateText()
+{
     TLTextInstance* text = m_displayText;
     if (text != NULL)
     {
-        eSaveLoad prevOp = gSceneTypeStack[gSceneTypeStackDepth - 1];
-        switch (prevOp)
+        SaveLoadScene::eSaveLoad prevOp = GetSceneType();
+        switch ((unsigned)prevOp)
         {
-        case ST_SAVE:
-        case ST_GAMESAVEIDTEST:
+        case SaveLoadScene::ST_SAVE:
+        case SaveLoadScene::ST_GAMESAVEIDTEST:
             text->m_LocStrId = 0xCF941DC9;
             text->m_OverloadFlags |= 0x8;
             break;
-        case ST_LOAD:
+        case SaveLoadScene::ST_LOAD:
             text->m_LocStrId = 0xFAA420FA;
             text->m_OverloadFlags |= 0x8;
             break;
-        case ST_FORMAT:
-        case ST_CONFIRM_FORMAT:
+        case SaveLoadScene::ST_FORMAT:
+        case SaveLoadScene::ST_CONFIRM_FORMAT:
             text->m_LocStrId = 0x81D26163;
             text->m_OverloadFlags |= 0x8;
             break;
-        case ST_DELETE:
+        case SaveLoadScene::ST_DELETE:
             text->m_LocStrId = 0x1A7FDB2D;
             text->m_OverloadFlags |= 0x8;
             break;
-        case ST_ASK_SAVE:
-        case ST_ASK_LOAD:
-        case ST_CHECKING:
-        case ST_SHOULD_LOAD_OR_SAVE:
+        case SaveLoadScene::ST_ASK_SAVE:
+        case SaveLoadScene::ST_ASK_LOAD:
+        case SaveLoadScene::ST_CHECKING:
+        case SaveLoadScene::ST_SHOULD_LOAD_OR_SAVE:
             text->m_LocStrId = 0xE8E70E54;
             text->m_OverloadFlags |= 0x8;
             break;
-        case ST_ABOUT_AUTOSAVE:
+        case SaveLoadScene::ST_ABOUT_AUTOSAVE:
             break;
-        case (eSaveLoad)11:
+        case (SaveLoadScene::eSaveLoad)11:
             text->m_LocStrId = 0xF501447B;
             text->m_OverloadFlags |= 0x8;
             break;
@@ -769,16 +744,7 @@ void SaveLoadScene::SceneCreated()
  */
 void SaveLoadScene::Update(float fDeltaT)
 {
-    MemCard* pMemCard = g_MemCards[0];
-    s32 probeResult = CARDProbeEx(pMemCard->m_Slot, &pMemCard->m_CardInfo.CardSize, &pMemCard->m_CardInfo.SectorSize);
-
-    if (probeResult != CARD_RESULT_READY)
-    {
-        pMemCard->m_State = IS_IDLE;
-        pMemCard->m_CardState = CS_IDLE;
-    }
-
-    PreviousNoCardInSlotState = (probeResult == CARD_RESULT_NOCARD);
+    PreviousNoCardInSlotState = NoCardInSlot();
 
     if (!g_pFEInput->HasInputLock(this))
     {
@@ -803,8 +769,12 @@ void SaveLoadScene::Update(float fDeltaT)
 
     if (mIsAutoSaving)
     {
-        eSaveLoad sceneType = gSceneTypeStack[gSceneTypeStackDepth - 1];
-        if (sceneType == (eSaveLoad)11)
+        SaveLoadScene::eSaveLoad sceneType = GetSceneType();
+        if (sceneType == (SaveLoadScene::eSaveLoad)11
+#if defined(VERSION_G4QJ01)
+            || IsFormatSceneOnStack()
+#endif
+        )
         {
             TLSlide* slide = FEFinder<TLSlide, 0>::Find<FEPresentation>(
                 m_pFEPresentation, InlineHasher(nlStringLowerHash("Slide1")));
@@ -824,49 +794,11 @@ void SaveLoadScene::Update(float fDeltaT)
         }
     }
 
-    TLTextInstance* text = m_displayText;
-    if (text != NULL)
-    {
-        eSaveLoad prevOp = gSceneTypeStack[gSceneTypeStackDepth - 1];
-        switch ((unsigned)prevOp)
-        {
-        case ST_SAVE:
-        case ST_GAMESAVEIDTEST:
-            text->m_LocStrId = 0xCF941DC9;
-            text->m_OverloadFlags |= 0x8;
-            break;
-        case ST_LOAD:
-            text->m_LocStrId = 0xFAA420FA;
-            text->m_OverloadFlags |= 0x8;
-            break;
-        case ST_FORMAT:
-        case ST_CONFIRM_FORMAT:
-            text->m_LocStrId = 0x81D26163;
-            text->m_OverloadFlags |= 0x8;
-            break;
-        case ST_DELETE:
-            text->m_LocStrId = 0x1A7FDB2D;
-            text->m_OverloadFlags |= 0x8;
-            break;
-        case ST_ASK_SAVE:
-        case ST_ASK_LOAD:
-        case ST_CHECKING:
-        case ST_SHOULD_LOAD_OR_SAVE:
-            text->m_LocStrId = 0xE8E70E54;
-            text->m_OverloadFlags |= 0x8;
-            break;
-        case ST_ABOUT_AUTOSAVE:
-            break;
-        case (eSaveLoad)11:
-            text->m_LocStrId = 0xF501447B;
-            text->m_OverloadFlags |= 0x8;
-            break;
-        }
-    }
+    UpdateText();
 
     if (ResetTask::s_ResetState == 1)
     {
-        if (gSceneTypeStack[gSceneTypeStackDepth - 1] == ST_SAVE)
+        if (GetSceneType() == SaveLoadScene::ST_SAVE)
         {
             gIgnoreMinWait = true;
         }
@@ -875,7 +807,7 @@ void SaveLoadScene::Update(float fDeltaT)
     if (!gIgnoreMinWait)
     {
         float minTime;
-        if (gSceneTypeStack[gSceneTypeStackDepth - 1] == (eSaveLoad)11)
+        if (GetSceneType() == (SaveLoadScene::eSaveLoad)11)
         {
             minTime = 3.5f;
         }
@@ -894,15 +826,15 @@ void SaveLoadScene::Update(float fDeltaT)
         }
     }
 
-    eSaveLoad sceneType = gSceneTypeStack[gSceneTypeStackDepth - 1];
-    if (sceneType == ST_CHECKING || sceneType == (eSaveLoad)11)
+    SaveLoadScene::eSaveLoad sceneType = GetSceneType();
+    if (sceneType == SaveLoadScene::ST_CHECKING || sceneType == (SaveLoadScene::eSaveLoad)11)
     {
         gSaveLoadStarted = true;
         gCallbackMade = false;
         gSaveLoadFinished = true;
     }
 
-    if (m_pFEPresentation->m_currentSlide == mAboutAutoSaveSlide)
+    if (IsOnAboutAutoSaveSlide())
     {
         UpdateForAboutToSaveSlide();
         return;
@@ -911,42 +843,7 @@ void SaveLoadScene::Update(float fDeltaT)
     if (!gSaveLoadStarted)
     {
         gSaveLoadStarted = true;
-        gSaveLoadFinished = false;
-        gCallbackMade = false;
-        switch (sceneType)
-        {
-        case ST_SAVE:
-            gResult = SaveLoad::StartSave(0, SaveLoadCallback);
-            break;
-        case ST_LOAD:
-            gResult = SaveLoad::StartLoad(0, SaveLoadCallback, true, false);
-            break;
-        case ST_GAMESAVEIDTEST:
-            gResult = SaveLoad::StartMemoryCardIDCheck(0, SaveLoadCallback);
-            break;
-        case ST_DELETE:
-            gResult = SaveLoad::StartDelete(0, SaveLoadCallback);
-            break;
-        case ST_FORMAT:
-            gResult = SaveLoad::StartFormat(0, SaveLoadCallback);
-            break;
-        case ST_ASK_SAVE:
-            gResult = SaveLoad::StartFileExistsCheck(0, SaveLoadCallback);
-            break;
-        case ST_ASK_LOAD:
-            gResult = SaveLoad::StartLoad(0, SaveLoadCallback, false, false);
-            break;
-        case ST_CHECKING:
-        case ST_ABOUT_AUTOSAVE:
-            break;
-        case ST_CONFIRM_FORMAT:
-            gSaveLoadFinished = true;
-            gCallbackMade = false;
-            break;
-        case ST_SHOULD_LOAD_OR_SAVE:
-            gResult = SaveLoad::StartFileExistsCheck(0, SaveLoadCallback);
-            break;
-        }
+        TrySaveLoad();
 
         if (gResult == -1)
         {
@@ -966,7 +863,7 @@ void SaveLoadScene::Update(float fDeltaT)
         CheckResults();
         if (gResult == 0)
         {
-            if (gSceneTypeStack[gSceneTypeStackDepth - 1] == ST_GAMESAVEIDTEST)
+            if (GetSceneType() == SaveLoadScene::ST_GAMESAVEIDTEST)
             {
                 if (SaveLoad::DidGameIDChange())
                 {
@@ -1004,6 +901,14 @@ bool SaveLoadScene::IsIOEnabled()
     return GetConfigBool(Config::Global(), "DisableMemCard", false) != true;
 }
 
+void SaveLoadScene::ShowText(bool newState)
+{
+    if (m_displayText != NULL)
+    {
+        m_displayText->m_bVisible = newState;
+    }
+}
+
 /**
  * Offset/Address/Size: 0x6D8 | 0x800B0C60 | size: 0xFC
  */
@@ -1038,8 +943,6 @@ void SaveLoadScene::SetupForAboutAutoSave()
  */
 void SaveLoadScene::UpdateForAboutToSaveSlide()
 {
-    FORCE_DONT_INLINE;
-
     if (PushNoCardMessage())
     {
         SceneCreated();
@@ -1049,12 +952,7 @@ void SaveLoadScene::UpdateForAboutToSaveSlide()
         SceneCreated();
 
         gSceneTypeStackDepth = 0;
-        gSceneTypeStack[gSceneTypeStackDepth++] = ST_SAVE;
-        gSaveLoadStarted = false;
-        gSaveLoadFinished = false;
-        gCallbackMade = false;
-        gSceneTime = 0.0f;
-        ResetTask::s_resetPaused = true;
+        PushSceneType(SaveLoadScene::ST_SAVE);
     }
 
     if (mButtonComponent != NULL)
@@ -1072,85 +970,37 @@ void SaveLoadScene::UpdateForAboutToSaveSlide()
  */
 void SaveLoadScene::HandleSaveLoadFinishedResult()
 {
-    eSaveLoad sceneType = gSceneTypeStack[gSceneTypeStackDepth - 1];
+    SaveLoadScene::eSaveLoad sceneType = GetSceneType();
 
     switch (sceneType)
     {
-    case ST_DELETE:
-    case ST_FORMAT:
+    case SaveLoadScene::ST_DELETE:
+    case SaveLoadScene::ST_FORMAT:
     {
-        if (sceneType == ST_FORMAT)
+        if (sceneType == SaveLoadScene::ST_FORMAT)
         {
-            int depth = *(volatile int*)&gSceneTypeStackDepth;
-            gSaveLoadStarted = false;
-            int stackIndex = depth - 1;
-            eSaveLoad prevScene = gSceneTypeStack[stackIndex];
-            gSaveLoadFinished = false;
-            gSceneTypeStackDepth = stackIndex;
-            ResetTask::s_resetPaused = (prevScene == 0);
-            gSceneTypeStack[gSceneTypeStackDepth++] = (eSaveLoad)SCENE_CUP_BACKGROUND;
-            gSaveLoadStarted = false;
-            gSaveLoadFinished = false;
-            gCallbackMade = false;
-            gSceneTime = 0.0f;
-            ResetTask::s_resetPaused = false;
+            PopSceneType();
+            PushSceneType((SaveLoadScene::eSaveLoad)SCENE_CUP_BACKGROUND);
         }
         else
         {
-            int stackIndex = --gSceneTypeStackDepth;
-            gSaveLoadStarted = false;
-            eSaveLoad prevScene = gSceneTypeStack[stackIndex];
-            gSaveLoadFinished = false;
-            if (prevScene == 0)
-            {
-                ResetTask::s_resetPaused = true;
-            }
-            else
-            {
-                ResetTask::s_resetPaused = false;
-            }
+            PopSceneType();
         }
         break;
     }
 
-    case (eSaveLoad)11:
-    {
-        int stackIndex = --gSceneTypeStackDepth;
-        gSaveLoadStarted = false;
-        eSaveLoad prevScene = gSceneTypeStack[stackIndex];
-        gSaveLoadFinished = false;
-        if (prevScene == 0)
-        {
-            ResetTask::s_resetPaused = true;
-        }
-        else
-        {
-            ResetTask::s_resetPaused = false;
-        }
+    case (SaveLoadScene::eSaveLoad)11:
+        PopSceneType();
         break;
-    }
 
-    case ST_GAMESAVEIDTEST:
-    {
-        int stackIndex = --gSceneTypeStackDepth;
-        gSaveLoadStarted = false;
-        eSaveLoad prevScene = gSceneTypeStack[stackIndex];
-        gSaveLoadFinished = false;
-        if (prevScene == 0)
-        {
-            ResetTask::s_resetPaused = true;
-        }
-        else
-        {
-            ResetTask::s_resetPaused = false;
-        }
+    case SaveLoadScene::ST_GAMESAVEIDTEST:
+        PopSceneType();
         break;
-    }
 
-    case ST_SAVE:
-    case ST_LOAD:
-    case ST_ASK_SAVE:
-    case ST_ASK_LOAD:
+    case SaveLoadScene::ST_SAVE:
+    case SaveLoadScene::ST_LOAD:
+    case SaveLoadScene::ST_ASK_SAVE:
+    case SaveLoadScene::ST_ASK_LOAD:
     {
         if (mIsAutoSaving)
         {
@@ -1163,7 +1013,7 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
                 SaveLoadScene::mLastSaveLoadSuccess = false;
                 if (mNextScene == SCENE_OPTIONS)
                 {
-                    if (sceneType != ST_FORMAT)
+                    if (sceneType != SaveLoadScene::ST_FORMAT)
                     {
                         if (gResult != -8 && gResult != -9)
                         {
@@ -1184,12 +1034,9 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
 
             BaseSceneHandler* scene = nlSingleton<GameSceneManager>::s_pInstance->Push(mNextScene, SCREEN_NOTHING, true);
 
-            if (m_displayText != NULL)
-            {
-                m_displayText->m_bVisible = false;
-            }
+            ShowText(false);
 
-            if (gSceneTypeStack[gSceneTypeStackDepth - 1] == SCENE_MARIO_BACKGROUND)
+            if (GetSceneType() == SCENE_MARIO_BACKGROUND)
             {
                 if (mNextScene != SCENE_LEGAL)
                 {
@@ -1218,23 +1065,19 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
         break;
     }
 
-    case ST_CHECKING:
+    case SaveLoadScene::ST_CHECKING:
     {
-        int stackIndex = --gSceneTypeStackDepth;
-        eSaveLoad prevScene = gSceneTypeStack[stackIndex];
-        gSaveLoadStarted = false;
-        gSaveLoadFinished = false;
-        ResetTask::s_resetPaused = (prevScene == 0);
+        PopSceneType();
         gSceneTime = 0.0f;
         gIgnoreMinWait = false;
         break;
     }
 
-    case ST_CONFIRM_FORMAT:
+    case SaveLoadScene::ST_CONFIRM_FORMAT:
     {
         int stackIndex = --gSceneTypeStackDepth;
         gSaveLoadFinished = false;
-        eSaveLoad prevScene = gSceneTypeStack[stackIndex];
+        SaveLoadScene::eSaveLoad prevScene = gSceneTypeStack[stackIndex];
         gSaveLoadStarted = false;
         ResetTask::s_resetPaused = (prevScene == 0);
         gSceneTime = 999.9f;
@@ -1242,13 +1085,13 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
         break;
     }
 
-    case ST_SHOULD_LOAD_OR_SAVE:
+    case SaveLoadScene::ST_SHOULD_LOAD_OR_SAVE:
     {
         if (gResult == 0)
         {
             PopSceneType();
             gSaveLoadFinished = false;
-            PushSceneType(ST_LOAD);
+            PushSceneType(SaveLoadScene::ST_LOAD);
         }
         else
         {
@@ -1258,7 +1101,7 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
         break;
     }
 
-    case ST_ABOUT_AUTOSAVE:
+    case SaveLoadScene::ST_ABOUT_AUTOSAVE:
     default:
         break;
     }
@@ -1276,8 +1119,8 @@ void SaveLoadScene::StartSaveNow()
         return;
     }
 
-    eSaveLoad sceneType = gSceneTypeStack[gSceneTypeStackDepth - 1];
-    if (sceneType != ST_SAVE)
+    SaveLoadScene::eSaveLoad sceneType = GetSceneType();
+    if (sceneType != SaveLoadScene::ST_SAVE)
     {
         return;
     }
@@ -1287,50 +1130,18 @@ void SaveLoadScene::StartSaveNow()
         return;
     }
 
-    if (mInstance->m_pFEPresentation->m_currentSlide == mInstance->mAboutAutoSaveSlide)
+    if (mInstance->IsOnAboutAutoSaveSlide())
     {
         return;
     }
 
     gSaveLoadStarted = true;
-    gSaveLoadFinished = false;
-    gCallbackMade = false;
+    TrySaveLoad();
+}
 
-    switch (sceneType)
-    {
-    case ST_SAVE:
-        gResult = SaveLoad::StartSave(0, SaveLoadCallback);
-        break;
-    case ST_LOAD:
-        gResult = SaveLoad::StartLoad(0, SaveLoadCallback, true, false);
-        break;
-    case ST_GAMESAVEIDTEST:
-        gResult = SaveLoad::StartMemoryCardIDCheck(0, SaveLoadCallback);
-        break;
-    case ST_DELETE:
-        gResult = SaveLoad::StartDelete(0, SaveLoadCallback);
-        break;
-    case ST_FORMAT:
-        gResult = SaveLoad::StartFormat(0, SaveLoadCallback);
-        break;
-    case ST_ASK_SAVE:
-        gResult = SaveLoad::StartFileExistsCheck(0, SaveLoadCallback);
-        break;
-    case ST_ASK_LOAD:
-        gResult = SaveLoad::StartLoad(0, SaveLoadCallback, false, false);
-        break;
-    case ST_CONFIRM_FORMAT:
-        gSaveLoadFinished = true;
-        gCallbackMade = false;
-        break;
-    case ST_SHOULD_LOAD_OR_SAVE:
-        gResult = SaveLoad::StartFileExistsCheck(0, SaveLoadCallback);
-        break;
-    case ST_CHECKING:
-        break;
-    case ST_ABOUT_AUTOSAVE:
-        break;
-    }
+bool SaveLoadScene::IsOnAboutAutoSaveSlide()
+{
+    return m_pFEPresentation->m_currentSlide == mAboutAutoSaveSlide;
 }
 
 /**
@@ -1343,28 +1154,9 @@ void SaveLoadScene::UpdateCardRemovedFlag()
         return;
     }
 
-    MemCard* memCard = g_MemCards[0];
-
-    s32 result = CARDProbeEx(memCard->m_Slot, &memCard->m_CardInfo.CardSize, &memCard->m_CardInfo.SectorSize);
-    if (result != 0)
+    if (NoCardInSlot())
     {
-        memCard->m_State = IS_IDLE;
-        memCard->m_CardState = CS_IDLE;
-    }
-
-    if (result == CARD_RESULT_NOCARD)
-    {
-        // Reload pointer in case it changed
-        memCard = g_MemCards[0];
-
-        result = CARDProbeEx(memCard->m_Slot, &memCard->m_CardInfo.CardSize, &memCard->m_CardInfo.SectorSize);
-        if (result != 0)
-        {
-            memCard->m_State = IS_IDLE;
-            memCard->m_CardState = CS_IDLE;
-        }
-
-        u8 currentNoCardState = (result == CARD_RESULT_NOCARD) ? 1 : 0;
+        u8 currentNoCardState = NoCardInSlot();
         if (PreviousNoCardInSlotState != currentNoCardState)
         {
             WasCardRemoved = 1;

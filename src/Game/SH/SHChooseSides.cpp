@@ -370,9 +370,9 @@ void SHChooseSides2::SceneCreated()
         for (int i = 0; i < 2; i++)
         {
             eTeamID teamid = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)i);
-            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, mainfilename, 0x80, teamid, i);
-            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, outlinefilename, 0x80, teamid, i);
-            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, flashfilename, 0x80, teamid, i);
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN, mainfilename, 0x80, teamid, i);
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN_OUTLINE, outlinefilename, 0x80, teamid, i);
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN_FLASH, flashfilename, 0x80, teamid, i);
 
             mAsyncImage[i][0]->QueueLoad(mainfilename, true);
             mAsyncImage[i][1]->QueueLoad(outlinefilename, true);

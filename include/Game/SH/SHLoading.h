@@ -23,17 +23,18 @@ public:
     SuperLoadingScene();
     virtual ~SuperLoadingScene();
     virtual void SceneCreated();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
     void DisplayCupInfo();
-    void BuildPlayerStrings(TLTextInstance*, int, bool);
-    void BuildAndLoadPortraits(eTeamID, eTeamID);
+    bool TexturesAreValid() const;
+    void BuildPlayerStrings(TLTextInstance* pTextInst, int side, bool checkConnected);
+    void BuildAndLoadPortraits(eTeamID homecaptain, eTeamID awaycaptain);
 
     enum TextureType
     {
         TT_MAIN = 0,
         TT_NUM_TYPES = 1,
     };
-    static unsigned long LoadImage(BundleFile&, eTeamID, int, TextureType);
+    static unsigned long LoadImage(BundleFile& bundlefile, eTeamID captain, int playingside, TextureType texturetype);
 
     /* 0x01C */ TransitionType mType;                   // size 0x4
     /* 0x020 */ float mElapsedTime;                     // size 0x4
@@ -43,49 +44,5 @@ public:
     /* 0x230 */ unsigned long mTextureHandles[2][1];    // size 0x8
     /* 0x238 */ unsigned short mPlayerStrings[2][255];  // size 0x3FC
 }; // total size: 0x634
-
-// class BasicString<unsigned short, Detail
-// {
-// public:
-//     void TempStringAllocator>::AppendInPlace(const unsigned short*);
-// };
-
-// class FEFinder<TLTextInstance, 3>
-// {
-// public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-// };
-
-// class FEFinder<TLComponentInstance, 4>
-// {
-// public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-// };
-
-// class FEFinder<TLImageInstance, 2>
-// {
-// public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-// };
-
-// class Format<BasicString<unsigned short, Detail
-// {
-// public:
-//     void TempStringAllocator>, unsigned short[16]>(const BasicString<unsigned short, Detail::TempStringAllocator>&, const unsigned
-//     short(&)[16]); void TempStringAllocator>, unsigned short[2]>(const BasicString<unsigned short, Detail::TempStringAllocator>&, const
-//     unsigned short(&)[2]);
-// };
-
-// class FormatImpl<BasicString<unsigned short, Detail
-// {
-// public:
-//     void TempStringAllocator>>::operator%<const unsigned short*>(const unsigned short* const&);
-// };
 
 #endif // _SHLOADING_H_

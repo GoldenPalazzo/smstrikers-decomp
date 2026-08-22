@@ -10,8 +10,6 @@
 #include <dolphin/charPipeline/texPalette.h>
 #include <string.h>
 
-extern void nlFree(void*);
-
 static void (*g_Callback)(long);
 static bool InOperation = false;
 
@@ -23,6 +21,11 @@ static MemCardIDInfo mLastKnownMemCardID;
 
 struct IconCRC
 {
+    IconCRC()
+        : mIconCRC(0)
+    {
+    }
+
     IconCRC& operator=(unsigned long crc)
     {
         mIconCRC = crc;
@@ -48,12 +51,6 @@ MemoryCardIDCallbacks MemoryCardIDSystem;
 
 inline IconDataCache::IconDataCache()
 {
-    gIconCRC = 0;
-    mIconConfig.BannerFormat = 0;
-    mIconConfig.IconCount = 0;
-    mIconConfig.IconFormat = 0;
-    mIconConfig.IconAnimType = 0;
-    memset(mIconConfig.IconSpeeds, 0, 8);
     mIconHdrBuffer = NULL;
     mIconBuffer = NULL;
     mBannerBuffer = NULL;
@@ -107,31 +104,12 @@ bool SaveLoad::CardBusy()
 
 static void ConstructIconCfg(MemCard::ICON_CONFIG& IconCfg)
 {
-    IconCfg.BannerFormat = 0;
-    IconCfg.IconCount = 0;
-    IconCfg.IconFormat = 0;
-    IconCfg.IconAnimType = 0;
-    memset(IconCfg.IconSpeeds, 0, 8);
     memset(&IconCfg, 0, sizeof(MemCard::ICON_CONFIG));
 
     IconCfg.IconCount = 1;
     IconCfg.IconFormat = 2;
     IconCfg.IconSpeeds[0] = 3;
     IconCfg.BannerFormat = 2;
-
-    u8 savedIconCount = IconCfg.IconCount;
-    int bannerFmt = IconCfg.BannerFormat;
-    s8 savedIconFmt = IconCfg.IconFormat;
-
-    int iconPixels = savedIconFmt << 10;
-    int bannerHeader = 0;
-    bannerHeader += ((bannerFmt == 1) ? 0x200 : 0);
-    bannerHeader += bannerFmt * 0xC00;
-    u32 iconClut = ((savedIconFmt == 1) ? 0x200 : 0);
-    int headerSize = bannerHeader + (savedIconCount * iconPixels);
-    headerSize = headerSize + iconClut;
-    headerSize += 0x40;
-    IconCfg.HeaderSize = headerSize;
 }
 
 static inline TEXHeaderPtr GetTPLImageHeader(TEXPalettePtr tpl)
@@ -234,7 +212,7 @@ inline unsigned long LoadCallbacks::LoadIconDataDoneCB(unsigned long Slot, long 
     gIconCRC = fileheader->IconCRC;
     if (m_TestGameID)
     {
-        *(u8*)&m_GameIDTestResult = nlSingleton<GameInfoManager>::s_pInstance->CheckSaveIDChanged((void*)((u8*)m_pReadBuffer + 12));
+        m_GameIDTestResult = nlSingleton<GameInfoManager>::s_pInstance->CheckSaveIDChanged((void*)((u8*)m_pReadBuffer + 12));
     }
     else
     {
@@ -270,11 +248,6 @@ unsigned long LoadCallbacks::ReadDoneCB(unsigned long Slot, long Result, void* p
     unsigned long calculatedcrc;
     unsigned long filesize;
 
-    localCfg.BannerFormat = 0;
-    localCfg.IconCount = 0;
-    localCfg.IconFormat = 0;
-    localCfg.IconAnimType = 0;
-    memset(localCfg.IconSpeeds, 0, 8);
     memset(&localCfg, 0, sizeof(MemCard::ICON_CONFIG));
 
     localCfg.IconCount = 1;
@@ -373,32 +346,32 @@ unsigned long LoadCallbacks::ReadDoneCB(unsigned long Slot, long Result, void* p
 /**
  * Offset/Address/Size: 0xE88 | 0x8018A7E4 | size: 0x24C
  */
-inline unsigned long LoadCallbacks::CardMountCB(unsigned long channel, long result, void* data)
+inline unsigned long LoadCallbacks::CardMountCB(unsigned long Slot, long Result, void* pUserData)
 {
-    if (result != 0)
+    if (Result != 0)
     {
-        MemCard* card = g_MemCards[channel];
+        MemCard* card = g_MemCards[Slot];
         card->m_State = IS_IDLE;
         card->m_CardState = CS_IDLE;
         CARDUnmount(card->m_Slot);
         InOperation = false;
-        g_Callback(result);
+        g_Callback(Result);
         m_MustFreeBuffers = true;
         return -1;
     }
 
     MemCard::MC_FILE* pFile;
-    unsigned long fileLen;
-    result = g_MemCards[channel]->OpenFile(MarioSoccerFileName, pFile, &fileLen);
+    unsigned long FileLength;
+    Result = g_MemCards[Slot]->OpenFile(MarioSoccerFileName, pFile, &FileLength);
 
-    if (result != 0)
+    if (Result != 0)
     {
-        MemCard* card = g_MemCards[channel];
+        MemCard* card = g_MemCards[Slot];
         card->m_State = IS_IDLE;
         card->m_CardState = CS_IDLE;
         CARDUnmount(card->m_Slot);
         InOperation = false;
-        g_Callback(result);
+        g_Callback(Result);
         m_MustFreeBuffers = true;
         return -1;
     }
@@ -407,14 +380,14 @@ inline unsigned long LoadCallbacks::CardMountCB(unsigned long channel, long resu
     {
         if (pFile != NULL)
         {
-            g_MemCards[channel]->CloseFile(pFile);
+            g_MemCards[Slot]->CloseFile(pFile);
         }
-        MemCard* card = g_MemCards[channel];
+        MemCard* card = g_MemCards[Slot];
         card->m_State = IS_IDLE;
         card->m_CardState = CS_IDLE;
         CARDUnmount(card->m_Slot);
         InOperation = false;
-        g_Callback(result);
+        g_Callback(Result);
         m_MustFreeBuffers = true;
         return 0;
     }
@@ -431,52 +404,25 @@ inline unsigned long LoadCallbacks::CardMountCB(unsigned long channel, long resu
     void* functorMem = functor.m_FunctorMem;
     new (functorMem) MemCardFunctor::MCMemberFunctor<LoadCallbacks>(&LoadSystem, cb, pFileLocal);
 
-    result = g_MemCards[channel]->InternalReadFile(pFile, m_pReadBuffer, m_AlignedReadBufferDataSize, pFile->TotalHeaderSize, functor);
+    Result = g_MemCards[Slot]->InternalReadFile(pFile, m_pReadBuffer, m_AlignedReadBufferDataSize, pFile->TotalHeaderSize, functor);
 
-    if (result != 0)
+    if (Result != 0)
     {
         if (pFile != NULL)
         {
-            g_MemCards[channel]->CloseFile(pFile);
+            g_MemCards[Slot]->CloseFile(pFile);
         }
-        MemCard* card = g_MemCards[channel];
+        MemCard* card = g_MemCards[Slot];
         card->m_State = IS_IDLE;
         card->m_CardState = CS_IDLE;
         CARDUnmount(card->m_Slot);
         InOperation = false;
-        g_Callback(result);
+        g_Callback(Result);
         m_MustFreeBuffers = true;
         return -1;
     }
 
     return 0;
-}
-
-static inline void ConstructMountIconCfg(MemCard::ICON_CONFIG& IconCfg)
-{
-    IconCfg.BannerFormat = 0;
-    IconCfg.IconCount = 0;
-    IconCfg.IconFormat = 0;
-    IconCfg.IconAnimType = 0;
-    memset(IconCfg.IconSpeeds, 0, 8);
-    memset(&IconCfg, 0, sizeof(MemCard::ICON_CONFIG));
-    IconCfg.IconCount = 1;
-    IconCfg.IconFormat = 2;
-    IconCfg.IconSpeeds[0] = 3;
-    IconCfg.BannerFormat = 2;
-    u8 savedIconCount = IconCfg.IconCount;
-    int bannerFmt = IconCfg.BannerFormat;
-    s8 savedIconFmt = IconCfg.IconFormat;
-    int iconPixels = savedIconFmt << 10;
-    int bannerHeader = 0;
-    bannerHeader += ((bannerFmt == 1) ? 0x200 : 0);
-    bannerHeader += bannerFmt * 0xC00;
-    u32 iconClut = ((savedIconFmt == 1) ? 0x200 : 0);
-    int headerSize = iconClut;
-    iconPixels = bannerHeader + savedIconCount * iconPixels;
-    headerSize = iconPixels + headerSize;
-    headerSize += 0x40;
-    IconCfg.HeaderSize = headerSize;
 }
 
 /**
@@ -486,60 +432,7 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
 {
     if (Result != 0)
     {
-        MemCard* card2;
-        long errorCode;
-        int numBlocks;
-        MemCard::MC_FILE* saveFile = m_pSaveFile;
-        errorCode = Result;
-        if (saveFile != NULL)
-        {
-            g_MemCards[Slot]->CloseFile(saveFile);
-            m_pSaveFile = NULL;
-        }
-        MemCard* card = g_MemCards[Slot];
-        card->m_State = IS_IDLE;
-        card->m_CardState = CS_IDLE;
-        CARDUnmount(card->m_Slot);
-        InOperation = false;
-
-        if (errorCode == -4)
-        {
-            unsigned long slotOffset = Slot << 2;
-            card2 = MemCard::At(slotOffset);
-            long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-            numBlocks = 0;
-            dataSize += 12;
-            while (dataSize > 0)
-            {
-                numBlocks++;
-                dataSize -= 0x2000;
-            }
-            MemCard::ICON_CONFIG IconCfg;
-            ConstructMountIconCfg(IconCfg);
-            dataSize = IconCfg.HeaderSize;
-            while (dataSize > 0)
-            {
-                numBlocks++;
-                dataSize -= 0x2000;
-            }
-            unsigned long sectorSize = card2->m_CardInfo.SectorSize;
-            unsigned long bytestosave = numBlocks * sectorSize;
-            unsigned long alignedSize = MemCard::At(slotOffset)->AlignBytesToSectorSize(bytestosave);
-            MemCard* mc = MemCard::At(slotOffset);
-            u8 hasSpace;
-            if (alignedSize > mc->m_CardInfo.FreeBytes)
-                hasSpace = 0;
-            else if (mc->m_CardInfo.FreeFiles < 1)
-                hasSpace = 0;
-            else
-                hasSpace = 1;
-            if (!hasSpace)
-                errorCode = -9;
-        }
-
-        m_MustFreeMemory = true;
-        g_Callback(errorCode);
-        ResetTask::s_resetPaused = false;
+        HandleError(Slot, Result);
         return -1;
     }
 
@@ -548,59 +441,8 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
         s64 serialID = g_MemCards[Slot]->GetSerialID();
         if (mRequiredMemoryCardID != serialID)
         {
-            unsigned long slotOffset;
-            int numBlocks;
             long serialError = -1001;
-            MemCard* card2;
-            if (m_pSaveFile != NULL)
-            {
-                g_MemCards[Slot]->CloseFile(m_pSaveFile);
-                m_pSaveFile = NULL;
-            }
-            MemCard* card = g_MemCards[Slot];
-            card->m_State = IS_IDLE;
-            card->m_CardState = CS_IDLE;
-            CARDUnmount(card->m_Slot);
-            InOperation = false;
-
-            if (serialError == -4)
-            {
-                slotOffset = Slot << 2;
-                card2 = MemCard::At(slotOffset);
-                long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-                numBlocks = 0;
-                dataSize += 12;
-                while (dataSize > 0)
-                {
-                    numBlocks++;
-                    dataSize -= 0x2000;
-                }
-                MemCard::ICON_CONFIG IconCfg;
-                ConstructMountIconCfg(IconCfg);
-                dataSize = IconCfg.HeaderSize;
-                while (dataSize > 0)
-                {
-                    numBlocks++;
-                    dataSize -= 0x2000;
-                }
-                unsigned long sectorSize = card2->m_CardInfo.SectorSize;
-                unsigned long bytestosave = numBlocks * sectorSize;
-                unsigned long alignedSize = MemCard::At(slotOffset)->AlignBytesToSectorSize(bytestosave);
-                MemCard* mc = MemCard::At(slotOffset);
-                u8 hasSpace;
-                if (alignedSize > mc->m_CardInfo.FreeBytes)
-                    hasSpace = 0;
-                else if (mc->m_CardInfo.FreeFiles < 1)
-                    hasSpace = 0;
-                else
-                    hasSpace = 1;
-                if (!hasSpace)
-                    serialError = -9;
-            }
-
-            m_MustFreeMemory = true;
-            g_Callback(serialError);
-            ResetTask::s_resetPaused = false;
+            HandleError(Slot, serialError);
             return -1;
         }
     }
@@ -609,7 +451,6 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
         mRequiredMemoryCardID = g_MemCards[Slot]->GetSerialID();
     }
 
-    // Success path
     g_MemCards[Slot]->CloseFile(m_pSaveFile);
     MemCard* card = g_MemCards[Slot];
     card->m_State = IS_IDLE;
@@ -635,11 +476,6 @@ inline long SaveCallbacks::DoSave(unsigned long Slot)
     };
 
     MemCard::ICON_CONFIG localCfg;
-    localCfg.BannerFormat = 0;
-    localCfg.IconCount = 0;
-    localCfg.IconFormat = 0;
-    localCfg.IconAnimType = 0;
-    memset(localCfg.IconSpeeds, 0, 8);
     memset(&localCfg, 0, sizeof(MemCard::ICON_CONFIG));
 
     localCfg.IconCount = 1;
@@ -649,57 +485,7 @@ inline long SaveCallbacks::DoSave(unsigned long Slot)
     u8 configValid = (memcmp(&localCfg, &m_pSaveFile->IconCfg, 1) == 0);
     if (!configValid)
     {
-        MemCard* card2;
-        long errorCode;
-        int numBlocks;
-        errorCode = -1000;
-        if (m_pSaveFile != NULL)
-        {
-            g_MemCards[Slot]->CloseFile(m_pSaveFile);
-            m_pSaveFile = NULL;
-        }
-        MemCard* card = g_MemCards[Slot];
-        card->m_State = IS_IDLE;
-        card->m_CardState = CS_IDLE;
-        CARDUnmount(card->m_Slot);
-        InOperation = false;
-        if (errorCode == -4)
-        {
-            unsigned long slotOffset = Slot << 2;
-            card2 = MemCard::At(slotOffset);
-            long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-            numBlocks = 0;
-            dataSize += 12;
-            while (dataSize > 0)
-            {
-                numBlocks++;
-                dataSize -= 0x2000;
-            }
-            MemCard::ICON_CONFIG IconCfg;
-            ConstructMountIconCfg(IconCfg);
-            dataSize = IconCfg.HeaderSize;
-            while (dataSize > 0)
-            {
-                numBlocks++;
-                dataSize -= 0x2000;
-            }
-            unsigned long sectorSize = card2->m_CardInfo.SectorSize;
-            unsigned long bytesToSave = numBlocks * sectorSize;
-            unsigned long alignedSize = MemCard::At(slotOffset)->AlignBytesToSectorSize(bytesToSave);
-            MemCard* mc = MemCard::At(slotOffset);
-            u8 hasSpace;
-            if (alignedSize > mc->m_CardInfo.FreeBytes)
-                hasSpace = 0;
-            else if (mc->m_CardInfo.FreeFiles < 1)
-                hasSpace = 0;
-            else
-                hasSpace = 1;
-            if (hasSpace == 0)
-                errorCode = -9;
-        }
-        m_MustFreeMemory = true;
-        g_Callback(errorCode);
-        ResetTask::s_resetPaused = false;
+        HandleError(Slot, -1000);
         return -1;
     }
 
@@ -757,61 +543,33 @@ inline long SaveCallbacks::DoSave(unsigned long Slot)
     long Result = g_MemCards[Slot]->InternalWriteFile(m_pSaveFile, m_pSaveGameBuffer, DataSize, m_pSaveFile->TotalHeaderSize, functor, true);
     if (Result != 0)
     {
-        unsigned long slotOffset;
-        int numBlocks;
-        long errorCode;
-        MemCard* card2;
-        errorCode = Result;
-        if (m_pSaveFile != NULL)
-        {
-            g_MemCards[Slot]->CloseFile(m_pSaveFile);
-            m_pSaveFile = NULL;
-        }
-        MemCard* card = g_MemCards[Slot];
-        card->m_State = IS_IDLE;
-        card->m_CardState = CS_IDLE;
-        CARDUnmount(card->m_Slot);
-        InOperation = false;
-        if (errorCode == -4)
-        {
-            slotOffset = Slot << 2;
-            card2 = MemCard::At(slotOffset);
-            long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-            numBlocks = 0;
-            dataSize += 12;
-            while (dataSize > 0)
-            {
-                numBlocks++;
-                dataSize -= 0x2000;
-            }
-            MemCard::ICON_CONFIG IconCfg;
-            ConstructMountIconCfg(IconCfg);
-            dataSize = IconCfg.HeaderSize;
-            while (dataSize > 0)
-            {
-                numBlocks++;
-                dataSize -= 0x2000;
-            }
-            unsigned long sectorSize = card2->m_CardInfo.SectorSize;
-            unsigned long bytesToSave = numBlocks * sectorSize;
-            unsigned long alignedSize = MemCard::At(slotOffset)->AlignBytesToSectorSize(bytesToSave);
-            MemCard* mc = MemCard::At(slotOffset);
-            u8 hasSpace;
-            if (alignedSize > mc->m_CardInfo.FreeBytes)
-                hasSpace = 0;
-            else if (mc->m_CardInfo.FreeFiles < 1)
-                hasSpace = 0;
-            else
-                hasSpace = 1;
-            if (hasSpace == 0)
-                errorCode = -9;
-        }
-        m_MustFreeMemory = true;
-        g_Callback(errorCode);
-        ResetTask::s_resetPaused = false;
+        HandleError(Slot, Result);
         return -1;
     }
     return 0;
+}
+
+inline void SaveCallbacks::HandleError(unsigned long Slot, long Result)
+{
+    if (m_pSaveFile != NULL)
+    {
+        g_MemCards[Slot]->CloseFile(m_pSaveFile);
+        m_pSaveFile = NULL;
+    }
+
+    MemCard* card = g_MemCards[Slot];
+    card->m_State = IS_IDLE;
+    card->m_CardState = CS_IDLE;
+    CARDUnmount(card->m_Slot);
+
+    InOperation = false;
+
+    if (Result == -4 && !SaveLoad::HasEnoughFreeSpace(Slot))
+        Result = -9;
+
+    m_MustFreeMemory = true;
+    g_Callback(Result);
+    ResetTask::s_resetPaused = false;
 }
 
 /**
@@ -821,63 +579,7 @@ inline unsigned long SaveCallbacks::FileWriteIconCB(unsigned long Slot, long Res
 {
     if (Result != 0)
     {
-        MemCard* card2;
-        long errorCode;
-        int numBlocks;
-        errorCode = Result;
-        if (m_pSaveFile != NULL)
-        {
-            g_MemCards[Slot]->CloseFile(m_pSaveFile);
-            m_pSaveFile = NULL;
-        }
-
-        MemCard* card = g_MemCards[Slot];
-        card->m_State = IS_IDLE;
-        card->m_CardState = CS_IDLE;
-        CARDUnmount(card->m_Slot);
-
-        InOperation = false;
-
-        if (errorCode == -4)
-        {
-            unsigned long slotOffset = Slot << 2;
-            card2 = MemCard::At(slotOffset);
-            long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-            numBlocks = 0;
-            dataSize += 12;
-            while (dataSize > 0)
-            {
-                numBlocks++;
-                dataSize -= 0x2000;
-            }
-
-            MemCard::ICON_CONFIG IconCfg;
-            ConstructMountIconCfg(IconCfg);
-            dataSize = IconCfg.HeaderSize;
-            while (dataSize > 0)
-            {
-                numBlocks++;
-                dataSize -= 0x2000;
-            }
-
-            unsigned long sectorSize = card2->m_CardInfo.SectorSize;
-            unsigned long bytesToSave = numBlocks * sectorSize;
-            unsigned long alignedSize = MemCard::At(slotOffset)->AlignBytesToSectorSize(bytesToSave);
-            MemCard* mc = MemCard::At(slotOffset);
-            u8 hasSpace;
-            if (alignedSize > mc->m_CardInfo.FreeBytes)
-                hasSpace = 0;
-            else if (mc->m_CardInfo.FreeFiles < 1)
-                hasSpace = 0;
-            else
-                hasSpace = 1;
-            if (hasSpace == 0)
-                errorCode = -9;
-        }
-
-        m_MustFreeMemory = true;
-        g_Callback(errorCode);
-        ResetTask::s_resetPaused = false;
+        HandleError(Slot, Result);
         return -1;
     }
 
@@ -894,58 +596,8 @@ unsigned long SaveCallbacks::CreateFileCB(unsigned long Slot, long Result, void*
 
     if (Result != 0)
     {
-        MemCard* card2;
-        long errorCode;
-        int numBlocks;
-        errorCode = Result;
         m_pSaveFile = NULL;
-        if (m_pSaveFile != NULL)
-        {
-            g_MemCards[Slot]->CloseFile(m_pSaveFile);
-            m_pSaveFile = NULL;
-        }
-        MemCard* card = g_MemCards[Slot];
-        card->m_State = IS_IDLE;
-        card->m_CardState = CS_IDLE;
-        CARDUnmount(card->m_Slot);
-        InOperation = false;
-        if (errorCode == -4)
-        {
-            unsigned long slotOffset = Slot << 2;
-            card2 = MemCard::At(slotOffset);
-            long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-            numBlocks = 0;
-            dataSize += 12;
-            while (dataSize > 0)
-            {
-                numBlocks++;
-                dataSize -= 0x2000;
-            }
-            MemCard::ICON_CONFIG IconCfg;
-            ConstructMountIconCfg(IconCfg);
-            dataSize = IconCfg.HeaderSize;
-            while (dataSize > 0)
-            {
-                numBlocks++;
-                dataSize -= 0x2000;
-            }
-            unsigned long sectorSize = card2->m_CardInfo.SectorSize;
-            unsigned long bytestosave = numBlocks * sectorSize;
-            unsigned long alignedSize = MemCard::At(slotOffset)->AlignBytesToSectorSize(bytestosave);
-            MemCard* mc = MemCard::At(slotOffset);
-            u8 hasSpace;
-            if (alignedSize > mc->m_CardInfo.FreeBytes)
-                hasSpace = 0;
-            else if (mc->m_CardInfo.FreeFiles < 1)
-                hasSpace = 0;
-            else
-                hasSpace = 1;
-            if (hasSpace == 0)
-                errorCode = -9;
-        }
-        m_MustFreeMemory = true;
-        g_Callback(errorCode);
-        ResetTask::s_resetPaused = false;
+        HandleError(Slot, Result);
         return -1;
     }
     MemCard::ICON_DATA_INFO bannerDataInfo;
@@ -993,59 +645,8 @@ unsigned long SaveCallbacks::CreateFileCB(unsigned long Slot, long Result, void*
     Result = g_MemCards[m_Slot]->WriteFileIconData(m_pSaveFile, gIconDataCache.mIconDataInfo.pHeaderData, functor);
     if (Result != 0)
     {
-        unsigned long slotOffset;
-        MemCard* card2;
-        int numBlocks;
-        long errorCode;
         Slot = m_Slot;
-        errorCode = Result;
-        if (m_pSaveFile != NULL)
-        {
-            g_MemCards[Slot]->CloseFile(m_pSaveFile);
-            m_pSaveFile = NULL;
-        }
-        MemCard* card3 = g_MemCards[Slot];
-        card3->m_State = IS_IDLE;
-        card3->m_CardState = CS_IDLE;
-        CARDUnmount(card3->m_Slot);
-        InOperation = false;
-        if (errorCode == -4)
-        {
-            slotOffset = Slot << 2;
-            card2 = MemCard::At(slotOffset);
-            long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-            numBlocks = 0;
-            dataSize += 12;
-            while (dataSize > 0)
-            {
-                numBlocks++;
-                dataSize -= 0x2000;
-            }
-            MemCard::ICON_CONFIG IconCfg;
-            ConstructMountIconCfg(IconCfg);
-            dataSize = IconCfg.HeaderSize;
-            while (dataSize > 0)
-            {
-                numBlocks++;
-                dataSize -= 0x2000;
-            }
-            unsigned long sectorSize = card2->m_CardInfo.SectorSize;
-            unsigned long bytestosave = numBlocks * sectorSize;
-            unsigned long alignedSize = MemCard::At(slotOffset)->AlignBytesToSectorSize(bytestosave);
-            MemCard* mc = MemCard::At(slotOffset);
-            u8 hasSpace;
-            if (alignedSize > mc->m_CardInfo.FreeBytes)
-                hasSpace = 0;
-            else if (mc->m_CardInfo.FreeFiles < 1)
-                hasSpace = 0;
-            else
-                hasSpace = 1;
-            if (hasSpace == 0)
-                errorCode = -9;
-        }
-        m_MustFreeMemory = true;
-        g_Callback(errorCode);
-        ResetTask::s_resetPaused = false;
+        HandleError(Slot, Result);
     }
     return Result;
 }
@@ -1053,93 +654,29 @@ unsigned long SaveCallbacks::CreateFileCB(unsigned long Slot, long Result, void*
 /**
  * Offset/Address/Size: 0x1EC4 | 0x8018B820 | size: 0x6C
  */
-unsigned long DeleteCallbacks::DeleteDoneCB(unsigned long channel, long result, void* data)
+unsigned long DeleteCallbacks::DeleteDoneCB(unsigned long Slot, long Result, void* pUserData)
 {
-    MemCard* card = g_MemCards[channel];
+    MemCard* card = g_MemCards[Slot];
     card->m_State = IS_IDLE;
     card->m_CardState = CS_IDLE;
     CARDUnmount(card->m_Slot);
     InOperation = false;
-    g_Callback(result);
-    return (-result | result) >> 31;
+    g_Callback(Result);
+    return (-Result | Result) >> 31;
 }
 
 /**
  * Offset/Address/Size: 0x1E58 | 0x8018B7B4 | size: 0x6C
  */
-unsigned long FormatCallbacks::FormatDoneCB(unsigned long channel, long result, void* data)
+unsigned long FormatCallbacks::FormatDoneCB(unsigned long Slot, long Result, void* pUserData)
 {
-    MemCard* card = g_MemCards[channel];
+    MemCard* card = g_MemCards[Slot];
     card->m_State = IS_IDLE;
     card->m_CardState = CS_IDLE;
     CARDUnmount(card->m_Slot);
     InOperation = false;
-    g_Callback(result);
-    return (-result | result) >> 31;
-}
-
-static inline unsigned char CheckMountSpace(unsigned long Slot)
-{
-    unsigned long slotOffset = Slot << 2;
-    MemCard* card2 = g_MemCards[slotOffset >> 2];
-    int ds = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-    int numBlocks = 0;
-    ds += 12;
-    while (ds > 0)
-    {
-        numBlocks++;
-        ds -= 0x2000;
-    }
-    MemCard::ICON_CONFIG IconCfg;
-    ConstructMountIconCfg(IconCfg);
-    ds = IconCfg.HeaderSize;
-    while (ds > 0)
-    {
-        numBlocks++;
-        ds -= 0x2000;
-    }
-    unsigned long sectorSize = card2->m_CardInfo.SectorSize;
-    unsigned long bytestosave = numBlocks * sectorSize;
-    unsigned long alignedSize = g_MemCards[slotOffset >> 2]->AlignBytesToSectorSize(bytestosave);
-    MemCard* mc = g_MemCards[slotOffset >> 2];
-    if (alignedSize > mc->m_CardInfo.FreeBytes)
-        return 0;
-    if (mc->m_CardInfo.FreeFiles < 1)
-        return 0;
-    return 1;
-}
-
-static inline unsigned char CheckLater1(unsigned long Slot)
-{
-    int numBlocks;
-    MemCard* card2;
-    unsigned long slotOffset = Slot << 2;
-    card2 = g_MemCards[slotOffset >> 2];
-    int ds = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-    numBlocks = 0;
-    ds += 12;
-    while (ds > 0)
-    {
-        numBlocks++;
-        ds -= 0x2000;
-    }
-    MemCard::ICON_CONFIG IconCfg;
-    ConstructMountIconCfg(IconCfg);
-    ds = IconCfg.HeaderSize;
-    while (ds > 0)
-    {
-        numBlocks++;
-        ds -= 0x2000;
-    }
-    unsigned long sectorSize = card2->m_CardInfo.SectorSize;
-    unsigned long bytestosave = numBlocks * sectorSize;
-    unsigned long alignedSize = g_MemCards[slotOffset >> 2]->AlignBytesToSectorSize(bytestosave);
-    MemCard* mc = g_MemCards[slotOffset >> 2];
-    if (alignedSize > mc->m_CardInfo.FreeBytes)
-        return 0;
-    if (mc->m_CardInfo.FreeFiles < 1)
-        return 0;
-    return 1;
+    g_Callback(Result);
+    return (-Result | Result) >> 31;
 }
 
 /**
@@ -1147,66 +684,28 @@ static inline unsigned char CheckLater1(unsigned long Slot)
  */
 inline unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* pUserData)
 {
-    MemCard::ICON_CONFIG IconCfg;
     typedef unsigned long (SaveCallbacks::*MemberCB)(unsigned long, long, void*);
-    MemberCB iconCb;
-    MemberCB cb;
+    union
+    {
+        MemCard::ICON_CONFIG IconCfg;
+    };
 
     m_Slot = Slot;
     if (Result != 0)
     {
-        MemCard* card2;
-        long errorCode = Result;
-        if (m_pSaveFile != NULL)
-        {
-            g_MemCards[Slot]->CloseFile(m_pSaveFile);
-            m_pSaveFile = NULL;
-        }
-        MemCard* card = g_MemCards[Slot];
-        card->m_State = IS_IDLE;
-        card->m_CardState = CS_IDLE;
-        CARDUnmount(card->m_Slot);
-        InOperation = false;
-        if (errorCode == -4)
-        {
-            unsigned long slotOffset = Slot << 2;
-            card2 = MemCard::At(slotOffset);
-            int dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-            int numBlocks = 0;
-            dataSize += 12;
-            while (dataSize > 0)
-            {
-                numBlocks++;
-                dataSize -= 0x2000;
-            }
-            MemCard::ICON_CONFIG IconCfg;
-            ConstructMountIconCfg(IconCfg);
-            dataSize = IconCfg.HeaderSize;
-            while (dataSize > 0)
-            {
-                numBlocks++;
-                dataSize -= 0x2000;
-            }
-            unsigned long sectorSize = card2->m_CardInfo.SectorSize;
-            unsigned long bytestosave = numBlocks * sectorSize;
-            unsigned long alignedSize = MemCard::At(slotOffset)->AlignBytesToSectorSize(bytestosave);
-            MemCard* mc = MemCard::At(slotOffset);
-            u8 hasSpace;
-            if (alignedSize > mc->m_CardInfo.FreeBytes)
-                hasSpace = 0;
-            else if (mc->m_CardInfo.FreeFiles < 1)
-                hasSpace = 0;
-            else
-                hasSpace = 1;
-            if (hasSpace == 0)
-                errorCode = -9;
-        }
-        m_MustFreeMemory = true;
-        g_Callback(errorCode);
-        ResetTask::s_resetPaused = false;
+        HandleError(Slot, Result);
         return -1;
     }
     long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize() + 12;
+#if defined(VERSION_G4QJ01)
+    if (mLastKnownMemCardID.serialID != 0
+        && mLastKnownMemCardID.serialID != g_MemCards[Slot]->GetSerialID())
+    {
+        Result = -1001;
+        HandleError(Slot, Result);
+        return -1;
+    }
+#endif
     Result = g_MemCards[Slot]->FileExists(MarioSoccerFileName);
     switch (Result)
     {
@@ -1217,25 +716,7 @@ inline unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result,
         long openResult = g_MemCards[Slot]->OpenFile(MarioSoccerFileName, m_pSaveFile, &openSize);
         if (openResult != 0)
         {
-            long errorCode = openResult;
-            if (m_pSaveFile != NULL)
-            {
-                g_MemCards[Slot]->CloseFile(m_pSaveFile);
-                m_pSaveFile = NULL;
-            }
-            MemCard* card = g_MemCards[Slot];
-            card->m_State = IS_IDLE;
-            card->m_CardState = CS_IDLE;
-            CARDUnmount(card->m_Slot);
-            InOperation = false;
-            if (errorCode == -4)
-            {
-                if (CheckLater1(Slot) == 0)
-                    errorCode = -9;
-            }
-            m_MustFreeMemory = true;
-            g_Callback(errorCode);
-            ResetTask::s_resetPaused = false;
+            HandleError(Slot, openResult);
             return -1;
         }
         MemCard::ICON_DATA_INFO bannerDataInfo;
@@ -1276,7 +757,7 @@ inline unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result,
         m_IconCRC = crc;
         gIconCRC = m_IconCRC;
         void* headerData = gIconDataCache.mIconDataInfo.pHeaderData;
-        iconCb = &SaveCallbacks::FileWriteIconCB;
+        MemberCB iconCb = &SaveCallbacks::FileWriteIconCB;
         union
         {
             MemCardFunctor functor;
@@ -1286,43 +767,21 @@ inline unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result,
         long writeResult = g_MemCards[Slot]->WriteFileIconData(m_pSaveFile, gIconDataCache.mIconDataInfo.pHeaderData, functor);
         if (writeResult != 0)
         {
-            long errorCode = writeResult;
-            if (m_pSaveFile != NULL)
-            {
-                g_MemCards[Slot]->CloseFile(m_pSaveFile);
-                m_pSaveFile = NULL;
-            }
-            MemCard* card3 = g_MemCards[Slot];
-            card3->m_State = IS_IDLE;
-            card3->m_CardState = CS_IDLE;
-            CARDUnmount(card3->m_Slot);
-            InOperation = false;
-            if (errorCode == -4)
-            {
-                if (CheckMountSpace(Slot) == 0)
-                    errorCode = -9;
-            }
-            m_MustFreeMemory = true;
-            g_Callback(errorCode);
-            ResetTask::s_resetPaused = false;
+            HandleError(Slot, writeResult);
             return -1;
         }
     }
     break;
     case -4:
     {
-        IconCfg.BannerFormat = 0;
-        IconCfg.IconCount = 0;
-        IconCfg.IconFormat = 0;
-        IconCfg.IconAnimType = 0;
-        memset(IconCfg.IconSpeeds, 0, 8);
+        IconCfg.Initialize();
         memset(&IconCfg, 0, sizeof(MemCard::ICON_CONFIG));
         IconCfg.IconCount = 1;
         IconCfg.IconFormat = 2;
         IconCfg.IconSpeeds[0] = 3;
         IconCfg.BannerFormat = 2;
         m_pSaveFile = NULL;
-        cb = &SaveCallbacks::CreateFileCB;
+        MemberCB cb = &SaveCallbacks::CreateFileCB;
         union
         {
             MemCardFunctor functor;
@@ -1332,50 +791,14 @@ inline unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result,
         mRequiredMemoryCardID = 0;
         if (createResult != 0)
         {
-            long errorCode = createResult;
-            if (m_pSaveFile != NULL)
-            {
-                g_MemCards[Slot]->CloseFile(m_pSaveFile);
-                m_pSaveFile = NULL;
-            }
-            MemCard* card5 = g_MemCards[Slot];
-            card5->m_State = IS_IDLE;
-            card5->m_CardState = CS_IDLE;
-            CARDUnmount(card5->m_Slot);
-            InOperation = false;
-            if (errorCode == -4)
-            {
-                if (CheckMountSpace(Slot) == 0)
-                    errorCode = -9;
-            }
-            m_MustFreeMemory = true;
-            g_Callback(errorCode);
-            ResetTask::s_resetPaused = false;
+            HandleError(Slot, createResult);
             return -1;
         }
     }
     break;
     default:
     {
-        long errorCode = Result;
-        if (m_pSaveFile != NULL)
-        {
-            g_MemCards[Slot]->CloseFile(m_pSaveFile);
-            m_pSaveFile = NULL;
-        }
-        MemCard* card7 = g_MemCards[Slot];
-        card7->m_State = IS_IDLE;
-        card7->m_CardState = CS_IDLE;
-        CARDUnmount(card7->m_Slot);
-        InOperation = false;
-        if (errorCode == -4)
-        {
-            if (CheckMountSpace(Slot) == 0)
-                errorCode = -9;
-        }
-        m_MustFreeMemory = true;
-        g_Callback(errorCode);
-        ResetTask::s_resetPaused = false;
+        HandleError(Slot, Result);
         return -1;
     }
     break;
@@ -1386,24 +809,24 @@ inline unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result,
 /**
  * Offset/Address/Size: 0xB10 | 0x8018A46C | size: 0xDC
  */
-inline unsigned long DeleteCallbacks::CardMountCB(unsigned long channel, long result, void* data)
+inline unsigned long DeleteCallbacks::CardMountCB(unsigned long Slot, long Result, void* pUserData)
 {
-    if (result != 0)
+    if (Result != 0)
     {
-        MemCard* card = g_MemCards[channel];
+        MemCard* card = g_MemCards[Slot];
         card->m_State = IS_IDLE;
         card->m_CardState = CS_IDLE;
         CARDUnmount(card->m_Slot);
         InOperation = false;
-        g_Callback(result);
+        g_Callback(Result);
         return -1;
     }
 
 #if defined(VERSION_G4QJ01)
-    s64 serialID = g_MemCards[channel]->GetSerialID();
+    s64 serialID = g_MemCards[Slot]->GetSerialID();
     if (mLastKnownMemCardID.serialID != serialID)
     {
-        MemCard* card = g_MemCards[channel];
+        MemCard* card = g_MemCards[Slot];
         card->m_State = IS_IDLE;
         card->m_CardState = CS_IDLE;
         CARDUnmount(card->m_Slot);
@@ -1422,30 +845,30 @@ inline unsigned long DeleteCallbacks::CardMountCB(unsigned long channel, long re
     };
     new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<DeleteCallbacks>(this, cb);
 
-    g_MemCards[channel]->DeleteFile(MarioSoccerFileName, functor);
+    g_MemCards[Slot]->DeleteFile(MarioSoccerFileName, functor);
     return 0;
 }
 
 /**
  * Offset/Address/Size: 0x900 | 0x8018A25C | size: 0x154
  */
-inline unsigned long FormatCallbacks::CardMountCB(unsigned long channel, long result, void* data)
+inline unsigned long FormatCallbacks::CardMountCB(unsigned long Slot, long Result, void* pUserData)
 {
-    if (result != 0 && result != -13 && result != -6)
+    if (Result != 0 && Result != -13 && Result != -6)
     {
-        MemCard* card = g_MemCards[channel];
+        MemCard* card = g_MemCards[Slot];
         card->m_State = IS_IDLE;
         card->m_CardState = CS_IDLE;
         CARDUnmount(card->m_Slot);
         InOperation = false;
-        g_Callback(result);
+        g_Callback(Result);
         return -1;
     }
 
-    s64 serialID = g_MemCards[channel]->GetSerialID();
+    s64 serialID = g_MemCards[Slot]->GetSerialID();
     if (mLastKnownMemCardID.serialID != serialID)
     {
-        MemCard* card = g_MemCards[channel];
+        MemCard* card = g_MemCards[Slot];
         card->m_State = IS_IDLE;
         card->m_CardState = CS_IDLE;
         CARDUnmount(card->m_Slot);
@@ -1463,7 +886,7 @@ inline unsigned long FormatCallbacks::CardMountCB(unsigned long channel, long re
     };
     new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<FormatCallbacks>(this, cb);
 
-    g_MemCards[channel]->FormatCard(functor);
+    g_MemCards[Slot]->FormatCard(functor);
     return 0;
 }
 
@@ -1516,7 +939,6 @@ long SaveLoad::StartLoad(int Slot, void (*pCB)(long), bool PerformLoad, bool tes
     };
     typedef unsigned long (LoadCallbacks::*MemberCB)(unsigned long, long, void*);
     MemberCB cb;
-    MemCard::ICON_CONFIG IconCfg;
 
     tDebugPrintManager::Print(DC_FE, "Starting memory card load\n");
 
@@ -1539,7 +961,23 @@ long SaveLoad::StartLoad(int Slot, void (*pCB)(long), bool PerformLoad, bool tes
         LoadSystem.m_pReadBuffer = nlMalloc(dataSize, 0x20, true);
         memset(LoadSystem.m_pReadBuffer, 0, LoadSystem.m_AlignedReadBufferDataSize);
 
+        MemCard::ICON_CONFIG IconCfg;
         ConstructIconCfg(IconCfg);
+        {
+            unsigned char iconCount = IconCfg.IconCount;
+            unsigned char bannerFormat = IconCfg.BannerFormat;
+            char iconFormat = IconCfg.IconFormat;
+            int iconPixels = iconFormat << 10;
+            int bannerHeader = 0;
+            bannerHeader += ((bannerFormat == 1) ? 0x200 : 0);
+            bannerHeader += bannerFormat * 0xC00;
+            unsigned long iconClut = ((iconFormat == 1) ? 0x200 : 0);
+            int headerSize = iconClut;
+            iconPixels = bannerHeader + (iconCount * iconPixels);
+            headerSize = iconPixels + headerSize;
+            headerSize += 0x40;
+            IconCfg.HeaderSize = headerSize;
+        }
 
         u32 allocSize = (IconCfg.HeaderSize + 0x1FF) & ~0x1FF;
         LoadSystem.m_pIconReadBuffer = nlMalloc(allocSize, 0x20, true);
@@ -1582,7 +1020,7 @@ long SaveLoad::StartLoad(int Slot, void (*pCB)(long), bool PerformLoad, bool tes
 /**
  * Offset/Address/Size: 0xBEC | 0x8018A548 | size: 0x10
  */
-bool SaveLoad::DidGameIDChange()
+u8 SaveLoad::DidGameIDChange()
 {
     return LoadSystem.m_GameIDTestResult;
 }
@@ -1644,16 +1082,16 @@ long SaveLoad::StartFormat(int slot, void (*callback)(long))
 /**
  * Offset/Address/Size: 0x5EC | 0x80189F48 | size: 0x258
  */
-inline unsigned long FileExistsCallbacks::CardMountCB(unsigned long channel, long result, void* data)
+inline unsigned long FileExistsCallbacks::CardMountCB(unsigned long Slot, long Result, void* pUserData)
 {
-    if (result == 0)
+    if (Result == 0)
     {
-        result = g_MemCards[channel]->FileExists(MarioSoccerFileName);
+        Result = g_MemCards[Slot]->FileExists(MarioSoccerFileName);
     }
 
-    if (result != -5)
+    if (Result != -5)
     {
-        MemCard* card = g_MemCards[channel];
+        MemCard* card = g_MemCards[Slot];
         card->m_State = IS_IDLE;
         card->m_CardState = CS_IDLE;
         CARDUnmount(card->m_Slot);
@@ -1661,69 +1099,18 @@ inline unsigned long FileExistsCallbacks::CardMountCB(unsigned long channel, lon
 
     InOperation = false;
 
-    if (mRequiredMemoryCardID != 0)
+    if (mRequiredMemoryCardID != 0
+        && mRequiredMemoryCardID != g_MemCards[Slot]->GetSerialID())
     {
-        s64 serialID = g_MemCards[channel]->GetSerialID();
-        if (mRequiredMemoryCardID != serialID)
-        {
-            result = -1001;
-            goto end;
-        }
+        Result = -1001;
+    }
+    else if (Result == -4)
+    {
+        if (!SaveLoad::HasEnoughFreeSpace(Slot))
+            Result = -9;
     }
 
-    if (result == -4)
-    {
-        MemCard* card;
-        int numBlocks;
-        long dataSize;
-        unsigned long slotOffset = channel << 2;
-        card = MemCard::At(slotOffset);
-        dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-        numBlocks = 0;
-
-        dataSize += 12;
-        while (dataSize > 0)
-        {
-            numBlocks++;
-            dataSize -= 0x2000;
-        }
-
-        MemCard::ICON_CONFIG IconCfg;
-        ConstructMountIconCfg(IconCfg);
-        dataSize = IconCfg.HeaderSize;
-        while (dataSize > 0)
-        {
-            numBlocks++;
-            dataSize -= 0x2000;
-        }
-
-        unsigned long sectorSize = card->m_CardInfo.SectorSize;
-        unsigned long bytestosave = numBlocks * sectorSize;
-        unsigned long alignedSize = MemCard::At(slotOffset)->AlignBytesToSectorSize(bytestosave);
-        MemCard* mc = MemCard::At(slotOffset);
-
-        u8 hasSpace;
-        if (alignedSize > mc->m_CardInfo.FreeBytes)
-        {
-            hasSpace = 0;
-        }
-        else if (mc->m_CardInfo.FreeFiles < 1)
-        {
-            hasSpace = 0;
-        }
-        else
-        {
-            hasSpace = 1;
-        }
-
-        if (!hasSpace)
-        {
-            result = -9;
-        }
-    }
-
-end:
-    g_Callback(result);
+    g_Callback(Result);
     return -1;
 }
 
@@ -1758,30 +1145,30 @@ long SaveLoad::StartFileExistsCheck(int slot, void (*callback)(long))
 /**
  * Offset/Address/Size: 0x45C | 0x80189DB8 | size: 0xC4
  */
-inline unsigned long MemoryCardIDCallbacks::CardMountCB(unsigned long channel, long result, void* data)
+inline unsigned long MemoryCardIDCallbacks::CardMountCB(unsigned long Slot, long Result, void* pUserData)
 {
-    if (result == 0)
+    if (Result == 0)
     {
         if (mRequiredMemoryCardID != 0)
         {
-            s64 serialID = g_MemCards[channel]->GetSerialID();
+            s64 serialID = g_MemCards[Slot]->GetSerialID();
             if (mRequiredMemoryCardID != serialID)
             {
-                result = -1001;
+                Result = -1001;
             }
         }
     }
 
-    if (result != -5)
+    if (Result != -5)
     {
-        MemCard* card = g_MemCards[channel];
+        MemCard* card = g_MemCards[Slot];
         card->m_State = IS_IDLE;
         card->m_CardState = CS_IDLE;
         CARDUnmount(card->m_Slot);
     }
 
     InOperation = false;
-    g_Callback(result);
+    g_Callback(Result);
     return -1;
 }
 
@@ -1829,7 +1216,8 @@ int SaveLoad::GetSaveBlockSize(int slot)
     }
 
     MemCard::ICON_CONFIG IconCfg;
-    ConstructMountIconCfg(IconCfg);
+    ConstructIconCfg(IconCfg);
+    IconCfg.CalculateHeaderSize();
     dataSize = IconCfg.HeaderSize;
     while (dataSize > 0)
     {
@@ -1840,49 +1228,19 @@ int SaveLoad::GetSaveBlockSize(int slot)
     return numBlocks;
 }
 
-static inline MemCard* GetCardBySlot(int slot)
-{
-    return g_MemCards[slot];
-}
-
 /**
  * Offset/Address/Size: 0xD8 | 0x80189A34 | size: 0x18C
  */
 u8 SaveLoad::HasEnoughFreeSpace(int Slot)
 {
-    MemCard* card;
-    int numBlocks;
-    long dataSize;
-    unsigned long slotOffset = Slot << 2;
-
-    card = MemCard::At(slotOffset);
-    dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-    numBlocks = 0;
-
-    dataSize += 12;
-    while (dataSize > 0)
-    {
-        numBlocks++;
-        dataSize -= 0x2000;
-    }
-
-    MemCard::ICON_CONFIG IconCfg;
-    ConstructMountIconCfg(IconCfg);
-    dataSize = IconCfg.HeaderSize;
-    while (dataSize > 0)
-    {
-        numBlocks++;
-        dataSize -= 0x2000;
-    }
-
-    unsigned long sectorSize = card->m_CardInfo.SectorSize;
-    unsigned long bytestosave = numBlocks * sectorSize;
-    unsigned long alignedSize = MemCard::At(slotOffset)->AlignBytesToSectorSize(bytestosave);
-    MemCard* mc = MemCard::At(slotOffset);
-    if (alignedSize > (unsigned long)mc->m_CardInfo.FreeBytes)
+    CARD_INFO& cardInfo = MemCard::At(Slot)->m_CardInfo;
+    int numBlocks = GetSaveBlockSize(Slot);
+    unsigned long bytestosave = numBlocks * cardInfo.SectorSize;
+    unsigned long alignedSize = MemCard::At(Slot)->AlignBytesToSectorSize(bytestosave);
+    if (alignedSize > (unsigned long)g_MemCards[Slot]->m_CardInfo.FreeBytes)
         return 0;
 
-    if (mc->m_CardInfo.FreeFiles < 1)
+    if (g_MemCards[Slot]->m_CardInfo.FreeFiles < 1)
         return 0;
 
     return 1;

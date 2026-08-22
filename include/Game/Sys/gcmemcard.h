@@ -135,7 +135,38 @@ public:
 
     struct ICON_CONFIG
     {
+        ICON_CONFIG()
+        {
+            Initialize();
+        }
+
+        void Initialize()
+        {
+            BannerFormat = 0;
+            IconCount = 0;
+            IconFormat = 0;
+            IconAnimType = 0;
+            memset(IconSpeeds, 0, 8);
+        }
+
         void GetValidDataInfo(ICON_DATA_INFO&) const;
+
+        void CalculateHeaderSize()
+        {
+            unsigned char iconCount = IconCount;
+            int bannerFormat = BannerFormat;
+            char iconFormat = IconFormat;
+            int iconPixels = iconFormat << 10;
+            int bannerHeader = 0;
+            bannerHeader += ((bannerFormat == 1) ? 0x200 : 0);
+            bannerHeader += bannerFormat * 0xC00;
+            unsigned long iconClut = ((iconFormat == 1) ? 0x200 : 0);
+            int headerSize = iconClut;
+            iconPixels = bannerHeader + (iconCount * iconPixels);
+            headerSize = iconPixels + headerSize;
+            headerSize += 0x40;
+            HeaderSize = headerSize;
+        }
 
         /* 0x0 */ unsigned char BannerFormat;
         /* 0x1 */ unsigned char IconCount;
@@ -197,10 +228,9 @@ public:
     /* 0x428 */ unsigned short m_CompanyId;
     /* 0x42A */ unsigned char m_CardWorkArea[41472];
 
-    // slotOffset is a byte offset into the g_MemCards table (slot * sizeof(MemCard*)).
-    static MemCard* At(unsigned long slotOffset)
+    static MemCard* At(int slot)
     {
-        return *(MemCard**)((unsigned char*)g_MemCards + slotOffset);
+        return g_MemCards[slot];
     }
 
     static bool s_InitDone;

@@ -13,56 +13,50 @@ struct MCFILE_HEADER
 
 void LoadMemoryCardIconData();
 
-class SaveLoad
+namespace SaveLoad
 {
-public:
-    static bool CardBusy();
-    static long StartSave(int slot, void (*callback)(long));
-    static long StartLoad(int Slot, void (*pCB)(long), bool PerformLoad, bool testOnly);
-    static bool DidGameIDChange();
-    static long StartDelete(int slot, void (*callback)(long));
-    static long StartFormat(int slot, void (*callback)(long));
-    static long StartFileExistsCheck(int slot, void (*callback)(long));
-    static long StartMemoryCardIDCheck(int slot, void (*callback)(long));
-    static int GetSaveBlockSize(int slot);
-    static u8 HasEnoughFreeSpace(int Slot);
-    static void FreeAllCallbackMemory();
-    static void RememberCurrentMemCardSerialID(int id);
+bool CardBusy();
+long StartSave(int slot, void (*callback)(long));
+long StartLoad(int Slot, void (*pCB)(long), bool PerformLoad, bool testOnly);
+u8 DidGameIDChange();
+long StartDelete(int slot, void (*callback)(long));
+long StartFormat(int slot, void (*callback)(long));
+long StartFileExistsCheck(int slot, void (*callback)(long));
+long StartMemoryCardIDCheck(int slot, void (*callback)(long));
+int GetSaveBlockSize(int slot);
+u8 HasEnoughFreeSpace(int Slot);
+void FreeAllCallbackMemory();
+void RememberCurrentMemCardSerialID(int id);
+} // namespace SaveLoad
+
+struct MemoryCardIDCallbacks
+{
+    unsigned long CardMountCB(unsigned long Slot, long Result, void* pUserData);
 };
 
-class MemoryCardIDCallbacks
+struct FileExistsCallbacks
 {
-public:
-    unsigned long CardMountCB(unsigned long channel, long result, void* data);
+    unsigned long CardMountCB(unsigned long Slot, long Result, void* pUserData);
 };
 
-class FileExistsCallbacks
+struct FormatCallbacks
 {
-public:
-    unsigned long CardMountCB(unsigned long channel, long result, void* data);
+    unsigned long FormatDoneCB(unsigned long Slot, long Result, void* pUserData);
+    unsigned long CardMountCB(unsigned long Slot, long Result, void* pUserData);
 };
 
-class FormatCallbacks
+struct DeleteCallbacks
 {
-public:
-    unsigned long FormatDoneCB(unsigned long channel, long result, void* data);
-    unsigned long CardMountCB(unsigned long channel, long result, void* data);
+    unsigned long DeleteDoneCB(unsigned long Slot, long Result, void* pUserData);
+    unsigned long CardMountCB(unsigned long Slot, long Result, void* pUserData);
 };
 
-class DeleteCallbacks
+struct LoadCallbacks
 {
-public:
-    unsigned long DeleteDoneCB(unsigned long channel, long result, void* data);
-    unsigned long CardMountCB(unsigned long channel, long result, void* data);
-};
-
-class LoadCallbacks
-{
-public:
     LoadCallbacks();
     unsigned long LoadIconDataDoneCB(unsigned long Slot, long Result, void* pUserData);
     unsigned long ReadDoneCB(unsigned long Slot, long Result, void* pUserData);
-    unsigned long CardMountCB(unsigned long channel, long result, void* data);
+    unsigned long CardMountCB(unsigned long Slot, long Result, void* pUserData);
 
     /* 0x00 */ void* m_pReadBuffer;
     /* 0x04 */ unsigned long m_AlignedReadBufferDataSize;
@@ -70,20 +64,20 @@ public:
     /* 0x0C */ unsigned long m_AlignedIconReadBufferDataSize;
     /* 0x10 */ MemCard::MC_FILE* m_pLoadFile;
     /* 0x14 */ bool m_TestGameID;
-    /* 0x15 */ bool m_GameIDTestResult;
+    /* 0x15 */ u8 m_GameIDTestResult;
     /* 0x16 */ bool m_PerformLoad;
     /* 0x17 */ bool m_MustFreeBuffers;
     /* 0x18 */ unsigned long m_IconLoadedCRC;
 }; // total size: 0x1C
 
-class SaveCallbacks
+struct SaveCallbacks
 {
-public:
     SaveCallbacks();
+    void HandleError(unsigned long Slot, long Result);
     unsigned long FileWriteCB(unsigned long Slot, long Result, void* pUserData);
-    long DoSave(unsigned long Slot);
     unsigned long FileWriteIconCB(unsigned long Slot, long Result, void* pUserData);
     unsigned long CreateFileCB(unsigned long Slot, long Result, void* pUserData);
+    long DoSave(unsigned long Slot);
     unsigned long CardMountCB(unsigned long Slot, long Result, void* pUserData);
 
     /* 0x00 */ MemCard::MC_FILE* m_pSaveFile;

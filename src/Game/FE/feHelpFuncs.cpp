@@ -573,15 +573,15 @@ void CaptainSidekickFilename::Build(CaptainSidekickFilename::Type type, char* bu
         suffix = 'l';
     }
 
-    if (type == TYPE_3 || type == TYPE_4)
+    if (type == TYPE_SIDEKICK || type == TYPE_SIDEKICK_OUTLINE)
     {
         const char* name = (id == -2) ? "myst_sidekick" : NameSidekickTable[id].mName;
         switch (type)
         {
-        case TYPE_3:
+        case TYPE_SIDEKICK:
             nlSNPrintf(buf, size, "fe/loadingscreens/%s_%c", name, suffix);
             break;
-        case TYPE_4:
+        case TYPE_SIDEKICK_OUTLINE:
             nlSNPrintf(buf, size, "fe/loadingscreens/%s_%c_bg", name, suffix);
             break;
         default:
@@ -595,13 +595,13 @@ void CaptainSidekickFilename::Build(CaptainSidekickFilename::Type type, char* bu
         suffix = (flag == 0) ? 'l' : 'r';
         switch (type)
         {
-        case TYPE_0:
+        case TYPE_CAPTAIN:
             nlSNPrintf(buf, size, "fe/loadingscreens/%s_%c", name, suffix);
             break;
-        case TYPE_2:
+        case TYPE_CAPTAIN_FLASH:
             nlSNPrintf(buf, size, "fe/loadingscreens/%s_%c_white", name, suffix);
             break;
-        case TYPE_1:
+        case TYPE_CAPTAIN_OUTLINE:
             nlSNPrintf(buf, size, "fe/loadingscreens/%s_%c_bg", name, suffix);
             break;
         default:

@@ -20,13 +20,17 @@ typedef BindExp2<void, MainMenuMemFun_t, SHMainMenu*, Placeholder<0> > MainMenuB
 
 extern nlColour MenuHighliteColour;
 
+#if defined(VERSION_G4QJ01)
+extern nlLocalization* g_pLocalization;
+#endif
+
 bool SHMainMenu::mSnapMenuIntoPosition = false;
 int SHMainMenu::mLastMenuItem = 0;
 
 static char sSlideIn[] = "in";
 static char sSlideOut[] = "out";
 
-static unsigned long sUnlockedTickerMessages[7] = {
+static unsigned long sUnlockedTickerMessages[SHMainMenu::NUM_ITEMS] = {
     0x10B8D08F,
     0xDB24E3FA,
     0x0755A109,
@@ -36,7 +40,7 @@ static unsigned long sUnlockedTickerMessages[7] = {
     0x7B1F3B7E,
 };
 
-static unsigned long sLockedTickerMessages[7] = {
+static unsigned long sLockedTickerMessages[SHMainMenu::NUM_ITEMS] = {
     0x10B8D08F,
     0xDB24E3FA,
     0x0F4F37A4,
@@ -207,9 +211,10 @@ SHMainMenu::~SHMainMenu()
     }
 }
 
-static inline BackgroundScene* GetMarioBackground()
+static BackgroundScene* GetBackgroundScene()
 {
-    return (BackgroundScene*)nlSingleton<GameSceneManager>::s_pInstance->GetScene(SCENE_MARIO_BACKGROUND);
+    BackgroundScene* bgscene = (BackgroundScene*)GameSceneManager::Instance()->GetScene(SCENE_MARIO_BACKGROUND);
+    return bgscene;
 }
 
 /**
@@ -234,11 +239,11 @@ void SHMainMenu::SceneCreated()
         InlineHasher(nlStringLowerHash("TickerText")));
 
     screenInfo = glGetScreenInfo();
-    FEScrollText* feST = new (nlMalloc(sizeof(FEScrollText), 8, false)) FEScrollText(scrollText, 0, screenInfo->ScreenWidth + 50);
-    m_itemDescriptions = feST;
-    scene = GetMarioBackground();
+    FEScrollText* scrollTextDisplay = new (nlMalloc(sizeof(FEScrollText), 8, false)) FEScrollText(scrollText, 0, screenInfo->ScreenWidth + 50);
+    m_itemDescriptions = scrollTextDisplay;
+    scene = GetBackgroundScene();
     scene->SetVisible(false);
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < NUM_ITEMS; i++)
     {
         nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
         TLInstance* instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
@@ -330,12 +335,12 @@ void SHMainMenu::OpenItem(TLComponentInstance* compinstance)
     highlight->SetActiveSlide(sSlideIn);
     highlight->Update(0.0f);
 
-    TLComponentInstance* flasher = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+    TLComponentInstance* flash = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         compinstance->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("flasher")));
 
-    flasher->SetActiveSlide("Slide1");
-    flasher->Update(0.0f);
+    flash->SetActiveSlide("Slide1");
+    flash->Update(0.0f);
 
     FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         highlight->GetActiveSlide(),
@@ -360,8 +365,18 @@ void SHMainMenu::OpenItem(TLComponentInstance* compinstance)
             compinstance->GetActiveSlide(),
             InlineHasher(nlStringLowerHash("R JUST")));
 
-        text->m_LocStrId = 0x2A68AC55;
-        text->m_OverloadFlags |= 8;
+#if defined(VERSION_G4QJ01)
+        if (g_pLocalization->m_CurrentLanguage == nlLocalization::LangJapanese)
+        {
+            text->m_LocStrId = 0x67452206;
+            text->m_OverloadFlags |= 8;
+        }
+        else
+#endif
+        {
+            text->m_LocStrId = 0x2A68AC55;
+            text->m_OverloadFlags |= 8;
+        }
 
         TLComponentInstance* lockedComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             compinstance->GetActiveSlide(),
@@ -449,9 +464,9 @@ void SHMainMenu::CloseItem(TLComponentInstance* compinstance)
 /**
  * Offset/Address/Size: 0x0 | 0x800A9A5C | size: 0x404
  */
-void SHMainMenu::Update(float dt)
+void SHMainMenu::Update(float fDeltaT)
 {
-    BaseSceneHandler::Update(dt);
+    BaseSceneHandler::Update(fDeltaT);
     mButtons.CentreButtons();
 
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
@@ -459,7 +474,7 @@ void SHMainMenu::Update(float dt)
 
     if (presentation->m_fadeDuration >= slide->m_start + slide->m_duration)
     {
-        m_itemDescriptions->Update(dt);
+        m_itemDescriptions->Update(fDeltaT);
     }
     else
     {
@@ -478,12 +493,12 @@ void SHMainMenu::Update(float dt)
         return;
     }
 
-    eFEINPUT_PAD pressedPad;
-    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, &pressedPad))
+    eFEINPUT_PAD padused;
+    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, &padused))
     {
         if (mMenuItems.RunCallbackOnCurrent(ON_APPLY) == RES_OK)
         {
-            GameInfoManager::s_pInstance->mMainUserPadNumber = pressedPad;
+            GameInfoManager::s_pInstance->mMainUserPadNumber = padused;
             FEAudio::PlayAnimAudioEvent("sfx_accept", false);
             mLastMenuItem = mMenuItems.GetActiveItemIndex();
         }

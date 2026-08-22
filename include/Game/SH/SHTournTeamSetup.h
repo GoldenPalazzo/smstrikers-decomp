@@ -38,31 +38,31 @@ public:
     TournTeamSetupSceneV2();
     virtual ~TournTeamSetupSceneV2();
     virtual void SceneCreated();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
 
-    void UpdateControllerIcon(int);
-    void UpdateRow(int);
-    void ChangeState(TournTeamSetupSceneV2::eTeamChooserState, TournTeamSetupSceneV2::eTeamChooserState);
-    void StartChooseCaptain(int);
+    void UpdateControllerIcon(int onScreenRow);
+    void UpdateRow(int onScreenRow);
+    void ChangeState(TournTeamSetupSceneV2::eTeamChooserState from, TournTeamSetupSceneV2::eTeamChooserState to);
+    void StartChooseCaptain(int onScreenRow);
     void UpdateCaptainName();
     void UpdateSKName();
     void SetTeam();
-    inline void UpdateAllRows();
+    void UpdateAllRows();
     int CanProceed() const;
     void Proceed();
     void CreateLeagueLineup();
     void CreateKnockout();
-    BasicString<char, Detail::TempStringAllocator> FindCaptainSlideName(eTeamID);
-    BasicString<char, Detail::TempStringAllocator> FindSidekickSlideName(eSidekickID);
+    BasicString<char, Detail::TempStringAllocator> FindCaptainSlideName(eTeamID captain);
+    BasicString<char, Detail::TempStringAllocator> FindSidekickSlideName(eSidekickID sidekick);
     bool CanAutoFill() const;
     void AutoFill();
-    unsigned char IsAlreadySelected(eTeamID) const;
+    unsigned char IsAlreadySelected(eTeamID captain) const;
     void UpdateForCurrentRow();
     void UpdateArrowVisibility();
-    void ScrollUp(bool);
-    void ScrollDown(bool);
+    void ScrollUp(bool bPlaySound);
+    void ScrollDown(bool bPlaySound);
     void AutoTagCurrentRowAsHumanPlayer();
-    void SetupButtonsBasedOnState(eTeamChooserState);
+    void SetupButtonsBasedOnState(eTeamChooserState state);
 
     /* 0x01C */ MenuList<TLComponentInstance> mMenuItems;  // size 0x214
     /* 0x230 */ TeamData mTeamData[8];                     // size 0x80
@@ -81,61 +81,7 @@ public:
     /* 0x308 */ ButtonComponent mButtons2;                 // size 0x24
     /* 0x32C */ TLImageInstance* mUpArrow;                 // size 0x4
     /* 0x330 */ TLImageInstance* mDownArrow;               // size 0x4
-    /* 0x334 */ bool mHasTaggedHumanPlayer;                 // size 0x1
+    /* 0x334 */ bool mHasTaggedHumanPlayer;                // size 0x1
 }; // total size: 0x338
-
-// class FEFinder<TLComponentInstance, 4>
-// {
-// public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-// };
-
-// class FEFinder<TLTextInstance, 3>
-// {
-// public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-// };
-
-// class FEFinder<TLImageInstance, 2>
-// {
-// public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-// };
-
-// class FEFinder<TLInstance, 4>
-// {
-// public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-// };
-
-// class Function1<void, TLComponentInstance*>
-// {
-// public:
-//     void FunctorImpl<BindExp2<void, Detail::MemFunImpl<void, void (TournTeamSetupSceneV2::*)(int)>, TournTeamSetupSceneV2*,
-//     int>>::~FunctorImpl(); void FunctorImpl<BindExp2<void, Detail::MemFunImpl<void, void (TournTeamSetupSceneV2::*)(int)>,
-//     TournTeamSetupSceneV2*, int>>::operator()(TLComponentInstance*); void FunctorImpl<BindExp2<void, Detail::MemFunImpl<void, void
-//     (TournTeamSetupSceneV2::*)(int)>, TournTeamSetupSceneV2*, int>>::Clone() const;
-// };
-
-// class MemFun<TournTeamSetupSceneV2, void, int>(void (TournTeamSetupSceneV2
-// {
-// public:
-//     void *)(int));
-// };
-
-// class Bind<void, Detail
-// {
-// public:
-//     void MemFunImpl<void, void (TournTeamSetupSceneV2::*)(int)>, TournTeamSetupSceneV2*, int>(Detail::MemFunImpl<void, void
-//     (TournTeamSetupSceneV2::*)(int)>, TournTeamSetupSceneV2* const&, const int&);
-// };
 
 #endif // _SHTOURNTEAMSETUP_H_

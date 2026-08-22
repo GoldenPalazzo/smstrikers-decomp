@@ -52,6 +52,9 @@ static const PopupEntry PopupEntries[] = {
     { 0, 0x64886630, { 0x56970FCC, 0, 0, 0 }, 0 },                   // 15 POPUP_NO_FORFEIT
     { 1, 0x4A4753B1, { 0x29793383, 0x56970FAF, 0, 0 }, 1 },          // 16 POPUP_REALLY_OVERWRITE
     { 0, 0xC19ADE86, { 0, 0, 0, 0 }, 0 },                            // 17 POPUP_APPLYING_AUDIO
+#if defined(VERSION_G4QJ01)
+    { 2, 0x4100B632, { 0x56970FCC, 0, 0, 0 }, 0 },                   // 18 POPUP_NO_CHEATS_UNLOCKED
+#endif
     { 1, 0x657FEF59, { 0x6C158828, 0x265190F3, 0, 0 }, 0 },          // 18 POPUP_NO_MEMCARD
     { 1, 0x3BB17094, { 0x6C158828, 0x265190F3, 0xEEE94B74, 0 }, 0 }, // 19 POPUP_MEMCARD_CORRUPTED
     { 1, 0x3BB17094, { 0x6C158828, 0x265190F3, 0xEEE94B74, 0 }, 0 }, // 20 POPUP_MEMCARD_WRONGFORMAT

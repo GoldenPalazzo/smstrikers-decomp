@@ -65,11 +65,12 @@ class CaptainSidekickFilename
 public:
     enum Type
     {
-        TYPE_0 = 0,
-        TYPE_1 = 1,
-        TYPE_2 = 2,
-        TYPE_3 = 3,
-        TYPE_4 = 4,
+        TYPE_INVALID = -1,
+        TYPE_CAPTAIN = 0,
+        TYPE_CAPTAIN_OUTLINE = 1,
+        TYPE_CAPTAIN_FLASH = 2,
+        TYPE_SIDEKICK = 3,
+        TYPE_SIDEKICK_OUTLINE = 4,
     };
     static void Build(Type, char*, int, int, int);
 };

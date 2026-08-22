@@ -35,3 +35,21 @@ block_relocations:
   # not a code pointer.
   - source: .text:0x801993EC
   - source: .text:0x801993F0
+
+# __start.c and OSThread.c load the version-specific _stack_addr linker symbol.
+# dtk cannot evaluate the linker-script stack arithmetic while reconstructing
+# these objects, so preserve the retail relocation pairs instead of baked JP
+# addresses.
+add_relocations:
+  - source: .init:0x80005410
+    type: hi
+    target: _stack_addr
+  - source: .init:0x80005414
+    type: l
+    target: _stack_addr
+  - source: .text:0x8025ADC0
+    type: ha
+    target: _stack_addr
+  - source: .text:0x8025ADC4
+    type: l
+    target: _stack_addr

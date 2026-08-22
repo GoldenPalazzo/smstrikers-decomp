@@ -1,5 +1,6 @@
 #include "Game/SH/SHPause.h"
 #include "Game/OverlayManager.h"
+#include "Game/SH/SHLessonSelect.h"
 
 #include "Game/FE/FEAudio.h"
 #include "Game/FE/Overlay/OverlayHandlerSummary.h"
@@ -12,14 +13,23 @@
 #include "Game/GameInfo.h"
 #include "Game/Game.h"
 #include "NL/glx/glxSwap.h"
+#if defined(VERSION_G4QJ01)
+#include "NL/nlLocalization.h"
+#endif
 #include "NL/nlPrint.h"
+#include "NL/nlTask.h"
 
 extern FEInput* g_pFEInput;
 extern nlColour MenuHighliteColour;
 
+#if defined(VERSION_G4QJ01)
+extern nlLocalization* g_pLocalization;
+#endif
+
 static char sPauseOutSlide[] = "out";
 eFEINPUT_PAD PauseMenuScene::mControllingInput = FE_ALL_PADS;
-float mDelayBeforeUnpause__14PauseMenuScene = 0.1f;
+float PauseMenuScene::mDelayBeforeUnpause = 0.1f;
+u32 PauseMenuScene::mLastTaskManagerState;
 s32 PauseMenuScene::mLastSelectedIndex;
 
 namespace DoubleHighlite
@@ -50,7 +60,7 @@ PauseMenuScene::PauseMenuScene(PauseMenuScene::ScreenContext context)
     , mButtons()
     , mButtons2()
 {
-    mDelayBeforeUnpause__14PauseMenuScene = 0.1f;
+    mDelayBeforeUnpause = 0.1f;
 }
 
 /**
@@ -63,8 +73,7 @@ PauseMenuScene::~PauseMenuScene()
 /**
  * Offset/Address/Size: 0x2158 | 0x800AF650 | size: 0x54
  */
-#pragma dont_inline on
-void PauseMenuScene::OnSelectRESUME(TLComponentInstance*)
+void PauseMenuScene::OnSelectRESUME(TLComponentInstance* instance)
 {
     TransitionOut(TT_OUT);
     g_pFEInput->Reset();
@@ -72,12 +81,11 @@ void PauseMenuScene::OnSelectRESUME(TLComponentInstance*)
     FEAudio::PlayAnimAudioEvent("sfx_pause_resume", false);
     mLastSelectedIndex = 0;
 }
-#pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0x18CC | 0x800AEDC4 | size: 0x88C
  */
-void PauseMenuScene::OnSelectQUIT(TLComponentInstance*)
+void PauseMenuScene::OnSelectQUIT(TLComponentInstance* instance)
 {
     FEPopupMenu* popup;
 
@@ -127,7 +135,7 @@ void PauseMenuScene::OnSelectQUIT(TLComponentInstance*)
 /**
  * Offset/Address/Size: 0x1890 | 0x800AED88 | size: 0x3C
  */
-void PauseMenuScene::OnSelectCHOOSESIDES(TLComponentInstance*)
+void PauseMenuScene::OnSelectCHOOSESIDES(TLComponentInstance* instance)
 {
     OverlayManager::s_pInstance->Push(IGSCENE_CHOOSE_SIDES, SCREEN_FORWARD, true);
 }
@@ -135,7 +143,7 @@ void PauseMenuScene::OnSelectCHOOSESIDES(TLComponentInstance*)
 /**
  * Offset/Address/Size: 0x1854 | 0x800AED4C | size: 0x3C
  */
-void PauseMenuScene::OnSelectAUDIOOPTIONS(TLComponentInstance*)
+void PauseMenuScene::OnSelectAUDIOOPTIONS(TLComponentInstance* instance)
 {
     OverlayManager::s_pInstance->Push(IGSCENE_PAUSE_AUDIO, SCREEN_FORWARD, true);
 }
@@ -143,7 +151,7 @@ void PauseMenuScene::OnSelectAUDIOOPTIONS(TLComponentInstance*)
 /**
  * Offset/Address/Size: 0x1818 | 0x800AED10 | size: 0x3C
  */
-void PauseMenuScene::OnSelectVISUALOPTIONS(TLComponentInstance*)
+void PauseMenuScene::OnSelectVISUALOPTIONS(TLComponentInstance* instance)
 {
     OverlayManager::s_pInstance->Push(IGSCENE_PAUSE_VISUAL, SCREEN_FORWARD, true);
 }
@@ -151,11 +159,15 @@ void PauseMenuScene::OnSelectVISUALOPTIONS(TLComponentInstance*)
 /**
  * Offset/Address/Size: 0x17CC | 0x800AECC4 | size: 0x4C
  */
-void PauseMenuScene::OnSelectSTATISTICS(TLComponentInstance*)
+void PauseMenuScene::OnSelectSTATISTICS(TLComponentInstance* instance)
 {
     SummaryOverlay* scene = (SummaryOverlay*)OverlayManager::s_pInstance->Push(OVERLAY_SUMMARY_PAUSE, SCREEN_FORWARD, true);
     scene->m_controllingInput = mControllingInput;
     scene->mButtonState = ButtonComponent::BS_B_ONLY;
+}
+
+void PauseMenuScene::OnSelectBRAGGING(TLComponentInstance* instance)
+{
 }
 
 /**
@@ -163,7 +175,6 @@ void PauseMenuScene::OnSelectSTATISTICS(TLComponentInstance*)
  */
 void PauseMenuScene::OnSelectPopupNOFORFEIT()
 {
-    // EMPTY
 }
 
 /**
@@ -171,12 +182,12 @@ void PauseMenuScene::OnSelectPopupNOFORFEIT()
  */
 void PauseMenuScene::OnSelectPopupYESFORFEIT()
 {
-    GameInfoManager* gim;
+    GameInfoManager* gameInfoManager;
     s32 quittingSide;
 
-    gim = nlSingleton<GameInfoManager>::s_pInstance;
+    gameInfoManager = nlSingleton<GameInfoManager>::s_pInstance;
 
-    if (gim->mIsInStrikers101Mode)
+    if (gameInfoManager->mIsInStrikers101Mode)
     {
         mQuitDelay = 1.0f;
         return;
@@ -184,37 +195,37 @@ void PauseMenuScene::OnSelectPopupYESFORFEIT()
 
     if (g_pGame->m_eGameState != GS_END_GAME)
     {
-        gim = nlSingleton<GameInfoManager>::s_pInstance;
+        gameInfoManager = nlSingleton<GameInfoManager>::s_pInstance;
         quittingSide = -1;
 
-        if (gim->IsInCupMode())
+        if (gameInfoManager->IsInCupMode())
         {
-            eTeamID userTeam = gim->GetUserSelectedCupTeam();
-            if (userTeam == gim->GetTeam(0))
+            eTeamID userTeam = gameInfoManager->GetUserSelectedCupTeam();
+            if (userTeam == gameInfoManager->GetTeam(0))
             {
                 quittingSide = 0;
             }
-            else if (userTeam == gim->GetTeam(1))
+            else if (userTeam == gameInfoManager->GetTeam(1))
             {
                 quittingSide = 1;
             }
         }
-        else if (gim->IsInTournamentMode())
+        else if (gameInfoManager->IsInTournamentMode())
         {
-            quittingSide = gim->GetPlayingSide(mQuittingController);
+            quittingSide = gameInfoManager->GetPlayingSide(mQuittingController);
         }
 
-        if (gim->IsInCupOrTournamentMode())
+        if (gameInfoManager->IsInCupOrTournamentMode())
         {
             if (quittingSide == 0)
             {
                 nlSingleton<StatsTracker>::s_pInstance->TrackWinner(0);
-                gim->SetResultsOfLastUserGame((eUserGameResult)0xD);
+                gameInfoManager->SetResultsOfLastUserGame((eUserGameResult)0xD);
             }
             else if (quittingSide == 1)
             {
                 nlSingleton<StatsTracker>::s_pInstance->TrackWinner(1);
-                gim->SetResultsOfLastUserGame((eUserGameResult)0xE);
+                gameInfoManager->SetResultsOfLastUserGame((eUserGameResult)0xE);
             }
         }
     }
@@ -225,10 +236,15 @@ void PauseMenuScene::OnSelectPopupYESFORFEIT()
 /**
  * Offset/Address/Size: 0x1640 | 0x800AEB38 | size: 0x44
  */
-void PauseMenuScene::OnSelectLESSONS(TLComponentInstance*)
+void PauseMenuScene::OnSelectLESSONS(TLComponentInstance* instance)
 {
-    BaseSceneHandler* scene = OverlayManager::s_pInstance->Push(IGSCENE_LESSON_SELECT, SCREEN_FORWARD, true);
-    ((u8*)scene)[0x2b2] = 1;
+    LessonSelectScene* scene = (LessonSelectScene*)OverlayManager::s_pInstance->Push(IGSCENE_LESSON_SELECT, SCREEN_FORWARD, true);
+    scene->mStartAnimAtEnd = true;
+}
+
+void PauseMenuScene::StartDelayedQuit()
+{
+    mQuitDelay = 1.0f;
 }
 
 /**
@@ -281,10 +297,17 @@ void PauseMenuScene::SceneCreated()
                 menuItem->SetCallback(ON_HIGHLIGHT, openFunc);
             }
 
+#if defined(VERSION_G4QJ01)
+            {
+                MenuCallback closeFunc(Bind<void>(MemFun<PauseMenuScene, void, TLComponentInstance*>(&PauseMenuScene::CloseItem), this, placeholder0));
+                menuItem->SetCallback(ON_UNHIGHLIGHT, closeFunc);
+            }
+#else
             {
                 MenuCallback closeFunc(DoubleHighlite::CloseItem);
                 menuItem->SetCallback(ON_UNHIGHLIGHT, closeFunc);
             }
+#endif
 
             if (PauseMenuCBs[i])
             {
@@ -305,6 +328,13 @@ void PauseMenuScene::SceneCreated()
                 TLSlide* slide = compinstance->GetActiveSlide();
                 compinstance->Update(1.0f + (slide->m_start + slide->m_duration));
             }
+
+#if defined(VERSION_G4QJ01)
+            if (i == 5)
+            {
+                SetQuitTextForJapanese(compinstance);
+            }
+#endif
 
             if (g_e3_Build)
             {
@@ -453,14 +483,14 @@ void PauseMenuScene::Update(float fDeltaT)
         return;
     }
 
-    register u8* connState;
-    register u8 goToChooseSides = 0;
-    register int i = 0;
+    u8* connState;
+    u8 goToChooseSides = 0;
+    int i = 0;
     connState = &FrontEnd::m_ctrlConnectedState[0];
 
     for (; i < 4; i++)
     {
-        bool isConn = g_pFEInput->IsConnected((eFEINPUT_PAD)i);
+        bool curConnected = g_pFEInput->IsConnected((eFEINPUT_PAD)i);
 
         if (!g_pFEInput->IsConnected((eFEINPUT_PAD)i))
         {
@@ -468,30 +498,30 @@ void PauseMenuScene::Update(float fDeltaT)
             {
                 if (!goToChooseSides)
                 {
-                    OverlayManager* om = nlSingleton<OverlayManager>::s_pInstance;
-                    while (((om = nlSingleton<OverlayManager>::s_pInstance)->mCurrentStackDepth != 0 ? om->mBaseSceneHandlerStack[om->mCurrentStackDepth - 1] : NULL) != (BaseSceneHandler*)this)
+                    OverlayManager* overlayManager = nlSingleton<OverlayManager>::s_pInstance;
+                    while (((overlayManager = nlSingleton<OverlayManager>::s_pInstance)->mCurrentStackDepth != 0 ? overlayManager->mBaseSceneHandlerStack[overlayManager->mCurrentStackDepth - 1] : NULL) != (BaseSceneHandler*)this)
                     {
-                        om->Pop();
+                        overlayManager->Pop();
                         nlSingleton<FESceneManager>::s_pInstance->ForceImmediateStackProcessing();
                     }
-                    om->Push(IGSCENE_CHOOSE_SIDES, SCREEN_FORWARD, true);
+                    overlayManager->Push(IGSCENE_CHOOSE_SIDES, SCREEN_FORWARD, true);
                 }
                 goToChooseSides = 1;
             }
         }
 
-        *connState = isConn;
+        *connState = curConnected;
         connState++;
     }
 
     if (goToChooseSides)
         return;
 
-    mDelayBeforeUnpause__14PauseMenuScene = mDelayBeforeUnpause__14PauseMenuScene - fDeltaT;
-    if (mDelayBeforeUnpause__14PauseMenuScene > 0.0f)
+    mDelayBeforeUnpause = mDelayBeforeUnpause - fDeltaT;
+    if (mDelayBeforeUnpause > 0.0f)
         return;
 
-    mDelayBeforeUnpause__14PauseMenuScene = 0.0f;
+    mDelayBeforeUnpause = 0.0f;
 
     if (m_pFEPresentation->m_currentSlide == NULL)
         return;
@@ -544,6 +574,14 @@ void PauseMenuScene::Update(float fDeltaT)
     }
 }
 
+void PauseMenuScene::SetupForNewGame()
+{
+    nlTaskManager* taskManager = nlTaskManager::m_pInstance;
+    mLastTaskManagerState = taskManager->m_CurrState;
+    taskManager->m_Locked = false;
+    nlTaskManager::SetNextState(1);
+}
+
 /**
  * Offset/Address/Size: 0xD0 | 0x800AD5C8 | size: 0x198
  */
@@ -563,7 +601,7 @@ void PauseMenuScene::TransitionOut(PauseMenuScene::TransitionType newtype)
         {
 
             char menuname[64];
-            nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
+            nlSNPrintf(menuname, sizeof(menuname), "MENU ITEM%d", i + 1);
 
             TLInstance* instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
                 presentation->m_currentSlide,
@@ -590,6 +628,13 @@ void PauseMenuScene::TransitionOut(PauseMenuScene::TransitionType newtype)
                 TLComponentInstance* highlite = (TLComponentInstance*)FindComponent(compinstance->GetActiveSlide(), "highlite");
                 highlite->m_bVisible = false;
             }
+
+#if defined(VERSION_G4QJ01)
+            if (i + 1 == 5)
+            {
+                SetQuitTextForJapanese(compinstance);
+            }
+#endif
         }
     }
 }
@@ -615,4 +660,40 @@ void PauseMenuScene::OpenItem(TLComponentInstance* instance)
         text->m_LocStrId = 0x38202C30;
         text->m_OverloadFlags |= 0x8;
     }
+
+#if defined(VERSION_G4QJ01)
+    if (mMenuItems.GetActiveItemIndex() == 5)
+    {
+        SetQuitTextForJapanese(instance);
+    }
+#endif
 }
+
+#if defined(VERSION_G4QJ01)
+void PauseMenuScene::CloseItem(TLComponentInstance* instance)
+{
+    DoubleHighlite::CloseItem(instance);
+
+    if (mMenuItems.GetActiveItemIndex() == 5)
+    {
+        SetQuitTextForJapanese(instance);
+    }
+}
+
+void PauseMenuScene::SetQuitTextForJapanese(TLComponentInstance* instance)
+{
+    if (g_pLocalization->m_CurrentLanguage == nlLocalization::LangJapanese
+        && nlSingleton<GameInfoManager>::s_pInstance->IsInCupOrTournamentMode())
+    {
+        TLTextInstance* text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            instance->GetActiveSlide(),
+            InlineHasher(nlStringLowerHash("pauseresume")));
+
+        if (text != NULL)
+        {
+            text->m_LocStrId = 0x2718546B;
+            text->m_OverloadFlags |= 0x8;
+        }
+    }
+}
+#endif

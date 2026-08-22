@@ -27,112 +27,6 @@ extern unsigned long CONTROLLER_TEXT[4];
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
 
-// /**
-//  * Offset/Address/Size: 0xE08 | 0x800A9794 | size: 0x118
-//  */
-// void Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[16]>(
-//     const BasicString<unsigned short, Detail::TempStringAllocator>&, const unsigned short (&)[16])
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x118 | 0x800A8AA4 | size: 0xCF0
-//  */
-// void FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator>>::operator% <const unsigned short*>(const unsigned short*
-// const&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800A898C | size: 0x118
-//  */
-// void Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[2]>(
-//     const BasicString<unsigned short, Detail::TempStringAllocator>&, const unsigned short (&)[2])
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x4EC | 0x800A8830 | size: 0x15C
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                      unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x468 | 0x800A87AC | size: 0x84
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                   unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x430 | 0x800A8774 | size: 0x38
-//  */
-// void FEFinder<TLImageInstance, 2>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                  InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800A8618 | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                          unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800A8594 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                       unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800A855C | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                      InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800A8400 | size: 0x15C
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                     unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800A837C | size: 0x84
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                  unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800A8344 | size: 0x38
-//  */
-// void FEFinder<TLTextInstance, 3>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                 InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800A8170 | size: 0x1D4
-//  */
-// void BasicString<unsigned short, Detail::TempStringAllocator>::AppendInPlace(const unsigned short*)
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x19A4 | 0x800A8114 | size: 0x5C
  */
@@ -229,6 +123,20 @@ void SuperLoadingScene::SceneCreated()
     }
 
     FEMusic::StopStream();
+
+#if defined(VERSION_G4QJ01)
+    if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+    {
+        TLTextInstance* text3 = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            slide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("Text3")));
+        if (text3 != NULL)
+        {
+            text3->m_bVisible = false;
+        }
+    }
+#endif
 }
 
 /**
@@ -282,13 +190,20 @@ unsigned long SuperLoadingScene::LoadImage(BundleFile& bundlefile, eTeamID capta
 {
     BundleFileDirectoryEntry fileentry;
     char filename[128] = { };
-    CaptainSidekickFilename::Build((CaptainSidekickFilename::Type)texturetype, filename, 0x80, captain, playingside);
+    u32 texturehandle;
+    CaptainSidekickFilename::Build(
+        texturetype < TT_NUM_TYPES
+            ? (CaptainSidekickFilename::Type)texturetype
+            : CaptainSidekickFilename::TYPE_INVALID,
+        filename,
+        0x80,
+        captain,
+        playingside);
     bundlefile.GetFileInfo(filename, &fileentry, true);
     u8* fileData = (u8*)nlMalloc(fileentry.m_length, 0x20, true);
     bundlefile.ReadFile(filename, fileData, fileentry.m_length);
-    u32 hash = nlStringHash(filename);
-    glTextureAdd(hash, fileData, fileentry.m_length);
-    u32 texturehandle = glGetTexture(filename);
+    glTextureAdd(nlStringHash(filename), fileData, fileentry.m_length);
+    texturehandle = glGetTexture(filename);
     delete[] fileData;
     return texturehandle;
 }
@@ -307,12 +222,12 @@ void SuperLoadingScene::BuildAndLoadPortraits(eTeamID homecaptain, eTeamID awayc
     delete bundleFile;
 }
 
-/**
- * Offset/Address/Size: 0x3C4 | 0x800A6B34 | size: 0xF60
- * TODO: 79.24% match - stack frame/local register allocation still diverges;
- * FE hash setup temporaries and TeamStats ctor inlining order remain
- * mismatched.
- */
+bool SuperLoadingScene::TexturesAreValid() const
+{
+    return mImageInstances[0][0]->m_pTextureResource->m_bValid
+        && mImageInstances[1][0]->m_pTextureResource->m_bValid;
+}
+
 static inline const unsigned short* LookupLocHash(unsigned long key)
 {
     nlLocalization* loc = g_pLocalization;
@@ -328,6 +243,9 @@ static inline const unsigned short* LookupLocHash(unsigned long key)
     return MissingLocString;
 }
 
+/**
+ * Offset/Address/Size: 0x3C4 | 0x800A6B34 | size: 0xF60
+ */
 void SuperLoadingScene::DisplayCupInfo()
 {
     TLSlide* slide = m_pFEPresentation->m_currentSlide;
@@ -430,7 +348,7 @@ void SuperLoadingScene::DisplayCupInfo()
             formatted = Format(unformatted[i], statWideString);
         }
 
-        memcpy(mStatsBuffers[i], formatted.c_str(), 0x80);
+        memcpy(mStatsBuffers[i], formatted.c_str(), sizeof(mStatsBuffers[i]));
         statsText[i]->SetString(mStatsBuffers[i]);
     }
 }
@@ -463,6 +381,6 @@ void SuperLoadingScene::BuildPlayerStrings(TLTextInstance* pTextInst, int side, 
         str = str.AppendInPlace((const unsigned short*)L"{clr:pop} ");
     }
 
-    memcpy(side == 0 ? mPlayerStrings[0] : mPlayerStrings[1], str.c_str(), 255);
+    memcpy(side == 0 ? mPlayerStrings[0] : mPlayerStrings[1], str.c_str(), sizeof(narrowBuf));
     pTextInst->SetString(side == 0 ? mPlayerStrings[0] : mPlayerStrings[1]);
 }
