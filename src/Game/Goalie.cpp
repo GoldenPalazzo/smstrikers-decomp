@@ -703,7 +703,7 @@ void Goalie::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
         pFldr->InitActionSTSHitReact(this);
 
         PlayRandomCharDialogue(CHAR_DIALOGUE_HIT, VECTORS, 100.0f, -1.0f);
-        pFldr->PlayAttackReactionSounds(g_pGame->m_pGameTweaks->unk264);
+        pFldr->PlayAttackReactionSounds(g_pGame->m_pGameTweaks->fGoalieDropKickHitReactionVolume);
 
         nlVector3 v3NewVel;
         nlVec3Scale(v3NewVel, m_v3Position, -((GoalieTweaks*)m_pTweaks)->fSTSAttackBallVelMult);
@@ -2203,7 +2203,7 @@ void Goalie::HandleSTSContact(cBall* pBall)
             if (pPrevOwner->m_eClassType == 2)
             {
                 BasicString<char, Detail::TempStringAllocator> effectName(
-                    GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)pPrevOwner->m_pTeam->m_nSide)));
+                    GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam((s16)pPrevOwner->m_pTeam->m_nSide)));
                 effectName.AppendInPlace("_shoot_to_score_catch");
                 EmitGoalieCatch(this, effectName.c_str(), true);
             }
@@ -6219,7 +6219,7 @@ void Goalie::WhackSTSPlayer(cFielder* pFielder)
     pFielder->SetFacingDirection(m_aActualFacingDirection + 0x8000);
     pFielder->InitActionSTSHitReact(this);
     PlayRandomCharDialogue(CHAR_DIALOGUE_HIT, VECTORS, 100.0f, -1.0f);
-    pFielder->PlayAttackReactionSounds(g_pGame->m_pGameTweaks->unk264);
+    pFielder->PlayAttackReactionSounds(g_pGame->m_pGameTweaks->fGoalieDropKickHitReactionVolume);
 
     nlVector3 v3BallVel;
     float fBallVelMult = ((GoalieTweaks*)m_pTweaks)->fSTSAttackBallVelMult;

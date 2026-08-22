@@ -379,7 +379,7 @@ float FakeBallWorld::GetPredictedPlaneIntersectTime(const nlVector4& v4Plane, nl
 }
 
 /**
- * Offset/Address/Size: 0x3DC | 0x8013819C | size: 0x3FC
+ * Offset/Address/Size: 0xDB0 | 0x8013819C | size: 0x3FC
  */
 float FakeBallWorld::GetPredictedHeightLimitTime(float fHeight, float fMinTime, nlVector3& v3ContactPoint, nlVector3& v3ContactVelocity, bool bDownOnly)
 {
@@ -810,6 +810,9 @@ FakePhysicsBall::FakePhysicsBall(float radius, FakeBallWorld& fakeBallWorld)
 {
 }
 
+/**
+ * Offset/Address/Size: 0x60 | 0x8013744C | size: 0x38
+ */
 ContactType FakePhysicsBall::Contact(PhysicsObject* object, dContact* contact, int numContacts)
 {
     if (mWorld.mbHitSuccess)
@@ -826,7 +829,7 @@ PhysicsGoaliePlane::PhysicsGoaliePlane(const nlVector4& plane, FakeBallWorld& fa
 {
 }
 
-ContactType PhysicsGoaliePlane::Contact(PhysicsObject*, dContact* info, int)
+ContactType PhysicsGoaliePlane::Contact(PhysicsObject* object, dContact* info, int numContacts)
 {
     mWorld.SetHitInfo(&info->geom);
     return NO_CONTACT;

@@ -1,4 +1,3 @@
-#pragma pool_data off
 
 #include "Game/Camera/FollowCam.h"
 #include "Game/Ball.h"

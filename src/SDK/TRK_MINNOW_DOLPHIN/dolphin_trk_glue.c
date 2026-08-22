@@ -7,12 +7,18 @@ u8 TRK_Use_BBA;
 
 DBCommTable gDBCommTable = { };
 
+/**
+ * Offset/Address/Size: 0x520 | 0x80229EB4 | size: 0x38
+ */
 void TRKEXICallBack(s16 param_0, OSContext* ctx)
 {
     OSEnableScheduler();
     TRKLoadContext(ctx, 0x500);
 }
 
+/**
+ * Offset/Address/Size: 0x2B4 | 0x80229C48 | size: 0x26C
+ */
 int InitMetroTRKCommTable(int hwId)
 {
     int result = 1;
@@ -79,6 +85,9 @@ int InitMetroTRKCommTable(int hwId)
     return result;
 }
 
+/**
+ * Offset/Address/Size: 0x264 | 0x80229BF8 | size: 0x50
+ */
 DSError TRKInitializeIntDrivenUART(u32 param_0, u32 param_1, u32 param_2, void* param_3)
 {
     gDBCommTable.initialize_func(param_3, TRKEXICallBack);
@@ -86,6 +95,9 @@ DSError TRKInitializeIntDrivenUART(u32 param_0, u32 param_1, u32 param_2, void* 
     return DS_NoError;
 }
 
+/**
+ * Offset/Address/Size: 0x21C | 0x80229BB0 | size: 0x48
+ */
 void EnableEXI2Interrupts(void)
 {
     if (!TRK_Use_BBA)
@@ -97,38 +109,59 @@ void EnableEXI2Interrupts(void)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x1EC | 0x80229B80 | size: 0x30
+ */
 int TRKPollUART(void)
 {
     return gDBCommTable.peek_func();
 }
 
+/**
+ * Offset/Address/Size: 0x1B0 | 0x80229B44 | size: 0x3C
+ */
 UARTError TRKReadUARTN(void* bytes, u32 length)
 {
     int readErr = gDBCommTable.read_func(bytes, length);
     return ((-readErr | readErr) >> 31);
 }
 
+/**
+ * Offset/Address/Size: 0x174 | 0x80229B08 | size: 0x3C
+ */
 UARTError TRKWriteUARTN(const void* bytes, u32 length)
 {
     int writeErr = gDBCommTable.write_func(bytes, length);
     return ((-writeErr | writeErr) >> 31);
 }
 
+/**
+ * Offset/Address/Size: 0x144 | 0x80229AD8 | size: 0x30
+ */
 void ReserveEXI2Port(void)
 {
     gDBCommTable.post_stop_func();
 }
 
+/**
+ * Offset/Address/Size: 0x114 | 0x80229AA8 | size: 0x30
+ */
 void UnreserveEXI2Port(void)
 {
     gDBCommTable.pre_continue_func();
 }
 
+/**
+ * Offset/Address/Size: 0xE4 | 0x80229A78 | size: 0x30
+ */
 void TRK_board_display(char* str)
 {
     OSReport("%s\n", str);
 }
 
+/**
+ * Offset/Address/Size: 0x8C | 0x80229A20 | size: 0x58
+ */
 DSError InitializeProgramEndTrap(void)
 {
     static const u32 EndofProgramInstruction = 'END';
@@ -140,11 +173,17 @@ DSError InitializeProgramEndTrap(void)
     DCFlushRange(ppcHaltPtr + 4, 4);
 }
 
+/**
+ * Offset/Address/Size: 0x88 | 0x80229A1C | size: 0x4
+ */
 void TRKUARTInterruptHandler()
 {
 }
 
-asm void TRKLoadContext(OSContext* ctx, u32)
+/**
+ * Offset/Address/Size: 0x0 | 0x80229994 | size: 0x88
+ */
+asm void TRKLoadContext(OSContext* ctx, u32 exceptionID)
 {
     // clang-format off
 	nofralloc

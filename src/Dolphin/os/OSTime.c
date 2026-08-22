@@ -10,6 +10,9 @@ static int LeapYearDays[MONTH_MAX] = { 0, 31, 60, 91, 121, 152, 182, 213, 244, 2
 
 #ifdef __GEKKO__
 // clang-format off
+/**
+ * Offset/Address/Size: 0x0 | 0x80259C2C | size: 0x18
+ */
 asm OSTime OSGetTime(void) {
 jump:
     nofralloc
@@ -25,6 +28,9 @@ jump:
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x18 | 0x80259C44 | size: 0x8
+ */
 asm OSTick OSGetTick(void){
     nofralloc
 
@@ -57,6 +63,9 @@ void __OSSetTime(OSTime time)
     OSRestoreInterrupts(enabled);
 }
 
+/**
+ * Offset/Address/Size: 0x20 | 0x80259C4C | size: 0x64
+ */
 OSTime __OSGetSystemTime()
 {
     BOOL enabled;
@@ -116,6 +125,9 @@ static int GetLeapDays(int year)
     return (year + 3) / 4 - (year - 1) / 100 + (year - 1) / 400;
 }
 
+/**
+ * Offset/Address/Size: 0x84 | 0x80259CB0 | size: 0x19C
+ */
 static void GetDates(int days, OSCalendarTime* td)
 {
     int year;
@@ -147,6 +159,9 @@ static void GetDates(int days, OSCalendarTime* td)
     td->mday = days - md[month] + 1;
 }
 
+/**
+ * Offset/Address/Size: 0x220 | 0x80259E4C | size: 0x204
+ */
 void OSTicksToCalendarTime(OSTime ticks, OSCalendarTime* td)
 {
     int days;

@@ -8,7 +8,13 @@
 class PhysicsCapsule : public PhysicsObject
 {
 public:
-    PhysicsCapsule(CollisionSpace*, PhysicsWorld*, float, float);
+    void SetDensity(float density);
+    void GetDimensions(float* radius, float* length);
+    void SetDimensions(float radius, float length);
+    void SetRadius(float radius);
+    void SetLength(float length);
+    float GetFullHeight();
+    PhysicsCapsule(CollisionSpace* collisionSpace, PhysicsWorld* world, float radius, float length);
     virtual int GetObjectType() const { return 0x2; };
 };
 

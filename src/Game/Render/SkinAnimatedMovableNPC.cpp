@@ -122,15 +122,3 @@ void SkinAnimatedMovableNPC::AnimMoveSeek(float speed, float turnRate, float see
     AnimTranslate(speed, applyPhysics);
     maFacingDirection = newDir;
 }
-
-/**
- * Stub only for field order; unreferenced so the linker drops it.
- * Forces emission of specific constants/operations so the compiler lays out the related fields to match the original binary.
- */
-void SkinAnimatedMovableNPC_stub(float& a, float& b, float& c, double& d)
-{
-    a = 0.f;
-    b = 1.f;
-    c = 0.0000958738f;
-    d = 4503599627370496;
-}

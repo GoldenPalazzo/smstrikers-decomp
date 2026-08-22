@@ -108,7 +108,7 @@ void WinnerOverlay::SceneCreated()
     presentation->SetActiveSlide("MENU IN2");
 
     short winnerSide = (scoreLeft > scoreRight) ? 0 : 1;
-    mWinningTeam = (eTeamID)nlSingleton<GameInfoManager>::s_pInstance->GetTeam(winnerSide);
+    mWinningTeam = (eTeamID)nlSingleton<GameInfoManager>::Instance()->GetTeam(winnerSide);
 
     unsigned long winnerLocID = GetLOCTeamName((eTeamID)mWinningTeam);
     BasicString<unsigned short, Detail::TempStringAllocator> winnerNameWideString(LookupWinnerLocHash(winnerLocID));
@@ -162,7 +162,7 @@ void WinnerOverlay::SceneCreated()
     mWinnerActionWhite->mImageInstance = pImage;
     mWinnerActionWhite->QueueLoad(WINNER_TEXTURES[mWinningTeam][2], false);
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->IsInDemoMode())
+    if (nlSingleton<GameInfoManager>::Instance()->IsInDemoMode())
     {
         TLComponentInstance* pComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
@@ -193,7 +193,7 @@ void WinnerOverlay::Update(float fDeltaT)
     {
         if (slide->m_time >= (slide->m_start + slide->m_duration))
         {
-            SummaryOverlay* pSummary = (SummaryOverlay*)nlSingleton<OverlayManager>::s_pInstance->Push(OVERLAY_SUMMARY, SCREEN_NOTHING, true);
+            SummaryOverlay* pSummary = (SummaryOverlay*)nlSingleton<OverlayManager>::Instance()->Push(OVERLAY_SUMMARY, SCREEN_NOTHING, true);
             pSummary->mButtonState = (ButtonComponent::ButtonState)1;
             return;
         }

@@ -4,12 +4,13 @@
 #include "ansi_files.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-int fseek(FILE* file, unsigned long offset, int mode);
-int _fseek(FILE* file, fpos_t offset, int mode);
-long ftell(FILE* file);
+    int fseek(FILE* stream, unsigned long offset, int whence);
+    int _fseek(FILE* file, fpos_t offset, int whence);
+    long ftell(FILE* stream);
 
 #ifdef __cplusplus
 }

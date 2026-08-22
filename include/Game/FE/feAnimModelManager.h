@@ -16,7 +16,7 @@ public:
     virtual ~FEAnimModelManager();
     FEAnimModelManager();
 
-    void Update(float);
+    void Update(float dt);
     void Initialize();
 
     // Inlined into Update() in the original (see dwarf.txt). Defined in the .cpp.

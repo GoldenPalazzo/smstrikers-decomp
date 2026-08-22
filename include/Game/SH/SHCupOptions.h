@@ -8,9 +8,9 @@
 class CupOptionsScene : public BaseSceneHandler
 {
 public:
-    CupOptionsScene(SceneList, SceneList);
+    CupOptionsScene(SceneList forwardScene, SceneList backScene);
     virtual ~CupOptionsScene();
-    virtual void Update(float);
+    virtual void Update(float dt);
     virtual void SceneCreated();
 
     /* 0x1C */ OptionsGameplayMenuV2* m_gameplayMenu;

@@ -118,6 +118,9 @@ static void DoReset()
     }
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8025A398 | size: 0x1A4
+ */
 static void UpdateOrigin(s32 chan)
 {
     PADStatus* origin;
@@ -167,6 +170,9 @@ static void UpdateOrigin(s32 chan)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x1A4 | 0x8025A53C | size: 0xC4
+ */
 static void PADOriginCallback(s32 chan, u32 error, OSContext* context)
 {
     ASSERTLINE(641, 0 <= ResettingChan && ResettingChan < SI_MAX_CHAN);
@@ -181,6 +187,9 @@ static void PADOriginCallback(s32 chan, u32 error, OSContext* context)
     DoReset();
 }
 
+/**
+ * Offset/Address/Size: 0x268 | 0x8025A600 | size: 0xCC
+ */
 static void PADOriginUpdateCallback(s32 chan, u32 error, OSContext* context)
 {
     ASSERTLINE(671, 0 <= chan && chan < SI_MAX_CHAN);
@@ -194,6 +203,9 @@ static void PADOriginUpdateCallback(s32 chan, u32 error, OSContext* context)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x334 | 0x8025A6CC | size: 0xD8
+ */
 static void PADProbeCallback(s32 chan, u32 error, OSContext* context)
 {
     u32 type;
@@ -210,6 +222,9 @@ static void PADProbeCallback(s32 chan, u32 error, OSContext* context)
     DoReset();
 }
 
+/**
+ * Offset/Address/Size: 0x40C | 0x8025A7A4 | size: 0x32C
+ */
 static void PADTypeAndStatusCallback(s32 chan, u32 type)
 {
     u32 chanBit;
@@ -280,6 +295,9 @@ static void PADTypeAndStatusCallback(s32 chan, u32 type)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x738 | 0x8025AAD0 | size: 0x140
+ */
 static void PADReceiveCheckCallback(s32 chan, u32 type)
 {
     u32 error;
@@ -308,6 +326,9 @@ static void PADReceiveCheckCallback(s32 chan, u32 type)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x878 | 0x8025AC10 | size: 0x110
+ */
 int PADReset(u32 mask)
 {
     BOOL enabled;
@@ -340,6 +361,9 @@ int PADReset(u32 mask)
     return 1;
 }
 
+/**
+ * Offset/Address/Size: 0x988 | 0x8025AD20 | size: 0x114
+ */
 BOOL PADRecalibrate(u32 mask)
 {
     BOOL enabled;
@@ -369,6 +393,9 @@ BOOL PADRecalibrate(u32 mask)
     return 1;
 }
 
+/**
+ * Offset/Address/Size: 0xA9C | 0x8025AE34 | size: 0x150
+ */
 BOOL PADInit()
 {
     s32 chan;
@@ -404,6 +431,9 @@ BOOL PADInit()
     return PADReset(PAD_CHAN0_BIT | PAD_CHAN1_BIT | PAD_CHAN2_BIT | PAD_CHAN3_BIT);
 }
 
+/**
+ * Offset/Address/Size: 0xBEC | 0x8025AF84 | size: 0x300
+ */
 u32 PADRead(PADStatus* status)
 {
     BOOL enabled;
@@ -567,6 +597,9 @@ void PADControlAllMotors(const u32* commandArray)
     OSRestoreInterrupts(enabled);
 }
 
+/**
+ * Offset/Address/Size: 0xEEC | 0x8025B284 | size: 0xB8
+ */
 void PADControlMotor(s32 chan, u32 command)
 {
     BOOL enabled;
@@ -589,6 +622,9 @@ void PADControlMotor(s32 chan, u32 command)
     OSRestoreInterrupts(enabled);
 }
 
+/**
+ * Offset/Address/Size: 0xFA4 | 0x8025B33C | size: 0x60
+ */
 void PADSetSpec(u32 spec)
 {
     ASSERTLINE(1282, !Initialized);
@@ -617,6 +653,9 @@ u32 PADGetSpec(void)
     return Spec;
 }
 
+/**
+ * Offset/Address/Size: 0x1004 | 0x8025B39C | size: 0x174
+ */
 static void SPEC0_MakeStatus(s32 chan, PADStatus* status, u32 data[2])
 {
     status->button = 0;
@@ -643,6 +682,9 @@ static void SPEC0_MakeStatus(s32 chan, PADStatus* status, u32 data[2])
     status->substickY -= 128;
 }
 
+/**
+ * Offset/Address/Size: 0x1178 | 0x8025B510 | size: 0x174
+ */
 static void SPEC1_MakeStatus(s32 chan, PADStatus* status, u32 data[2])
 {
     status->button = 0;
@@ -698,6 +740,9 @@ static u8 ClampU8(u8 var, u8 org)
     return var -= org;
 }
 
+/**
+ * Offset/Address/Size: 0x12EC | 0x8025B684 | size: 0x470
+ */
 static void SPEC2_MakeStatus(s32 chan, PADStatus* status, u32 data[2])
 {
     PADStatus* origin;
@@ -820,6 +865,9 @@ void PADSetAnalogMode(u32 mode)
 
 static void (*SamplingCallback)();
 
+/**
+ * Offset/Address/Size: 0x175C | 0x8025BAF4 | size: 0xBC
+ */
 static BOOL OnReset(BOOL final)
 {
     BOOL sync;
@@ -849,6 +897,9 @@ void __PADDisableXPatch(void)
     XPatchBits = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x1818 | 0x8025BBB0 | size: 0x60
+ */
 static void SamplingHandler(__OSInterrupt interrupt, OSContext* context)
 {
     OSContext exceptionContext;
@@ -863,6 +914,9 @@ static void SamplingHandler(__OSInterrupt interrupt, OSContext* context)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x1878 | 0x8025BC10 | size: 0x54
+ */
 PADSamplingCallback PADSetSamplingCallback(PADSamplingCallback callback)
 {
     PADSamplingCallback prev;
@@ -881,6 +935,9 @@ PADSamplingCallback PADSetSamplingCallback(PADSamplingCallback callback)
     return prev;
 }
 
+/**
+ * Offset/Address/Size: 0x18CC | 0x8025BC64 | size: 0x7C
+ */
 BOOL __PADDisableRecalibration(BOOL disable)
 {
     BOOL enabled;

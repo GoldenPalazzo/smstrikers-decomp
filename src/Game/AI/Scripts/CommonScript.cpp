@@ -1570,8 +1570,8 @@ FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
 
         float fNetOpeness = LikelyToScore(TheFielder);
         float fPlayerDistance = PlayerShotDistance(TheFielder);
-        float fNetWeighting = g_pGame->m_pGameTweaks->unk2DC;
-        float fPlayerWeighting = g_pGame->m_pGameTweaks->unk2E0;
+        float fNetWeighting = g_pGame->m_pGameTweaks->fShotMeterNetOpenWeight;
+        float fPlayerWeighting = g_pGame->m_pGameTweaks->fShotMeterPlayerDistanceWeight;
         float fTotalSum = 0.0f;
         float fTotalWeight = 0.0f;
         fTotalSum += fNetOpeness * fNetWeighting;
@@ -1735,8 +1735,8 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
 
         float fPositionScore = GoalieOutOfPosition(TheFielder);
         float fNetOpeness = LikelyToScore(TheFielder);
-        float fPositionWeighting = g_pGame->m_pGameTweaks->unk2E4;
-        float fNetWeighting = g_pGame->m_pGameTweaks->unk2E8;
+        float fPositionWeighting = g_pGame->m_pGameTweaks->fShotChipMeterGPositionWeight;
+        float fNetWeighting = g_pGame->m_pGameTweaks->fShotChipMeterNetOpenWeight;
         float fTotalSum = 0.0f;
         float fTotalWeight = 0.0f;
 

@@ -13,8 +13,8 @@ public:
     MoviePlayerScene();
     virtual ~MoviePlayerScene();
     virtual void SceneCreated();
-    void SetMovieDetails(const char*, bool, bool);
-    virtual void Update(float);
+    void SetMovieDetails(const char* filename, bool withsound, bool loopmovie);
+    virtual void Update(float fDeltaT);
     virtual bool CheckMoviePlayerAbort();
     virtual void PlayScreenForwardSFX();
     virtual void PlayScreenBackSFX();
@@ -71,7 +71,7 @@ public:
     virtual ~LessonMoviePlayerScene() { };
     virtual void SceneCreated();
     virtual bool CheckMoviePlayerAbort();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
 
     ButtonComponent mButtonComponent;
 };

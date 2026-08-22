@@ -68,7 +68,7 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
             }
         }
 
-        if (nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode == GameInfoManager::GM_TOURNAMENT)
+        if (nlSingleton<GameInfoManager>::Instance()->mCurrentMode == GameInfoManager::GM_TOURNAMENT)
         {
             ShowMessage(MSG_CUSTOMTOURNNEXTMATCHUP);
         }

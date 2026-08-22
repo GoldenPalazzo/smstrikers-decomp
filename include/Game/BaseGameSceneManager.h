@@ -105,16 +105,16 @@ class BaseGameSceneManager
 public:
     BaseGameSceneManager();
     virtual ~BaseGameSceneManager();
-    virtual BaseSceneHandler* Push(SceneList, ScreenMovement, bool);
-    BaseSceneHandler* GetScene(SceneList);
+    virtual BaseSceneHandler* Push(SceneList newscene, ScreenMovement movement, bool popfirst);
+    BaseSceneHandler* GetScene(SceneList scene);
     virtual void Pop();
     void PopEntireStack();
-    int GetSceneType(BaseSceneHandler*);
-    bool IsOnStack(SceneList);
-    BasicString<char, Detail::TempStringAllocator> GetFileName(SceneList);
-    void PushLoadingScene(bool);
-    static bool GetVisible(SceneList);
-    static void SetVisible(SceneList, bool);
+    int GetSceneType(BaseSceneHandler* handler);
+    bool IsOnStack(SceneList scene);
+    BasicString<char, Detail::TempStringAllocator> GetFileName(SceneList scene);
+    void PushLoadingScene(bool clearStack);
+    static bool GetVisible(SceneList sceneid);
+    static void SetVisible(SceneList sceneid, bool visibility);
 
 public:
     /* 0x04 */ u32 mCurrentStackDepth;

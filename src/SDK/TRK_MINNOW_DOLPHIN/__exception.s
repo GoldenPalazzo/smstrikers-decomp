@@ -7,8 +7,14 @@
 # assembler fold lis/ori at assembly time instead of emitting R_PPC_ADDR16_HI/LO
 # relocations; --strip-local-absolute then drops the symbol so the symtab still
 # holds only gTRKInterruptVectorTable / gTRKInterruptVectorTableEnd. Value is the
-# linked address of TRKInterruptHandler (.text:0x80227424, see symbols.txt).
+# linked address of TRKInterruptHandler for the build version (see symbols.txt).
+.if BUILD_VERSION == 0
 .set TRKInterruptHandler, 0x80227424
+.elseif BUILD_VERSION == 1
+.set TRKInterruptHandler, 0x80229480
+.else
+.error "__exception.s: no TRKInterruptHandler address for this BUILD_VERSION"
+.endif
 
 .section .init, "ax"  # 0x80003100 - 0x80005600
 
@@ -44,8 +50,8 @@ gTRKInterruptVectorTable:
 /* 80003380 00000380  7C 60 00 A6 */	mfmsr r3
 /* 80003384 00000384  60 63 00 30 */	ori r3, r3, 0x30
 /* 80003388 00000388  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 8000338C 0000038C  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80003390 00000390  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 8000338C 0000038C  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80003390 00000390  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 80003394 00000394  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80003398 00000398  38 60 02 00 */	li r3, 0x200
 /* 8000339C 0000039C  4C 00 00 64 */	rfi 
@@ -60,8 +66,8 @@ gTRKInterruptVectorTable:
 /* 80003468 00000468  7C 60 00 A6 */	mfmsr r3
 /* 8000346C 0000046C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80003470 00000470  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80003474 00000474  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80003478 00000478  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80003474 00000474  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80003478 00000478  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 8000347C 0000047C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80003480 00000480  38 60 03 00 */	li r3, 0x300
 /* 80003484 00000484  4C 00 00 64 */	rfi 
@@ -76,8 +82,8 @@ gTRKInterruptVectorTable:
 /* 80003568 00000568  7C 60 00 A6 */	mfmsr r3
 /* 8000356C 0000056C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80003570 00000570  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80003574 00000574  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80003578 00000578  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80003574 00000574  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80003578 00000578  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 8000357C 0000057C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80003580 00000580  38 60 04 00 */	li r3, 0x400
 /* 80003584 00000584  4C 00 00 64 */	rfi 
@@ -92,8 +98,8 @@ gTRKInterruptVectorTable:
 /* 80003668 00000668  7C 60 00 A6 */	mfmsr r3
 /* 8000366C 0000066C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80003670 00000670  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80003674 00000674  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80003678 00000678  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80003674 00000674  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80003678 00000678  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 8000367C 0000067C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80003680 00000680  38 60 05 00 */	li r3, 0x500
 /* 80003684 00000684  4C 00 00 64 */	rfi 
@@ -108,8 +114,8 @@ gTRKInterruptVectorTable:
 /* 80003768 00000768  7C 60 00 A6 */	mfmsr r3
 /* 8000376C 0000076C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80003770 00000770  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80003774 00000774  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80003778 00000778  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80003774 00000774  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80003778 00000778  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 8000377C 0000077C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80003780 00000780  38 60 06 00 */	li r3, 0x600
 /* 80003784 00000784  4C 00 00 64 */	rfi 
@@ -124,8 +130,8 @@ gTRKInterruptVectorTable:
 /* 80003868 00000868  7C 60 00 A6 */	mfmsr r3
 /* 8000386C 0000086C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80003870 00000870  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80003874 00000874  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80003878 00000878  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80003874 00000874  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80003878 00000878  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 8000387C 0000087C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80003880 00000880  38 60 07 00 */	li r3, 0x700
 /* 80003884 00000884  4C 00 00 64 */	rfi 
@@ -140,8 +146,8 @@ gTRKInterruptVectorTable:
 /* 80003968 00000968  7C 60 00 A6 */	mfmsr r3
 /* 8000396C 0000096C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80003970 00000970  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80003974 00000974  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80003978 00000978  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80003974 00000974  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80003978 00000978  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 8000397C 0000097C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80003980 00000980  38 60 08 00 */	li r3, 0x800
 /* 80003984 00000984  4C 00 00 64 */	rfi 
@@ -156,8 +162,8 @@ gTRKInterruptVectorTable:
 /* 80003A68 00000A68  7C 60 00 A6 */	mfmsr r3
 /* 80003A6C 00000A6C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80003A70 00000A70  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80003A74 00000A74  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80003A78 00000A78  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80003A74 00000A74  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80003A78 00000A78  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 80003A7C 00000A7C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80003A80 00000A80  38 60 09 00 */	li r3, 0x900
 /* 80003A84 00000A84  4C 00 00 64 */	rfi 
@@ -178,8 +184,8 @@ gTRKInterruptVectorTable:
 /* 80003D68 00000D68  7C 60 00 A6 */	mfmsr r3
 /* 80003D6C 00000D6C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80003D70 00000D70  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80003D74 00000D74  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80003D78 00000D78  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80003D74 00000D74  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80003D78 00000D78  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 80003D7C 00000D7C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80003D80 00000D80  38 60 0C 00 */	li r3, 0xc00
 /* 80003D84 00000D84  4C 00 00 64 */	rfi 
@@ -194,8 +200,8 @@ gTRKInterruptVectorTable:
 /* 80003E68 00000E68  7C 60 00 A6 */	mfmsr r3
 /* 80003E6C 00000E6C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80003E70 00000E70  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80003E74 00000E74  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80003E78 00000E78  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80003E74 00000E74  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80003E78 00000E78  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 80003E7C 00000E7C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80003E80 00000E80  38 60 0D 00 */	li r3, 0xd00
 /* 80003E84 00000E84  4C 00 00 64 */	rfi 
@@ -215,8 +221,8 @@ gTRKInterruptVectorTable:
 /* 80003F68 00000F68  7C 60 00 A6 */	mfmsr r3
 /* 80003F6C 00000F6C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80003F70 00000F70  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80003F74 00000F74  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80003F78 00000F78  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80003F74 00000F74  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80003F78 00000F78  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 80003F7C 00000F7C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80003F80 00000F80  38 60 0E 00 */	li r3, 0xe00
 /* 80003F84 00000F84  4C 00 00 64 */	rfi 
@@ -237,8 +243,8 @@ gTRKInterruptVectorTable:
 /* 80004088 00001088  7C 60 00 A6 */	mfmsr r3
 /* 8000408C 0000108C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80004090 00001090  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80004094 00001094  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80004098 00001098  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80004094 00001094  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80004098 00001098  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 8000409C 0000109C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 800040A0 000010A0  38 60 0F 20 */	li r3, 0xf20
 /* 800040A4 000010A4  4C 00 00 64 */	rfi 
@@ -251,8 +257,8 @@ gTRKInterruptVectorTable:
 /* 800040BC 000010BC  7C 60 00 A6 */	mfmsr r3
 /* 800040C0 000010C0  60 63 00 30 */	ori r3, r3, 0x30
 /* 800040C4 000010C4  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 800040C8 000010C8  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 800040CC 000010CC  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 800040C8 000010C8  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 800040CC 000010CC  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 800040D0 000010D0  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 800040D4 000010D4  38 60 0F 00 */	li r3, 0xf00
 /* 800040D8 000010D8  4C 00 00 64 */	rfi 
@@ -283,8 +289,8 @@ gTRKInterruptVectorTable:
 /* 800041A4 000011A4  7C 60 00 A6 */	mfmsr r3
 /* 800041A8 000011A8  60 63 00 30 */	ori r3, r3, 0x30
 /* 800041AC 000011AC  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 800041B0 000011B0  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 800041B4 000011B4  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 800041B0 000011B0  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 800041B4 000011B4  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 800041B8 000011B8  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 800041BC 000011BC  38 60 10 00 */	li r3, 0x1000
 /* 800041C0 000011C0  4C 00 00 64 */	rfi 
@@ -320,8 +326,8 @@ gTRKInterruptVectorTable:
 /* 800042A4 000012A4  7C 60 00 A6 */	mfmsr r3
 /* 800042A8 000012A8  60 63 00 30 */	ori r3, r3, 0x30
 /* 800042AC 000012AC  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 800042B0 000012B0  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 800042B4 000012B4  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 800042B0 000012B0  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 800042B4 000012B4  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 800042B8 000012B8  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 800042BC 000012BC  38 60 11 00 */	li r3, 0x1100
 /* 800042C0 000012C0  4C 00 00 64 */	rfi 
@@ -352,8 +358,8 @@ gTRKInterruptVectorTable:
 /* 800043A4 000013A4  7C 60 00 A6 */	mfmsr r3
 /* 800043A8 000013A8  60 63 00 30 */	ori r3, r3, 0x30
 /* 800043AC 000013AC  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 800043B0 000013B0  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 800043B4 000013B4  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 800043B0 000013B0  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 800043B4 000013B4  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 800043B8 000013B8  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 800043BC 000013BC  38 60 12 00 */	li r3, 0x1200
 /* 800043C0 000013C0  4C 00 00 64 */	rfi 
@@ -368,8 +374,8 @@ gTRKInterruptVectorTable:
 /* 80004468 00001468  7C 60 00 A6 */	mfmsr r3
 /* 8000446C 0000146C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80004470 00001470  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80004474 00001474  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80004478 00001478  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80004474 00001474  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80004478 00001478  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 8000447C 0000147C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80004480 00001480  38 60 13 00 */	li r3, 0x1300
 /* 80004484 00001484  4C 00 00 64 */	rfi 
@@ -384,8 +390,8 @@ gTRKInterruptVectorTable:
 /* 80004568 00001568  7C 60 00 A6 */	mfmsr r3
 /* 8000456C 0000156C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80004570 00001570  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80004574 00001574  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80004578 00001578  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80004574 00001574  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80004578 00001578  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 8000457C 0000157C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80004580 00001580  38 60 14 00 */	li r3, 0x1400
 /* 80004584 00001584  4C 00 00 64 */	rfi 
@@ -400,8 +406,8 @@ gTRKInterruptVectorTable:
 /* 80004768 00001768  7C 60 00 A6 */	mfmsr r3
 /* 8000476C 0000176C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80004770 00001770  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80004774 00001774  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80004778 00001778  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80004774 00001774  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80004778 00001778  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 8000477C 0000177C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80004780 00001780  38 60 16 00 */	li r3, 0x1600
 /* 80004784 00001784  4C 00 00 64 */	rfi 
@@ -416,8 +422,8 @@ gTRKInterruptVectorTable:
 /* 80004868 00001868  7C 60 00 A6 */	mfmsr r3
 /* 8000486C 0000186C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80004870 00001870  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80004874 00001874  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80004878 00001878  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80004874 00001874  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80004878 00001878  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 8000487C 0000187C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80004880 00001880  38 60 17 00 */	li r3, 0x1700
 /* 80004884 00001884  4C 00 00 64 */	rfi 
@@ -432,8 +438,8 @@ gTRKInterruptVectorTable:
 /* 80004D68 00001D68  7C 60 00 A6 */	mfmsr r3
 /* 80004D6C 00001D6C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80004D70 00001D70  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80004D74 00001D74  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80004D78 00001D78  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80004D74 00001D74  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80004D78 00001D78  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 80004D7C 00001D7C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80004D80 00001D80  38 60 1C 00 */	li r3, 0x1c00
 /* 80004D84 00001D84  4C 00 00 64 */	rfi 
@@ -448,8 +454,8 @@ gTRKInterruptVectorTable:
 /* 80004E68 00001E68  7C 60 00 A6 */	mfmsr r3
 /* 80004E6C 00001E6C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80004E70 00001E70  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80004E74 00001E74  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80004E78 00001E78  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80004E74 00001E74  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80004E78 00001E78  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 80004E7C 00001E7C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80004E80 00001E80  38 60 1D 00 */	li r3, 0x1d00
 /* 80004E84 00001E84  4C 00 00 64 */	rfi 
@@ -464,8 +470,8 @@ gTRKInterruptVectorTable:
 /* 80004F68 00001F68  7C 60 00 A6 */	mfmsr r3
 /* 80004F6C 00001F6C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80004F70 00001F70  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80004F74 00001F74  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80004F78 00001F78  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80004F74 00001F74  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80004F78 00001F78  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 80004F7C 00001F7C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80004F80 00001F80  38 60 1E 00 */	li r3, 0x1e00
 /* 80004F84 00001F84  4C 00 00 64 */	rfi 
@@ -480,8 +486,8 @@ gTRKInterruptVectorTable:
 /* 80005068 00002068  7C 60 00 A6 */	mfmsr r3
 /* 8000506C 0000206C  60 63 00 30 */	ori r3, r3, 0x30
 /* 80005070 00002070  7C 7B 03 A6 */	mtspr 0x1b, r3
-/* 80005074 00002074  3C 60 80 0B */	lis r3, TRKInterruptHandler@h
-/* 80005078 00002078  60 63 DE F4 */	ori r3, r3, TRKInterruptHandler@l
+/* 80005074 00002074  3C 60 80 22 */	lis r3, TRKInterruptHandler@h
+/* 80005078 00002078  60 63 74 24 */	ori r3, r3, TRKInterruptHandler@l
 /* 8000507C 0000207C  7C 7A 03 A6 */	mtspr 0x1a, r3
 /* 80005080 00002080  38 60 1F 00 */	li r3, 0x1f00
 /* 80005084 00002084  4C 00 00 64 */	rfi 

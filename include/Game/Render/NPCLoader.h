@@ -6,7 +6,7 @@
 class NPCLoader : public Loader
 {
 public:
-    bool StartLoad(LoadingManager*);
+    bool StartLoad(LoadingManager* manager);
 };
 
 #endif // _NPCLOADER_H_

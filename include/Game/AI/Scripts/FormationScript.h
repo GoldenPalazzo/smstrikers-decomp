@@ -8,9 +8,9 @@ namespace Fuzzy
 {
 FuzzyVariant GetStrategicBallCarrier(cTeam*);
 FuzzyVariant GetBestBallInterceptor(cTeam*);
-FuzzyVariant GetBestDefensiveFormation(cTeam*);
-FuzzyVariant GetBestOffensiveFormation(cTeam*);
-FuzzyVariant GetBestBallFormationSet(cTeam*);
+FuzzyVariant GetBestDefensiveFormation(cTeam* TheTeam);
+FuzzyVariant GetBestOffensiveFormation(cTeam* TheTeam);
+FuzzyVariant GetBestBallFormationSet(cTeam* TheTeam);
 } // namespace Fuzzy
 
 #endif // _FORMATIONSCRIPT_H_

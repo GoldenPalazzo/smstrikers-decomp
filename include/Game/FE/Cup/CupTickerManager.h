@@ -16,10 +16,10 @@ class CupTickerManager
 public:
     CupTickerManager();
     ~CupTickerManager();
-    void SetTickerTextInstance(TLTextInstance*);
+    void SetTickerTextInstance(TLTextInstance* tickerText);
     void CreateNewMessage();
-    void Update(float);
-    void BuildGoalTotalTickerMessage(BasicString<unsigned short, Detail::TempStringAllocator>&, bool);
+    void Update(float dt);
+    void BuildGoalTotalTickerMessage(BasicString<unsigned short, Detail::TempStringAllocator>& result, bool bIsHuman);
 
     /* 0x000 */ FEScrollText* mTicker;
     /* 0x004 */ eCupTickerState mState;

@@ -152,7 +152,7 @@ void Audio::AudioEventHandler(Event* pEvent, void* data)
     }
 
     case 4:
-        if (!StatsTracker::s_pInstance->mIsOvertime)
+        if (!StatsTracker::Instance()->mIsOvertime)
         {
             Audio::gWorldSFX.Play((Audio::eWorldSFX)0x4F, 100.0f, -1.0f, true, 100.0f);
             Audio::gWorldSFX.Play((Audio::eWorldSFX)0x4F, 100.0f, 0.5f, true, 100.0f);
@@ -185,10 +185,10 @@ void Audio::AudioEventHandler(Event* pEvent, void* data)
 
         nlVector3 ballNetVel = pData->v3CollisionVelocity;
         GameTweaks* tweaks = g_pGame->m_pGameTweaks;
-        float maxDist = tweaks->unk278;
-        float satDist = tweaks->unk27C;
-        float minRatio = tweaks->unk280;
-        float throttleInterval = tweaks->unk284;
+        float maxDist = tweaks->fBallHitNetMaxAudibleVelocity;
+        float satDist = tweaks->fBallHitNetMinAudibleVelocity;
+        float minRatio = tweaks->fBallHitNetMinVolume;
+        float throttleInterval = tweaks->fBallHitNetMinTimeBeforeNextAudio;
         float rawLen = nlSqrt(
             ballNetVel.x * ballNetVel.x + ballNetVel.y * ballNetVel.y + ballNetVel.z * ballNetVel.z, true);
         float len = rawLen;
@@ -269,9 +269,9 @@ void Audio::AudioEventHandler(Event* pEvent, void* data)
 
         float speed = pData->fCollisionVecLen;
         GameTweaks* tweaks = g_pGame->m_pGameTweaks;
-        float maxSpeed = tweaks->unk268;
-        float minSpeed = tweaks->unk26C;
-        float throttleDelay = tweaks->unk274;
+        float maxSpeed = tweaks->fBallHitWallMaxAudibleVelocity;
+        float minSpeed = tweaks->fBallHitWallMinAudibleVelocity;
+        float throttleDelay = tweaks->fBallHitWallMinTimeBeforeNextAudio;
         if (speed > maxSpeed)
             speed = maxSpeed;
         if (speed < minSpeed)
@@ -794,8 +794,8 @@ void Audio::AudioEventHandler(Event* pEvent, void* data)
             pData = (PlayerAttackData*)&pEvent->m_data;
         }
 
-        ((cPlayer*)pData->pTarget)->PlayAttackReactionSounds(g_pGame->m_pGameTweaks->unk244);
-        ((cPlayer*)pData->pAttacker)->PlayRandomCharDialogue(2, (PosUpdateMethod)2, g_pGame->m_pGameTweaks->unk244, -1.0f);
+        ((cPlayer*)pData->pTarget)->PlayAttackReactionSounds(g_pGame->m_pGameTweaks->fSlideAttackHitReactionVolume);
+        ((cPlayer*)pData->pAttacker)->PlayRandomCharDialogue(2, (PosUpdateMethod)2, g_pGame->m_pGameTweaks->fSlideAttackHitReactionVolume, -1.0f);
         break;
     }
 

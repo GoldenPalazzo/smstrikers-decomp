@@ -29,8 +29,8 @@ public:
         m_tweenActive = 0;
     }
 
-    void setNextTween(FETweener*);
-    void setDoneCallFunc(void (*)(void*), void*);
+    void setNextTween(FETweener* next);
+    void setDoneCallFunc(void (*doneFunc)(void*), void* doneFuncParam);
 
     /* 0x00 */ unsigned char m_arraySize;                        // size 0x1
     /* 0x01 */ unsigned char m_tweenActive;                      // size 0x1
@@ -56,32 +56,14 @@ class FETweenManager
 public:
     FETweenManager();
     ~FETweenManager();
-    FETweener* createTween(float*, float*, float, float, unsigned char, float (*)(float, float, float, float), void*, void (*)(void*, const float*));
+    FETweener* createTween(float* startVals, float* endVals, float duration, float delay, unsigned char arraySize, float (*tweenFunc)(float, float, float, float), void* applyObj, void (*setterFunc)(void*, const float*));
     void Update(float fDeltaT);
     void clearTweens();
-    void clearTweensOnObj(void*);
-    void startTween(FETweener*);
+    void clearTweensOnObj(void* obj);
+    void startTween(FETweener* pTweener);
 
     /* 0x00 */ nlDLListSlotPool<FETweener*> m_tweenList;       // size 0x1C
     /* 0x1C */ nlDLListSlotPool<FETweener*> m_activeTweenList; // size 0x1C
 }; // total size: 0x38
-
-// class DLListContainerBase<FETweener*, BasicSlotPool<DLListEntry<FETweener*>>>
-// {
-// public:
-//     void DeleteEntry(DLListEntry<FETweener*>*);
-// };
-
-// class nlWalkDLRing<DLListEntry<FETweener*>, DLListContainerBase<FETweener*, BasicSlotPool<DLListEntry<FETweener*>>>>(DLListEntry<FETweener*>*, DLListContainerBase<FETweener*, BasicSlotPool<DLListEntry<FETweener*>>>*, void (DLListContainerBase<FETweener*, BasicSlotPool<DLListEntry<FETweener*>>>
-// {
-// public:
-//     void *)(DLListEntry<FETweener*>*));
-// };
-
-// class nlWalkRing<DLListEntry<FETweener*>, DLListContainerBase<FETweener*, BasicSlotPool<DLListEntry<FETweener*>>>>(DLListEntry<FETweener*>*, DLListContainerBase<FETweener*, BasicSlotPool<DLListEntry<FETweener*>>>*, void (DLListContainerBase<FETweener*, BasicSlotPool<DLListEntry<FETweener*>>>
-// {
-// public:
-//     void *)(DLListEntry<FETweener*>*));
-// };
 
 #endif // _FETWEENER_H_

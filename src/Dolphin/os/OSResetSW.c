@@ -9,6 +9,9 @@ static BOOL LastState;
 static OSTime HoldUp;
 static OSTime HoldDown;
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80257BCC | size: 0xF4
+ */
 void __OSResetSWInterruptHandler(s16 exception, OSContext* context)
 {
     OSResetCallback callback;
@@ -54,6 +57,9 @@ OSResetCallback OSSetResetCallback(OSResetCallback callback)
     return prevCallback;
 }
 
+/**
+ * Offset/Address/Size: 0xF4 | 0x80257CC0 | size: 0x298
+ */
 BOOL OSGetResetButtonState(void)
 {
     BOOL enabled = OSDisableInterrupts();

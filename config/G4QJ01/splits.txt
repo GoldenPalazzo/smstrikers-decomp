@@ -444,7 +444,7 @@ Game/AI/SpaceSearch.cpp:
 	.sdata2     start:0x80378DB0 end:0x80378E28
 	.sbss2      start:0x8037B4F0 end:0x8037B500
 
-NL/StatsGatherer.cpp:
+Game/AI/StatsGatherer.cpp:
 	.text       start:0x800643A0 end:0x800643A0
 	.text       start:0x800643A0 end:0x800643A4
 	.text       start:0x800643A4 end:0x800643B8
@@ -518,7 +518,7 @@ Game/AI/Scripts/FormationScript.cpp:
 	.sdata      start:0x803748F0 end:0x80374920
 	.sdata2     start:0x80378ED8 end:0x80378EE8
 
-Game/AI/ScriptCaching.cpp:
+Game/AI/Scripts/ScriptCaching.cpp:
 	.text       start:0x8007E96C end:0x8007E96C
 	.text       start:0x8007E96C end:0x8007E96C
 	.sdata      start:0x80374920 end:0x80374928
@@ -645,7 +645,7 @@ Game/BaseGameSceneManager.cpp:
 	.data       start:0x802ABD60 end:0x802ACA88
 	.sdata      start:0x803749C0 end:0x803749C8
 
-Game/GameSceneManager.cpp:
+Game/FE/GameSceneManager.cpp:
 	.text       start:0x80096C98 end:0x80096D54
 	.text       start:0x80096D54 end:0x80096D54
 	.data       start:0x802ACA88 end:0x802ACAA0
@@ -1226,7 +1226,7 @@ Game/SH/SHSuperTeam.cpp:
 	.sdata      start:0x803753A8 end:0x803753B8
 	.sdata2     start:0x80379318 end:0x80379320
 
-Game/OverlayHandlerHUD.cpp:
+Game/FE/Overlay/OverlayHandlerHUD.cpp:
 	.text       start:0x800F7B10 end:0x800FB27C
 	.text       start:0x800FB27C end:0x800FB27C
 	.text       start:0x800FB27C end:0x800FB27C
@@ -1245,7 +1245,7 @@ Game/OverlayHandlerHUD.cpp:
 	.sdata      start:0x803753B8 end:0x80375450
 	.sdata2     start:0x80379320 end:0x80379350
 
-Game/OverlayHandlerInGameText.cpp:
+Game/FE/Overlay/OverlayHandlerInGameText.cpp:
 	.text       start:0x800FC8DC end:0x800FD8C8
 	.text       start:0x800FD8C8 end:0x800FD8C8
 	.text       start:0x800FD8C8 end:0x800FD938
@@ -1293,7 +1293,7 @@ Game/FE/feInGameMessengerManager.cpp:
 	.data       start:0x802B0E70 end:0x802B0E80
 	.sdata2     start:0x80379358 end:0x80379360
 
-Game/OverlayHandlerGoal.cpp:
+Game/FE/Overlay/OverlayHandlerGoal.cpp:
 	.text       start:0x801018A0 end:0x80104ECC
 	.text       start:0x80104ECC end:0x80104ECC
 	.text       start:0x80104ECC end:0x8010516C
@@ -1311,7 +1311,7 @@ Game/OverlayHandlerGoal.cpp:
 	.sdata2     start:0x80379360 end:0x80379378
 	.sbss2      start:0x8037B520 end:0x8037B528
 
-Game/OverlayHandlerDemo.cpp:
+Game/FE/Overlay/OverlayHandlerDemo.cpp:
 	.text       start:0x80107164 end:0x80107278
 	.text       start:0x80107278 end:0x80107278
 	.text       start:0x80107278 end:0x80107278
@@ -1331,7 +1331,7 @@ Game/FE/Overlay/OverlayHandlerWinner.cpp:
 	.sdata      start:0x80375590 end:0x803755C8
 	.sdata2     start:0x80379378 end:0x80379388
 
-Game/OverlayHandlerSTSX2.cpp:
+Game/FE/Overlay/OverlayHandlerSTSX2.cpp:
 	.text       start:0x801089E8 end:0x80108D10
 	.text       start:0x80108D10 end:0x80108D10
 	.text       start:0x80108D10 end:0x80108D10
@@ -1842,7 +1842,7 @@ Game/PhysicsShell.cpp:
 	.data       start:0x802B3398 end:0x802B3408
 	.sdata2     start:0x80379918 end:0x80379940
 
-Game/PhysicsGroundPlane.cpp:
+Game/Physics/PhysicsGroundPlane.cpp:
 	.text       start:0x8013E024 end:0x8013E070
 	.text       start:0x8013E070 end:0x8013E070
 	.text       start:0x8013E070 end:0x8013E0E0
@@ -1850,7 +1850,7 @@ Game/PhysicsGroundPlane.cpp:
 	.data       start:0x802B3408 end:0x802B3430
 	.sdata2     start:0x80379940 end:0x80379948
 
-Game/PhysicsWall.cpp:
+Game/Physics/PhysicsWall.cpp:
 	.text       start:0x8013E0E8 end:0x8013E130
 	.text       start:0x8013E130 end:0x8013E130
 	.text       start:0x8013E130 end:0x8013E1A0
@@ -2768,7 +2768,7 @@ Game/Camera/rumblefilter.cpp:
 	.sbss       start:0x803774F0 end:0x803774F8
 	.sdata2     start:0x8037A1E8 end:0x8037A200
 
-Game/CameraLoader.cpp:
+Game/Camera/CameraLoader.cpp:
 	.text       start:0x801A8664 end:0x801A8698
 	.text       start:0x801A8698 end:0x801A8698
 	.ctors      start:0x8028F39C end:0x8028F3A0
@@ -4397,20 +4397,20 @@ Game/Physics/PhysicsBox.cpp:
 	.text       start:0x802007B0 end:0x802007B0
 	.text       start:0x802007B0 end:0x802007B0
 
-Game/PhysicsCapsule.cpp:
+Game/Physics/PhysicsCapsule.cpp:
 	.text       start:0x802007B0 end:0x80200898
 	.text       start:0x80200898 end:0x80200898
 	.text       start:0x80200898 end:0x80200898
 	.sdata2     start:0x8037AA08 end:0x8037AA10
 
-Game/PhysicsColumn.cpp:
+Game/Physics/PhysicsColumn.cpp:
 	.text       start:0x80200898 end:0x80200A44
 	.text       start:0x80200A44 end:0x80200A4C
 	.text       start:0x80200A4C end:0x80200A4C
 	.data       start:0x80306610 end:0x80306638
 	.sdata2     start:0x8037AA10 end:0x8037AA18
 
-Game/PhysicsRoundedCorner.cpp:
+Game/Physics/PhysicsRoundedCorner.cpp:
 	.text       start:0x80200A4C end:0x80200B0C
 	.text       start:0x80200B0C end:0x80200B0C
 	.text       start:0x80200B0C end:0x80200B0C
@@ -4436,7 +4436,7 @@ Game/PhysicsCompositeObject.cpp:
 	.text       start:0x80201A94 end:0x80201AF4
 	.data       start:0x803066C8 end:0x80306700
 
-Game/PhysicsFinitePlane.cpp:
+Game/Physics/PhysicsFinitePlane.cpp:
 	.text       start:0x80201AF4 end:0x80201D0C
 	.text       start:0x80201D0C end:0x80201D0C
 	.text       start:0x80201D0C end:0x80201D0C
@@ -4450,7 +4450,7 @@ Game/PhysicsObject.cpp:
 	.sdata      start:0x80376910 end:0x80376918
 	.sdata2     start:0x8037AA48 end:0x8037AA68
 
-Game/PhysicsPlane.cpp:
+Game/Physics/PhysicsPlane.cpp:
 	.text       start:0x802031A8 end:0x80203250
 	.text       start:0x80203250 end:0x80203250
 	.text       start:0x80203250 end:0x80203250
@@ -4731,7 +4731,7 @@ NL/nlTextEscape.cpp:
 	.sdata2     start:0x8037ABB0 end:0x8037ABB8
 	.sbss2      start:0x8037B5A8 end:0x8037B5B2
 
-Game/BaseSceneHandler.cpp:
+Game/FE/BaseSceneHandler.cpp:
 	.text       start:0x80214914 end:0x802149A0
 	.text       start:0x802149A0 end:0x802149A0
 	.text       start:0x802149A0 end:0x802149A0

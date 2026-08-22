@@ -6,7 +6,6 @@
 #include "Game/FE/fePresentation.h"
 #include "Game/FE/feScene.h"
 
-// Todo Figure this out? IDK Man.
 class BaseScreenHandler
 {
 public:
@@ -33,10 +32,10 @@ public:
         m_pFEScene = NULL;
     };
     virtual ~BaseSceneHandler() { };
-    virtual void Update(float);
+    virtual void Update(float dt);
     virtual void InitializeSubHandlers() { };
-    virtual void AddScreenHandler(BaseScreenHandler*);
-    virtual void RemoveScreenHandler(BaseScreenHandler*);
+    virtual void AddScreenHandler(BaseScreenHandler* handler);
+    virtual void RemoveScreenHandler(BaseScreenHandler* pScreenHandler);
     virtual void SetPresentation(FEPresentation* presentation) { m_pFEPresentation = presentation; };
     virtual void OnActivate();
     virtual void SceneCreated() { };

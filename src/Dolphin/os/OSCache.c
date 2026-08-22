@@ -19,6 +19,9 @@ asm void DCFlashInvalidate(void) {
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802549AC | size: 0x14
+ */
 asm void DCEnable(void) {
     nofralloc
     sync
@@ -84,6 +87,9 @@ asm void DCBlockInvalidate(register void* addr) {
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x14 | 0x802549C0 | size: 0x2C
+ */
 asm void DCInvalidateRange(register void* addr, register u32 nBytes) {
     nofralloc
     cmplwi nBytes, 0
@@ -101,6 +107,9 @@ asm void DCInvalidateRange(register void* addr, register u32 nBytes) {
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x40 | 0x802549EC | size: 0x30
+ */
 asm void DCFlushRange(register void* addr, register u32 nBytes) {
     nofralloc
     cmplwi nBytes, 0
@@ -119,6 +128,9 @@ asm void DCFlushRange(register void* addr, register u32 nBytes) {
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x70 | 0x80254A1C | size: 0x30
+ */
 asm void DCStoreRange(register void* addr, register u32 nBytes) {
     nofralloc
     cmplwi nBytes, 0
@@ -138,6 +150,9 @@ asm void DCStoreRange(register void* addr, register u32 nBytes) {
     blr
 }
 
+/**
+ * Offset/Address/Size: 0xA0 | 0x80254A4C | size: 0x2C
+ */
 asm void DCFlushRangeNoSync(register void* addr, register u32 nBytes) {
     nofralloc
     cmplwi nBytes, 0
@@ -155,6 +170,9 @@ asm void DCFlushRangeNoSync(register void* addr, register u32 nBytes) {
     blr
 }
 
+/**
+ * Offset/Address/Size: 0xCC | 0x80254A78 | size: 0x2C
+ */
 asm void DCStoreRangeNoSync(register void* addr, register u32 nBytes) {
     nofralloc
     cmplwi nBytes, 0
@@ -173,6 +191,9 @@ asm void DCStoreRangeNoSync(register void* addr, register u32 nBytes) {
     blr
 }
 
+/**
+ * Offset/Address/Size: 0xF8 | 0x80254AA4 | size: 0x2C
+ */
 asm void DCZeroRange(register void* addr, register u32 nBytes) {
   nofralloc
   cmplwi nBytes, 0
@@ -209,6 +230,9 @@ asm void DCTouchRange(register void* addr, register u32 nBytes) {
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x124 | 0x80254AD0 | size: 0x34
+ */
 asm void ICInvalidateRange(register void* addr, register u32 nBytes) {
     nofralloc
     cmplwi nBytes, 0
@@ -229,6 +253,9 @@ asm void ICInvalidateRange(register void* addr, register u32 nBytes) {
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x158 | 0x80254B04 | size: 0x10
+ */
 asm void ICFlashInvalidate(void) {
     nofralloc
     mfspr r3, HID0
@@ -237,6 +264,9 @@ asm void ICFlashInvalidate(void) {
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x168 | 0x80254B14 | size: 0x14
+ */
 asm void ICEnable(void) {
     nofralloc
     isync
@@ -289,6 +319,9 @@ asm void ICSync(void) {
 #define CACHE_LINES 1024
 
 // clang-format off
+/**
+ * Offset/Address/Size: 0x17C | 0x80254B28 | size: 0xCC
+ */
 static asm void __LCEnable(void) {
     nofralloc
     mfmsr   r5
@@ -352,6 +385,9 @@ _lockloop:
 }
 // clang-format on
 
+/**
+ * Offset/Address/Size: 0x248 | 0x80254BF4 | size: 0x38
+ */
 void LCEnable(void)
 {
     BOOL enabled;
@@ -362,6 +398,9 @@ void LCEnable(void)
 }
 
 // clang-format off
+/**
+ * Offset/Address/Size: 0x280 | 0x80254C2C | size: 0x28
+ */
 asm void LCDisable(void) {
     nofralloc
     lis     r3, LC_BASE_PREFIX
@@ -423,6 +462,9 @@ asm void LCLoadBlocks(register void* destTag, register void* srcAddr, register u
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x2A8 | 0x80254C54 | size: 0x24
+ */
 asm void LCStoreBlocks(register void* destAddr, register void* srcTag, register u32 numBlocks) {
     nofralloc
     rlwinm  r6, numBlocks, 30, 27, 31
@@ -495,6 +537,9 @@ u32 LCLoadData(void* destAddr, void* srcAddr, u32 nBytes)
     return numTransactions;
 }
 
+/**
+ * Offset/Address/Size: 0x2CC | 0x80254C78 | size: 0xAC
+ */
 u32 LCStoreData(void* destAddr, void* srcAddr, u32 nBytes)
 {
     u32 numBlocks = (nBytes + 31) / 32;
@@ -531,6 +576,9 @@ asm u32 LCQueueLength(void) {
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x378 | 0x80254D24 | size: 0x14
+ */
 asm void LCQueueWait(register u32 len) {
     nofralloc
 @1
@@ -589,6 +637,9 @@ void L2Disable(void)
     __sync();
 }
 
+/**
+ * Offset/Address/Size: 0x38C | 0x80254D38 | size: 0x98
+ */
 void L2GlobalInvalidate(void)
 {
     L2Disable();
@@ -623,6 +674,9 @@ void L2SetWriteThrough(BOOL writeThrough)
     PPCMtl2cr(PPCMfl2cr() & 0xFFF7FFFF);
 }
 
+/**
+ * Offset/Address/Size: 0x424 | 0x80254DD0 | size: 0x160
+ */
 void DMAErrorHandler(OSError error, OSContext* context, ...)
 {
     u32 hid2 = PPCMfhid2();
@@ -663,6 +717,9 @@ void DMAErrorHandler(OSError error, OSContext* context, ...)
     PPCMthid2(hid2);
 }
 
+/**
+ * Offset/Address/Size: 0x584 | 0x80254F30 | size: 0xF4
+ */
 void __OSCacheInit()
 {
     if (!(PPCMfhid0() & HID0_ICE))

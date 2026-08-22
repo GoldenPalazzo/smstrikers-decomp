@@ -281,7 +281,11 @@ void CupTickerManager::CreateNewMessage()
                      && !gameInfo->IsUserQualified(GameInfoManager::GM_BOWSER_CUP)
                      && gameInfo->IsInCupMode())
             {
+#if defined(VERSION_G4QJ01)
+                locString = CupTickerLookupLocString(0x906BC349UL);
+#else
                 locString = CupTickerLookupLocString(0xEEC22902UL);
+#endif
                 tickerMessage = WideBasicString(locString);
                 messageDisplayed = true;
             }
@@ -433,7 +437,7 @@ void CupTickerManager::BuildGoalTotalTickerMessage(
     }
 
     int sortedIndices[8];
-    nlSingleton<StatsTracker>::s_pInstance->GetSortedStats(
+    nlSingleton<StatsTracker>::Instance()->GetSortedStats(
         playerStats, numTeams, sortedIndices, numTeams, (ePlayerStats)1, (eSortOrder)1);
 
     for (j = 0; j < numTeams; j++)

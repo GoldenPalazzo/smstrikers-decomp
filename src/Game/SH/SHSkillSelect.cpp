@@ -39,7 +39,7 @@ void SkillSelectScene::Update(float dt)
             break;
         }
 
-        nlSingleton<GameInfoManager>::s_pInstance->mCurrentCup->mCupSettings.SkillLevel = skillLevel;
+        nlSingleton<GameInfoManager>::Instance()->mCurrentCup->mCupSettings.SkillLevel = skillLevel;
         m_SlideSkillSelect->ApplyFunction();
     }
     else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
@@ -104,11 +104,11 @@ static void SkillSelectMenuBack(bool isSuperCup)
 {
     if (isSuperCup)
     {
-        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SUPER_CUP_CHOOSE_CUP, SCREEN_BACK, true);
+        nlSingleton<GameSceneManager>::Instance()->Push(SCENE_SUPER_CUP_CHOOSE_CUP, SCREEN_BACK, true);
     }
     else
     {
-        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_CHOOSE_CUP, SCREEN_BACK, true);
+        nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CUP_CHOOSE_CUP, SCREEN_BACK, true);
     }
 }
 
@@ -116,11 +116,11 @@ static void Proceed(bool isSuperCup)
 {
     if (isSuperCup)
     {
-        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SUPER_CUP_CHOOSE_CAPTAIN, SCREEN_FORWARD, true);
+        nlSingleton<GameSceneManager>::Instance()->Push(SCENE_SUPER_CUP_CHOOSE_CAPTAIN, SCREEN_FORWARD, true);
     }
     else
     {
-        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_CHOOSE_CAPTAIN, SCREEN_FORWARD, true);
+        nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CUP_CHOOSE_CAPTAIN, SCREEN_FORWARD, true);
     }
 }
 

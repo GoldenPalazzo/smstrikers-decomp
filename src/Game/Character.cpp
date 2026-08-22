@@ -250,7 +250,7 @@ void AIEventHandler(Event* pEvent, void*)
                 if (pPrevOwner->m_eClassType == FIELDER)
                 {
                     BasicString<char, Detail::TempStringAllocator> effectName(
-                        GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)pPrevOwner->m_pTeam->m_nSide)));
+                        GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam((s16)pPrevOwner->m_pTeam->m_nSide)));
                     effectName.AppendInPlace("_shoot_to_score_catch");
                     fxGetGroup(effectName.c_str());
                 }
@@ -454,7 +454,7 @@ void AIEventHandler(Event* pEvent, void*)
         bool bHit = pEventData->pFielder->InitActionHitReact(pEventData->pBall->m_pPrevOwner, (unsigned short)nAngle, false);
         if (bHit)
         {
-            pEventData->pFielder->PlayAttackReactionSounds(g_pGame->m_pGameTweaks->unk248);
+            pEventData->pFielder->PlayAttackReactionSounds(g_pGame->m_pGameTweaks->fShootToScoreBallHitReactionVolume);
         }
 
         break;

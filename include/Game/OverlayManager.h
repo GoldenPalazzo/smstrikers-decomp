@@ -24,18 +24,16 @@ class OverlayManager : public BaseGameSceneManager, public nlSingleton<OverlayMa
 public:
     OverlayManager();
     ~OverlayManager();
-    virtual BaseSceneHandler* Push(SceneList, ScreenMovement, bool);
+    virtual BaseSceneHandler* Push(SceneList newOverlay, ScreenMovement movement, bool popFirst);
     virtual void Pop();
-    void SetCurrentTextOverlaySlide(OverlaySlideName);
-    void Update(float);
-    static void FEEventHandler(Event*, void*);
-    void SetVisible(SceneList, bool, bool);
-    void HandleStateTransition(u32, u32);
+    void SetCurrentTextOverlaySlide(OverlaySlideName slideName);
+    void Update(float fDeltaT);
+    static void FEEventHandler(Event* pEvent, void* pParam);
+    void SetVisible(SceneList scene, bool visibility, bool overrideStateSettings);
+    void HandleStateTransition(u32 to, u32 param_2);
     void DestroyMessengerManager();
     void ShowDemoSlide();
     void RestartGoalOverlay();
-
-    // static nlSingleton<OverlayManager> s_pInstance;
 
     class InGameTextOverlay* mInGameTextOverlay;         // offset 0x108, size 0x4
     bool mIsHUDSlideIn;                                  // offset 0x10C, size 0x1

@@ -60,7 +60,7 @@ void SpoilsScene::Update(float dt)
 
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
     {
-        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_MAIN_MENU, SCREEN_BACK, true);
+        nlSingleton<GameSceneManager>::Instance()->Push(SCENE_MAIN_MENU, SCREEN_BACK, true);
         mLastSelectedIndex = 0;
         return;
     }

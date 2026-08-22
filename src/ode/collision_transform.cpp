@@ -68,12 +68,18 @@ dxGeomTransform::dxGeomTransform(dSpaceID space)
     dRSetIdentity(final_R);
 }
 
+/**
+ * Offset/Address/Size: 0x594 | 0x8021BEB0 | size: 0x9C
+ */
 dxGeomTransform::~dxGeomTransform()
 {
     if (obj && cleanup)
         delete obj;
 }
 
+/**
+ * Offset/Address/Size: 0x4E4 | 0x8021BE00 | size: 0xB0
+ */
 void dxGeomTransform::computeAABB()
 {
     if (!obj)
@@ -103,6 +109,9 @@ void dxGeomTransform::computeAABB()
 // utility function for dCollideTransform() : compute final pos and R
 // for the encapsulated geom object
 
+/**
+ * Offset/Address/Size: 0x2AC | 0x8021BBC8 | size: 0x238
+ */
 void dxGeomTransform::computeFinalTx()
 {
     dMULTIPLY0_331(final_pos, R, obj->pos);
@@ -117,6 +126,9 @@ void dxGeomTransform::computeFinalTx()
 // this collides a transformed geom with another geom. the other geom can
 // also be a transformed geom, but this case is not handled specially.
 
+/**
+ * Offset/Address/Size: 0x108 | 0x8021BA24 | size: 0x1A4
+ */
 int dCollideTransform(dxGeom* o1, dxGeom* o2, int flags,
     dContactGeom* contact, int skip)
 {
@@ -174,11 +186,17 @@ int dCollideTransform(dxGeom* o1, dxGeom* o2, int flags,
 //****************************************************************************
 // public API
 
+/**
+ * Offset/Address/Size: 0x74 | 0x8021B990 | size: 0x94
+ */
 dGeomID dCreateGeomTransform(dSpaceID space)
 {
     return new dxGeomTransform(space);
 }
 
+/**
+ * Offset/Address/Size: 0x8 | 0x8021B924 | size: 0x6C
+ */
 void dGeomTransformSetGeom(dGeomID g, dGeomID obj)
 {
     dUASSERT(g && g->type == dGeomTransformClass,
@@ -213,6 +231,9 @@ int dGeomTransformGetCleanup(dGeomID g)
     return tr->cleanup;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8021B91C | size: 0x8
+ */
 void dGeomTransformSetInfo(dGeomID g, int mode)
 {
     dUASSERT(g && g->type == dGeomTransformClass,

@@ -9,9 +9,12 @@ class STSX2Overlay : public BaseOverlayHandler
 public:
     STSX2Overlay();
     virtual ~STSX2Overlay();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
     virtual void SceneCreated();
-    static void EventHandlerFunc(Event*, void*);
+    static void EventHandlerFunc(Event* event, void* userData);
+
+    void CreateEventHandler();
+    void DestroyEventHandler();
 
     EventHandler* m_EventHandler;
 };

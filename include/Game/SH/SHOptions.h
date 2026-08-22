@@ -40,10 +40,10 @@ public:
     OptionsScene();
     ~OptionsScene();
     void SceneCreated();
-    void Update(float);
-    void UpdateForMain(float);
-    void UpdateForSubOptionMenus(float);
-    void ChangeMenuState(eMenuState);
+    void Update(float dt);
+    void UpdateForMain(float fDeltaT);
+    void UpdateForSubOptionMenus(float fDeltaT);
+    void ChangeMenuState(eMenuState newState);
 
     static s32 mLastSelectedIndex;
     static u32 mUserInfoCRC;

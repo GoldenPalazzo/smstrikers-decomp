@@ -3,7 +3,7 @@
 #include "types.h"
 
 /**
- * Offset/Address/Size: 0x74 | 0x801ACC8C | size: 0x8
+ * Offset/Address/Size: 0x108 | 0x801ACC8C | size: 0x8
  */
 eCameraType cAnimViewerCamera::GetType()
 {
@@ -11,7 +11,7 @@ eCameraType cAnimViewerCamera::GetType()
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x801ACC18 | size: 0x74
+ * Offset/Address/Size: 0x94 | 0x801ACC18 | size: 0x74
  */
 cAnimViewerCamera::~cAnimViewerCamera()
 {

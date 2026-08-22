@@ -25,12 +25,12 @@ struct ProjectedShadowParams
 
 class glModel;
 
-void RenderProjectedShadow(const ProjectedShadowParams&);
-void SetCharacterShadowUpdated(int, bool);
-void RenderCharacterIntoTexture(const ProjectedShadowParams&);
-u8 ShouldShadowBeUpdated(const ProjectedShadowParams&);
+void RenderProjectedShadow(const ProjectedShadowParams& params);
+void SetCharacterShadowUpdated(int index, bool updated);
+void RenderCharacterIntoTexture(const ProjectedShadowParams& params);
+u8 ShouldShadowBeUpdated(const ProjectedShadowParams& params);
 int GetShadowPartitionIndex();
-void RenderShadowModel(unsigned long, glModel*, unsigned long);
+void RenderShadowModel(unsigned long flags, glModel* model, unsigned long matrix);
 void ShadowStartup();
 
 extern int MaxProjectedShadows;

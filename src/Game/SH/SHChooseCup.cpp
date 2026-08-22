@@ -61,7 +61,7 @@ void confirmedNewCup(bool isSuperCup)
         gim->mSuperBowserCupKnockout.mRoundNumber = -5;
     }
 
-    BaseCup* cup = nlSingleton<GameInfoManager>::s_pInstance->mCurrentCup;
+    BaseCup* cup = nlSingleton<GameInfoManager>::Instance()->mCurrentCup;
     cup->mCupStarted = false;
 
     GameInfoManager* gim2 = nlSingleton<GameInfoManager>::s_pInstance;
@@ -74,7 +74,7 @@ void confirmedNewCup(bool isSuperCup)
 
     if (!isSuperCup)
     {
-        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_OPTIONS_INITIAL_CUP, SCREEN_NOTHING, true);
+        nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CUP_OPTIONS_INITIAL_CUP, SCREEN_NOTHING, true);
     }
     else
     {
@@ -82,7 +82,7 @@ void confirmedNewCup(bool isSuperCup)
         {
             cup->mCupSettings.SkillLevel = GameplaySettings::PROFESSIONAL;
         }
-        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_OPTIONS_INITIAL_SUPER, SCREEN_NOTHING, true);
+        nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CUP_OPTIONS_INITIAL_SUPER, SCREEN_NOTHING, true);
     }
 }
 
@@ -94,7 +94,7 @@ typedef Function0<void>::FunctorImpl<BindExp1_vfb> FunctorImpl_vfb;
  */
 void startNewCup(bool isSuperCup)
 {
-    FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+    FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
     pPopup->Create(
         POPUP_REALLY_OVERWRITE,
@@ -111,11 +111,11 @@ void continueCup(bool isSuperCup)
 {
     if (isSuperCup)
     {
-        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SUPER_CUP_STANDINGS, SCREEN_NOTHING, true);
+        nlSingleton<GameSceneManager>::Instance()->Push(SCENE_SUPER_CUP_STANDINGS, SCREEN_NOTHING, true);
     }
     else
     {
-        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_STANDINGS, SCREEN_NOTHING, true);
+        nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CUP_STANDINGS, SCREEN_NOTHING, true);
     }
 }
 
@@ -423,8 +423,8 @@ void ChooseCupSceneV2::Update(float fDeltaT)
 
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
     {
-        nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
-        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_MAIN_MENU, SCREEN_BACK, false);
+        nlSingleton<GameSceneManager>::Instance()->PopEntireStack();
+        nlSingleton<GameSceneManager>::Instance()->Push(SCENE_MAIN_MENU, SCREEN_BACK, false);
         FEAudio::PlayAnimAudioEvent("sfx_back", false);
         return;
     }
@@ -658,13 +658,13 @@ static inline bool DisplayCupCanProceed(ChooseCupSceneV2* scene)
             returnValue = true;
             break;
         case TROPHY_FLOWER_CUP:
-            returnValue = nlSingleton<GameInfoManager>::s_pInstance->IsUserQualified(GameInfoManager::GM_FLOWER_CUP);
+            returnValue = nlSingleton<GameInfoManager>::Instance()->IsUserQualified(GameInfoManager::GM_FLOWER_CUP);
             break;
         case TROPHY_STAR_CUP:
-            returnValue = nlSingleton<GameInfoManager>::s_pInstance->IsUserQualified(GameInfoManager::GM_STAR_CUP);
+            returnValue = nlSingleton<GameInfoManager>::Instance()->IsUserQualified(GameInfoManager::GM_STAR_CUP);
             break;
         case TROPHY_BOWSER_CUP:
-            returnValue = nlSingleton<GameInfoManager>::s_pInstance->IsUserQualified(GameInfoManager::GM_BOWSER_CUP);
+            returnValue = nlSingleton<GameInfoManager>::Instance()->IsUserQualified(GameInfoManager::GM_BOWSER_CUP);
             break;
         }
     }
@@ -795,7 +795,7 @@ void ChooseCupSceneV2::DisplayCup()
         break;
     }
 
-    BaseCup* cup = nlSingleton<GameInfoManager>::s_pInstance->GetCup(cupMode);
+    BaseCup* cup = nlSingleton<GameInfoManager>::Instance()->GetCup(cupMode);
     if (cup->mCupStarted)
     {
         progressComp->m_bVisible = true;
@@ -809,7 +809,7 @@ void ChooseCupSceneV2::DisplayCup()
     }
     else
     {
-        UserInfo* userInfo = &nlSingleton<GameInfoManager>::s_pInstance->mUserInfo;
+        UserInfo* userInfo = &nlSingleton<GameInfoManager>::Instance()->mUserInfo;
         Spoil cupSpoil = userInfo->mSpoils[(int)mCupToDisplay];
 
         if (cupSpoil.mCurrentChamp == TEAM_INVALID)
@@ -883,32 +883,32 @@ void ChooseCupSceneV2::Proceed()
     switch (mCupToDisplay)
     {
     case TROPHY_MUSHROOM_CUP:
-        nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_MUSHROOM_CUP);
+        nlSingleton<GameInfoManager>::Instance()->SetMode(GameInfoManager::GM_MUSHROOM_CUP);
         break;
     case TROPHY_FLOWER_CUP:
-        nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_FLOWER_CUP);
+        nlSingleton<GameInfoManager>::Instance()->SetMode(GameInfoManager::GM_FLOWER_CUP);
         break;
     case TROPHY_STAR_CUP:
-        nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_STAR_CUP);
+        nlSingleton<GameInfoManager>::Instance()->SetMode(GameInfoManager::GM_STAR_CUP);
         break;
     case TROPHY_BOWSER_CUP:
-        nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_BOWSER_CUP);
+        nlSingleton<GameInfoManager>::Instance()->SetMode(GameInfoManager::GM_BOWSER_CUP);
         break;
     case TROPHY_SUPER_MUSHROOM_CUP:
-        nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_SUPER_MUSHROOM_CUP);
+        nlSingleton<GameInfoManager>::Instance()->SetMode(GameInfoManager::GM_SUPER_MUSHROOM_CUP);
         break;
     case TROPHY_SUPER_FLOWER_CUP:
-        nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_SUPER_FLOWER_CUP);
+        nlSingleton<GameInfoManager>::Instance()->SetMode(GameInfoManager::GM_SUPER_FLOWER_CUP);
         break;
     case TROPHY_SUPER_STAR_CUP:
-        nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_SUPER_STAR_CUP);
+        nlSingleton<GameInfoManager>::Instance()->SetMode(GameInfoManager::GM_SUPER_STAR_CUP);
         break;
     case TROPHY_SUPER_BOWSER_CUP:
-        nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_SUPER_BOWSER_CUP);
+        nlSingleton<GameInfoManager>::Instance()->SetMode(GameInfoManager::GM_SUPER_BOWSER_CUP);
         break;
     }
 
-    nlSingleton<GameInfoManager>::s_pInstance->GetCurrentRoundNumber();
+    nlSingleton<GameInfoManager>::Instance()->GetCurrentRoundNumber();
 
     GameInfoManager* gim = nlSingleton<GameInfoManager>::s_pInstance;
     BaseCup* cup = gim->mCurrentCup;
@@ -917,7 +917,7 @@ void ChooseCupSceneV2::Proceed()
     {
         bool isSuperCup = ProceedCupMode(mIsSuperCup);
 
-        cup = nlSingleton<GameInfoManager>::s_pInstance->mCurrentCup;
+        cup = nlSingleton<GameInfoManager>::Instance()->mCurrentCup;
         cup->mCupStarted = false;
 
         GameInfoManager* gim2 = nlSingleton<GameInfoManager>::s_pInstance;
@@ -930,7 +930,7 @@ void ChooseCupSceneV2::Proceed()
 
         if (!isSuperCup)
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_OPTIONS_INITIAL_CUP, SCREEN_NOTHING, true);
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CUP_OPTIONS_INITIAL_CUP, SCREEN_NOTHING, true);
         }
         else
         {
@@ -938,12 +938,12 @@ void ChooseCupSceneV2::Proceed()
             {
                 cup->mCupSettings.SkillLevel = GameplaySettings::PROFESSIONAL;
             }
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_OPTIONS_INITIAL_SUPER, SCREEN_NOTHING, true);
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CUP_OPTIONS_INITIAL_SUPER, SCREEN_NOTHING, true);
         }
     }
     else
     {
-        FEPopupMenu* menu = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+        FEPopupMenu* menu = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
         menu->Create(
             POPUP_START_NEW_CUP,

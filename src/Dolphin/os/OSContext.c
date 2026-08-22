@@ -15,6 +15,9 @@ volatile OSContext* __OSFPUContext AT_ADDRESS(OS_BASE_CACHED | 0x00D8);
 
 #ifdef __GEKKO__
 // clang-format off
+/**
+ * Offset/Address/Size: 0x0 | 0x80255024 | size: 0x124
+ */
 static asm void __OSLoadFPUContext(register u32 dummy, register OSContext* fpucontext) {
     nofralloc
     lhz r5, fpucontext->state;
@@ -97,6 +100,9 @@ _return:
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x124 | 0x80255148 | size: 0x128
+ */
 static asm void __OSSaveFPUContext(register u32 dummy1, register u32 dummy2, register OSContext* fpucontext) {
     nofralloc
 
@@ -189,12 +195,18 @@ asm void OSLoadFPUContext(register OSContext* fpucontext) {
     b       __OSLoadFPUContext
 }
 
+/**
+ * Offset/Address/Size: 0x24C | 0x80255270 | size: 0x8
+ */
 asm void OSSaveFPUContext(register OSContext* fpucontext) {
     nofralloc
     addi    r5, fpucontext, 0
     b       __OSSaveFPUContext
 }
 
+/**
+ * Offset/Address/Size: 0x254 | 0x80255278 | size: 0x5C
+ */
 asm void OSSetCurrentContext(register OSContext* context){
     nofralloc
 
@@ -231,6 +243,9 @@ _disableFPU:
 // clang-format on
 #endif
 
+/**
+ * Offset/Address/Size: 0x2B0 | 0x802552D4 | size: 0xC
+ */
 OSContext* OSGetCurrentContext(void)
 {
     return (OSContext*)__OSCurrentContext;
@@ -238,6 +253,9 @@ OSContext* OSGetCurrentContext(void)
 
 #ifdef __GEKKO__
 // clang-format off
+/**
+ * Offset/Address/Size: 0x2BC | 0x802552E0 | size: 0x80
+ */
 asm u32 OSSaveContext(register OSContext* context) {
     nofralloc
     stmw    r13, context->gpr[13]
@@ -274,6 +292,9 @@ asm u32 OSSaveContext(register OSContext* context) {
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x33C | 0x80255360 | size: 0xD8
+ */
 asm void OSLoadContext(register OSContext* context) {
     nofralloc
 
@@ -345,6 +366,9 @@ notexc:
     rfi
 }
 
+/**
+ * Offset/Address/Size: 0x414 | 0x80255438 | size: 0x8
+ */
 asm u32 OSGetStackPointer() {
     nofralloc 
     mr r3, r1 
@@ -377,6 +401,9 @@ asm int OSSwitchFiber(register u32 pc, register u32 newsp) {
 // clang-format on
 #endif
 
+/**
+ * Offset/Address/Size: 0x41C | 0x80255440 | size: 0x24
+ */
 void OSClearContext(register OSContext* context)
 {
     context->mode = 0;
@@ -447,6 +474,9 @@ asm void OSInitContext(register OSContext* context, register u32 pc, register u3
 // clang-format on
 #endif
 
+/**
+ * Offset/Address/Size: 0x440 | 0x80255464 | size: 0x2A8
+ */
 void OSDumpContext(OSContext* context)
 {
     u32 i;
@@ -504,6 +534,9 @@ void OSDumpContext(OSContext* context)
 
 #ifdef __GEKKO__
 // clang-format off
+/**
+ * Offset/Address/Size: 0x6E8 | 0x8025570C | size: 0x84
+ */
 static asm void OSSwitchFPUContext(register __OSException exception, register OSContext* context) {
     nofralloc
     mfmsr   r5
@@ -545,6 +578,9 @@ _restoreAndExit:
 // clang-format on
 #endif
 
+/**
+ * Offset/Address/Size: 0x76C | 0x80255790 | size: 0x48
+ */
 void __OSContextInit(void)
 {
     __OSSetExceptionHandler(__OS_EXCEPTION_FLOATING_POINT, OSSwitchFPUContext);

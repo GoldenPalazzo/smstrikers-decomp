@@ -95,14 +95,12 @@ void* DefaultSlotPoolAllocator(unsigned long size)
     return nlMalloc(size, 8, false);
 }
 
-// /**
 //  */
 // // nlListAddStart<SlotPoolEntry>(SlotPoolEntry**, SlotPoolEntry*, SlotPoolEntry**)
 // void nlListAddStart(SlotPoolEntry**, SlotPoolEntry*, SlotPoolEntry**)
 // {
 // }
 
-// /**
 //  */
 // // nlListAddStart<SlotPoolBlock>(SlotPoolBlock**, SlotPoolBlock*, SlotPoolBlock**)
 // void nlListAddStart(SlotPoolBlock**, SlotPoolBlock*, SlotPoolBlock**)

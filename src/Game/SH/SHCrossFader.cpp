@@ -62,14 +62,14 @@ void CrossFaderScene::SceneCreated()
     if (!doCrossFade)
     {
         AudioLoader::LoadFEAudioData(true);
-        while (!nlSingleton<FESceneManager>::s_pInstance->AreAllScenesValid())
+        while (!nlSingleton<FESceneManager>::Instance()->AreAllScenesValid())
         {
             nlServiceFileSystem();
-            nlSingleton<FESceneManager>::s_pInstance->Update(0.0f);
-            nlSingleton<FEResourceManager>::s_pInstance->Run(0.0f);
+            nlSingleton<FESceneManager>::Instance()->Update(0.0f);
+            nlSingleton<FEResourceManager>::Instance()->Run(0.0f);
         }
-        nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
-        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_INTRO_MOVIE, SCREEN_NOTHING, false);
+        nlSingleton<GameSceneManager>::Instance()->PopEntireStack();
+        nlSingleton<GameSceneManager>::Instance()->Push(SCENE_INTRO_MOVIE, SCREEN_NOTHING, false);
     }
     else
     {
@@ -272,7 +272,7 @@ void CrossFaderScene::Update(float fDeltaT)
             switch (mCurrentImage)
             {
             case 2:
-                nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mAudioOptions.ForceApplySettings(true);
+                nlSingleton<GameInfoManager>::Instance()->mUserInfo.mAudioOptions.ForceApplySettings(true);
                 break;
             case 0:
             {
@@ -371,8 +371,8 @@ void CrossFaderScene::Update(float fDeltaT)
             mFadeToBlackTimer = timer;
             if (timer >= 0.2f)
             {
-                nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
-                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_INTRO_MOVIE, SCREEN_NOTHING, false);
+                nlSingleton<GameSceneManager>::Instance()->PopEntireStack();
+                nlSingleton<GameSceneManager>::Instance()->Push(SCENE_INTRO_MOVIE, SCREEN_NOTHING, false);
                 mFadeToBlackTimer = 0.0f;
             }
         }

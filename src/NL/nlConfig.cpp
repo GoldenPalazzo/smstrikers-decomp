@@ -10,6 +10,9 @@
 typedef BasicString<char, Detail::TempStringAllocator> BString;
 typedef Tokenizer<BString> BTokenizer;
 
+/**
+ * Offset/Address/Size: 0x0 | 0x801D2C64 | size: 0x13EC
+ */
 void Config::Parse(const char* s, Config::Parser& parser)
 {
     BTokenizer split(BString(s), BString("\n\r"));

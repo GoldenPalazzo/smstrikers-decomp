@@ -19,10 +19,10 @@ public:
     };
 
     void CentreButtons();
-    void SetState(ButtonComponent::ButtonState); // not sure if this is correct
+    void SetState(ButtonComponent::ButtonState buttonstate); // not sure if this is correct
     ~ButtonComponent();
     ButtonComponent();
-    static int GetRenderedStringLength(const unsigned short*, const nlFont*);
+    static int GetRenderedStringLength(const unsigned short* pString, const nlFont* pFont);
 
     /* 0x00 */ TLComponentInstance* mButtonInstance;
     /* 0x04 */ TLImageInstance* mButtonImages[3];

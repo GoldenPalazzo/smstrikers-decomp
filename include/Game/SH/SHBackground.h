@@ -19,7 +19,8 @@ class BackgroundScene : public BaseSceneHandler
 public:
     BackgroundScene();
     virtual ~BackgroundScene();
-    virtual void Update(float);
+    void ActivatePlayMode();
+    virtual void Update(float dt);
     virtual void SceneCreated();
 
     /* 0x1C */ PlayMode mPlayMode;

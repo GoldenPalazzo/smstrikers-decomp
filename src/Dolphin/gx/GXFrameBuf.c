@@ -430,6 +430,9 @@ GXRenderModeObj GXRmHW = { 1,
     { 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6 },
     { 0, 0, 21, 22, 21, 0, 0 } };
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8024DFC0 | size: 0x144
+ */
 void GXAdjustForOverscan(const GXRenderModeObj* rmin, GXRenderModeObj* rmout, u16 hor, u16 ver)
 {
     u16 hor2 = hor * 2;
@@ -470,6 +473,9 @@ void GXAdjustForOverscan(const GXRenderModeObj* rmin, GXRenderModeObj* rmout, u1
     rmout->viYOrigin = rmin->viYOrigin + ver;
 }
 
+/**
+ * Offset/Address/Size: 0x144 | 0x8024E104 | size: 0x7C
+ */
 void GXSetDispCopySrc(u16 left, u16 top, u16 wd, u16 ht)
 {
     CHECK_GXBEGIN(1235, "GXSetDispCopySrc");
@@ -485,6 +491,9 @@ void GXSetDispCopySrc(u16 left, u16 top, u16 wd, u16 ht)
     SET_REG_FIELD(1244, __GXData->cpDispSize, 8, 24, 0x4A);
 }
 
+/**
+ * Offset/Address/Size: 0x1C0 | 0x8024E180 | size: 0x7C
+ */
 void GXSetTexCopySrc(u16 left, u16 top, u16 wd, u16 ht)
 {
     CHECK_GXBEGIN(1263, "GXSetTexCopySrc");
@@ -500,6 +509,9 @@ void GXSetTexCopySrc(u16 left, u16 top, u16 wd, u16 ht)
     SET_REG_FIELD(1272, __GXData->cpTexSize, 8, 24, 0x4A);
 }
 
+/**
+ * Offset/Address/Size: 0x23C | 0x8024E1FC | size: 0x34
+ */
 void GXSetDispCopyDst(u16 wd, u16 ht)
 {
     u16 stride;
@@ -513,6 +525,9 @@ void GXSetDispCopyDst(u16 wd, u16 ht)
     SET_REG_FIELD(1300, __GXData->cpDispStride, 8, 24, 0x4D);
 }
 
+/**
+ * Offset/Address/Size: 0x270 | 0x8024E230 | size: 0x130
+ */
 void GXSetTexCopyDst(u16 wd, u16 ht, GXTexFmt fmt, GXBool mipmap)
 {
     u32 rowTiles;
@@ -560,6 +575,9 @@ void GXSetTexCopyDst(u16 wd, u16 ht, GXTexFmt fmt, GXBool mipmap)
     SET_REG_FIELD(1393, __GXData->cpTex, 3, 4, peTexFmt);
 }
 
+/**
+ * Offset/Address/Size: 0x3A0 | 0x8024E360 | size: 0x24
+ */
 void GXSetDispCopyFrame2Field(GXCopyMode mode)
 {
     CHECK_GXBEGIN(1410, "GXSetDispCopyFrame2Field");
@@ -567,6 +585,9 @@ void GXSetDispCopyFrame2Field(GXCopyMode mode)
     SET_REG_FIELD(1411, __GXData->cpTex, 2, 12, 0);
 }
 
+/**
+ * Offset/Address/Size: 0x3C4 | 0x8024E384 | size: 0x58
+ */
 void GXSetCopyClamp(GXFBClamp clamp)
 {
     u8 clmpB;
@@ -625,6 +646,9 @@ u16 GXGetNumXfbLines(u16 efbHeight, f32 yScale)
     return __GXGetNumXfbLines(efbHeight, iScale);
 }
 
+/**
+ * Offset/Address/Size: 0x41C | 0x8024E3DC | size: 0x238
+ */
 f32 GXGetYScaleFactor(u16 efbHeight, u16 xfbHeight)
 {
     f32 fScale;
@@ -662,6 +686,9 @@ f32 GXGetYScaleFactor(u16 efbHeight, u16 xfbHeight)
     return fScale;
 }
 
+/**
+ * Offset/Address/Size: 0x654 | 0x8024E614 | size: 0xCC
+ */
 u32 GXSetDispCopyYScale(f32 vscale)
 {
     u8 enable;
@@ -686,6 +713,9 @@ u32 GXSetDispCopyYScale(f32 vscale)
     return __GXGetNumXfbLines(ht, iScale);
 }
 
+/**
+ * Offset/Address/Size: 0x720 | 0x8024E6E0 | size: 0x78
+ */
 void GXSetCopyClear(GXColor clear_clr, u32 clear_z)
 {
     u32 reg;
@@ -712,6 +742,9 @@ void GXSetCopyClear(GXColor clear_clr, u32 clear_z)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x798 | 0x8024E758 | size: 0x208
+ */
 void GXSetCopyFilter(GXBool aa, const u8 sample_pattern[12][2], GXBool vf, const u8 vfilter[7])
 {
     u32 msLoc[4];
@@ -802,6 +835,9 @@ void GXSetCopyFilter(GXBool aa, const u8 sample_pattern[12][2], GXBool vf, const
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x9A0 | 0x8024E960 | size: 0x14
+ */
 void GXSetDispCopyGamma(GXGamma gamma)
 {
     CHECK_GXBEGIN(1741, "GXSetDispCopyGamma");
@@ -851,6 +887,9 @@ static void __GXVerifCopy(void* dest, u8 clear)
 }
 #endif
 
+/**
+ * Offset/Address/Size: 0x9B4 | 0x8024E974 | size: 0x168
+ */
 void GXCopyDisp(void* dest, GXBool clear)
 {
     u32 reg;
@@ -916,6 +955,9 @@ void GXCopyDisp(void* dest, GXBool clear)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0xB1C | 0x8024EADC | size: 0x18C
+ */
 void GXCopyTex(void* dest, GXBool clear)
 {
     u32 reg;
@@ -990,6 +1032,9 @@ void GXCopyTex(void* dest, GXBool clear)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0xCA8 | 0x8024EC68 | size: 0x38
+ */
 void GXClearBoundingBox(void)
 {
     u32 reg;

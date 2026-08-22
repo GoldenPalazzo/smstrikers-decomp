@@ -1,4 +1,3 @@
-#pragma pool_data off
 
 #include "Game/ScriptTuning.h"
 #include "Game/AI/Scripts/ScriptCaching.h"

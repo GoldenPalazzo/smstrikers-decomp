@@ -34,7 +34,7 @@ void SuperTeamScene::Update(float fDeltaT)
 
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
     {
-        CupHubScene* scene = (CupHubScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_STANDINGS, SCREEN_NOTHING, true);
+        CupHubScene* scene = (CupHubScene*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CUP_STANDINGS, SCREEN_NOTHING, true);
         scene->mDoAutoSave = true;
     }
 }

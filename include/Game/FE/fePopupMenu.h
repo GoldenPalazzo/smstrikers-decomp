@@ -84,12 +84,12 @@ class FEPopupMenu : public BaseSceneHandler
 public:
     FEPopupMenu();
     virtual ~FEPopupMenu();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
     virtual void SceneCreated();
 
-    void SetOptionTextColourOnCurrent(bool);
+    void SetOptionTextColourOnCurrent(bool bHighlighted);
     void ResizeHighlight();
-    void CentrePopup(float, float);
+    void CentrePopup(float totalHeight, float topOfMessageBox);
     void SetPositions();
 
     void Create(ePopupMenu type)
@@ -116,12 +116,12 @@ public:
     }
 
     void Create(
-        ePopupMenu,
-        Function<FnVoidVoid>,
-        Function<FnVoidVoid>,
-        Function<FnVoidVoid>,
-        Function<FnVoidVoid>);
-    void SetBackButtonCallback(_FEPopupMenuCB);
+        ePopupMenu type,
+        Function<FnVoidVoid> option1,
+        Function<FnVoidVoid> option2,
+        Function<FnVoidVoid> option3,
+        Function<FnVoidVoid> option4);
+    void SetBackButtonCallback(_FEPopupMenuCB callback);
     static void Nothing() { }
 
     /* 0x01C */ unsigned short mMessageBuffer[1024];  // size 0x800

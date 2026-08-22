@@ -5,6 +5,9 @@ void TRKWaitForACK(void)
     // UNUSED FUNCTION
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80227250 | size: 0x98
+ */
 DSError TRKDoNotifyStopped(MessageCommandID cmd)
 {
     int reqIdx;

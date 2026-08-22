@@ -732,7 +732,7 @@ void cBall::CollideWithWallCallback()
                 if (m_pPrevOwner != NULL && m_pPrevOwner->m_eClassType == FIELDER)
                 {
                     BasicString<char, Detail::TempStringAllocator> effectName(
-                        GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)m_pPrevOwner->m_pTeam->m_nSide)));
+                        GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam((s16)m_pPrevOwner->m_pTeam->m_nSide)));
                     effectName.AppendInPlace("_shoot_to_score_catch");
                     cPlayer* prevOwner = m_pPrevOwner;
                     EmissionController* pController = EmitGeneric(prevOwner, effectName.c_str(), NULL);
@@ -1047,18 +1047,18 @@ void cBall::InitiateBallBlur(eBallShotEffectType effectType, cPlayer* pPlayer)
     {
         char textureName[32] = "";
         nlStrNCpy(textureName, szShootToScoreBallBlurTexture, 0x20);
-        m_pBlurHandler = BlurManager::GetNewHandler(textureName, g_pGame->m_pGameTweaks->unk288, g_pGame->m_pGameTweaks->unk28C, true);
+        m_pBlurHandler = BlurManager::GetNewHandler(textureName, g_pGame->m_pGameTweaks->fShootToScoreBallBlurWidth, g_pGame->m_pGameTweaks->nShootToScoreBallBlurLength, true);
         break;
     }
 
     case BALL_EFFECT_S2S_SHOT:
         if (pPlayer != NULL)
         {
-            if (pPlayer->IsCaptain() || nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)pPlayer->m_pTeam->m_nSide) == TEAM_MYSTERY)
+            if (pPlayer->IsCaptain() || nlSingleton<GameInfoManager>::Instance()->GetTeam((s16)pPlayer->m_pTeam->m_nSide) == TEAM_MYSTERY)
             {
                 char textureName[32] = "";
 
-                switch (nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)pPlayer->m_pTeam->m_nSide))
+                switch (nlSingleton<GameInfoManager>::Instance()->GetTeam((s16)pPlayer->m_pTeam->m_nSide))
                 {
                 case TEAM_DAISY:
                     nlStrNCpy(textureName, szDaisyShootToScoreBallBlurTexture, 0x20);
@@ -1092,12 +1092,12 @@ void cBall::InitiateBallBlur(eBallShotEffectType effectType, cPlayer* pPlayer)
                     break;
                 }
 
-                m_pBlurHandler = BlurManager::GetNewHandler(textureName, g_pGame->m_pGameTweaks->unk288, g_pGame->m_pGameTweaks->unk28C, true);
+                m_pBlurHandler = BlurManager::GetNewHandler(textureName, g_pGame->m_pGameTweaks->fShootToScoreBallBlurWidth, g_pGame->m_pGameTweaks->nShootToScoreBallBlurLength, true);
                 break;
             }
         }
 
-        m_pBlurHandler = BlurManager::GetNewHandler(szShootToScoreBallBlurTexture, g_pGame->m_pGameTweaks->unk288, g_pGame->m_pGameTweaks->unk28C, true);
+        m_pBlurHandler = BlurManager::GetNewHandler(szShootToScoreBallBlurTexture, g_pGame->m_pGameTweaks->fShootToScoreBallBlurWidth, g_pGame->m_pGameTweaks->nShootToScoreBallBlurLength, true);
         break;
 
     case BALL_EFFECT_PERFECT_SHOT:
@@ -1700,7 +1700,7 @@ void cBall::Update(float fDeltaT)
     if (m_pPassTarget != NULL && mbHyperSTS)
     {
         GameTweaks* pTweaks = g_pGame->m_pGameTweaks;
-        if (m_tPassTargetTimer.GetSeconds() < pTweaks->unk23C)
+        if (m_tPassTargetTimer.GetSeconds() < pTweaks->fFadePerfectPassTrailSFXStartTime)
         {
             if (gbCanFadeOutPerfectPassSFX)
             {

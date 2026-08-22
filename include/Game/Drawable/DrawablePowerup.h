@@ -12,10 +12,10 @@ public:
     template <typename T>
     void Replay(T&);
 
-    void Blend(const float*, const DrawablePowerup&, const DrawablePowerup&);
-    void Render(int) const;
-    void Grab(int);
-    PowerupBase* GetPowerup(int) const;
+    void Blend(const float* blendFactors, const DrawablePowerup& lhs, const DrawablePowerup& rhs);
+    void Render(int idx) const;
+    void Grab(int idx);
+    PowerupBase* GetPowerup(int idx) const;
 
     /* 0x00 */ s8 mType;
     /* 0x04 */ float mScale;

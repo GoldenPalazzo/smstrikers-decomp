@@ -31,7 +31,7 @@ TournTeamSetupSceneV2::TournTeamSetupSceneV2()
     , mMenuItems()
     , mRowOffset(0)
     , mCurrentRow(0)
-    , mTournInfo(nlSingleton<GameInfoManager>::s_pInstance->mCustomTournamentInfo)
+    , mTournInfo(nlSingleton<GameInfoManager>::Instance()->mCustomTournamentInfo)
     , mCurrentState(STATE_IN)
     , mCurrentCaptain(TEAM_MARIO)
     , mCurrentSK(SK_TOAD)
@@ -326,7 +326,7 @@ void TournTeamSetupSceneV2::Update(float fDeltaT)
         }
         else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_OPTIONS_INITIAL_TOURN, SCREEN_BACK, true);
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CUP_OPTIONS_INITIAL_TOURN, SCREEN_BACK, true);
             FEAudio::PlayAnimAudioEvent("sfx_back", false);
         }
         else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x800, false, NULL))
@@ -389,12 +389,12 @@ void TournTeamSetupSceneV2::Update(float fDeltaT)
                 }
                 else if (result == -1)
                 {
-                    FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+                    FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
                     pPopup->Create(POPUP_FILLALLSLOTS);
                 }
                 else if (result == -2)
                 {
-                    FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+                    FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
                     pPopup->Create(POPUP_NO_HUMAN_TOURNAMENT);
                 }
             }
@@ -895,7 +895,7 @@ void TournTeamSetupSceneV2::UpdateCaptainName()
         slide,
         InlineHasher(nlStringLowerHash("CAPTAIN_NAME2")));
 
-    if (mCurrentCaptain == TEAM_MYSTERY && !nlSingleton<GameInfoManager>::s_pInstance->IsSuperTeamUnlocked())
+    if (mCurrentCaptain == TEAM_MYSTERY && !nlSingleton<GameInfoManager>::Instance()->IsSuperTeamUnlocked())
     {
         captainDesc->SetStringId("CUP_ATTR_MYSTERY_LOCKED");
     }
@@ -937,7 +937,7 @@ void TournTeamSetupSceneV2::UpdateSKName()
         slide,
         InlineHasher(nlStringLowerHash("CAPTAIN_NAME2")));
 
-    if (mCurrentCaptain == TEAM_MYSTERY && !nlSingleton<GameInfoManager>::s_pInstance->IsSuperTeamUnlocked())
+    if (mCurrentCaptain == TEAM_MYSTERY && !nlSingleton<GameInfoManager>::Instance()->IsSuperTeamUnlocked())
     {
         captainDescText->SetStringId("CUP_ATTR_MYSTERY_LOCKED");
     }
@@ -1016,7 +1016,7 @@ void TournTeamSetupSceneV2::Proceed()
     }
 
     pGameInfo->SetMode(GameInfoManager::GM_TOURNAMENT);
-    nlSingleton<GameInfoManager>::s_pInstance->GetCurrentRoundNumber();
+    nlSingleton<GameInfoManager>::Instance()->GetCurrentRoundNumber();
 
     if (mTournInfo.m_tournMode == TM_LEAGUE)
     {
@@ -1053,7 +1053,7 @@ void TournTeamSetupSceneV2::Proceed()
 
     pGameInfo->SetResultsOfLastUserGame(RESULT_CUP_START);
 
-    nlSingleton<GameSceneManager>::s_pInstance->Pop();
+    nlSingleton<GameSceneManager>::Instance()->Pop();
 
     if (pGameInfo->GetNumHumanTeams() == 1)
     {
@@ -1213,7 +1213,7 @@ void TournTeamSetupSceneV2::AutoFill()
 
             do
             {
-                if (nlSingleton<GameInfoManager>::s_pInstance->IsSuperTeamUnlocked())
+                if (nlSingleton<GameInfoManager>::Instance()->IsSuperTeamUnlocked())
                 {
                     randCapt = (eTeamID)nlRandom(9, &nlDefaultSeed);
                 }

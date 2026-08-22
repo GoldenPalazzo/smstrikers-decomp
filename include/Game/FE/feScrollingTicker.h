@@ -19,8 +19,8 @@ public:
     void CloseMessenger();
     void OpenMessengerNow();
     void OpenMessenger();
-    void SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>&);
-    void SetDisplayMessage(const char*);
+    void SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>& msg);
+    void SetDisplayMessage(const char* locMessage);
     void SetMessageFinishedCB(const Function<FnVoidVoid>& cb)
     {
         m_cbFunc = cb;
@@ -31,13 +31,13 @@ public:
     }
     virtual ~ScrollingTickerScene();
     virtual void SceneCreated();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
     ScrollingTickerScene();
 
-    static void tickerClosed(void*);
-    static void tickerOpened(void*);
-    static void setScaleTweenCallback(void*, const float*);
-    static void setSizeTweenCallback(void*, const float*);
+    static void tickerClosed(void* scene);
+    static void tickerOpened(void* pScene);
+    static void setScaleTweenCallback(void* scene, const float* value);
+    static void setSizeTweenCallback(void* scene, const float* value);
 
     /* 0x020 */ unsigned char m_active;
     /* 0x024 */ feVector3 m_leftBallClosedPos;

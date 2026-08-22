@@ -55,7 +55,7 @@ void QuickGameplayOptionsScene::SceneCreated()
 
     int maxSkillLevel = GameInfoManager::GetInstance()->IsLegendSkillUnlocked() ? -1 : 4;
 
-    OptionsGameplayMenuV2* pMem = (OptionsGameplayMenuV2*)nlMalloc(0x27C, 8, false);
+    OptionsGameplayMenuV2* pMem = (OptionsGameplayMenuV2*)nlMalloc(sizeof(OptionsGameplayMenuV2), 8, false);
     pMem = new (pMem) OptionsGameplayMenuV2(pPresentation, ButtonComponent::BS_B_ONLY, GameInfoManager::GetInstance()->mCurGameGameplayOptions, maxSkillLevel);
     m_pOptionsMenu = pMem;
 }

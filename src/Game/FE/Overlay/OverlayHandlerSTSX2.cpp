@@ -3,7 +3,18 @@
 #include "Game/FE/FEAudio.h"
 #include "Game/Sys/eventman.h"
 #include "NL/nlBundleFile.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlTask.h"
+
+void STSX2Overlay::CreateEventHandler()
+{
+    CreateEventHandler();
+}
+
+void STSX2Overlay::DestroyEventHandler()
+{
+    DestroyEventHandler();
+}
 
 /**
  * Offset/Address/Size: 0x280 | 0x8010705C | size: 0xA8
@@ -65,9 +76,9 @@ void STSX2Overlay::Update(float fDeltaT)
 /**
  * Offset/Address/Size: 0x0 | 0x80106DDC | size: 0xF0
  */
-void STSX2Overlay::EventHandlerFunc(Event* event, void* arg1)
+void STSX2Overlay::EventHandlerFunc(Event* event, void* userData)
 {
-    STSX2Overlay* self = static_cast<STSX2Overlay*>(arg1);
+    STSX2Overlay* self = static_cast<STSX2Overlay*>(userData);
 
     if (event->m_uEventID == 5)
     {

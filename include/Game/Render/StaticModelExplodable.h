@@ -5,8 +5,6 @@
 #include "NL/nlMath.h"
 #include "Game/Render/SidelineExplodable.h"
 
-// void 0x8028D320..0x8028D324 | size: 0x4;
-
 enum StaticModelExplodableCategory
 {
     EXPLODABLE_BENCH1 = 0,
@@ -20,10 +18,10 @@ class StaticModelExplodable : public SidelineExplodable
 {
 public:
     static void CleanUp();
-    StaticModelExplodable(StaticModelExplodableCategory, const nlMatrix4&);
+    StaticModelExplodable(StaticModelExplodableCategory category, const nlMatrix4& worldMatrix);
     ~StaticModelExplodable();
     virtual ExplodableCategoryData& GetCategoryData() const;
-    void SetUnexplodedModelVisibility(bool);
+    void SetUnexplodedModelVisibility(bool visible);
     virtual const nlMatrix4& GetWorldMatrix() const;
 
     static bool LoadGeometry();

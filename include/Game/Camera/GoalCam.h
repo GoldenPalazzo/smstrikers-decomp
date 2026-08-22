@@ -9,7 +9,7 @@ public:
     GoalCamera();
     /* 0x08 */ virtual ~GoalCamera();
     /* 0x0C */ virtual eCameraType GetType() { return eCameraType_Goal; };
-    /* 0x10 */ virtual void Update(float);
+    /* 0x10 */ virtual void Update(float dt);
     /* 0x24 */ virtual const nlVector3& GetTargetPosition() const { return m_vecTarget; };
     /* 0x20 */ virtual const nlVector3& GetCameraPosition() const { return m_vecCamera; };
     /* 0x14 */ virtual const nlMatrix4& GetViewMatrix() const { return m_matView; };

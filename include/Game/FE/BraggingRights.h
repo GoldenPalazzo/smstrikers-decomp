@@ -13,7 +13,7 @@ public:
     BraggingRightsScene();
     ~BraggingRightsScene();
     void SceneCreated();
-    void Update(float);
+    void Update(float fDeltaT);
 
     /* 0x001C */ u16 mBuffer[5][256];
     /* 0x0A1C */ u16 mThisCupBuffer[5][256];
@@ -30,8 +30,8 @@ public:
     void SceneCreated();
     void IngameSceneCreated();
     void TournamentSceneCreated();
-    void Update(float);
-    void ChangeTicker(int);
+    void Update(float fDeltaT);
+    void ChangeTicker(int tickerRow);
 
     /* 0x001C */ u16 mBuffer[256];
     /* 0x021C */ MenuList<TLComponentInstance> mMenuItems;

@@ -47,7 +47,7 @@ void ChooseCaptainsSceneV2::SceneCreated()
     }
     else
     {
-        eFEINPUT_PAD pad = nlSingleton<GameInfoManager>::s_pInstance->mMainUserPadNumber;
+        eFEINPUT_PAD pad = nlSingleton<GameInfoManager>::Instance()->mMainUserPadNumber;
         if (g_pFEInput->IsConnected(pad))
         {
             mChooseCaptain.PushPlayer(pad, -1);
@@ -211,7 +211,7 @@ void ChooseCaptainsSceneV2::ResetForCHOOSESIDES()
 
     mTicker->SetDisplayMessage((unsigned long)0x53B23764);
 
-    if (!nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode && !g_e3_Build)
+    if (!nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode && !g_e3_Build)
     {
         FindUnion findComp2;
         findComp2.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
@@ -257,19 +257,19 @@ void ChooseCaptainsSceneV2::Update(float fDeltaT)
         mMoveForwardFrameDelay--;
         if (mMoveForwardFrameDelay != 0)
             return;
-        if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+        if (nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode)
         {
-            nlSingleton<GameSceneManager>::s_pInstance->PushLoadingScene(true);
-            nlSingleton<GameInfoManager>::s_pInstance->SetStadium((eStadiumID)0);
+            nlSingleton<GameSceneManager>::Instance()->PushLoadingScene(true);
+            nlSingleton<GameInfoManager>::Instance()->SetStadium((eStadiumID)0);
         }
         else if (g_e3_Build)
         {
-            nlSingleton<GameSceneManager>::s_pInstance->PushLoadingScene(true);
-            nlSingleton<GameInfoManager>::s_pInstance->SetStadium((eStadiumID)3);
+            nlSingleton<GameSceneManager>::Instance()->PushLoadingScene(true);
+            nlSingleton<GameInfoManager>::Instance()->SetStadium((eStadiumID)3);
         }
         else
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_STADIUM_SELECT, SCREEN_FORWARD, true);
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_STADIUM_SELECT, SCREEN_FORWARD, true);
         }
         mChooseSide.SaveChanges();
         FrontEnd::SetControllerState();
@@ -294,8 +294,8 @@ void ChooseCaptainsSceneV2::Update(float fDeltaT)
         switch (mChooseCaptain.Update(fDeltaT))
         {
         case UPDATE_GO_BACK:
-            nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_MAIN_MENU, SCREEN_BACK, false);
+            nlSingleton<GameSceneManager>::Instance()->PopEntireStack();
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_MAIN_MENU, SCREEN_BACK, false);
             return;
         case UPDATE_GO_FORWARD:
             ChangeSceneType(SceneType_1);
@@ -306,13 +306,13 @@ void ChooseCaptainsSceneV2::Update(float fDeltaT)
     case SceneType_1:
     {
         eFEINPUT_PAD buttonPressed = FE_ALL_PADS;
-        if (!nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+        if (!nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode)
         {
             if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x800, false, NULL))
             {
                 if (!g_e3_Build)
                 {
-                    nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_QUICK_GAMEPLAY_OPTIONS, SCREEN_FORWARD, false);
+                    nlSingleton<GameSceneManager>::Instance()->Push(SCENE_QUICK_GAMEPLAY_OPTIONS, SCREEN_FORWARD, false);
                     return;
                 }
             }
@@ -376,7 +376,7 @@ void ChooseCaptainsSceneV2::Update(float fDeltaT)
             }
             if (!mChooseSide.AtLeastOnePlayerReady())
             {
-                ((FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false))->Create(POPUP_NO_SIDES_CHOSEN);
+                ((FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false))->Create(POPUP_NO_SIDES_CHOSEN);
             }
             break;
         }

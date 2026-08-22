@@ -9,6 +9,9 @@ static DVDDiskID* idTmp;
 // prototypes
 static void cb(s32 result, DVDCommandBlock* block);
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80248CC8 | size: 0xD8
+ */
 static void cb(s32 result, DVDCommandBlock* block)
 {
     if (result > 0)
@@ -39,6 +42,9 @@ static void cb(s32 result, DVDCommandBlock* block)
     }
 }
 
+/**
+ * Offset/Address/Size: 0xD8 | 0x80248DA0 | size: 0x168
+ */
 void __fstLoad(void)
 {
     OSBootInfo* bootInfo;
@@ -88,7 +94,7 @@ void __fstLoad(void)
     bootInfo->FSTLocation = (void*)bb2->FSTAddress;
     bootInfo->FSTMaxLength = bb2->FSTMaxLength;
     id = &bootInfo->DVDDiskID;
-    memcpy(id, idTmp, 0x20);
+    memcpy(id, idTmp, sizeof(DVDDiskID));
     OSReport("\n");
     OSReport("  Game Name ... %c%c%c%c\n", id->gameName[0], id->gameName[1], id->gameName[2], id->gameName[3]);
     OSReport("  Company ..... %c%c\n", id->company[0], id->company[1]);

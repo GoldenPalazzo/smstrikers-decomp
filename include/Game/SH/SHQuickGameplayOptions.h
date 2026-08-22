@@ -10,7 +10,7 @@ class QuickGameplayOptionsScene : public BaseSceneHandler
 public:
     QuickGameplayOptionsScene();
     virtual ~QuickGameplayOptionsScene();
-    virtual void Update(float);
+    virtual void Update(float dt);
     virtual void SceneCreated();
 
     /* 0x1C */ OptionsGameplayMenuV2* m_pOptionsMenu;

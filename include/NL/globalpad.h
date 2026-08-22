@@ -10,7 +10,7 @@ class cGlobalPad;
 class cPadManager
 {
 public:
-    static void Update(float);
+    static void Update(float deltaTime);
 
     static cGlobalPad* GetPad(int idx);
     // static s32* GetRemapArray(); // { return m_pRemapArray; };
@@ -48,10 +48,10 @@ public:
     /* 0x38 */ virtual bool RumbleActive() = 0;
     /* 0x3C */ virtual void StartRumble(float, float, float) = 0;
     /* 0x40 */ virtual void StopRumble() = 0;
-    /* 0x44 */ virtual void Update(float);
+    /* 0x44 */ virtual void Update(float deltaTime);
 
-    bool JustReleased(int, bool);
-    bool JustPressed(int, bool);
+    bool JustReleased(int button, bool remap);
+    bool JustPressed(int button, bool remap);
 
     /**
      * Offset/Address/Size: 0x0 | 0x8020FB00 | size: 0xC

@@ -30,7 +30,7 @@ void WiperCallback::TransitionProgressed(float fDeltaT) { };
 void Wiper::Reset()
 {
     wiperCallback.mTransitionActive = false;
-    ScreenTransitionManager::s_pInstance->m_SelectedTransition = NULL;
+    ScreenTransitionManager::Instance()->m_SelectedTransition = NULL;
 }
 
 /**
@@ -53,7 +53,7 @@ bool Wiper::WipeInProgress() const
  */
 bool Wiper::CutHasOccured() const
 {
-    return ScreenTransitionManager::s_pInstance->m_Cut;
+    return ScreenTransitionManager::Instance()->m_Cut;
 }
 
 /**
@@ -94,14 +94,14 @@ void Wiper::DoWipe(const char* wipe)
             return;
         }
 
-        ScreenTransitionManager::s_pInstance->m_pCallback = &wiperCallback;
-        if ((g_ForceDoubleBallTransition == 0) && (ScreenTransitionManager::s_pInstance->m_SelectedTransition != 0))
+        ScreenTransitionManager::Instance()->m_pCallback = &wiperCallback;
+        if ((g_ForceDoubleBallTransition == 0) && (ScreenTransitionManager::Instance()->m_SelectedTransition != 0))
         {
-            ScreenTransitionManager::s_pInstance->EnableSelectedTransition();
+            ScreenTransitionManager::Instance()->EnableSelectedTransition();
             return;
         }
 
-        ScreenTransitionManager::s_pInstance->EnableRandomTransition(wipe);
+        ScreenTransitionManager::Instance()->EnableRandomTransition(wipe);
         g_ForceDoubleBallTransition = 0;
     }
 }
@@ -112,7 +112,7 @@ void Wiper::DoWipe(const char* wipe)
 void Wiper::Render(float dt)
 {
     dt = dt * GetConfigFloat(Config::Global(), "transitions/speed", 1.0f);
-    ScreenTransitionManager::s_pInstance->Render(dt);
+    ScreenTransitionManager::Instance()->Render(dt);
 }
 
 /**

@@ -1453,7 +1453,7 @@ float FallenDown(cFielder* pFielder)
 /**
  * Offset/Address/Size: 0x3FA0 | 0x80082A28 | size: 0x268
  */
-float LikelyToScoreFromPosition(const nlVector3& v3Position, const nlVector3& v3GoaliePosition, const cNet* pNet, bool)
+float LikelyToScoreFromPosition(const nlVector3& v3Position, const nlVector3& v3GoaliePosition, const cNet* pNet, bool bIsChipShot)
 {
     float fNetHalfWidth;
     float fGoalLine;
@@ -1468,7 +1468,7 @@ float LikelyToScoreFromPosition(const nlVector3& v3Position, const nlVector3& v3
 
     float fSideSign = pNet->m_fDirection;
     float fOpenAngle = 65536.0f;
-    fOpenAngle *= g_pGame->m_pGameTweaks->unk2D4;
+    fOpenAngle *= g_pGame->m_pGameTweaks->fShotMeterNetOpenAngle;
     fNetHalfWidth = 0.5f * cNet::m_fNetWidth;
     aNetAngle = ((s32)fOpenAngle) / 360;
 

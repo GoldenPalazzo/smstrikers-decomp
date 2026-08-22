@@ -184,7 +184,7 @@ void ScrollingTickerScene::SceneCreated()
 
     m_textBox->m_bVisible = false;
 
-    m_textScroller = new (nlMalloc(0x22C, 8, false))
+    m_textScroller = new (nlMalloc(sizeof(FEScrollText), 8, false))
         FEScrollText(m_textBox, 0, (int)(m_rightBallOpenPos.f.x - m_leftBallOpenPos.f.x));
 
     m_textScroller->m_messageFinishedCB = m_cbFunc;
@@ -235,9 +235,6 @@ void ScrollingTickerScene::Update(float fDeltaT)
     }
 }
 
-/**
- * Offset/Address/Size: 0x3C4 | 0x800A001C | size: 0x20C
- */
 static inline void setBallPositions(ScrollingTickerScene* tscene, f32 val)
 {
     f32 closedY = tscene->m_leftBallClosedPos.f.y;
@@ -258,6 +255,9 @@ static inline void setBallPositions(ScrollingTickerScene* tscene, f32 val)
     tscene->m_backRectangle->SetAssetScale(x, tscene->m_grayOpenScale.f.y, 1.0f);
 }
 
+/**
+ * Offset/Address/Size: 0x3C4 | 0x800A001C | size: 0x20C
+ */
 void ScrollingTickerScene::OpenMessenger()
 {
     m_pFETweenManager.clearTweens();

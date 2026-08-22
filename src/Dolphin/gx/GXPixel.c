@@ -4,6 +4,9 @@
 
 #include "__gx.h"
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80250D28 | size: 0x214
+ */
 void GXSetFog(GXFogType type, f32 startz, f32 endz, f32 nearz, f32 farz, GXColor color)
 {
     u32 fogclr;
@@ -134,6 +137,9 @@ void GXSetFogColor(GXColor color)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x214 | 0x80250F3C | size: 0x1B0
+ */
 void GXInitFogAdjTable(GXFogAdjTable* table, u16 width, const f32 projmtx[4][4])
 {
     f32 xi;
@@ -169,6 +175,9 @@ void GXInitFogAdjTable(GXFogAdjTable* table, u16 width, const f32 projmtx[4][4])
     }
 }
 
+/**
+ * Offset/Address/Size: 0x3C4 | 0x802510EC | size: 0x124
+ */
 void GXSetFogRangeAdj(GXBool enable, u16 center, const GXFogAdjTable* table)
 {
     u32 i;
@@ -197,6 +206,9 @@ void GXSetFogRangeAdj(GXBool enable, u16 center, const GXFogAdjTable* table)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x4E8 | 0x80251210 | size: 0x54
+ */
 void GXSetBlendMode(GXBlendMode type, GXBlendFactor src_factor, GXBlendFactor dst_factor, GXLogicOp op)
 {
     u32 reg;
@@ -226,6 +238,9 @@ void GXSetBlendMode(GXBlendMode type, GXBlendFactor src_factor, GXBlendFactor ds
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x53C | 0x80251264 | size: 0x2C
+ */
 void GXSetColorUpdate(GXBool update_enable)
 {
     u32 reg;
@@ -240,6 +255,9 @@ void GXSetColorUpdate(GXBool update_enable)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x568 | 0x80251290 | size: 0x2C
+ */
 void GXSetAlphaUpdate(GXBool update_enable)
 {
     u32 reg;
@@ -254,6 +272,9 @@ void GXSetAlphaUpdate(GXBool update_enable)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x594 | 0x802512BC | size: 0x34
+ */
 void GXSetZMode(GXBool compare_enable, GXCompare func, GXBool update_enable)
 {
     u32 reg;
@@ -270,6 +291,9 @@ void GXSetZMode(GXBool compare_enable, GXCompare func, GXBool update_enable)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x5C8 | 0x802512F0 | size: 0x34
+ */
 void GXSetZCompLoc(GXBool before_tex)
 {
     CHECK_GXBEGIN(474, "GXSetZCompLoc");
@@ -278,6 +302,9 @@ void GXSetZCompLoc(GXBool before_tex)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x5FC | 0x80251324 | size: 0xD4
+ */
 void GXSetPixelFmt(GXPixelFmt pix_fmt, GXZFmt16 z_fmt)
 {
     u32 oldPeCtrl;
@@ -311,6 +338,9 @@ void GXSetPixelFmt(GXPixelFmt pix_fmt, GXZFmt16 z_fmt)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x6D0 | 0x802513F8 | size: 0x2C
+ */
 void GXSetDither(GXBool dither)
 {
     u32 reg;
@@ -325,6 +355,9 @@ void GXSetDither(GXBool dither)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x6FC | 0x80251424 | size: 0x3C
+ */
 void GXSetDstAlpha(GXBool enable, u8 alpha)
 {
     u32 reg;
@@ -340,6 +373,9 @@ void GXSetDstAlpha(GXBool enable, u8 alpha)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x738 | 0x80251460 | size: 0x38
+ */
 void GXSetFieldMask(GXBool odd_mask, GXBool even_mask)
 {
     u32 reg;
@@ -353,6 +389,9 @@ void GXSetFieldMask(GXBool odd_mask, GXBool even_mask)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x770 | 0x80251498 | size: 0x78
+ */
 void GXSetFieldMode(GXBool field_mode, GXBool half_aspect_ratio)
 {
     u32 reg;

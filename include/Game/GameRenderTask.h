@@ -6,7 +6,7 @@
 class GameRenderTask : public nlTask
 {
 public:
-    virtual void Run(float);
+    virtual void Run(float fDeltaT);
     virtual const char* GetName() { return "Game Render"; }
 
 private:

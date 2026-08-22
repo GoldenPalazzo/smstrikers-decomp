@@ -1531,9 +1531,9 @@ unsigned char GameInfoManager::DetermineNextMatchups(int dnmflags)
 
         if (dnmflags & 0x10)
         {
-            nlSingleton<StatsTracker>::s_pInstance->SetBasicGameInfoPointer(gameinfo, true);
-            nlSingleton<StatsTracker>::s_pInstance->SimulateGame();
-            nlSingleton<StatsTracker>::s_pInstance->CompileEndOfGameStats();
+            nlSingleton<StatsTracker>::Instance()->SetBasicGameInfoPointer(gameinfo, true);
+            nlSingleton<StatsTracker>::Instance()->SimulateGame();
+            nlSingleton<StatsTracker>::Instance()->CompileEndOfGameStats();
         }
 
         if (!(dnmflags & 0x2))
@@ -1578,15 +1578,15 @@ void GameInfoManager::IncreaseRoundNumber()
             if (mCurrentCup->mRoundNumber == -3)
             {
                 mUserLastResults[mCurrentMode] = RESULT_USER_ELIMINATED_QUARTER;
-                nlSingleton<StatsTracker>::s_pInstance->SimulateRemainingGames();
+                nlSingleton<StatsTracker>::Instance()->SimulateRemainingGames();
                 SetupKnockoutRound(-2);
                 mCurrentCup->mRoundNumber = -2;
-                nlSingleton<StatsTracker>::s_pInstance->SimulateRemainingGames();
+                nlSingleton<StatsTracker>::Instance()->SimulateRemainingGames();
             }
             else if (mCurrentCup->mRoundNumber == -2)
             {
                 mUserLastResults[mCurrentMode] = RESULT_USER_ELIMINATED_SEMI;
-                nlSingleton<StatsTracker>::s_pInstance->SimulateRemainingGames();
+                nlSingleton<StatsTracker>::Instance()->SimulateRemainingGames();
             }
 
             mCurrentCup->mRoundNumber = -5;
@@ -1619,10 +1619,10 @@ void GameInfoManager::IncreaseRoundNumber()
             else
             {
                 mUserLastResults[mCurrentMode] = RESULT_USER_DOES_NOT_PLAYOFF_QUALIFY;
-                nlSingleton<StatsTracker>::s_pInstance->SimulateRemainingGames();
+                nlSingleton<StatsTracker>::Instance()->SimulateRemainingGames();
                 mCurrentCup->mRoundNumber = -2;
                 SetupKnockoutRound(-2);
-                nlSingleton<StatsTracker>::s_pInstance->SimulateRemainingGames();
+                nlSingleton<StatsTracker>::Instance()->SimulateRemainingGames();
                 mCurrentCup->mRoundNumber = -5;
             }
         }
@@ -1646,10 +1646,10 @@ void GameInfoManager::IncreaseRoundNumber()
             else
             {
                 mUserLastResults[mCurrentMode] = RESULT_USER_DOES_NOT_PLAYOFF_QUALIFY;
-                nlSingleton<StatsTracker>::s_pInstance->SimulateRemainingGames();
+                nlSingleton<StatsTracker>::Instance()->SimulateRemainingGames();
                 mCurrentCup->mRoundNumber = -2;
                 SetupKnockoutRound(-2);
-                nlSingleton<StatsTracker>::s_pInstance->SimulateRemainingGames();
+                nlSingleton<StatsTracker>::Instance()->SimulateRemainingGames();
                 mCurrentCup->mRoundNumber = -5;
             }
         }
@@ -2888,7 +2888,7 @@ void GameInfoManager::OnPostCupGameState()
                 }
             }
 
-            nlSingleton<StatsTracker>::s_pInstance->GetSortedTeamStats(allStats, numTeams, rankIndices, numTeams);
+            nlSingleton<StatsTracker>::Instance()->GetSortedTeamStats(allStats, numTeams, rankIndices, numTeams);
 
             for (j = 0; j < numTeams; j++)
             {
@@ -3057,7 +3057,7 @@ void GameInfoManager::DetermineNextCupScreen()
     {
         if (mDisplayTrophy[i + 1] == 1)
         {
-            MilestoneTrophyScene* scene = (MilestoneTrophyScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_MILESTONE_TROPHY, SCREEN_NOTHING, false);
+            MilestoneTrophyScene* scene = (MilestoneTrophyScene*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_MILESTONE_TROPHY, SCREEN_NOTHING, false);
             scene->CreateTrophyScene(MILESTONES[i], ButtonComponent::BS_A_ONLY, true);
             mDisplayTrophy[i + 1] = false;
             Audio::gWorldSFX.Play(Audio::WORLDSFX_FE_ACCEPT_WARIO, 100.0f, -1.0f, true, 100.0f);
@@ -3099,12 +3099,12 @@ superCupDone:
     }
     if (nextScene != SCENE_CUP_SUPER_TEAM)
     {
-        CupHubScene* hub = (CupHubScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(nextScene, SCREEN_NOTHING, false);
+        CupHubScene* hub = (CupHubScene*)nlSingleton<GameSceneManager>::Instance()->Push(nextScene, SCREEN_NOTHING, false);
         hub->mDoAutoSave = true;
     }
     else
     {
-        nlSingleton<GameSceneManager>::s_pInstance->Push(nextScene, SCREEN_NOTHING, false);
+        nlSingleton<GameSceneManager>::Instance()->Push(nextScene, SCREEN_NOTHING, false);
     }
 }
 
@@ -3159,7 +3159,7 @@ signed char GameInfoManager::DetermineUserPlacement(Spoil* pSpoil)
     }
     else
     {
-        StatsTracker::s_pInstance->GetSortedTeamStats(allStats, numTeams, rankIndices, numTeams);
+        StatsTracker::Instance()->GetSortedTeamStats(allStats, numTeams, rankIndices, numTeams);
 
         for (j = 0; j < numTeams; j++)
         {
@@ -3371,7 +3371,7 @@ eTeamID GameInfoManager::FindWinningTeam()
         allStats[i] = *copiedStats;
     }
 
-    nlSingleton<StatsTracker>::s_pInstance->GetSortedTeamStats(allStats, numTeams, rankIndices, numTeams);
+    nlSingleton<StatsTracker>::Instance()->GetSortedTeamStats(allStats, numTeams, rankIndices, numTeams);
 
     return allStats[rankIndices[0]].mTeamIndex;
 }

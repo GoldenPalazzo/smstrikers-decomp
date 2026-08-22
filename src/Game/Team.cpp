@@ -418,7 +418,7 @@ void cTeam::Update(float fDeltaT)
         if (mfPowerupTimer < 0.0f)
         {
             mfPowerupTimer = 10.0f;
-            if (nlSingleton<GameInfoManager>::s_pInstance->IsInfinitePowerupsOn())
+            if (nlSingleton<GameInfoManager>::Instance()->IsInfinitePowerupsOn())
                 PowerupBase::AwardPowerup(this);
         }
         mtTeamStyleTimer.Countdown(fDeltaT, 0.0f);
@@ -456,7 +456,7 @@ void cTeam::UpdateControllers()
 
     for (int i = 0; i < 4; i++)
     {
-        if (m_nSide != (s16)nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((u16)i))
+        if (m_nSide != (s16)nlSingleton<GameInfoManager>::Instance()->GetPlayingSide((u16)i))
         {
             for (int j = 0; j < 5; j++)
             {

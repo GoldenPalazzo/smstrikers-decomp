@@ -8,8 +8,9 @@
 class PhysicsBox : public PhysicsObject
 {
 public:
-    void SetDensity(float);
-    PhysicsBox(CollisionSpace*, PhysicsWorld*, float, float, float);
+    void GetSides(float* sides);
+    void SetDensity(float density);
+    PhysicsBox(CollisionSpace* collisionSpace, PhysicsWorld* world, float lx, float ly, float lz);
     virtual int GetObjectType() const { return 0x1; };
 }; // total size: 0x2C
 

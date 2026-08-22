@@ -1,8 +1,11 @@
-#include "file_pos.h"
+#include "FILE_POS.h"
 #include "critical_regions.h"
 #include "errno.h"
 
 /* 80365E90-80365F74 3607D0 00E4+00 0/0 2/2 0/0 .text            ftell */
+/**
+ * Offset/Address/Size: 0x2DC | 0x802311F0 | size: 0xE4
+ */
 long ftell(FILE* stream)
 {
     int retval;
@@ -50,6 +53,9 @@ inline int _ftell(FILE* file)
 }
 
 /* 80365C20-80365E90 360560 0270+00 1/1 0/0 0/0 .text            _fseek */
+/**
+ * Offset/Address/Size: 0x6C | 0x80230F80 | size: 0x270
+ */
 int _fseek(FILE* file, unsigned long offset, int whence)
 {
     int bufferCode;
@@ -162,6 +168,9 @@ int _fseek(FILE* file, unsigned long offset, int whence)
 }
 
 /* 80365BB4-80365C20 3604F4 006C+00 0/0 2/2 0/0 .text            fseek */
+/**
+ * Offset/Address/Size: 0x0 | 0x80230F14 | size: 0x6C
+ */
 int fseek(FILE* stream, unsigned long offset, int whence)
 {
     int code;

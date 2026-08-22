@@ -15,7 +15,7 @@ public:
     };
 
     cFollowCamera();
-    cFollowCamera(cFollowCamera::FollowTarget);
+    cFollowCamera(cFollowCamera::FollowTarget followTarget);
     virtual ~cFollowCamera() { };
 
     /* 0x0C */ virtual eCameraType GetType()
@@ -24,7 +24,7 @@ public:
             return eCameraType_FollowBall;
         return eCameraType_FollowCharacter;
     };
-    /* 0x10 */ virtual void Update(float);
+    /* 0x10 */ virtual void Update(float fDeltaT);
     /* 0x14 */ virtual const nlMatrix4& GetViewMatrix() const { return m_matView; };
     /* 0x20 */ virtual const nlVector3& GetTargetPosition() const { return m_v3OOIDampened; };
     /* 0x24 */ virtual const nlVector3& GetCameraPosition() const { return m_v3CameraPosition; };

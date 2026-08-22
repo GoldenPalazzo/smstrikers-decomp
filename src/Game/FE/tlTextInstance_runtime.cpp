@@ -1,4 +1,6 @@
 #include "Game/FE/tlTextInstance.h"
+
+#include "NL/nlAlgorithm.h"
 #include "NL/nlFont.h"
 #include "NL/nlLocalization.h"
 #include "NL/nlTextBox.h"
@@ -158,6 +160,11 @@ void TLTextInstance::Render(eGLView view, const nlColour& colour) const
     {
         m_DrawInfo.pFont->DisableScissorBox();
     }
+}
+
+void TLTextInstance::DisableScissorBox()
+{
+    m_UseScissorRect = false;
 }
 
 /**

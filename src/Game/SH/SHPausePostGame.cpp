@@ -171,7 +171,7 @@ void PausePostGameScene::SceneCreated()
             instance->GetActiveSlide(),
             InlineHasher(nlStringLowerHash("TEAM")));
 
-        text->m_LocStrId = GetLOCTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)i));
+        text->m_LocStrId = GetLOCTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam((short)i));
         text->m_OverloadFlags |= 8;
 
         text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
@@ -179,7 +179,7 @@ void PausePostGameScene::SceneCreated()
             InlineHasher(nlStringLowerHash("LINE_0")));
 
         BasicString<char, Detail::TempStringAllocator> score = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(
-            (int)nlSingleton<StatsTracker>::s_pInstance->mNumGamesWon[i]);
+            (int)nlSingleton<StatsTracker>::Instance()->mNumGamesWon[i]);
         unsigned short wscore[8];
         nlStrToWcs(score.c_str(), wscore, 8);
         memcpy(mScoreBuffer[i], wscore, sizeof(wscore));
@@ -197,7 +197,7 @@ void PausePostGameScene::SceneCreated()
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("MESSAGE 1")));
 
-    BasicGameInfo* game = nlSingleton<GameInfoManager>::s_pInstance->mGameInfo[nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode];
+    BasicGameInfo* game = nlSingleton<GameInfoManager>::Instance()->mGameInfo[nlSingleton<GameInfoManager>::Instance()->mCurrentMode];
     u8 hasHome = PausePostGameHasSide(game, 0);
     if (hasHome)
     {
@@ -222,7 +222,7 @@ void PausePostGameScene::SceneCreated()
                 const unsigned short* formatLoc;
                 formatLoc = LookupLocHash(0x29199065);
 
-                eTeamID winningteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)((pointdiff > 0) ? 0 : 1));
+                eTeamID winningteam = nlSingleton<GameInfoManager>::Instance()->GetTeam((short)((pointdiff > 0) ? 0 : 1));
 
                 BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), LookupLocHash(GetLOCCharacterName(winningteam, true, false)));
                 SetText(*message, formatted);
@@ -232,7 +232,7 @@ void PausePostGameScene::SceneCreated()
                 const unsigned short* formatLoc;
                 formatLoc = LookupLocHash(0x1214A3EB);
 
-                eTeamID loosingteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)((pointdiff > 0) ? 1 : 0));
+                eTeamID loosingteam = nlSingleton<GameInfoManager>::Instance()->GetTeam((short)((pointdiff > 0) ? 1 : 0));
 
                 BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), LookupLocHash(GetLOCCharacterName(loosingteam, true, false)));
                 SetText(*message, formatted);
@@ -242,7 +242,7 @@ void PausePostGameScene::SceneCreated()
                 const unsigned short* formatLoc;
                 formatLoc = LookupLocHash(0xAACD893B);
 
-                eTeamID loosingteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)((pointdiff > 0) ? 1 : 0));
+                eTeamID loosingteam = nlSingleton<GameInfoManager>::Instance()->GetTeam((short)((pointdiff > 0) ? 1 : 0));
 
                 BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), LookupLocHash(GetLOCCharacterName(loosingteam, true, false)));
                 SetText(*message, formatted);
@@ -279,14 +279,14 @@ void PausePostGameScene::SceneCreated()
                 const unsigned short* formatLoc;
                 formatLoc = LookupLocHash(0xDBBFA4DE);
 
-                eTeamID otherteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)(humanside ? 0 : 1));
+                eTeamID otherteam = nlSingleton<GameInfoManager>::Instance()->GetTeam((short)(humanside ? 0 : 1));
 
                 BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), LookupLocHash(GetLOCCharacterName(otherteam, true, false)));
                 SetText(*message, formatted);
             }
             else
             {
-                if (nlSingleton<GameInfoManager>::s_pInstance->GetSkillLevel() == GameplaySettings::LEGEND)
+                if (nlSingleton<GameInfoManager>::Instance()->GetSkillLevel() == GameplaySettings::LEGEND)
                 {
                     message->m_LocStrId = 0xA4CA441C;
                     message->m_OverloadFlags |= 8;
@@ -336,7 +336,7 @@ void PausePostGameScene::Update(float dt)
 
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
     {
-        BaseSceneHandler* summary = nlSingleton<OverlayManager>::s_pInstance->Push(OVERLAY_SUMMARY, SCREEN_NOTHING, true);
+        BaseSceneHandler* summary = nlSingleton<OverlayManager>::Instance()->Push(OVERLAY_SUMMARY, SCREEN_NOTHING, true);
         *(ButtonComponent::ButtonState*)((u8*)summary + 0xC3C) = (ButtonComponent::ButtonState)1;
         FEAudio::PlayAnimAudioEvent("sfx_back", false);
         return;
@@ -398,8 +398,8 @@ void PausePostGameScene::OnSelectRematch()
         tracker->WriteStats(gameTime, -1.0f, NULL);
     }
 
-    nlSingleton<StatsTracker>::s_pInstance->ResetCurrentStats();
-    nlSingleton<OverlayManager>::s_pInstance->Pop();
+    nlSingleton<StatsTracker>::Instance()->ResetCurrentStats();
+    nlSingleton<OverlayManager>::Instance()->Pop();
     g_pFEInput->EnableAnalogToDPadMapping(FE_ALL_PADS, false);
     FrontEnd::ExitWinnerScreen();
     g_pTrackManager->StopAllTracks(0);

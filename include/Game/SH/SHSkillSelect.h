@@ -8,10 +8,10 @@ class FESlideMenu;
 class SkillSelectScene : public BaseSceneHandler
 {
 public:
-    virtual void Update(float);
+    virtual void Update(float dt);
     virtual void SceneCreated();
     virtual ~SkillSelectScene();
-    SkillSelectScene(bool);
+    SkillSelectScene(bool isSuperCup);
 
     /* 0x1C */ bool mIsSuperCup;
     /* 0x20 */ FESlideMenu* m_SlideSkillSelect;

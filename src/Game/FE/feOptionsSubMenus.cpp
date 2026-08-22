@@ -51,7 +51,7 @@ OptionsSubMenu::~OptionsSubMenu()
 /**
  * Offset/Address/Size: 0x55A4 | 0x800BA5E8 | size: 0xA30
  */
-void OptionsSubMenu::Update(float)
+void OptionsSubMenu::Update(float dt)
 {
     mButtons.CentreButtons();
 
@@ -812,7 +812,7 @@ void OptionsAudioMenuV2::Revert()
 /**
  * Offset/Address/Size: 0x20C8 | 0x800B710C | size: 0xA3C
  */
-void OptionsAudioMenuV2::Update(float)
+void OptionsAudioMenuV2::Update(float dt)
 {
     bool ischaractervol = (mMenuItems.GetActiveItemIndex() == 2);
     mButtons.CentreButtons();
@@ -1560,8 +1560,8 @@ void OptionsSaveLoad::Update(float dt)
             ResetEnableSaveLoadFlag();
             if (SaveLoadScene::IsIOEnabled())
             {
-                nlSingleton<GameSceneManager>::s_pInstance->Pop();
-                SaveLoadScene* handler = (SaveLoadScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_ASK_SAVE, SCREEN_FORWARD, false);
+                nlSingleton<GameSceneManager>::Instance()->Pop();
+                SaveLoadScene* handler = (SaveLoadScene*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_ASK_SAVE, SCREEN_FORWARD, false);
                 handler->mNextScene = SCENE_OPTIONS;
             }
         }
@@ -1570,8 +1570,8 @@ void OptionsSaveLoad::Update(float dt)
             ResetEnableSaveLoadFlag();
             if (SaveLoadScene::IsIOEnabled())
             {
-                nlSingleton<GameSceneManager>::s_pInstance->Pop();
-                SaveLoadScene* handler = (SaveLoadScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_ASK_LOAD, SCREEN_FORWARD, false);
+                nlSingleton<GameSceneManager>::Instance()->Pop();
+                SaveLoadScene* handler = (SaveLoadScene*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_ASK_LOAD, SCREEN_FORWARD, false);
                 handler->mNextScene = SCENE_OPTIONS;
             }
         }

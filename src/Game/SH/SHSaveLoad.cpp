@@ -296,7 +296,7 @@ static void CheckResults()
 #if defined(VERSION_G4QJ01)
         SaveLoad::RememberCurrentMemCardSerialID(0);
 #endif
-        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
         pPopup->Create(POPUP_MEMCARD_CONFIRM_FORMAT, ContinueWithoutSavingCB, FormatCB);
 #if !defined(VERSION_G4QJ01)
@@ -315,7 +315,7 @@ static void CheckResults()
 
         if (sceneType == SaveLoadScene::ST_ASK_SAVE)
         {
-            FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+            FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
             pPopup->Create(POPUP_MEMCARD_ASK_SAVE_OVERWRITE, ContinueWithoutSavingCB, OverwriteFileAndContinueCB);
             return;
@@ -323,7 +323,7 @@ static void CheckResults()
 
         if (sceneType == SaveLoadScene::ST_ASK_LOAD)
         {
-            FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+            FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
             pPopup->Create(POPUP_MEMCARD_ASK_LOAD_OVERWRITE, ContinueWithoutLoadingCB, ContinueLoadingCB);
             return;
@@ -335,7 +335,7 @@ static void CheckResults()
 
     case -3:
     {
-        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
         pPopup->Create(POPUP_NO_MEMCARD, RetryCB, ContinueWithoutSavingCB);
         return;
@@ -344,7 +344,7 @@ static void CheckResults()
     case -9:
     case -8:
     {
-        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
         sceneType = GetSceneType();
         if (sceneType != SaveLoadScene::ST_ASK_SAVE)
@@ -382,7 +382,7 @@ static void CheckResults()
 
     case -2:
     {
-        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
         pPopup->Create(POPUP_WRONG_DEVICE, RetryCB, ContinueWithoutSavingCB);
         return;
@@ -390,7 +390,7 @@ static void CheckResults()
 
     case -6:
     {
-        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
         pPopup->Create(POPUP_MEMCARD_CORRUPTED, RetryCB, ContinueWithoutSavingCB, FormatConfirmCB);
         return;
@@ -398,7 +398,7 @@ static void CheckResults()
 
     case -13:
     {
-        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
         pPopup->Create(POPUP_MEMCARD_WRONGFORMAT, RetryCB, ContinueWithoutSavingCB, FormatConfirmCB);
         return;
@@ -406,7 +406,7 @@ static void CheckResults()
 
     case -5:
     {
-        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
         pPopup->Create(POPUP_MEMCARD_DAMAGED, RetryCB, ContinueWithoutSavingCB);
         return;
@@ -418,7 +418,7 @@ static void CheckResults()
 #if defined(VERSION_G4QJ01)
         SaveLoad::RememberCurrentMemCardSerialID(0);
 #endif
-        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
         pPopup->Create(POPUP_FILE_CORRUPTED, RetryCB, ContinueWithoutSavingCB, DeleteFileCB);
         return;
@@ -433,7 +433,7 @@ static void CheckResults()
 #if defined(VERSION_G4QJ01)
             SaveLoad::RememberCurrentMemCardSerialID(0);
 #endif
-            FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+            FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
             pPopup->Create(POPUP_MEMCARD_ASK_SAVE_NO_FILE, CreateFileAndSaveCB, ContinueWithoutSavingCB);
             return;
@@ -444,7 +444,7 @@ static void CheckResults()
 #if defined(VERSION_G4QJ01)
             SaveLoad::RememberCurrentMemCardSerialID(0);
 #endif
-            FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+            FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
             pPopup->Create(POPUP_MEMCARD_ASK_SAVE_NO_FILE, CreateFileAndSaveCB, ContinueWithoutSavingCB);
             return;
@@ -462,7 +462,7 @@ static void CheckResults()
 #if defined(VERSION_G4QJ01)
             SaveLoad::RememberCurrentMemCardSerialID(0);
 #endif
-            FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+            FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
             pPopup->Create(POPUP_MEMCARD_ASK_SAVE_NO_FILE, CreateFileAndSaveCB, ContinueWithoutSavingCB);
             return;
@@ -478,7 +478,7 @@ static void CheckResults()
 
     case -1001:
     {
-        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
         pPopup->Create(POPUP_NOTSAMECARD, RetryCB, ContinueWithoutSavingCB);
         return;
@@ -556,16 +556,16 @@ static bool PushNoCardMessage()
     if (NoCardInSlot() || WasCardRemoved)
     {
         BaseSceneHandler* handler;
-        if (nlSingleton<GameSceneManager>::s_pInstance->mCurrentStackDepth != 0)
+        if (nlSingleton<GameSceneManager>::Instance()->mCurrentStackDepth != 0)
         {
-            handler = nlSingleton<GameSceneManager>::s_pInstance->mBaseSceneHandlerStack[nlSingleton<GameSceneManager>::s_pInstance->mCurrentStackDepth - 1];
+            handler = nlSingleton<GameSceneManager>::Instance()->mBaseSceneHandlerStack[nlSingleton<GameSceneManager>::Instance()->mCurrentStackDepth - 1];
         }
         else
         {
             handler = NULL;
         }
 
-        if (nlSingleton<GameSceneManager>::s_pInstance->GetSceneType(handler) == SCENE_POPUP_MENU)
+        if (nlSingleton<GameSceneManager>::Instance()->GetSceneType(handler) == SCENE_POPUP_MENU)
         {
             if (((FEPopupMenu*)handler)->mType == POPUP_NO_MEMCARD)
             {
@@ -573,16 +573,16 @@ static bool PushNoCardMessage()
                 return false;
             }
 
-            if (!nlSingleton<FESceneManager>::s_pInstance->AreAllScenesValid())
+            if (!nlSingleton<FESceneManager>::Instance()->AreAllScenesValid())
             {
                 return false;
             }
 
-            nlSingleton<GameSceneManager>::s_pInstance->Pop();
-            nlSingleton<FESceneManager>::s_pInstance->ForceImmediateStackProcessing();
+            nlSingleton<GameSceneManager>::Instance()->Pop();
+            nlSingleton<FESceneManager>::Instance()->ForceImmediateStackProcessing();
         }
 
-        FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+        FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
         popup->Create(
             POPUP_NO_MEMCARD,
@@ -749,15 +749,15 @@ void SaveLoadScene::Update(float fDeltaT)
     if (!g_pFEInput->HasInputLock(this))
     {
         BaseSceneHandler* handler;
-        if (nlSingleton<GameSceneManager>::s_pInstance->mCurrentStackDepth != 0)
+        if (nlSingleton<GameSceneManager>::Instance()->mCurrentStackDepth != 0)
         {
-            handler = nlSingleton<GameSceneManager>::s_pInstance->mBaseSceneHandlerStack[nlSingleton<GameSceneManager>::s_pInstance->mCurrentStackDepth - 1];
+            handler = nlSingleton<GameSceneManager>::Instance()->mBaseSceneHandlerStack[nlSingleton<GameSceneManager>::Instance()->mCurrentStackDepth - 1];
         }
         else
         {
             handler = NULL;
         }
-        if (nlSingleton<GameSceneManager>::s_pInstance->GetSceneType(handler) == SCENE_POPUP_MENU)
+        if (nlSingleton<GameSceneManager>::Instance()->GetSceneType(handler) == SCENE_POPUP_MENU)
         {
             PushNoCardMessage();
         }
@@ -1004,7 +1004,7 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
     {
         if (mIsAutoSaving)
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Pop();
+            nlSingleton<GameSceneManager>::Instance()->Pop();
         }
         else
         {
@@ -1032,7 +1032,7 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
                 }
             }
 
-            BaseSceneHandler* scene = nlSingleton<GameSceneManager>::s_pInstance->Push(mNextScene, SCREEN_NOTHING, true);
+            BaseSceneHandler* scene = nlSingleton<GameSceneManager>::Instance()->Push(mNextScene, SCREEN_NOTHING, true);
 
             ShowText(false);
 
@@ -1040,15 +1040,15 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
             {
                 if (mNextScene != SCENE_LEGAL)
                 {
-                    eAudioMode currentMode = (eAudioMode)nlSingleton<GameInfoManager>::s_pInstance->mCurGameAudioSettings.Mode;
-                    AudioSettings& opts = nlSingleton<GameInfoManager>::s_pInstance->GetAudioOptions();
+                    eAudioMode currentMode = (eAudioMode)nlSingleton<GameInfoManager>::Instance()->mCurGameAudioSettings.Mode;
+                    AudioSettings& opts = nlSingleton<GameInfoManager>::Instance()->GetAudioOptions();
                     eAudioMode memCardMode = (eAudioMode)opts.Mode;
                     bool playMusic = false;
                     if (currentMode == DOLBY || memCardMode == DOLBY)
                     {
                         playMusic = true;
                     }
-                    nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mAudioOptions.ForceApplySettings(false);
+                    nlSingleton<GameInfoManager>::Instance()->mUserInfo.mAudioOptions.ForceApplySettings(false);
                     if (playMusic)
                     {
                         AudioLoader::PlayFEMenuMusic();
@@ -1095,7 +1095,7 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
         }
         else
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(mNextScene, SCREEN_NOTHING, true);
+            nlSingleton<GameSceneManager>::Instance()->Push(mNextScene, SCREEN_NOTHING, true);
         }
         gSaveLoadFinished = false;
         break;

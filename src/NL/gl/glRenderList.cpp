@@ -242,6 +242,9 @@ GLRenderList::~GLRenderList()
  */
 typedef DLListContainerBase<const glModelPacket*, BasicSlotPool<DLListEntry<const glModelPacket*> > > GLPacketListBase;
 
+/**
+ * Offset/Address/Size: 0xB68 | 0x801D9E28 | size: 0xA0
+ */
 void GLRenderList::Clear()
 {
     GLPacketListBase* pList;

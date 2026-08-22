@@ -10,7 +10,7 @@ class PhysicsPlane : public PhysicsObject
 {
 public:
     virtual int GetObjectType() const { return 0x6; }
-    PhysicsPlane(CollisionSpace*, float, float, float, float);
+    PhysicsPlane(CollisionSpace* collision_space, float a, float b, float c, float d);
 };
 
 #endif // _PHYSICSPLANE_H_

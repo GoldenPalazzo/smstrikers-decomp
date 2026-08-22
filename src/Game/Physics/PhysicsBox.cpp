@@ -2,6 +2,16 @@
 #include "NL/nlMath.h"
 #include "Game/Physics/PhysicsObject.h"
 
+void PhysicsBox::GetSides(float* sides)
+{
+    dVector3 dimensions;
+
+    dGeomBoxGetLengths(m_geomID, dimensions);
+    sides[0] = dimensions[0];
+    sides[1] = dimensions[1];
+    sides[2] = dimensions[2];
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x801FE628 | size: 0x74
  */

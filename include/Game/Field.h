@@ -22,19 +22,19 @@ struct sSideLinePlane
 class cField
 {
 public:
-    static void Init(cNet*, cNet*);
-    static float GetGoalLineX(float);
-    static float GetGoalLineX(unsigned int);
-    static float GetSidelineY(unsigned int);
+    static void Init(cNet* net0, cNet* net1);
+    static float GetGoalLineX(float side);
+    static float GetGoalLineX(unsigned int side);
+    static float GetSidelineY(unsigned int side);
     static float GetCornerRadius();
-    static float GetPenaltyBoxX(unsigned int);
+    static float GetPenaltyBoxX(unsigned int side);
     static float GetPenaltyBoxY();
-    static cNet* GetNet(unsigned int);
-    static cNet* GetNet(float);
+    static cNet* GetNet(unsigned int index);
+    static cNet* GetNet(float side);
     static float GetGroundZ();
-    static bool IsOnField(const nlVector3&);
-    static void FixOutOfBoundsPosition(nlVector3&, float);
-    static void SetFieldDimensions(float, float, float);
+    static bool IsOnField(const nlVector3& location);
+    static void FixOutOfBoundsPosition(nlVector3& v, float fMinDistanceFromWall);
+    static void SetFieldDimensions(float fX, float fY, float fZ);
 
     static inline const nlVector3& GetFieldPosition()
     {

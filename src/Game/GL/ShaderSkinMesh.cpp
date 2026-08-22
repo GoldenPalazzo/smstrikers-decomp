@@ -120,6 +120,9 @@ struct TreeStack
     unsigned int m_Count;
 };
 
+/**
+ * Offset/Address/Size: 0x8E8 | 0x801E0F2C | size: 0x1AC
+ */
 void ShaderSkinMesh::GetPoseMatrices(GLSkinMeshMatrix* pMatrices)
 {
     TreeStack* stack = (TreeStack*)nlMalloc(sizeof(TreeStack), 8, false);

@@ -1,5 +1,8 @@
 #include "wchar_io.h"
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80236EEC | size: 0x88
+ */
 int fwide(FILE* file, int mode)
 {
     if (file == NULL || file->file_mode.file_kind == __closed_file)

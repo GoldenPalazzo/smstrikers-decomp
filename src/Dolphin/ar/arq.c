@@ -40,6 +40,9 @@ void __ARQPopTaskQueueHi(void)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8023D3EC | size: 0x100
+ */
 void __ARQServiceQueueLo(void)
 {
     if (__ARQRequestPendingLo == 0 && __ARQRequestQueueLo)
@@ -77,10 +80,16 @@ void __ARQServiceQueueLo(void)
     }
 }
 
-void __ARQCallbackHack(u32 unused)
+/**
+ * Offset/Address/Size: 0x100 | 0x8023D4EC | size: 0x4
+ */
+void __ARQCallbackHack(u32 pointerToARQRequest)
 {
 }
 
+/**
+ * Offset/Address/Size: 0x104 | 0x8023D4F0 | size: 0xCC
+ */
 void __ARQInterruptServiceRoutine()
 {
     if (__ARQCallbackHi)
@@ -124,6 +133,9 @@ void __ARQPushTempQueue(ARQRequest* task)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x1D0 | 0x8023D5BC | size: 0x70
+ */
 void ARQInit(void)
 {
     if (__ARQ_init_flag != TRUE)
@@ -141,11 +153,17 @@ void ARQInit(void)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x240 | 0x8023D62C | size: 0xC
+ */
 void ARQReset(void)
 {
     __ARQ_init_flag = FALSE;
 }
 
+/**
+ * Offset/Address/Size: 0x24C | 0x8023D638 | size: 0x15C
+ */
 void ARQPostRequest(ARQRequest* request, u32 owner, u32 type, u32 priority, u32 source, u32 dest, u32 length, ARQCallback callback)
 {
     BOOL level;
@@ -288,6 +306,9 @@ void ARQFlushQueue(void)
     OSRestoreInterrupts(level);
 }
 
+/**
+ * Offset/Address/Size: 0x3A8 | 0x8023D794 | size: 0x20
+ */
 void ARQSetChunkSize(u32 size)
 {
     u32 i;
@@ -301,6 +322,9 @@ void ARQSetChunkSize(u32 size)
     __ARQChunkSize = size;
 }
 
+/**
+ * Offset/Address/Size: 0x3C8 | 0x8023D7B4 | size: 0x8
+ */
 u32 ARQGetChunkSize(void)
 {
     return __ARQChunkSize;

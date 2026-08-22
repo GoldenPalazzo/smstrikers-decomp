@@ -12,7 +12,13 @@
 static CircleBuffer gRecvCB;
 static u8 gRecvBuf[DDH_BUF_SIZE];
 
+static int gLastError;
 static BOOL gIsInitialized = FALSE;
+
+static BOOL IsInitialized(void)
+{
+    return gIsInitialized;
+}
 
 /**
  * Offset/Address/Size: 0x2BC | 0x8022A880 | size: 0x88

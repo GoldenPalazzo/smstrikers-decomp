@@ -17,7 +17,7 @@ public:
     void SwapHomeAway(bool);
     void SetTeam(eTeamSide, const char*);
     void SetSidekick(eTeamSide, const char*);
-    void SetTestName(const char*);
+    void SetTestName(const char* name);
     void SetGameLength(float);
     void ResetClock();
     void ResetStats();

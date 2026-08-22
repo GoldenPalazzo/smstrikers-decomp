@@ -7,6 +7,6 @@
 bool IsMoviePlayingInStrikers101();
 bool MoviePlay();
 bool MovieStop();
-bool MovieStart(const char*, bool, bool);
+bool MovieStart(const char* szFilename, bool bSound, bool bLoopMovie);
 
 #endif // _MOVIE_H_

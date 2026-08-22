@@ -23,6 +23,9 @@ inline void TRKIdle()
     }
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802248C0 | size: 0xF8
+ */
 void TRKNubMainLoop(void)
 {
     void* msg;

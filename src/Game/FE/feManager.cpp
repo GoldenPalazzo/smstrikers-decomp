@@ -94,7 +94,7 @@ void FrontEnd::UpdateForGame(float fDeltaT)
     if (nlTaskManager::m_pInstance->m_CurrState == 1)
         return;
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode && !AlreadyStartedStrikers101Menu)
+    if (nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode && !AlreadyStartedStrikers101Menu)
         return;
 
     for (int i = 0; i < 4; i++)
@@ -102,7 +102,7 @@ void FrontEnd::UpdateForGame(float fDeltaT)
         bool curConnected = g_pFEInput->IsConnected((eFEINPUT_PAD)i);
         if (m_ctrlConnectedState[i] == 1 && !curConnected)
         {
-            if (nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((unsigned short)i) != -1)
+            if (nlSingleton<GameInfoManager>::Instance()->GetPlayingSide((unsigned short)i) != -1)
             {
                 EnterMenuState(MET_CHOOSESIDES);
             }
@@ -124,7 +124,7 @@ void FrontEnd::Update(float fTimeDelta)
         m_pauseDelay = 0.0f;
     }
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->IsInDemoMode())
+    if (nlSingleton<GameInfoManager>::Instance()->IsInDemoMode())
     {
         m_fDemoTimeElapsed += fTimeDelta;
         if (m_fDemoTimeElapsed < 3.0f)
@@ -132,7 +132,7 @@ void FrontEnd::Update(float fTimeDelta)
         }
         else
         {
-            nlSingleton<OverlayManager>::s_pInstance->ShowDemoSlide();
+            nlSingleton<OverlayManager>::Instance()->ShowDemoSlide();
             if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x1F00, false, NULL))
             {
                 glxSwapSetBlack(true);
@@ -172,7 +172,7 @@ void FrontEnd::Update(float fTimeDelta)
         UpdateForGame(fTimeDelta);
     }
 
-    nlSingleton<OverlayManager>::s_pInstance->Update(fTimeDelta);
+    nlSingleton<OverlayManager>::Instance()->Update(fTimeDelta);
     m_feStateCurrent = m_feStatePending;
 
     switch (m_feStateCurrent)
@@ -186,12 +186,12 @@ void FrontEnd::Update(float fTimeDelta)
         BaseSceneHandler* scene;
 
         g_pBall->SetVisible(true);
-        if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode && !AlreadyStartedStrikers101Menu)
+        if (nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode && !AlreadyStartedStrikers101Menu)
         {
             if (m_pauseDelay <= 0.0f)
             {
                 EnterMenuState(MET_PAUSE);
-                scene = nlSingleton<OverlayManager>::s_pInstance->GetScene(OVERLAY_LESSON_TICKER);
+                scene = nlSingleton<OverlayManager>::Instance()->GetScene(OVERLAY_LESSON_TICKER);
                 if (scene != NULL)
                 {
                     scene = (BaseSceneHandler*)((char*)scene - 4);
@@ -239,7 +239,7 @@ void FrontEnd::Update(float fTimeDelta)
  */
 void FrontEnd::ExitMenuState()
 {
-    if (!FESceneManager::s_pInstance->AreAllScenesValid())
+    if (!FESceneManager::Instance()->AreAllScenesValid())
         return;
 
     m_bInPauseMenuState = false;
@@ -247,7 +247,7 @@ void FrontEnd::ExitMenuState()
     m_feStatePending = m_feStatePrevious;
     nlTaskManager::m_pInstance->m_Locked = false;
     nlTaskManager::SetNextState(m_lastTaskState);
-    OverlayManager::s_pInstance->Pop();
+    OverlayManager::Instance()->Pop();
     g_pEventManager->CreateValidEvent(1, 0x14);
     g_pFEInput->EnableAnalogToDPadMapping(FE_ALL_PADS, false);
     m_pauseDelay = 0.25f;
@@ -283,26 +283,26 @@ void FrontEnd::EnterMenuState(FrontEnd::MenuEnterType menuType)
         }
     }
     nlTaskManager::SetNextState(1);
-    if (nlSingleton<OverlayManager>::s_pInstance->IsOnStack(SCENE_SUPER_LOADING))
+    if (nlSingleton<OverlayManager>::Instance()->IsOnStack(SCENE_SUPER_LOADING))
     {
-        nlSingleton<OverlayManager>::s_pInstance->Pop();
-        nlSingleton<FESceneManager>::s_pInstance->ForceImmediateStackProcessing();
+        nlSingleton<OverlayManager>::Instance()->Pop();
+        nlSingleton<FESceneManager>::Instance()->ForceImmediateStackProcessing();
     }
     switch (m_menuType)
     {
     case MET_PAUSE:
-        if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+        if (nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode)
         {
-            nlSingleton<OverlayManager>::s_pInstance->Push(IGSCENE_STRIKERS_101_PAUSE, SCREEN_NOTHING, false);
+            nlSingleton<OverlayManager>::Instance()->Push(IGSCENE_STRIKERS_101_PAUSE, SCREEN_NOTHING, false);
         }
         else
         {
-            nlSingleton<OverlayManager>::s_pInstance->Push(IGSCENE_PAUSE, SCREEN_NOTHING, false);
+            nlSingleton<OverlayManager>::Instance()->Push(IGSCENE_PAUSE, SCREEN_NOTHING, false);
         }
         PauseMenuScene::mControllingInput = FE_ALL_PADS;
         break;
     case MET_CHOOSESIDES:
-        nlSingleton<OverlayManager>::s_pInstance->Push(IGSCENE_CHOOSE_SIDES, SCREEN_NOTHING, false);
+        nlSingleton<OverlayManager>::Instance()->Push(IGSCENE_CHOOSE_SIDES, SCREEN_NOTHING, false);
         PauseMenuScene::mControllingInput = FE_ALL_PADS;
         break;
     case MET_END:
@@ -346,7 +346,7 @@ void FrontEnd::ExitWinnerScreen()
 void FrontEnd::EnterStartScreen(bool bStraightToKickoff)
 {
     bool isInStrikers101 = false;
-    if (GameInfoManager::s_pInstance->mIsInStrikers101Mode)
+    if (GameInfoManager::Instance()->mIsInStrikers101Mode)
     {
         isInStrikers101 = true;
     }
@@ -410,10 +410,10 @@ void FrontEnd::FEEventHandler(Event* pEvent, void* pParam)
     case 0x1C:
         if (nlSingleton<OverlayManager>::s_pInstance != NULL)
         {
-            if (nlSingleton<OverlayManager>::s_pInstance->IsOnStack(SCENE_SUPER_LOADING))
+            if (nlSingleton<OverlayManager>::Instance()->IsOnStack(SCENE_SUPER_LOADING))
             {
-                nlSingleton<OverlayManager>::s_pInstance->Pop();
-                nlSingleton<FESceneManager>::s_pInstance->ForceImmediateStackProcessing();
+                nlSingleton<OverlayManager>::Instance()->Pop();
+                nlSingleton<FESceneManager>::Instance()->ForceImmediateStackProcessing();
             }
         }
         break;

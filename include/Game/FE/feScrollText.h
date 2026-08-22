@@ -11,15 +11,15 @@
 class FEScrollText
 {
 public:
-    FEScrollText(TLTextInstance*, int, int);
+    FEScrollText(TLTextInstance* controlText, int pos, int width);
     ~FEScrollText() { }
 
-    void ApplyNewTextInstancePointer(TLTextInstance*, float, float);
-    void Update(float);
-    void SetDisplayMessage(const char*);
-    void SetDisplayMessage(unsigned long);
-    void SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>&);
-    void SetMetrics(int, int);
+    void ApplyNewTextInstancePointer(TLTextInstance* controltext, float boxwidth, float boxheight);
+    void Update(float fDeltaT);
+    void SetDisplayMessage(const char* locMessage);
+    void SetDisplayMessage(unsigned long hash);
+    void SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>& theMessage);
+    void SetMetrics(int pos, int width);
 
     /* 0x0,  */ TLTextInstance* m_controlText;
     /* 0x4,  */ BasicString<unsigned short, Detail::TempStringAllocator> m_message;

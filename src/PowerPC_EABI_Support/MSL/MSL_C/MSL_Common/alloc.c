@@ -163,6 +163,9 @@ static inline void FixBlock_fill_subblocks(FixBlock* b, FixBlock* tail, FixBlock
     ((FixSubBlock*)p)->next_ = NULL;
 }
 
+/**
+ * Offset/Address/Size: 0xCA0 | 0x8022BD90 | size: 0x238
+ */
 static void Block_construct(Block* ths, u32 size)
 {
     SubBlock* sb = (SubBlock*)((char*)ths + sizeof(Block));
@@ -248,7 +251,7 @@ static inline void Block_unlink(Block* ths, SubBlock* sb)
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x8022BBAC | size: 0x1E4
+ * Offset/Address/Size: 0xABC | 0x8022BBAC | size: 0x1E4
  */
 static SubBlock* Block_subBlock(Block* ths, u32 size)
 {
@@ -449,6 +452,9 @@ static Block* __unlink(__mem_pool_obj* pool_obj, Block* bp)
  * @note Address: 0x8022BAF8
  * @note Size: 0xB4
  */
+/**
+ * Offset/Address/Size: 0xA08 | 0x8022BAF8 | size: 0xB4
+ */
 static Block* link_new_block(__mem_pool_obj* pool_obj, u32 size)
 {
     Block* block;
@@ -488,6 +494,9 @@ static Block* link_new_block(__mem_pool_obj* pool_obj, u32 size)
 /**
  * @note Address: 0x8022BA1C
  * @note Size: 0xDC
+ */
+/**
+ * Offset/Address/Size: 0x92C | 0x8022BA1C | size: 0xDC
  */
 static void* allocate_from_var_pools(__mem_pool_obj* pool_obj, u32 size)
 {
@@ -537,7 +546,9 @@ done:
  * @note Address: 0x8022B944
  * @note Size: 0xD8
  */
-#pragma dont_inline on
+/**
+ * Offset/Address/Size: 0x854 | 0x8022B944 | size: 0xD8
+ */
 static void* soft_allocate_from_var_pools(Block** start_ptr, u32 size, u32* max_free_size)
 {
     Block* bp;
@@ -586,11 +597,13 @@ static void* soft_allocate_from_var_pools(Block** start_ptr, u32 size, u32* max_
 found:
     return (char*)sb + 8;
 }
-#pragma dont_inline reset
 
 /**
  * @note Address: 0x800C2770
  * @note Size: 0x294
+ */
+/**
+ * Offset/Address/Size: 0x5C0 | 0x8022B6B0 | size: 0x294
  */
 static void deallocate_from_var_pools(__mem_pool_obj* pool_obj, void* ptr)
 {
@@ -648,6 +661,9 @@ static __mem_pool* get_malloc_pool(void)
  * 100% match. The list wiring (prev_/next_/client_size_) must live INSIDE
  * FixBlock_fill_subblocks (params ordered b, tail, head, p, msize, index) so the
  * loop-carried subblock cursor 'p' colors to r10 and 'tail' to r8 as in target.
+ */
+/**
+ * Offset/Address/Size: 0x2F0 | 0x8022B3E0 | size: 0x2D0
  */
 void* allocate_from_fixed_pools(__mem_pool_obj* pool_obj, u32 size)
 {
@@ -743,6 +759,9 @@ void* allocate_from_fixed_pools(__mem_pool_obj* pool_obj, u32 size)
 /**
  * @note Address: 0x800C2618
  * @note Size: 0x158
+ */
+/**
+ * Offset/Address/Size: 0x198 | 0x8022B288 | size: 0x158
  */
 void deallocate_from_fixed_pools(__mem_pool_obj* pool_obj, void* ptr, u32 size)
 {
@@ -842,6 +861,9 @@ void __msize(void)
  * @note Address: 0x8022B234
  * @note Size: 0x54
  */
+/**
+ * Offset/Address/Size: 0x144 | 0x8022B234 | size: 0x54
+ */
 extern void* __pool_alloc(__mem_pool* pool, u32 size)
 {
     if (size == 0)
@@ -865,6 +887,9 @@ extern void* __pool_alloc(__mem_pool* pool, u32 size)
 /**
  * @note Address: 0x800C25C0
  * @note Size: 0x58
+ */
+/**
+ * Offset/Address/Size: 0xEC | 0x8022B1DC | size: 0x58
  */
 void __pool_free(__mem_pool* pool, void* ptr)
 {
@@ -911,6 +936,9 @@ void __pool_alloc_clear(void)
  * @note Address: N/A
  * @note Size: 0x7C
  */
+/**
+ * Offset/Address/Size: 0x70 | 0x8022B160 | size: 0x7C
+ */
 void* malloc(u32 size)
 {
     void* ptr;
@@ -923,6 +951,9 @@ void* malloc(u32 size)
 /**
  * @note Address: 0x800C2550
  * @note Size: 0x70
+ */
+/**
+ * Offset/Address/Size: 0x0 | 0x8022B0F0 | size: 0x70
  */
 void free(void* ptr)
 {

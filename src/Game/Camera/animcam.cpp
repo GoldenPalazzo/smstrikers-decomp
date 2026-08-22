@@ -258,7 +258,7 @@ static bool LoadAnimCameraData(nlChunk* outerChunk, nlChunk* outerEnd, cCameraDa
 bool cAnimCamera::LoadCameraAnimation(nlChunk* begin, nlChunk* end, const char* cameraName, bool ownsKeyData)
 {
     cCameraData* pData;
-    void* mem = nlMalloc(0x24, 8, false);
+    void* mem = nlMalloc(sizeof(cCameraData), 8, false);
     pData = (cCameraData*)mem;
     if (mem != NULL)
     {
@@ -295,7 +295,7 @@ bool cAnimCamera::LoadCameraAnimation(const char* szFilename, const char* szCame
     begin = (nlChunk*)((u8*)pData + 8);
     end = (nlChunk*)((u8*)pData + ((nlChunk*)pData)->m_Size + 8);
 
-    void* mem = nlMalloc(0x24, 8, false);
+    void* mem = nlMalloc(sizeof(cCameraData), 8, false);
     pCamData = (cCameraData*)mem;
     if (mem != NULL)
     {

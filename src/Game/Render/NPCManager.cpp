@@ -155,12 +155,12 @@ NPCManager::NPCManager()
     mpChainChomp = chainChomp;
     chainPhysics->SetCallbackFunction(&ChainChomp::CollisionCallback);
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+    if (nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode)
         CreateNPCTemplate(6, false);
     else
         CreateNPCTemplate(6, true);
 
-    PhysicsNPC* bowserPhysics = new (nlMalloc(sizeof(PhysicsNPC), 8, false)) PhysicsNPC(g_pGame->m_pGameTweaks->unk304);
+    PhysicsNPC* bowserPhysics = new (nlMalloc(sizeof(PhysicsNPC), 8, false)) PhysicsNPC(g_pGame->m_pGameTweaks->fBowserRadius);
     Bowser* bowser = new (nlMalloc(sizeof(Bowser), 8, false)) Bowser(*mNPCTemplate[6].hierarchy, mNPCTemplate[6].modelID, *bowserPhysics, mpInventorySAnim);
     mpBowser = bowser;
     bowserPhysics->SetCallbackFunction(&Bowser::CollisionCallback);

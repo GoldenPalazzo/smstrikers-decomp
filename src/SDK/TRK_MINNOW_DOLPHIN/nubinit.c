@@ -13,6 +13,9 @@ BOOL gTRKBigEndian;
 
 inline BOOL TRKInitializeEndian(void);
 
+/**
+ * Offset/Address/Size: 0x4C | 0x80224C2C | size: 0x14C
+ */
 DSError TRKInitializeNub(void)
 {
     DSError ret;
@@ -59,12 +62,18 @@ DSError TRKInitializeNub(void)
     return ret;
 }
 
+/**
+ * Offset/Address/Size: 0x28 | 0x80224C08 | size: 0x24
+ */
 DSError TRKTerminateNub(void)
 {
     TRKTerminateSerialHandler();
     return DS_NoError;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80224BE0 | size: 0x28
+ */
 void TRKNubWelcome(void)
 {
     TRK_board_display("MetroTRK for GAMECUBE v2.6");

@@ -16,8 +16,8 @@ public:
         {
         }
 
-        void Play(bool, bool);
-        void Set(unsigned long, float, bool, unsigned long, unsigned long, const char*, Audio::MasterVolume::VOLUME_GROUP, bool, bool);
+        void Play(bool CheckActive, bool GetNextId);
+        void Set(unsigned long StreamId, float Volume, bool Looping, unsigned long FadeIn, unsigned long ExistingFadeOut, const char* StreamParam, Audio::MasterVolume::VOLUME_GROUP VolGroup, bool Queue, bool Active);
 
         /* 0x00 */ unsigned long m_StreamId;
         /* 0x04 */ unsigned long m_OrigStreamId;
@@ -34,17 +34,17 @@ public:
         static unsigned char s_BowserAttackNext;
         static unsigned char s_SuddenDeathNext;
 
-        unsigned long GetNextStreamId(unsigned long);
+        unsigned long GetNextStreamId(unsigned long SimpleStreamId);
     }; // total size: 0x38
 
     PriorityStream(AudioStreamTrack::StreamTrack&);
     void Reset();
-    void PlayStream(unsigned long, float, bool, unsigned long, unsigned long, const char*);
-    void Stop(unsigned long, unsigned long);
-    void FakePause(unsigned long);
-    void FakeResume(bool);
+    void PlayStream(unsigned long StreamId, float Volume, bool Looping, unsigned long FadeIn, unsigned long ExistingFadeOut, const char* StreamParam);
+    void Stop(unsigned long StreamId, unsigned long FadeOut);
+    void FakePause(unsigned long Fadeout);
+    void FakeResume(bool CheckActive);
     void TrackIdleCB();
-    bool GrabCrowdStream(unsigned long);
+    bool GrabCrowdStream(unsigned long Fadeout);
 
     /* 0x00 */ unsigned char m_InPause : 8;
     /* 0x04 */ AudioStreamTrack::StreamTrack& m_Track;

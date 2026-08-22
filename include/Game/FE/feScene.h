@@ -15,9 +15,9 @@ public:
     ~FEScene();
 
     void AllResourcesLoadedCallback();
-    bool LoadPackage(const char*);
+    bool LoadPackage(const char* szPackageFileName);
     void UnloadPackage();
-    void Update(float);
+    void Update(float dt);
     eGLView GetRenderView() const
     {
         return (eGLView)m_uRenderView;

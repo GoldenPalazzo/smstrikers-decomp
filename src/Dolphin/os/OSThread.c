@@ -273,6 +273,7 @@ static void SetRun(OSThread* thread)
     ASSERTLINE(LINE(537, 555, 555), thread->state == OS_THREAD_STATE_READY);
 
     ASSERTLINE(LINE(539, 557, 557), OS_PRIORITY_MIN <= thread->priority && thread->priority <= OS_PRIORITY_MAX);
+    // clang-format on
 
     thread->queue = &RunQueue[thread->priority];
 
@@ -292,6 +293,7 @@ static void UnsetRun(OSThread* thread)
     ASSERTLINE(LINE(560, 578, 578), thread->state == OS_THREAD_STATE_READY);
 
     ASSERTLINE(LINE(562, 580, 580), OS_PRIORITY_MIN <= thread->priority && thread->priority <= OS_PRIORITY_MAX);
+    // clang-format on
     ASSERTLINE(LINE(563, 581, 581), thread->queue == &RunQueue[thread->priority]);
 
     queue = thread->queue;
@@ -921,7 +923,7 @@ static BOOL IsMember(OSThreadQueue* queue, OSThread* thread)
 #define ASSERTREPORT(line, cond) \
     if (!(cond)) { \
         OSReport("OSCheckActiveThreads: Failed " #cond " in %d\n", line); \
-        OSPanic(__FILE__, line, ""); \
+        OSPanic(__FILE__, line, "");                                      \
     }
 
 s32 OSCheckActiveThreads(void)
@@ -957,7 +959,9 @@ s32 OSCheckActiveThreads(void)
         ASSERTREPORT(LINE(1495, 1526, 1526), thread->linkActive.next == NULL || thread == thread->linkActive.next->linkActive.prev);
         ASSERTREPORT(LINE(1497, 1528, 1528), thread->linkActive.prev == NULL || thread == thread->linkActive.prev->linkActive.next);
         ASSERTREPORT(LINE(1500, 1531, 1531), *(thread->stackEnd) == OS_THREAD_STACK_MAGIC);
+        // clang-format off
         ASSERTREPORT(LINE(1503, 1534, 1534), OS_PRIORITY_MIN <= thread->priority && thread->priority <= OS_PRIORITY_MAX+1);
+        // clang-format on
         ASSERTREPORT(LINE(1504, 1535, 1535), 0 <= thread->suspend);
         ASSERTREPORT(LINE(1505, 1536, 1536), CheckThreadQueue(&thread->queueJoin));
 

@@ -574,7 +574,7 @@ static inline const char* GetStadiumFilterName(eStadiumID stadium)
 
 static inline char* GetNisStadiumName()
 {
-    eStadiumID id = GameInfoManager::s_pInstance->GetStadium();
+    eStadiumID id = GameInfoManager::Instance()->GetStadium();
     if (id == STAD_PEACH_TOAD_STADIUM)
     {
         return "the_palace";
@@ -613,52 +613,52 @@ BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTar
 {
     if (target == NIS_TARGET_STADIUM)
     {
-        eStadiumID stadium = nlSingleton<GameInfoManager>::s_pInstance->GetStadium();
+        eStadiumID stadium = nlSingleton<GameInfoManager>::Instance()->GetStadium();
         const char* stadiumName = GetStadiumFilterName(stadium);
         return BasicString<char, Detail::TempStringAllocator>(stadiumName);
     }
 
     if (target == NIS_TARGET_HOME_CAPTAIN)
     {
-        return BasicString<char, Detail::TempStringAllocator>(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)));
+        return BasicString<char, Detail::TempStringAllocator>(GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam(0)));
     }
 
     if (target == NIS_TARGET_AWAY_CAPTAIN)
     {
-        return BasicString<char, Detail::TempStringAllocator>(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1)));
+        return BasicString<char, Detail::TempStringAllocator>(GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam(1)));
     }
 
     if (target == NIS_TARGET_HOME_SIDEKICK)
     {
-        return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0)));
+        return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::Instance()->GetSidekick(0)));
     }
 
     if (target == NIS_TARGET_AWAY_SIDEKICK)
     {
-        return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1)));
+        return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::Instance()->GetSidekick(1)));
     }
 
     if (target == NIS_TARGET_WINNER_SIDEKICK)
     {
-        return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick((short)mWinnerSide[winnerType])));
+        return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::Instance()->GetSidekick((short)mWinnerSide[winnerType])));
     }
 
     if (target == NIS_TARGET_LOSER_SIDEKICK)
     {
         int side = (mWinnerSide[winnerType] + 1) % 2;
-        return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick((short)side)));
+        return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::Instance()->GetSidekick((short)side)));
     }
 
     if (target == NIS_TARGET_WINNER_CAPTAIN)
     {
-        return BasicString<char, Detail::TempStringAllocator>(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)mWinnerSide[winnerType])));
+        return BasicString<char, Detail::TempStringAllocator>(GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam((short)mWinnerSide[winnerType])));
     }
 
     if (target == NIS_TARGET_LOSER_CAPTAIN)
     {
         int side = (mWinnerSide[winnerType] + 1) % 2;
 
-        return BasicString<char, Detail::TempStringAllocator>(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)side)));
+        return BasicString<char, Detail::TempStringAllocator>(GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam((short)side)));
     }
 
     if (target == NIS_TARGET_HOME_GOALIE || target == NIS_TARGET_AWAY_GOALIE || target == NIS_TARGET_WINNER_GOALIE || target == NIS_TARGET_LOSER_GOALIE)
@@ -668,7 +668,7 @@ BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTar
 
     if (target == NIS_TARGET_AWAY_SIDEKICK)
     {
-        return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1)));
+        return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::Instance()->GetSidekick(1)));
     }
 
     return BasicString<char, Detail::TempStringAllocator>(kNisEmpty);

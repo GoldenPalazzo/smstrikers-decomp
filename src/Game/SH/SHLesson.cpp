@@ -111,9 +111,9 @@ void LessonScene::Update(float fDeltaT)
 
     BaseSceneHandler::Update(fDeltaT);
     this->mButtons.CentreButtons();
-    if (nlSingleton<OverlayManager>::s_pInstance->mCurrentStackDepth != 0)
+    if (nlSingleton<OverlayManager>::Instance()->mCurrentStackDepth != 0)
     {
-        scene = (MoviePlayerScene*)nlSingleton<OverlayManager>::s_pInstance->mBaseSceneHandlerStack[nlSingleton<OverlayManager>::s_pInstance->mCurrentStackDepth - 1];
+        scene = (MoviePlayerScene*)nlSingleton<OverlayManager>::Instance()->mBaseSceneHandlerStack[nlSingleton<OverlayManager>::Instance()->mCurrentStackDepth - 1];
     }
     else
     {
@@ -137,7 +137,7 @@ void LessonScene::Update(float fDeltaT)
 
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, nullptr))
     {
-        MoviePlayerScene* movieScene = (MoviePlayerScene*)nlSingleton<OverlayManager>::s_pInstance->Push(IGSCENE_LESSON_MOVIE_PLAYER, SCREEN_FORWARD, false);
+        MoviePlayerScene* movieScene = (MoviePlayerScene*)nlSingleton<OverlayManager>::Instance()->Push(IGSCENE_LESSON_MOVIE_PLAYER, SCREEN_FORWARD, false);
         nlSNPrintf(filename, 0x80, "movies/lesson%d.thp", mLessonIndex);
         movieScene->SetMovieDetails(filename, true, false);
         movieScene->mNextScene = IGSCENE_LESSON;
@@ -149,7 +149,7 @@ void LessonScene::Update(float fDeltaT)
 
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, nullptr))
     {
-        LessonSelectScene* lessonScene = (LessonSelectScene*)nlSingleton<OverlayManager>::s_pInstance->Push(IGSCENE_LESSON_SELECT, SCREEN_BACK, true);
+        LessonSelectScene* lessonScene = (LessonSelectScene*)nlSingleton<OverlayManager>::Instance()->Push(IGSCENE_LESSON_SELECT, SCREEN_BACK, true);
         lessonScene->mStartAnimAtEnd = true;
         FEAudio::PlayAnimAudioEvent("sfx_back", NULL);
         return;

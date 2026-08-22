@@ -143,119 +143,6 @@ typedef Detail::MemFunImpl<void, void (CupHubScene::*)()> MemFunImpl_CupHubScene
 typedef BindExp1<void, MemFunImpl_CupHubScene_v, CupHubScene*> BindExp1_vfmfcp;
 typedef Function0<void>::FunctorImpl<BindExp1_vfmfcp> FunctorImpl_vfmfcp;
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800F1F90 | size: 0x38
-//  */
-// void Bind<void, Detail::MemFunImpl<void, void (CupHubScene::*)()>, CupHubScene*>(Detail::MemFunImpl<void, void (CupHubScene::*)()>,
-// CupHubScene* const&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800F1F74 | size: 0x1C
-//  */
-// void MemFun<CupHubScene, void>(void (CupHubScene::*)())
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800F1F18 | size: 0x5C
-//  */
-// void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (CupHubScene::*)()>, CupHubScene*>>::~FunctorImpl()
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x0 | 0x800F1EB4 | size: 0x64
- */
-// /**
-//  * Offset/Address/Size: 0x680 | 0x800F1D88 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x648 | 0x800F1D50 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher, InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x4EC | 0x800F1BF4 | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x468 | 0x800F1B70 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x430 | 0x800F1B38 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800F19DC | size: 0x15C
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800F1958 | size: 0x84
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800F1920 | size: 0x38
-//  */
-// void FEFinder<TLTextInstance, 3>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800F17C4 | size: 0x15C
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800F1740 | size: 0x84
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800F1708 | size: 0x38
-//  */
-// void FEFinder<TLImageInstance, 2>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x72C8 | 0x800F1024 | size: 0x6E4
  */
@@ -499,7 +386,7 @@ void CupHubScene::Update(float fDeltaT)
 
     if (mCaptainImage->Update(true) && mDoAutoSave && SaveLoadScene::IsIOEnabled())
     {
-        scene = (SaveLoadScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SAVE, SCREEN_NOTHING, false);
+        scene = (SaveLoadScene*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_SAVE, SCREEN_NOTHING, false);
         scene->mIsAutoSaving = true;
         mDoAutoSave = false;
         return;
@@ -655,9 +542,9 @@ void CupHubScene::Update(float fDeltaT)
     mTickerManager.Update(fDeltaT);
 
     BaseSceneHandler* handler;
-    if (nlSingleton<GameSceneManager>::s_pInstance->mCurrentStackDepth != 0)
+    if (nlSingleton<GameSceneManager>::Instance()->mCurrentStackDepth != 0)
     {
-        handler = nlSingleton<GameSceneManager>::s_pInstance->mBaseSceneHandlerStack[nlSingleton<GameSceneManager>::s_pInstance->mCurrentStackDepth - 1];
+        handler = nlSingleton<GameSceneManager>::Instance()->mBaseSceneHandlerStack[nlSingleton<GameSceneManager>::Instance()->mCurrentStackDepth - 1];
     }
     else
     {
@@ -691,7 +578,7 @@ void CupHubScene::Update(float fDeltaT)
             gameInfo->SetPlayingSide((u16)i, -1);
         }
 
-        curSceneType = (SceneList)nlSingleton<GameSceneManager>::s_pInstance->GetSceneType(this);
+        curSceneType = (SceneList)nlSingleton<GameSceneManager>::Instance()->GetSceneType(this);
 
         switch (curSceneType)
         {
@@ -709,7 +596,7 @@ void CupHubScene::Update(float fDeltaT)
             break;
         }
 
-        nlSingleton<GameSceneManager>::s_pInstance->Push(sideScene, SCREEN_FORWARD, true);
+        nlSingleton<GameSceneManager>::Instance()->Push(sideScene, SCREEN_FORWARD, true);
         return;
     }
 
@@ -729,7 +616,7 @@ void CupHubScene::Update(float fDeltaT)
     {
         FEAudio::PlayAnimAudioEvent("sfx_back", false);
 
-        pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+        pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
         pPopup->Create(
             (ePopupMenu)0,
@@ -744,25 +631,25 @@ void CupHubScene::Update(float fDeltaT)
  */
 void CupHubScene::EndCup()
 {
-    if (nlSingleton<GameInfoManager>::s_pInstance->mDisplayTrophy[0] && nlSingleton<GameInfoManager>::s_pInstance->IsInCupMode())
+    if (nlSingleton<GameInfoManager>::Instance()->mDisplayTrophy[0] && nlSingleton<GameInfoManager>::Instance()->IsInCupMode())
     {
-        nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
+        nlSingleton<GameSceneManager>::Instance()->PopEntireStack();
 
-        CupTrophyScene* trophyScene = (CupTrophyScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_TROPHY, SCREEN_FORWARD, false);
+        CupTrophyScene* trophyScene = (CupTrophyScene*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CUP_TROPHY, SCREEN_FORWARD, false);
 
-        eTrophyType trophyType = nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode();
+        eTrophyType trophyType = nlSingleton<GameInfoManager>::Instance()->GetTrophyTypeByCurrentMode();
         trophyScene->CreateTrophyScene(trophyType, ButtonComponent::BS_A_ONLY, true);
     }
-    else if (nlSingleton<GameInfoManager>::s_pInstance->IsInTournamentMode())
+    else if (nlSingleton<GameInfoManager>::Instance()->IsInTournamentMode())
     {
-        if (nlSingleton<GameInfoManager>::s_pInstance->GetNumHumanTeams() > 1)
+        if (nlSingleton<GameInfoManager>::Instance()->GetNumHumanTeams() > 1)
         {
-            nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_TOURNEY_BRAG, SCREEN_FORWARD, false);
+            nlSingleton<GameSceneManager>::Instance()->PopEntireStack();
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_TOURNEY_BRAG, SCREEN_FORWARD, false);
         }
         else
         {
-            FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+            FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
             popup->Create(
                 POPUP_TOURNEY_OVER,
@@ -772,8 +659,8 @@ void CupHubScene::EndCup()
     }
     else
     {
-        nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
-        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_BRAG, SCREEN_FORWARD, false);
+        nlSingleton<GameSceneManager>::Instance()->PopEntireStack();
+        nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CUP_BRAG, SCREEN_FORWARD, false);
     }
 }
 #pragma dont_inline off
@@ -783,8 +670,8 @@ void CupHubScene::EndCup()
  */
 void CupHubScene::ReturnToMainMenu()
 {
-    nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
-    nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_MAIN_MENU, SCREEN_FORWARD, false);
+    nlSingleton<GameSceneManager>::Instance()->PopEntireStack();
+    nlSingleton<GameSceneManager>::Instance()->Push(SCENE_MAIN_MENU, SCREEN_FORWARD, false);
 }
 
 /**
@@ -795,10 +682,10 @@ unsigned char CupHubScene::UpdateDisplayedStat()
     TLSlide* pSlide;
     TLTextInstance* pTextInstance;
     int standingsIndices[8];
-    int numTeams = nlSingleton<GameInfoManager>::s_pInstance->GetNumPlayingTeams();
+    int numTeams = nlSingleton<GameInfoManager>::Instance()->GetNumPlayingTeams();
     int i;
 
-    nlSingleton<StatsTracker>::s_pInstance->GetSortedTeamStats(mAllTeamStats, numTeams, standingsIndices, numTeams);
+    nlSingleton<StatsTracker>::Instance()->GetSortedTeamStats(mAllTeamStats, numTeams, standingsIndices, numTeams);
 
     for (i = 0; i < numTeams; i++)
     {
@@ -921,7 +808,7 @@ void CupHubScene::CreateLeague()
     position = pComp->GetAssetPosition();
     pComp->SetAssetPosition(position.f.x, position.f.y - (float)posOffset, position.f.z);
 
-    nlSingleton<StatsTracker>::s_pInstance->GetSortedTeamStats(mAllTeamStats, numTeams, mStandingsIndices, numTeams);
+    nlSingleton<StatsTracker>::Instance()->GetSortedTeamStats(mAllTeamStats, numTeams, mStandingsIndices, numTeams);
 
     unsigned char useHighlight;
     eTeamID currentTeam;
@@ -1076,7 +963,7 @@ void CupHubScene::CreateLeague()
             mAllTeamStats[i] = gameInfo->GetTeamStatsByIndex((u16)i);
         }
 
-        nlSingleton<StatsTracker>::s_pInstance->GetSortedTeamStats(mAllTeamStats, numTeams, standingsIndices, numTeams);
+        nlSingleton<StatsTracker>::Instance()->GetSortedTeamStats(mAllTeamStats, numTeams, standingsIndices, numTeams);
 
         for (int i = 0; i < gameInfo->GetNumPlayingTeams(); i++)
         {
@@ -1114,14 +1001,14 @@ static inline float AddLeagueY(float lhs, float rhs)
     return lhs + rhs;
 }
 
-/**
- * Offset/Address/Size: 0x4018 | 0x800EDD74 | size: 0xE1C
- */
 static inline TLTextInstance* IdentityBowserRowText(TLTextInstance* value)
 {
     return value;
 }
 
+/**
+ * Offset/Address/Size: 0x4018 | 0x800EDD74 | size: 0xE1C
+ */
 void CupHubScene::CreateBowserLeague()
 {
     extern const char* HUB_BOWSER_SLIDE_NAME;
@@ -1169,7 +1056,7 @@ void CupHubScene::CreateBowserLeague()
     title->m_LocStrId = GetLOCStandingsName(mode);
     title->m_OverloadFlags |= 8;
 
-    nlSingleton<StatsTracker>::s_pInstance->GetSortedTeamStats(mAllTeamStats, numTeams, standingsIndices, numTeams);
+    nlSingleton<StatsTracker>::Instance()->GetSortedTeamStats(mAllTeamStats, numTeams, standingsIndices, numTeams);
 
     for (row = 0; row < 8; row++)
     {
@@ -1679,7 +1566,7 @@ unsigned char CupHubScene::UpdateLeague(float fDeltaT)
 
             int i = 0;
             LeagueStatsCursor* statsCursor = (LeagueStatsCursor*)this;
-            while (i < nlSingleton<GameInfoManager>::s_pInstance->GetNumPlayingTeams())
+            while (i < nlSingleton<GameInfoManager>::Instance()->GetNumPlayingTeams())
             {
                 int oldRank = mOldRanks[statsCursor->team];
                 int newRank = mNewRanks[statsCursor->team];
@@ -1767,12 +1654,12 @@ unsigned char CupHubScene::UpdateLeague(float fDeltaT)
 
     gHubLeagueMovementSoundIsPlaying = false;
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->GetCurrentRoundNumber() != 0)
+    if (nlSingleton<GameInfoManager>::Instance()->GetCurrentRoundNumber() != 0)
     {
         int i = 0;
         LeagueStatsCursor* statsCursor = (LeagueStatsCursor*)this;
 
-        while (i < nlSingleton<GameInfoManager>::s_pInstance->GetNumPlayingTeams())
+        while (i < nlSingleton<GameInfoManager>::Instance()->GetNumPlayingTeams())
         {
             if (mNewRanks[statsCursor->team] == 0)
             {
@@ -2452,10 +2339,10 @@ void CupHubScene::ColourUserRow()
     int standingsIndices[8];
     int* pStandingsIndices;
     TLTextInstance* pTextInstance;
-    int numTeams = nlSingleton<GameInfoManager>::s_pInstance->GetNumPlayingTeams();
+    int numTeams = nlSingleton<GameInfoManager>::Instance()->GetNumPlayingTeams();
     int row;
 
-    nlSingleton<StatsTracker>::s_pInstance->GetSortedTeamStats(mAllTeamStats, numTeams, standingsIndices, numTeams);
+    nlSingleton<StatsTracker>::Instance()->GetSortedTeamStats(mAllTeamStats, numTeams, standingsIndices, numTeams);
 
     pStandingsIndices = standingsIndices;
     state.row = HUBstandingsRowNames;
@@ -2512,7 +2399,7 @@ void CupHubScene::HandleButtonComponent()
     mButtons.mButtonInstance = inst;
     inst->m_bVisible = false;
 
-    s16 roundNum = nlSingleton<GameInfoManager>::s_pInstance->GetCurrentRoundNumber();
+    s16 roundNum = nlSingleton<GameInfoManager>::Instance()->GetCurrentRoundNumber();
     if (roundNum == -5)
     {
         mButtons.SetState(ButtonComponent::BS_A_ONLY);

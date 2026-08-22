@@ -82,7 +82,6 @@ void DrawableObject::GetAABBDimensions(AABBDimensions& dim, bool param) const
     dim.mDim.z = 0.0f;
 }
 
-// /**
 //  */
 // void DrawableObject::DrawPlanarShadow()
 // {

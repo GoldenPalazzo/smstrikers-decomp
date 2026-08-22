@@ -818,7 +818,11 @@ const char* GetMemCardDescription()
     case nlLocalization::LangItalian:
         return "File di Dati";
     case nlLocalization::LangJapanese:
-        return "\x83\x74\x83\x40\x83\x8B\x82\xF0\x8F\x9C\x82\xAF\x82\xCE\0"; // Japanese (SJIS): "Save File"
+#if defined(VERSION_G4QJ01)
+        return "\x83\x5A\x81\x5B\x83\x75\x83\x66\x81\x5B\x83\x5E"; // Japanese (SJIS): "save data"
+#else
+        return "\x83\x74\x83\x40\x83\x8B\x82\xF0\x8F\x9C\x82\xAF\x82\xCE\0"; // Japanese (SJIS): "delete file"
+#endif
     case nlLocalization::LangUKEnglish:
         return "Save File";
     default:

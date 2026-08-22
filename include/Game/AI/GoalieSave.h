@@ -76,7 +76,7 @@ public:
     static SaveData* GetRandomSTSSaveData();
     static bool TriggerCallback(float fTime, float fDuration, unsigned long uEventID, float fIntensity, void* pUserData);
     static void AddAreaToGrid(SaveData* pSaveData);
-    static void AddSegmentToGrid(SaveData* pStartSaveData, SaveData* pEndSaveData);
+    static void AddSegmentToGrid(SaveData* pSaveData1, SaveData* pSaveData2);
     static void AddChainToGrid(SaveData* pSaveData, bool bVertical);
     static void AddToGrid(SaveData* pSaveData);
     static void ClearGrid();

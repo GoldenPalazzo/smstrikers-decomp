@@ -61,6 +61,9 @@ enum hex_scan_states
 #define fetch()    (count++, (*ReadProc)(ReadProcArg, 0, __GetAChar))
 #define unfetch(c) (*ReadProc)(ReadProcArg, c, __UngetAChar)
 
+/**
+ * Offset/Address/Size: 0x8C | 0x80235164 | size: 0x100C
+ */
 long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* ReadProcArg, int* chars_scanned,
     int* overflow)
 {
@@ -713,6 +716,9 @@ inline double strtod(const char* str, char** end)
     return value;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802350D8 | size: 0x8C
+ */
 double atof(const char* str)
 {
     return strtod(str, NULL);

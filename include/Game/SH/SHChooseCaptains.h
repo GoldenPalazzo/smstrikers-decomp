@@ -20,13 +20,13 @@ public:
         SceneType_1 = 1
     };
 
-    ChooseCaptainsSceneV2(ChooseCaptainsSceneV2::SceneType);
+    ChooseCaptainsSceneV2(ChooseCaptainsSceneV2::SceneType sceneType);
     ~ChooseCaptainsSceneV2();
     void SceneCreated();
-    void ChangeSceneType(ChooseCaptainsSceneV2::SceneType);
+    void ChangeSceneType(ChooseCaptainsSceneV2::SceneType sceneType);
     void ResetForCHOOSECAPTAINS();
     void ResetForCHOOSESIDES();
-    void Update(float);
+    void Update(float fDeltaT);
     void BindChooseSideInstances();
     void CreateTicker();
 

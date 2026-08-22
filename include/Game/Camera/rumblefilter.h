@@ -15,11 +15,11 @@ class cRumbleFilter : public cCameraFilter
 {
 public:
     cRumbleFilter();
-    virtual void Update(float);
-    virtual void Filter(const nlMatrix4&, nlMatrix4&);
+    virtual void Update(float dt);
+    virtual void Filter(const nlMatrix4& matViewIn, nlMatrix4& matViewOut);
     virtual void Reset();
 
-    void Rumble(float, float);
+    void Rumble(float x, float y);
 
     /* 0x4, */ nlVector2 v2Pos0;
     /* 0xC, */ nlVector2 v2Pos1;

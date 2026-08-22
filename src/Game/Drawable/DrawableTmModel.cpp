@@ -2,6 +2,11 @@
 
 static bool g_bEnableDrawableTMModel = true;
 
+const nlMatrix4& DrawableTmModel::GetAnimatedWorldMatrix()
+{
+    return m_pAnimController->m_pPoseAccumulator->GetNodeMatrix(m_uAnimBoneIndex);
+}
+
 /**
  * Offset/Address/Size: 0xD4 | 0x80122B00 | size: 0x1E4
  */

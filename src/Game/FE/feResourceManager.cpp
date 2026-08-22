@@ -81,12 +81,10 @@ void FEResourceManager::Cleanup()
         nlPrintf("FEResourceManager: Warning! Manager being destroyed while resources are still loaded!\n");
         nlPrintf("                   Did all the scenes get popped before destroying the FEResourceManager?\n");
 
-        typedef nlAVLTreeIterator<unsigned long, FEResourceHandle*,
-            DefaultKeyCompare<unsigned long> > ResourceIterator;
+        typedef nlAVLTreeIterator<unsigned long, FEResourceHandle*, DefaultKeyCompare<unsigned long> > ResourceIterator;
 
-        ResourceIterator* iterator =
-            new (nlMalloc(sizeof(ResourceIterator), 8, false))
-                ResourceIterator(s_loadedResourceList);
+        ResourceIterator* iterator = new (nlMalloc(sizeof(ResourceIterator), 8, false))
+            ResourceIterator(s_loadedResourceList);
 
         while (iterator->IsValid())
         {
@@ -271,7 +269,7 @@ ResourceResult FEResourceManager::IssueFontLoadRequest(FEFontResource* pFeFontRe
 /**
  * Offset/Address/Size: 0x29C | 0x8020BDDC | size: 0xA8
  */
-void FEResourceManager::TextureResourceLoadComplete(void*, unsigned long uReadSize, unsigned long uParam)
+void FEResourceManager::TextureResourceLoadComplete(void* buffer, unsigned long uReadSize, unsigned long uParam)
 {
     FEResourceHandle* pHandle = (FEResourceHandle*)uParam;
 
@@ -359,7 +357,7 @@ ResourceResult FEResourceManager::IssueResourceLoadRequest(FEResourceHandle* pFe
 /**
  * Offset/Address/Size: 0x0 | 0x8020BB40 | size: 0x29C
  */
-void FEResourceManager::Update(float)
+void FEResourceManager::Update(float dt)
 {
     ResourceResult result;
     bool bQueueNextResource = true;

@@ -162,8 +162,8 @@ void InGameTextOverlay::Update(float fDeltaT)
     }
     if (this->mCurrentSlideName == SLIDE_NAME_TEXT_WINNER && g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL) && m_bVisible)
     {
-        nlSingleton<OverlayManager>::s_pInstance->SetVisible(OVERLAY_TEXT, false, false);
-        SummaryOverlay* handler = (SummaryOverlay*)nlSingleton<OverlayManager>::s_pInstance->Push(OVERLAY_SUMMARY, SCREEN_NOTHING, false);
+        nlSingleton<OverlayManager>::Instance()->SetVisible(OVERLAY_TEXT, false, false);
+        SummaryOverlay* handler = (SummaryOverlay*)nlSingleton<OverlayManager>::Instance()->Push(OVERLAY_SUMMARY, SCREEN_NOTHING, false);
         handler->mButtonState = ButtonComponent::BS_A_ONLY;
     }
 }
@@ -215,7 +215,7 @@ void InGameTextOverlay::DisplayFinalScore()
 
         winningSide = (scoreLeft > scoreRight) ? 0 : 1;
 
-        eTeamID winningTeam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)winningSide);
+        eTeamID winningTeam = nlSingleton<GameInfoManager>::Instance()->GetTeam((short)winningSide);
 
         const unsigned short* winnerNameLookup = LookupLocHash(GetLOCTeamName(winningTeam));
         WideString winnerNameWideString(winnerNameLookup);
@@ -242,7 +242,7 @@ void InGameTextOverlay::DisplayFinalScore()
         memcpy(mWinnerBuffer, formattedName.c_str(), sizeof(mWinnerBuffer));
         winnerNameTextInstance->SetString(mWinnerBuffer);
 
-        eTeamID team = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0);
+        eTeamID team = nlSingleton<GameInfoManager>::Instance()->GetTeam(0);
 
         TLComponentInstance* pComponentInstance = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
             presentation,
@@ -252,7 +252,7 @@ void InGameTextOverlay::DisplayFinalScore()
 
         pComponentInstance->SetActiveSlide(TEAM_SLIDE_NAMES[team]);
 
-        team = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
+        team = nlSingleton<GameInfoManager>::Instance()->GetTeam(1);
 
         pComponentInstance = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
             presentation,
@@ -262,7 +262,7 @@ void InGameTextOverlay::DisplayFinalScore()
 
         pComponentInstance->SetActiveSlide(TEAM_SLIDE_NAMES[team]);
 
-        if (nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode != 0)
+        if (nlSingleton<GameInfoManager>::Instance()->mCurrentMode != 0)
         {
             if (g_pGame->m_eGameState == GS_OVERTIME)
             {
@@ -275,7 +275,7 @@ void InGameTextOverlay::DisplayFinalScore()
         }
         else
         {
-            nlSingleton<StatsTracker>::s_pInstance->mNumGamesWon[winningSide]++;
+            nlSingleton<StatsTracker>::Instance()->mNumGamesWon[winningSide]++;
         }
     }
 

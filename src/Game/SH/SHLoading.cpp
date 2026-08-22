@@ -65,8 +65,8 @@ void SuperLoadingScene::SceneCreated()
     }
 
     BuildAndLoadPortraits(
-        nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0),
-        nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1));
+        nlSingleton<GameInfoManager>::Instance()->GetTeam(0),
+        nlSingleton<GameInfoManager>::Instance()->GetTeam(1));
 
     TLSlide* slide = pres->m_currentSlide;
 
@@ -86,7 +86,7 @@ void SuperLoadingScene::SceneCreated()
         InlineHasher(nlStringLowerHash("stadiumname")));
     if (stadiumText != NULL)
     {
-        stadiumText->m_LocStrId = GetStadiumStringID(nlSingleton<GameInfoManager>::s_pInstance->GetStadium());
+        stadiumText->m_LocStrId = GetStadiumStringID(nlSingleton<GameInfoManager>::Instance()->GetStadium());
         stadiumText->m_OverloadFlags |= 0x8;
     }
 
@@ -125,7 +125,7 @@ void SuperLoadingScene::SceneCreated()
     FEMusic::StopStream();
 
 #if defined(VERSION_G4QJ01)
-    if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+    if (nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode)
     {
         TLTextInstance* text3 = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             slide,
@@ -181,7 +181,7 @@ void SuperLoadingScene::Update(float fDeltaT)
         }
         else if (mType == TT_OUT)
         {
-            nlSingleton<OverlayManager>::s_pInstance->Pop();
+            nlSingleton<OverlayManager>::Instance()->Pop();
         }
     }
 }
@@ -311,7 +311,7 @@ void SuperLoadingScene::DisplayCupInfo()
         }
     }
 
-    nlSingleton<StatsTracker>::s_pInstance->GetSortedTeamStats(allTeamStats, numTeams, standingsIndices, numTeams);
+    nlSingleton<StatsTracker>::Instance()->GetSortedTeamStats(allTeamStats, numTeams, standingsIndices, numTeams);
 
     for (int i = 0; i < numTeams; i++)
     {
@@ -339,7 +339,7 @@ void SuperLoadingScene::DisplayCupInfo()
 
         WideString formatted;
 
-        if (nlSingleton<GameInfoManager>::s_pInstance->GetCurrentRoundNumber() == 0 && (i == 0 || i == 2))
+        if (nlSingleton<GameInfoManager>::Instance()->GetCurrentRoundNumber() == 0 && (i == 0 || i == 2))
         {
             formatted = Format(unformatted[i], *(const unsigned short (*)[2])L"-");
         }
@@ -371,7 +371,7 @@ void SuperLoadingScene::BuildPlayerStrings(TLTextInstance* pTextInst, int side, 
                 continue;
         }
 
-        if (nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((unsigned short)i) != side)
+        if (nlSingleton<GameInfoManager>::Instance()->GetPlayingSide((unsigned short)i) != side)
             continue;
 
         nlSNPrintf(narrowBuf, 255, "{clr:%2x%2x%2x}", PAD_COLOURS[i][0], PAD_COLOURS[i][1], PAD_COLOURS[i][2]);

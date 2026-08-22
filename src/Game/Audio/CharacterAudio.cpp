@@ -718,7 +718,7 @@ void cCharacterSFX::StopPlayingAllRandomCharDialogue()
 /**
  * Offset/Address/Size: 0x4B8 | 0x8014C85C | size: 0x148
  */
-int cCharacterSFX::PlayRandomWalkFootstep(float, bool bAvoidCurrent)
+int cCharacterSFX::PlayRandomWalkFootstep(float fVol, bool bNoRepeat)
 {
     if (mbInited == 0)
     {
@@ -739,7 +739,7 @@ int cCharacterSFX::PlayRandomWalkFootstep(float, bool bAvoidCurrent)
     Audio::eCharSFX* walkSFX = charFootstepSFX[1];
     Audio::eCharSFX sfxType = walkSFX[randomIndex];
 
-    if (bAvoidCurrent != 0)
+    if (bNoRepeat != 0)
     {
         if (mCharSFX[sfxType].m_unk_0x40 != 0)
         {
@@ -911,7 +911,6 @@ bool cCharacterSFX::IsMovementLoopPlaying()
  */
 bool cCharacterSFX::IsMovementLoopStarted()
 {
-    // return m_movementLoopStarted != 0;
     return mpMovementLoopSound != NULL;
 }
 

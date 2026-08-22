@@ -3,9 +3,9 @@
 
 #include "NL/glx/glxGX.h"
 
-void glPlatGrabFrameBufferToTexture(unsigned long, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int);
+void glPlatGrabFrameBufferToTexture(unsigned long texture, unsigned int destWidth, unsigned int destHeight, unsigned int srcLeft, unsigned int srcTop, unsigned int srcWidth, unsigned int srcHeight);
 void glx_UpdateWarble();
-void glx_DOFUpdate(float);
+void glx_DOFUpdate(float startDist);
 void glx_DOFGrab();
 void glx_ShadowTextureGrab();
 void glx_ClearZBuffer();

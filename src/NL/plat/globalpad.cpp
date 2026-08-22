@@ -8,7 +8,7 @@ float cPadManager::m_DeltaT = 0.0f;
 /**
  * Offset/Address/Size: 0xDC | 0x801F01C0 | size: 0x13C
  */
-void cGlobalPad::Update(float)
+void cGlobalPad::Update(float deltaTime)
 {
     float x;
     float y;

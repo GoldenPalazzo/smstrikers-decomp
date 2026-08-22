@@ -6,6 +6,9 @@
 static void* SaveStart;
 static void* SaveEnd;
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802576C4 | size: 0x70
+ */
 void __OSReboot(u32 resetCode, u32 bootDol)
 {
     OSContext exceptionContext;
@@ -30,6 +33,9 @@ void OSSetSaveRegion(void* start, void* end)
     SaveEnd = end;
 }
 
+/**
+ * Offset/Address/Size: 0x70 | 0x80257734 | size: 0x14
+ */
 void OSGetSaveRegion(void** start, void** end)
 {
     *start = SaveStart;

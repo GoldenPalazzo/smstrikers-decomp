@@ -21,27 +21,27 @@ struct NameIDEntry
 extern NameIDEntry NameTeamTable[9];
 extern NameIDEntry NameSidekickTable[4];
 
-void MakeTextBoxReallyWide(TLTextInstance&);
-const char* GetCupStreamName(eTrophyType);
+void MakeTextBoxReallyWide(TLTextInstance& textInstance);
+const char* GetCupStreamName(eTrophyType trophyType);
 const char* GetMemCardDescription();
 const char* GetMemCardTitle();
 void EnableAutoPressed();
-TLInstance* FindComponent(TLSlide*, const char*);
-unsigned long GetLOCRank(int);
-eSidekickID ConvertToSidekickID(const char*);
-eTeamID ConvertToTeamID(const char*);
-const char* GetSidekickName(eSidekickID);
-const char* GetTeamName(eTeamID);
-eCharacterClass ConvertToCharacterClass(eSidekickID);
-eCharacterClass ConvertToCharacterClass(eTeamID);
-unsigned long GetLOCTrophyName(eTrophyType);
-unsigned long GetLOCStandingsName(GameInfoManager::eGameModes);
-unsigned long GetLOCModeName(GameInfoManager::eGameModes);
-unsigned long GetLOCTeamName(eTeamID);
-unsigned long GetLOCSidekickName(eSidekickID);
-unsigned long GetLOCCharacterName(eTeamID, bool, bool);
-unsigned long GetLOCDifficultyName(GameplaySettings::eSkillLevel);
-unsigned long GetStadiumStringID(eStadiumID);
+TLInstance* FindComponent(TLSlide* slide, const char* name);
+unsigned long GetLOCRank(int rank);
+eSidekickID ConvertToSidekickID(const char* name);
+eTeamID ConvertToTeamID(const char* name);
+const char* GetSidekickName(eSidekickID sidekickID);
+const char* GetTeamName(eTeamID teamID);
+eCharacterClass ConvertToCharacterClass(eSidekickID sidekickID);
+eCharacterClass ConvertToCharacterClass(eTeamID teamID);
+unsigned long GetLOCTrophyName(eTrophyType trophyType);
+unsigned long GetLOCStandingsName(GameInfoManager::eGameModes mode);
+unsigned long GetLOCModeName(GameInfoManager::eGameModes mode);
+unsigned long GetLOCTeamName(eTeamID teamID);
+unsigned long GetLOCSidekickName(eSidekickID sidekickid);
+unsigned long GetLOCCharacterName(eTeamID teamid, bool useShortSuperTeam, bool useLockedSuperTeam);
+unsigned long GetLOCDifficultyName(GameplaySettings::eSkillLevel difficulty);
+unsigned long GetStadiumStringID(eStadiumID stadiumID);
 
 namespace TakeGameMemSnapshot
 {
@@ -49,15 +49,15 @@ extern unsigned char gTakenSnapshot;
 extern float gTimeElapsed;
 void WriteToDisk();
 void ResetTimers();
-void Update(float);
+void Update(float dt);
 } // namespace TakeGameMemSnapshot
 
 class FECharacterSound
 {
 public:
-    static void PlayCaptainSlideIn(eTeamID);
-    static void PlaySidekickName(eSidekickID);
-    static const char* PlayCaptainName(eTeamID);
+    static void PlayCaptainSlideIn(eTeamID teamID);
+    static void PlaySidekickName(eSidekickID sidekickID);
+    static const char* PlayCaptainName(eTeamID teamID);
 };
 
 class CaptainSidekickFilename
@@ -72,22 +72,22 @@ public:
         TYPE_SIDEKICK = 3,
         TYPE_SIDEKICK_OUTLINE = 4,
     };
-    static void Build(Type, char*, int, int, int);
+    static void Build(Type type, char* buf, int size, int id, int flag);
 };
 
 extern const unsigned char PAD_COLOURS[4][3];
 
 namespace DoubleHighlite
 {
-void CloseItem(TLComponentInstance*);
-void OpenItem(TLComponentInstance*);
+void CloseItem(TLComponentInstance* component);
+void OpenItem(TLComponentInstance* component);
 void TempDisableSound();
 } // namespace DoubleHighlite
 
 namespace SingleHighlite
 {
-void CloseItem(TLComponentInstance*);
-void OpenItem(TLComponentInstance*);
+void CloseItem(TLComponentInstance* component);
+void OpenItem(TLComponentInstance* component);
 void TempDisableSound();
 
 extern bool TEMPDISABLESOUND;

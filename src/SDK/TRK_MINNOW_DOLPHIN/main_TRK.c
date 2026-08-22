@@ -2,6 +2,9 @@
 
 static DSError TRK_mainError;
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8022993C | size: 0x58
+ */
 DSError TRK_main(void)
 {
     MWTRACE(1, "TRK_Main \n");

@@ -53,7 +53,8 @@ enum ResourceResult
 class FESceneResource;
 class FETextureResource;
 class FEFontResource;
-template <typename T> class DLListEntry;
+template <typename T>
+class DLListEntry;
 
 class FEResourceManager : public nlTask, public nlSingleton<FEResourceManager>
 {
@@ -72,15 +73,15 @@ public:
     }
 
     void Cleanup();
-    void LoadPermanentResourceBundle(const char*);
+    void LoadPermanentResourceBundle(const char* szBundleFileName);
     static void LoadPermanentTextures();
-    bool OpenOnDemandResourceBundle(const char*);
+    bool OpenOnDemandResourceBundle(const char* szBundleFileName);
     void Initialize();
-    void Update(float);
-    void QueueResourceLoad(FEResourceHandle*);
-    void UnloadResource(FEResourceHandle*);
+    void Update(float dt);
+    void QueueResourceLoad(FEResourceHandle* pHandle);
+    void UnloadResource(FEResourceHandle* pFeResourceHandle);
     void UnloadPermanentResourceBundle();
-    static void TextureResourceLoadComplete(void*, unsigned long uReadSize, unsigned long uParam);
+    static void TextureResourceLoadComplete(void* buffer, unsigned long uReadSize, unsigned long uParam);
 
 private:
     static void PlaceHolderForceTextureValid(FETextureResource* pFETextureResource);

@@ -56,7 +56,7 @@ UpdateResult IChooseSide::Update(float dt, eFEINPUT_PAD* pad, int param)
 /**
  * Offset/Address/Size: 0xFD4 | 0x800C4418 | size: 0x600
  */
-UpdateResult IChooseSide::UpdateForFE(float, eFEINPUT_PAD* pad)
+UpdateResult IChooseSide::UpdateForFE(float padresult, eFEINPUT_PAD* pad)
 {
     for (int i = 0, offset = 0; i < 4; i++, offset += 4)
     {
@@ -169,7 +169,7 @@ UpdateResult IChooseSide::UpdateForFE(float, eFEINPUT_PAD* pad)
 /**
  * Offset/Address/Size: 0xCDC | 0x800C4120 | size: 0x2F8
  */
-UpdateResult IChooseSide::UpdateForPause(float, eFEINPUT_PAD* pad)
+UpdateResult IChooseSide::UpdateForPause(float padresult, eFEINPUT_PAD* pad)
 {
     for (int i = 0; i < 4; i++)
     {

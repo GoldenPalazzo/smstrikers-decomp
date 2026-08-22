@@ -139,7 +139,7 @@ void TransitionSequence::Update(float dt)
 
     if ((progress <= m_CutAt) && (newProgress > m_CutAt))
     {
-        ScreenTransitionManager::s_pInstance->m_Cut = true;
+        ScreenTransitionManager::Instance()->m_Cut = true;
     }
 }
 

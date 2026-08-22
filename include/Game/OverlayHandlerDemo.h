@@ -8,7 +8,7 @@ class DemoOverlay : public BaseOverlayHandler
 public:
     DemoOverlay();
     virtual ~DemoOverlay();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
     virtual void SceneCreated();
 };
 

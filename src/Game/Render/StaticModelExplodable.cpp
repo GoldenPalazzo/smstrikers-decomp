@@ -35,7 +35,7 @@ void StaticModelExplodable::CreateExplodablesFromHelperObjects()
     void* pNode;
 
     pWorld = WorldManager::s_World;
-    pWalkData = (StaticModelExplodableHelperTreeWalkData*)nlMalloc(8, 8, false);
+    pWalkData = (StaticModelExplodableHelperTreeWalkData*)nlMalloc(sizeof(StaticModelExplodableHelperTreeWalkData), 8, false);
 
     if (pWalkData != NULL)
     {

@@ -119,6 +119,9 @@ static const double one = 1.00000000000000000000e+00, /* 0x3FF00000, 0x00000000 
         2.59073051863633712884e-05,  /* 0x3EFB2A70, 0x74BF7AD4 */
     };
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80239174 | size: 0x214
+ */
 double __kernel_tan(double x, double y, int iy)
 {
     double z, r, v, w, s;

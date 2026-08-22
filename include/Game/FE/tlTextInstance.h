@@ -21,13 +21,14 @@ class TLTextInstance : public TLInstance
 public:
     void SetScissorBox(u16 left, u16 top, u16 width, u16 height);
     void SetString(const unsigned short* utf16);
+    void DisableScissorBox();
     void SetStringId(const char* id);
     const unsigned short* GetString() const;
     void SetMatrix(nlMatrix4* pMatrix)
     {
         m_DrawInfo.pMatrix = pMatrix;
     }
-    void Render(eGLView, const nlColour&) const;
+    void Render(eGLView view, const nlColour& colour) const;
 
     /* 0x80 */ unsigned long m_LocStrId;
     /* 0x84 */ FETextLibObjectAttributes m_OverloadedAttributes;

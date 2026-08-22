@@ -13,6 +13,9 @@ union FpscrUnion
 	} u;
 };
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8023D7BC | size: 0x8
+ */
 asm u32 PPCMfmsr() 
 {
     nofralloc
@@ -20,6 +23,9 @@ asm u32 PPCMfmsr()
     blr    
 }
 
+/**
+ * Offset/Address/Size: 0x8 | 0x8023D7C4 | size: 0x8
+ */
 asm void PPCMtmsr(register u32 newMSR) 
 {
     nofralloc
@@ -51,6 +57,9 @@ asm u32 PPCAndCMsr(register u32 value)
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x10 | 0x8023D7CC | size: 0x8
+ */
 asm u32 PPCMfhid0() 
 {
     nofralloc
@@ -58,6 +67,9 @@ asm u32 PPCMfhid0()
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x18 | 0x8023D7D4 | size: 0x8
+ */
 asm void PPCMthid0(register u32 newHID0)
 {
     nofralloc
@@ -72,6 +84,9 @@ asm u32 PPCMfhid1()
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x20 | 0x8023D7DC | size: 0x8
+ */
 asm u32 PPCMfl2cr() 
 {
     nofralloc
@@ -79,6 +94,9 @@ asm u32 PPCMfl2cr()
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x28 | 0x8023D7E4 | size: 0x8
+ */
 asm void PPCMtl2cr(register u32 newL2cr) 
 {
     nofralloc
@@ -86,6 +104,9 @@ asm void PPCMtl2cr(register u32 newL2cr)
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x30 | 0x8023D7EC | size: 0x8
+ */
 asm void PPCMtdec(register u32 newDec) 
 {
     nofralloc
@@ -100,6 +121,9 @@ asm u32 PPCMfdec()
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x38 | 0x8023D7F4 | size: 0x8
+ */
 asm void PPCSync() 
 {
     nofralloc
@@ -125,6 +149,9 @@ asm void PPCEieio()
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x40 | 0x8023D7FC | size: 0x14
+ */
 asm void PPCHalt() 
 {
     nofralloc
@@ -143,6 +170,9 @@ asm u32 PPCMfmmcr0()
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x54 | 0x8023D810 | size: 0x8
+ */
 asm void PPCMtmmcr0(register u32 newMmcr0) 
 {
     nofralloc
@@ -157,6 +187,9 @@ asm u32 PPCMfmmcr1()
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x5C | 0x8023D818 | size: 0x8
+ */
 asm void PPCMtmmcr1(register u32 newMmcr1) 
 {
     nofralloc
@@ -171,6 +204,9 @@ asm u32 PPCMfpmc1()
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x64 | 0x8023D820 | size: 0x8
+ */
 asm void PPCMtpmc1(register u32 newPmc1) 
 {
     nofralloc
@@ -185,6 +221,9 @@ asm u32 PPCMfpmc2()
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x6C | 0x8023D828 | size: 0x8
+ */
 asm void PPCMtpmc2(register u32 newPmc2) 
 {
     nofralloc
@@ -199,6 +238,9 @@ asm u32 PPCMfpmc3()
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x74 | 0x8023D830 | size: 0x8
+ */
 asm void PPCMtpmc3(register u32 newPmc3) 
 {
     nofralloc
@@ -213,6 +255,9 @@ asm u32 PPCMfpmc4()
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x7C | 0x8023D838 | size: 0x8
+ */
 asm void PPCMtpmc4(register u32 newPmc4) 
 {
     nofralloc
@@ -233,6 +278,9 @@ asm void PPCMtsia(register u32 newSia)
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x84 | 0x8023D840 | size: 0x20
+ */
 u32 PPCMffpscr() 
 {
     union FpscrUnion m;
@@ -245,6 +293,9 @@ u32 PPCMffpscr()
     return m.u.fpscr; 
 }
 
+/**
+ * Offset/Address/Size: 0xA4 | 0x8023D860 | size: 0x28
+ */
 void PPCMtfpscr(register u32 newFPSCR) 
 {
     union FpscrUnion m;
@@ -258,6 +309,9 @@ void PPCMtfpscr(register u32 newFPSCR)
     }
 }
 
+/**
+ * Offset/Address/Size: 0xCC | 0x8023D888 | size: 0x8
+ */
 asm u32 PPCMfhid2() 
 {
     nofralloc
@@ -265,6 +319,9 @@ asm u32 PPCMfhid2()
     blr
 }
 
+/**
+ * Offset/Address/Size: 0xD4 | 0x8023D890 | size: 0x8
+ */
 asm void PPCMthid2(register u32 newhid2) 
 {
     nofralloc
@@ -279,6 +336,9 @@ asm u32 PPCMfwpar() {
     blr
 }
 
+/**
+ * Offset/Address/Size: 0xDC | 0x8023D898 | size: 0x8
+ */
 asm void PPCMtwpar(register u32 newwpar) 
 {
     nofralloc
@@ -326,6 +386,9 @@ void PPCEnableSpeculation(void)
     PPCMthid0(PPCMfhid0() & ~HID0_SPD);
 }
 
+/**
+ * Offset/Address/Size: 0xE4 | 0x8023D8A0 | size: 0x28
+ */
 void PPCDisableSpeculation(void) 
 {
     PPCMthid0(PPCMfhid0() | HID0_SPD);
@@ -339,6 +402,9 @@ asm void PPCSetFpIEEEMode()
 	blr
 }
 
+/**
+ * Offset/Address/Size: 0x10C | 0x8023D8C8 | size: 0x8
+ */
 asm void PPCSetFpNonIEEEMode() 
 {
 	nofralloc

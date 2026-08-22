@@ -25,6 +25,9 @@ public:
         i = n;
     }
 
+    /**
+     * Offset/Address/Size: 0x1F0 | 0x8023A3A4 | size: 0xB8
+     */
     ~__partial_array_destructor()
     {
         char* ptr;
@@ -40,6 +43,9 @@ public:
     }
 };
 
+/**
+ * Offset/Address/Size: 0x2A8 | 0x8023A45C | size: 0x104
+ */
 extern void* __construct_new_array(void* block, ConstructorDestructor ctor, ConstructorDestructor dtor, size_t size, size_t n)
 {
     char* ptr;
@@ -74,6 +80,9 @@ static inline void __construct_array_loop(char* ptr, ConstructorDestructor ctor,
     }
 }
 
+/**
+ * Offset/Address/Size: 0xF4 | 0x8023A2A8 | size: 0xFC
+ */
 extern void __construct_array(void* ptr, ConstructorDestructor ctor, ConstructorDestructor dtor, size_t size, size_t n)
 {
     __partial_array_destructor pad(ptr, size, n, dtor);
@@ -81,6 +90,9 @@ extern void __construct_array(void* ptr, ConstructorDestructor ctor, Constructor
     __construct_array_loop((char*)ptr, ctor, size, n, &pad.i);
 }
 
+/**
+ * Offset/Address/Size: 0x7C | 0x8023A230 | size: 0x78
+ */
 extern void __destroy_arr(void* block, ConstructorDestructor* dtor, size_t size, size_t n)
 {
     char* p;
@@ -92,6 +104,9 @@ extern void __destroy_arr(void* block, ConstructorDestructor* dtor, size_t size,
     }
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8023A1B4 | size: 0x7C
+ */
 extern void __destroy_new_array(void* block, ConstructorDestructor dtor)
 {
     if (block)

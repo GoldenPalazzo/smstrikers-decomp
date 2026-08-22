@@ -284,7 +284,7 @@ void CharacterTriggerHandler(unsigned int uParam)
     case 0x7D452499:
     {
         s16 teamSlot = (s16)((cPlayer*)pCharacter)->m_pTeam->m_nSide;
-        if (nlSingleton<GameInfoManager>::s_pInstance->GetTeam(teamSlot) != 8)
+        if (nlSingleton<GameInfoManager>::Instance()->GetTeam(teamSlot) != 8)
             break;
         bool isGoalie = (g_pCurrentlyUpdatingCharacter->m_eClassType == GOALIE);
         u32 hasPad = ((cPlayer*)g_pCurrentlyUpdatingCharacter)->GetGlobalPad() != NULL;
@@ -298,7 +298,7 @@ void CharacterTriggerHandler(unsigned int uParam)
     case 0x8F6B5826:
     {
         s16 teamSlot = (s16)((cPlayer*)pCharacter)->m_pTeam->m_nSide;
-        if (nlSingleton<GameInfoManager>::s_pInstance->GetTeam(teamSlot) != 8)
+        if (nlSingleton<GameInfoManager>::Instance()->GetTeam(teamSlot) != 8)
             break;
         bool isGoalie = (g_pCurrentlyUpdatingCharacter->m_eClassType == GOALIE);
         u32 hasPad = ((cPlayer*)g_pCurrentlyUpdatingCharacter)->GetGlobalPad() != NULL;
@@ -359,7 +359,7 @@ void CharacterTriggerHandler(unsigned int uParam)
         if (pCharacter->m_eClassType == GOALIE)
         {
             s16 teamSlot = (s16)((cPlayer*)pCharacter)->m_pTeam->m_nSide;
-            if (nlSingleton<GameInfoManager>::s_pInstance->GetTeam(teamSlot) == 8)
+            if (nlSingleton<GameInfoManager>::Instance()->GetTeam(teamSlot) == 8)
                 g_pCurrentlyUpdatingCharacter->PlayRandomCharDialogue(6, (PosUpdateMethod)2, 100.0f, -1.0f);
             else
                 g_pCurrentlyUpdatingCharacter->Play3DSFX((Audio::eCharSFX)0x5E, (PosUpdateMethod)2, 100.0f);
@@ -678,7 +678,7 @@ void CharacterTriggerHandler(unsigned int uParam)
         if (pCharacter->m_eClassType == GOALIE)
         {
             s16 teamSlot = (s16)((cPlayer*)pCharacter)->m_pTeam->m_nSide;
-            if (nlSingleton<GameInfoManager>::s_pInstance->GetTeam(teamSlot) == 8)
+            if (nlSingleton<GameInfoManager>::Instance()->GetTeam(teamSlot) == 8)
                 g_pCurrentlyUpdatingCharacter->PlayRandomCharDialogue(0, (PosUpdateMethod)2, 100.0f, -1.0f);
             else
                 g_pCurrentlyUpdatingCharacter->Play3DSFX((Audio::eCharSFX)0x5F, (PosUpdateMethod)2, 100.0f);
@@ -694,7 +694,7 @@ void CharacterTriggerHandler(unsigned int uParam)
         if (pCharacter->m_eClassType == GOALIE)
         {
             s16 teamSlot = (s16)((cPlayer*)pCharacter)->m_pTeam->m_nSide;
-            if (nlSingleton<GameInfoManager>::s_pInstance->GetTeam(teamSlot) == 8)
+            if (nlSingleton<GameInfoManager>::Instance()->GetTeam(teamSlot) == 8)
                 g_pCurrentlyUpdatingCharacter->PlayRandomCharDialogue(0, (PosUpdateMethod)2, 100.0f, -1.0f);
             else
                 g_pCurrentlyUpdatingCharacter->Play3DSFX((Audio::eCharSFX)0x61, (PosUpdateMethod)2, 100.0f);
@@ -1106,9 +1106,9 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
     }
     case BALL_EFFECT_S2S_SHOT:
     {
-        if (pCharacter->IsCaptain() || nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)pCharacter->m_pTeam->m_nSide) == 8)
+        if (pCharacter->IsCaptain() || nlSingleton<GameInfoManager>::Instance()->GetTeam((s16)pCharacter->m_pTeam->m_nSide) == 8)
         {
-            BasicString<char, Detail::TempStringAllocator> effectName(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)pCharacter->m_pTeam->m_nSide)));
+            BasicString<char, Detail::TempStringAllocator> effectName(GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam((s16)pCharacter->m_pTeam->m_nSide)));
             effectName.AppendInPlace("_shoot_to_score_shot");
 
             if (fxGetGroup(effectName.c_str()) != NULL)
@@ -1179,7 +1179,7 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
         nlVector3 delta;
         nlVec3Sub(delta, ballPos, targetPos);
         const float distSq = delta.GetLengthSq3D();
-        if (distSq > g_pGame->m_pGameTweaks->unk22C)
+        if (distSq > g_pGame->m_pGameTweaks->fPerfectPassProximityFilterDistSq)
         {
             Audio::SoundAttributes attrs;
             attrs.Init();

@@ -43,11 +43,11 @@ extern "C"
     void InitMetroTRK_BBA(void);
     void EnableMetroTRKInterrupts(void);
 
-    void TRKLoadContext(OSContext* ctx, u32);
+    void TRKLoadContext(OSContext* ctx, u32 exceptionID);
     void TRKSaveExtended1Block();
     void TRKRestoreExtended1Block();
-    int InitMetroTRKCommTable(int);
-    void TRK_board_display(char*);
+    int InitMetroTRKCommTable(int hwId);
+    void TRK_board_display(char* str);
     ////////////////////////////////////
 
     ////////// GDEV FUNCTIONS //////////
@@ -55,8 +55,8 @@ extern "C"
     int gdev_cc_shutdown();
     int gdev_cc_open();
     int gdev_cc_close();
-    int gdev_cc_read(u8* dest, int size);
-    int gdev_cc_write(const u8* src, int size);
+    int gdev_cc_read(u8* data, int size);
+    int gdev_cc_write(const u8* bytes, int length);
     int gdev_cc_pre_continue();
     int gdev_cc_post_stop();
     int gdev_cc_peek();
@@ -85,8 +85,8 @@ extern "C"
     int ddh_cc_shutdown();
     int ddh_cc_open();
     int ddh_cc_close();
-    int ddh_cc_read(u8* dest, int size);
-    int ddh_cc_write(const u8* src, int size);
+    int ddh_cc_read(u8* data, int size);
+    int ddh_cc_write(const u8* bytes, int length);
     int ddh_cc_pre_continue();
     int ddh_cc_post_stop();
     int ddh_cc_peek();
@@ -116,17 +116,17 @@ extern "C"
     DSError TRKAppendBuffer_ui8(TRKBuffer* buffer, const u8* data, int count);
     DSError TRKSetBufferPosition(TRKBuffer* msg, u32 pos);
 
-    DSError TRKMessageSend(TRKBuffer*);
+    DSError TRKMessageSend(TRKBuffer* msg);
     void TRKSwapAndGo(void);
     DSError TRKInitializeNub(void);
     DSError TRKTerminateNub(void);
     void TRKNubWelcome(void);
     void TRKNubMainLoop(void);
 
-    DSError TRKInitializeMutex(void*);
-    DSError TRKAcquireMutex(void*);
-    DSError TRKReleaseMutex(void*);
-    void* TRK_memcpy(void* dst, const void* src, size_t n);
+    DSError TRKInitializeMutex(void* p1);
+    DSError TRKAcquireMutex(void* p1);
+    DSError TRKReleaseMutex(void* p1);
+    void* TRK_memcpy(void* dest, const void* src, size_t count);
     ////////////////////////////////////
 
     /////// INITIALIZE FUNCTIONS ///////
@@ -146,11 +146,11 @@ extern "C"
     ////////////////////////////////////
 
     /////////// MW FUNCTIONS ///////////
-    void MWTRACE(u8, char*, ...);
+    void MWTRACE(u8 level, char* format, ...);
     ////////////////////////////////////
 
     //////// SUPPORT FUNCTIONS /////////
-    DSError TRKRequestSend();
+    DSError TRKRequestSend(TRKBuffer* msgBuf, int* bufferId, u32 p1, u32 p2, int p3);
     u32 TRKAccessFile(u32, u32, u32*, u8*);
     u32 TRKOpenFile(u32, u32, u8, u32*);
     u32 TRKCloseFile(u32, u32);
@@ -160,15 +160,15 @@ extern "C"
     ////////// OTHER FUNCTIONS /////////
     DSError TRK_main(void);
     UARTError InitializeUART(UARTBaudRate baudRate);
-    DSError TRKInitializeIntDrivenUART(u32, u32, u32, void*);
+    DSError TRKInitializeIntDrivenUART(u32 param_0, u32 param_1, u32 param_2, void* param_3);
     // DSError TRKInitializeIntDrivenUART(u32 param_0, u32 param_1, u32 param_2, volatile u8** param_3);
 
     int TRKPollUART();
-    UARTError TRKReadUARTN(void*, u32);
+    UARTError TRKReadUARTN(void* bytes, u32 length);
     UARTError TRKWriteUARTN(const void* bytes, u32 length);
     void usr_put_initialize();
     void TRKTargetSetInputPendingPtr(void* ptr);
-    void SetUseSerialIO(u8);
+    void SetUseSerialIO(u8 sio);
     u8 GetUseSerialIO(void);
 
     DSError TRKTargetAddStopInfo(TRKBuffer* b);

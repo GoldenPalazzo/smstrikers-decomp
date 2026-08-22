@@ -29,13 +29,13 @@ public:
     /* 0x08 */ virtual ~SkinAnimatedNPC();
     /* 0x0C */ virtual SkinAnimatedNPC_Type GetSkinAnimatedNPC_Type() const;
     /* 0x10 */ virtual void Render();
-    /* 0x14 */ virtual void RenderFromReplay(const cPoseAccumulator&, const nlMatrix4*);
-    /* 0x18 */ virtual void Update(float);
-    /* 0x1C */ virtual void DrawShadow(const glModel*, const nlMatrix4&);
-    /* 0x20 */ virtual void DrawShadow(const cPoseAccumulator&, const nlMatrix4&);
+    /* 0x14 */ virtual void RenderFromReplay(const cPoseAccumulator& poseAccumulator, const nlMatrix4* pWorldMatrix);
+    /* 0x18 */ virtual void Update(float dt);
+    /* 0x1C */ virtual void DrawShadow(const glModel* pModel, const nlMatrix4& matrix);
+    /* 0x20 */ virtual void DrawShadow(const cPoseAccumulator& poseAccumulator, const nlMatrix4& worldMatrix);
 
     void SendToGL() const;
-    void SetAnimState(cSAnim&, float, ePlayMode);
+    void SetAnimState(cSAnim& pAnim, float fBlendTime, ePlayMode playMode);
 
     /* 0x04 */ nlMatrix4 mWorldMatrix;                // offset 0x4, size 0x40
     /* 0x44 */ cPN_SAnimController* mpAnimController; // offset 0x44, size 0x4

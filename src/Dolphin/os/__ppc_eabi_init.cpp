@@ -71,6 +71,16 @@ loop:
         }
     }
 
+    void __fini_cpp(void)
+    {
+        voidfunctionptr* destructor;
+
+        for (destructor = _dtors; *destructor; destructor++)
+        {
+            (*destructor)();
+        }
+    }
+
     void _ExitProcess(void)
     {
         PPCHalt();

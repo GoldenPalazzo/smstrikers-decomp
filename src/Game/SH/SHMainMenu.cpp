@@ -68,8 +68,8 @@ static void onSelectFriendly(TLComponentInstance*)
  */
 static void onSelectCup(TLComponentInstance*)
 {
-    GameSceneManager::s_pInstance->PopEntireStack();
-    GameSceneManager::s_pInstance->Push(SCENE_CUP_CHOOSE_CUP, SCREEN_FORWARD, false);
+    GameSceneManager::Instance()->PopEntireStack();
+    GameSceneManager::Instance()->Push(SCENE_CUP_CHOOSE_CUP, SCREEN_FORWARD, false);
 }
 
 /**
@@ -109,11 +109,11 @@ static void onSelect101(TLComponentInstance*)
  */
 static void newTourn()
 {
-    GameSceneManager::s_pInstance->PopEntireStack();
-    GameSceneManager::s_pInstance->Push(SCENE_TOURN_SETPARAMS, SCREEN_FORWARD, false);
-    if (GameInfoManager::s_pInstance->mCustomTournamentInfo.m_cupConstructed)
+    GameSceneManager::Instance()->PopEntireStack();
+    GameSceneManager::Instance()->Push(SCENE_TOURN_SETPARAMS, SCREEN_FORWARD, false);
+    if (GameInfoManager::Instance()->mCustomTournamentInfo.m_cupConstructed)
     {
-        GameInfoManager::s_pInstance->mCustomTournamentInfo.m_cup->mCupStarted = false;
+        GameInfoManager::Instance()->mCustomTournamentInfo.m_cup->mCupStarted = false;
     }
 }
 
@@ -122,9 +122,9 @@ static void newTourn()
  */
 static void continueTourn()
 {
-    GameInfoManager::s_pInstance->SetMode(GameInfoManager::GM_TOURNAMENT);
-    GameSceneManager::s_pInstance->PopEntireStack();
-    GameSceneManager::s_pInstance->Push(SCENE_TOURNAMENT_STANDINGS, SCREEN_FORWARD, false);
+    GameInfoManager::Instance()->SetMode(GameInfoManager::GM_TOURNAMENT);
+    GameSceneManager::Instance()->PopEntireStack();
+    GameSceneManager::Instance()->Push(SCENE_TOURNAMENT_STANDINGS, SCREEN_FORWARD, false);
 }
 
 /**
@@ -132,7 +132,7 @@ static void continueTourn()
  */
 static void confirmNewTourn()
 {
-    FEPopupMenu* menu = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+    FEPopupMenu* menu = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
     menu->Create(
         POPUP_REALLY_OVERWRITE,
         Function<FnVoidVoid>(newTourn),
@@ -145,25 +145,25 @@ static void confirmNewTourn()
  */
 static void onSelectTournament(TLComponentInstance*)
 {
-    if (GameInfoManager::s_pInstance->mCustomTournamentInfo.m_cupConstructed
-        && GameInfoManager::s_pInstance->mCustomTournamentInfo.m_cup->mCupStarted)
+    if (GameInfoManager::Instance()->mCustomTournamentInfo.m_cupConstructed
+        && GameInfoManager::Instance()->mCustomTournamentInfo.m_cup->mCupStarted)
     {
-        FEPopupMenu* menu = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+        FEPopupMenu* menu = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
         menu->Create(
             POPUP_START_NEW_TOURNAMENT,
             Function<FnVoidVoid>(continueTourn),
             Function<FnVoidVoid>(confirmNewTourn));
         menu->SetBackButtonCallback(Function<FnVoidVoid>(FEPopupMenu::Nothing));
-        GameInfoManager::s_pInstance->SetMode(GameInfoManager::GM_TOURNAMENT);
+        GameInfoManager::Instance()->SetMode(GameInfoManager::GM_TOURNAMENT);
     }
     else
     {
-        GameSceneManager::s_pInstance->PopEntireStack();
-        GameSceneManager::s_pInstance->Push(SCENE_TOURN_SETPARAMS, SCREEN_FORWARD, false);
+        GameSceneManager::Instance()->PopEntireStack();
+        GameSceneManager::Instance()->Push(SCENE_TOURN_SETPARAMS, SCREEN_FORWARD, false);
 
-        if (GameInfoManager::s_pInstance->mCustomTournamentInfo.m_cupConstructed)
+        if (GameInfoManager::Instance()->mCustomTournamentInfo.m_cupConstructed)
         {
-            GameInfoManager::s_pInstance->mCustomTournamentInfo.m_cup->mCupStarted = false;
+            GameInfoManager::Instance()->mCustomTournamentInfo.m_cup->mCupStarted = false;
         }
     }
 }
@@ -173,8 +173,8 @@ static void onSelectTournament(TLComponentInstance*)
  */
 static void onSelectTrophies(TLComponentInstance*)
 {
-    GameSceneManager::s_pInstance->PopEntireStack();
-    GameSceneManager::s_pInstance->Push(SCENE_TROPHY_ROOM, SCREEN_FORWARD, false);
+    GameSceneManager::Instance()->PopEntireStack();
+    GameSceneManager::Instance()->Push(SCENE_TROPHY_ROOM, SCREEN_FORWARD, false);
     FEMusic::StartStreamIfDifferent(6);
 }
 
@@ -183,8 +183,8 @@ static void onSelectTrophies(TLComponentInstance*)
  */
 static void onSelectOptions(TLComponentInstance*)
 {
-    GameSceneManager::s_pInstance->PopEntireStack();
-    GameSceneManager::s_pInstance->Push(SCENE_OPTIONS, SCREEN_FORWARD, false);
+    GameSceneManager::Instance()->PopEntireStack();
+    GameSceneManager::Instance()->Push(SCENE_OPTIONS, SCREEN_FORWARD, false);
     FEMusic::StartStreamIfDifferent(7);
 }
 
@@ -274,7 +274,7 @@ void SHMainMenu::SceneCreated()
             OpenItem(compinstance);
             item->SetDisabledFlag(false);
         }
-        else if (i == 2 && !g_e3_Build && !nlSingleton<GameInfoManager>::s_pInstance->IsSuperCupModeUnlocked())
+        else if (i == 2 && !g_e3_Build && !nlSingleton<GameInfoManager>::Instance()->IsSuperCupModeUnlocked())
         {
             CloseItem(compinstance);
             item->SetLockedFlag(true);
@@ -409,7 +409,7 @@ void SHMainMenu::OpenItem(TLComponentInstance* compinstance)
         m_itemDescriptions->SetDisplayMessage(sUnlockedTickerMessages[mMenuItems.GetActiveItemIndex()]);
     }
 
-    BaseSceneHandler* scene = nlSingleton<GameSceneManager>::s_pInstance->GetScene(SCENE_MARIO_BACKGROUND);
+    BaseSceneHandler* scene = nlSingleton<GameSceneManager>::Instance()->GetScene(SCENE_MARIO_BACKGROUND);
     if (scene->m_bVisible)
     {
         FEAudio::PlayAnimAudioEvent("sfx_main_menu_highlight_open", false);
@@ -437,7 +437,7 @@ void SHMainMenu::CloseItem(TLComponentInstance* compinstance)
         InlineHasher(nlStringLowerHash("may_highlite")))
         ->SetAssetColour(mHighlightColour);
 
-    BaseSceneHandler* scene = nlSingleton<GameSceneManager>::s_pInstance->GetScene(SCENE_MARIO_BACKGROUND);
+    BaseSceneHandler* scene = nlSingleton<GameSceneManager>::Instance()->GetScene(SCENE_MARIO_BACKGROUND);
     if (scene->m_bVisible)
     {
         Audio::gWorldSFX.Stop((Audio::eWorldSFX)0xC, cGameSFX::SFX_STOP_FIRST);
@@ -498,7 +498,7 @@ void SHMainMenu::Update(float fDeltaT)
     {
         if (mMenuItems.RunCallbackOnCurrent(ON_APPLY) == RES_OK)
         {
-            GameInfoManager::s_pInstance->mMainUserPadNumber = padused;
+            GameInfoManager::Instance()->mMainUserPadNumber = padused;
             FEAudio::PlayAnimAudioEvent("sfx_accept", false);
             mLastMenuItem = mMenuItems.GetActiveItemIndex();
         }
@@ -512,7 +512,7 @@ void SHMainMenu::Update(float fDeltaT)
 
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
     {
-        GameSceneManager::s_pInstance->PopEntireStack();
-        GameSceneManager::s_pInstance->Push(SCENE_TITLE, SCREEN_BACK, false);
+        GameSceneManager::Instance()->PopEntireStack();
+        GameSceneManager::Instance()->Push(SCENE_TITLE, SCREEN_BACK, false);
     }
 }

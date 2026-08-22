@@ -10,9 +10,9 @@ public:
     LessonScene();
     virtual ~LessonScene();
     virtual void SceneCreated();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
 
-    static void SetLesson(int);
+    static void SetLesson(int index);
 
     /* 0x1C */ bool mHUDWasVisible;
     /* 0x20 */ BaseSceneHandler* mHUDScene;

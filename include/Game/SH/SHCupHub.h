@@ -28,25 +28,25 @@ enum eHubState
 class CupHubScene : public BaseSceneHandler
 {
 public:
-    CupHubScene(bool, bool);
+    CupHubScene(bool doAnimations, bool playAllKnockoutAnimations);
     ~CupHubScene();
     void SceneCreated();
-    void Update(float);
+    void Update(float fDeltaT);
     void EndCup();
     void ReturnToMainMenu();
     unsigned char UpdateDisplayedStat();
     void CreateLeague();
     void CreateBowserLeague();
     void CreateKnockout();
-    unsigned char UpdateLeague(float);
-    unsigned char UpdateKnockout8(float);
-    unsigned char UpdateKnockout4(float);
+    unsigned char UpdateLeague(float fDeltaT);
+    unsigned char UpdateKnockout8(float fDeltaT);
+    unsigned char UpdateKnockout4(float fDeltaT);
     unsigned char UpdateKnockout2(float fDeltaT);
     void UpdateProgressIndicator();
     void ColourUserRow();
     void HandleButtonComponent();
-    void SetRoundColours(eHubColour*, int);
-    void UpdateRoundMessage(bool);
+    void SetRoundColours(eHubColour* coloursArray, int sizeOfArray);
+    void UpdateRoundMessage(bool hideMessage);
     void LoadCaptainImage();
 
     /* 0x001C */ TeamStats mAllTeamStats[8];                     // size 0x200

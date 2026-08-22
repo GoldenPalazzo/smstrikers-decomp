@@ -3,6 +3,9 @@
 
 extern void OSReport(char* fmt);
 
+/**
+ * Offset/Address/Size: 0x4 | 0x802258B4 | size: 0x88
+ */
 BOOL usr_puts_serial(const char* msg)
 {
     BOOL connect_ = FALSE;
@@ -26,6 +29,9 @@ BOOL usr_puts_serial(const char* msg)
     return connect_;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802258B0 | size: 0x4
+ */
 void usr_put_initialize(void)
 {
 }

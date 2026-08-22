@@ -6,7 +6,7 @@
 
 class GLLightUserData;
 
-void glx_SendFrame_cb(eGLView, unsigned long, const glModelPacket*);
+void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p);
 void glx_SendEnd();
 void glx_SendReset();
 

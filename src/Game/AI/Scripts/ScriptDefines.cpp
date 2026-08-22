@@ -59,7 +59,6 @@ void FuzzyScriptSetCurrentTeam(cTeam* pCurrentTeam)
  */
 void FuzzyScriptClearGlobals()
 {
-    FORCE_DONT_INLINE;
     g_pScriptCurrentTeam = NULL;
     g_pScriptCurrentFielder = NULL;
     g_pScriptCurrentMark = 0;
@@ -68,8 +67,8 @@ void FuzzyScriptClearGlobals()
     g_pScriptOtherTeam = 0;
     g_pScriptBall = NULL;
 
-    if (ScriptQuestionCache::s_pInstance != NULL)
+    if (ScriptQuestionCache::Instance() != NULL)
     {
-        ScriptQuestionCache::s_pInstance->Clear();
+        ScriptQuestionCache::Instance()->Clear();
     }
 }

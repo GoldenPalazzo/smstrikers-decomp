@@ -145,7 +145,6 @@ LooseBallInfo* LooseBallAnims::GetLooseBallAnim(unsigned int uIndex)
 const LooseBallInfo* LooseBallAnims::GetSwatSTSInfo(int nSide)
 {
     static FilteredRandomRange randgenSwats;
-    // static FilteredRandomRange randgenSwats = *((FilteredRandomRange*)__register_global_object(&randgenSwats, NULL, (void*)0x8030EC80));
 
     if (nSide < 0)
     {

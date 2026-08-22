@@ -17,11 +17,11 @@ public:
     ~CupTrophyScene();
     void SceneCreated();
     void HandleUnlockedTriggers();
-    void Update(float);
-    void CreateTrophyScene(eTrophyType, ButtonComponent::ButtonState, bool);
-    void SetWinRecord(Spoil&);
-    void SetLossRecord(Spoil&);
-    void SetHistory(Spoil&);
+    void Update(float fDeltaT);
+    void CreateTrophyScene(eTrophyType trophy, ButtonComponent::ButtonState buttonState, bool isNew);
+    void SetWinRecord(Spoil& spoil);
+    void SetLossRecord(Spoil& spoil);
+    void SetHistory(Spoil& spoil);
     void ChangeSlides();
 
     /* 0x1C, */ eTrophyType mTrophy;                       // size 0x4

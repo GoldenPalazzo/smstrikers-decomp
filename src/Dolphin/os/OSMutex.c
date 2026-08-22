@@ -132,6 +132,9 @@ void OSUnlockMutex(OSMutex* mutex)
     OSRestoreInterrupts(enabled);
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80257654 | size: 0x70
+ */
 void __OSUnlockAllMutex(OSThread* thread)
 {
     OSMutex* mutex;

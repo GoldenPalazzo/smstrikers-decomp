@@ -18,18 +18,18 @@ class IChooseSide
 public:
     IChooseSide();
     ~IChooseSide();
-    UpdateResult Update(float, eFEINPUT_PAD*, int);
-    UpdateResult UpdateForFE(float, eFEINPUT_PAD*);
-    UpdateResult UpdateForPause(float, eFEINPUT_PAD*);
-    void CheckControllers(int);
-    void ResetAndPositionControllers(bool);
-    void SetReady(int, bool);
-    void PositionController(int, bool, bool);
+    UpdateResult Update(float dt, eFEINPUT_PAD* pad, int param);
+    UpdateResult UpdateForFE(float padresult, eFEINPUT_PAD* pad);
+    UpdateResult UpdateForPause(float padresult, eFEINPUT_PAD* pad);
+    void CheckControllers(int disabledSide);
+    void ResetAndPositionControllers(bool reset);
+    void SetReady(int controllerIdx, bool ready);
+    void PositionController(int padindex, bool usetween, bool setvisibilities);
     bool AllPlayersReady() const;
     bool AllPluggedInAreReady() const;
     bool AtLeastOnePlayerReady() const;
     bool AllControllersAreCentred() const;
-    static void TweenSetPosCallback(void*, const float*);
+    static void TweenSetPosCallback(void* obj, const float* value);
     void SaveChanges();
 
     /* 0x00 */ int mPlayingSides[4]; // size 0x10

@@ -24,170 +24,6 @@ static inline void SetAllSides(IChooseSide& cs);
 static inline eDifficultyID GetDifficulty0(GameInfoManager* gameInfo);
 static inline eDifficultyID GetDifficulty1(GameInfoManager* gameInfo);
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800C7D40 | size: 0xEC
-//  */
-// void BasicString<char, Detail::TempStringAllocator>::BasicString(const char*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xCC8 | 0x800C7BE4 | size: 0x15C
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xC44 | 0x800C7B60 | size: 0x84
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xC0C | 0x800C7B28 | size: 0x38
-//  */
-// void FEFinder<TLImageInstance, 2>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xAB0 | 0x800C79CC | size: 0x15C
-//  */
-// void FEFinder<TLInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xA2C | 0x800C7948 | size: 0x84
-//  */
-// void FEFinder<TLInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x9F4 | 0x800C7910 | size: 0x38
-//  */
-// void FEFinder<TLInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x898 | 0x800C77B4 | size: 0x15C
-//  */
-// void FEFinder<TLInstance, 5>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x814 | 0x800C7730 | size: 0x84
-//  */
-// void FEFinder<TLInstance, 5>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x7DC | 0x800C76F8 | size: 0x38
-//  */
-// void FEFinder<TLInstance, 5>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x680 | 0x800C759C | size: 0x15C
-//  */
-// void FEFinder<TLInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x648 | 0x800C7564 | size: 0x38
-//  */
-// void FEFinder<TLInstance, 3>::Find<TLInstance>(TLInstance*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x4EC | 0x800C7408 | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x468 | 0x800C7384 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x430 | 0x800C734C | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800C71F0 | size: 0x15C
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800C716C | size: 0x84
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800C7134 | size: 0x38
-//  */
-// void FEFinder<TLTextInstance, 3>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800C6FD8 | size: 0x15C
-//  */
-// void FEFinder<TLInstance, 2>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800C6F54 | size: 0x84
-//  */
-// void FEFinder<TLInstance, 2>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800C6F1C | size: 0x38
-//  */
-// void FEFinder<TLInstance, 2>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x21C8 | 0x800C6D88 | size: 0x194
  */
@@ -369,7 +205,7 @@ void SHChooseSides2::SceneCreated()
 
         for (int i = 0; i < 2; i++)
         {
-            eTeamID teamid = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)i);
+            eTeamID teamid = nlSingleton<GameInfoManager>::Instance()->GetTeam((short)i);
             CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN, mainfilename, 0x80, teamid, i);
             CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN_OUTLINE, outlinefilename, 0x80, teamid, i);
             CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_CAPTAIN_FLASH, flashfilename, 0x80, teamid, i);
@@ -388,7 +224,7 @@ void SHChooseSides2::SceneCreated()
             pNameComp->GetActiveSlide(),
             InlineHasher(nlStringLowerHash("COMPONENT")));
 
-        pIconComp->SetActiveSlide(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)0)));
+        pIconComp->SetActiveSlide(GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam((short)0)));
 
         pNameComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             currentSlide,
@@ -399,7 +235,7 @@ void SHChooseSides2::SceneCreated()
             pNameComp->GetActiveSlide(),
             InlineHasher(nlStringLowerHash("COMPONENT")));
 
-        pIconComp->SetActiveSlide(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)1)));
+        pIconComp->SetActiveSlide(GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam((short)1)));
     }
     else
     {
@@ -425,7 +261,7 @@ void SHChooseSides2::SceneCreated()
 
         for (int i = 0; i < 2; i++)
         {
-            eTeamID teamid = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)i);
+            eTeamID teamid = nlSingleton<GameInfoManager>::Instance()->GetTeam((short)i);
             switch (teamid)
             {
             case TEAM_DAISY:
@@ -479,7 +315,7 @@ void SHChooseSides2::SceneCreated()
         captainnamecomponent->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("CAPTAIN_NAME")));
 
-    captaintext->m_LocStrId = GetLOCTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)0));
+    captaintext->m_LocStrId = GetLOCTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam((short)0));
     captaintext->m_OverloadFlags |= 8;
 
     captainnamecomponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
@@ -491,7 +327,7 @@ void SHChooseSides2::SceneCreated()
         captainnamecomponent->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("CAPTAIN_NAME")));
 
-    captaintext->m_LocStrId = GetLOCTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)1));
+    captaintext->m_LocStrId = GetLOCTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam((short)1));
     captaintext->m_OverloadFlags |= 8;
 
     TLComponentInstance* buttons = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
@@ -596,14 +432,14 @@ void SHChooseSides2::UpdateChooseSideComponent(float fDeltaT)
                 {
                     g_pTeams[0]->UpdateControllers();
                     g_pTeams[1]->UpdateControllers();
-                    nlSingleton<GameInfoManager>::s_pInstance->ApplyDifficultySettings();
+                    nlSingleton<GameInfoManager>::Instance()->ApplyDifficultySettings();
                     g_pGame->SetDifficulty(
                         GetDifficulty0(nlSingleton<GameInfoManager>::s_pInstance),
                         GetDifficulty1(nlSingleton<GameInfoManager>::s_pInstance),
                         (eDifficultyID)3);
                 }
 
-                nlSingleton<OverlayManager>::s_pInstance->Push(IGSCENE_PAUSE, SCREEN_BACK, true);
+                nlSingleton<OverlayManager>::Instance()->Push(IGSCENE_PAUSE, SCREEN_BACK, true);
                 break;
             }
         }
@@ -639,7 +475,7 @@ void SHChooseSides2::UpdateChooseSideComponent(float fDeltaT)
                 {
                     if (!mChooseSide.AtLeastOnePlayerReady())
                     {
-                        FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+                        FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
                         popup->Create(POPUP_NO_SIDES_CHOSEN);
                     }
                 }
@@ -658,7 +494,7 @@ void SHChooseSides2::UpdateChooseSideComponent(float fDeltaT)
             {
                 if (!GetConfigBool(Config::Global(), "no_humans", false))
                 {
-                    FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<OverlayManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+                    FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<OverlayManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
                     popup->Create(POPUP_NO_SIDES_CHOSEN);
                     break;
                 }
@@ -673,26 +509,26 @@ void SHChooseSides2::UpdateChooseSideComponent(float fDeltaT)
             {
                 g_pTeams[0]->UpdateControllers();
                 g_pTeams[1]->UpdateControllers();
-                nlSingleton<GameInfoManager>::s_pInstance->ApplyDifficultySettings();
+                nlSingleton<GameInfoManager>::Instance()->ApplyDifficultySettings();
                 g_pGame->SetDifficulty(
                     GetDifficulty0(nlSingleton<GameInfoManager>::s_pInstance),
                     GetDifficulty1(nlSingleton<GameInfoManager>::s_pInstance),
                     (eDifficultyID)3);
             }
 
-            if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+            if (nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode)
             {
-                nlSingleton<OverlayManager>::s_pInstance->Push(IGSCENE_STRIKERS_101_PAUSE, SCREEN_BACK, true);
+                nlSingleton<OverlayManager>::Instance()->Push(IGSCENE_STRIKERS_101_PAUSE, SCREEN_BACK, true);
             }
             else
             {
-                PauseMenuScene* scene = (PauseMenuScene*)nlSingleton<OverlayManager>::s_pInstance->Push(IGSCENE_PAUSE, SCREEN_BACK, true);
+                PauseMenuScene* scene = (PauseMenuScene*)nlSingleton<OverlayManager>::Instance()->Push(IGSCENE_PAUSE, SCREEN_BACK, true);
                 scene->mStartAnimAtEnd = true;
             }
         }
         else
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(mBackScene, SCREEN_BACK, true);
+            nlSingleton<GameSceneManager>::Instance()->Push(mBackScene, SCREEN_BACK, true);
         }
         break;
     }
@@ -789,7 +625,7 @@ static inline void GetAllSides()
 {
     for (int i = 0; i < 4; i++)
     {
-        nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((u16)i);
+        nlSingleton<GameInfoManager>::Instance()->GetPlayingSide((u16)i);
     }
 }
 
@@ -797,7 +633,7 @@ static inline void SetAllSides(IChooseSide& cs)
 {
     for (int i = 0; i < 4; i++)
     {
-        nlSingleton<GameInfoManager>::s_pInstance->SetPlayingSide((u16)i, (short)cs.mPlayingSides[i]);
+        nlSingleton<GameInfoManager>::Instance()->SetPlayingSide((u16)i, (short)cs.mPlayingSides[i]);
     }
 }
 
@@ -838,7 +674,7 @@ void SHChooseSides2::Update(float fDeltaT)
             {
                 g_pTeams[0]->UpdateControllers();
                 g_pTeams[1]->UpdateControllers();
-                nlSingleton<GameInfoManager>::s_pInstance->ApplyDifficultySettings();
+                nlSingleton<GameInfoManager>::Instance()->ApplyDifficultySettings();
                 g_pGame->SetDifficulty(
                     GetDifficulty0(nlSingleton<GameInfoManager>::s_pInstance),
                     GetDifficulty1(nlSingleton<GameInfoManager>::s_pInstance),
@@ -849,11 +685,11 @@ void SHChooseSides2::Update(float fDeltaT)
 
             if (mNextScene == SCENE_SUPER_LOADING)
             {
-                nlSingleton<GameSceneManager>::s_pInstance->PushLoadingScene(true);
+                nlSingleton<GameSceneManager>::Instance()->PushLoadingScene(true);
             }
             else
             {
-                nlSingleton<GameSceneManager>::s_pInstance->Push(mNextScene, SCREEN_FORWARD, true);
+                nlSingleton<GameSceneManager>::Instance()->Push(mNextScene, SCREEN_FORWARD, true);
             }
 
             mProceedDelay = -1;
@@ -871,7 +707,7 @@ void SHChooseSides2::Update(float fDeltaT)
 
                 for (int i = 0; i < 2; i++)
                 {
-                    eTeamID teamid = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)i);
+                    eTeamID teamid = nlSingleton<GameInfoManager>::Instance()->GetTeam((short)i);
                     FECharacterSound::PlayCaptainSlideIn(teamid);
                 }
             }

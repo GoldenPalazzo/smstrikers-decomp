@@ -11,11 +11,11 @@ class PhysicsNPC : public PhysicsSphere
 public:
     typedef void (*CallbackFn)(PhysicsObject*, PhysicsObject*, const nlVector3&);
 
-    PhysicsNPC(float);
+    PhysicsNPC(float radius);
     // virtual ~PhysicsNPC() { };
     virtual int GetObjectType() const { return 0x1A; };
     virtual bool SetContactInfo(dContact* contact, PhysicsObject* other, bool first);
-    virtual ContactType Contact(PhysicsObject*, dContact*, int);
+    virtual ContactType Contact(PhysicsObject* obj, dContact* info, int what);
 
     void SetCallbackFunction(CallbackFn cb);
     // void SetCallbackFunction(void (*)(PhysicsObject*, PhysicsObject*, const nlVector3&));

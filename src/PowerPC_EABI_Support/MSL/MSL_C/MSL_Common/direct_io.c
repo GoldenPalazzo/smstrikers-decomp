@@ -6,6 +6,9 @@
 #include "string.h"
 #include "FILE_POS.h"
 
+/**
+ * Offset/Address/Size: 0x6D8 | 0x802307D8 | size: 0x7C
+ */
 size_t fread(const void* buffer, size_t size, size_t count, FILE* stream)
 {
     size_t retval;
@@ -17,6 +20,9 @@ size_t fread(const void* buffer, size_t size, size_t count, FILE* stream)
     return retval;
 }
 
+/**
+ * Offset/Address/Size: 0x388 | 0x80230488 | size: 0x350
+ */
 size_t __fread(const void* buffer, size_t size, size_t count, FILE* stream)
 {
     int always_buffer, ioresult;
@@ -179,6 +185,9 @@ size_t __fread(const void* buffer, size_t size, size_t count, FILE* stream)
     return (bytes_read / size);
 }
 
+/**
+ * Offset/Address/Size: 0x30C | 0x8023040C | size: 0x7C
+ */
 size_t fwrite(const void* buffer, size_t size, size_t count, FILE* stream)
 {
     size_t retval;
@@ -190,6 +199,9 @@ size_t fwrite(const void* buffer, size_t size, size_t count, FILE* stream)
     return (retval);
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80230100 | size: 0x30C
+ */
 size_t __fwrite(const void* buffer, size_t size, size_t count, FILE* stream)
 {
     unsigned char* write_ptr;

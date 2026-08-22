@@ -83,9 +83,9 @@ public:
         m_Volume = 0x7F;
         m_Pan = 0x40;
     }
-    void Update(unsigned long, unsigned long);
-    unsigned long UpdateHandler(unsigned long, unsigned long);
-    unsigned long DoUpdate(unsigned long);
+    void Update(unsigned long Offset, unsigned long Length);
+    unsigned long UpdateHandler(unsigned long LengthA, unsigned long LengthB);
+    unsigned long DoUpdate(unsigned long Length);
     static inline unsigned long _UpdateHandler(
         void*, unsigned long LengthA, void*, unsigned long LengthB,
         unsigned long user);
@@ -123,11 +123,11 @@ public:
     {
         m_BuffersFree = (m_BuffersFree & ~(1 << index)) | (state << index);
     }
-    void Init(unsigned long);
-    void CreateBuffers(unsigned long);
+    void Init(unsigned long BufferPoolSize);
+    void CreateBuffers(unsigned long Count);
     void DeleteBuffers();
-    void FreeBuffer(GCAudioStreaming::AudioStreamBuffer*);
-    AudioStreamBuffer* GetFreeBuffer(GCAudioStreaming::AudioStream*);
+    void FreeBuffer(GCAudioStreaming::AudioStreamBuffer* pBuffer);
+    AudioStreamBuffer* GetFreeBuffer(GCAudioStreaming::AudioStream* pStream);
 
     static const unsigned long MAX_BUFFERS = 8;
 
@@ -514,9 +514,9 @@ public:
         Purge();
     }
 
-    static void _HdrReadCB(nlFile*, void*, unsigned int, unsigned long);
-    static void _WarmReadCB(nlFile*, void*, unsigned int, unsigned long);
-    static void _UpdateReadCB(nlFile*, void*, unsigned int, unsigned long);
+    static void _HdrReadCB(nlFile* pFile, void* pData, unsigned int Length, unsigned long User);
+    static void _WarmReadCB(nlFile* pFile, void* pData, unsigned int Length, unsigned long User);
+    static void _UpdateReadCB(nlFile* pFile, void* pData, unsigned int Length, unsigned long User);
 
     class READ_CB_INFO
     {
@@ -570,8 +570,8 @@ public:
         m_State = SS_Initd;
     }
     inline virtual ~MonoAudioStream();
-    virtual unsigned long DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, GCAudioStreaming::AudioStreamBuffer*);
-    virtual void Warm(bool);
+    virtual unsigned long DoUpdateRead(unsigned long MRAMOffsetA, unsigned long LengthA, unsigned long MRAMOffsetB, unsigned long LengthB, GCAudioStreaming::AudioStreamBuffer* pRequestingBuffer);
+    virtual void Warm(bool CoolOnStop);
     void ReadHeader();
     void ReadAsync(void* pData, unsigned int Length)
     {
@@ -623,8 +623,8 @@ public:
     {
         Destructor();
     }
-    virtual unsigned long DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, GCAudioStreaming::AudioStreamBuffer*);
-    void InterleavedHdrReadCB(nlFile*, void*, unsigned int);
+    virtual unsigned long DoUpdateRead(unsigned long MRAMOffsetA, unsigned long LengthA, unsigned long MRAMOffsetB, unsigned long LengthB, GCAudioStreaming::AudioStreamBuffer* pRequestingBuffer);
+    void InterleavedHdrReadCB(nlFile* pFile, void* pData, unsigned int Length);
     AudioStreamBuffer* GetBuffer(unsigned long index)
     {
         return index < m_BufferCount ? m_Buffers[index] : NULL;
@@ -669,7 +669,7 @@ public:
     {
         m_StreamPos += length;
     }
-    virtual void Warm(bool);
+    virtual void Warm(bool CoolOnStop);
     inline virtual void CancelPendingReads();
     static inline void _AsyncCancelCB(
         nlFile*, void* buffer, unsigned int, unsigned long uParam,

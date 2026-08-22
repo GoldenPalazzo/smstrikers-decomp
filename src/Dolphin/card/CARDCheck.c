@@ -6,6 +6,9 @@ static s32 VerifyID(CARDControl* card);
 static s32 VerifyDir(CARDControl* card, int* pcurrent);
 static s32 VerifyFAT(CARDControl* card, int* pcurrent);
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80240868 | size: 0x1B0
+ */
 void __CARDCheckSum(void* ptr, int length, u16* checksum, u16* checksumInv)
 {
     u16* p;
@@ -28,6 +31,9 @@ void __CARDCheckSum(void* ptr, int length, u16* checksum, u16* checksumInv)
         *checksumInv = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x1B0 | 0x80240A18 | size: 0x284
+ */
 static s32 VerifyID(CARDControl* card)
 {
     CARDID* id;
@@ -67,6 +73,9 @@ static s32 VerifyID(CARDControl* card)
     return CARD_RESULT_READY;
 }
 
+/**
+ * Offset/Address/Size: 0x434 | 0x80240C9C | size: 0x240
+ */
 static s32 VerifyDir(CARDControl* card, int* pcurrent)
 {
     CARDDir* dir[2];
@@ -114,6 +123,9 @@ static s32 VerifyDir(CARDControl* card, int* pcurrent)
     return errors;
 }
 
+/**
+ * Offset/Address/Size: 0x674 | 0x80240EDC | size: 0x284
+ */
 static s32 VerifyFAT(CARDControl* card, int* pcurrent)
 {
     u16* fat[2];
@@ -177,6 +189,9 @@ static s32 VerifyFAT(CARDControl* card, int* pcurrent)
     return errors;
 }
 
+/**
+ * Offset/Address/Size: 0x8F8 | 0x80241160 | size: 0x8C
+ */
 s32 __CARDVerify(CARDControl* card)
 {
     s32 result;
@@ -201,6 +216,9 @@ s32 __CARDVerify(CARDControl* card)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x984 | 0x802411EC | size: 0x590
+ */
 s32 CARDCheckExAsync(s32 chan, s32* xferBytes, CARDCallback callback)
 {
     CARDControl* card;
@@ -366,6 +384,9 @@ s32 CARDCheckExAsync(s32 chan, s32* xferBytes, CARDCallback callback)
     return CARD_RESULT_READY;
 }
 
+/**
+ * Offset/Address/Size: 0xF14 | 0x8024177C | size: 0x28
+ */
 s32 CARDCheckAsync(s32 chan, CARDCallback callback)
 {
     s32 xferBytes;

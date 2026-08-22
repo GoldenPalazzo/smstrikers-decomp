@@ -32,8 +32,8 @@ eTerrain g_StadiumTerrain[7] = {
  */
 bool WorldLoader::StartLoad(LoadingManager* manager)
 {
-    bool temp_ret = WorldManager::LoadWorld(g_szStadiumName[GameInfoManager::s_pInstance->GetStadium()], mTEMP_FOR_FE);
-    if (temp_ret == 0)
+    eStadiumID stadiumtoload = GameInfoManager::Instance()->GetStadium();
+    if (WorldManager::LoadWorld(g_szStadiumName[stadiumtoload], mTEMP_FOR_FE) == 0)
     {
         tDebugPrintManager::Print(DC_LOADER, "Failed to load the game world.\n");
         nlBreak();

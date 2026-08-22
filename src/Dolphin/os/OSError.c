@@ -9,6 +9,9 @@ OSErrorHandler __OSErrorTable[17];
 #define FPSCR_ENABLE (FPSCR_VE | FPSCR_OE | FPSCR_UE | FPSCR_ZE | FPSCR_XE)
 u32 __OSFpscrEnableBits = FPSCR_ENABLE;
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802557D8 | size: 0x80
+ */
 void OSReport(const char* msg, ...)
 {
     va_list marker;
@@ -22,6 +25,9 @@ void OSVReport(const char* msg, va_list list)
     vprintf(msg, list);
 }
 
+/**
+ * Offset/Address/Size: 0x80 | 0x80255858 | size: 0x12C
+ */
 void OSPanic(const char* file, int line, const char* msg, ...)
 {
     va_list marker;
@@ -43,6 +49,9 @@ void OSPanic(const char* file, int line, const char* msg, ...)
     PPCHalt();
 }
 
+/**
+ * Offset/Address/Size: 0x1AC | 0x80255984 | size: 0x218
+ */
 OSErrorHandler OSSetErrorHandler(OSError error, OSErrorHandler handler)
 {
     OSErrorHandler oldHandler;
@@ -111,6 +120,9 @@ OSErrorHandler OSSetErrorHandler(OSError error, OSErrorHandler handler)
 
 volatile OSContext* __OSFPUContext AT_ADDRESS(OS_BASE_CACHED | 0x00D8);
 
+/**
+ * Offset/Address/Size: 0x3C4 | 0x80255B9C | size: 0x2E8
+ */
 void __OSUnhandledException(__OSException exception, OSContext* context, u32 dsisr, u32 dar)
 {
     OSTime now;

@@ -357,7 +357,7 @@ void FETweenManager::Update(float fDeltaT)
 FETweener* FETweenManager::createTween(float* startVals, float* endVals, float duration, float delay, unsigned char arraySize,
     float (*tweenFunc)(float, float, float, float), void* applyObj, void (*setterFunc)(void*, const float*))
 {
-    FETweener* retTweener = new (nlMalloc(0x50, 0x20, true)) FETweener(arraySize, startVals, endVals, duration, delay, tweenFunc, applyObj, (void (*)(void*, float*))setterFunc);
+    FETweener* retTweener = new (nlMalloc(sizeof(FETweener), 0x20, true)) FETweener(arraySize, startVals, endVals, duration, delay, tweenFunc, applyObj, (void (*)(void*, float*))setterFunc);
 
     DLListEntry<FETweener*>* pEntry = NULL;
 

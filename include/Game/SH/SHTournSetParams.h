@@ -14,17 +14,17 @@ class TournSetParamsScene : public BaseSceneHandler
 public:
     TournSetParamsScene();
     virtual ~TournSetParamsScene();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
     virtual void SceneCreated();
 
-    void BuildSubMenuList(int, TLComponentInstance*, bool, int);
-    void SetInitialParams(bool, int, int);
+    void BuildSubMenuList(int menuitem, TLComponentInstance* compinstance, bool wraps, int startindex);
+    void SetInitialParams(bool isLeagueMode, int numTeams, int numGames);
     void ApplyMenuDefaults();
     void InitializeMenu();
     void Proceed();
 
-    bool ColourAllText(const nlColour&, int);
-    void ColourAllText(TLComponentInstance&, const nlColour&);
+    bool ColourAllText(const nlColour& colour, int menuitem);
+    void ColourAllText(TLComponentInstance& component, const nlColour& colour);
 
     /* 0x01C */ MenuList<TLComponentInstance> mMenuItems; // size 0x214
     /* 0x230 */ SlideMenuList* mSlideMenuLists[3];

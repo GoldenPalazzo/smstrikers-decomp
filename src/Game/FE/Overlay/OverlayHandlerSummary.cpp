@@ -231,7 +231,7 @@ void SummaryOverlay::Update(float fDeltaT)
     {
         if (showBButton && g_pFEInput->JustPressed(m_controllingInput, PAD_BUTTON_B, false, NULL))
         {
-            PauseMenuScene* pauseScene = (PauseMenuScene*)nlSingleton<OverlayManager>::s_pInstance->Push(IGSCENE_PAUSE, SCREEN_BACK, true);
+            PauseMenuScene* pauseScene = (PauseMenuScene*)nlSingleton<OverlayManager>::Instance()->Push(IGSCENE_PAUSE, SCREEN_BACK, true);
             pauseScene->mStartAnimAtEnd = true;
             FEAudio::PlayAnimAudioEvent("sfx_back", false);
         }
@@ -242,7 +242,7 @@ void SummaryOverlay::Update(float fDeltaT)
         {
             if (FrontEnd::m_feStateCurrent != FE_ALL_PADS)
             {
-                if (nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode == GameInfoManager::GM_FRIENDLY)
+                if (nlSingleton<GameInfoManager>::Instance()->mCurrentMode == GameInfoManager::GM_FRIENDLY)
                 {
                     if (g_e3_Build)
                     {
@@ -250,7 +250,7 @@ void SummaryOverlay::Update(float fDeltaT)
                     }
                     else
                     {
-                        nlSingleton<OverlayManager>::s_pInstance->Push(IGSCENE_PAUSE_POST_GAME, SCREEN_FORWARD, true);
+                        nlSingleton<OverlayManager>::Instance()->Push(IGSCENE_PAUSE_POST_GAME, SCREEN_FORWARD, true);
                     }
                 }
                 else
@@ -319,7 +319,7 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
         numRows = 6;
 
         WideBasicString unformatted(LookupSummaryLocString("TOTAL_MATCH_SUMMARY"));
-        NLString numGamesString(LexicalCast<NLString, int>((int)nlSingleton<StatsTracker>::s_pInstance->mNumConsecutiveGamesPlayed));
+        NLString numGamesString(LexicalCast<NLString, int>((int)nlSingleton<StatsTracker>::Instance()->mNumConsecutiveGamesPlayed));
         unsigned short tempBuffer[32];
         nlStrToWcs(numGamesString.c_str(), tempBuffer, 0x40);
         WideBasicString formatted(Format(unformatted, tempBuffer));
@@ -362,7 +362,7 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
         }
         else
         {
-            statsStrings[0] = LexicalCast<NLString, int>((int)nlSingleton<StatsTracker>::s_pInstance->mNumGamesWon[team]);
+            statsStrings[0] = LexicalCast<NLString, int>((int)nlSingleton<StatsTracker>::Instance()->mNumGamesWon[team]);
             statsStrings[1] = LexicalCast<NLString, int>((int)displayedStats[team]->mNumGoalsFor);
             statsStrings[2] = LexicalCast<NLString, int>((int)displayedStats[team]->mNumShotsOnGoal);
             statsStrings[3] = LexicalCast<NLString, int>((int)displayedStats[team]->mNumFouls);
@@ -426,7 +426,7 @@ void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
             displayedStats[j] = &mCumulativeUserStats[j];
 
             WideBasicString unformatted(LookupSummaryLocString("TOTAL_USER_STATS"));
-            NLString numGamesString(LexicalCast<NLString, int>((int)nlSingleton<StatsTracker>::s_pInstance->mNumConsecutiveGamesPlayed));
+            NLString numGamesString(LexicalCast<NLString, int>((int)nlSingleton<StatsTracker>::Instance()->mNumConsecutiveGamesPlayed));
             unsigned short tempBuffer[32];
             nlStrToWcs(numGamesString.c_str(), tempBuffer, 0x40);
             WideBasicString formatted(Format(unformatted, tempBuffer));
@@ -455,7 +455,7 @@ void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
             pSlide,
             InlineHasher(nlStringLowerHash(SUMMARY_COL_NAMES[user])));
 
-        if (nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((unsigned short)user) == -1)
+        if (nlSingleton<GameInfoManager>::Instance()->GetPlayingSide((unsigned short)user) == -1)
         {
             pComponentInstances[user]->m_bVisible = false;
         }

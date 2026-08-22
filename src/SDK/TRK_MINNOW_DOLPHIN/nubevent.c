@@ -5,6 +5,9 @@
 
 TRKEventQueue gTRKEventQueue;
 
+/**
+ * Offset/Address/Size: 0x1D0 | 0x80224B88 | size: 0x58
+ */
 DSError TRKInitializeEventQueue()
 {
     TRKInitializeMutex(&gTRKEventQueue);
@@ -21,6 +24,9 @@ inline void TRKCopyEvent(TRKEvent* dstEvent, const TRKEvent* srcEvent)
     TRK_memcpy(dstEvent, srcEvent, sizeof(TRKEvent));
 }
 
+/**
+ * Offset/Address/Size: 0x11C | 0x80224AD4 | size: 0xB4
+ */
 BOOL TRKGetNextEvent(TRKEvent* event)
 {
     BOOL status = 0;
@@ -39,6 +45,9 @@ BOOL TRKGetNextEvent(TRKEvent* event)
     return status;
 }
 
+/**
+ * Offset/Address/Size: 0x3C | 0x802249F4 | size: 0xE0
+ */
 DSError TRKPostEvent(TRKEvent* event)
 {
     DSError ret = DS_NoError;
@@ -66,6 +75,9 @@ DSError TRKPostEvent(TRKEvent* event)
     return ret;
 }
 
+/**
+ * Offset/Address/Size: 0x24 | 0x802249DC | size: 0x18
+ */
 void TRKConstructEvent(TRKEvent* event, /*NubEventType*/ u32 eventType)
 {
     event->eventType = eventType;
@@ -73,6 +85,9 @@ void TRKConstructEvent(TRKEvent* event, /*NubEventType*/ u32 eventType)
     event->msgBufID = -1;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802249B8 | size: 0x24
+ */
 void TRKDestructEvent(TRKEvent* event)
 {
     TRKReleaseBuffer(event->msgBufID);

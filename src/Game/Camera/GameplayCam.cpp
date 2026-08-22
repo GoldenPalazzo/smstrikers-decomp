@@ -167,10 +167,10 @@ void GameplayCamera::CalcDynamicZoom()
  */
 void GameplayCamera::Update(float deltaTime)
 {
-    m_bDynamicZoom = nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mVisualOptions.mIsAutoZoomCamera;
-    m_fDesiredZoom = 1.0f - nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mVisualOptions.mCameraZoomLevel;
+    m_bDynamicZoom = nlSingleton<GameInfoManager>::Instance()->mUserInfo.mVisualOptions.mIsAutoZoomCamera;
+    m_fDesiredZoom = 1.0f - nlSingleton<GameInfoManager>::Instance()->mUserInfo.mVisualOptions.mCameraZoomLevel;
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mVisualOptions.mIsWidescreen)
+    if (nlSingleton<GameInfoManager>::Instance()->mUserInfo.mVisualOptions.mIsWidescreen)
     {
         m_nearZoom.m_CameraData = gCameraData + 2;
         m_farZoom.m_CameraData = gCameraData + 3;

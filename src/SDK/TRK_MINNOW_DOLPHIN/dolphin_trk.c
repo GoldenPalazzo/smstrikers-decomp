@@ -24,16 +24,25 @@ static u32 TRK_ISR_OFFSETS[15] = { PPC_SystemReset,
     PPC_ThermalManagementInterrupt };
 
 void __TRK_copy_vectors(void);
+/**
+ * Offset/Address/Size: 0x0 | 0x80005088 | size: 0x2C
+ */
 __declspec(section ".init") void __TRK_reset(void)
 {
     OSResetSystem(FALSE, 0, FALSE);
 }
 
+/**
+ * Offset/Address/Size: 0x61C | 0x8022991C | size: 0x20
+ */
 void EnableMetroTRKInterrupts(void)
 {
     EnableEXI2Interrupts();
 }
 
+/**
+ * Offset/Address/Size: 0x5C4 | 0x802298C4 | size: 0x58
+ */
 u32 TRKTargetTranslate(u32 param_0)
 {
     if (param_0 >= lc_base)
@@ -60,6 +69,9 @@ void TRK_copy_vector(u32 offset)
     TRK_flush_cache(destPtr, 0x100);
 }
 
+/**
+ * Offset/Address/Size: 0x498 | 0x80229798 | size: 0x12C
+ */
 void __TRK_copy_vectors(void)
 {
     u32 r3 = lc_base;
@@ -91,6 +103,9 @@ void __TRK_copy_vectors(void)
     } while (i <= 14);
 }
 
+/**
+ * Offset/Address/Size: 0x44C | 0x8022974C | size: 0x4C
+ */
 DSError TRKInitializeTarget()
 {
     gTRKState.isStopped = TRUE;
@@ -102,6 +117,9 @@ DSError TRKInitializeTarget()
 #define __dcbi(a, b)    asm { dcbi a, b }
 #define __dcbfASM(a, b) asm { dcbf a, b }
 
+/**
+ * Offset/Address/Size: 0x318 | 0x80229618 | size: 0x134
+ */
 void TRK__read_aram(register int c, register u32 p2, void* p3)
 {
     u32 err;
@@ -149,6 +167,9 @@ void TRK__read_aram(register int c, register u32 p2, void* p3)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x12C | 0x8022942C | size: 0x1EC
+ */
 void TRK__write_aram(register int c, register u32 p2, void* p3)
 {
     u8 buff[32] ALIGN_DECL(32);
@@ -238,6 +259,9 @@ void TRK__write_aram(register int c, register u32 p2, void* p3)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80229300 | size: 0x98
+ */
 asm void InitMetroTRK()
 {
     // clang-format off
@@ -272,10 +296,8 @@ asm void InitMetroTRK()
 	mtspr  0x3f2, r0
 	mtspr  0x3f5, r0
 	//Restore stack pointer
-	lis r1, 0x8038
-	ori r1, r1, 0xa000
-	// lis r1, _db_stack_addr@h
-	// ori r1, r1, _db_stack_addr@l
+	lis r1, _db_stack_addr@h
+	ori r1, r1, _db_stack_addr@l
 	mr r3, r5
 	bl InitMetroTRKCommTable //Initialize comm table
 	/*
@@ -302,6 +324,9 @@ initCommTableSuccess:
     // clang-format on
 }
 
+/**
+ * Offset/Address/Size: 0x98 | 0x80229398 | size: 0x94
+ */
 asm void InitMetroTRK_BBA()
 {
     // clang-format off
@@ -335,10 +360,8 @@ asm void InitMetroTRK_BBA()
 	mtspr  0x3f2, r0
 	mtspr 0x3f5, r0
 	//Restore the stack pointer
-	lis r1, 0x8038
-	ori r1, r1, 0xa000
-	// lis r1, _db_stack_addr@h
-	// ori r1, r1, _db_stack_addr@l
+	lis r1, _db_stack_addr@h
+	ori r1, r1, _db_stack_addr@l
 	li r3, 2
 	bl InitMetroTRKCommTable //Initialize comm table as BBA hardware
 	/*

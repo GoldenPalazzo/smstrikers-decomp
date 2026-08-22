@@ -57,19 +57,19 @@ bool Audio::TrackMgrFileNameParamLookup(const char* param, char* out, unsigned l
     switch (hash)
     {
     case 0x3B762F28:
-        value = GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0));
+        value = GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam(0));
         nlStrNCpy(out, value, size);
         break;
 
     case (s32)0xB59118F1:
     {
-        u32 outValue = (u32)GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1));
+        u32 outValue = (u32)GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam(1));
         nlStrNCpy(out, (const char*)outValue, size);
         break;
     }
 
     case (s32)0xBDD1CBB6:
-        switch (nlSingleton<GameInfoManager>::s_pInstance->GetStadium())
+        switch (nlSingleton<GameInfoManager>::Instance()->GetStadium())
         {
         case 0:
             nlStrNCpy(out, "pipeline", size);
@@ -149,7 +149,7 @@ bool Audio::TrackMgrFileNameParamLookup(const char* param, char* out, unsigned l
     {
         int sideInt = g_pTeams[0]->m_nScore < g_pTeams[1]->m_nScore;
         s16 side = (s16)sideInt;
-        u32 outValue = (u32)GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(side));
+        u32 outValue = (u32)GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam(side));
         nlStrNCpy(out, (const char*)outValue, size);
         break;
     }

@@ -43,6 +43,9 @@ spaces
 // and moving it to the front of the space's list. all the parents of a
 // dirty geom also become dirty.
 
+/**
+ * Offset/Address/Size: 0xB90 | 0x80216CA8 | size: 0x88
+ */
 void dGeomMoved(dxGeom* geom)
 {
     dAASSERT(geom);
@@ -86,6 +89,9 @@ dxSpace::dxSpace(dSpaceID _space)
     lock_count = 0;
 }
 
+/**
+ * Offset/Address/Size: 0xAC8 | 0x80216BE0 | size: 0xC8
+ */
 dxSpace::~dxSpace()
 {
     CHECK_NOT_LOCKED(this);
@@ -110,6 +116,9 @@ dxSpace::~dxSpace()
     }
 }
 
+/**
+ * Offset/Address/Size: 0x990 | 0x80216AA8 | size: 0x138
+ */
 void dxSpace::computeAABB()
 {
     if (first)
@@ -163,6 +172,9 @@ int dxSpace::getNumGeoms()
 
 // the dirty geoms are numbered 0..k, the clean geoms are numbered k+1..count-1
 
+/**
+ * Offset/Address/Size: 0x924 | 0x80216A3C | size: 0x6C
+ */
 dxGeom* dxSpace::getGeom(int i)
 {
     dUASSERT(i >= 0 && i < count, "index out of range");
@@ -188,6 +200,9 @@ dxGeom* dxSpace::getGeom(int i)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x84C | 0x80216964 | size: 0xD8
+ */
 void dxSpace::add(dxGeom* geom)
 {
     CHECK_NOT_LOCKED(this);
@@ -210,6 +225,9 @@ void dxSpace::add(dxGeom* geom)
     dGeomMoved(this);
 }
 
+/**
+ * Offset/Address/Size: 0x780 | 0x80216898 | size: 0xCC
+ */
 void dxSpace::remove(dxGeom* geom)
 {
     CHECK_NOT_LOCKED(this);
@@ -233,6 +251,9 @@ void dxSpace::remove(dxGeom* geom)
     dGeomMoved(this);
 }
 
+/**
+ * Offset/Address/Size: 0x734 | 0x8021684C | size: 0x4C
+ */
 void dxSpace::dirty(dxGeom* geom)
 {
     geom->spaceRemove();
@@ -256,6 +277,9 @@ dxSimpleSpace::dxSimpleSpace(dSpaceID _space)
     type = dSimpleSpaceClass;
 }
 
+/**
+ * Offset/Address/Size: 0x66C | 0x80216784 | size: 0xC8
+ */
 void dxSimpleSpace::cleanGeoms()
 {
     // compute the AABBs of all dirty geoms, and clear the dirty flags
@@ -272,6 +296,9 @@ void dxSimpleSpace::cleanGeoms()
     lock_count--;
 }
 
+/**
+ * Offset/Address/Size: 0x4C8 | 0x802165E0 | size: 0x1A4
+ */
 void dxSimpleSpace::collide(void* data, dNearCallback* callback)
 {
     dAASSERT(callback);
@@ -297,6 +324,9 @@ void dxSimpleSpace::collide(void* data, dNearCallback* callback)
     lock_count--;
 }
 
+/**
+ * Offset/Address/Size: 0x314 | 0x8021642C | size: 0x1B4
+ */
 void dxSimpleSpace::collide2(void* data, dxGeom* geom,
     dNearCallback* callback)
 {
@@ -667,6 +697,9 @@ void dxHashSpace::collide2(void* data, dxGeom* geom,
 //****************************************************************************
 // space functions
 
+/**
+ * Offset/Address/Size: 0x284 | 0x8021639C | size: 0x90
+ */
 dxSpace* dSimpleSpaceCreate(dxSpace* space)
 {
     return new dxSimpleSpace(space);
@@ -694,6 +727,9 @@ void dHashSpaceGetLevels(dxSpace* space, int* minlevel, int* maxlevel)
     hspace->getLevels(minlevel, maxlevel);
 }
 
+/**
+ * Offset/Address/Size: 0x264 | 0x8021637C | size: 0x20
+ */
 void dSpaceDestroy(dxSpace* space)
 {
     dAASSERT(space);
@@ -715,6 +751,9 @@ int dSpaceGetCleanup(dxSpace* space)
     return space->getCleanup();
 }
 
+/**
+ * Offset/Address/Size: 0x238 | 0x80216350 | size: 0x2C
+ */
 void dSpaceAdd(dxSpace* space, dxGeom* g)
 {
     dAASSERT(space);
@@ -723,6 +762,9 @@ void dSpaceAdd(dxSpace* space, dxGeom* g)
     space->add(g);
 }
 
+/**
+ * Offset/Address/Size: 0x20C | 0x80216324 | size: 0x2C
+ */
 void dSpaceRemove(dxSpace* space, dxGeom* g)
 {
     dAASSERT(space);
@@ -746,6 +788,9 @@ void dSpaceClean(dxSpace* space)
     space->cleanGeoms();
 }
 
+/**
+ * Offset/Address/Size: 0x204 | 0x8021631C | size: 0x8
+ */
 int dSpaceGetNumGeoms(dxSpace* space)
 {
     dAASSERT(space);
@@ -753,6 +798,9 @@ int dSpaceGetNumGeoms(dxSpace* space)
     return space->getNumGeoms();
 }
 
+/**
+ * Offset/Address/Size: 0x1D8 | 0x802162F0 | size: 0x2C
+ */
 dGeomID dSpaceGetGeom(dxSpace* space, int i)
 {
     dAASSERT(space);
@@ -760,6 +808,9 @@ dGeomID dSpaceGetGeom(dxSpace* space, int i)
     return space->getGeom(i);
 }
 
+/**
+ * Offset/Address/Size: 0x1AC | 0x802162C4 | size: 0x2C
+ */
 void dSpaceCollide(dxSpace* space, void* data, dNearCallback* callback)
 {
     dAASSERT(space && callback);
@@ -767,6 +818,9 @@ void dSpaceCollide(dxSpace* space, void* data, dNearCallback* callback)
     space->collide(data, callback);
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80216118 | size: 0x1AC
+ */
 void dSpaceCollide2(dxGeom* g1, dxGeom* g2, void* data,
     dNearCallback* callback)
 {

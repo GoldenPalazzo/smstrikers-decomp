@@ -1,6 +1,9 @@
 #include "string.h"
 
 /* 80366130-803661FC 360A70 00CC+00 0/0 2/2 0/0 .text            memmove */
+/**
+ * Offset/Address/Size: 0xA4 | 0x8023169C | size: 0xCC
+ */
 void* memmove(void* dst, const void* src, size_t n)
 {
     unsigned char* csrc;
@@ -65,6 +68,9 @@ void* memmove(void* dst, const void* src, size_t n)
 }
 
 /* 80366104-80366130 360A44 002C+00 0/0 1/1 0/0 .text            memchr */
+/**
+ * Offset/Address/Size: 0x78 | 0x80231670 | size: 0x2C
+ */
 void* memchr(const void* ptr, int ch, size_t count)
 {
     const unsigned char* p;
@@ -79,6 +85,9 @@ void* memchr(const void* ptr, int ch, size_t count)
 }
 
 /* 803660D8-80366104 360A18 002C+00 0/0 1/1 0/0 .text            __memrchr */
+/**
+ * Offset/Address/Size: 0x4C | 0x80231644 | size: 0x2C
+ */
 void* __memrchr(const void* ptr, int ch, size_t count)
 {
     const unsigned char* p;
@@ -93,6 +102,9 @@ void* __memrchr(const void* ptr, int ch, size_t count)
 }
 
 /* 8036608C-803660D8 3609CC 004C+00 0/0 19/19 5/5 .text            memcmp */
+/**
+ * Offset/Address/Size: 0x0 | 0x802315F8 | size: 0x4C
+ */
 int memcmp(const void* lhs, const void* rhs, size_t count)
 {
     const unsigned char* p1;

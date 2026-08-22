@@ -138,7 +138,7 @@ bool MovieStart(const char* szFilename, bool bSound, bool bLoopMovie)
 
     if (nlTaskManager::m_pInstance->m_CurrState != 4)
     {
-        if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+        if (nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode)
         {
             AudioStreamTrack::TrackManagerBase* trackMgr = g_pTrackManager;
             AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("Announcer"));
@@ -182,7 +182,7 @@ bool MovieStart(const char* szFilename, bool bSound, bool bLoopMovie)
 
         if (nlTaskManager::m_pInstance->m_CurrState != 4)
         {
-            if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+            if (nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode)
             {
                 AudioStreamTrack::TrackManagerBase* trackMgr = g_pTrackManager;
                 AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("Announcer"));
@@ -326,7 +326,7 @@ bool MoviePlay()
 bool IsMoviePlayingInStrikers101()
 {
     if (nlTaskManager::m_pInstance->m_CurrState != 4
-        && nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode
+        && nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode
         && g_bActive)
     {
         return true;

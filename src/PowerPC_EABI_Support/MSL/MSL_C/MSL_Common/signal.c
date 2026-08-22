@@ -7,6 +7,9 @@
 __signal_func_ptr signal_funcs[6];
 
 /* 8036881C-803688DC 36315C 00C0+00 0/0 1/1 0/0 .text            raise */
+/**
+ * Offset/Address/Size: 0x0 | 0x80234D00 | size: 0xC0
+ */
 int raise(int sig)
 {
     __signal_func_ptr signal_func;

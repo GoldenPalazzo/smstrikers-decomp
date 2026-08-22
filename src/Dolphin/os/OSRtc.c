@@ -116,6 +116,9 @@ static int ReadSram(void* buffer)
     return !err;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80257F58 | size: 0x60
+ */
 static void WriteSramCallback(s32, OSContext*)
 {
     ASSERTLINE(258, !Scb.locked);
@@ -127,6 +130,9 @@ static void WriteSramCallback(s32, OSContext*)
     ASSERTLINE(264, Scb.sync);
 }
 
+/**
+ * Offset/Address/Size: 0x60 | 0x80257FB8 | size: 0x118
+ */
 static int WriteSram(void* buffer, u32 offset, u32 size)
 {
     int err;
@@ -152,6 +158,9 @@ static int WriteSram(void* buffer, u32 offset, u32 size)
     return !err;
 }
 
+/**
+ * Offset/Address/Size: 0x178 | 0x802580D0 | size: 0x13C
+ */
 void __OSInitSram(void)
 {
     Scb.locked = Scb.enabled = FALSE;
@@ -178,16 +187,25 @@ static void* LockSram(u32 offset)
     return &Scb.sram[offset];
 }
 
+/**
+ * Offset/Address/Size: 0x2B4 | 0x8025820C | size: 0x5C
+ */
 OSSram* __OSLockSram(void)
 {
     return (OSSram*)LockSram(0);
 }
 
+/**
+ * Offset/Address/Size: 0x310 | 0x80258268 | size: 0x5C
+ */
 OSSramEx* __OSLockSramEx(void)
 {
     return (OSSramEx*)LockSram(sizeof(OSSram));
 }
 
+/**
+ * Offset/Address/Size: 0x36C | 0x802582C4 | size: 0x33C
+ */
 static int UnlockSram(int commit, u32 offset)
 {
     u16* p;
@@ -235,16 +253,25 @@ static int UnlockSram(int commit, u32 offset)
     return Scb.sync;
 }
 
+/**
+ * Offset/Address/Size: 0x6A8 | 0x80258600 | size: 0x24
+ */
 int __OSUnlockSram(int commit)
 {
     UnlockSram(commit, 0);
 }
 
+/**
+ * Offset/Address/Size: 0x6CC | 0x80258624 | size: 0x24
+ */
 int __OSUnlockSramEx(int commit)
 {
     UnlockSram(commit, sizeof(OSSram));
 }
 
+/**
+ * Offset/Address/Size: 0x6F0 | 0x80258648 | size: 0x10
+ */
 int __OSSyncSram(void)
 {
     return Scb.sync;
@@ -340,6 +367,9 @@ int __OSReadROMAsync(void* buffer, s32 length, s32 offset, void (*callback)())
     return !err;
 }
 
+/**
+ * Offset/Address/Size: 0x700 | 0x80258658 | size: 0x80
+ */
 u32 OSGetSoundMode(void)
 {
     OSSram* sram = __OSLockSram();
@@ -349,6 +379,9 @@ u32 OSGetSoundMode(void)
     return mode;
 }
 
+/**
+ * Offset/Address/Size: 0x780 | 0x802586D8 | size: 0xA4
+ */
 void OSSetSoundMode(u32 mode)
 {
     OSSram* sram;
@@ -368,6 +401,9 @@ void OSSetSoundMode(u32 mode)
     __OSUnlockSram(1);
 }
 
+/**
+ * Offset/Address/Size: 0x824 | 0x8025877C | size: 0x70
+ */
 u32 OSGetProgressiveMode(void)
 {
     OSSram* sram;
@@ -379,6 +415,9 @@ u32 OSGetProgressiveMode(void)
     return on;
 }
 
+/**
+ * Offset/Address/Size: 0x894 | 0x802587EC | size: 0xA4
+ */
 void OSSetProgressiveMode(u32 on)
 {
 #ifndef DEBUG
@@ -442,6 +481,9 @@ void OSSetVideoMode(u32 mode)
     __OSUnlockSram(1);
 }
 
+/**
+ * Offset/Address/Size: 0x938 | 0x80258890 | size: 0x6C
+ */
 u8 OSGetLanguage(void)
 {
     OSSram* sram = __OSLockSram();
@@ -490,6 +532,9 @@ void __OSSetBootMode(u8 ntd)
     __OSUnlockSram(1);
 }
 
+/**
+ * Offset/Address/Size: 0x9A4 | 0x802588FC | size: 0x70
+ */
 u32 OSGetEuRgb60Mode(void)
 {
     OSSram* sram;
@@ -501,6 +546,9 @@ u32 OSGetEuRgb60Mode(void)
     return on;
 }
 
+/**
+ * Offset/Address/Size: 0xA14 | 0x8025896C | size: 0xA4
+ */
 void OSSetEuRgb60Mode(u32 on)
 {
 #ifndef DEBUG
@@ -525,6 +573,9 @@ void OSSetEuRgb60Mode(u32 on)
     }
 }
 
+/**
+ * Offset/Address/Size: 0xAB8 | 0x80258A10 | size: 0x84
+ */
 u16 OSGetWirelessID(s32 chan)
 {
     OSSramEx* sram;
@@ -536,6 +587,9 @@ u16 OSGetWirelessID(s32 chan)
     return id;
 }
 
+/**
+ * Offset/Address/Size: 0xB3C | 0x80258A94 | size: 0xAC
+ */
 void OSSetWirelessID(s32 chan, u16 id)
 {
     OSSramEx* sram;
@@ -551,6 +605,9 @@ void OSSetWirelessID(s32 chan, u16 id)
     __OSUnlockSramEx(FALSE);
 }
 
+/**
+ * Offset/Address/Size: 0xBE8 | 0x80258B40 | size: 0x70
+ */
 u16 OSGetGbsMode(void)
 {
     OSSramEx* sram;
@@ -562,6 +619,9 @@ u16 OSGetGbsMode(void)
     return mode;
 }
 
+/**
+ * Offset/Address/Size: 0xC58 | 0x80258BB0 | size: 0xB8
+ */
 void OSSetGbsMode(u16 mode)
 {
 #ifndef DEBUG

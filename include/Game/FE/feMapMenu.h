@@ -18,23 +18,23 @@ struct ItemEntry
 class FEMapMenu
 {
 public:
-    FEMapMenu(TLInstance*, bool);
+    FEMapMenu(TLInstance* pHighlighter, bool makeSounds);
     ~FEMapMenu();
-    void AddItem(int, TLInstance*, int, int, int, int, bool);
+    void AddItem(int itemID, TLInstance* pIcon, int leftID, int rightID, int upID, int downID, bool active);
     void UpdateAllItems();
-    void Update(float);
-    bool MoveRight(bool);
-    bool MoveLeft(bool);
-    bool MoveDown(bool);
-    bool MoveUp(bool);
+    void Update(float dt);
+    bool MoveRight(bool playSound);
+    bool MoveLeft(bool playSound);
+    bool MoveDown(bool playSound);
+    bool MoveUp(bool playSound);
     int GetSelectedItem() const;
     bool IsSelectedItemActive() const;
-    bool IsItemActive(int) const;
-    void SetSelectedItem(int);
+    bool IsItemActive(int itemID) const;
+    void SetSelectedItem(int itemID);
     void UpdateHighlighter();
-    void SetItemActive(int, bool);
+    void SetItemActive(int itemID, bool active);
     void SetAllItemsActive();
-    void ChangeItem(int, TLInstance*);
+    void ChangeItem(int itemID, TLInstance* pInstance);
 
     inline void SetCurrentSelectByID(int itemID);
     inline bool TryMoveRandom(int itemID, int soundIndex);

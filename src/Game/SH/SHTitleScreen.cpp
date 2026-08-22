@@ -121,7 +121,7 @@ void TitleScene::Update(float dt)
 
     if (!mStartedDemo && m_fTimeElapsed >= demoTimeout)
     {
-        if (nlSingleton<GameInfoManager>::s_pInstance->mDemoEnabled)
+        if (nlSingleton<GameInfoManager>::Instance()->mDemoEnabled)
         {
             bool doSoak = GetConfigBool(Config::Global(), "dosoak", false);
 
@@ -188,7 +188,7 @@ void TitleScene::Update(float dt)
                 gim->SetSidekick(1, awaySidekick);
                 gim->ResetPlayingSides();
 
-                SuperLoadingScene* scene = (SuperLoadingScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SUPER_LOADING, SCREEN_NOTHING, true);
+                SuperLoadingScene* scene = (SuperLoadingScene*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_SUPER_LOADING, SCREEN_NOTHING, true);
                 scene->mType = SuperLoadingScene::TT_IN;
             }
             else
@@ -206,14 +206,14 @@ void TitleScene::Update(float dt)
         || g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
     {
         FEAudio::PlayAnimAudioEvent("sfx_accept", false);
-        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_MAIN_MENU, SCREEN_FORWARD, true);
+        nlSingleton<GameSceneManager>::Instance()->Push(SCENE_MAIN_MENU, SCREEN_FORWARD, true);
 
         SHMainMenu::mSnapMenuIntoPosition = false;
         SHMainMenu::mLastMenuItem = 0;
 
-        nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mGameplayOptions.OnSettingsUpdated();
-        nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mPowerupOptions.OnSettingsUpdated();
-        nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mCheatOptions.OnSettingsUpdated();
+        nlSingleton<GameInfoManager>::Instance()->mUserInfo.mGameplayOptions.OnSettingsUpdated();
+        nlSingleton<GameInfoManager>::Instance()->mUserInfo.mPowerupOptions.OnSettingsUpdated();
+        nlSingleton<GameInfoManager>::Instance()->mUserInfo.mCheatOptions.OnSettingsUpdated();
     }
 }
 

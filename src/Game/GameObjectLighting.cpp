@@ -130,7 +130,7 @@ void InitializeGameObjectLighting()
     }
 
     pLightArray = (GameObjectLightArray*)glUserGetData(g_pInGameLightData);
-    stadium = nlSingleton<GameInfoManager>::s_pInstance->GetStadium();
+    stadium = nlSingleton<GameInfoManager>::Instance()->GetStadium();
     pParams = &gStadiumGameObjectLightingParams[stadium];
 
     {
@@ -155,13 +155,13 @@ void InitializeGameObjectLighting()
         pLightArray->lights[1].intensity = pParams->inGameFillIntensity;
     }
 
-    stadium = nlSingleton<GameInfoManager>::s_pInstance->GetStadium();
+    stadium = nlSingleton<GameInfoManager>::Instance()->GetStadium();
     g_pGameObjectLightRamp = glx_CreatePlatTexture();
     pRampTexture = g_pGameObjectLightRamp;
     glx_AddTex(gStadiumGameObjectLightingParams[stadium].lightRamp, pRampTexture);
     g_pGameObjectLightRamp->Create(0x100, 4, GXTex_RGBA8, 1, true, false);
 
-    stadium = nlSingleton<GameInfoManager>::s_pInstance->GetStadium();
+    stadium = nlSingleton<GameInfoManager>::Instance()->GetStadium();
     pRampTexture = g_pGameObjectLightRamp;
     StadiumLightingParams* pRampParams = &gStadiumGameObjectLightingParams[stadium];
 
@@ -305,7 +305,7 @@ void UpdateGameObjectLighting()
 
     nlMakeRotationMatrixZ(viewRotMat, radAngle);
 
-    s32 stadium = nlSingleton<GameInfoManager>::s_pInstance->GetStadium();
+    s32 stadium = nlSingleton<GameInfoManager>::Instance()->GetStadium();
     StadiumLightingParams* params = &gStadiumGameObjectLightingParams[stadium];
 
     GameObjectLightArray* pLights = (GameObjectLightArray*)glUserGetData(pLightData);
@@ -338,5 +338,5 @@ static f32 GameObjectLightRampT(s32 i)
  */
 u32 GetGameObjectLightRamp()
 {
-    return gStadiumGameObjectLightingParams[nlSingleton<GameInfoManager>::s_pInstance->GetStadium()].lightRamp;
+    return gStadiumGameObjectLightingParams[nlSingleton<GameInfoManager>::Instance()->GetStadium()].lightRamp;
 }

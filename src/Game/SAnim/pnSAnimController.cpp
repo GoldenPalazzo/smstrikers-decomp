@@ -184,9 +184,6 @@ void cPN_SAnimController::Evaluate(int nodeIndex, float weight, cPoseAccumulator
     pAccumulator->m_trans.mData[nodeIndex].t = translationOffset;
 }
 
-/**
- * Offset/Address/Size: 0x35C | 0x801EA9B8 | size: 0x280
- */
 static inline void GetRootTransDelta(cPN_SAnimController* pController, nlVector3* pRootTrans, float fStartTime, float fEndTime)
 {
     nlVector3 v3LastFrame;
@@ -200,7 +197,7 @@ static inline void GetRootTransDelta(cPN_SAnimController* pController, nlVector3
 }
 
 /**
- * Offset/Address/Size: 0x3DC | 0x801EA9B8 | size: 0x280
+ * Offset/Address/Size: 0x35C | 0x801EA9B8 | size: 0x280
  */
 void cPN_SAnimController::BlendRootTrans(nlVector3* pRootTrans, float fNodeWeight, float* fAccumulatedWeight)
 {

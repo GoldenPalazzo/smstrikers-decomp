@@ -38,7 +38,7 @@ public:
     CreditScene();
     ~CreditScene();
     void SceneCreated();
-    void Update(float);
+    void Update(float fDeltaT);
     void DisplayFinalMessage();
     void SetupForPhase();
     void GotoNextPhase();
@@ -46,10 +46,10 @@ public:
     void SetupForCredits();
     void SetupForNintendoLogo();
     void SetupForNLGMovie();
-    void UpdateForCopyrightMessage(float);
-    void UpdateForCredits(float);
-    void UpdateForNintendoLogo(float);
-    void UpdateForNLGMovie(float);
+    void UpdateForCopyrightMessage(float fDeltaT);
+    void UpdateForCredits(float fDeltaT);
+    void UpdateForNintendoLogo(float fDeltaT);
+    void UpdateForNLGMovie(float fDeltaT);
     TLComponentInstance* GetWhiteFadeComponent();
 
     static SceneList mNextScene;

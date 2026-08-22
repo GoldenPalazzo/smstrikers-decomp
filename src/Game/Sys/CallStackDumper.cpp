@@ -3494,7 +3494,6 @@ static inline int DrawStatLine(const char* str, int x, int y)
     return y;
 }
 
-
 static int DisplayMessage(int y, int scale, const char* str)
 {
     unsigned short* frameBuffer;
@@ -3559,31 +3558,23 @@ static void ErrorHandler(unsigned short error, OSContext* context, unsigned long
 
         y = PutString(0x0F, callStackY, 0x0B, "Call Stack", (unsigned long)0xFFFF8888);
         for (p = (unsigned long*)p[1], i = 0;
-            (p != 0) &&
-            (p != (unsigned long*)0xFFFFFFFF) &&
-            (i++ < 0x10); p = (unsigned long*)p[0]) {
+            (p != 0) && (p != (unsigned long*)0xFFFFFFFF) && (i++ < 0x10);
+            p = (unsigned long*)p[0])
+        {
             nlSNPrintf(buf, 0x3C, "%08x", p[1]);
             y = PutString(0x0F, y, 0x0B, buf, (unsigned long)0xFFFF8888);
         }
 
-
         x = (((int)nlStrLen(buf) + 4) * 0x0B) + 0x0F;
-
-
 
         y = PutString(x, callStackY, 0x0B, "General Purpose Registers", 0xFF8888FF), p = &context->gpr[0];
         for (i = 0; i < 0x10; i++, p++)
         {
-            nlSNPrintf(buf, 0x3C,
-                "r%-2d=%08x r%-2d=%08x",
-                i, p[0], i + 0x10, p[0x10]);
+            nlSNPrintf(buf, 0x3C, "r%-2d=%08x r%-2d=%08x", i, p[0], i + 0x10, p[0x10]);
             y = PutString(x, y, 0x0B, buf, 0xFF8888FF);
         }
 
-
         x += ((int)nlStrLen(buf) + 2) * 0x0B;
-
-
 
         nlSNPrintf(buf, 0x3C, "LR=%08x", context->lr);
         callStackY = DrawStatLine(buf, x, callStackY);
@@ -3597,7 +3588,6 @@ static void ErrorHandler(unsigned short error, OSContext* context, unsigned long
         GXCopyDisp(frameBuffer, 0);
         GXDrawDone();
         GXFlush();
-
     }
 
     GXPokeColorUpdate(0);

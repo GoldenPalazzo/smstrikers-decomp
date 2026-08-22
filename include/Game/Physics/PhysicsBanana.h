@@ -20,13 +20,13 @@ struct CollisionPowerupGroundData : public EventData
 class PhysicsBanana : public PhysicsSphere
 {
 public:
-    PhysicsBanana(float);
+    PhysicsBanana(float radius);
     virtual ~PhysicsBanana();
     virtual int GetObjectType() const { return 0x14; };
-    virtual bool SetContactInfo(dContact*, PhysicsObject*, bool);
+    virtual bool SetContactInfo(dContact* contact, PhysicsObject* other, bool first);
     virtual void PreUpdate();
     virtual void PreCollide();
-    virtual ContactType Contact(PhysicsObject*, dContact*, int);
+    virtual ContactType Contact(PhysicsObject* other, dContact* contact, int numContacts);
 
     /* 0x2C */ void (*m_pTriggerCallbackFunc)(class PhysicsObject*, class PhysicsObject*, class nlVector3&, void*);
     /* 0x30 */ void* m_pCallbackParam;

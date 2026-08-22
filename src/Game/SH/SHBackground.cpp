@@ -1,5 +1,7 @@
 #include "Game/SH/SHBackground.h"
 
+#include "NL/nlAlgorithm.h"
+
 /**
  * Offset/Address/Size: 0x16C | 0x800A9A18 | size: 0x44
  */
@@ -17,10 +19,7 @@ BackgroundScene::~BackgroundScene()
 {
 }
 
-/**
- * Offset/Address/Size: 0xA8 | 0x800A9954 | size: 0x68
- */
-void BackgroundScene::SceneCreated()
+void BackgroundScene::ActivatePlayMode()
 {
     if (mPlayMode != 3)
     {
@@ -37,6 +36,14 @@ void BackgroundScene::SceneCreated()
         slide->m_time = 0.0f;
         slide->Update(0.0f);
     }
+}
+
+/**
+ * Offset/Address/Size: 0xA8 | 0x800A9954 | size: 0x68
+ */
+void BackgroundScene::SceneCreated()
+{
+    ActivatePlayMode();
 }
 
 /**

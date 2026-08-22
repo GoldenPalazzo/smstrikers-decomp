@@ -5,7 +5,7 @@ GraphicsLoader TheGraphicsLoader;
 /**
  * Offset/Address/Size: 0x0 | 0x8015F1DC | size: 0x78
  */
-bool GraphicsLoader::StartLoad(LoadingManager*)
+bool GraphicsLoader::StartLoad(LoadingManager* manager)
 {
     glLoadModel("debug/debug.glg", NULL);
     glLoadModel("effects/meshes.glg", NULL);

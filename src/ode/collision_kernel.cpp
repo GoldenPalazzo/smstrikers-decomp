@@ -210,6 +210,9 @@ int dCollide(dxGeom* o1, dxGeom* o2, int flags, dContactGeom* contact,
 //****************************************************************************
 // dxGeom
 
+/**
+ * Offset/Address/Size: 0xBFC | 0x8021521C | size: 0x100
+ */
 dxGeom::dxGeom(dSpaceID _space, int is_placeable)
 {
     initColliders();

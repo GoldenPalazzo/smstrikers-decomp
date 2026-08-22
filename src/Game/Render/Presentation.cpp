@@ -178,7 +178,7 @@ void Presentation::LoadTrophyModel()
     bool hasCupOverride = Config::Global().Exists("gimme_cup_trophy");
     if (!hasCupOverride)
     {
-        if (!nlSingleton<GameInfoManager>::s_pInstance->IsPossibleCupMatch())
+        if (!nlSingleton<GameInfoManager>::Instance()->IsPossibleCupMatch())
         {
             return;
         }
@@ -190,7 +190,7 @@ void Presentation::LoadTrophyModel()
         hasCupOverride
             ? BasicString<char, Detail::TempStringAllocator>("Gameplay/").Append(GetGimmeCupTrophyName())
             : BasicString<char, Detail::TempStringAllocator>(
-                  GetThrophyModelName(nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode())));
+                  GetThrophyModelName(nlSingleton<GameInfoManager>::Instance()->GetTrophyTypeByCurrentMode())));
 
     nlSNPrintf(trophyFileName, 0xFF, "%s.glg", trophyName.c_str());
     glBeginLoadModel(trophyFileName, ReadTrophyModel, NULL);
@@ -198,7 +198,7 @@ void Presentation::LoadTrophyModel()
 
 inline bool Presentation::DetectSkipPress() const
 {
-    if (nlSingleton<GameInfoManager>::s_pInstance->IsInDemoMode())
+    if (nlSingleton<GameInfoManager>::Instance()->IsInDemoMode())
     {
         return false;
     }
@@ -405,10 +405,10 @@ void Presentation::HandleOverlay(float deltaT)
         mOverlayDelay -= deltaT;
         if (mOverlayDelay <= 0.0)
         {
-            nlSingleton<OverlayManager>::s_pInstance->SetVisible(mOverlayToDisplay, true, false);
+            nlSingleton<OverlayManager>::Instance()->SetVisible(mOverlayToDisplay, true, false);
             if (mOverlayToDisplay == OVERLAY_GOAL)
             {
-                nlSingleton<OverlayManager>::s_pInstance->RestartGoalOverlay();
+                nlSingleton<OverlayManager>::Instance()->RestartGoalOverlay();
             }
             mOverlayDelay = 0.0f;
             mOverlayDisplayed = true;
@@ -421,7 +421,7 @@ void Presentation::HandleOverlay(float deltaT)
         {
             if (mOverlayDisplayed)
             {
-                nlSingleton<OverlayManager>::s_pInstance->SetVisible(mOverlayToDisplay, false, false);
+                nlSingleton<OverlayManager>::Instance()->SetVisible(mOverlayToDisplay, false, false);
             }
             mOverlayDisplayed = false;
             mOverlayToDisplay = SCENE_INVALID;
@@ -544,9 +544,9 @@ void Presentation::PlayJumbotron()
 
 void Presentation::WaitForAutoReplayCompletion(const char* wipe)
 {
-    if (nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition == NULL)
+    if (nlSingleton<ScreenTransitionManager>::Instance()->m_SelectedTransition == NULL)
     {
-        nlSingleton<ScreenTransitionManager>::s_pInstance->SelectRandomTransition(wipe);
+        nlSingleton<ScreenTransitionManager>::Instance()->SelectRandomTransition(wipe);
     }
     if (!ReplayChoreo::Instance().Done())
     {
@@ -568,13 +568,13 @@ void Presentation::WaitForCharacterDirection()
 void Presentation::WaitForNisCompletion(const char* wipe)
 {
     float cutTime = 0.0f;
-    if (nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition == NULL)
+    if (nlSingleton<ScreenTransitionManager>::Instance()->m_SelectedTransition == NULL)
     {
-        nlSingleton<ScreenTransitionManager>::s_pInstance->SelectRandomTransition(wipe);
+        nlSingleton<ScreenTransitionManager>::Instance()->SelectRandomTransition(wipe);
     }
-    if (nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition != NULL)
+    if (nlSingleton<ScreenTransitionManager>::Instance()->m_SelectedTransition != NULL)
     {
-        cutTime = 0.2f + nlSingleton<ScreenTransitionManager>::s_pInstance->GetSelectedTransitionCutTime();
+        cutTime = 0.2f + nlSingleton<ScreenTransitionManager>::Instance()->GetSelectedTransitionCutTime();
     }
     if (NisPlayer::Instance()->TimeLeft() > cutTime)
     {
@@ -754,7 +754,7 @@ struct EmissionControllerUserLocal
 static inline void TriggerParticleEffects()
 {
     WorldLocal* world = (WorldLocal*)WorldManager::s_World;
-    TreeStackLocal* stack = (TreeStackLocal*)nlMalloc(8, 8, false);
+    TreeStackLocal* stack = (TreeStackLocal*)nlMalloc(sizeof(TreeStackLocal), 8, false);
     if (stack != 0)
     {
         TreeNodeLocal* node = world->helperRoot;
@@ -1096,7 +1096,7 @@ void Presentation::LoadNis(const char* name, NisTarget target, NisUseStadiumOffs
     {
         return;
     }
-    if (nlStrCmp<char>(name, "trophy") == 0 && !Config::Global().Exists("gimme_cup_trophy") && !nlSingleton<StatsTracker>::s_pInstance->mIsUserCupWinner)
+    if (nlStrCmp<char>(name, "trophy") == 0 && !Config::Global().Exists("gimme_cup_trophy") && !nlSingleton<StatsTracker>::Instance()->mIsUserCupWinner)
     {
         return;
     }
@@ -1116,12 +1116,12 @@ void Presentation::PlayAutoReplay(ReplayType type)
     ReplayChoreo::Instance().StartAutoReplay(type);
     if (type == REPLAY_TYPE_HIGHLIGHT)
     {
-        nlSingleton<OverlayManager>::s_pInstance->SetCurrentTextOverlaySlide((OverlaySlideName)7);
-        nlSingleton<OverlayManager>::s_pInstance->SetVisible((SceneList)0x44, false, true);
-        nlSingleton<OverlayManager>::s_pInstance->mIsInHighlights = true;
+        nlSingleton<OverlayManager>::Instance()->SetCurrentTextOverlaySlide((OverlaySlideName)7);
+        nlSingleton<OverlayManager>::Instance()->SetVisible((SceneList)0x44, false, true);
+        nlSingleton<OverlayManager>::Instance()->mIsInHighlights = true;
         if (mOverlayDisplayed)
         {
-            nlSingleton<OverlayManager>::s_pInstance->SetVisible(mOverlayToDisplay, false, false);
+            nlSingleton<OverlayManager>::Instance()->SetVisible(mOverlayToDisplay, false, false);
         }
         mOverlayDisplayed = false;
         mOverlayToDisplay = SCENE_INVALID;
@@ -1131,9 +1131,9 @@ void Presentation::PlayAutoReplay(ReplayType type)
     }
     else
     {
-        nlSingleton<OverlayManager>::s_pInstance->SetCurrentTextOverlaySlide((OverlaySlideName)7);
-        nlSingleton<OverlayManager>::s_pInstance->SetVisible((SceneList)0x44, true, true);
-        nlSingleton<OverlayManager>::s_pInstance->mIsInHighlights = false;
+        nlSingleton<OverlayManager>::Instance()->SetCurrentTextOverlaySlide((OverlaySlideName)7);
+        nlSingleton<OverlayManager>::Instance()->SetVisible((SceneList)0x44, true, true);
+        nlSingleton<OverlayManager>::Instance()->mIsInHighlights = false;
     }
 }
 
@@ -1152,14 +1152,14 @@ void Presentation::PlaySfxWithVol(const char* sfx, float volume)
  */
 void Presentation::PlayOverlay(const char* name, float delay, float length)
 {
-    if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+    if (nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode)
     {
         return;
     }
 
     if (mOverlayDisplayed)
     {
-        nlSingleton<OverlayManager>::s_pInstance->SetVisible(mOverlayToDisplay, false, false);
+        nlSingleton<OverlayManager>::Instance()->SetVisible(mOverlayToDisplay, false, false);
     }
 
     mOverlayDisplayed = false;
@@ -1182,7 +1182,7 @@ void Presentation::PlayOverlay(const char* name, float delay, float length)
         mOverlayDelay = delay;
         mOverlayDisplayLength = length;
         mOverlayDisplayed = false;
-        GoalOverlay* scene = (GoalOverlay*)nlSingleton<OverlayManager>::s_pInstance->GetScene(mOverlayToDisplay);
+        GoalOverlay* scene = (GoalOverlay*)nlSingleton<OverlayManager>::Instance()->GetScene(mOverlayToDisplay);
         scene->SetHighlightNumber(ReplayChoreo::Instance().mNumHighlights);
         return;
     }
@@ -1193,7 +1193,7 @@ void Presentation::PlayOverlay(const char* name, float delay, float length)
         mOverlayDelay = delay;
         mOverlayDisplayLength = length;
         mOverlayDisplayed = false;
-        GoalOverlay* scene = (GoalOverlay*)nlSingleton<OverlayManager>::s_pInstance->GetScene(mOverlayToDisplay);
+        GoalOverlay* scene = (GoalOverlay*)nlSingleton<OverlayManager>::Instance()->GetScene(mOverlayToDisplay);
         scene->DoMatchEndOverlay();
         return;
     }
@@ -1204,7 +1204,7 @@ void Presentation::PlayOverlay(const char* name, float delay, float length)
         mOverlayDelay = delay;
         mOverlayDisplayLength = length;
         mOverlayDisplayed = false;
-        GoalOverlay* scene = (GoalOverlay*)nlSingleton<OverlayManager>::s_pInstance->GetScene(mOverlayToDisplay);
+        GoalOverlay* scene = (GoalOverlay*)nlSingleton<OverlayManager>::Instance()->GetScene(mOverlayToDisplay);
         scene->DoCupWinOverlay();
     }
 }
@@ -1216,7 +1216,7 @@ void Presentation::StopOverlay()
 {
     if (mOverlayDisplayed)
     {
-        nlSingleton<OverlayManager>::s_pInstance->SetVisible(mOverlayToDisplay, false, false);
+        nlSingleton<OverlayManager>::Instance()->SetVisible(mOverlayToDisplay, false, false);
     }
     mOverlayDisplayed = false;
     mOverlayToDisplay = SCENE_INVALID;
@@ -1226,7 +1226,7 @@ void Presentation::StopOverlay()
 
 void Presentation::PlayHighlights()
 {
-    nlSingleton<ScreenTransitionManager>::s_pInstance->m_SelectedTransition = NULL;
+    nlSingleton<ScreenTransitionManager>::Instance()->m_SelectedTransition = NULL;
     if (ReplayChoreo::Instance().NumHighlights() <= 0)
     {
         return;
@@ -1266,7 +1266,7 @@ static void CupWinStingerDone()
 void Presentation::PlayCupOverlay()
 {
     bool gimmeCup = Config::Global().Exists("gimme_cup_trophy");
-    if (!gimmeCup && !nlSingleton<StatsTracker>::s_pInstance->mIsUserCupWinner)
+    if (!gimmeCup && !nlSingleton<StatsTracker>::Instance()->mIsUserCupWinner)
     {
         return;
     }
@@ -1276,7 +1276,7 @@ void Presentation::PlayCupOverlay()
     }
 
     PlayOverlay("cup", 0.2f, -15.0f);
-    const char* streamName = GetCupStreamName(nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode());
+    const char* streamName = GetCupStreamName(nlSingleton<GameInfoManager>::Instance()->GetTrophyTypeByCurrentMode());
     AudioLoader::StartFEStream(streamName, false, "Music");
     AudioStreamTrack::TrackManagerBase* trackManager = AudioStreamTrack::TrackManagerBase::Get();
     AudioStreamTrack::StreamTrack* track = trackManager->GetTrack(nlStringLowerHash("Music"));
@@ -1305,7 +1305,7 @@ void Presentation::UpdateAndRenderLetterBox()
         mLetterBoxDuration = 1.0f;
     }
 
-    if (!nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mVisualOptions.mIsWidescreen && mLetterBoxDuration > 0.0f)
+    if (!nlSingleton<GameInfoManager>::Instance()->mUserInfo.mVisualOptions.mIsWidescreen && mLetterBoxDuration > 0.0f)
     {
         nlColour black = { { 0x00, 0x00, 0x00, 0xFF } };
         g_ShapeRenderer.DrawRectangle2D(0.0f, 0.0f, glGetOrthographicWidth(), 38.0f * mLetterBoxDuration, 1.0f, black, GLV_Transitions);
@@ -1349,7 +1349,7 @@ void Presentation::Reset()
     mOverlayDisplayed = false;
     if (mOverlayDisplayed)
     {
-        nlSingleton<OverlayManager>::s_pInstance->SetVisible(mOverlayToDisplay, false, false);
+        nlSingleton<OverlayManager>::Instance()->SetVisible(mOverlayToDisplay, false, false);
     }
     mOverlayDisplayed = false;
     mOverlayToDisplay = SCENE_INVALID;

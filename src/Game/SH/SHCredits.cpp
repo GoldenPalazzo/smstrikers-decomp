@@ -430,7 +430,7 @@ void CreditScene::UpdateForNintendoLogo(float fDeltaT)
 /**
  * Offset/Address/Size: 0x98 | 0x8010F1F4 | size: 0x6C
  */
-void CreditScene::UpdateForNLGMovie(float)
+void CreditScene::UpdateForNLGMovie(float fDeltaT)
 {
     if (FESceneManager::GetInstance()->AreAllScenesValid())
     {

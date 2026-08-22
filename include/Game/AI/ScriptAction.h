@@ -95,7 +95,7 @@ public:
     static SlotPool<ScriptAction> m_ScriptActionSlotPool;
 
     ScriptAction() { }
-    ScriptAction(eScriptActionType, float);
+    ScriptAction(eScriptActionType action_type, float fConfidence);
     float CalcSelectionChance();
     bool RollChanceDice();
 
@@ -107,11 +107,5 @@ public:
     /* 0x10 */ sDesireParams m_sDesireParams; // size 0x68
     /* 0x78 */ sPlayParams m_sPlayParams;     // size 0x8
 }; // total size: 0x80
-
-// class SlotPool<ScriptAction>
-// {
-// public:
-//     void ~SlotPool();
-// };
 
 #endif // _SCRIPTACTION_H_

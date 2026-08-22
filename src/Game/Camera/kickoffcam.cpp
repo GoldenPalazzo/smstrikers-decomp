@@ -1,5 +1,3 @@
-#pragma pool_data off
-
 #include "Game/Camera/kickoffcam.h"
 
 #include "NL/gl/glMatrix.h"
@@ -26,7 +24,7 @@ cKickOffCamera::~cKickOffCamera()
 /**
  * Offset/Address/Size: 0x0 | 0x801A60F4 | size: 0x34
  */
-void cKickOffCamera::Update(float)
+void cKickOffCamera::Update(float dt)
 {
     glMatrixLookAt(m_matView, m_v3Camera, m_v3Target, mUpVector);
 }

@@ -1,4 +1,3 @@
-#pragma pool_data off
 
 #include "Game/TestTask.h"
 
@@ -96,7 +95,7 @@ static inline void WriteToTestLog(TestTask* self, const char* msg)
 /**
  * Offset/Address/Size: 0x424 | 0x8016CD20 | size: 0x2CC
  */
-void TestTask::RunSmokeTest(float)
+void TestTask::RunSmokeTest(float dt)
 {
     if (mRunSmokeTest)
     {

@@ -8,7 +8,7 @@
 class FuzzyTweaks : public TweaksBase
 {
 public:
-    FuzzyTweaks(const char*);
+    FuzzyTweaks(const char* name);
     ~FuzzyTweaks();
     void Init();
 

@@ -52,13 +52,13 @@ struct tCharacterTemplateInfo
 
 class tCharacterTemplateInfo;
 
-s32 GetGoalieIndex(int);
-s32 GetCharacterIndex(const cCharacter*);
-cPlayer* CreateGoalie(eCharacterClass, bool);
-cPlayer* CreateSidekick(int, int, eCharacterClass, eCharacterClass, bool);
-cPlayer* CreateCharacter(int, int, eCharacterClass, bool);
-void CharacterLoadingGuts(tCharacterTemplate*, const tCharacterTemplateInfo&, eCharacterClass, bool);
-bool IsCaptain(eCharacterClass);
+s32 GetGoalieIndex(int side);
+s32 GetCharacterIndex(const cCharacter* character);
+cPlayer* CreateGoalie(eCharacterClass gcc, bool bForViewer);
+cPlayer* CreateSidekick(int nPlayerID, int nTeamID, eCharacterClass cc, eCharacterClass captaincc, bool bForViewer);
+cPlayer* CreateCharacter(int nPlayerID, int nTeamID, eCharacterClass cc, bool bForViewer);
+void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharacterTemplateInfo& charTemplateInfo, eCharacterClass cc, bool bForViewer);
+bool IsCaptain(eCharacterClass cc);
 char* GetCharacterName(eCharacterClass cc);
 
 extern cCharacter* g_pCharacters[10];

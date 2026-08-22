@@ -6,7 +6,7 @@
 class CameraLoader : public Loader
 {
 public:
-    bool StartLoad(LoadingManager*);
+    bool StartLoad(LoadingManager* manager);
 };
 
 #endif // _CAMERALOADER_H_

@@ -204,14 +204,14 @@ static void LoadFonts()
     nlSNPrintf(headingfontbundlename, 64, "art/fe/fonts/%sfontheading24.res", langprefix);
     nlSNPrintf(headingfontfilename, 64, "fe/fonts/%sfontheading24", langprefix);
 
-    nlSingleton<FontManager>::s_pInstance->LoadFont(textfontbundlename, textfontfilename, TEXT_FONT_NAME);
+    nlSingleton<FontManager>::Instance()->LoadFont(textfontbundlename, textfontfilename, TEXT_FONT_NAME);
 #if defined(VERSION_G4QJ01)
     if (g_pLocalization->m_CurrentLanguage == nlLocalization::LangJapanese)
     {
         MarkFontAsJapanese(TEXT_FONT_NAME);
     }
 #endif
-    nlSingleton<FontManager>::s_pInstance->LoadFont(headingfontbundlename, headingfontfilename, HEADING_FONT_NAME);
+    nlSingleton<FontManager>::Instance()->LoadFont(headingfontbundlename, headingfontfilename, HEADING_FONT_NAME);
 #if defined(VERSION_G4QJ01)
     if (g_pLocalization->m_CurrentLanguage == nlLocalization::LangJapanese)
     {
@@ -234,11 +234,11 @@ static void LoadFontsJapaneseInGame()
     nlSNPrintf(textfontfilename, 64, "fe/fonts/%sfonttextingame18", langprefix);
     nlSNPrintf(headingfontbundlename, 64, "art/fe/fonts/%sfontheadingingame24.res", langprefix);
     nlSNPrintf(headingfontfilename, 64, "fe/fonts/%sfontheadingingame24", langprefix);
-    nlSingleton<FontManager>::s_pInstance->LoadFont(textfontbundlename, textfontfilename, TEXT_FONT_NAME);
+    nlSingleton<FontManager>::Instance()->LoadFont(textfontbundlename, textfontfilename, TEXT_FONT_NAME);
 #if defined(VERSION_G4QJ01)
     MarkFontAsJapanese(TEXT_FONT_NAME);
 #endif
-    nlSingleton<FontManager>::s_pInstance->LoadFont(headingfontbundlename, headingfontfilename, HEADING_FONT_NAME);
+    nlSingleton<FontManager>::Instance()->LoadFont(headingfontbundlename, headingfontfilename, HEADING_FONT_NAME);
 #if defined(VERSION_G4QJ01)
     MarkFontAsJapanese(HEADING_FONT_NAME);
 #endif
@@ -258,11 +258,11 @@ static void LoadFontsJapanese101()
     nlSNPrintf(textfontfilename, 64, "fe/fonts/%sfonttext10118", langprefix);
     nlSNPrintf(headingfontbundlename, 64, "art/fe/fonts/%sfontheading10124.res", langprefix);
     nlSNPrintf(headingfontfilename, 64, "fe/fonts/%sfontheading10124", langprefix);
-    nlSingleton<FontManager>::s_pInstance->LoadFont(textfontbundlename, textfontfilename, TEXT_FONT_NAME);
+    nlSingleton<FontManager>::Instance()->LoadFont(textfontbundlename, textfontfilename, TEXT_FONT_NAME);
 #if defined(VERSION_G4QJ01)
     MarkFontAsJapanese(TEXT_FONT_NAME);
 #endif
-    nlSingleton<FontManager>::s_pInstance->LoadFont(headingfontbundlename, headingfontfilename, HEADING_FONT_NAME);
+    nlSingleton<FontManager>::Instance()->LoadFont(headingfontbundlename, headingfontfilename, HEADING_FONT_NAME);
 #if defined(VERSION_G4QJ01)
     MarkFontAsJapanese(HEADING_FONT_NAME);
 #endif
@@ -341,11 +341,11 @@ static void EnablePersistentEffects(bool bEnable)
 
 static void WaitForAllScenesValid()
 {
-    while (!nlSingleton<FESceneManager>::s_pInstance->AreAllScenesValid())
+    while (!nlSingleton<FESceneManager>::Instance()->AreAllScenesValid())
     {
         nlServiceFileSystem();
-        nlSingleton<FESceneManager>::s_pInstance->Update(0.0f);
-        nlSingleton<FEResourceManager>::s_pInstance->Run(0.0f);
+        nlSingleton<FESceneManager>::Instance()->Update(0.0f);
+        nlSingleton<FEResourceManager>::Instance()->Run(0.0f);
     }
 }
 
@@ -354,8 +354,8 @@ static void WaitForFELoadsToFinish(BaseSceneHandler* pFinalScene)
     do
     {
         nlServiceFileSystem();
-        nlSingleton<FEResourceManager>::s_pInstance->Run(0.0f);
-        nlSingleton<FESceneManager>::s_pInstance->Update(0.0f);
+        nlSingleton<FEResourceManager>::Instance()->Run(0.0f);
+        nlSingleton<FESceneManager>::Instance()->Update(0.0f);
     } while (!pFinalScene->m_pFEScene->m_bValid);
 }
 
@@ -492,7 +492,7 @@ void TransitionTask::StateTransition(unsigned int from, unsigned int to)
 
     if (nlSingleton<OverlayManager>::s_pInstance != NULL)
     {
-        nlSingleton<OverlayManager>::s_pInstance->HandleStateTransition(from, to);
+        nlSingleton<OverlayManager>::Instance()->HandleStateTransition(from, to);
     }
 
     if ((to & 0x110) || to == 0x20000)
@@ -572,12 +572,12 @@ void TransitionTask::InitializeGameState()
 
     gSebringLoadPackageToVirtualMemory = true;
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->IsInCupMode())
+    if (nlSingleton<GameInfoManager>::Instance()->IsInCupMode())
     {
-        nlSingleton<StatsTracker>::s_pInstance->SimulateRemainingGames();
+        nlSingleton<StatsTracker>::Instance()->SimulateRemainingGames();
     }
 
-    nlSingleton<GameInfoManager>::s_pInstance->OnPreGameState();
+    nlSingleton<GameInfoManager>::Instance()->OnPreGameState();
     ReplayManager::Instance()->Initialize();
     m_GameResourceMark = glResourceMark();
     InitializeGameObjectLighting();
@@ -585,10 +585,10 @@ void TransitionTask::InitializeGameState()
     m_pAIHandler = g_pEventManager->AddEventHandler(AIEventHandler, NULL, 1);
     m_pGoalieHandler = g_pEventManager->AddEventHandler(Goalie::EventHandler, NULL, 1);
 
-    nlSingleton<StatsTracker>::s_pInstance->SetBasicGameInfoPointer(
-        nlSingleton<GameInfoManager>::s_pInstance->mGameInfo[nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode],
+    nlSingleton<StatsTracker>::Instance()->SetBasicGameInfoPointer(
+        nlSingleton<GameInfoManager>::Instance()->mGameInfo[nlSingleton<GameInfoManager>::Instance()->mCurrentMode],
         true);
-    nlSingleton<StatsTracker>::s_pInstance->CreateEventHandler();
+    nlSingleton<StatsTracker>::Instance()->CreateEventHandler();
 
     Jumbotron::instance.Initialize();
     CrowdManager::instance.Initialize();
@@ -630,7 +630,7 @@ void TransitionTask::InitializeGameState()
 
     if (g_pLocalization->m_CurrentLanguage == nlLocalization::LangJapanese)
     {
-        if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+        if (nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode)
         {
             LoadFontsJapanese101();
         }
@@ -649,65 +649,65 @@ void TransitionTask::InitializeGameState()
         nlSingleton<FEResourceManager>::s_pInstance = new (nlMalloc(sizeof(FEResourceManager), 8, false)) FEResourceManager();
     }
 
-    nlSingleton<FEResourceManager>::s_pInstance->Initialize();
-    nlSingleton<FEResourceManager>::s_pInstance->LoadPermanentResourceBundle("art/fe/InGameUI.Res");
-    nlSingleton<FEResourceManager>::s_pInstance->OpenOnDemandResourceBundle("art/fe/InGameUI.Dmn");
+    nlSingleton<FEResourceManager>::Instance()->Initialize();
+    nlSingleton<FEResourceManager>::Instance()->LoadPermanentResourceBundle("art/fe/InGameUI.Res");
+    nlSingleton<FEResourceManager>::Instance()->OpenOnDemandResourceBundle("art/fe/InGameUI.Dmn");
 
     if (nlSingleton<FESceneManager>::s_pInstance == NULL)
     {
         nlSingleton<FESceneManager>::s_pInstance = new (nlMalloc(sizeof(FESceneManager), 8, false)) FESceneManager();
     }
 
-    nlSingleton<FESceneManager>::s_pInstance->m_uDefaultRenderView = 31;
+    nlSingleton<FESceneManager>::Instance()->m_uDefaultRenderView = 31;
 
     if (nlSingleton<OverlayManager>::s_pInstance == NULL)
     {
         nlSingleton<OverlayManager>::s_pInstance = new (nlMalloc(sizeof(OverlayManager), 8, false)) OverlayManager();
     }
 
-    nlSingleton<OverlayManager>::s_pInstance->Push(OVERLAY_TEXT, (ScreenMovement)0, false);
+    nlSingleton<OverlayManager>::Instance()->Push(OVERLAY_TEXT, (ScreenMovement)0, false);
     BaseSceneHandler* newscene
-        = nlSingleton<OverlayManager>::s_pInstance->Push(OVERLAY_HUD, (ScreenMovement)0, false);
+        = nlSingleton<OverlayManager>::Instance()->Push(OVERLAY_HUD, (ScreenMovement)0, false);
     newscene->SetVisible(false);
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+    if (nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode)
     {
-        nlSingleton<OverlayManager>::s_pInstance->Push(OVERLAY_LESSON_TICKER, (ScreenMovement)0, false);
+        nlSingleton<OverlayManager>::Instance()->Push(OVERLAY_LESSON_TICKER, (ScreenMovement)0, false);
         Presentation& pres = Presentation::Instance();
         pres.mLetterBoxEnabled = false;
         pres.mLetterBoxDuration = 0.0f;
     }
 
     BaseSceneHandler* goalOverlay
-        = nlSingleton<OverlayManager>::s_pInstance->Push(OVERLAY_GOAL, (ScreenMovement)0, false);
+        = nlSingleton<OverlayManager>::Instance()->Push(OVERLAY_GOAL, (ScreenMovement)0, false);
     goalOverlay->SetVisible(false);
 
-    GameInfoManager::eGameModes mode = nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode;
+    GameInfoManager::eGameModes mode = nlSingleton<GameInfoManager>::Instance()->mCurrentMode;
     if (!(mode >= GameInfoManager::GM_MUSHROOM_CUP && mode <= GameInfoManager::GM_TOURNAMENT))
     {
         if (mode == GameInfoManager::GM_DEMO)
         {
-            nlSingleton<OverlayManager>::s_pInstance->Push(OVERLAY_DEMO, (ScreenMovement)0, false);
+            nlSingleton<OverlayManager>::Instance()->Push(OVERLAY_DEMO, (ScreenMovement)0, false);
         }
     }
 
-    nlSingleton<OverlayManager>::s_pInstance->Push((SceneList)0x4D, (ScreenMovement)0, false);
+    nlSingleton<OverlayManager>::Instance()->Push((SceneList)0x4D, (ScreenMovement)0, false);
 
     WaitForAllScenesValid();
 
-    SuperLoadingScene* loadingscene = (SuperLoadingScene*)nlSingleton<OverlayManager>::s_pInstance->Push(SCENE_SUPER_LOADING, (ScreenMovement)0, false);
+    SuperLoadingScene* loadingscene = (SuperLoadingScene*)nlSingleton<OverlayManager>::Instance()->Push(SCENE_SUPER_LOADING, (ScreenMovement)0, false);
     loadingscene->mType = SuperLoadingScene::TT_OUT;
-    nlSingleton<FESceneManager>::s_pInstance->Update(0.0f);
+    nlSingleton<FESceneManager>::Instance()->Update(0.0f);
 
     do
     {
         nlServiceFileSystem();
-        nlSingleton<FEResourceManager>::s_pInstance->Run(0.0f);
+        nlSingleton<FEResourceManager>::Instance()->Run(0.0f);
     } while (!loadingscene->m_pFEScene->m_bValid);
 
     PauseMenuScene::mLastSelectedIndex = 0;
 
-    cPlatPad::m_bDisableRumble = !nlSingleton<GameInfoManager>::s_pInstance->GetGameplayOptions().RumbleEnabled
+    cPlatPad::m_bDisableRumble = !nlSingleton<GameInfoManager>::Instance()->GetGameplayOptions().RumbleEnabled
                               || GetConfigBool(Config::Global(), "no_pad_rumble", false);
 
     AudioLoader::StopStreaming();
@@ -752,14 +752,14 @@ void TransitionTask::DestroyGameState()
 
     WaitForAllScenesValid();
 
-    nlSingleton<OverlayManager>::s_pInstance->PopEntireStack();
-    nlSingleton<FESceneManager>::s_pInstance->ForceImmediateStackProcessing();
+    nlSingleton<OverlayManager>::Instance()->PopEntireStack();
+    nlSingleton<FESceneManager>::Instance()->ForceImmediateStackProcessing();
 
     glxSwapLoading(false, false);
 
-    nlSingleton<OverlayManager>::s_pInstance->Push((SceneList)0x4E, (ScreenMovement)0, false);
+    nlSingleton<OverlayManager>::Instance()->Push((SceneList)0x4E, (ScreenMovement)0, false);
 
-    nlSingleton<FESceneManager>::s_pInstance->ForceImmediateStackProcessing();
+    nlSingleton<FESceneManager>::Instance()->ForceImmediateStackProcessing();
 
     WaitForAllScenesValid();
 
@@ -767,9 +767,9 @@ void TransitionTask::DestroyGameState()
     {
         glBeginFrame();
         SetupMatrices();
-        nlSingleton<FEResourceManager>::s_pInstance->Run(1.0f);
-        nlSingleton<FESceneManager>::s_pInstance->Update(1.0f);
-        nlSingleton<FESceneManager>::s_pInstance->RenderActiveScenes();
+        nlSingleton<FEResourceManager>::Instance()->Run(1.0f);
+        nlSingleton<FESceneManager>::Instance()->Update(1.0f);
+        nlSingleton<FESceneManager>::Instance()->RenderActiveScenes();
         glFinish();
         glEndFrame();
         glSendFrame();
@@ -788,12 +788,12 @@ void TransitionTask::DestroyGameState()
 
     WaitForAllScenesValid();
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode != 0)
+    if (nlSingleton<GameInfoManager>::Instance()->mCurrentMode != 0)
     {
-        nlSingleton<OverlayManager>::s_pInstance->DestroyMessengerManager();
+        nlSingleton<OverlayManager>::Instance()->DestroyMessengerManager();
     }
 
-    nlSingleton<OverlayManager>::s_pInstance->PopEntireStack();
+    nlSingleton<OverlayManager>::Instance()->PopEntireStack();
 
     if (nlSingleton<OverlayManager>::s_pInstance != NULL)
     {
@@ -807,7 +807,7 @@ void TransitionTask::DestroyGameState()
         nlSingleton<FESceneManager>::s_pInstance = NULL;
     }
 
-    nlSingleton<FEResourceManager>::s_pInstance->UnloadPermanentResourceBundle();
+    nlSingleton<FEResourceManager>::Instance()->UnloadPermanentResourceBundle();
 
     if (nlSingleton<FEResourceManager>::s_pInstance != NULL)
     {
@@ -861,10 +861,10 @@ void TransitionTask::DestroyGameState()
     BlurManager::Shutdown();
     CleanBoundingBoxCache();
 
-    nlSingleton<StatsTracker>::s_pInstance->DestroyEventHandler();
+    nlSingleton<StatsTracker>::Instance()->DestroyEventHandler();
     glResourceRelease(m_GameResourceMark);
 
-    nlSingleton<ScreenTransitionManager>::s_pInstance->CancelAllTransitions();
+    nlSingleton<ScreenTransitionManager>::Instance()->CancelAllTransitions();
 
     gSebringLoadPackageToVirtualMemory = 0;
 
@@ -901,17 +901,17 @@ void TransitionTask::InitializeFEState()
         nlSingleton<FEResourceManager>::s_pInstance = new (nlMalloc(sizeof(FEResourceManager), 8, false)) FEResourceManager();
     }
 
-    nlSingleton<FEResourceManager>::s_pInstance->Initialize();
-    nlSingleton<FEResourceManager>::s_pInstance->LoadPermanentResourceBundle("art/fe/MainUI.Dmn");
+    nlSingleton<FEResourceManager>::Instance()->Initialize();
+    nlSingleton<FEResourceManager>::Instance()->LoadPermanentResourceBundle("art/fe/MainUI.Dmn");
 
     if (nlSingleton<FESceneManager>::s_pInstance == NULL)
     {
         nlSingleton<FESceneManager>::s_pInstance = new (nlMalloc(sizeof(FESceneManager), 8, false)) FESceneManager();
     }
 
-    nlSingleton<FESceneManager>::s_pInstance->m_uDefaultRenderView = 31;
+    nlSingleton<FESceneManager>::Instance()->m_uDefaultRenderView = 31;
 
-    nlSingleton<GameInfoManager>::s_pInstance->OnPostGameState();
+    nlSingleton<GameInfoManager>::Instance()->OnPostGameState();
 
     if (nlSingleton<GameSceneManager>::s_pInstance == NULL)
     {
@@ -923,7 +923,7 @@ void TransitionTask::InitializeFEState()
         nlSingleton<FEAnimModelManager>::s_pInstance = new (nlMalloc(sizeof(FEAnimModelManager), 8, false)) FEAnimModelManager();
     }
 
-    nlSingleton<FEAnimModelManager>::s_pInstance->Initialize();
+    nlSingleton<FEAnimModelManager>::Instance()->Initialize();
 
     FEMusic::ResetCurrentFEStreamHash();
 
@@ -934,12 +934,12 @@ void TransitionTask::InitializeFEState()
         gAlreadyBooted = true;
         if (SaveLoadScene::IsIOEnabled())
         {
-            SaveLoadScene* scene = (SaveLoadScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SHOULD_LOAD_OR_SAVE, (ScreenMovement)0, false);
+            SaveLoadScene* scene = (SaveLoadScene*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_SHOULD_LOAD_OR_SAVE, (ScreenMovement)0, false);
             scene->mNextScene = SCENE_LEGAL;
         }
         else
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_LEGAL, (ScreenMovement)0, false);
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_LEGAL, (ScreenMovement)0, false);
         }
     }
     else
@@ -950,16 +950,16 @@ void TransitionTask::InitializeFEState()
         {
             for (int i = 0; i < 4; i++)
             {
-                nlSingleton<GameInfoManager>::s_pInstance->SetPlayingSide(i, -1);
+                nlSingleton<GameInfoManager>::Instance()->SetPlayingSide(i, -1);
             }
         }
 
-        if (nlSingleton<GameInfoManager>::s_pInstance->IsInDemoMode())
+        if (nlSingleton<GameInfoManager>::Instance()->IsInDemoMode())
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_TITLE, (ScreenMovement)0, false);
-            nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_DEMO);
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_TITLE, (ScreenMovement)0, false);
+            nlSingleton<GameInfoManager>::Instance()->SetMode(GameInfoManager::GM_DEMO);
         }
-        else if (nlSingleton<GameInfoManager>::s_pInstance->IsInCupOrTournamentMode())
+        else if (nlSingleton<GameInfoManager>::Instance()->IsInCupOrTournamentMode())
         {
             GameInfoManager* pGameInfo = nlSingleton<GameInfoManager>::Instance();
             if (pGameInfo->IsInTournamentMode())
@@ -972,18 +972,18 @@ void TransitionTask::InitializeFEState()
                     pGameInfo->IncreaseRoundNumber();
                 }
 
-                CupHubScene* scene = (CupHubScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_TOURNAMENT_STANDINGS_ANIM, (ScreenMovement)0, false);
+                CupHubScene* scene = (CupHubScene*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_TOURNAMENT_STANDINGS_ANIM, (ScreenMovement)0, false);
                 scene->mDoAutoSave = true;
                 FEMusic::StartStreamIfDifferent(4);
             }
             else
             {
                 pGameInfo->OnPostCupGameState();
-                if (nlSingleton<GameInfoManager>::s_pInstance->IsInRegularCupMode())
+                if (nlSingleton<GameInfoManager>::Instance()->IsInRegularCupMode())
                 {
                     FEMusic::StartStreamIfDifferent(2);
                 }
-                else if (nlSingleton<GameInfoManager>::s_pInstance->IsInSuperCupMode())
+                else if (nlSingleton<GameInfoManager>::Instance()->IsInSuperCupMode())
                 {
                     FEMusic::StartStreamIfDifferent(3);
                 }
@@ -991,16 +991,16 @@ void TransitionTask::InitializeFEState()
         }
         else
         {
-            if (nlSingleton<GameInfoManager>::s_pInstance->mGoToChooseCaptains)
+            if (nlSingleton<GameInfoManager>::Instance()->mGoToChooseCaptains)
             {
-                nlSingleton<GameInfoManager>::s_pInstance->mGoToChooseCaptains = false;
-                nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_FRIENDLY);
-                nlSingleton<GameInfoManager>::s_pInstance->ResetPlayingSides();
-                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CHOOSE_CAPTAINS, (ScreenMovement)0, false);
+                nlSingleton<GameInfoManager>::Instance()->mGoToChooseCaptains = false;
+                nlSingleton<GameInfoManager>::Instance()->SetMode(GameInfoManager::GM_FRIENDLY);
+                nlSingleton<GameInfoManager>::Instance()->ResetPlayingSides();
+                nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CHOOSE_CAPTAINS, (ScreenMovement)0, false);
             }
             else
             {
-                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_MAIN_MENU, (ScreenMovement)0, false);
+                nlSingleton<GameSceneManager>::Instance()->Push(SCENE_MAIN_MENU, (ScreenMovement)0, false);
                 SHMainMenu::mSnapMenuIntoPosition = true;
                 SHMainMenu::mLastMenuItem = 0;
             }
@@ -1024,7 +1024,7 @@ void TransitionTask::DestroyFEState()
 
     WaitForAllScenesValid();
 
-    nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
+    nlSingleton<GameSceneManager>::Instance()->PopEntireStack();
 
     if (nlSingleton<GameSceneManager>::s_pInstance != NULL)
     {
@@ -1038,7 +1038,7 @@ void TransitionTask::DestroyFEState()
         nlSingleton<FESceneManager>::s_pInstance = NULL;
     }
 
-    nlSingleton<FEResourceManager>::s_pInstance->UnloadPermanentResourceBundle();
+    nlSingleton<FEResourceManager>::Instance()->UnloadPermanentResourceBundle();
 
     if (nlSingleton<FEResourceManager>::s_pInstance != NULL)
     {
@@ -1083,15 +1083,15 @@ void TransitionTask::InitializeFEFast()
         nlSingleton<FEResourceManager>::s_pInstance = new (nlMalloc(sizeof(FEResourceManager), 8, false)) FEResourceManager();
     }
 
-    nlSingleton<FEResourceManager>::s_pInstance->Initialize();
-    nlSingleton<FEResourceManager>::s_pInstance->LoadPermanentResourceBundle("art/fe/BootUI.Res");
+    nlSingleton<FEResourceManager>::Instance()->Initialize();
+    nlSingleton<FEResourceManager>::Instance()->LoadPermanentResourceBundle("art/fe/BootUI.Res");
 
     if (nlSingleton<FESceneManager>::s_pInstance == NULL)
     {
         nlSingleton<FESceneManager>::s_pInstance = new (nlMalloc(sizeof(FESceneManager), 8, false)) FESceneManager();
     }
 
-    nlSingleton<FESceneManager>::s_pInstance->m_uDefaultRenderView = 31;
+    nlSingleton<FESceneManager>::Instance()->m_uDefaultRenderView = 31;
 
     if (nlSingleton<GameSceneManager>::s_pInstance == NULL)
     {
@@ -1116,7 +1116,7 @@ void TransitionTask::DestroyFEFast()
 
     WaitForAllScenesValid();
 
-    nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
+    nlSingleton<GameSceneManager>::Instance()->PopEntireStack();
 
     if (nlSingleton<GameSceneManager>::s_pInstance != NULL)
     {
@@ -1130,7 +1130,7 @@ void TransitionTask::DestroyFEFast()
         nlSingleton<FESceneManager>::s_pInstance = NULL;
     }
 
-    nlSingleton<FEResourceManager>::s_pInstance->UnloadPermanentResourceBundle();
+    nlSingleton<FEResourceManager>::Instance()->UnloadPermanentResourceBundle();
 
     if (nlSingleton<FEResourceManager>::s_pInstance != NULL)
     {
@@ -1168,16 +1168,16 @@ void TransitionTask::DisplayFirstScreen()
         {
             if (VIGetDTVStatus() != 0 && (OSGetProgressiveMode() == 1 || isBPressed))
             {
-                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_PROGRESSIVE_SCAN, (ScreenMovement)0, false);
+                nlSingleton<GameSceneManager>::Instance()->Push(SCENE_PROGRESSIVE_SCAN, (ScreenMovement)0, false);
                 break;
             }
         }
         else if (VIGetTvFormat() == 1)
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_EURO_RGB60, (ScreenMovement)0, false);
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_EURO_RGB60, (ScreenMovement)0, false);
             break;
         }
 
-        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_HEALTH_WARNING, (ScreenMovement)0, false);
+        nlSingleton<GameSceneManager>::Instance()->Push(SCENE_HEALTH_WARNING, (ScreenMovement)0, false);
     } while (false);
 }

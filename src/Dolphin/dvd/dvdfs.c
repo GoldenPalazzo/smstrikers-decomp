@@ -28,6 +28,9 @@ static void cbForSeekSync(s32 result, DVDCommandBlock* block);
 static void cbForPrepareStreamAsync(s32 result, DVDCommandBlock* block);
 static void cbForPrepareStreamSync(s32 result, DVDCommandBlock* block);
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80245BD4 | size: 0x38
+ */
 void __DVDFSInit(void)
 {
     BootInfo = (void*)OSPhysicalToCached(0);
@@ -65,6 +68,9 @@ static BOOL isSame(const char* path, const char* string)
     return FALSE;
 }
 
+/**
+ * Offset/Address/Size: 0x38 | 0x80245C0C | size: 0x2F4
+ */
 s32 DVDConvertPathToEntrynum(const char* pathPtr)
 {
     const char* ptr;
@@ -189,6 +195,9 @@ s32 DVDConvertPathToEntrynum(const char* pathPtr)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x32C | 0x80245F00 | size: 0x74
+ */
 BOOL DVDFastOpen(s32 entrynum, DVDFileInfo* fileInfo)
 {
     ASSERTMSGLINE(455, fileInfo, "DVDFastOpen(): null pointer is specified to file info address  ");
@@ -239,6 +248,9 @@ BOOL DVDOpen(const char* fileName, DVDFileInfo* fileInfo)
     return TRUE;
 }
 
+/**
+ * Offset/Address/Size: 0x3A0 | 0x80245F74 | size: 0x24
+ */
 BOOL DVDClose(DVDFileInfo* fileInfo)
 {
     ASSERTMSGLINE(530, fileInfo, "DVDClose(): null pointer is specified to file info address  ");
@@ -342,6 +354,9 @@ BOOL DVDChangeDir(const char* dirName)
     return TRUE;
 }
 
+/**
+ * Offset/Address/Size: 0x3C4 | 0x80245F98 | size: 0xC0
+ */
 BOOL DVDReadAsyncPrio(DVDFileInfo* fileInfo, void* addr, s32 length, s32 offset, DVDCallback callback, s32 prio)
 {
     ASSERTMSGLINE(736, fileInfo, "DVDReadAsync(): null pointer is specified to file info address  ");
@@ -363,6 +378,9 @@ BOOL DVDReadAsyncPrio(DVDFileInfo* fileInfo, void* addr, s32 length, s32 offset,
 #define offsetof(type, memb) ((u32) & ((type*)0)->memb)
 #endif
 
+/**
+ * Offset/Address/Size: 0x484 | 0x80246058 | size: 0x30
+ */
 static void cbForReadAsync(s32 result, DVDCommandBlock* block)
 {
     DVDFileInfo* fileInfo;

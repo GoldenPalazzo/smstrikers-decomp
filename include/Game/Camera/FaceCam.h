@@ -8,19 +8,21 @@
 class FaceCam : public cBaseCamera
 {
 public:
-    FaceCam(float);
+    FaceCam(float distance);
     virtual ~FaceCam() { };
     virtual eCameraType GetType()
     {
         return eCameraType_FaceCloseup;
     };
-    virtual void Update(float);
+    virtual void Update(float dt);
     virtual const nlMatrix4& GetViewMatrix() const
     {
         return mViewMatrix;
     };
     virtual const nlVector3& GetCameraPosition() const;
     virtual const nlVector3& GetTargetPosition() const;
+
+    void SetToUserCharacter();
 
     /* 0x1C */ cCharacter* mpCharacter;
     /* 0x20 */ float mDistance;

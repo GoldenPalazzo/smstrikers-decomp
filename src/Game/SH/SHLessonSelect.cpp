@@ -198,7 +198,7 @@ void LessonSelectScene::Update(float fDeltaT)
     }
     else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
     {
-        PauseMenuScene* pauseScene = (PauseMenuScene*)nlSingleton<OverlayManager>::s_pInstance->Push(
+        PauseMenuScene* pauseScene = (PauseMenuScene*)nlSingleton<OverlayManager>::Instance()->Push(
             IGSCENE_STRIKERS_101_PAUSE, SCREEN_BACK, true);
         pauseScene->mStartAnimAtEnd = true;
         FEAudio::PlayAnimAudioEvent("sfx_back", false);
@@ -406,7 +406,7 @@ void SetTickerLesson(int lesson)
         ResetHistory = 0;
     }
 
-    BaseSceneHandler* scene = OverlayManager::s_pInstance->GetScene(OVERLAY_LESSON_TICKER);
+    BaseSceneHandler* scene = OverlayManager::Instance()->GetScene(OVERLAY_LESSON_TICKER);
     if (scene != 0)
     {
         scene = (BaseSceneHandler*)((char*)scene - 4);

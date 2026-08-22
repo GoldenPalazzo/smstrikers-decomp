@@ -13,7 +13,7 @@ class TitleScene : public BaseSceneHandler
 public:
     TitleScene();
     virtual ~TitleScene();
-    virtual void Update(float);
+    virtual void Update(float dt);
     virtual void SceneCreated();
 
     static void StartIntroMovie();

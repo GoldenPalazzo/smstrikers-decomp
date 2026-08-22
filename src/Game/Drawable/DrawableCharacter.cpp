@@ -275,7 +275,7 @@ static void DrawableCharacterHeadTrackCallback(unsigned int ctx, unsigned int, c
 /**
  * Offset/Address/Size: 0x290C | 0x8011B7BC | size: 0xE4
  */
-void DrawableCharacter::DrawableBowserHeadTrackCallback(unsigned int ctx, unsigned int, cPoseAccumulator* poseAccumulator, unsigned int currentNodeIndex, int)
+void DrawableCharacter::DrawableBowserHeadTrackCallback(unsigned int ctx, unsigned int nParam2, cPoseAccumulator* poseAccumulator, unsigned int currentNodeIndex, int nParentIndex)
 {
     DrawableCharacter* drawableChar = (DrawableCharacter*)ctx;
     nlMatrix4& nodeMatrix = poseAccumulator->GetNodeMatrix(currentNodeIndex);

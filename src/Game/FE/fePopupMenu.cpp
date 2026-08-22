@@ -449,7 +449,7 @@ void FEPopupMenu::Create(
         mPopup.pMessage = new (8, false) WStr(Format<WStr, WStr>(message, cupName));
 
         WStr tournamentTypeName(LookupLoc(0x81A57D85));
-        CustomTournament* tournamentInfo = &GameInfoManager::s_pInstance->mCustomTournamentInfo;
+        CustomTournament* tournamentInfo = &GameInfoManager::Instance()->mCustomTournamentInfo;
         if (tournamentInfo->m_tournMode == TM_LEAGUE)
         {
             tournamentTypeName = LookupLoc(0x81A57D85);
@@ -494,12 +494,12 @@ void FEPopupMenu::Create(
 
     case POPUP_START_NEW_CUP:
     {
-        WStr cupName(LookupLoc(GetLOCModeName(GameInfoManager::s_pInstance->mCurrentMode)));
+        WStr cupName(LookupLoc(GetLOCModeName(GameInfoManager::Instance()->mCurrentMode)));
         WStr message(LookupLoc(popupEntry->mMessage));
         mPopup.pMessage = new (8, false) WStr(Format<WStr, WStr>(message, cupName));
 
-        WStr captainName(LookupLoc(GetLOCTeamName(GameInfoManager::s_pInstance->GetUserSelectedCupTeam())));
-        int round = GameInfoManager::s_pInstance->GetCurrentRoundNumber();
+        WStr captainName(LookupLoc(GetLOCTeamName(GameInfoManager::Instance()->GetUserSelectedCupTeam())));
+        int round = GameInfoManager::Instance()->GetCurrentRoundNumber();
         WStr roundString;
         if (round == -4)
         {
@@ -534,7 +534,7 @@ void FEPopupMenu::Create(
 
     case POPUP_REALLY_OVERWRITE:
     {
-        WStr cupName(LookupLoc(GetLOCModeName(GameInfoManager::s_pInstance->mCurrentMode)));
+        WStr cupName(LookupLoc(GetLOCModeName(GameInfoManager::Instance()->mCurrentMode)));
         WStr message(LookupLoc(popupEntry->mMessage));
         mPopup.pMessage = new (8, false) WStr(Format<WStr, WStr>(message, cupName));
         mPopup.pOptionLabels[0] = new (8, false) WStr(LookupLoc(popupEntry->mOptions[0]));
@@ -547,7 +547,7 @@ void FEPopupMenu::Create(
 
     case POPUP_END_CUP:
     {
-        WStr cupName(LookupLoc(GetLOCModeName(GameInfoManager::s_pInstance->mCurrentMode)));
+        WStr cupName(LookupLoc(GetLOCModeName(GameInfoManager::Instance()->mCurrentMode)));
         WStr message(LookupLoc(popupEntry->mMessage));
         mPopup.pMessage = new (8, false) WStr(Format<WStr, WStr>(message, cupName));
         mPopup.numOptions = 2;
@@ -595,14 +595,14 @@ void FEPopupMenu::Create(
 
         if (GameSceneManager::s_pInstance != NULL)
         {
-            optionsScene = (OptionsScene*)GameSceneManager::s_pInstance->GetScene(SCENE_OPTIONS);
+            optionsScene = (OptionsScene*)GameSceneManager::Instance()->GetScene(SCENE_OPTIONS);
             menuState = optionsScene->m_curMenuState;
         }
-        else if (OverlayManager::s_pInstance->GetScene(IGSCENE_PAUSE_AUDIO) != NULL)
+        else if (OverlayManager::Instance()->GetScene(IGSCENE_PAUSE_AUDIO) != NULL)
         {
             menuState = MS_AUDIO;
         }
-        else if (OverlayManager::s_pInstance->GetScene(IGSCENE_PAUSE_VISUAL) != NULL)
+        else if (OverlayManager::Instance()->GetScene(IGSCENE_PAUSE_VISUAL) != NULL)
         {
             menuState = MS_VISUAL;
         }
@@ -923,7 +923,7 @@ void FEPopupMenu::ResizeHighlight()
 /**
  * Offset/Address/Size: 0xA8 | 0x80098354 | size: 0xBC
  */
-void FEPopupMenu::SetOptionTextColourOnCurrent(bool)
+void FEPopupMenu::SetOptionTextColourOnCurrent(bool bHighlighted)
 {
     FORCE_DONT_INLINE;
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();

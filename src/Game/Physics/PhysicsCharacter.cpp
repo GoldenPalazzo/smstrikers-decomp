@@ -431,7 +431,7 @@ void PhysicsCharacter::PostUpdate()
                         if (pPrevOwner != NULL && pPrevOwner->m_eClassType == GOALIE)
                         {
                             cTeam* otherTeam = pPrevOwner->m_pTeam->GetOtherTeam();
-                            eTeamID teamID = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)otherTeam->m_nSide);
+                            eTeamID teamID = nlSingleton<GameInfoManager>::Instance()->GetTeam((short)otherTeam->m_nSide);
                             BasicString<char, Detail::TempStringAllocator> effectName(GetTeamName(teamID));
                             effectName.AppendInPlace("_shoot_to_score_catch");
                             EmitGoalieCatch(pFldr, effectName.c_str(), false);
@@ -464,7 +464,7 @@ void PhysicsCharacter::PostUpdate()
                     }
                     else
                     {
-                        eTeamID teamID = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)pFldr->m_pTeam->m_nSide);
+                        eTeamID teamID = nlSingleton<GameInfoManager>::Instance()->GetTeam((short)pFldr->m_pTeam->m_nSide);
                         BasicString<char, Detail::TempStringAllocator> effectName(GetTeamName(teamID));
                         effectName.AppendInPlace("_shoot_to_score_catch");
                         EmitGoalieCatch(pFldr, effectName.c_str(), true);

@@ -43,17 +43,17 @@ public:
     /* 0x18 */ virtual float GetFOV() const;
     /* 0x14 */ virtual const nlMatrix4& GetViewMatrix() const;
 
-    static bool LoadCameraAnimation(nlChunk*, nlChunk*, const char*, bool);
-    static bool LoadCameraAnimation(const char*, const char*, bool);
+    static bool LoadCameraAnimation(nlChunk* begin, nlChunk* end, const char* cameraName, bool ownsKeyData);
+    static bool LoadCameraAnimation(const char* szFilename, const char* szCameraName, bool ownsKeyData);
     static void FreeCameraAnimations();
 
-    void BuildAnimViewMatrix(nlMatrix4&);
+    void BuildAnimViewMatrix(nlMatrix4& mView);
     void UnselectCameraAnimation();
-    void SelectCameraAnimation(const char*);
-    bool CameraAnimationExists(const char*) const;
-    static void FreeCameraAnimation(const char*);
-    void Update(float);
-    void ManualUpdate(float);
+    void SelectCameraAnimation(const char* name);
+    bool CameraAnimationExists(const char* name) const;
+    static void FreeCameraAnimation(const char* szCameraName);
+    void Update(float dt);
+    void ManualUpdate(float dt);
 
     static cCameraData* m_cameraDataList;
 

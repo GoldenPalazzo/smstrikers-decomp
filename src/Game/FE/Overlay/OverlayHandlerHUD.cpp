@@ -191,14 +191,14 @@ void HUDOverlay::Update(float fDeltaT)
         }
     }
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+    if (nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode)
     {
         DisplayPowerUps();
         return;
     }
 
     unsigned long time;
-    bool isOvertime = nlSingleton<StatsTracker>::s_pInstance->IsOvertime();
+    bool isOvertime = nlSingleton<StatsTracker>::Instance()->IsOvertime();
 
     float fTime = g_pGame->GetGameTime();
     float overtimeTime = 59999.0f;
@@ -405,7 +405,7 @@ void HUDOverlay::SceneCreated()
     LoadHUDTextures();
     SetTeamIcons();
 
-    team = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0);
+    team = nlSingleton<GameInfoManager>::Instance()->GetTeam(0);
 
     pTeamName = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
@@ -423,7 +423,7 @@ void HUDOverlay::SceneCreated()
     pTeamName->m_LocStrId = GetLOCCharacterName(team, true, false);
     pTeamName->m_OverloadFlags |= 8;
 
-    team = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
+    team = nlSingleton<GameInfoManager>::Instance()->GetTeam(1);
 
     pTeamName = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
@@ -441,7 +441,7 @@ void HUDOverlay::SceneCreated()
     pTeamName->m_LocStrId = GetLOCCharacterName(team, true, false);
     pTeamName->m_OverloadFlags |= 8;
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+    if (nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode)
     {
         m_pTextInstanceClock[0]->m_bVisible = false;
         m_pTextInstanceClock[1]->m_bVisible = false;
@@ -720,7 +720,7 @@ void HUDOverlay::SetTeamIcons()
 
     for (int i = 0; i < 2; i++)
     {
-        eTeamID teamid = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)i);
+        eTeamID teamid = nlSingleton<GameInfoManager>::Instance()->GetTeam((short)i);
 
         switch (teamid)
         {

@@ -12,7 +12,7 @@ extern GCAudioStreaming::AudioBufferMgr g_BufferMgr;
 /**
  * Offset/Address/Size: 0x24E4 | 0x8015723C | size: 0x100
  */
-void AudioStreamTrack::TrackManagerBase::Update(float)
+void AudioStreamTrack::TrackManagerBase::Update(float dT)
 {
     typedef DLListEntry<GCAudioStreaming::StereoAudioStream*> Entry;
 
@@ -68,7 +68,7 @@ void AudioStreamTrack::TrackManagerBase::Update(float)
 namespace AudioStreamTrack
 {
 TrackManagerBase::StreamFileLookup::StreamFileLookup(
-    const char* /*name*/,
+    const char* name,
     const Function<bool(const char*, char*, unsigned long)>& ParamCB)
     : m_ParamCB(ParamCB)
     , m_pLookup(NULL)
@@ -168,13 +168,6 @@ void AudioStreamTrack::TrackManagerBase::FadeManager::AddFade(
 
     fadeCtrl->Callback = callback;
 }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801573F0 | size: 0x5C
-//  */
-// void Function0<void>::FunctorImpl<BindExp2<void, Detail::MemFunImpl<void, void (AudioStreamTrack::StreamTrack::*)(AudioStreamTrack::StreamTrack::QUEUED_STREAM*)>, AudioStreamTrack::StreamTrack*, AudioStreamTrack::StreamTrack::QUEUED_STREAM*> >::~FunctorImpl()
-// {
-// }
 
 extern "C" void sndStreamMixParameterEx(unsigned long stid, unsigned char vol, unsigned char pan,
     unsigned char span, unsigned char auxa, unsigned char auxb);
@@ -303,7 +296,7 @@ void AudioStreamTrack::TrackManagerBase::FadeManager::UpdateFade(STREAM_FADE_CTR
 /**
  * Offset/Address/Size: 0x18FC | 0x80156654 | size: 0x74
  */
-void AudioStreamTrack::StreamTrack::Update(float)
+void AudioStreamTrack::StreamTrack::Update(float dT)
 {
     DLListEntry<QUEUED_STREAM>* head = m_QueuedStreams.m_Head;
     if (!head)
@@ -580,7 +573,7 @@ void AudioStreamTrack::StreamTrack::Stop(unsigned long Fadeout)
 }
 
 /**
- * Offset/Address/Size: 0x9C4 | 0x801556A4 | size: 0xDC
+ * Offset/Address/Size: 0x94C | 0x801556A4 | size: 0xDC
  */
 void AudioStreamTrack::StreamTrack::StartQStreamFadeout(
     QUEUED_STREAM* pQS, unsigned long Fadeout, const Function<FnVoidVoid>& callback)

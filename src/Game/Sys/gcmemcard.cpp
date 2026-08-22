@@ -701,7 +701,7 @@ void MemCard::SetStatusDone(long Result)
     }
 }
 
-void MemCard::CardRemoved(long)
+void MemCard::CardRemoved(long result)
 {
     m_State = IS_IDLE;
     m_CardState = CS_IDLE;

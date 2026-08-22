@@ -9,13 +9,15 @@
 class PhysicsColumn : public PhysicsObject
 {
 public:
-    PhysicsColumn(CollisionSpace*, PhysicsWorld*, float);
+    PhysicsColumn(CollisionSpace* collisionSpace, PhysicsWorld* world, float radius);
     virtual ~PhysicsColumn();
     virtual int GetObjectType() const
     {
         return 0x04;
     };
-    void GetRadius(float*);
+    void SetDensity(float density);
+    void SetRadius(float radius);
+    void GetRadius(float* radius);
 
     /* 0x2c */ dJointID m_jointID;
 };

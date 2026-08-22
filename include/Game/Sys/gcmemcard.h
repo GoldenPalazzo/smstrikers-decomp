@@ -149,7 +149,7 @@ public:
             memset(IconSpeeds, 0, 8);
         }
 
-        void GetValidDataInfo(ICON_DATA_INFO&) const;
+        void GetValidDataInfo(ICON_DATA_INFO& DataInfo) const;
 
         void CalculateHeaderSize()
         {
@@ -185,29 +185,29 @@ public:
 
     MemCard(unsigned long slot);
 
-    long BeginCardAccess(const MemCardFunctor&);
-    long CreateFile(const char*, unsigned long, MemCard::ICON_CONFIG*, MemCard::MC_FILE*&, const MemCardFunctor&);
-    long OpenFile(const char*, MemCard::MC_FILE*&, unsigned long*);
-    long FormatCard(const MemCardFunctor&);
-    long DeleteFile(const char*, const MemCardFunctor&);
-    long InternalReadFile(MemCard::MC_FILE*, void*, unsigned long, unsigned long, const MemCardFunctor&);
-    long InternalWriteFile(MemCard::MC_FILE*, void*, unsigned long, unsigned long, const MemCardFunctor&, bool);
-    long CloseFile(MemCard::MC_FILE*);
-    long FileExists(const char*);
-    long WriteFileIconData(MemCard::MC_FILE*, void*, const MemCardFunctor&);
-    unsigned long AlignBytesToSectorSize(unsigned long);
+    long BeginCardAccess(const MemCardFunctor& Callback);
+    long CreateFile(const char* FileName, unsigned long FileSize, MemCard::ICON_CONFIG* pIconConfig, MemCard::MC_FILE*& pFile, const MemCardFunctor& Callback);
+    long OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned long* pFileLength);
+    long FormatCard(const MemCardFunctor& Callback);
+    long DeleteFile(const char* FileName, const MemCardFunctor& Callback);
+    long InternalReadFile(MemCard::MC_FILE* pFile, void* Buffer, unsigned long Length, unsigned long StartAt, const MemCardFunctor& Callback);
+    long InternalWriteFile(MemCard::MC_FILE* pFile, void* Buffer, unsigned long Length, unsigned long StartAt, const MemCardFunctor& Callback, bool ResetTransfer);
+    long CloseFile(MemCard::MC_FILE* pFile);
+    long FileExists(const char* fileName);
+    long WriteFileIconData(MemCard::MC_FILE* pFile, void* pData, const MemCardFunctor& functor);
+    unsigned long AlignBytesToSectorSize(unsigned long bytes);
 
 private:
-    void CardRemoved(long);
-    void SetStatusDone(long);
-    void WriteFileDone(long);
-    void ReadFileDone(long);
-    void DeleteFileDone(long);
-    void CreateFileDone(long);
-    void FormatDone(long);
-    void CardCheckBrokenDone(long);
-    void CardCheckDone(long);
-    void MountDone(long);
+    void CardRemoved(long result);
+    void SetStatusDone(long Result);
+    void WriteFileDone(long result);
+    void ReadFileDone(long result);
+    void DeleteFileDone(long result);
+    void CreateFileDone(long result);
+    void FormatDone(long result);
+    void CardCheckBrokenDone(long result);
+    void CardCheckDone(long result);
+    void MountDone(long result);
 
 public:
     s64 GetSerialID() const;
@@ -218,7 +218,6 @@ public:
     /* 0x00C  */ CARD_INFO m_CardInfo;
     /* 0x01C */ unsigned long m_LastTransferSize;
     /* 0x020 */ unsigned long m_TargetTransferSize;
-    /* 0x024 */ s32 unk_24;
     /* 0x028 */ s64 m_SerialID;
     /* 0x030 */ MemCardFunctor m_CB[9];
     /* 0x108 */ nlStaticSortedSlot<MC_FILE, 16> m_OpenFiles;

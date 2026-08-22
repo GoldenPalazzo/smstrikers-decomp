@@ -121,7 +121,7 @@ public:
     void UpdatePresentation();
     bool PrevItem();
     bool NextItem();
-    void SetSlideByIndex(unsigned char);
+    void SetSlideByIndex(unsigned char index);
     bool OnHighlight()
     {
         MenuItem* item = &m_menuItems[m_currentSlide];
@@ -141,10 +141,10 @@ public:
         }
     }
     bool ApplyFunction();
-    MenuItem* AddMenuItem(const char*);
-    MenuItem* AddMenuItem(const char*, const Function<FnVoidVoid>&);
+    MenuItem* AddMenuItem(const char* name);
+    MenuItem* AddMenuItem(const char* name, const Function<FnVoidVoid>& func);
     ~FESlideMenu();
-    FESlideMenu(TLComponentInstance*);
+    FESlideMenu(TLComponentInstance* pWorkPres);
 
     /* 0x0,  */ MenuItem m_menuItems[16];
     /* 0x140 */ unsigned char m_size;

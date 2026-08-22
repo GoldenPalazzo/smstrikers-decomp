@@ -260,7 +260,7 @@ DrawableCharacter* DrawableBall::IndexToPlayer(int index) const
 }
 
 /**
- * Offset/Address/Size: 0x138 | 0x8011E774 | size: 0x138
+ * Offset/Address/Size: 0xA24 | 0x8011E774 | size: 0x138
  */
 template <>
 void DrawableBall::Replay<SaveFrame>(SaveFrame& frame)
@@ -286,7 +286,7 @@ void DrawableBall::Replay<SaveFrame>(SaveFrame& frame)
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x8011E63C | size: 0x138
+ * Offset/Address/Size: 0x8EC | 0x8011E63C | size: 0x138
  */
 template <>
 void DrawableBall::Replay<LoadFrame>(LoadFrame& frame)

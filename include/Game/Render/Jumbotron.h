@@ -3,8 +3,6 @@
 
 #include "types.h"
 
-// void BundleLoad_cb(void*, unsigned long, void*);
-
 enum eJumboState
 {
     JState_Nothing = 0,
@@ -33,7 +31,7 @@ public:
     void WaitForLoad();
     void BeginPlaying();
     void StopPlaying();
-    void Update(float);
+    void Update(float dt);
 
     /* 0x00 */ void* m_BundleLoadBase;
     /* 0x04 */ eJumboState m_State;

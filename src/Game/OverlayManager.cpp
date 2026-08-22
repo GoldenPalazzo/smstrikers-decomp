@@ -119,7 +119,7 @@ void OverlayManager::Update(float fDeltaT)
 /**
  * Offset/Address/Size: 0x330 | 0x800C815C | size: 0x638
  */
-void OverlayManager::FEEventHandler(Event* pEvent, void*)
+void OverlayManager::FEEventHandler(Event* pEvent, void* pParam)
 {
     if (nlTaskManager::m_pInstance->m_CurrState == 4)
         return;
@@ -128,7 +128,7 @@ void OverlayManager::FEEventHandler(Event* pEvent, void*)
     {
     case 3:
     {
-        if (g_e3_Build && nlSingleton<GameInfoManager>::s_pInstance->IsInDemoMode())
+        if (g_e3_Build && nlSingleton<GameInfoManager>::Instance()->IsInDemoMode())
         {
             bool notimeout = GetConfigBool(Config::Global(), "notimeout", false);
             if (!notimeout)
@@ -141,7 +141,7 @@ void OverlayManager::FEEventHandler(Event* pEvent, void*)
             }
         }
         AudioLoader::StartFEStream("FE_Game_Over", true, "Music");
-        SummaryOverlay* summaryOverlay = (SummaryOverlay*)nlSingleton<OverlayManager>::s_pInstance->Push(OVERLAY_SUMMARY, SCREEN_NOTHING, false);
+        SummaryOverlay* summaryOverlay = (SummaryOverlay*)nlSingleton<OverlayManager>::Instance()->Push(OVERLAY_SUMMARY, SCREEN_NOTHING, false);
         summaryOverlay->mButtonState = ButtonComponent::BS_A_ONLY;
         OverlayManager* inst = nlSingleton<OverlayManager>::s_pInstance;
         inst->mHUDDelay = 0.0f;
@@ -152,7 +152,7 @@ void OverlayManager::FEEventHandler(Event* pEvent, void*)
             inst->mIsHUDSlideIn = false;
         }
         Presentation::Instance().StopOverlay();
-        HUDOverlay* HUD = (HUDOverlay*)nlSingleton<OverlayManager>::s_pInstance->GetScene(OVERLAY_HUD);
+        HUDOverlay* HUD = (HUDOverlay*)nlSingleton<OverlayManager>::Instance()->GetScene(OVERLAY_HUD);
         HUD->ResetScores();
         break;
     }
@@ -186,29 +186,29 @@ void OverlayManager::FEEventHandler(Event* pEvent, void*)
                 inst->mIsHUDSlideIn = false;
             }
         }
-        HUDOverlay* HUD = (HUDOverlay*)nlSingleton<OverlayManager>::s_pInstance->GetScene(OVERLAY_HUD);
+        HUDOverlay* HUD = (HUDOverlay*)nlSingleton<OverlayManager>::Instance()->GetScene(OVERLAY_HUD);
         HUD->UpdateScore();
         break;
     }
     case 9:
     {
-        nlSingleton<OverlayManager>::s_pInstance->SetVisible(OVERLAY_HUD, true, true);
+        nlSingleton<OverlayManager>::Instance()->SetVisible(OVERLAY_HUD, true, true);
         OverlayManager* inst = nlSingleton<OverlayManager>::s_pInstance;
         inst->mHUDDelay = 0.25f;
         inst->mDoHUDSlideIn = true;
         isGoalScored = false;
-        HUDOverlay* HUD = (HUDOverlay*)nlSingleton<OverlayManager>::s_pInstance->GetScene(OVERLAY_HUD);
+        HUDOverlay* HUD = (HUDOverlay*)nlSingleton<OverlayManager>::Instance()->GetScene(OVERLAY_HUD);
         HUD->DisplayNewScore();
-        if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+        if (nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode)
         {
-            NSNMessengerScene* messenger = (NSNMessengerScene*)nlSingleton<OverlayManager>::s_pInstance->GetScene(OVERLAY_LESSON_TICKER);
+            NSNMessengerScene* messenger = (NSNMessengerScene*)nlSingleton<OverlayManager>::Instance()->GetScene(OVERLAY_LESSON_TICKER);
             messenger->ForceMessengerVisibleNow();
         }
         break;
     }
     case 10:
     {
-        nlSingleton<OverlayManager>::s_pInstance->SetVisible(OVERLAY_TEXT, false, false);
+        nlSingleton<OverlayManager>::Instance()->SetVisible(OVERLAY_TEXT, false, false);
         break;
     }
     case 0x46:
@@ -269,14 +269,14 @@ void OverlayManager::FEEventHandler(Event* pEvent, void*)
  */
 void OverlayManager::SetVisible(SceneList scene, bool visibility, bool overrideStateSettings)
 {
-    if (nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode == GameInfoManager::GM_DEMO && scene != OVERLAY_HUD)
+    if (nlSingleton<GameInfoManager>::Instance()->mCurrentMode == GameInfoManager::GM_DEMO && scene != OVERLAY_HUD)
     {
         return;
     }
 
     BasicString<char, Detail::TempStringAllocator> fileName = GetFileName(scene);
     u32 uHashID = nlStringLowerHash(fileName.c_str());
-    BaseOverlayHandler* sceneHandler = (BaseOverlayHandler*)nlSingleton<FESceneManager>::s_pInstance->GetSceneHandler(uHashID);
+    BaseOverlayHandler* sceneHandler = (BaseOverlayHandler*)nlSingleton<FESceneManager>::Instance()->GetSceneHandler(uHashID);
     u32 state = nlTaskManager::m_pInstance->m_CurrState;
 
     if (overrideStateSettings || (sceneHandler->mVisibilityMask & state))

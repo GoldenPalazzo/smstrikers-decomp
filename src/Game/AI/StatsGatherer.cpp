@@ -1,4 +1,4 @@
-#include "NL/StatsGatherer.h"
+#include "Game/AI/StatsGatherer.h"
 
 StatsGatherer::StatsGatherer()
     : InterpreterCore(10)

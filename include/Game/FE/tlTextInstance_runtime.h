@@ -40,6 +40,7 @@ class TLTextInstance : public TLInstance
 public:
     void SetScissorBox(unsigned short, unsigned short, unsigned short, unsigned short);
     void SetString(const unsigned short*);
+    void DisableScissorBox();
     void Render(eGLView, const nlColour&) const;
     unsigned short* GetString() const;
 

@@ -15,7 +15,7 @@ class cPN_Feather : public cPoseNode
 {
 public:
     cPN_Feather() { }
-    cPN_Feather(cSHierarchy*, void (*)(unsigned int, cPN_Feather*), unsigned int);
+    cPN_Feather(cSHierarchy* hierarchy, void (*callback)(unsigned int, cPN_Feather*), unsigned int callbackParam);
     /* 0x08 */ virtual ~cPN_Feather();
     static void* operator new(unsigned long)
     {
@@ -23,12 +23,12 @@ public:
         m_FeatherSlotPool.Allocate(result);
         return result;
     }
-    /* 0x14 */ virtual void Evaluate(int, float, cPoseAccumulator*) const;
-    /* 0x10 */ virtual void Evaluate(float, cPoseAccumulator*) const;
-    /* 0x18 */ virtual cPoseNode* Update(float);
+    /* 0x14 */ virtual void Evaluate(int nodeIndex, float weight, cPoseAccumulator* accum) const;
+    /* 0x10 */ virtual void Evaluate(float weight, cPoseAccumulator* accum) const;
+    /* 0x18 */ virtual cPoseNode* Update(float dt);
     /* 0x1C */ virtual int GetType() { return 0x1; };
-    /* 0x20 */ virtual void BlendRootTrans(nlVector3*, float, float*);
-    /* 0x24 */ virtual void BlendRootRot(unsigned short*, float, float*);
+    /* 0x20 */ virtual void BlendRootTrans(nlVector3* outBase, float weight, float* scratch);
+    /* 0x24 */ virtual void BlendRootRot(unsigned short* outRot, float weight, float* scratch);
 
     template <typename T>
     void Replay(T& frame)
@@ -42,11 +42,11 @@ public:
     }
 
     void ClearNodeWeights();
-    void SetNodeWeight(int, float, float);
-    void SetChildFeatherWeight(int, float);
-    void SetNodeWeight(int, float);
-    void BeginBlendIn(float);
-    void BeginBlendOut(float);
+    void SetNodeWeight(int nodeIndex, float weight, float decayFactor);
+    void SetChildFeatherWeight(int nodeIndex, float weight);
+    void SetNodeWeight(int nodeIndex, float weight);
+    void BeginBlendIn(float duration);
+    void BeginBlendOut(float duration);
 
     inline void operator delete(void* ptr);
 
@@ -61,12 +61,6 @@ public:
     static SlotPool<cPN_Feather> m_FeatherSlotPool;
 }; // total size: 0x30
 
-// class SlotPool<cPN_Feather>
-// {
-// public:
-//     void ~SlotPool();
-// };
-
 inline cPN_Feather* AllocateFeather()
 {
     cPN_Feather* feather = nullptr;
@@ -75,6 +69,5 @@ inline cPN_Feather* AllocateFeather()
 
     return feather;
 }
-
 
 #endif // _PNFEATHER_H_

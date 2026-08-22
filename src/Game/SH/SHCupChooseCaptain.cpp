@@ -232,7 +232,7 @@ void CupChooseCaptainSceneV2::SceneCreated()
     mPressAComponent->m_bVisible = false;
 
     {
-        GameInfoManager::eGameModes gameMode = nlSingleton<GameInfoManager>::s_pInstance->GetCurrentMode();
+        GameInfoManager::eGameModes gameMode = nlSingleton<GameInfoManager>::Instance()->GetCurrentMode();
         mCupStartString = Format(
             BasicString<unsigned short, Detail::TempStringAllocator>(LookupCupCaptainLoc(0xB862AB94)),
             LookupCupCaptainLoc(GetLOCModeName(gameMode)));
@@ -305,7 +305,7 @@ void CupChooseCaptainSceneV2::Update(float fDeltaT)
                 FEAudio::PlayAnimAudioEvent("sfx_accept_no_screen_change", false);
                 lastCaptainSelectSoundStrPlayed = FECharacterSound::PlayCaptainName(mCurrentCaptain);
             }
-            else if (mCurrentCaptain == TEAM_MYSTERY && nlSingleton<GameInfoManager>::s_pInstance->IsSuperTeamUnlocked())
+            else if (mCurrentCaptain == TEAM_MYSTERY && nlSingleton<GameInfoManager>::Instance()->IsSuperTeamUnlocked())
             {
                 ChangeState(mState, CUP_STATE_READY);
                 FEAudio::PlayAnimAudioEvent("sfx_accept_no_screen_change", false);
@@ -320,11 +320,11 @@ void CupChooseCaptainSceneV2::Update(float fDeltaT)
         {
             if (mIsSuperCup)
             {
-                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_OPTIONS_INITIAL_SUPER, SCREEN_BACK, true);
+                nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CUP_OPTIONS_INITIAL_SUPER, SCREEN_BACK, true);
             }
             else
             {
-                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_OPTIONS_INITIAL_CUP, SCREEN_BACK, true);
+                nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CUP_OPTIONS_INITIAL_CUP, SCREEN_BACK, true);
             }
             FEAudio::PlayAnimAudioEvent("sfx_back", false);
         }
@@ -400,9 +400,9 @@ void CupChooseCaptainSceneV2::Update(float fDeltaT)
                 CreateLineup();
                 pGameInfo->IncreaseRoundNumber();
                 pGameInfo->SetResultsOfLastUserGame(RESULT_CUP_START);
-                nlSingleton<GameSceneManager>::s_pInstance->Pop();
+                nlSingleton<GameSceneManager>::Instance()->Pop();
                 SceneList nextScene = mIsSuperCup ? SCENE_SUPER_CUP_STANDINGS : SCENE_CUP_STANDINGS;
-                BaseSceneHandler* hubScene = nlSingleton<GameSceneManager>::s_pInstance->Push(nextScene, SCREEN_FORWARD, false);
+                BaseSceneHandler* hubScene = nlSingleton<GameSceneManager>::Instance()->Push(nextScene, SCREEN_FORWARD, false);
                 *(u8*)((u8*)hubScene + 0x226) = 1;
                 FEAudio::PlayAnimAudioEvent("sfx_accept", false);
             }
@@ -443,7 +443,7 @@ void CupChooseCaptainSceneV2::UpdateCaptainName()
         slide,
         InlineHasher(nlStringLowerHash("CAPTAIN_NAME2")));
 
-    if (mCurrentCaptain == 8 && !nlSingleton<GameInfoManager>::s_pInstance->IsSuperTeamUnlocked())
+    if (mCurrentCaptain == 8 && !nlSingleton<GameInfoManager>::Instance()->IsSuperTeamUnlocked())
     {
         captainDescText->SetStringId("CUP_ATTR_MYSTERY_LOCKED");
     }
@@ -486,7 +486,7 @@ void CupChooseCaptainSceneV2::UpdateSKName()
         slide,
         InlineHasher(nlStringLowerHash("CAPTAIN_NAME2")));
 
-    if (mCurrentCaptain == 8 && !nlSingleton<GameInfoManager>::s_pInstance->IsSuperTeamUnlocked())
+    if (mCurrentCaptain == 8 && !nlSingleton<GameInfoManager>::Instance()->IsSuperTeamUnlocked())
     {
         captainDescText->SetStringId("CUP_ATTR_MYSTERY_LOCKED");
     }

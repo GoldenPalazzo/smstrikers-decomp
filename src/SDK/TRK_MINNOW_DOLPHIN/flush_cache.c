@@ -1,6 +1,9 @@
 #include "types.h"
 
 // clang-format off
+/**
+ * Offset/Address/Size: 0x0 | 0x802272E8 | size: 0x38
+ */
 ASM void TRK_flush_cache(u32 param_1, int param_2)
 {
 #ifdef __MWERKS__

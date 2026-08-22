@@ -4,16 +4,11 @@
 #include "NL/nlSlotPool.h"
 #include "Game/PoseAccumulator.h"
 
-// static void operator delete(void* ptr)
-// {
-//     m_BlenderSlotPool.Free(static_cast<cPN_Blender*>(ptr));
-// }
-
 class cPN_Blender : public cPoseNode
 {
 public:
     cPN_Blender() { }
-    cPN_Blender(cPoseNode*, cPoseNode*, float);
+    cPN_Blender(cPoseNode* child0, cPoseNode* child1, float blendDuration);
     /* 0x08 */ virtual ~cPN_Blender() { };
     static void* operator new(unsigned long)
     {
@@ -21,12 +16,12 @@ public:
         m_BlenderSlotPool.Allocate(result);
         return result;
     }
-    /* 0x10 */ virtual void Evaluate(float, cPoseAccumulator*) const;
-    /* 0x14 */ virtual void Evaluate(int, float, cPoseAccumulator*) const;
-    /* 0x18 */ virtual cPoseNode* Update(float);
+    /* 0x10 */ virtual void Evaluate(float weight, cPoseAccumulator* accum) const;
+    /* 0x14 */ virtual void Evaluate(int nodeIndex, float weight, cPoseAccumulator* accum) const;
+    /* 0x18 */ virtual cPoseNode* Update(float dt);
     /* 0x1C */ virtual int GetType() { return 0x0; };
-    /* 0x20 */ virtual void BlendRootTrans(nlVector3*, float, float*);
-    /* 0x24 */ virtual void BlendRootRot(unsigned short*, float, float*);
+    /* 0x20 */ virtual void BlendRootTrans(nlVector3* outBase, float weight, float* scratch);
+    /* 0x24 */ virtual void BlendRootRot(unsigned short* outRot, float weight, float* scratch);
 
     template <typename T>
     void Replay(T& frame)
@@ -59,6 +54,5 @@ inline cPN_Blender* CreateAndAssignBlender(const cPoseNode* child0, const cPoseN
     cPN_Blender::m_BlenderSlotPool.Allocate(blender);
     return ::new ((u8*)blender) cPN_Blender((cPoseNode*)child0, (cPoseNode*)child1, blendDuration);
 }
-
 
 #endif // _PNBLENDER_H_

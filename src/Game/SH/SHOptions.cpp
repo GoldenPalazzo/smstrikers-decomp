@@ -39,14 +39,14 @@ u32 OptionsScene::mUserInfoCRC;
  */
 void ApplyChangesCB()
 {
-    OptionsScene* scene = (OptionsScene*)nlSingleton<GameSceneManager>::s_pInstance->GetScene(SCENE_OPTIONS);
+    OptionsScene* scene = (OptionsScene*)nlSingleton<GameSceneManager>::Instance()->GetScene(SCENE_OPTIONS);
 
     if (scene->m_curMenuState == MS_AUDIO)
     {
         OptionsAudioMenuV2* subMenuBytes = (OptionsAudioMenuV2*)scene->m_subMenu;
         if (subMenuBytes->mbUpdateMode)
         {
-            FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+            FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
             popup->Create(POPUP_APPLYING_AUDIO);
             scene->mPopupResult = PR_APPLY_DELAYED_AUDIO_CHANGES;
             return;
@@ -61,7 +61,7 @@ void ApplyChangesCB()
  */
 void RevertChangesCB()
 {
-    OptionsScene* scene = (OptionsScene*)nlSingleton<GameSceneManager>::s_pInstance->GetScene(SCENE_OPTIONS);
+    OptionsScene* scene = (OptionsScene*)nlSingleton<GameSceneManager>::Instance()->GetScene(SCENE_OPTIONS);
     scene->mPopupResult = PR_REVERT_CHANGES;
 }
 
@@ -84,12 +84,12 @@ OptionsScene::OptionsScene()
         {
             if ((SaveLoadScene::mLastSaveLoadSuccess != 0) && (DidContinueWithoutOperation() == false))
             {
-                OptionsScene::mUserInfoCRC = nlChecksum32(&(nlSingleton<GameInfoManager>::s_pInstance->mUserInfo), 0x113C);
+                OptionsScene::mUserInfoCRC = nlChecksum32(&(nlSingleton<GameInfoManager>::Instance()->mUserInfo), 0x113C);
             }
         }
         else if (mLastSelectedIndex == 0)
         {
-            OptionsScene::mUserInfoCRC = nlChecksum32(&(nlSingleton<GameInfoManager>::s_pInstance->mUserInfo), 0x113C);
+            OptionsScene::mUserInfoCRC = nlChecksum32(&(nlSingleton<GameInfoManager>::Instance()->mUserInfo), 0x113C);
         }
     }
 
@@ -134,7 +134,7 @@ void OptionsScene::SceneCreated()
 
         if (MenuToMenuStateMap[i] == MS_NUMMENUSTATES)
         {
-            if (!nlSingleton<GameInfoManager>::s_pInstance->HasTrophy(TROPHY_BOWSER_CUP))
+            if (!nlSingleton<GameInfoManager>::Instance()->HasTrophy(TROPHY_BOWSER_CUP))
             {
                 instance->m_bVisible = false;
                 continue;
@@ -228,7 +228,7 @@ void OptionsScene::Update(float dt)
 /**
  * Offset/Address/Size: 0x6EC | 0x800B3CA8 | size: 0x408
  */
-void OptionsScene::UpdateForMain(float)
+void OptionsScene::UpdateForMain(float fDeltaT)
 {
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
     {
@@ -240,25 +240,25 @@ void OptionsScene::UpdateForMain(float)
     }
     else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
     {
-        nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
+        nlSingleton<GameSceneManager>::Instance()->PopEntireStack();
 
         if (SaveLoadScene::IsIOEnabled())
         {
-            unsigned long currentcrc = nlChecksum32(&(nlSingleton<GameInfoManager>::s_pInstance->mUserInfo), 0x113C);
+            unsigned long currentcrc = nlChecksum32(&(nlSingleton<GameInfoManager>::Instance()->mUserInfo), 0x113C);
 
             if (currentcrc != OptionsScene::mUserInfoCRC)
             {
-                SaveLoadScene* scene = (SaveLoadScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SAVE, SCREEN_NOTHING, false);
+                SaveLoadScene* scene = (SaveLoadScene*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_SAVE, SCREEN_NOTHING, false);
                 scene->mNextScene = SCENE_MAIN_MENU;
             }
             else
             {
-                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_MAIN_MENU, SCREEN_BACK, false);
+                nlSingleton<GameSceneManager>::Instance()->Push(SCENE_MAIN_MENU, SCREEN_BACK, false);
             }
         }
         else
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_MAIN_MENU, SCREEN_BACK, false);
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_MAIN_MENU, SCREEN_BACK, false);
         }
 
         mLastSelectedIndex = 0;
@@ -336,7 +336,7 @@ void OptionsScene::UpdateForSubOptionMenus(float fDeltaT)
             if (HACK_DELAY_UNTIL_APPLY >= 0.5f)
             {
                 mPopupResult = PR_APPLY_CHANGES;
-                nlSingleton<GameSceneManager>::s_pInstance->Pop();
+                nlSingleton<GameSceneManager>::Instance()->Pop();
                 gStartLoadingBar = true;
             }
             return;
@@ -366,7 +366,7 @@ void OptionsScene::UpdateForSubOptionMenus(float fDeltaT)
     {
         if (m_subMenu->ChangesMade())
         {
-            FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+            FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
             popup->Create(POPUP_REVERT_OPTION_CHANGES, ApplyChangesCB, RevertChangesCB);
         }
         else
@@ -416,33 +416,33 @@ void OptionsScene::ChangeMenuState(eMenuState newState)
     }
     case MS_AUDIO:
         m_subMenu = new ((OptionsAudioMenuV2*)nlMalloc(sizeof(OptionsAudioMenuV2), 8, false))
-            OptionsAudioMenuV2(pres, ButtonComponent::BS_B_ONLY, nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mAudioOptions);
+            OptionsAudioMenuV2(pres, ButtonComponent::BS_B_ONLY, nlSingleton<GameInfoManager>::Instance()->mUserInfo.mAudioOptions);
         break;
     case MS_VISUAL:
         m_subMenu = new ((OptionsVisualMenuV2*)nlMalloc(sizeof(OptionsVisualMenuV2), 8, false))
-            OptionsVisualMenuV2(pres, ButtonComponent::BS_B_ONLY, nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mVisualOptions);
+            OptionsVisualMenuV2(pres, ButtonComponent::BS_B_ONLY, nlSingleton<GameInfoManager>::Instance()->mUserInfo.mVisualOptions);
         break;
     case MS_GAMEPLAY:
     {
-        bool showLegend = nlSingleton<GameInfoManager>::s_pInstance->IsLegendSkillUnlocked();
+        bool showLegend = nlSingleton<GameInfoManager>::Instance()->IsLegendSkillUnlocked();
         m_subMenu = new ((OptionsGameplayMenuV2*)nlMalloc(sizeof(OptionsGameplayMenuV2), 8, false))
             OptionsGameplayMenuV2(pres,
                 ButtonComponent::BS_B_ONLY,
-                nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mGameplayOptions,
+                nlSingleton<GameInfoManager>::Instance()->mUserInfo.mGameplayOptions,
                 !showLegend ? 4 : -1);
         break;
     }
     case MS_CHEATS:
         m_subMenu = new ((OptionsCheatsMenu*)nlMalloc(sizeof(OptionsCheatsMenu), 8, false))
-            OptionsCheatsMenu(pres, ButtonComponent::BS_B_ONLY, nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mCheatOptions);
+            OptionsCheatsMenu(pres, ButtonComponent::BS_B_ONLY, nlSingleton<GameInfoManager>::Instance()->mUserInfo.mCheatOptions);
         break;
     case MS_SAVE_LOAD:
         m_subMenu = new ((OptionsSaveLoad*)nlMalloc(sizeof(OptionsSaveLoad), 8, false))
             OptionsSaveLoad(pres, ButtonComponent::BS_A_AND_B);
         break;
     case MS_NUMMENUSTATES:
-        nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
-        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CREDITS, SCREEN_NOTHING, false);
+        nlSingleton<GameSceneManager>::Instance()->PopEntireStack();
+        nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CREDITS, SCREEN_NOTHING, false);
         CreditScene::mNextScene = SCENE_OPTIONS;
         FEMusic::StopStream();
         break;

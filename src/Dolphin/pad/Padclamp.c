@@ -101,6 +101,9 @@ static void ClampStick(s8* px, s8* py, s8 max, s8 xy, s8 min)
     *py = (s8)(signY * y);
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8025A0E4 | size: 0x1A8
+ */
 static void ClampCircle(s8* px, s8* py, s8 radius, s8 min)
 {
     int x = *px;
@@ -178,6 +181,9 @@ void PADClamp(PADStatus* status)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x1A8 | 0x8025A28C | size: 0x10C
+ */
 void PADClampCircle(PADStatus* status)
 {
     int i;

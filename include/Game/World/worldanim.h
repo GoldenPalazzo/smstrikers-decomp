@@ -67,7 +67,11 @@ public:
     SkinnedAnimController(const char* szAnimSetAndHierarchyName, World* pWorldContext);
     virtual ~SkinnedAnimController();
     virtual void Update(float fTimeDelta);
-    virtual glModel* GetUpdatedModel(unsigned long program, void* pLightData);
+    virtual glModel* GetUpdatedModel(unsigned long program, void* pLightData)
+    {
+        UpdateSkinnedMesh(program, pLightData);
+        return m_pCachedSkinnedModel;
+    }
 
     void UpdateSkinnedMesh(unsigned long program, void* pLightData);
     void UpdateAnimation(float fTimeDelta, const nlMatrix4& worldMatrix);

@@ -3,10 +3,10 @@
 
 #include "NL/nlMath.h"
 
-nlVector4 glConstantGet(const char*);
-bool glConstantGet(const char*, nlVector4&);
-void glConstantSet(const char*, const nlVector4&);
-void gl_ConstantMarkerBackup(int);
+nlVector4 glConstantGet(const char* constantName);
+bool glConstantGet(const char* constantName, nlVector4& result);
+void glConstantSet(const char* constantName, const nlVector4& value);
+void gl_ConstantMarkerBackup(int arg);
 void gl_ConstantMarkerAdvance();
 void gl_ConstantStartup();
 

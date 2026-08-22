@@ -547,10 +547,10 @@ void CreateCharacters()
     eCharacterClass captain[2];
     eCharacterClass sidekick[2];
     eCharacterClass goalie[2];
-    captain[0] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0));
-    captain[1] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1));
-    sidekick[0] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0));
-    sidekick[1] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1));
+    captain[0] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::Instance()->GetTeam(0));
+    captain[1] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::Instance()->GetTeam(1));
+    sidekick[0] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::Instance()->GetSidekick(0));
+    sidekick[1] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::Instance()->GetSidekick(1));
 
     goalie[0] = GetGoalieFromCaptain(captain[0]);
     goalie[1] = GetGoalieFromCaptain(captain[1]);

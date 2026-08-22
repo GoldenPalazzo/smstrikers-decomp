@@ -1473,7 +1473,7 @@ static inline float IdentityFloat(float value)
 /**
  * Offset/Address/Size: 0x390 | 0x800537B0 | size: 0x3F0
  */
-void GoalieSave::AddSegmentToGrid(SaveData* pStartSaveData, SaveData* pEndSaveData)
+void GoalieSave::AddSegmentToGrid(SaveData* pSaveData1, SaveData* pSaveData2)
 {
     int divisions;
     SaveData* pCurSaveData;
@@ -1482,24 +1482,24 @@ void GoalieSave::AddSegmentToGrid(SaveData* pStartSaveData, SaveData* pEndSaveDa
     nlVector3 v3CurPos;
     nlVector3 v3Delta;
 
-    Local2GridCoords(pStartSaveData->mv3SavePos.y, pStartSaveData->mv3SavePos.z, i, j);
-    Local2GridCoords(pEndSaveData->mv3SavePos.y, pEndSaveData->mv3SavePos.z, m, n);
+    Local2GridCoords(pSaveData1->mv3SavePos.y, pSaveData1->mv3SavePos.z, i, j);
+    Local2GridCoords(pSaveData2->mv3SavePos.y, pSaveData2->mv3SavePos.z, m, n);
     divisions = AbsInt(i - m) + AbsInt(j - n);
-    nlVec3Sub(v3Delta, pEndSaveData->mv3SavePos, pStartSaveData->mv3SavePos);
+    nlVec3Sub(v3Delta, pSaveData2->mv3SavePos, pSaveData1->mv3SavePos);
     if (divisions > 0)
     {
         nlVec3Scale(v3Delta, v3Delta, 1.0f / (float)divisions);
     }
-    v3CurPos = pStartSaveData->mv3SavePos;
+    v3CurPos = pSaveData1->mv3SavePos;
     for (count = 0; count <= divisions; count++)
     {
-        if (nlGetLengthSquared2D(pStartSaveData->mv3SavePos.y - v3CurPos.y,
-                pStartSaveData->mv3SavePos.z - v3CurPos.z)
-            < nlGetLengthSquared2D(pEndSaveData->mv3SavePos.y - v3CurPos.y,
-                IdentityFloat(pEndSaveData->mv3SavePos.z - v3CurPos.z)))
-            pCurSaveData = pStartSaveData;
+        if (nlGetLengthSquared2D(pSaveData1->mv3SavePos.y - v3CurPos.y,
+                pSaveData1->mv3SavePos.z - v3CurPos.z)
+            < nlGetLengthSquared2D(pSaveData2->mv3SavePos.y - v3CurPos.y,
+                IdentityFloat(pSaveData2->mv3SavePos.z - v3CurPos.z)))
+            pCurSaveData = pSaveData1;
         else
-            pCurSaveData = pEndSaveData;
+            pCurSaveData = pSaveData2;
         AddPointToGrid(pCurSaveData, v3CurPos);
         nlVec3Add(v3CurPos, v3CurPos, v3Delta);
     }

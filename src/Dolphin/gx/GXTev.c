@@ -93,6 +93,9 @@ static struct
         (reg) = (u32)__rlwimi((u32)(reg), (val), (shift), (32 - (shift) - (size)), (31 - (shift))); \
     } while (0);
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80250608 | size: 0x8C
+ */
 void GXSetTevOp(GXTevStageID id, GXTevMode mode)
 {
     u32* ctmp;
@@ -127,6 +130,9 @@ void GXSetTevOp(GXTevStageID id, GXTevMode mode)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x8C | 0x80250694 | size: 0x44
+ */
 void GXSetTevColorIn(GXTevStageID stage, GXTevColorArg a, GXTevColorArg b, GXTevColorArg c, GXTevColorArg d)
 {
     u32 tevReg;
@@ -149,6 +155,9 @@ void GXSetTevColorIn(GXTevStageID stage, GXTevColorArg a, GXTevColorArg b, GXTev
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0xD0 | 0x802506D8 | size: 0x44
+ */
 void GXSetTevAlphaIn(GXTevStageID stage, GXTevAlphaArg a, GXTevAlphaArg b, GXTevAlphaArg c, GXTevAlphaArg d)
 {
     u32 tevReg;
@@ -171,6 +180,9 @@ void GXSetTevAlphaIn(GXTevStageID stage, GXTevAlphaArg a, GXTevAlphaArg b, GXTev
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x114 | 0x8025071C | size: 0x68
+ */
 void GXSetTevColorOp(GXTevStageID stage, GXTevOp op, GXTevBias bias, GXTevScale scale, GXBool clamp, GXTevRegID out_reg)
 {
     u32 tevReg;
@@ -198,6 +210,9 @@ void GXSetTevColorOp(GXTevStageID stage, GXTevOp op, GXTevBias bias, GXTevScale 
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x17C | 0x80250784 | size: 0x68
+ */
 void GXSetTevAlphaOp(GXTevStageID stage, GXTevOp op, GXTevBias bias, GXTevScale scale, GXBool clamp, GXTevRegID out_reg)
 {
     u32 tevReg;
@@ -225,6 +240,9 @@ void GXSetTevAlphaOp(GXTevStageID stage, GXTevOp op, GXTevBias bias, GXTevScale 
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x1E4 | 0x802507EC | size: 0x60
+ */
 void GXSetTevColor(GXTevRegID id, GXColor color)
 {
     u32 rgba;
@@ -250,6 +268,9 @@ void GXSetTevColor(GXTevRegID id, GXColor color)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x244 | 0x8025084C | size: 0x64
+ */
 void GXSetTevColorS10(GXTevRegID id, GXColorS10 color)
 {
     u32 sRG;
@@ -282,6 +303,9 @@ void GXSetTevColorS10(GXTevRegID id, GXColorS10 color)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x2A8 | 0x802508B0 | size: 0x64
+ */
 void GXSetTevKColor(GXTevKColorID id, GXColor color)
 {
     u32 rgba;
@@ -307,6 +331,9 @@ void GXSetTevKColor(GXTevKColorID id, GXColor color)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x30C | 0x80250914 | size: 0x5C
+ */
 void GXSetTevKColorSel(GXTevStageID stage, GXTevKColorSel sel)
 {
     u32* Kreg;
@@ -328,6 +355,9 @@ void GXSetTevKColorSel(GXTevStageID stage, GXTevKColorSel sel)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x368 | 0x80250970 | size: 0x5C
+ */
 void GXSetTevKAlphaSel(GXTevStageID stage, GXTevKAlphaSel sel)
 {
     u32* Kreg;
@@ -349,6 +379,9 @@ void GXSetTevKAlphaSel(GXTevStageID stage, GXTevKAlphaSel sel)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x3C4 | 0x802509CC | size: 0x48
+ */
 void GXSetTevSwapMode(GXTevStageID stage, GXTevSwapSel ras_sel, GXTevSwapSel tex_sel)
 {
     u32* pTevReg;
@@ -364,6 +397,9 @@ void GXSetTevSwapMode(GXTevStageID stage, GXTevSwapSel ras_sel, GXTevSwapSel tex
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x40C | 0x80250A14 | size: 0x80
+ */
 void GXSetTevSwapModeTable(GXTevSwapSel table, GXTevColorChan red, GXTevColorChan green, GXTevColorChan blue, GXTevColorChan alpha)
 {
     u32* Kreg;
@@ -398,6 +434,9 @@ void GXSetTevClampMode(void)
     ASSERTMSGLINE(1012, 0, "GXSetTevClampMode: not available on this hardware");
 }
 
+/**
+ * Offset/Address/Size: 0x48C | 0x80250A94 | size: 0x44
+ */
 void GXSetAlphaCompare(GXCompare comp0, u8 ref0, GXAlphaOp op, GXCompare comp1, u8 ref1)
 {
     u32 reg;
@@ -415,6 +454,9 @@ void GXSetAlphaCompare(GXCompare comp0, u8 ref0, GXAlphaOp op, GXCompare comp1, 
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x4D0 | 0x80250AD8 | size: 0x8C
+ */
 void GXSetZTexture(GXZTexOp op, GXTexFmt fmt, u32 bias)
 {
     u32 zenv0;
@@ -454,6 +496,9 @@ void GXSetZTexture(GXZTexOp op, GXTexFmt fmt, u32 bias)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x55C | 0x80250B64 | size: 0x19C
+ */
 void GXSetTevOrder(GXTevStageID stage, GXTexCoordID coord, GXTexMapID map, GXChannelID color)
 {
     u32* ptref;
@@ -504,6 +549,9 @@ void GXSetTevOrder(GXTevStageID stage, GXTexCoordID coord, GXTexMapID map, GXCha
     __GXData->dirtyState |= 1;
 }
 
+/**
+ * Offset/Address/Size: 0x6F8 | 0x80250D00 | size: 0x28
+ */
 void GXSetNumTevStages(u8 nStages)
 {
     CHECK_GXBEGIN(1187, "GXSetNumTevStages");

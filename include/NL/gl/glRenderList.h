@@ -11,9 +11,9 @@ class GLPacketList;
 class GLRenderList
 {
 public:
-    bool AttachModel(const glModel*, unsigned long);
-    void AttachPacket(unsigned long, const glModelPacket*);
-    void Iterate(eGLView, void (*)(eGLView, unsigned long, const glModelPacket*));
+    bool AttachModel(const glModel* pModel, unsigned long layer);
+    void AttachPacket(unsigned long layer, const glModelPacket* pPacket);
+    void Iterate(eGLView view, void (*cb)(eGLView, unsigned long, const glModelPacket*));
     bool IsEmpty() const;
     void Compact();
     void Clear();

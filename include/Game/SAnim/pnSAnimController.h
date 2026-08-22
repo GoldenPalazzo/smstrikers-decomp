@@ -20,7 +20,7 @@ public:
         , m_fTime(0.0f)
     {
     }
-    cPN_SAnimController(cSAnim*, const AnimRetarget*, ePlayMode, void (*)(unsigned int, cPN_SAnimController*), unsigned int, bool);
+    cPN_SAnimController(cSAnim* pSAnim, const AnimRetarget* pAnimRetarget, ePlayMode playMode, void (*funcPlaybackSpeedCallback)(unsigned int, cPN_SAnimController*), unsigned int nPlaybackSpeedCallbackParam, bool bMirror);
     /* 0x08 */ virtual ~cPN_SAnimController() { };
     static void* operator new(unsigned long)
     {
@@ -32,12 +32,12 @@ public:
     {
         m_SAnimControllerSlotPool.Free((cPN_SAnimController*)ptr);
     }
-    /* 0x10 */ virtual void Evaluate(float, cPoseAccumulator*) const;
-    /* 0x14 */ virtual void Evaluate(int, float, cPoseAccumulator*) const;
-    /* 0x18 */ virtual cPoseNode* Update(float);
+    /* 0x10 */ virtual void Evaluate(float weight, cPoseAccumulator* pAccumulator) const;
+    /* 0x14 */ virtual void Evaluate(int nodeIndex, float weight, cPoseAccumulator* pAccumulator) const;
+    /* 0x18 */ virtual cPoseNode* Update(float t);
     /* 0x1C */ virtual int GetType() { return 0x2; };
-    /* 0x20 */ virtual void BlendRootTrans(nlVector3*, float, float*);
-    /* 0x24 */ virtual void BlendRootRot(unsigned short*, float, float*);
+    /* 0x20 */ virtual void BlendRootTrans(nlVector3* pRootTrans, float fNodeWeight, float* fAccumulatedWeight);
+    /* 0x24 */ virtual void BlendRootRot(unsigned short* pOutRot, float weight, float* pAccumWeight);
 
     template <typename T>
     void Replay(T& frame)
@@ -61,16 +61,16 @@ public:
         Replayable<0>(frame, (unsigned int&)m_pAnimRetarget);
     }
 
-    void UpdateSynchronized(float);
+    void UpdateSynchronized(float time);
     void SetTime(float time)
     {
         m_fPrevTime = m_fTime;
         m_fTime = time;
     };
     void ProcessCallbacks();
-    bool TestTrigger(float) const;
-    bool TestFrameTrigger(float);
-    int RemapNode(int) const;
+    bool TestTrigger(float fTime) const;
+    bool TestFrameTrigger(float frame);
+    int RemapNode(int nodeIndex) const;
 
     inline const float get_fTime() const
     {
@@ -108,6 +108,5 @@ inline cPN_SAnimController* AllocateSAnimController()
     cPN_SAnimController::m_SAnimControllerSlotPool.Allocate(controller);
     return controller;
 }
-
 
 #endif // _PNSANIMCONTROLLER_H_

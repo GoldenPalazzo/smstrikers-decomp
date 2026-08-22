@@ -3914,7 +3914,7 @@ void cFielder::CleanActionShootToScore()
     g_pBall->m_pDrawableBall->m_uObjectFlags &= ~0x40;
 
     BasicString<char, Detail::TempStringAllocator> effectName(
-        GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)this->m_pTeam->m_nSide)));
+        GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam((s16)this->m_pTeam->m_nSide)));
     effectName.AppendInPlace("_captain_sts_effect");
     EffectsGroup* pGroup = fxGetGroup(effectName.c_str());
     KillEffect(pGroup);
@@ -5225,7 +5225,7 @@ void cFielder::TestCollisionForInvicibility(cFielder* pOpponent)
 
     if (g_pGame->IsGameplayOrOvertime())
     {
-        nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_POWERUPS_HIT,
+        nlSingleton<StatsTracker>::Instance()->TrackStat(STATS_POWERUPS_HIT,
             pReactee->m_pTeam->m_nSide,
             pReactee->m_ID,
             0,
@@ -5918,7 +5918,7 @@ void cFielder::ThrowPowerup()
 
         if (g_pGame->IsGameplayOrOvertime())
         {
-            nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_POWERUPS_USED, m_pTeam->m_nSide, m_ID, 0, 0, 0, 0);
+            nlSingleton<StatsTracker>::Instance()->TrackStat(STATS_POWERUPS_USED, m_pTeam->m_nSide, m_ID, 0, 0, 0, 0);
         }
         m_pPowerupTarget = NULL;
     }
@@ -5998,7 +5998,7 @@ void cFielder::SetPowerup(ePowerUpType eNewPowerup, int nnumOfPowerups, cFielder
         ThrowPowerup();
         if (g_pGame->IsGameplayOrOvertime())
         {
-            nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_POWERUPS_USED, m_pTeam->m_nSide, m_ID, 0, 0, 0, 0);
+            nlSingleton<StatsTracker>::Instance()->TrackStat(STATS_POWERUPS_USED, m_pTeam->m_nSide, m_ID, 0, 0, 0, 0);
         }
         m_pPowerupTarget = NULL;
         ClearPowerupAnimState(false);
@@ -6009,7 +6009,7 @@ void cFielder::SetPowerup(ePowerUpType eNewPowerup, int nnumOfPowerups, cFielder
         ThrowPowerup();
         if (g_pGame->IsGameplayOrOvertime())
         {
-            nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_POWERUPS_USED, m_pTeam->m_nSide, m_ID, 0, 0, 0, 0);
+            nlSingleton<StatsTracker>::Instance()->TrackStat(STATS_POWERUPS_USED, m_pTeam->m_nSide, m_ID, 0, 0, 0, 0);
         }
         m_pPowerupTarget = NULL;
         ClearPowerupAnimState(false);
@@ -6400,7 +6400,7 @@ void cFielder::UpdateController(float fDeltaT)
 
             if (GetGlobalPad() == NULL)
             {
-                const GameplaySettings& gameplayOptions = nlSingleton<GameInfoManager>::s_pInstance->GetGameplayOptions();
+                const GameplaySettings& gameplayOptions = nlSingleton<GameInfoManager>::Instance()->GetGameplayOptions();
                 switch (gameplayOptions.SkillLevel)
                 {
                 case GameplaySettings::TRAINING:

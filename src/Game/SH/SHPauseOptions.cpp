@@ -36,12 +36,12 @@ void PauseOptionsScene::SceneCreated()
     {
     case MODE_AUDIO:
         menu = (OptionsSubMenu*)nlMalloc(sizeof(OptionsAudioMenuV2), 8, false);
-        menu = new (menu) OptionsAudioMenuV2(pres, ButtonComponent::BS_B_ONLY, nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mAudioOptions);
+        menu = new (menu) OptionsAudioMenuV2(pres, ButtonComponent::BS_B_ONLY, nlSingleton<GameInfoManager>::Instance()->mUserInfo.mAudioOptions);
         m_pauseMenu = menu;
         break;
     case MODE_VISUAL:
         menu = (OptionsSubMenu*)nlMalloc(sizeof(OptionsVisualMenuV2), 8, false);
-        menu = new (menu) OptionsVisualMenuV2(pres, ButtonComponent::BS_B_ONLY, nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mVisualOptions);
+        menu = new (menu) OptionsVisualMenuV2(pres, ButtonComponent::BS_B_ONLY, nlSingleton<GameInfoManager>::Instance()->mUserInfo.mVisualOptions);
         m_pauseMenu = menu;
         break;
     }
@@ -58,7 +58,7 @@ void PauseOptionsScene::Update(float dt)
     {
         m_pauseMenu->Save();
 
-        PauseMenuScene* pauseScene = (PauseMenuScene*)nlSingleton<OverlayManager>::s_pInstance->Push(IGSCENE_PAUSE, SCREEN_BACK, true);
+        PauseMenuScene* pauseScene = (PauseMenuScene*)nlSingleton<OverlayManager>::Instance()->Push(IGSCENE_PAUSE, SCREEN_BACK, true);
 
         PauseMenuScene::mControllingInput = m_controllingInput;
 

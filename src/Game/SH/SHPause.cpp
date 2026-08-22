@@ -91,32 +91,32 @@ void PauseMenuScene::OnSelectQUIT(TLComponentInstance* instance)
 
     if (FrontEnd::m_bGameOver)
     {
-        OverlayManager::s_pInstance->Pop();
-        OverlayManager::s_pInstance->Pop();
-        OverlayManager::s_pInstance->Push(OVERLAY_BRAG, SCREEN_FORWARD, false);
+        OverlayManager::Instance()->Pop();
+        OverlayManager::Instance()->Pop();
+        OverlayManager::Instance()->Push(OVERLAY_BRAG, SCREEN_FORWARD, false);
     }
     else
     {
-        popup = (FEPopupMenu*)OverlayManager::s_pInstance->Push(OVERLAY_POPUP, SCREEN_NOTHING, false);
+        popup = (FEPopupMenu*)OverlayManager::Instance()->Push(OVERLAY_POPUP, SCREEN_NOTHING, false);
         popup->mControlInput = mQuittingController;
 
-        if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+        if (nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode)
         {
             popup->Create(
                 POPUP_INGAME_QUIT_STRIKERS_101,
                 Bind<void>(MemFun<PauseMenuScene, void>(&PauseMenuScene::OnSelectPopupYESFORFEIT), this),
                 Bind<void>(MemFun<PauseMenuScene, void>(&PauseMenuScene::OnSelectPopupNOFORFEIT), this));
         }
-        else if (nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode == GameInfoManager::GM_FRIENDLY || g_pGame->m_eGameState == GS_END_GAME)
+        else if (nlSingleton<GameInfoManager>::Instance()->mCurrentMode == GameInfoManager::GM_FRIENDLY || g_pGame->m_eGameState == GS_END_GAME)
         {
             popup->Create(
                 POPUP_INGAME_QUIT_MATCH,
                 Bind<void>(MemFun<PauseMenuScene, void>(&PauseMenuScene::OnSelectPopupYESFORFEIT), this),
                 Bind<void>(MemFun<PauseMenuScene, void>(&PauseMenuScene::OnSelectPopupNOFORFEIT), this));
         }
-        else if (nlSingleton<GameInfoManager>::s_pInstance->IsInCupMode()
-                 || (nlSingleton<GameInfoManager>::s_pInstance->IsInTournamentMode()
-                     && nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((unsigned short)mQuittingController) != -1))
+        else if (nlSingleton<GameInfoManager>::Instance()->IsInCupMode()
+                 || (nlSingleton<GameInfoManager>::Instance()->IsInTournamentMode()
+                     && nlSingleton<GameInfoManager>::Instance()->GetPlayingSide((unsigned short)mQuittingController) != -1))
         {
             popup->Create(
                 POPUP_INGAME_FORFEIT_MATCH,
@@ -137,7 +137,7 @@ void PauseMenuScene::OnSelectQUIT(TLComponentInstance* instance)
  */
 void PauseMenuScene::OnSelectCHOOSESIDES(TLComponentInstance* instance)
 {
-    OverlayManager::s_pInstance->Push(IGSCENE_CHOOSE_SIDES, SCREEN_FORWARD, true);
+    OverlayManager::Instance()->Push(IGSCENE_CHOOSE_SIDES, SCREEN_FORWARD, true);
 }
 
 /**
@@ -145,7 +145,7 @@ void PauseMenuScene::OnSelectCHOOSESIDES(TLComponentInstance* instance)
  */
 void PauseMenuScene::OnSelectAUDIOOPTIONS(TLComponentInstance* instance)
 {
-    OverlayManager::s_pInstance->Push(IGSCENE_PAUSE_AUDIO, SCREEN_FORWARD, true);
+    OverlayManager::Instance()->Push(IGSCENE_PAUSE_AUDIO, SCREEN_FORWARD, true);
 }
 
 /**
@@ -153,7 +153,7 @@ void PauseMenuScene::OnSelectAUDIOOPTIONS(TLComponentInstance* instance)
  */
 void PauseMenuScene::OnSelectVISUALOPTIONS(TLComponentInstance* instance)
 {
-    OverlayManager::s_pInstance->Push(IGSCENE_PAUSE_VISUAL, SCREEN_FORWARD, true);
+    OverlayManager::Instance()->Push(IGSCENE_PAUSE_VISUAL, SCREEN_FORWARD, true);
 }
 
 /**
@@ -161,7 +161,7 @@ void PauseMenuScene::OnSelectVISUALOPTIONS(TLComponentInstance* instance)
  */
 void PauseMenuScene::OnSelectSTATISTICS(TLComponentInstance* instance)
 {
-    SummaryOverlay* scene = (SummaryOverlay*)OverlayManager::s_pInstance->Push(OVERLAY_SUMMARY_PAUSE, SCREEN_FORWARD, true);
+    SummaryOverlay* scene = (SummaryOverlay*)OverlayManager::Instance()->Push(OVERLAY_SUMMARY_PAUSE, SCREEN_FORWARD, true);
     scene->m_controllingInput = mControllingInput;
     scene->mButtonState = ButtonComponent::BS_B_ONLY;
 }
@@ -219,12 +219,12 @@ void PauseMenuScene::OnSelectPopupYESFORFEIT()
         {
             if (quittingSide == 0)
             {
-                nlSingleton<StatsTracker>::s_pInstance->TrackWinner(0);
+                nlSingleton<StatsTracker>::Instance()->TrackWinner(0);
                 gameInfoManager->SetResultsOfLastUserGame((eUserGameResult)0xD);
             }
             else if (quittingSide == 1)
             {
-                nlSingleton<StatsTracker>::s_pInstance->TrackWinner(1);
+                nlSingleton<StatsTracker>::Instance()->TrackWinner(1);
                 gameInfoManager->SetResultsOfLastUserGame((eUserGameResult)0xE);
             }
         }
@@ -238,7 +238,7 @@ void PauseMenuScene::OnSelectPopupYESFORFEIT()
  */
 void PauseMenuScene::OnSelectLESSONS(TLComponentInstance* instance)
 {
-    LessonSelectScene* scene = (LessonSelectScene*)OverlayManager::s_pInstance->Push(IGSCENE_LESSON_SELECT, SCREEN_FORWARD, true);
+    LessonSelectScene* scene = (LessonSelectScene*)OverlayManager::Instance()->Push(IGSCENE_LESSON_SELECT, SCREEN_FORWARD, true);
     scene->mStartAnimAtEnd = true;
 }
 
@@ -437,7 +437,7 @@ void PauseMenuScene::Update(float fDeltaT)
     if (mQuitDelay > 0.0f)
     {
         mQuitDelay = mQuitDelay - fDeltaT;
-        if (!nlSingleton<OverlayManager>::s_pInstance->IsOnStack(OVERLAY_POPUP))
+        if (!nlSingleton<OverlayManager>::Instance()->IsOnStack(OVERLAY_POPUP))
         {
             glxSwapSetBlack(true);
         }
@@ -494,7 +494,7 @@ void PauseMenuScene::Update(float fDeltaT)
 
         if (!g_pFEInput->IsConnected((eFEINPUT_PAD)i))
         {
-            if (nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((unsigned short)i) != -1)
+            if (nlSingleton<GameInfoManager>::Instance()->GetPlayingSide((unsigned short)i) != -1)
             {
                 if (!goToChooseSides)
                 {
@@ -502,7 +502,7 @@ void PauseMenuScene::Update(float fDeltaT)
                     while (((overlayManager = nlSingleton<OverlayManager>::s_pInstance)->mCurrentStackDepth != 0 ? overlayManager->mBaseSceneHandlerStack[overlayManager->mCurrentStackDepth - 1] : NULL) != (BaseSceneHandler*)this)
                     {
                         overlayManager->Pop();
-                        nlSingleton<FESceneManager>::s_pInstance->ForceImmediateStackProcessing();
+                        nlSingleton<FESceneManager>::Instance()->ForceImmediateStackProcessing();
                     }
                     overlayManager->Push(IGSCENE_CHOOSE_SIDES, SCREEN_FORWARD, true);
                 }
@@ -683,7 +683,7 @@ void PauseMenuScene::CloseItem(TLComponentInstance* instance)
 void PauseMenuScene::SetQuitTextForJapanese(TLComponentInstance* instance)
 {
     if (g_pLocalization->m_CurrentLanguage == nlLocalization::LangJapanese
-        && nlSingleton<GameInfoManager>::s_pInstance->IsInCupOrTournamentMode())
+        && nlSingleton<GameInfoManager>::Instance()->IsInCupOrTournamentMode())
     {
         TLTextInstance* text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             instance->GetActiveSlide(),

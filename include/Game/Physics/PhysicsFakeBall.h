@@ -23,7 +23,7 @@ struct BallCacheInfo
 class FakeBallWorld
 {
 public:
-    FakeBallWorld(cBall*);
+    FakeBallWorld(cBall* pBall);
     ~FakeBallWorld();
 
     cBall* GetBall() const
@@ -31,20 +31,20 @@ public:
         return mpBall;
     }
 
-    static BallCacheInfo* AddCacheEntry(float, PhysicsBall*);
-    static void GetNextBallPosVel(nlVector3&, nlVector3&);
-    void SetHitInfo(dContactGeom*);
-    static bool FindBallIntercept(const nlVector3&, float, float, nlVector3&, nlVector3&, float&, float&, float);
-    static void GetNextBallPosition(nlVector3&);
+    static BallCacheInfo* AddCacheEntry(float fTime, PhysicsBall* pPhysicsBall);
+    static void GetNextBallPosVel(nlVector3& v3BallPos, nlVector3& v3BallVel);
+    void SetHitInfo(dContactGeom* info);
+    static bool FindBallIntercept(const nlVector3& v3PlayerPos, float fPlayerReach, float fPlayerSpeed, nlVector3& v3InterceptPos, nlVector3& v3InterceptVel, float& fInterceptTime, float& fClosestDist, float fMaxTime);
+    static void GetNextBallPosition(nlVector3& v3BallPos);
     static void ResetBallIterator();
-    static float GetPredictedPosAtDistance(float, nlVector3&, nlVector3&);
-    static float GetPredictedHeightLimitTime(float, float, nlVector3&, nlVector3&, bool);
-    static float GetPredictedPlaneIntersectTime(const nlVector4&, nlVector3&, nlVector3&);
+    static float GetPredictedPosAtDistance(float fDistance, nlVector3& v3Position, nlVector3& v3Velocity);
+    static float GetPredictedHeightLimitTime(float fHeight, float fMinTime, nlVector3& v3ContactPoint, nlVector3& v3ContactVelocity, bool bDownOnly);
+    static float GetPredictedPlaneIntersectTime(const nlVector4& v4Plane, nlVector3& v3ContactPoint, nlVector3& v3ContactVelocity);
     static void ClearBallCache();
-    static bool GetPredictedBallPosition(float, nlVector3&, nlVector3&);
+    static bool GetPredictedBallPosition(float fDeltaTime, nlVector3& v3Position, nlVector3& v3Velocity);
     static void InvalidateBallCache();
     static void Destroy();
-    static void Init(cBall*);
+    static void Init(cBall* pBall);
 
     /* 0x00 */ cBall* mpBall;                    // offset 0x0, size 0x4
     /* 0x04 */ float mfElapsedTime;              // offset 0x4, size 0x4
@@ -64,9 +64,9 @@ public:
 class PhysicsGoaliePlane : public PhysicsPlane
 {
 public:
-    PhysicsGoaliePlane(const nlVector4&, FakeBallWorld&);
+    PhysicsGoaliePlane(const nlVector4& plane, FakeBallWorld& fakeBallWorld);
     virtual int GetObjectType() const { return 0x6; }
-    virtual ContactType Contact(PhysicsObject*, dContact*, int);
+    virtual ContactType Contact(PhysicsObject* object, dContact* info, int numContacts);
 
     /* 0x2C */ FakeBallWorld& mWorld;
 }; // total size: 0x30
@@ -74,9 +74,9 @@ public:
 class FakePhysicsBall : public PhysicsBall
 {
 public:
-    FakePhysicsBall(float, FakeBallWorld&);
+    FakePhysicsBall(float radius, FakeBallWorld& fakeBallWorld);
     virtual int GetObjectType() const { return 0x10; }
-    virtual ContactType Contact(PhysicsObject*, dContact*, int);
+    virtual ContactType Contact(PhysicsObject* object, dContact* contact, int numContacts);
 
     /* 0x40 */ FakeBallWorld& mWorld;
 }; // total size: 0x44

@@ -202,7 +202,7 @@ void ReplayChoreo::Reset()
 /**
  * Offset/Address/Size: 0x698 | 0x80127D04 | size: 0x3E0
  */
-BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScriptName(ReplayType) const
+BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScriptName(ReplayType rt) const
 {
     BasicString<char, Detail::TempStringAllocator> format("{0}_{1}_{2}_{3}");
 

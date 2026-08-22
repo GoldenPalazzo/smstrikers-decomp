@@ -139,10 +139,10 @@ void ShootToScoreMeter::TurnOnMeter(ShootToScoreMeter::STSMeterType type, float 
     m_fWhiteBarPreviousAngle = m_fWhiteBarAngle;
     m_fSavedWhiteBarAngle = m_fWhiteBarAngle;
     mfRumbleAmount = 0.0f;
-    m_fGreenBarAngle = 180.0f * g_pGame->m_pGameTweaks->unk294;
-    m_fSavedGreenBarAngle = 180.0f * g_pGame->m_pGameTweaks->unk294;
-    m_fGreenRegionWidth = 180.0f * (2.0f * g_pGame->m_pGameTweaks->unk29C);
-    m_fSavedGreenRegionWidth = 180.0f * (2.0f * g_pGame->m_pGameTweaks->unk29C);
+    m_fGreenBarAngle = 180.0f * g_pGame->m_pGameTweaks->fShootToScorePerfectFirstButtonTime;
+    m_fSavedGreenBarAngle = 180.0f * g_pGame->m_pGameTweaks->fShootToScorePerfectFirstButtonTime;
+    m_fGreenRegionWidth = 180.0f * (2.0f * g_pGame->m_pGameTweaks->fShootToScorePerfectDistanceTimeMin);
+    m_fSavedGreenRegionWidth = 180.0f * (2.0f * g_pGame->m_pGameTweaks->fShootToScorePerfectDistanceTimeMin);
     m_fYellowRegionWidth = scaledYellowWidth;
     m_fSavedYellowRegionWidth = scaledYellowWidth;
     m_fWhiteBarPreviousAngle = m_fWhiteBarAngle;
@@ -433,7 +433,7 @@ void ShootToScoreMeter::DrawColouredRegion(float startAngle, float endAngle, con
 /**
  * Offset/Address/Size: 0x394 | 0x801605F4 | size: 0x48
  */
-void ShootToScoreMeter::UpdateAndRender(float)
+void ShootToScoreMeter::UpdateAndRender(float fDeltaT)
 {
     if (m_bMeterVisible == 0)
     {

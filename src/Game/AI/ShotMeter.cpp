@@ -28,7 +28,7 @@ void ShotMeter::Update(float fDeltaT, bool bHoldTime)
     {
     case SHOT_METER_ACTIVE:
     {
-        if (m_fTime >= g_pGame->m_pGameTweaks->unk2D0)
+        if (m_fTime >= g_pGame->m_pGameTweaks->fShotWindupTime)
         {
             float fNetDirection = -1.0f;
             cPlayer* pPrevOwner = g_pBall->m_pOwner;
@@ -62,7 +62,7 @@ void ShotMeter::Update(float fDeltaT, bool bHoldTime)
     {
         SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
         float fSTSWindupTime = pSkillTweaks->fSTSWindupTime;
-        float fShotWindupTime = g_pGame->m_pGameTweaks->unk2D0;
+        float fShotWindupTime = g_pGame->m_pGameTweaks->fShotWindupTime;
         if (m_fTime >= fShotWindupTime + fSTSWindupTime)
         {
             if (!bHoldTime)
@@ -145,12 +145,12 @@ void ShotMeter::CalcOneTimerValue(cFielder* pFielder, bool bWasPerfectPass)
         float fDot = (v3FielderToNet.x * v3BallDirection.x) + (v3FielderToNet.y * v3BallDirection.y) + (v3FielderToNet.z * v3BallDirection.z);
         float fDirectionValue = InterpolateRangeClamped(0.0f, 1.0f, 1.0f, 0.0f, fDot);
 
-        m_fSpeedValue = nlRandomf(0.2f * g_pGame->m_pGameTweaks->unk2EC, &nlDefaultSeed);
+        m_fSpeedValue = nlRandomf(0.2f * g_pGame->m_pGameTweaks->fShotMeterOneTimerMaxSpeed, &nlDefaultSeed);
 
         float fSumValue = fDirectionValue + fDistanceValue;
         float fHalfValue = 0.5f;
         float fCombinedValue = fSumValue * fHalfValue;
-        m_fSpeedValue += InterpolateRangeClamped(0.25f, 0.8f * g_pGame->m_pGameTweaks->unk2EC, 0.0f, 1.0f, fCombinedValue);
+        m_fSpeedValue += InterpolateRangeClamped(0.25f, 0.8f * g_pGame->m_pGameTweaks->fShotMeterOneTimerMaxSpeed, 0.0f, 1.0f, fCombinedValue);
     }
     else
     {
@@ -170,7 +170,7 @@ float ShotMeter::GetTotalDuration() const
     float fSTSWindupTime;
     SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
     fSTSWindupTime = pSkillTweaks->fSTSWindupTime;
-    fShotWindupTime = g_pGame->m_pGameTweaks->unk2D0;
+    fShotWindupTime = g_pGame->m_pGameTweaks->fShotWindupTime;
     return fShotWindupTime + fSTSWindupTime;
 }
 
@@ -221,16 +221,16 @@ static inline void CalcScoreValue(cFielder* pFielder, ShotMeter* pMeter)
 
     float fShooting = ((FielderTweaks*)pFielder->m_pTweaks)->fShooting;
     GameTweaks* pGameTweaks = g_pGame->m_pGameTweaks;
-    float fPositionWeighting = pGameTweaks->unk2D8;
+    float fPositionWeighting = pGameTweaks->fShotMeterRatingsWeight;
     bool bIsChipShot = pFielder->mActionShotVars.bIsChipShot || pFielder->mActionLooseBallShotVars.bIsChipShot;
 
     fNetOpeness = fRatingsValue;
 
     if (!bIsChipShot)
     {
-        float fPlayerWeighting = pGameTweaks->unk2E0;
+        float fPlayerWeighting = pGameTweaks->fShotMeterPlayerDistanceWeight;
         fShooting *= fPositionWeighting;
-        float fNetWeighting = pGameTweaks->unk2DC;
+        float fNetWeighting = pGameTweaks->fShotMeterNetOpenWeight;
         fNetOpeness *= fNetWeighting;
         fPlayerDistance *= fPlayerWeighting;
         float fSumWeighting = fPlayerWeighting + fNetWeighting;
@@ -242,7 +242,7 @@ static inline void CalcScoreValue(cFielder* pFielder, ShotMeter* pMeter)
     }
     else
     {
-        float fChipWeight = pGameTweaks->unk2E4;
+        float fChipWeight = pGameTweaks->fShotChipMeterGPositionWeight;
         float fGoalieOut = GoalieOutOfPosition(pFielder);
         pGameTweaks = g_pGame->m_pGameTweaks;
         float fGoalieVal;
@@ -252,7 +252,7 @@ static inline void CalcScoreValue(cFielder* pFielder, ShotMeter* pMeter)
         fGoalieVal = fGoalieOut;
         fGoalieVal *= fChipWeight;
         fShooting *= fPositionWeighting;
-        float fChipOpenWeight = pGameTweaks->unk2E8;
+        float fChipOpenWeight = pGameTweaks->fShotChipMeterNetOpenWeight;
         fNetOpeness *= fChipOpenWeight;
         fSum = fChipWeight + fChipOpenWeight;
         fSumWeights = fPositionWeighting + fSum;
@@ -271,13 +271,13 @@ void ShotMeter::ShotReleased(cFielder* pFielder)
     m_eShotMeterState = SHOT_METER_RELEASED;
 
     GameTweaks* pGameTweaks = g_pGame->m_pGameTweaks;
-    if (m_fTime > pGameTweaks->unk2D0)
+    if (m_fTime > pGameTweaks->fShotWindupTime)
     {
         m_fSpeedValue = 1.0f;
     }
     else
     {
-        m_fSpeedValue = Interpolate(0.25f, 1.0f, m_fTime / pGameTweaks->unk2D0);
+        m_fSpeedValue = Interpolate(0.25f, 1.0f, m_fTime / pGameTweaks->fShotWindupTime);
     }
 
     CalcScoreValue(pFielder, this);

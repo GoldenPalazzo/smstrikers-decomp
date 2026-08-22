@@ -4,8 +4,6 @@
 #include "NL/nlMath.h"
 #include "Game/Player.h"
 
-// bool LooseBallCallback(float, float, unsigned long, float, void*);
-
 enum eLooseBallAnimType
 {
     LOOSEBALL_ANIM_PICKUP = 0,

@@ -88,15 +88,15 @@ public:
     }
 
     virtual ~OptionsSubMenu();
-    virtual void Update(float);
+    virtual void Update(float dt);
     virtual void Save() = 0;
     virtual void Revert() = 0;
     virtual bool ChangesMade() = 0;
     virtual void GoBack();
 
-    void SetAButtonLOC(unsigned long);
-    void SetButtonState(ButtonComponent::ButtonState);
-    void BuildSubMenuList(int, TLComponentInstance*, bool, int);
+    void SetAButtonLOC(unsigned long locStrId);
+    void SetButtonState(ButtonComponent::ButtonState buttonState);
+    void BuildSubMenuList(int menuitem, TLComponentInstance* compinstance, bool wraps, int startindex);
 
     /* 0x004 */ FEPresentation* m_pres;
     /* 0x008 */ TLComponentInstance* m_buttons;
@@ -110,9 +110,9 @@ public:
 class OptionsSaveLoad : public OptionsSubMenu
 {
 public:
-    OptionsSaveLoad(FEPresentation*, ButtonComponent::ButtonState);
+    OptionsSaveLoad(FEPresentation* presentation, ButtonComponent::ButtonState buttonstate);
     virtual ~OptionsSaveLoad();
-    virtual void Update(float);
+    virtual void Update(float dt);
     virtual void Save();
     virtual void Revert();
     virtual bool ChangesMade()
@@ -124,7 +124,7 @@ public:
 class OptionsGameplayMenuV2 : public OptionsSubMenu
 {
 public:
-    OptionsGameplayMenuV2(FEPresentation*, ButtonComponent::ButtonState, GameplaySettings&, int);
+    OptionsGameplayMenuV2(FEPresentation* presentation, ButtonComponent::ButtonState buttonstate, GameplaySettings& settings, int skilltoskip);
     virtual ~OptionsGameplayMenuV2();
     virtual void Save();
     virtual void Revert();
@@ -134,9 +134,9 @@ public:
         return mSettingsCRC != checksum;
     }
 
-    void BuildSkillLevelMenu(TLComponentInstance*, int, int);
-    void CloseItem(TLComponentInstance*);
-    void OpenItem(TLComponentInstance*);
+    void BuildSkillLevelMenu(TLComponentInstance* compinstance, int startindex, int skilltoskip);
+    void CloseItem(TLComponentInstance* compinstance);
+    void OpenItem(TLComponentInstance* compinstance);
 
     /* 0x26C */ GameplaySettings& mSettings;
     /* 0x270 */ GameplaySettings mBackupSettings;
@@ -145,9 +145,9 @@ public:
 class OptionsVisualMenuV2 : public OptionsSubMenu
 {
 public:
-    OptionsVisualMenuV2(FEPresentation*, ButtonComponent::ButtonState, VisualSettings&);
+    OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::ButtonState btnState, VisualSettings& settings);
     virtual ~OptionsVisualMenuV2();
-    virtual void Update(float);
+    virtual void Update(float dt);
     virtual void Save();
     virtual void Revert();
     virtual bool ChangesMade()
@@ -163,9 +163,9 @@ public:
 class OptionsAudioMenuV2 : public OptionsSubMenu
 {
 public:
-    OptionsAudioMenuV2(FEPresentation*, ButtonComponent::ButtonState, AudioSettings&);
+    OptionsAudioMenuV2(FEPresentation* presentation, ButtonComponent::ButtonState buttonstate, AudioSettings& settings);
     virtual ~OptionsAudioMenuV2();
-    virtual void Update(float);
+    virtual void Update(float dt);
     virtual void Save();
     virtual void Revert();
     virtual bool ChangesMade()
@@ -182,7 +182,7 @@ public:
 class OptionsCheatsMenu : public OptionsSubMenu
 {
 public:
-    OptionsCheatsMenu(FEPresentation*, ButtonComponent::ButtonState, CheatSettings&);
+    OptionsCheatsMenu(FEPresentation* pres, ButtonComponent::ButtonState btnState, CheatSettings& settings);
     virtual ~OptionsCheatsMenu();
     virtual void Save();
     virtual void Revert();
@@ -192,8 +192,8 @@ public:
         return mSettingsCRC != checksum;
     }
 
-    void BuildCustomPowerupsList(TLComponentInstance*, CustomPowerups, FEPresentation*);
-    void BuildLockableSubMenuList(int, TLComponentInstance*, FEPresentation*, bool, int);
+    void BuildCustomPowerupsList(TLComponentInstance* compinstance, CustomPowerups startOption, FEPresentation* presentation);
+    void BuildLockableSubMenuList(int menuitem, TLComponentInstance* compinstance, FEPresentation* presentation, bool unlocked, int startindex);
 
     /* 0x26C */ CheatSettings& mSettings;
     /* 0x270 */ CheatSettings mBackupSettings;

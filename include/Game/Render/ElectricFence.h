@@ -17,7 +17,7 @@ public:
 class ElectricFenceData
 {
 public:
-    ElectricFenceData(EmissionController*);
+    ElectricFenceData(EmissionController* pEmissionController);
 
     /* 0x00 */ EmissionController* mpEmissionController;
     /* 0x04 */ float mfIntensity;
@@ -33,12 +33,12 @@ public:
     static SlotPool<ElectricFenceData> sElectricFenceDataPool;
 }; // total size: 0x2C
 
-void UpdateElectricFence(float);
+void UpdateElectricFence(float fDeltaT);
 void StopDisplayingElectricFence();
 void DisplayElectricFence();
 void FreeElectricFence();
 void InitializeElectricFence();
-void EmitElectricFenceCharacterEffect(const nlVector3&, const nlVector3&, unsigned long);
-void EmitElectricFenceBallEffect(const nlVector3&, const nlVector3&, unsigned long, bool);
+void EmitElectricFenceCharacterEffect(const nlVector3& pos, const nlVector3& dir, unsigned long emitterID);
+void EmitElectricFenceBallEffect(const nlVector3& pos, const nlVector3& dir, unsigned long emitterID, bool bNoSpark);
 
 #endif // _ELECTRICFENCE_H_

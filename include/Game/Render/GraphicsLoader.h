@@ -9,12 +9,10 @@
 #include "Game/Effects/EffectsGroup.h"
 #include "Game/Effects/ParticleSystem.h"
 
-// void 0x8028D308..0x8028D30C | size: 0x4;
-
 class GraphicsLoader : public Loader
 {
 public:
-    virtual bool StartLoad(LoadingManager*);
+    virtual bool StartLoad(LoadingManager* manager);
 };
 
 #endif // _GRAPHICSLOADER_H_

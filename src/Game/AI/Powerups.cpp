@@ -120,13 +120,11 @@ const unsigned long uBOBOMB_MASTER_OBJECT = nlStringLowerHash("gameplay/bobomb")
 const char* uBANANA_STREAK_TEXTURE;
 } // namespace
 
-// /**
 //  */
 // void FormatImpl<BasicString<char, Detail::TempStringAllocator>>::operator%<int>(const int&)
 // {
 // }
 
-// /**
 //  */
 // void Format<BasicString<char, Detail::TempStringAllocator>, int>(const BasicString<char, Detail::TempStringAllocator>&, const int&)
 // {
@@ -390,17 +388,17 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
     }
     else if (pBowser != NULL)
     {
-        fBigChance += nlRandomf(g_pGame->m_pGameTweaks->unk33C, &nlDefaultSeed);
+        fBigChance += nlRandomf(g_pGame->m_pGameTweaks->fBowserBigPowerupBoost, &nlDefaultSeed);
     }
 
     if (pBowser == NULL)
     {
-        if ((nlSingleton<GameInfoManager>::s_pInstance->GetCustomPowerups() == CP_GIANT) && (nnumOfPowerups == 1))
+        if ((nlSingleton<GameInfoManager>::Instance()->GetCustomPowerups() == CP_GIANT) && (nnumOfPowerups == 1))
         {
             fMediumChance = 0.0f;
             fBigChance = 1.0f;
         }
-        else if (nlSingleton<GameInfoManager>::s_pInstance->GetCustomPowerups() == CP_EXPLOSIVE)
+        else if (nlSingleton<GameInfoManager>::Instance()->GetCustomPowerups() == CP_EXPLOSIVE)
         {
             fExplodeChance = 1.0f;
         }
@@ -807,7 +805,6 @@ PowerupBase* FindPowerUp(unsigned long hashOfDrawable)
     return FindPowerUpImpl(hashOfDrawable);
 }
 
-// /**
 //  */
 /**
  * Offset/Address/Size: 0x4C00 | 0x8005F4EC | size: 0x2B4
@@ -1098,7 +1095,7 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
         return -1;
     }
 
-    if (!nlSingleton<GameInfoManager>::s_pInstance->GetGameplayOptions().PowerUps)
+    if (!nlSingleton<GameInfoManager>::Instance()->GetGameplayOptions().PowerUps)
     {
         return -1;
     }
@@ -1205,7 +1202,7 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
 
     int nChance = nlRandom(nChanceForFreezeShell, &nlDefaultSeed);
 
-    switch (nlSingleton<GameInfoManager>::s_pInstance->GetCustomPowerups())
+    switch (nlSingleton<GameInfoManager>::Instance()->GetCustomPowerups())
     {
     case CP_FREEZING:
         nChanceForChainChomp = nChanceForStar = nChanceForSpinyShell = nChanceForRedShell = nChanceForBanana = nChanceForBoBomb = nChanceForMushroom = nChanceForGreenShell = 0;
@@ -1328,7 +1325,7 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
         break;
     }
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->GetCustomPowerups() == CP_GIANT)
+    if (nlSingleton<GameInfoManager>::Instance()->GetCustomPowerups() == CP_GIANT)
     {
         nNumOfPowerups = 1;
     }
@@ -1784,7 +1781,7 @@ void PowerupBase::Destroy(bool bSilent)
                     PowerupSound pwrSnd;
                     unsigned long sndType;
                     PhysicsObject* pPhysObj = m_pPhysicsObject;
-                    float fVol = g_pGame->m_pGameTweaks->unk238;
+                    float fVol = g_pGame->m_pGameTweaks->fPowerupLargeSizeVolCoeff;
                     pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
 
                     if (!Audio::IsInited())
@@ -1859,7 +1856,7 @@ void PowerupBase::Destroy(bool bSilent)
 
                     PhysicsObject* pPhysObj = m_pPhysicsObject;
                     unsigned long sndType;
-                    float fVol = g_pGame->m_pGameTweaks->unk234;
+                    float fVol = g_pGame->m_pGameTweaks->fPowerupMedSizeVolCoeff;
                     PowerupSound pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
 
                     if (!Audio::IsInited())
@@ -1934,7 +1931,7 @@ void PowerupBase::Destroy(bool bSilent)
 
                     PhysicsObject* pPhysObj = m_pPhysicsObject;
                     unsigned long sndType;
-                    float fVol = g_pGame->m_pGameTweaks->unk230;
+                    float fVol = g_pGame->m_pGameTweaks->fPowerupSmallSizeVolCoeff;
                     PowerupSound pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
 
                     if (!Audio::IsInited())
@@ -2031,7 +2028,7 @@ void PowerupBase::Destroy(bool bSilent)
         {
         case POWERUPSIZE_LARGE:
         {
-            float fVol = g_pGame->m_pGameTweaks->unk238;
+            float fVol = g_pGame->m_pGameTweaks->fPowerupLargeSizeVolCoeff;
             ePowerUpType type = m_eType;
             PhysicsObject* pPhysObj = m_pPhysicsObject;
 
@@ -2070,7 +2067,7 @@ void PowerupBase::Destroy(bool bSilent)
         }
         case POWERUPSIZE_MEDIUM:
         {
-            float fVol = g_pGame->m_pGameTweaks->unk234;
+            float fVol = g_pGame->m_pGameTweaks->fPowerupMedSizeVolCoeff;
             ePowerUpType type = m_eType;
             PhysicsObject* pPhysObj = m_pPhysicsObject;
 
@@ -2109,7 +2106,7 @@ void PowerupBase::Destroy(bool bSilent)
         }
         case POWERUPSIZE_SMALL:
         {
-            float fVol = g_pGame->m_pGameTweaks->unk230;
+            float fVol = g_pGame->m_pGameTweaks->fPowerupSmallSizeVolCoeff;
             ePowerUpType type = m_eType;
             PhysicsObject* pPhysObj = m_pPhysicsObject;
 
@@ -2450,7 +2447,6 @@ unsigned long PowerupBase::GetSoundType(ePowerUpType type, PowerupBase::PowerupS
     return sndType;
 }
 
-// /**
 //  */
 // PhysicsShell::~PhysicsShell()
 // {
@@ -3216,7 +3212,7 @@ skip_anticipation:
             t = pSolutions[0];
         }
 
-        if (t > g_pGame->m_pGameTweaks->unk228)
+        if (t > g_pGame->m_pGameTweaks->fMinBobombMoveSFXTime)
         {
             ePowerUpType type = m_eType;
             PhysicsObject* pPhysObj = m_pPhysicsObject;

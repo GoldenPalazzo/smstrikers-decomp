@@ -112,7 +112,7 @@ Bowser::Bowser(cSHierarchy& rSHierarchy, int nTeam, PhysicsNPC& rPhysNPC, cInven
         SetTiltParameters(0.0f);
         mAttackType = (eBowserAttackType)0;
 
-        if (g_pGame->m_pGameTweaks->unk310 < 0.0f)
+        if (g_pGame->m_pGameTweaks->fBowserEndTime < 0.0f)
         {
             g_pGame->ResetBowser();
         }
@@ -120,7 +120,7 @@ Bowser::Bowser(cSHierarchy& rSHierarchy, int nTeam, PhysicsNPC& rPhysNPC, cInven
         if (mbAlive)
         {
             mbAlive = false;
-            if (GameInfoManager::s_pInstance->IsBowserAttackEnabled() && savedAttackType != BOWSER_ATTACK_STOMP && savedVisible)
+            if (GameInfoManager::Instance()->IsBowserAttackEnabled() && savedAttackType != BOWSER_ATTACK_STOMP && savedVisible)
             {
                 g_pEventManager->CreateValidEvent(0x37, 0x14);
             }
@@ -128,7 +128,7 @@ Bowser::Bowser(cSHierarchy& rSHierarchy, int nTeam, PhysicsNPC& rPhysNPC, cInven
     }
     else
     {
-        g_pGame->ResetBowserTimer(g_pGame->m_pGameTweaks->unk31C);
+        g_pGame->ResetBowserTimer(g_pGame->m_pGameTweaks->fBowserTiltTime);
     }
 
     m_pCharacterSFX = new (nlMalloc(sizeof(Audio::cCharacterSFX), 8, false)) Audio::cCharacterSFX();
@@ -200,7 +200,7 @@ void Bowser::Update(float fDeltaT)
         }
     }
 
-    if (!GameInfoManager::s_pInstance->IsBowserAttackEnabled())
+    if (!GameInfoManager::Instance()->IsBowserAttackEnabled())
     {
         if (mbIsVisible)
         {
@@ -237,7 +237,7 @@ void Bowser::Update(float fDeltaT)
             }
 
             mbIsVisible = true;
-            if (GameInfoManager::s_pInstance->IsBowserAttackEnabled())
+            if (GameInfoManager::Instance()->IsBowserAttackEnabled())
             {
                 if (mAttackType != BOWSER_ATTACK_STOMP)
                 {
@@ -273,7 +273,7 @@ void Bowser::Update(float fDeltaT)
             if (mbFirstTime)
             {
                 mbFirstTime = false;
-                if (GameInfoManager::s_pInstance->IsBowserAttackEnabled())
+                if (GameInfoManager::Instance()->IsBowserAttackEnabled())
                 {
                     if (mAttackType == BOWSER_ATTACK_STOMP)
                     {
@@ -298,9 +298,9 @@ void Bowser::Update(float fDeltaT)
             if (mbDoTilt)
             {
                 pTweaks = g_pGame->m_pGameTweaks;
-                float fTiltForce = pTweaks->unk324 + nlRandomf(pTweaks->unk328 - pTweaks->unk324, &nlDefaultSeed);
+                float fTiltForce = pTweaks->fBowserMinTiltForce + nlRandomf(pTweaks->fBowserMaxTiltForce - pTweaks->fBowserMinTiltForce, &nlDefaultSeed);
                 float fNewTilt = mfYAxisTilt - (fTiltForce * mv3Position.x);
-                float fMaxTilt = g_pGame->m_pGameTweaks->unk32C;
+                float fMaxTilt = g_pGame->m_pGameTweaks->fBowserMaxTilt;
                 if (fNewTilt > fMaxTilt)
                 {
                     fNewTilt = fMaxTilt;
@@ -349,7 +349,7 @@ void Bowser::Update(float fDeltaT)
             }
             else
             {
-                if (fabsf(mfYAxisTilt) < g_pGame->m_pGameTweaks->unk32C)
+                if (fabsf(mfYAxisTilt) < g_pGame->m_pGameTweaks->fBowserMaxTilt)
                 {
                     ActionIdle();
                 }
@@ -381,7 +381,7 @@ void Bowser::Update(float fDeltaT)
 
             if (mAttackType == BOWSER_ATTACK_STOMP)
             {
-                if (!mbDoTilt || fabsf(mfYAxisTilt) >= g_pGame->m_pGameTweaks->unk32C)
+                if (!mbDoTilt || fabsf(mfYAxisTilt) >= g_pGame->m_pGameTweaks->fBowserMaxTilt)
                 {
                     KillFire();
                     ActionLeave();
@@ -717,9 +717,9 @@ void Bowser::ActionInit()
     eBowserAttackType savedAttackType;
     u32 savedVisible;
 
-    if (!nlSingleton<GameInfoManager>::s_pInstance->IsTiltingFieldOn()
-        && nlSingleton<GameInfoManager>::s_pInstance->IsBowserAttackEnabled()
-        && !nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+    if (!nlSingleton<GameInfoManager>::Instance()->IsTiltingFieldOn()
+        && nlSingleton<GameInfoManager>::Instance()->IsBowserAttackEnabled()
+        && !nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode)
     {
     }
     else
@@ -759,12 +759,12 @@ void Bowser::ActionInit()
                 savedAttackType = mAttackType;
                 SetTiltParameters(0.0f);
                 mAttackType = BOWSER_ATTACK_ROLL;
-                if (g_pGame->m_pGameTweaks->unk310 < 0.0f)
+                if (g_pGame->m_pGameTweaks->fBowserEndTime < 0.0f)
                     g_pGame->ResetBowser();
                 if (!mbAlive)
                     return;
                 mbAlive = false;
-                if (!nlSingleton<GameInfoManager>::s_pInstance->IsBowserAttackEnabled())
+                if (!nlSingleton<GameInfoManager>::Instance()->IsBowserAttackEnabled())
                     return;
                 if (savedAttackType == BOWSER_ATTACK_STOMP)
                     return;
@@ -773,7 +773,7 @@ void Bowser::ActionInit()
                 g_pEventManager->CreateValidEvent(0x37, 0x14);
                 return;
             }
-            g_pGame->ResetBowserTimer(g_pGame->m_pGameTweaks->unk31C);
+            g_pGame->ResetBowserTimer(g_pGame->m_pGameTweaks->fBowserTiltTime);
             return;
         }
     }
@@ -857,7 +857,7 @@ void Bowser::ActionThrow()
         return;
     }
 
-    if (!GameInfoManager::s_pInstance->GetGameplayOptions().PowerUps)
+    if (!GameInfoManager::Instance()->GetGameplayOptions().PowerUps)
     {
         ActionIdle();
         return;
@@ -1000,12 +1000,12 @@ void Bowser::ActionDescend(float fBlendTime)
  */
 void Bowser::ActionFall()
 {
-    float timerSeconds = g_pGame->m_pGameTweaks->unk314;
+    float timerSeconds = g_pGame->m_pGameTweaks->fBowserMinAttackTime;
     nlVector3 vel;
 
-    if (timerSeconds < g_pGame->m_pGameTweaks->unk318)
+    if (timerSeconds < g_pGame->m_pGameTweaks->fBowserMaxAttackTime)
     {
-        timerSeconds += nlRandomf(g_pGame->m_pGameTweaks->unk318 - timerSeconds, &nlDefaultSeed);
+        timerSeconds += nlRandomf(g_pGame->m_pGameTweaks->fBowserMaxAttackTime - timerSeconds, &nlDefaultSeed);
     }
 
     mtActiveTimer.SetSeconds(timerSeconds);
@@ -1084,7 +1084,7 @@ void Bowser::ActionJump()
     nlVector3 v3JumpPos = g_pBall->m_v3Position;
     v3JumpPos.x += nlRandomf(3.0f, &nlDefaultSeed) - 1.5f;
 
-    float fMaxTilt = g_pGame->m_pGameTweaks->unk32C;
+    float fMaxTilt = g_pGame->m_pGameTweaks->fBowserMaxTilt;
     if (v3JumpPos.x > 0.0f && mfYAxisTilt <= -fMaxTilt)
     {
         v3JumpPos.x *= -1.0f;
@@ -1185,7 +1185,7 @@ void Bowser::ActionHide()
         SetTiltParameters(0.0f);
         mAttackType = BOWSER_ATTACK_ROLL;
 
-        if (g_pGame->m_pGameTweaks->unk310 < 0.0f)
+        if (g_pGame->m_pGameTweaks->fBowserEndTime < 0.0f)
         {
             g_pGame->ResetBowser();
         }
@@ -1194,7 +1194,7 @@ void Bowser::ActionHide()
         {
             mbAlive = false;
 
-            if (GameInfoManager::s_pInstance->IsBowserAttackEnabled() && oldAttackType != BOWSER_ATTACK_STOMP && wasVisible)
+            if (GameInfoManager::Instance()->IsBowserAttackEnabled() && oldAttackType != BOWSER_ATTACK_STOMP && wasVisible)
             {
                 g_pEventManager->CreateValidEvent(0x37, 0x14);
             }
@@ -1202,7 +1202,7 @@ void Bowser::ActionHide()
     }
     else
     {
-        g_pGame->ResetBowserTimer(g_pGame->m_pGameTweaks->unk31C);
+        g_pGame->ResetBowserTimer(g_pGame->m_pGameTweaks->fBowserTiltTime);
     }
 }
 
@@ -1252,7 +1252,7 @@ void Bowser::ActionReset()
             oldAttackType = mAttackType;
             ResetBowserAttackState(this);
 
-            if (g_pGame->m_pGameTweaks->unk310 < 0.0f)
+            if (g_pGame->m_pGameTweaks->fBowserEndTime < 0.0f)
             {
                 g_pGame->ResetBowser();
             }
@@ -1261,7 +1261,7 @@ void Bowser::ActionReset()
             {
                 mbAlive = false;
 
-                if (GameInfoManager::s_pInstance->IsBowserAttackEnabled() && oldAttackType != BOWSER_ATTACK_STOMP && wasVisible)
+                if (GameInfoManager::Instance()->IsBowserAttackEnabled() && oldAttackType != BOWSER_ATTACK_STOMP && wasVisible)
                 {
                     g_pEventManager->CreateValidEvent(0x37, 0x14);
                 }
@@ -1269,7 +1269,7 @@ void Bowser::ActionReset()
         }
         else
         {
-            g_pGame->ResetBowserTimer(g_pGame->m_pGameTweaks->unk31C);
+            g_pGame->ResetBowserTimer(g_pGame->m_pGameTweaks->fBowserTiltTime);
         }
     }
 
@@ -1285,7 +1285,7 @@ void Bowser::ActionLeave()
     if (meBowserState == BOWSER_STATE_LEAVE)
         return;
 
-    if (GameInfoManager::s_pInstance->IsBowserAttackEnabled())
+    if (GameInfoManager::Instance()->IsBowserAttackEnabled())
     {
         g_pEventManager->CreateValidEvent(0x3b, 0x14);
     }
@@ -1370,7 +1370,7 @@ void Bowser::Move(float fDeltaT)
 
 eBowserMoveResult Bowser::GravityMove(float fDeltaT)
 {
-    float fHalfGrav = 0.5f * g_pGame->m_pGameTweaks->unk330;
+    float fHalfGrav = 0.5f * g_pGame->m_pGameTweaks->fBowserGravity;
     nlVector3 v3Vel = mv3Velocity;
     nlVector3 v3Pos = mv3Position;
     eBowserMoveResult result = BOWSER_MOVE_RESULT_NORMAL;
@@ -1384,11 +1384,11 @@ eBowserMoveResult Bowser::GravityMove(float fDeltaT)
     else
     {
         v3Pos.z += (v3Vel.z + fHalfGrav * fDeltaT) * fDeltaT;
-        v3Vel.z += fDeltaT * g_pGame->m_pGameTweaks->unk330;
+        v3Vel.z += fDeltaT * g_pGame->m_pGameTweaks->fBowserGravity;
         if (v3Pos.z < 0.0f)
         {
             v3Pos.z = 0.0f;
-            v3Vel.z *= g_pGame->m_pGameTweaks->unk334;
+            v3Vel.z *= g_pGame->m_pGameTweaks->fBowserRebound;
             result = BOWSER_MOVE_RESULT_REBOUND;
         }
     }
@@ -1426,7 +1426,7 @@ void Bowser::ActionIdle()
 
     mv3Velocity = v3Zero;
 
-    mtStateTimer.SetSeconds(g_pGame->m_pGameTweaks->unk320);
+    mtStateTimer.SetSeconds(g_pGame->m_pGameTweaks->fBowserIntervalDelay);
 
     EmissionManager::Destroy((unsigned long)this, fxGetGroup("bowser_fire"));
     g_pEventManager->CreateValidEvent(0x65, 0x14);
@@ -1452,7 +1452,7 @@ void Bowser::SetTiltParameters(float fYAxisTilt)
         if ((float)fabs(fYAxisTilt) > 0.01f)
         {
             nlVector3 tiltForce = { 0.0f, 0.0f, 0.0f };
-            tiltForce.x = -fYAxisTilt * g_pGame->m_pGameTweaks->unk338;
+            tiltForce.x = -fYAxisTilt * g_pGame->m_pGameTweaks->fBowserBallForceMult;
 
             g_pBall->m_pPhysicsBall->m_v3TiltForce = tiltForce;
             g_pBall->m_pPhysicsBall->m_bUseTiltForce = true;
@@ -1501,18 +1501,18 @@ bool Bowser::CheckForAbort()
         {
             savedAttackType = pBowser->mAttackType;
             ResetBowserAttackState(pBowser);
-            if (g_pGame->m_pGameTweaks->unk310 < 0.0f)
+            if (g_pGame->m_pGameTweaks->fBowserEndTime < 0.0f)
                 g_pGame->ResetBowser();
             if (pBowser->mbAlive)
             {
                 pBowser->mbAlive = false;
-                if (nlSingleton<GameInfoManager>::s_pInstance->IsBowserAttackEnabled() && savedAttackType != BOWSER_ATTACK_STOMP && savedVisible)
+                if (nlSingleton<GameInfoManager>::Instance()->IsBowserAttackEnabled() && savedAttackType != BOWSER_ATTACK_STOMP && savedVisible)
                     g_pEventManager->CreateValidEvent(0x37, 0x14);
             }
         }
         else
         {
-            g_pGame->ResetBowserTimer(g_pGame->m_pGameTweaks->unk31C);
+            g_pGame->ResetBowserTimer(g_pGame->m_pGameTweaks->fBowserTiltTime);
         }
         return true;
     }
@@ -1738,7 +1738,7 @@ void Bowser::CheckFootSteps()
     {
         f32 fNewTilt = mfYAxisTilt;
         GameTweaks* pTweaks = g_pGame->m_pGameTweaks;
-        f32 fTiltForce = pTweaks->unk324 + nlRandomf(pTweaks->unk328 - pTweaks->unk324, &nlDefaultSeed);
+        f32 fTiltForce = pTweaks->fBowserMinTiltForce + nlRandomf(pTweaks->fBowserMaxTiltForce - pTweaks->fBowserMinTiltForce, &nlDefaultSeed);
 
         if (mAttackType != BOWSER_ATTACK_STOMP)
         {
@@ -1749,7 +1749,7 @@ void Bowser::CheckFootSteps()
             fNewTilt -= fTiltForce * mv3Position.x;
         }
 
-        f32 fMaxTilt = g_pGame->m_pGameTweaks->unk32C;
+        f32 fMaxTilt = g_pGame->m_pGameTweaks->fBowserMaxTilt;
         if (fNewTilt > fMaxTilt)
         {
             fNewTilt = fMaxTilt;

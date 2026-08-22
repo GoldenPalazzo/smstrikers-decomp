@@ -17,6 +17,9 @@ u16 CARDGetVendorID()
     return __CARDVendorID;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80244114 | size: 0xC4
+ */
 s32 CARDGetSerialNo(s32 chan, u64* serialNo)
 {
     CARDControl* card;

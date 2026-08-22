@@ -337,7 +337,6 @@ void PhysicsUpdate(PhysicsWorld* pWorld, float fDeltaT)
     pWorld->PostUpdate();
 }
 
-// /**
 //  */
 // void PhysicsRoundedCorner::GetObjectType() const
 // {

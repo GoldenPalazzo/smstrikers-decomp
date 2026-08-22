@@ -24,7 +24,6 @@ float g_fIdleGameTime;
 extern FrontEnd* g_pFrontEnd;
 extern FEInput* g_pFEInput;
 
-// TODO: missing header, Forward declaration
 namespace TakeGameMemSnapshot
 {
 void Update(float);
@@ -46,7 +45,7 @@ void FrontEndTask::Run(float dt)
     {
         for (int padIdx = 0; padIdx < 4; padIdx++)
         {
-            short playingSide = nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide(padIdx);
+            short playingSide = nlSingleton<GameInfoManager>::Instance()->GetPlayingSide(padIdx);
             if (playingSide == -1)
             {
                 continue;
@@ -128,7 +127,7 @@ void FrontEndTask::HandleE3IdleReset(float dt)
         return;
     }
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->IsInDemoMode())
+    if (nlSingleton<GameInfoManager>::Instance()->IsInDemoMode())
     {
         if (nlTaskManager::m_pInstance->m_CurrState & 0x2)
         {

@@ -9,7 +9,7 @@ extern u32 mCurrentFEStreamHash;
 
 void ResetCurrentFEStreamHash();
 void StopStream();
-void StartStreamIfDifferent(int);
+void StartStreamIfDifferent(int idx);
 } // namespace FEMusic
 
 #endif // _FEMUSIC_H_

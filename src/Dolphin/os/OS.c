@@ -86,6 +86,9 @@ u32 __OSIsDebuggerPresent(void)
 
 /* clang-format off */
 #ifdef __GEKKO__
+/**
+ * Offset/Address/Size: 0x0 | 0x80253194 | size: 0x128
+ */
 asm void __OSFPRInit(void) {
     // clang-format off
     nofralloc
@@ -182,6 +185,9 @@ static inline void DisableWriteGatherPipe(void)
     PPCMthid2(hid2);
 }
 
+/**
+ * Offset/Address/Size: 0x128 | 0x802532BC | size: 0x28
+ */
 u32 OSGetConsoleType(void)
 {
     if (!BootInfo || BootInfo->consoleType == 0)
@@ -228,6 +234,9 @@ static inline void ClearArena(void)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x150 | 0x802532E4 | size: 0x3C
+ */
 static void InquiryCallback(s32, DVDCommandBlock* block)
 {
     switch (block->state)
@@ -241,6 +250,9 @@ static void InquiryCallback(s32, DVDCommandBlock* block)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x18C | 0x80253320 | size: 0x4E0
+ */
 void OSInit(void)
 {
     u32 consoleType;
@@ -422,6 +434,9 @@ char* __OSExceptionNames[17] = {
 };
 #endif
 
+/**
+ * Offset/Address/Size: 0x66C | 0x80253800 | size: 0x280
+ */
 static void OSExceptionInit(void)
 {
     __OSException exception;
@@ -512,6 +527,9 @@ static void OSExceptionInit(void)
 
 #ifdef __GEKKO__
 // clang-format off
+/**
+ * Offset/Address/Size: 0x8EC | 0x80253A80 | size: 0x24
+ */
 static asm void __OSDBIntegrator(void) {
     nofralloc
 entry __OSDBINTSTART
@@ -531,6 +549,9 @@ entry __OSDBINTEND
 
 #ifdef __GEKKO__
 // clang-format off
+/**
+ * Offset/Address/Size: 0x910 | 0x80253AA4 | size: 0x4
+ */
 static asm void __OSDBJump(void) {
     nofralloc
 entry __OSDBJUMPSTART
@@ -540,6 +561,9 @@ entry __OSDBJUMPEND
 // clang-format on
 #endif
 
+/**
+ * Offset/Address/Size: 0x914 | 0x80253AA8 | size: 0x1C
+ */
 __OSExceptionHandler __OSSetExceptionHandler(__OSException exception, __OSExceptionHandler handler)
 {
     __OSExceptionHandler oldHandler;
@@ -551,6 +575,9 @@ __OSExceptionHandler __OSSetExceptionHandler(__OSException exception, __OSExcept
     return oldHandler;
 }
 
+/**
+ * Offset/Address/Size: 0x930 | 0x80253AC4 | size: 0x14
+ */
 __OSExceptionHandler __OSGetExceptionHandler(__OSException exception)
 {
     ASSERTMSGLINE(1228, exception < __OS_EXCEPTION_MAX, "__OSGetExceptionHandler(): unknown exception.");
@@ -559,6 +586,9 @@ __OSExceptionHandler __OSGetExceptionHandler(__OSException exception)
 
 #ifdef __GEKKO__
 // clang-format off
+/**
+ * Offset/Address/Size: 0x944 | 0x80253AD8 | size: 0x9C
+ */
 static asm void OSExceptionVector(void) {
     nofralloc
 
@@ -647,6 +677,9 @@ void __OSUnhandledException(__OSException exception, OSContext* context, u32 dsi
 
 #ifdef __GEKKO__
 // clang-format off
+/**
+ * Offset/Address/Size: 0x9E0 | 0x80253B74 | size: 0x58
+ */
 asm void OSDefaultExceptionHandler(register __OSException exception, register OSContext* context) {
     nofralloc
     OS_EXCEPTION_SAVE_GPRS(context)
@@ -660,6 +693,9 @@ asm void OSDefaultExceptionHandler(register __OSException exception, register OS
 #endif
 
 #ifdef __GEKKO__
+/**
+ * Offset/Address/Size: 0xA38 | 0x80253BCC | size: 0x54
+ */
 void __OSPSInit(void)
 {
     PPCMthid2(PPCMfhid2() | 0x80000000 | 0x20000000);
@@ -681,11 +717,17 @@ void __OSPSInit(void)
 }
 #endif
 
+/**
+ * Offset/Address/Size: 0xA8C | 0x80253C20 | size: 0x14
+ */
 u32 __OSGetDIConfig(void)
 {
     return (__DIRegs[9] & 0xFF);
 }
 
+/**
+ * Offset/Address/Size: 0xAA0 | 0x80253C34 | size: 0x2C
+ */
 void OSRegisterVersion(const char* id)
 {
     OSReport("%s\n", id);

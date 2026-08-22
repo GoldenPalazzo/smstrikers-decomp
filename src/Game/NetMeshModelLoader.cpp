@@ -192,7 +192,6 @@ void NetMeshModelLoader::AddEdge(const glModelPacket& packet, unsigned short idx
 /**
  * Offset/Address/Size: 0xB90 | 0x80130CE8 | size: 0xB4
  */
-#pragma dont_inline on
 void NetMeshModelLoader::AddTriangleFromGeometry(const glModelPacket& packet, unsigned short* vertexIndices)
 {
     unsigned char isThin = 0;
@@ -210,7 +209,6 @@ void NetMeshModelLoader::AddTriangleFromGeometry(const glModelPacket& packet, un
         }
     }
 }
-#pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0xA80 | 0x80130BD8 | size: 0x110

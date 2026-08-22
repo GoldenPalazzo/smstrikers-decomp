@@ -1,5 +1,8 @@
 #include "PowerPC_EABI_Support/MetroTRK/custconn/CircleBuffer.h"
 
+/**
+ * Offset/Address/Size: 0x260 | 0x8022AB68 | size: 0x8
+ */
 u32 CBGetBytesAvailableForRead(CircleBuffer* cb)
 {
     return cb->mBytesToRead;
@@ -10,6 +13,9 @@ u32 CBGetBytesAvailableForWrite(CircleBuffer* cb)
     return cb->mBytesToWrite;
 }
 
+/**
+ * Offset/Address/Size: 0x210 | 0x8022AB18 | size: 0x50
+ */
 void CircleBufferInitialize(CircleBuffer* cb, u8* buf, u32 size)
 {
     cb->mStartPtr = buf;
@@ -26,6 +32,9 @@ void CircleBufferTerminate(CircleBuffer* cb)
     // UNUSED FUNCTION
 }
 
+/**
+ * Offset/Address/Size: 0x108 | 0x8022AA10 | size: 0x108
+ */
 int CircleBufferWriteBytes(CircleBuffer* cb, u8* buf, u32 size)
 {
     int availSize;
@@ -59,6 +68,9 @@ int CircleBufferWriteBytes(CircleBuffer* cb, u8* buf, u32 size)
     return 0;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8022A908 | size: 0x108
+ */
 int CircleBufferReadBytes(CircleBuffer* cb, u8* buf, u32 size)
 {
     int availSize;

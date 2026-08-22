@@ -464,7 +464,6 @@ void EmissionManager::Destroy(unsigned long userData, const EffectsGroup* pEffec
 /**
  * Offset/Address/Size: 0x520 | 0x801F8E40 | size: 0x2C
  */
-#pragma dont_inline on
 void EmissionManager::ResetLingerers()
 {
     if (lingerers != nullptr)
@@ -472,12 +471,11 @@ void EmissionManager::ResetLingerers()
         lingerers->DeleteValues();
     }
 }
-#pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0x4D0 | 0x801F8DF0 | size: 0x50
  */
-void EmissionManager::AddError(const char*, ...)
+void EmissionManager::AddError(const char* format, ...)
 {
 }
 

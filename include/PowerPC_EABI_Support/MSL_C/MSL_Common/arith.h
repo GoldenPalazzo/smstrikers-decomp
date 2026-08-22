@@ -6,6 +6,8 @@ extern "C" {
 #endif
 
 int abs(int n);
+long labs(long n);
+long long llabs(long long n);
 
 #ifdef __cplusplus
 }

@@ -98,7 +98,7 @@ void DrawableSkinModel::Draw()
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x80122F2C | size: 0x24
+ * Offset/Address/Size: 0x1D0 | 0x80122F2C | size: 0x24
  */
 void DrawableSkinModel::SetAnimation(const char* szAnimationName, unsigned long playMode)
 {
@@ -106,7 +106,7 @@ void DrawableSkinModel::SetAnimation(const char* szAnimationName, unsigned long 
 }
 
 /**
- * Offset/Address/Size: 0x24 | 0x80122F50 | size: 0xC
+ * Offset/Address/Size: 0x1F4 | 0x80122F50 | size: 0xC
  */
 void DrawableSkinModel::SetAnimationSpeed(float fSpeed)
 {
@@ -114,7 +114,7 @@ void DrawableSkinModel::SetAnimationSpeed(float fSpeed)
 }
 
 /**
- * Offset/Address/Size: 0x30 | 0x80122F5C | size: 0x24
+ * Offset/Address/Size: 0x200 | 0x80122F5C | size: 0x24
  */
 float DrawableSkinModel::GetAnimationTime()
 {
@@ -122,7 +122,7 @@ float DrawableSkinModel::GetAnimationTime()
 }
 
 /**
- * Offset/Address/Size: 0x54 | 0x80122F80 | size: 0x24
+ * Offset/Address/Size: 0x224 | 0x80122F80 | size: 0x24
  */
 void DrawableSkinModel::SetAnimationTime(float fTime)
 {
@@ -130,7 +130,7 @@ void DrawableSkinModel::SetAnimationTime(float fTime)
 }
 
 /**
- * Offset/Address/Size: 0x78 | 0x80122FA4 | size: 0x24
+ * Offset/Address/Size: 0x248 | 0x80122FA4 | size: 0x24
  */
 float DrawableSkinModel::GetAnimationDuration()
 {

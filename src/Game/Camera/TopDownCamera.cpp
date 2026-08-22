@@ -24,7 +24,7 @@ TopDownCamera::TopDownCamera()
 /**
  * Offset/Address/Size: 0xBC | 0x801A5FBC | size: 0xB8
  */
-void TopDownCamera::Update(float)
+void TopDownCamera::Update(float dt)
 {
     if (sbFocusOnBall)
     {

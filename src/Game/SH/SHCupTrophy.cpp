@@ -98,7 +98,7 @@ void CupTrophyScene::SceneCreated()
     mRow = 0;
 
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
-    UserInfo* userInfo = &nlSingleton<GameInfoManager>::s_pInstance->mUserInfo;
+    UserInfo* userInfo = &nlSingleton<GameInfoManager>::Instance()->mUserInfo;
     Spoil* pSpoil = &userInfo->mSpoils[(int)mTrophy];
 
     TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
@@ -139,10 +139,10 @@ void CupTrophyScene::SceneCreated()
             InlineHasher(nlStringLowerHash("ARROWS")));
 
         pComp->m_bVisible = false;
-        nlSingleton<GameInfoManager>::s_pInstance->mDisplayTrophy[0] = false;
+        nlSingleton<GameInfoManager>::Instance()->mDisplayTrophy[0] = false;
     }
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->HasTrophy(mTrophy))
+    if (nlSingleton<GameInfoManager>::Instance()->HasTrophy(mTrophy))
     {
         nlColour trophyColour = ((FELibObject*)pTrophyImage->m_component)->GetColour();
         pTrophyImage->SetAssetColour(trophyColour);
@@ -226,7 +226,7 @@ void CupTrophyScene::HandleUnlockedTriggers()
     {
         if ((gameInfo->mUnlockedTriggers & (1 << i)) != 0)
         {
-            popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+            popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
             popup->Create(
                 PopupMap[i],
                 Bind<void>(MemFun<CupTrophyScene, void>(&CupTrophyScene::HandleUnlockedTriggers), this));
@@ -238,7 +238,7 @@ void CupTrophyScene::HandleUnlockedTriggers()
         i++;
     }
 
-    nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_BRAG, SCREEN_NOTHING, true);
+    nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CUP_BRAG, SCREEN_NOTHING, true);
 }
 extern FEInput* g_pFEInput;
 
@@ -279,13 +279,13 @@ void CupTrophyScene::Update(float fDeltaT)
     {
         if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
         {
-            if (nlSingleton<GameInfoManager>::s_pInstance->mUnlockedTriggers != 0)
+            if (nlSingleton<GameInfoManager>::Instance()->mUnlockedTriggers != 0)
             {
                 HandleUnlockedTriggers();
             }
             else
             {
-                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_BRAG, SCREEN_FORWARD, true);
+                nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CUP_BRAG, SCREEN_FORWARD, true);
             }
 
             FEAudio::PlayAnimAudioEvent("sfx_accept", false);
@@ -297,7 +297,7 @@ void CupTrophyScene::Update(float fDeltaT)
     {
         if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_TROPHY_ROOM, SCREEN_BACK, true);
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_TROPHY_ROOM, SCREEN_BACK, true);
             FEAudio::PlayAnimAudioEvent("sfx_back", false);
             return;
         }

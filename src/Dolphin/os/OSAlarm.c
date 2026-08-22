@@ -61,6 +61,9 @@ static void SetTimer(OSAlarm* alarm)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80253C60 | size: 0x58
+ */
 void OSInitAlarm(void)
 {
     if (__OSGetExceptionHandler(8) != DecrementerExceptionHandler)
@@ -71,12 +74,18 @@ void OSInitAlarm(void)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x58 | 0x80253CB8 | size: 0x10
+ */
 void OSCreateAlarm(OSAlarm* alarm)
 {
     alarm->handler = 0;
     alarm->tag = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x68 | 0x80253CC8 | size: 0x250
+ */
 static void InsertAlarm(OSAlarm* alarm, OSTime fire, OSAlarmHandler handler)
 {
     OSAlarm* next;
@@ -141,6 +150,9 @@ static void InsertAlarm(OSAlarm* alarm, OSTime fire, OSAlarmHandler handler)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x2B8 | 0x80253F18 | size: 0x68
+ */
 void OSSetAlarm(OSAlarm* alarm, OSTime tick, OSAlarmHandler handler)
 {
     BOOL enabled;
@@ -178,6 +190,9 @@ void OSSetPeriodicAlarm(OSAlarm* alarm, OSTime start, OSTime period, OSAlarmHand
     OSRestoreInterrupts(enabled);
 }
 
+/**
+ * Offset/Address/Size: 0x320 | 0x80253F80 | size: 0x11C
+ */
 void OSCancelAlarm(OSAlarm* alarm)
 {
     OSAlarm* next;
@@ -217,8 +232,10 @@ void OSCancelAlarm(OSAlarm* alarm)
     OSRestoreInterrupts(enabled);
 }
 
-static void DecrementerExceptionCallback(register __OSException exception,
-    register OSContext* context)
+/**
+ * Offset/Address/Size: 0x43C | 0x8025409C | size: 0x230
+ */
+static void DecrementerExceptionCallback(__OSException exception, OSContext* context)
 {
     OSAlarm* alarm;
     OSAlarm* next;
@@ -278,6 +295,9 @@ static void DecrementerExceptionCallback(register __OSException exception,
 
 #ifdef __GEKKO__
 // clang-format off
+/**
+ * Offset/Address/Size: 0x66C | 0x802542CC | size: 0x50
+ */
 static asm void DecrementerExceptionHandler(register __OSException exception,
                                             register OSContext* context) {
     nofralloc 
@@ -325,6 +345,9 @@ void OSCancelAlarms(u32 tag)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x6BC | 0x8025431C | size: 0xA0
+ */
 static BOOL OnReset(BOOL final)
 {
     OSAlarm* alarm;

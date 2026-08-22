@@ -20,6 +20,9 @@
     } while (0)
 #endif
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802500CC | size: 0x6C
+ */
 void GXSetTevIndirect(GXTevStageID tev_stage, GXIndTexStageID ind_stage, GXIndTexFormat format, GXIndTexBiasSel bias_sel,
     GXIndTexMtxID matrix_sel, GXIndTexWrap wrap_s, GXIndTexWrap wrap_t, GXBool add_prev, GXBool utc_lod,
     GXIndTexAlphaSel alpha_sel)
@@ -42,6 +45,9 @@ void GXSetTevIndirect(GXTevStageID tev_stage, GXIndTexStageID ind_stage, GXIndTe
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x6C | 0x80250138 | size: 0x178
+ */
 void GXSetIndTexMtx(GXIndTexMtxID mtx_id, const f32 offset[2][3], s8 scale_exp)
 {
     s32 mtx[6];
@@ -103,6 +109,9 @@ void GXSetIndTexMtx(GXIndTexMtxID mtx_id, const f32 offset[2][3], s8 scale_exp)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x1E4 | 0x802502B0 | size: 0x144
+ */
 void GXSetIndTexCoordScale(GXIndTexStageID ind_state, GXIndTexScale scale_s, GXIndTexScale scale_t)
 {
     CHECK_GXBEGIN(249, "GXSetIndTexScale");
@@ -140,6 +149,9 @@ void GXSetIndTexCoordScale(GXIndTexStageID ind_state, GXIndTexScale scale_s, GXI
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x328 | 0x802503F4 | size: 0xEC
+ */
 void GXSetIndTexOrder(GXIndTexStageID ind_stage, GXTexCoordID tex_coord, GXTexMapID tex_map)
 {
     CHECK_GXBEGIN(302, "GXSetIndTexOrder");
@@ -184,6 +196,9 @@ void GXSetIndTexOrder(GXIndTexStageID ind_stage, GXTexCoordID tex_coord, GXTexMa
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x414 | 0x802504E0 | size: 0x24
+ */
 void GXSetNumIndStages(u8 nIndStages)
 {
     CHECK_GXBEGIN(353, "GXSetNumIndStages");
@@ -192,12 +207,18 @@ void GXSetNumIndStages(u8 nIndStages)
     __GXData->dirtyState |= 6;
 }
 
+/**
+ * Offset/Address/Size: 0x438 | 0x80250504 | size: 0x48
+ */
 void GXSetTevDirect(GXTevStageID tev_stage)
 {
     CHECK_GXBEGIN(373, "GXSetTevDirect");
     GXSetTevIndirect(tev_stage, GX_INDTEXSTAGE0, GX_ITF_8, GX_ITB_NONE, GX_ITM_OFF, GX_ITW_OFF, GX_ITW_OFF, GX_FALSE, GX_FALSE, GX_ITBA_OFF);
 }
 
+/**
+ * Offset/Address/Size: 0x480 | 0x8025054C | size: 0x64
+ */
 void GXSetTevIndWarp(GXTevStageID tev_stage, GXIndTexStageID ind_stage, u8 signed_offset, u8 replace_mode, GXIndTexMtxID matrix_sel)
 {
     GXIndTexWrap wrap = (replace_mode != 0) ? GX_ITW_0 : GX_ITW_OFF;
@@ -315,10 +336,16 @@ void GXSetTevIndRepeat(GXTevStageID tev_stage)
     GXSetTevIndirect(tev_stage, GX_INDTEXSTAGE0, GX_ITF_8, GX_ITB_NONE, GX_ITM_OFF, GX_ITW_0, GX_ITW_0, GX_TRUE, GX_FALSE, GX_ITBA_OFF);
 }
 
+/**
+ * Offset/Address/Size: 0x4E4 | 0x802505B0 | size: 0x4
+ */
 void __GXUpdateBPMask(void)
 {
 }
 
+/**
+ * Offset/Address/Size: 0x4E8 | 0x802505B4 | size: 0x30
+ */
 void __GXSetIndirectMask(u32 mask)
 {
     SET_REG_FIELD(664, __GXData->bpMask, 8, ~0xFF, mask);
@@ -327,6 +354,9 @@ void __GXSetIndirectMask(u32 mask)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x518 | 0x802505E4 | size: 0x24
+ */
 void __GXFlushTextureState(void)
 {
     GX_WRITE_SOME_REG5(GX_LOAD_BP_REG, __GXData->bpMask);

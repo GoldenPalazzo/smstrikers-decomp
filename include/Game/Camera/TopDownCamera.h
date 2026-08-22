@@ -9,7 +9,7 @@ public:
     TopDownCamera();
     virtual ~TopDownCamera();
     virtual const nlMatrix4& GetViewMatrix() const;
-    virtual void Update(float);
+    virtual void Update(float dt);
 
     virtual eCameraType GetType()
     {

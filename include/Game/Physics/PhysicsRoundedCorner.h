@@ -9,7 +9,7 @@
 class PhysicsRoundedCorner : public PhysicsObject
 {
 public:
-    PhysicsRoundedCorner(CollisionSpace*, const nlVector2&, float, bool, bool);
+    PhysicsRoundedCorner(CollisionSpace* collisionSpace, const nlVector2& position, float radius, bool isTrigger, bool isStatic);
     virtual int GetObjectType() const
     {
         return 0x05;

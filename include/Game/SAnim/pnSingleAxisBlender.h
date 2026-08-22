@@ -9,7 +9,7 @@ class cPN_SingleAxisBlender : public cPoseNode
 {
 public:
     cPN_SingleAxisBlender() { }
-    cPN_SingleAxisBlender(int, void (*)(unsigned int, cPN_SingleAxisBlender*), unsigned int, float);
+    cPN_SingleAxisBlender(int numChildren, void (*callback)(unsigned int, cPN_SingleAxisBlender*), unsigned int callbackParam, float weightSeek);
     /* 0x08 */ virtual ~cPN_SingleAxisBlender() { };
     static void* operator new(unsigned long)
     {
@@ -21,12 +21,12 @@ public:
     {
         m_SingleAxisBlenderSlotPool.Free((cPN_SingleAxisBlender*)ptr);
     }
-    /* 0x14 */ virtual void Evaluate(int, float, cPoseAccumulator*) const;
-    /* 0x10 */ virtual void Evaluate(float, cPoseAccumulator*) const;
-    /* 0x18 */ virtual cPoseNode* Update(float);
+    /* 0x14 */ virtual void Evaluate(int nodeIndex, float weight, cPoseAccumulator* accum) const;
+    /* 0x10 */ virtual void Evaluate(float weight, cPoseAccumulator* accum) const;
+    /* 0x18 */ virtual cPoseNode* Update(float dt);
     /* 0x1C */ virtual int GetType() { return 0x3; };
-    /* 0x20 */ virtual void BlendRootTrans(nlVector3*, float, float*);
-    /* 0x24 */ virtual void BlendRootRot(unsigned short*, float, float*);
+    /* 0x20 */ virtual void BlendRootTrans(nlVector3* outBase, float weight, float* scratch);
+    /* 0x24 */ virtual void BlendRootRot(unsigned short* outRot, float weight, float* scratch);
 
     template <typename T>
     void Replay(T& frame)
@@ -52,6 +52,5 @@ inline cPN_SingleAxisBlender* AllocateSingleAxisBlender()
 
     return pSAB;
 }
-
 
 #endif // _PNSINGLEAXISBLENDER_H_

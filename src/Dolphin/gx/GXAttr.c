@@ -150,6 +150,9 @@ static inline void SETVCDATTR(GXAttr Attr, GXAttrType Type)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8024C858 | size: 0x26C
+ */
 void GXSetVtxDesc(GXAttr attr, GXAttrType type)
 {
     CHECK_GXBEGIN(264, "GXSetVtxDesc");
@@ -195,6 +198,9 @@ void GXSetVtxDescv(const GXVtxDescList* attrPtr)
     __GXData->dirtyState |= 8;
 }
 
+/**
+ * Offset/Address/Size: 0x26C | 0x8024CAC4 | size: 0xBC
+ */
 void __GXSetVCD(void)
 {
     GX_WRITE_SOME_REG4(8, 0x50, __GXData->vcdLo, -12);
@@ -202,6 +208,9 @@ void __GXSetVCD(void)
     __GXXfVtxSpecs();
 }
 
+/**
+ * Offset/Address/Size: 0x328 | 0x8024CB80 | size: 0x124
+ */
 void __GXCalculateVLim(void)
 {
     static u8 tbl1[] = { 0, 4, 1, 2 };
@@ -359,6 +368,9 @@ void GXGetVtxDescv(GXVtxDescList* vcd)
     vcd[attr].attr = GX_VA_NULL;
 }
 
+/**
+ * Offset/Address/Size: 0x44C | 0x8024CCA4 | size: 0x38
+ */
 void GXClearVtxDesc(void)
 {
     CHECK_GXBEGIN(543, "GXClearVtxDesc");
@@ -444,6 +456,9 @@ static inline void SETVAT(u32* va, u32* vb, u32* vc, GXAttr attr, GXCompCnt cnt,
     }
 }
 
+/**
+ * Offset/Address/Size: 0x484 | 0x8024CCDC | size: 0x25C
+ */
 void GXSetVtxAttrFmt(GXVtxFmt vtxfmt, GXAttr attr, GXCompCnt cnt, GXCompType type, u8 frac)
 {
     u32* va;
@@ -468,6 +483,9 @@ void GXSetVtxAttrFmt(GXVtxFmt vtxfmt, GXAttr attr, GXCompCnt cnt, GXCompType typ
     __GXData->dirtyVAT |= (u8)(1 << (u8)vtxfmt);
 }
 
+/**
+ * Offset/Address/Size: 0x6E0 | 0x8024CF38 | size: 0x280
+ */
 void GXSetVtxAttrFmtv(GXVtxFmt vtxfmt, const GXVtxAttrFmtList* list)
 {
     u32* va;
@@ -496,6 +514,9 @@ void GXSetVtxAttrFmtv(GXVtxFmt vtxfmt, const GXVtxAttrFmtList* list)
     __GXData->dirtyVAT |= (u8)(1 << (u8)vtxfmt);
 }
 
+/**
+ * Offset/Address/Size: 0x960 | 0x8024D1B8 | size: 0x88
+ */
 void __GXSetVAT(void)
 {
     s32 i;
@@ -645,12 +666,13 @@ void GXGetVtxAttrFmtv(GXVtxFmt fmt, GXVtxAttrFmtList* vat)
     vat->attr = GX_VA_NULL;
 }
 
+/**
+ * Offset/Address/Size: 0x9E8 | 0x8024D240 | size: 0x44
+ */
 void GXSetArray(GXAttr attr, void* base_ptr, u8 stride)
 {
     GXAttr cpAttr;
     u32 phyAddr;
-
-    attr; // needed to match
 
     CHECK_GXBEGIN(963, "GXSetArray");
     if (attr == GX_VA_NBT)
@@ -666,12 +688,18 @@ void GXSetArray(GXAttr attr, void* base_ptr, u8 stride)
     GX_WRITE_SOME_REG3(8, cpAttr | 0xB0, stride, cpAttr - 12);
 }
 
+/**
+ * Offset/Address/Size: 0xA2C | 0x8024D284 | size: 0x10
+ */
 void GXInvalidateVtxCache(void)
 {
     CHECK_GXBEGIN(988, "GXInvalidateVtxCache");
     GX_WRITE_U8(0x48);
 }
 
+/**
+ * Offset/Address/Size: 0xA3C | 0x8024D294 | size: 0x280
+ */
 void GXSetTexCoordGen2(GXTexCoordID dst_coord, GXTexGenType func, GXTexGenSrc src_param, u32 mtx, GXBool normalize, u32 pt_texmtx)
 {
     u32 reg = 0;
@@ -845,6 +873,9 @@ void GXSetTexCoordGen2(GXTexCoordID dst_coord, GXTexGenType func, GXTexGenSrc sr
     __GXSetMatrixIndex(mtxIdAttr);
 }
 
+/**
+ * Offset/Address/Size: 0xCBC | 0x8024D514 | size: 0x3C
+ */
 void GXSetNumTexGens(u8 nTexGens)
 {
     CHECK_GXBEGIN(1172, "GXSetNumTexGens");

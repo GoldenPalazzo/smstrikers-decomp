@@ -6,9 +6,9 @@
 class FrontEndTask : public nlTask
 {
 public:
-    virtual void Run(float);
+    virtual void Run(float dt);
     virtual const char* GetName() { return "Front End"; };
-    void HandleE3IdleReset(float);
+    void HandleE3IdleReset(float dt);
 };
 
 #endif // _FRONTENDTASK_H_

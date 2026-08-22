@@ -21,19 +21,19 @@ public:
     EmissionController(EffectsGroup* pEffectsGroup, unsigned short id, eGLView view);
     ~EmissionController();
     void InitializeSystemsFromGroup();
-    void SetPosition(const nlVector3&);
+    void SetPosition(const nlVector3& pos);
     const nlVector3& GetPosition() const;
-    void SetDirection(const nlVector3&);
+    void SetDirection(const nlVector3& dir);
     void SetVelocity(const nlVector3& velocity);
-    void SetPoseAccumulator(const cPoseAccumulator&);
-    void SetAnimController(const cPN_SAnimController&);
+    void SetPoseAccumulator(const cPoseAccumulator& pose);
+    void SetAnimController(const cPN_SAnimController& animController);
     void Die();
     float GetRemainingTime() const;
     bool IsLingering() const;
-    bool Update(float);
+    bool Update(float dt);
     void Render();
-    void SetUpdateCallback(const Function1<void, EmissionController&>&);
-    void SetFinishedCallback(const Function1<void, EmissionController&>&);
+    void SetUpdateCallback(const Function1<void, EmissionController&>& callback);
+    void SetFinishedCallback(const Function1<void, EmissionController&>& callback);
 
     template <typename T>
     void Replay(T& frame);
@@ -63,7 +63,6 @@ public:
     /* 0x84 */ UserEffectSpec** m_pUserEffects;
     /* 0x88 */ bool m_bPoseErrorDisplayed;
 };
-
 
 template <typename T>
 inline void EmissionController::Replay(T& frame)

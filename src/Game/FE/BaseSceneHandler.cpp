@@ -20,7 +20,7 @@ void BaseSceneHandler::AddScreenHandler(BaseScreenHandler* handler)
 /**
  * Offset/Address/Size: 0x38 | 0x802128F0 | size: 0x4
  */
-void BaseSceneHandler::RemoveScreenHandler(BaseScreenHandler*)
+void BaseSceneHandler::RemoveScreenHandler(BaseScreenHandler* pScreenHandler)
 {
 }
 

@@ -7,10 +7,10 @@
 class LoadingManager : public nlTask
 {
 public:
-    LoadingManager(unsigned int);
-    virtual void Run(float);
+    LoadingManager(unsigned int maxEntries);
+    virtual void Run(float dt);
     virtual const char* GetName();
-    void QueueLoader(Loader*);
+    void QueueLoader(Loader* loader);
 
     /* 0x18 */ u32 m_MaxEntries;
     /* 0x1C */ u32 m_CurrEntry;

@@ -194,9 +194,9 @@ struct dxSpace : public dxGeom
     int getNumGeoms();
     virtual dxGeom* getGeom(int i);
 
-    virtual void add(dxGeom*);
-    virtual void remove(dxGeom*);
-    virtual void dirty(dxGeom*);
+    virtual void add(dxGeom* geom);
+    virtual void remove(dxGeom* geom);
+    virtual void dirty(dxGeom* geom);
 
     virtual void cleanGeoms() = 0;
     // turn all dirty geoms into clean geoms by computing their AABBs and any

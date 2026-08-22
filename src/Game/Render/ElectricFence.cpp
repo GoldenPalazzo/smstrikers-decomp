@@ -46,13 +46,6 @@ SlotPool<ElectricFenceGeometry> ElectricFenceGeometry::sElectricFenceGeometryPoo
 static bool sbIsElectricFenceBeingDisplayed;
 static float sfElectricFenceDisplayAngle;
 
-// /**
-//  * Offset/Address/Size: 0x9C | 0x8016C6EC | size: 0x2C
-//  */
-// void nlListAddEnd<ElectricFenceData>(ElectricFenceData**, ElectricFenceData**, ElectricFenceData*)
-// {
-// }
-
 #pragma cpp_extensions on
 #pragma msext on
 
@@ -596,8 +589,6 @@ void StopDisplayingElectricFence()
 
 /**
  * Offset/Address/Size: 0x0 | 0x8016B030 | size: 0x560
- * TODO: 99.97% match - r0/r4 register swap while incrementing counter
- *   and computing useNoSpark.
  */
 void UpdateElectricFence(float fDeltaT)
 {

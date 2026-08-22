@@ -8,13 +8,13 @@ class TestTask : public nlTask
 {
 public:
     TestTask();
-    virtual void Run(float);
+    virtual void Run(float dt);
     virtual const char* GetName() { return "Test"; };
 
     void Initialize();
 
-    void RunSmokeTest(float);
-    void RunFrameRateTest(float);
+    void RunSmokeTest(float dt);
+    void RunFrameRateTest(float dt);
 
     /* 0x18 */ void* mTestLog;
     /* 0x1C */ f32 mTestTimeOut;

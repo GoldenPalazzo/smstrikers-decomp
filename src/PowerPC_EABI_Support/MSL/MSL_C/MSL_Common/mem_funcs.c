@@ -7,6 +7,9 @@
 #define deref_auto_inc(p) *++(p)
 
 /* 80366410-803664CC 360D50 00BC+00 0/0 1/1 0/0 .text            __copy_longs_aligned */
+/**
+ * Offset/Address/Size: 0x214 | 0x8023197C | size: 0xBC
+ */
 void __copy_longs_aligned(void* dst, const void* src, size_t n)
 {
     unsigned long i;
@@ -73,6 +76,9 @@ void __copy_longs_aligned(void* dst, const void* src, size_t n)
 }
 
 /* 80366368-80366410 360CA8 00A8+00 0/0 1/1 0/0 .text            __copy_longs_rev_aligned */
+/**
+ * Offset/Address/Size: 0x16C | 0x802318D4 | size: 0xA8
+ */
 void __copy_longs_rev_aligned(void* dst, const void* src, size_t n)
 {
     unsigned long i;
@@ -124,6 +130,9 @@ void __copy_longs_rev_aligned(void* dst, const void* src, size_t n)
 }
 
 /* 803662A8-80366368 360BE8 00C0+00 0/0 1/1 0/0 .text            __copy_longs_unaligned */
+/**
+ * Offset/Address/Size: 0xAC | 0x80231814 | size: 0xC0
+ */
 void __copy_longs_unaligned(void* dst, const void* src, size_t n)
 {
     unsigned long i, v1, v2;
@@ -188,6 +197,9 @@ void __copy_longs_unaligned(void* dst, const void* src, size_t n)
 }
 
 /* 803661FC-803662A8 360B3C 00AC+00 0/0 1/1 0/0 .text            __copy_longs_rev_unaligned */
+/**
+ * Offset/Address/Size: 0x0 | 0x80231768 | size: 0xAC
+ */
 void __copy_longs_rev_unaligned(void* dst, const void* src, size_t n)
 {
     unsigned long i, v1, v2;

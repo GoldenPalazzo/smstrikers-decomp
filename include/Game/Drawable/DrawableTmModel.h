@@ -20,6 +20,8 @@ public:
         , m_uAnimBoneIndex(other.m_uAnimBoneIndex) {
         };
 
+    const nlMatrix4& GetAnimatedWorldMatrix();
+
     virtual DrawableObject* Clone() const;
     virtual void Draw();
 
@@ -39,7 +41,6 @@ public:
         m_pAnimController->m_fSpeed = speed;
     }
 
-    // virtual void GetAnimationTime();
     /**
      * Offset/Address/Size: 0x30 | 0x80122D14 | size: 0x24
      */
@@ -48,7 +49,6 @@ public:
         m_pAnimController->GetAnimationTime();
     }
 
-    // virtual void SetAnimationTime(float);
     /**
      * Offset/Address/Size: 0x54 | 0x80122D38 | size: 0x24
      */

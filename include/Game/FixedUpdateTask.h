@@ -3,21 +3,19 @@
 
 #include "NL/nlTask.h"
 
-// void 0x8028D334..0x8028D338 | size: 0x4
-
 class FixedUpdateTask : public nlTask
 {
 public:
     virtual void Run(float dt);
     virtual const char* GetName();
 
-    static void DecrementFrameLock(float);
+    static void DecrementFrameLock(float fDeltaT);
     static float GetPhysicsUpdateTick();
 
     static void CallFixedUpdateTasks();
-    static void PostPhysicsAITask(float);
-    static void PrePhysicsAITask(float);
-    static void AIUpdateTask(float);
+    static void PostPhysicsAITask(float fDeltaT);
+    static void PrePhysicsAITask(float fDeltaT);
+    static void AIUpdateTask(float fDeltaT);
 
     FixedUpdateTask();
 

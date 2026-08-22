@@ -8,7 +8,7 @@
 class PhysicsFinitePlane : public PhysicsObject
 {
 public:
-    PhysicsFinitePlane(CollisionSpace*, nlVector3&, nlVector3&, nlVector3&, bool, float);
+    PhysicsFinitePlane(CollisionSpace* collision_space, nlVector3& centre, nlVector3& v1, nlVector3& v2, bool isOneSided, float errorCorrectionDepth);
     virtual int GetObjectType() const { return 0x7; };
 
     /* 0x2C */ float xMin;

@@ -7,7 +7,7 @@
 class PhysicsWall : public PhysicsPlane
 {
 public:
-    PhysicsWall(CollisionSpace*, float, float, float);
+    PhysicsWall(CollisionSpace* collision_space, float a, float b, float c);
 
     virtual ~PhysicsWall() { };
 

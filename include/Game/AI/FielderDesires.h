@@ -7,7 +7,7 @@
 class CommonDesireData
 {
 public:
-    CommonDesireData(eFielderDesireState);
+    CommonDesireData(eFielderDesireState desireType);
 
     /**
      * Offset/Address/Size: 0x0 | 0x80037FD8 | size: 0x3C

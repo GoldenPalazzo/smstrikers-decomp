@@ -4,32 +4,33 @@
 #include "PowerPC_EABI_Support/MetroTRK/trk.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-// typedef u32 NubEventID;
+    // typedef u32 NubEventID;
 
-// typedef struct TRKEvent {
-// 	// NubEventType eventType;
-// 	u32 eventType;
-// 	NubEventID eventID;
-// 	MessageBufferID msgBufID;
-// } TRKEvent;
+    // typedef struct TRKEvent {
+    // 	// NubEventType eventType;
+    // 	u32 eventType;
+    // 	NubEventID eventID;
+    // 	MessageBufferID msgBufID;
+    // } TRKEvent;
 
-// typedef struct TRKEventQueue {
-// 	int _00;
-// 	int count;
-// 	int next;
-// 	TRKEvent events[2];
-// 	NubEventID eventID;
-// } TRKEventQueue;
-// extern TRKEventQueue gTRKEventQueue;
+    // typedef struct TRKEventQueue {
+    // 	int _00;
+    // 	int count;
+    // 	int next;
+    // 	TRKEvent events[2];
+    // 	NubEventID eventID;
+    // } TRKEventQueue;
+    // extern TRKEventQueue gTRKEventQueue;
 
-BOOL TRKGetNextEvent(TRKEvent* event);
-void TRKDestructEvent(TRKEvent*);
-void TRKConstructEvent(TRKEvent*, /*NubEventType*/ u32 EventType);
-DSError TRKPostEvent(TRKEvent*);
-DSError TRKInitializeEventQueue();
+    BOOL TRKGetNextEvent(TRKEvent* event);
+    void TRKDestructEvent(TRKEvent* event);
+    void TRKConstructEvent(TRKEvent* event, /*NubEventType*/ u32 eventType);
+    DSError TRKPostEvent(TRKEvent* event);
+    DSError TRKInitializeEventQueue();
 
 #ifdef __cplusplus
 }

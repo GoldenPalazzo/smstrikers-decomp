@@ -81,6 +81,9 @@ u32 GXEndDisplayList(void)
     return 0;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80251510 | size: 0x70
+ */
 void GXCallDisplayList(void* list, u32 nbytes)
 {
     CHECK_GXBEGIN(254, "GXCallDisplayList");

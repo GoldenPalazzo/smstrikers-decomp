@@ -182,7 +182,7 @@ void MilestoneTrophyScene::SceneCreated()
         pComp->m_bVisible = false;
     }
 
-    eMilestoneColour levelReached = nlSingleton<GameInfoManager>::s_pInstance->GetMilestoneLevel(mTrophy);
+    eMilestoneColour levelReached = nlSingleton<GameInfoManager>::Instance()->GetMilestoneLevel(mTrophy);
     BasicString<char, Detail::TempStringAllocator> fileName(TROPHY_TEXTURE_FILENAMES[(int)mTrophy]);
     if (levelReached == MILESTONE_BLACK)
     {
@@ -220,7 +220,7 @@ void MilestoneTrophyScene::SceneCreated()
     }
     mDoBlockLoad = false;
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->HasTrophy(mTrophy))
+    if (nlSingleton<GameInfoManager>::Instance()->HasTrophy(mTrophy))
     {
         CharBasicString accumulatedString = LexicalCast<CharBasicString, int>(statAccumulated);
 
@@ -346,8 +346,8 @@ void MilestoneTrophyScene::Update(float fDeltaT)
     {
         if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Pop();
-            nlSingleton<GameInfoManager>::s_pInstance->DetermineNextCupScreen();
+            nlSingleton<GameSceneManager>::Instance()->Pop();
+            nlSingleton<GameInfoManager>::Instance()->DetermineNextCupScreen();
             FEAudio::PlayAnimAudioEvent("sfx_accept", false);
             return;
         }
@@ -357,7 +357,7 @@ void MilestoneTrophyScene::Update(float fDeltaT)
     {
         if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_TROPHY_ROOM, SCREEN_BACK, true);
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_TROPHY_ROOM, SCREEN_BACK, true);
             FEAudio::PlayAnimAudioEvent("sfx_back", false);
             return;
         }

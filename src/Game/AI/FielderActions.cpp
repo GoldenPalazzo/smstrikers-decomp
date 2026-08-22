@@ -110,55 +110,6 @@ public:
     static void Flash();
 };
 
-// /**
-//  * Offset/Address/Size: 0x114 | 0x8002FFE8 | size: 0x28
-//  */
-// void FormatImpl<BasicString<char, Detail::TempStringAllocator> >::operator BasicString<char, Detail::TempStringAllocator>() const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8002FED4 | size: 0x114
-//  */
-// void Format<BasicString<char, Detail::TempStringAllocator>, const char*>(const BasicString<char, Detail::TempStringAllocator>&, const char* const&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x118 | 0x8002FE7C | size: 0x40
-//  */
-// void 0x8002FEBC..0x8002FED4 | size : 0x18
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x30 | 0x8002FD94 | size: 0xE8
-//  */
-// void Detail::LexicalCastImpl<BasicString<char, Detail::TempStringAllocator>, const char*>::Do(const char*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8002FD64 | size: 0x30
-//  */
-// void LexicalCast<BasicString<char, Detail::TempStringAllocator>, const char*>(const char* const&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8002FD5C | size: 0x8
-//  */
-// void cNet::GetPostRadius()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8002FD14 | size: 0x48
-//  */
-// void Function1<void, EmissionController&>::FunctorBase::~FunctorBase()
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x8654 | 0x8002F18C | size: 0xB88
  */
@@ -862,7 +813,7 @@ void cFielder::asmRunningWB(float fDeltaT)
 
             m_fDesiredSpeed = 0.0f;
 
-            float fTotalDuration = !IsCaptain() ? g_pGame->m_pGameTweaks->unk2D0 : m_pShotMeter->GetTotalDuration();
+            float fTotalDuration = !IsCaptain() ? g_pGame->m_pGameTweaks->fShotWindupTime : m_pShotMeter->GetTotalDuration();
 
             float fTimeLeft = fTotalDuration - m_pShotMeter->m_fTime;
             if (fTimeLeft < 0.01f)
@@ -1282,9 +1233,6 @@ void cFielder::InitActionDeke(ePadActions padAction)
 /**
  * Offset/Address/Size: 0x74A8 | 0x8002DFE0 | size: 0x330
  */
-/**
- * Offset/Address/Size: 0x74A8 | 0x8002DFE0 | size: 0x330
- */
 void cFielder::ActionDeke(float dt)
 {
     cGlobalPad* pGlobalPad = GetGlobalPad();
@@ -1607,7 +1555,7 @@ void cFielder::InitActionHit(cFielder* pTarget)
 /**
  * Offset/Address/Size: 0x6A8C | 0x8002D5C4 | size: 0x68
  */
-void cFielder::ActionHit(float)
+void cFielder::ActionHit(float fDeltaT)
 {
     if (ShouldStartCrossBlend(7))
     {
@@ -1687,7 +1635,7 @@ bool cFielder::InitActionHitReact(cPlayer* pAttacker, unsigned short desiredFaci
 /**
  * Offset/Address/Size: 0x6658 | 0x8002D190 | size: 0x9C
  */
-void cFielder::ActionHitReact(float)
+void cFielder::ActionHitReact(float fDeltaT)
 {
     m_pCurrentAnimController->TestFrameTrigger(2.0f);
 
@@ -1741,7 +1689,7 @@ void cFielder::InitActionIdleTurn(unsigned short desiredFacingDirection)
 /**
  * Offset/Address/Size: 0x64A4 | 0x8002CFDC | size: 0x98
  */
-void cFielder::ActionIdleTurn(float)
+void cFielder::ActionIdleTurn(float fDeltaT)
 {
     if (m_eAnimID == 0)
     {
@@ -1832,7 +1780,7 @@ void cFielder::InitActionLateOneTimerFromVolley()
 /**
  * Offset/Address/Size: 0x615C | 0x8002CC94 | size: 0x44
  */
-void cFielder::ActionLateOneTimerFromVolley(float)
+void cFielder::ActionLateOneTimerFromVolley(float fDeltaT)
 {
     if (ShouldStartCrossBlend(7))
     {
@@ -1972,7 +1920,7 @@ void cFielder::InitActionLooseBallPass(cFielder* pPassTarget, bool bVolleyPass)
 /**
  * Offset/Address/Size: 0x5B40 | 0x8002C678 | size: 0xAC
  */
-void cFielder::ActionLooseBallPass(float)
+void cFielder::ActionLooseBallPass(float fDeltaT)
 {
     if (m_pCurrentAnimController->TestTrigger(mActionOneTimerVars.fOneTimerAnimTime))
     {
@@ -2015,7 +1963,7 @@ void cFielder::InitActionLooseBallShot(bool bIsChipShot)
 /**
  * Offset/Address/Size: 0x58E0 | 0x8002C418 | size: 0x44
  */
-void cFielder::ActionLooseBallShot(float)
+void cFielder::ActionLooseBallShot(float fDeltaT)
 {
     if (ShouldStartCrossBlend(7))
     {
@@ -2058,7 +2006,7 @@ void cFielder::InitActionOneTimer(int animID, nlVector3& targetPos, float fAdjus
 /**
  * Offset/Address/Size: 0x5778 | 0x8002C2B0 | size: 0x44
  */
-void cFielder::ActionOneTimer(float)
+void cFielder::ActionOneTimer(float fDeltaT)
 {
     if (ShouldStartCrossBlend(7))
     {
@@ -2092,7 +2040,7 @@ void cFielder::InitActionOneTouchPassFromVolley(cPlayer* pPlayer)
 /**
  * Offset/Address/Size: 0x54D4 | 0x8002C00C | size: 0x44
  */
-void cFielder::ActionOneTouchPassFromVolley(float)
+void cFielder::ActionOneTouchPassFromVolley(float fDeltaT)
 {
     if (ShouldStartCrossBlend(7))
     {
@@ -2176,7 +2124,7 @@ void cFielder::InitActionPass(cPlayer* pPassTarget, bool bVolleyPass, bool bAllo
 /**
  * Offset/Address/Size: 0x5020 | 0x8002BB58 | size: 0x84
  */
-void cFielder::ActionPass(float)
+void cFielder::ActionPass(float fDeltaT)
 {
     if (m_pBall != nullptr)
     {
@@ -2209,7 +2157,7 @@ void cFielder::InitActionPostWhistle()
 /**
  * Offset/Address/Size: 0x4F94 | 0x8002BACC | size: 0x4
  */
-void cFielder::ActionPostWhistle(float)
+void cFielder::ActionPostWhistle(float fDeltaT)
 {
     // EMPTY
 }
@@ -2287,7 +2235,7 @@ void cFielder::InitActionBombHitReact(const nlVector3& v3BombPosition)
 
     if (!IsFallenDown(0.0f))
     {
-        PlayAttackReactionSounds(g_pGame->m_pGameTweaks->unk250);
+        PlayAttackReactionSounds(g_pGame->m_pGameTweaks->fBombShockwaveReactionVolume);
     }
 
     InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
@@ -2310,7 +2258,7 @@ void cFielder::InitActionBombHitReact(const nlVector3& v3BombPosition)
 /**
  * Offset/Address/Size: 0x46D0 | 0x8002B208 | size: 0x298
  */
-void cFielder::InitActionBananaReact(const nlVector3&)
+void cFielder::InitActionBananaReact(const nlVector3& fDeltaT)
 {
     CleanUpPowerupEffect();
 
@@ -2843,7 +2791,7 @@ void cFielder::InitActionShot(bool bIsChipShot)
 /**
  * Offset/Address/Size: 0x36B8 | 0x8002A1F0 | size: 0x184
  */
-void cFielder::ActionShot(float)
+void cFielder::ActionShot(float fDeltaT)
 {
     if (m_pBall != nullptr && m_pCurrentAnimController->TestFrameTrigger(1.825f))
     {
@@ -2892,11 +2840,11 @@ void cFielder::ActionShot(float)
     }
 }
 
+inline static float FindSTSDistanceAffectedPercentage(cFielder* pFielder, float fMinAmount, float fMaxAmount);
+
 /**
  * Offset/Address/Size: 0x3180 | 0x80029CB8 | size: 0x538
  */
-inline static float FindSTSDistanceAffectedPercentage(cFielder* pFielder, float fMinAmount, float fMaxAmount);
-
 void cFielder::InitActionShootToScore()
 {
     ActionShootToScoreVars stsVars;
@@ -2943,7 +2891,7 @@ void cFielder::InitActionShootToScore()
 
     KillWindup(this, "ball_sts_windup", true);
 
-    if (IsCaptain() || nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)m_pTeam->m_nSide) == 8)
+    if (IsCaptain() || nlSingleton<GameInfoManager>::Instance()->GetTeam((s16)m_pTeam->m_nSide) == 8)
     {
         mActionShootToScoreVars.isCaptainSts = true;
     }
@@ -2979,7 +2927,7 @@ void cFielder::InitActionShootToScore()
     mActionShootToScoreVars.fShootToScoreActiveTime = 0.0f;
     mActionShootToScoreVars.fFrameButtonDownTime1 = -1.0f;
     mActionShootToScoreVars.fFrameButtonDownTime2 = -1.0f;
-    mActionShootToScoreVars.fGreenRegionWidth = g_pGame->m_pGameTweaks->unk29C;
+    mActionShootToScoreVars.fGreenRegionWidth = g_pGame->m_pGameTweaks->fShootToScorePerfectDistanceTimeMin;
     mActionShootToScoreVars.fMeterFractionTime = 0.0f;
     mActionShootToScoreVars.v3MeterPosition.x = 0.0f;
     mActionShootToScoreVars.v3MeterPosition.y = 0.0f;
@@ -2996,7 +2944,7 @@ void cFielder::InitActionShootToScore()
     ShootToScoreMeter::instance.m_v3OriginalMeterPosition = mActionShootToScoreVars.v3MeterPosition;
     ShootToScoreMeter::instance.m_v3MeterPosition = mActionShootToScoreVars.v3MeterPosition;
 
-    mActionShootToScoreVars.fCaptainYellowWidth = g_pGame->m_pGameTweaks->unk290;
+    mActionShootToScoreVars.fCaptainYellowWidth = g_pGame->m_pGameTweaks->fShootToScoreYellowDistance;
 
     switch (m_eCharacterClass)
     {
@@ -3019,7 +2967,7 @@ void cFielder::InitActionShootToScore()
 
     ShootToScoreMeter::instance.TurnOnMeter(ShootToScoreMeter::REGULAR_SHOOT_TO_SCORE_PHASE1, mActionShootToScoreVars.fCaptainYellowWidth);
 
-    f32 fTimeScale = FindSTSDistanceAffectedPercentage(this, g_pGame->m_pGameTweaks->unk1E8, g_pGame->m_pGameTweaks->unk1EC);
+    f32 fTimeScale = FindSTSDistanceAffectedPercentage(this, g_pGame->m_pGameTweaks->fShootToScoreSlowMoMin, g_pGame->m_pGameTweaks->fShootToScoreSlowMoMax);
     FixedUpdateTask::mTimeScale = fTimeScale;
     ParticleUpdateTask::SetTimeScale(fTimeScale);
 
@@ -3031,7 +2979,7 @@ void cFielder::InitActionShootToScore()
 /**
  * Offset/Address/Size: 0x3158 | 0x80029C90 | size: 0x28
  */
-void MatrixCamFinishedCallback(MatrixEffectCam*)
+void MatrixCamFinishedCallback(MatrixEffectCam* pMatrixCam)
 {
     const float timeScale = 1.0f;
     FixedUpdateTask::mTimeScale = timeScale;
@@ -3050,7 +2998,7 @@ void cFielder::SetupCaptainSTSAnimCam(bool arg1)
 
     BasicString<char, Detail::TempStringAllocator> cameraName = Format(BasicString<char, Detail::TempStringAllocator>("{0}_ShootToScoreCamera"),
         (const char*)GetTeamName(nlSingleton<GameInfoManager>::s_pInstance
-                ->mGameInfo[nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode]
+                ->mGameInfo[nlSingleton<GameInfoManager>::Instance()->mCurrentMode]
                 ->mTeamIndex[(s16)m_pTeam->m_nSide]));
 
     if (mActionShootToScoreVars.captainStsCamera->CameraAnimationExists(cameraName.c_str()))
@@ -3109,7 +3057,7 @@ void cFielder::SetupCaptainSTSAnimCam(bool arg1)
 /**
  * Offset/Address/Size: 0x2D04 | 0x8002983C | size: 0x4
  */
-void OtherMatrixCamFinishedCallback(MatrixEffectCam*)
+void OtherMatrixCamFinishedCallback(MatrixEffectCam* pMatrixCam)
 {
     // EMPTY
 }
@@ -3198,7 +3146,7 @@ inline static float FindSTSDistanceAffectedPercentage(cFielder* pFielder, float 
 /**
  * Offset/Address/Size: 0x17D0 | 0x80028308 | size: 0x147C
  */
-void cFielder::ActionShootToScore(float)
+void cFielder::ActionShootToScore(float fDeltaT)
 {
     if (setCaptainStscaptainStsTargetPos)
     {
@@ -3290,8 +3238,8 @@ void cFielder::ActionShootToScore(float)
             }
             else
             {
-                float fShootToScoreSlowMoMax = g_pGame->m_pGameTweaks->unk1EC;
-                float fShootToScoreSlowMoMin = g_pGame->m_pGameTweaks->unk1E8;
+                float fShootToScoreSlowMoMax = g_pGame->m_pGameTweaks->fShootToScoreSlowMoMax;
+                float fShootToScoreSlowMoMin = g_pGame->m_pGameTweaks->fShootToScoreSlowMoMin;
                 float fTimeScale = FindSTSDistanceAffectedPercentage(this, fShootToScoreSlowMoMin, fShootToScoreSlowMoMax);
                 FixedUpdateTask::mTimeScale = fTimeScale;
                 ParticleUpdateTask::SetTimeScale(fTimeScale);
@@ -3321,14 +3269,14 @@ void cFielder::ActionShootToScore(float)
         float fDiff;
         float fSweetSpotOffset;
         float fMeterPos;
-        if (mActionShootToScoreVars.fFrameButtonDownTime1 < 0.0f && (fMeterPos = mActionShootToScoreVars.fMeterFractionTime) > g_pGame->m_pGameTweaks->unk298)
+        if (mActionShootToScoreVars.fFrameButtonDownTime1 < 0.0f && (fMeterPos = mActionShootToScoreVars.fMeterFractionTime) > g_pGame->m_pGameTweaks->fShootToScorePerfectSecondButtonTime)
         {
-            fSweetSpotOffset = g_pGame->m_pGameTweaks->unk294;
+            fSweetSpotOffset = g_pGame->m_pGameTweaks->fShootToScorePerfectFirstButtonTime;
             fDiff = fSweetSpotOffset - fMeterPos;
             fDiff = fabs(fDiff);
             fDiff = (float)fDiff;
 
-            if (fDiff < g_pGame->m_pGameTweaks->unk29C)
+            if (fDiff < g_pGame->m_pGameTweaks->fShootToScorePerfectDistanceTimeMin)
             {
                 mActionShootToScoreVars.fFrameButtonDownTime1 = fSweetSpotOffset;
                 BeginRumbleAction((eRumbleActionPreset)3, GetGlobalPad());
@@ -3351,7 +3299,7 @@ void cFielder::ActionShootToScore(float)
             {
                 if (m_pCurrentAnimController->m_fTime >= fSweetSpotCenter && m_pCurrentAnimController->m_fTime < fCaptainPercentage)
                 {
-                    fCenter = g_pGame->m_pGameTweaks->unk298;
+                    fCenter = g_pGame->m_pGameTweaks->fShootToScorePerfectSecondButtonTime;
                     fDiffFromCenter = fCenter - fMeterPos2;
                     fDiffFromCenter = fabs(fDiffFromCenter);
                     fDiffFromCenter = (float)fDiffFromCenter;
@@ -3359,7 +3307,7 @@ void cFielder::ActionShootToScore(float)
                     if (fDiffFromCenter < mActionShootToScoreVars.fGreenRegionWidth)
                     {
                         mActionShootToScoreVars.fFrameButtonDownTime2 = fMeterPos2;
-                        if (mActionShootToScoreVars.fFrameButtonDownTime1 == g_pGame->m_pGameTweaks->unk294)
+                        if (mActionShootToScoreVars.fFrameButtonDownTime1 == g_pGame->m_pGameTweaks->fShootToScorePerfectFirstButtonTime)
                         {
                             BeginRumbleAction((eRumbleActionPreset)5, GetGlobalPad());
                             ShootToScoreMeter::instance.meHyper = STS_GOT_HYPER;
@@ -3385,7 +3333,7 @@ void cFielder::ActionShootToScore(float)
 
     if (mActionShootToScoreVars.fFrameButtonDownTime1 > 0.0f)
     {
-        float fSweetSpotOffset = g_pGame->m_pGameTweaks->unk294;
+        float fSweetSpotOffset = g_pGame->m_pGameTweaks->fShootToScorePerfectFirstButtonTime;
         float fSweetSpotPercent = fSweetSpotOffset - mActionShootToScoreVars.fFrameButtonDownTime1;
         fSweetSpotPercent = fabs(fSweetSpotPercent);
         float fAbsSweetSpotPercent = (float)fSweetSpotPercent;
@@ -3412,21 +3360,21 @@ void cFielder::ActionShootToScore(float)
         }
 
         GameTweaks* pGameTweaks = g_pGame->m_pGameTweaks;
-        fMultiplier = fMultiplier * pGameTweaks->unk2A0;
+        fMultiplier = fMultiplier * pGameTweaks->fShootToScorePerfectDistanceTimeMax;
 
-        if (fAbsSweetSpotPercent >= pGameTweaks->unk29C)
+        if (fAbsSweetSpotPercent >= pGameTweaks->fShootToScorePerfectDistanceTimeMin)
         {
-            mActionShootToScoreVars.fGreenRegionWidth = pGameTweaks->unk29C;
+            mActionShootToScoreVars.fGreenRegionWidth = pGameTweaks->fShootToScorePerfectDistanceTimeMin;
         }
         else
         {
-            float fNewWidth = InterpolateRangeClamped(pGameTweaks->unk29C, fMultiplier, mActionShootToScoreVars.fCaptainYellowWidth, pGameTweaks->unk29C, fAbsSweetSpotPercent);
-            float fMinOverMax = g_pGame->m_pGameTweaks->unk29C / g_pGame->m_pGameTweaks->unk2A0;
+            float fNewWidth = InterpolateRangeClamped(pGameTweaks->fShootToScorePerfectDistanceTimeMin, fMultiplier, mActionShootToScoreVars.fCaptainYellowWidth, pGameTweaks->fShootToScorePerfectDistanceTimeMin, fAbsSweetSpotPercent);
+            float fMinOverMax = g_pGame->m_pGameTweaks->fShootToScorePerfectDistanceTimeMin / g_pGame->m_pGameTweaks->fShootToScorePerfectDistanceTimeMax;
             FindSTSDistanceAffectedPercentage(this, 1.0f, fMinOverMax);
 
             mActionShootToScoreVars.fGreenRegionWidth = fNewWidth;
 
-            float fMinimumGreenRegionWidth = g_pGame->m_pGameTweaks->unk29C;
+            float fMinimumGreenRegionWidth = g_pGame->m_pGameTweaks->fShootToScorePerfectDistanceTimeMin;
             fMinimumGreenRegionWidth = fMinimumGreenRegionWidth;
             float fCurrentGreenRegionWidth = mActionShootToScoreVars.fGreenRegionWidth;
             fCurrentGreenRegionWidth = fCurrentGreenRegionWidth;
@@ -3444,7 +3392,7 @@ void cFielder::ActionShootToScore(float)
     {
         if (ShootToScoreMeter::instance.m_MeterType != ShootToScoreMeter::REGULAR_SHOOT_TO_SCORE_PHASE2)
         {
-            ShootToScoreMeter::instance.SetGreenBarPosition(g_pGame->m_pGameTweaks->unk298);
+            ShootToScoreMeter::instance.SetGreenBarPosition(g_pGame->m_pGameTweaks->fShootToScorePerfectSecondButtonTime);
             ShootToScoreMeter::instance.SetGreenRegionWidth(2.0f * mActionShootToScoreVars.fGreenRegionWidth);
         }
     }
@@ -3452,8 +3400,8 @@ void cFielder::ActionShootToScore(float)
     if (m_pCurrentAnimController->TestTrigger(fHalfAnimationTime))
     {
         DoCalcShootToScoreResult(
-            g_pGame->m_pGameTweaks->unk294,
-            g_pGame->m_pGameTweaks->unk298,
+            g_pGame->m_pGameTweaks->fShootToScorePerfectFirstButtonTime,
+            g_pGame->m_pGameTweaks->fShootToScorePerfectSecondButtonTime,
             mActionShootToScoreVars.fFrameButtonDownTime1,
             mActionShootToScoreVars.fFrameButtonDownTime2,
             mActionShootToScoreVars.fGreenRegionWidth);
@@ -3611,7 +3559,7 @@ void cFielder::ActionShootToScore(float)
         {
             if (m_pCurrentAnimController->TestTrigger(shaolinTime))
             {
-                BasicString<char, Detail::TempStringAllocator> effectName(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)m_pTeam->m_nSide)));
+                BasicString<char, Detail::TempStringAllocator> effectName(GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam((s16)m_pTeam->m_nSide)));
                 effectName.AppendInPlace("_captain_sts_effect");
 
                 EffectsGroup* pGroup = fxGetGroup(effectName.c_str());
@@ -4076,7 +4024,7 @@ void cFielder::ActionSlideAttack(float fDeltaTime)
         if (m_tSlideAttackTimer.m_uPackedTime == 0 || bShouldDecelerate)
         {
             mActionSlideAttackVars.eSlideAttackState = SLIDE_ATTACK_DECELERATE;
-            InitMovementDecelerateExponential(g_pGame->m_pGameTweaks->unk2AC);
+            InitMovementDecelerateExponential(g_pGame->m_pGameTweaks->fSlideAttackDeceleration);
             m_tSlideAttackTimer.SetSeconds(g_pGame->m_pGameTweaks->fSlideAttackTimeToDecelrate);
             m_fDesiredSpeed = 0.0f;
         }
@@ -4130,7 +4078,7 @@ void cFielder::InitActionSlideAttackFailReact()
 /**
  * Offset/Address/Size: 0xBE8 | 0x80027720 | size: 0x44
  */
-void cFielder::ActionSlideAttackFailReact(float)
+void cFielder::ActionSlideAttackFailReact(float fDeltaT)
 {
     if (ShouldStartCrossBlend(7))
     {
@@ -4174,7 +4122,7 @@ void cFielder::InitActionSquishReact(const nlVector3& dir)
     m_aActualMovementDirection = polar.a;
 
     EmitTackleImpact(this);
-    PlayAttackReactionSounds(g_pGame->m_pGameTweaks->unk25C);
+    PlayAttackReactionSounds(g_pGame->m_pGameTweaks->fLargeShellHitReactionVolume);
 
     m_fDesiredSpeed = 0.0f;
 }
@@ -4251,7 +4199,7 @@ void cFielder::InitActionSlideAttackReact(cPlayer* pAttacker, bool bSkipEvent)
 /**
  * Offset/Address/Size: 0x3BC | 0x80026EF4 | size: 0x204
  */
-void cFielder::InitActionSTSHitReact(cPlayer*)
+void cFielder::InitActionSTSHitReact(cPlayer* fDeltaT)
 {
     CleanUpPowerupEffect();
 
@@ -4267,7 +4215,7 @@ void cFielder::InitActionSTSHitReact(cPlayer*)
 /**
  * Offset/Address/Size: 0x378 | 0x80026EB0 | size: 0x44
  */
-void cFielder::ActionSlideAttackReact(float)
+void cFielder::ActionSlideAttackReact(float fDeltaT)
 {
     if (ShouldStartCrossBlend(7))
     {
@@ -4278,7 +4226,7 @@ void cFielder::ActionSlideAttackReact(float)
 /**
  * Offset/Address/Size: 0x334 | 0x80026E6C | size: 0x44
  */
-void cFielder::ActionBombReact(float)
+void cFielder::ActionBombReact(float fDeltaT)
 {
     if (ShouldStartCrossBlend(7))
     {
@@ -4289,7 +4237,7 @@ void cFielder::ActionBombReact(float)
 /**
  * Offset/Address/Size: 0x2AC | 0x80026DE4 | size: 0x88
  */
-void cFielder::ActionSTSHitReact(float)
+void cFielder::ActionSTSHitReact(float fDeltaT)
 {
     m_pCurrentAnimController->TestFrameTrigger(3.0f);
 
@@ -4308,7 +4256,7 @@ void cFielder::ActionSTSHitReact(float)
 /**
  * Offset/Address/Size: 0x268 | 0x80026DA0 | size: 0x44
  */
-void cFielder::ActionShellReact(float)
+void cFielder::ActionShellReact(float fDeltaT)
 {
     if (ShouldStartCrossBlend(7))
     {
@@ -4319,7 +4267,7 @@ void cFielder::ActionShellReact(float)
 /**
  * Offset/Address/Size: 0x224 | 0x80026D5C | size: 0x44
  */
-void cFielder::ActionBananaReact(float)
+void cFielder::ActionBananaReact(float fDeltaT)
 {
     if (ShouldStartCrossBlend(7))
     {
@@ -4330,7 +4278,7 @@ void cFielder::ActionBananaReact(float)
 /**
  * Offset/Address/Size: 0x1E0 | 0x80026D18 | size: 0x44
  */
-void cFielder::ActionSquishReact(float)
+void cFielder::ActionSquishReact(float fDeltaT)
 {
     if (ShouldStartCrossBlend(7))
     {
@@ -4359,7 +4307,7 @@ void cFielder::InitActionReceivePass(int animID, nlVector3& v3TargetPos, float f
 /**
  * Offset/Address/Size: 0x68 | 0x80026BA0 | size: 0xB0
  */
-void cFielder::ActionReceivePass(float)
+void cFielder::ActionReceivePass(float fDeltaT)
 {
     if (CanPickupBallFromPass(g_pBall))
     {
@@ -4484,7 +4432,7 @@ bool cFielder::InitAction(eFielderActionState eAction, FuzzyVariant vOpt1, Fuzzy
 /**
  * Offset/Address/Size: 0x0 | 0x80026B38 | size: 0x4
  */
-void cFielder::ActionWait(float)
+void cFielder::ActionWait(float fDeltaT)
 {
     // EMPTY
 }

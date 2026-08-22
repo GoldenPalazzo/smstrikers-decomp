@@ -24,6 +24,9 @@ static u32 ErrorTable[18] = {
 
 #define DIDNT_MATCH 29
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80248A08 | size: 0x11C
+ */
 static u8 ErrorCode2Num(u32 errorCode)
 {
     u32 i;
@@ -71,6 +74,9 @@ static u8 Convert(u32 error)
     return statusCode * 30 + errorNum;
 }
 
+/**
+ * Offset/Address/Size: 0x11C | 0x80248B24 | size: 0x7C
+ */
 void __DVDStoreErrorCode(u32 error)
 {
     OSSramEx* sram;

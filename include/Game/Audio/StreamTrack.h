@@ -52,7 +52,7 @@ public:
         }; // total size: 0xC
 
         StreamFileLookup(const char* name,
-            const Function<bool(const char*, char*, unsigned long)>& fn);
+            const Function<bool(const char*, char*, unsigned long)>& ParamCB);
         void GetFileName(unsigned long StreamId, char* FileName, int MaxLength,
             const char* Param);
 
@@ -99,12 +99,12 @@ public:
         {
             Clear();
         }
-        void CompleteFade(STREAM_FADE_CTRL*);
-        void UpdateFade(STREAM_FADE_CTRL*);
-        bool ChangeFade(GCAudioStreaming::StereoAudioStream*, unsigned long, unsigned long,
-            const Function<FnVoidVoid>&);
-        void AddFade(GCAudioStreaming::StereoAudioStream*, unsigned long, unsigned long,
-            Audio::MasterVolume::VOLUME_GROUP, unsigned long, const Function<FnVoidVoid>&);
+        void CompleteFade(STREAM_FADE_CTRL* fadeCtrl);
+        void UpdateFade(STREAM_FADE_CTRL* pFade);
+        bool ChangeFade(GCAudioStreaming::StereoAudioStream* pStream, unsigned long endVol, unsigned long fadeLength,
+            const Function<FnVoidVoid>& callback);
+        void AddFade(GCAudioStreaming::StereoAudioStream* pStream, unsigned long startVol, unsigned long endVol,
+            Audio::MasterVolume::VOLUME_GROUP volGroup, unsigned long fadeLength, const Function<FnVoidVoid>& callback);
 
         STREAM_FADE_CTRL* FindFade(GCAudioStreaming::StereoAudioStream*);
         bool IsFading(
@@ -158,7 +158,7 @@ public:
         }
     }
 
-    /* 0x0C */ virtual void Update(float);
+    /* 0x0C */ virtual void Update(float dT);
     /* 0x10 */ virtual StreamTrack* CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP) = 0;
     /* 0x14 */ virtual void DestroyAllTracks() = 0;
     static TrackManagerBase* Get();
@@ -267,22 +267,22 @@ public:
     StreamTrack(TrackManagerBase& mgr, Audio::MasterVolume::VOLUME_GROUP volumeGroup);
     ~StreamTrack() { }
 
-    void Update(float);
-    void PlayStream(unsigned long, float, bool, unsigned long, unsigned long, const char*, Audio::MasterVolume::VOLUME_GROUP);
-    void QueueStream(unsigned long, float, bool, unsigned long, const char*, Audio::MasterVolume::VOLUME_GROUP);
+    void Update(float dT);
+    void PlayStream(unsigned long StreamId, float Volume, bool Looping, unsigned long FadeIn, unsigned long ExistingFadeOut, const char* StreamParam, Audio::MasterVolume::VOLUME_GROUP OverrideVolGroup);
+    void QueueStream(unsigned long StreamId, float Volume, bool Looping, unsigned long FadeIn, const char* StreamParam, Audio::MasterVolume::VOLUME_GROUP OverrideVolGroup);
     void ProcessNewHeadStream();
     void SetIdleState();
-    void StopHead(unsigned long);
-    void Stop(unsigned long);
-    void StopQStream(QUEUED_STREAM*);
-    void StopStream(GCAudioStreaming::StereoAudioStream*, bool);
-    void FadeOutDone(QUEUED_STREAM*);
-    void FadeOutDoneStartNext(QUEUED_STREAM*);
-    void StartQStreamFadeout(QUEUED_STREAM*, unsigned long, const Function<FnVoidVoid>&);
-    void Pause(unsigned long, bool);
+    void StopHead(unsigned long Fadeout);
+    void Stop(unsigned long Fadeout);
+    void StopQStream(QUEUED_STREAM* pQueuedStream);
+    void StopStream(GCAudioStreaming::StereoAudioStream* pStream, bool TrackOwns);
+    void FadeOutDone(QUEUED_STREAM* qs);
+    void FadeOutDoneStartNext(QUEUED_STREAM* qs);
+    void StartQStreamFadeout(QUEUED_STREAM* pQS, unsigned long Fadeout, const Function<FnVoidVoid>& callback);
+    void Pause(unsigned long Fadeout, bool bPause);
     void UpdateLPF();
     void Resume();
-    void AttachStream(GCAudioStreaming::StereoAudioStream*, Audio::MasterVolume::VOLUME_GROUP, unsigned long, unsigned long, bool, bool);
+    void AttachStream(GCAudioStreaming::StereoAudioStream* pStream, Audio::MasterVolume::VOLUME_GROUP VolGroup, unsigned long StreamId, unsigned long FadeIn, bool Looping, bool TrackOwnsStream);
 
     static const unsigned long MAX_QUEUED_STREAMS = 4;
 

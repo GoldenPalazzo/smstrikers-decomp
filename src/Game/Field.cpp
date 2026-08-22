@@ -155,7 +155,7 @@ void cField::FixOutOfBoundsPosition(nlVector3& v, float fMinDistanceFromWall)
 /**
  * Offset/Address/Size: 0x0 | 0x800190E4 | size: 0x2C
  */
-void cField::SetFieldDimensions(float, float, float)
+void cField::SetFieldDimensions(float fX, float fY, float fZ)
 {
     mpNet[0]->m_v3NetLocation.x = -mv3FieldPosition.x;
     mpNet[1]->m_v3NetLocation.x = mv3FieldPosition.x;

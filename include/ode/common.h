@@ -323,7 +323,7 @@ typedef double dReal;
      * when the ODE step function updates the body state.
      */
 
-    void dGeomMoved(dGeomID);
+    void dGeomMoved(dGeomID geom);
     dGeomID dGeomGetBodyNext(dGeomID geom);
 
 #ifdef __cplusplus

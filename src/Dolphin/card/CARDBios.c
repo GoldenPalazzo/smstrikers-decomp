@@ -24,6 +24,9 @@ static BOOL OnReset(BOOL f);
 
 static OSResetFunctionInfo ResetFunctionInfo = { OnReset, 127 };
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8023D8D0 | size: 0x4
+ */
 void __CARDDefaultApiCallback(s32 chan, s32 result)
 {
 }
@@ -35,6 +38,9 @@ void __CARDSyncCallback(s32 chan, s32 result)
     OSWakeupThread(&card->threadQueue);
 }
 
+/**
+ * Offset/Address/Size: 0x4 | 0x8023D8D4 | size: 0xD8
+ */
 void __CARDExtHandler(s32 chan, OSContext* context)
 {
     CARDControl* card;
@@ -71,6 +77,9 @@ void __CARDExtHandler(s32 chan, OSContext* context)
     }
 }
 
+/**
+ * Offset/Address/Size: 0xDC | 0x8023D9AC | size: 0x118
+ */
 void __CARDExiHandler(s32 chan, OSContext* context)
 {
     CARDControl* card;
@@ -121,6 +130,9 @@ fatal:
     }
 }
 
+/**
+ * Offset/Address/Size: 0x1F4 | 0x8023DAC4 | size: 0xA8
+ */
 void __CARDTxHandler(s32 chan, OSContext* context)
 {
     CARDControl* card;
@@ -140,6 +152,9 @@ void __CARDTxHandler(s32 chan, OSContext* context)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x29C | 0x8023DB6C | size: 0x84
+ */
 void __CARDUnlockedHandler(s32 chan, OSContext* context)
 {
     CARDControl* card;
@@ -156,6 +171,9 @@ void __CARDUnlockedHandler(s32 chan, OSContext* context)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x320 | 0x8023DBF0 | size: 0xC0
+ */
 s32 __CARDEnableInterrupt(s32 chan, BOOL enable)
 {
     BOOL err;
@@ -176,6 +194,9 @@ s32 __CARDEnableInterrupt(s32 chan, BOOL enable)
     return err ? CARD_RESULT_NOCARD : CARD_RESULT_READY;
 }
 
+/**
+ * Offset/Address/Size: 0x3E0 | 0x8023DCB0 | size: 0xF0
+ */
 s32 __CARDReadStatus(s32 chan, u8* status)
 {
     BOOL err;
@@ -198,6 +219,9 @@ s32 __CARDReadStatus(s32 chan, u8* status)
     return err ? CARD_RESULT_NOCARD : CARD_RESULT_READY;
 }
 
+/**
+ * Offset/Address/Size: 0x4D0 | 0x8023DDA0 | size: 0xF0
+ */
 int __CARDReadVendorID(s32 chan, u16* id)
 {
     BOOL err;
@@ -219,6 +243,9 @@ int __CARDReadVendorID(s32 chan, u16* id)
     return err ? CARD_RESULT_NOCARD : CARD_RESULT_READY;
 }
 
+/**
+ * Offset/Address/Size: 0x5C0 | 0x8023DE90 | size: 0xAC
+ */
 s32 __CARDClearStatus(s32 chan)
 {
     BOOL err;
@@ -287,6 +314,9 @@ s32 __CARDWakeup(s32 chan)
     return CARD_RESULT_READY;
 }
 
+/**
+ * Offset/Address/Size: 0x66C | 0x8023DF3C | size: 0xA4
+ */
 static void TimeoutHandler(OSAlarm* alarm, OSContext* context)
 {
     s32 chan;
@@ -339,6 +369,9 @@ static void SetupTimeoutAlarm(CARDControl* card)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x710 | 0x8023DFE0 | size: 0x2A0
+ */
 static s32 Retry(s32 chan)
 {
     CARDControl* card;
@@ -385,6 +418,9 @@ static s32 Retry(s32 chan)
     return CARD_RESULT_READY;
 }
 
+/**
+ * Offset/Address/Size: 0x9B0 | 0x8023E280 | size: 0x110
+ */
 static void UnlockedCallback(s32 chan, s32 result)
 {
     CARDCallback callback;
@@ -433,6 +469,9 @@ static void UnlockedCallback(s32 chan, s32 result)
     }
 }
 
+/**
+ * Offset/Address/Size: 0xAC0 | 0x8023E390 | size: 0x224
+ */
 static s32 __CARDStart(s32 chan, CARDCallback txCallback, CARDCallback exiCallback)
 {
     BOOL enabled;
@@ -493,6 +532,9 @@ static s32 __CARDStart(s32 chan, CARDCallback txCallback, CARDCallback exiCallba
 #define AD3(x)   ((u8)(((x) >> 7) & 0x03))
 #define BA(x)    ((u8)((x) & 0x7f))
 
+/**
+ * Offset/Address/Size: 0xCE4 | 0x8023E5B4 | size: 0x134
+ */
 s32 __CARDReadSegment(s32 chan, CARDCallback callback)
 {
     CARDControl* card;
@@ -539,6 +581,9 @@ s32 __CARDReadSegment(s32 chan, CARDCallback callback)
     return result;
 }
 
+/**
+ * Offset/Address/Size: 0xE18 | 0x8023E6E8 | size: 0x13C
+ */
 s32 __CARDWritePage(s32 chan, CARDCallback callback)
 {
     CARDControl* card;
@@ -628,6 +673,9 @@ s32 __CARDErase(s32 chan, CARDCallback callback)
     return result;
 }
 
+/**
+ * Offset/Address/Size: 0xF54 | 0x8023E824 | size: 0x110
+ */
 s32 __CARDEraseSector(s32 chan, u32 addr, CARDCallback callback)
 {
     CARDControl* card;
@@ -679,6 +727,9 @@ s32 __CARDEraseSector(s32 chan, u32 addr, CARDCallback callback)
     return result;
 }
 
+/**
+ * Offset/Address/Size: 0x1064 | 0x8023E934 | size: 0xAC
+ */
 void CARDInit(void)
 {
     int chan;
@@ -708,6 +759,9 @@ void CARDInit(void)
     OSRegisterResetFunction(&ResetFunctionInfo);
 }
 
+/**
+ * Offset/Address/Size: 0x1110 | 0x8023E9E0 | size: 0x8
+ */
 u16 __CARDGetFontEncode(void)
 {
     return __CARDEncode;
@@ -728,6 +782,9 @@ u16 __CARDSetFontEncode(u16 encode)
     return prev;
 }
 
+/**
+ * Offset/Address/Size: 0x1118 | 0x8023E9E8 | size: 0x38
+ */
 void __CARDSetDiskID(const DVDDiskID* id)
 {
     __CARDBlock[0].diskID = id ? id : &__CARDDiskNone;
@@ -760,6 +817,9 @@ s32 CARDSetDiskID(s32 chan, const DVDDiskID* diskID)
     return 0;
 }
 
+/**
+ * Offset/Address/Size: 0x1150 | 0x8023EA20 | size: 0xB8
+ */
 s32 __CARDGetControlBlock(s32 chan, CARDControl** pcard)
 {
     BOOL enabled;
@@ -795,6 +855,9 @@ s32 __CARDGetControlBlock(s32 chan, CARDControl** pcard)
     return result;
 }
 
+/**
+ * Offset/Address/Size: 0x1208 | 0x8023EAD8 | size: 0x64
+ */
 s32 __CARDPutControlBlock(CARDControl* card, s32 result)
 {
     BOOL enabled;
@@ -829,6 +892,9 @@ s32 CARDGetResultCode(s32 chan)
     return card->result;
 }
 
+/**
+ * Offset/Address/Size: 0x126C | 0x8023EB3C | size: 0x150
+ */
 s32 CARDFreeBlocks(s32 chan, s32* byteNotUsed, s32* filesNotUsed)
 {
     CARDControl* card;
@@ -936,6 +1002,9 @@ s32 __CARDSync(s32 chan)
     return result;
 }
 
+/**
+ * Offset/Address/Size: 0x13BC | 0x8023EC8C | size: 0x50
+ */
 static BOOL OnReset(BOOL final)
 {
     if (!final)
@@ -957,6 +1026,9 @@ BOOL CARDSetFastMode(BOOL enable)
     return prev ? TRUE : FALSE;
 }
 
+/**
+ * Offset/Address/Size: 0x140C | 0x8023ECDC | size: 0x1C
+ */
 BOOL CARDGetFastMode(void)
 {
     return __CARDFastMode ? TRUE : FALSE;

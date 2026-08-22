@@ -216,13 +216,13 @@ void cPN_Feather::Evaluate(int nodeIndex, float weight, cPoseAccumulator* accum)
 /**
  * Offset/Address/Size: 0x4 | 0x801EF538 | size: 0x4
  */
-void cPN_Feather::BlendRootTrans(nlVector3*, float, float*)
+void cPN_Feather::BlendRootTrans(nlVector3* outBase, float weight, float* scratch)
 {
 }
 
 /**
  * Offset/Address/Size: 0x0 | 0x801EF534 | size: 0x4
  */
-void cPN_Feather::BlendRootRot(unsigned short*, float, float*)
+void cPN_Feather::BlendRootRot(unsigned short* outRot, float weight, float* scratch)
 {
 }

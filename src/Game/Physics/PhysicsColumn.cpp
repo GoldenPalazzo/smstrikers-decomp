@@ -51,6 +51,22 @@ PhysicsColumn::PhysicsColumn(CollisionSpace* collisionSpace, PhysicsWorld* world
     dBodySetAutoDisableFlag(m_bodyID, 0);
 }
 
+void PhysicsColumn::SetDensity(float density)
+{
+    float radius;
+
+    dMass m;
+    dMassSetZero(&m);
+    dGeomColumnGetParams(m_geomID, &radius);
+    dMassSetCappedCylinder(&m, density, 3, radius, 1.0f);
+    dBodySetMass(m_bodyID, &m);
+}
+
+void PhysicsColumn::SetRadius(float radius)
+{
+    dGeomColumnSetParams(m_geomID, radius);
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x801FE888 | size: 0x24
  */

@@ -104,7 +104,7 @@ BraggingRightsOverlay::~BraggingRightsOverlay()
     {
         delete mTicker;
     }
-    nlSingleton<GameInfoManager>::s_pInstance->IsInTournamentMode();
+    nlSingleton<GameInfoManager>::Instance()->IsInTournamentMode();
 }
 
 /**
@@ -158,7 +158,7 @@ void BraggingRightsOverlay::SceneCreated()
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("buttons")));
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->IsInTournamentMode())
+    if (nlSingleton<GameInfoManager>::Instance()->IsInTournamentMode())
     {
         mIsTournamentScene = 1;
         TournamentSceneCreated();
@@ -183,7 +183,7 @@ void BraggingRightsOverlay::IngameSceneCreated()
     PlayerStats userStats[4];
     for (int i = 0; i < 4; i++)
     {
-        PlayerStats playerStats = nlSingleton<StatsTracker>::s_pInstance->mCumulativeUserStats[i];
+        PlayerStats playerStats = nlSingleton<StatsTracker>::Instance()->mCumulativeUserStats[i];
         userStats[i] = playerStats;
     }
 
@@ -198,7 +198,7 @@ void BraggingRightsOverlay::IngameSceneCreated()
             int mainStat;
             int tieBreaker;
 
-            if ((short)nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((unsigned short)user) == -1)
+            if ((short)nlSingleton<GameInfoManager>::Instance()->GetPlayingSide((unsigned short)user) == -1)
                 continue;
 
             switch (award)
@@ -397,7 +397,7 @@ void BraggingRightsOverlay::TournamentSceneCreated()
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("Placement")));
 
-    unsigned long winningNameId = GetLOCCharacterName(nlSingleton<GameInfoManager>::s_pInstance->FindWinningTeam(), false, false);
+    unsigned long winningNameId = GetLOCCharacterName(nlSingleton<GameInfoManager>::Instance()->FindWinningTeam(), false, false);
     pText->SetString(LookupLocHash(winningNameId));
 
     TLComponentInstance* pButtonComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
@@ -468,13 +468,13 @@ void BraggingRightsOverlay::Update(float fDeltaT)
     {
         if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
         {
-            if (nlSingleton<GameInfoManager>::s_pInstance->mCustomTournamentInfo.m_tournMode == TM_KNOCKOUT)
+            if (nlSingleton<GameInfoManager>::Instance()->mCustomTournamentInfo.m_tournMode == TM_KNOCKOUT)
             {
-                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_TOURNAMENT_STANDINGS_FINAL_ANIM, SCREEN_BACK, true);
+                nlSingleton<GameSceneManager>::Instance()->Push(SCENE_TOURNAMENT_STANDINGS_FINAL_ANIM, SCREEN_BACK, true);
             }
             else
             {
-                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_TOURNAMENT_STANDINGS, SCREEN_BACK, true);
+                nlSingleton<GameSceneManager>::Instance()->Push(SCENE_TOURNAMENT_STANDINGS, SCREEN_BACK, true);
             }
             return;
         }
@@ -483,15 +483,15 @@ void BraggingRightsOverlay::Update(float fDeltaT)
     {
         if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
         {
-            nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
+            nlSingleton<GameSceneManager>::Instance()->PopEntireStack();
             if (SaveLoadScene::IsIOEnabled())
             {
-                SaveLoadScene* scene = (SaveLoadScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SAVE, SCREEN_FORWARD, false);
+                SaveLoadScene* scene = (SaveLoadScene*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_SAVE, SCREEN_FORWARD, false);
                 scene->mNextScene = SCENE_MAIN_MENU;
             }
             else
             {
-                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_MAIN_MENU, SCREEN_FORWARD, false);
+                nlSingleton<GameSceneManager>::Instance()->Push(SCENE_MAIN_MENU, SCREEN_FORWARD, false);
             }
             SHMainMenu::mSnapMenuIntoPosition = true;
             SHMainMenu::mLastMenuItem = 0;
@@ -532,7 +532,7 @@ void BraggingRightsOverlay::ChangeTicker(int tickerRow)
     {
         if (mIsTournamentScene)
         {
-            eTeamID winningTeam = nlSingleton<GameInfoManager>::s_pInstance->GetTeamStatsByIndex((unsigned short)mAwardWinners[tickerRow]).mTeamIndex;
+            eTeamID winningTeam = nlSingleton<GameInfoManager>::Instance()->GetTeamStatsByIndex((unsigned short)mAwardWinners[tickerRow]).mTeamIndex;
 
             if (tickerRow == 4)
             {
@@ -578,7 +578,7 @@ BraggingRightsScene::~BraggingRightsScene()
 void BraggingRightsScene::SceneCreated()
 {
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
-    UserInfo& ui = nlSingleton<GameInfoManager>::s_pInstance->mUserInfo;
+    UserInfo& ui = nlSingleton<GameInfoManager>::Instance()->mUserInfo;
     GameInfoManager* info = nlSingleton<GameInfoManager>::Instance();
 
     int wins;
@@ -711,7 +711,7 @@ void BraggingRightsScene::SceneCreated()
         }
     }
 
-    mUserPlace = nlSingleton<GameInfoManager>::s_pInstance->DetermineUserPlacement(NULL);
+    mUserPlace = nlSingleton<GameInfoManager>::Instance()->DetermineUserPlacement(NULL);
 
     BasicString<char, Detail::TempStringAllocator> winString
         = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(wins);
@@ -788,7 +788,7 @@ void BraggingRightsScene::Update(float fDeltaT)
     {
         SceneList nextScene;
 
-        nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
+        nlSingleton<GameSceneManager>::Instance()->PopEntireStack();
 
         info = nlSingleton<GameInfoManager>::s_pInstance;
         nextScene = SCENE_MAIN_MENU;
@@ -804,12 +804,12 @@ void BraggingRightsScene::Update(float fDeltaT)
 
         if (SaveLoadScene::IsIOEnabled())
         {
-            scene = (SaveLoadScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SAVE, SCREEN_FORWARD, false);
+            scene = (SaveLoadScene*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_SAVE, SCREEN_FORWARD, false);
             scene->mNextScene = nextScene;
         }
         else
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(nextScene, SCREEN_FORWARD, false);
+            nlSingleton<GameSceneManager>::Instance()->Push(nextScene, SCREEN_FORWARD, false);
         }
 
         SHMainMenu::mSnapMenuIntoPosition = false;
@@ -821,27 +821,27 @@ void BraggingRightsScene::Update(float fDeltaT)
         info = nlSingleton<GameInfoManager>::s_pInstance;
         if (info->mCurrentMode == GameInfoManager::GM_BOWSER_CUP)
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_STANDINGS_FINAL_ANIM, SCREEN_BACK, true);
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CUP_STANDINGS_FINAL_ANIM, SCREEN_BACK, true);
         }
         else if (info->mCurrentMode == GameInfoManager::GM_SUPER_BOWSER_CUP)
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SUPER_CUP_STANDINGS_FINAL_ANIM, SCREEN_BACK, true);
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_SUPER_CUP_STANDINGS_FINAL_ANIM, SCREEN_BACK, true);
         }
         else if (info->IsInTournamentMode() && info->mCustomTournamentInfo.m_tournMode == TM_KNOCKOUT)
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_TOURNAMENT_STANDINGS_FINAL_ANIM, SCREEN_BACK, true);
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_TOURNAMENT_STANDINGS_FINAL_ANIM, SCREEN_BACK, true);
         }
         else if (info->IsInRegularCupMode())
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_STANDINGS, SCREEN_BACK, true);
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_CUP_STANDINGS, SCREEN_BACK, true);
         }
         else if (info->IsInSuperCupMode())
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SUPER_CUP_STANDINGS, SCREEN_BACK, true);
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_SUPER_CUP_STANDINGS, SCREEN_BACK, true);
         }
         else
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_TOURNAMENT_STANDINGS, SCREEN_BACK, true);
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_TOURNAMENT_STANDINGS, SCREEN_BACK, true);
         }
 
         FEAudio::PlayAnimAudioEvent("sfx_back", false);

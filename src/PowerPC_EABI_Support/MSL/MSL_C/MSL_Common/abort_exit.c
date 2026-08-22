@@ -14,6 +14,9 @@ static int __atexit_curr_func;
 
 static int __aborting;
 
+/**
+ * Offset/Address/Size: 0xF0 | 0x8022B054 | size: 0x9C
+ */
 void abort(void)
 {
     raise(1);
@@ -35,6 +38,9 @@ void abort(void)
     _ExitProcess();
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8022AF64 | size: 0xF0
+ */
 void exit(int status)
 {
     int i;

@@ -212,11 +212,11 @@ inline unsigned long LoadCallbacks::LoadIconDataDoneCB(unsigned long Slot, long 
     gIconCRC = fileheader->IconCRC;
     if (m_TestGameID)
     {
-        m_GameIDTestResult = nlSingleton<GameInfoManager>::s_pInstance->CheckSaveIDChanged((void*)((u8*)m_pReadBuffer + 12));
+        m_GameIDTestResult = nlSingleton<GameInfoManager>::Instance()->CheckSaveIDChanged((void*)((u8*)m_pReadBuffer + 12));
     }
     else
     {
-        nlSingleton<GameInfoManager>::s_pInstance->SetMemoryCardData((void*)((u8*)m_pReadBuffer + 12));
+        nlSingleton<GameInfoManager>::Instance()->SetMemoryCardData((void*)((u8*)m_pReadBuffer + 12));
     }
 
     mRequiredMemoryCardID = g_MemCards[Slot]->GetSerialID();
@@ -263,7 +263,7 @@ unsigned long LoadCallbacks::ReadDoneCB(unsigned long Slot, long Result, void* p
     else
     {
         header = (MCFILE_HEADER*)m_pReadBuffer;
-        configValid = (header->Size == (u32)nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize());
+        configValid = (header->Size == (u32)nlSingleton<GameInfoManager>::Instance()->GetMemoryCardDataSize());
     }
 
     if (!configValid)
@@ -283,7 +283,7 @@ unsigned long LoadCallbacks::ReadDoneCB(unsigned long Slot, long Result, void* p
     }
 
     header = (MCFILE_HEADER*)m_pReadBuffer;
-    filesize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
+    filesize = nlSingleton<GameInfoManager>::Instance()->GetMemoryCardDataSize();
     calculatedcrc = nlChecksum32((MCFILE_HEADER*)m_pReadBuffer + 1, filesize);
     if (header->CRC != calculatedcrc)
     {
@@ -527,14 +527,14 @@ inline long SaveCallbacks::DoSave(unsigned long Slot)
         gIconCRC = m_IconCRC;
     }
 
-    unsigned long DataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize() + 12;
+    unsigned long DataSize = nlSingleton<GameInfoManager>::Instance()->GetMemoryCardDataSize() + 12;
     m_pSaveGameBuffer = nlMalloc(DataSize, 0x20, true);
     GameInfoManager* pGIM = nlSingleton<GameInfoManager>::s_pInstance;
     pGIM->mUserInfo.mSaveID = nlRandom(-1, &nlDefaultSeed);
-    nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardData((void*)((u8*)m_pSaveGameBuffer + 12));
+    nlSingleton<GameInfoManager>::Instance()->GetMemoryCardData((void*)((u8*)m_pSaveGameBuffer + 12));
     MCFILE_HEADER* header = (MCFILE_HEADER*)m_pSaveGameBuffer;
-    header->Size = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-    header->CRC = nlChecksum32((void*)((u8*)m_pSaveGameBuffer + 12), nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize());
+    header->Size = nlSingleton<GameInfoManager>::Instance()->GetMemoryCardDataSize();
+    header->CRC = nlChecksum32((void*)((u8*)m_pSaveGameBuffer + 12), nlSingleton<GameInfoManager>::Instance()->GetMemoryCardDataSize());
     header->IconCRC = gIconCRC;
     void* saveBuffer = m_pSaveGameBuffer;
     cb = &SaveCallbacks::FileWriteCB;
@@ -696,7 +696,7 @@ inline unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result,
         HandleError(Slot, Result);
         return -1;
     }
-    long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize() + 12;
+    long dataSize = nlSingleton<GameInfoManager>::Instance()->GetMemoryCardDataSize() + 12;
 #if defined(VERSION_G4QJ01)
     if (mLastKnownMemCardID.serialID != 0
         && mLastKnownMemCardID.serialID != g_MemCards[Slot]->GetSerialID())
@@ -954,7 +954,7 @@ long SaveLoad::StartLoad(int Slot, void (*pCB)(long), bool PerformLoad, bool tes
 
     if (PerformLoad)
     {
-        long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize() + 0xC;
+        long dataSize = nlSingleton<GameInfoManager>::Instance()->GetMemoryCardDataSize() + 0xC;
         LoadSystem.m_AlignedReadBufferDataSize = dataSize;
         dataSize = (dataSize + 0x1FF) & ~0x1FF;
         LoadSystem.m_AlignedReadBufferDataSize = dataSize;
@@ -1205,7 +1205,7 @@ long SaveLoad::StartMemoryCardIDCheck(int slot, void (*callback)(long))
  */
 int SaveLoad::GetSaveBlockSize(int slot)
 {
-    int dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
+    int dataSize = nlSingleton<GameInfoManager>::Instance()->GetMemoryCardDataSize();
     int numBlocks = 0;
 
     dataSize += 12;

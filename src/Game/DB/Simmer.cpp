@@ -22,8 +22,8 @@ Simulator::Simulator()
 void Simulator::InitializeStats()
 {
     eDifficultyID diff;
-    GameplaySettings::eSkillLevel skillLevel = GameInfoManager::s_pInstance->GetGameplayOptions().SkillLevel;
-    int length = GameInfoManager::s_pInstance->GetGameplayOptions().GameTime;
+    GameplaySettings::eSkillLevel skillLevel = GameInfoManager::Instance()->GetGameplayOptions().SkillLevel;
+    int length = GameInfoManager::Instance()->GetGameplayOptions().GameTime;
     unsigned char doMean;
     unsigned char isMeanFound;
     unsigned char isSDFound;

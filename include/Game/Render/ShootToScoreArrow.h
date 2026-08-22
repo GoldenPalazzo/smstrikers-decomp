@@ -17,8 +17,8 @@ public:
     };
 
     static WorldDarkening& Instance();
-    void Fade(float, float);
-    void UpdateAndRender(float);
+    void Fade(float rate, float to);
+    void UpdateAndRender(float deltaTime);
 
     /* 0x0 */ float mRate;
     /* 0x4 */ float mPos;

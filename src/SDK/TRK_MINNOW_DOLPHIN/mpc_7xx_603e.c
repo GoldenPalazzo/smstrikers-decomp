@@ -4,6 +4,9 @@
  * @note Address: 0x800BFA60
  * @note Size: 0x1B8
  */
+/**
+ * Offset/Address/Size: 0x0 | 0x80228F90 | size: 0x1B8
+ */
 ASM void TRKSaveExtended1Block(void)
 {
 #ifdef __MWERKS__ // clang-format off
@@ -127,6 +130,9 @@ loc_0x150:
 /**
  * @note Address: 0x800BFC18
  * @note Size: 0x1B8
+ */
+/**
+ * Offset/Address/Size: 0x1B8 | 0x80229148 | size: 0x1B8
  */
 ASM void TRKRestoreExtended1Block()
 {

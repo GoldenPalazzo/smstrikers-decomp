@@ -409,7 +409,7 @@ bool BasicStadium::DoInitialize()
     {
         Config stadConfig(Config::ALLOCATE_HIGH);
         char szKey[256];
-        eStadiumID stadiumid = nlSingleton<GameInfoManager>::s_pInstance->GetStadium();
+        eStadiumID stadiumid = nlSingleton<GameInfoManager>::Instance()->GetStadium();
         stadConfig.LoadFromFile("Stadium.ini");
         nlStrNCat<char>(szKey, m_szBaseName, " pitch", 0x100);
         BasicString<char, Detail::TempStringAllocator> terrain = stadConfig.Get<BasicString<char, Detail::TempStringAllocator> >(szKey, BasicString<char, Detail::TempStringAllocator>("grass"));

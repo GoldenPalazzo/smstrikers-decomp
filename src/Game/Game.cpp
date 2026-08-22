@@ -137,7 +137,7 @@ void CreateGame()
         nlSingleton<ScriptQuestionCache>::s_pInstance = new (nlMalloc(sizeof(ScriptQuestionCache), 8, false)) ScriptQuestionCache();
     }
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->GetGameplayOptions().SkillLevel == 0)
+    if (nlSingleton<GameInfoManager>::Instance()->GetGameplayOptions().SkillLevel == 0)
     {
         g_pGame->m_fGameDuration = 10800.0f;
     }
@@ -167,9 +167,9 @@ void CreateGame()
     }
     else
     {
-        eDifficultyID retVal = nlSingleton<GameInfoManager>::s_pInstance->GetSkillLevelAsDifficultyID();
-        eDifficultyID diff0 = nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[0];
-        eDifficultyID diff1 = nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[1];
+        eDifficultyID retVal = nlSingleton<GameInfoManager>::Instance()->GetSkillLevelAsDifficultyID();
+        eDifficultyID diff0 = nlSingleton<GameInfoManager>::Instance()->mCurrentDifficulty[0];
+        eDifficultyID diff1 = nlSingleton<GameInfoManager>::Instance()->mCurrentDifficulty[1];
         ApplyDifficulty(diff0, diff1, retVal);
     }
 }
@@ -184,7 +184,7 @@ void DestroyGame()
 
     if (bWriteStats)
     {
-        nlSingleton<StatsTracker>::s_pInstance->WriteStats(g_pGame->m_fGameDuration, -1.0f, NULL);
+        nlSingleton<StatsTracker>::Instance()->WriteStats(g_pGame->m_fGameDuration, -1.0f, NULL);
     }
 
     nlSingleton<ScriptQuestionCache>::DestroyInstance();
@@ -245,7 +245,7 @@ cGame::cGame()
     mIsPure = GetConfigBool(cfg, "pure_game", false);
     if (GetConfigBool(Config::Global(), "save_stats", false) != false)
     {
-        nlSingleton<StatsTracker>::s_pInstance->WriteCurrentlyPlaying();
+        nlSingleton<StatsTracker>::Instance()->WriteCurrentlyPlaying();
     }
 }
 
@@ -285,9 +285,9 @@ void cGame::DoPerfectPassSlowDown()
 
     GameTweaks* pTweaks;
     pTweaks = g_pGame->m_pGameTweaks;
-    FixedUpdateTask::mTimeScale = pTweaks->unk1E4;
+    FixedUpdateTask::mTimeScale = pTweaks->fPerfectPassSlowMo;
     pTweaks = g_pGame->m_pGameTweaks;
-    ParticleUpdateTask::SetTimeScale(pTweaks->unk1E4);
+    ParticleUpdateTask::SetTimeScale(pTweaks->fPerfectPassSlowMo);
     g_pEventManager->CreateValidEvent(0x46, 0x14);
     Audio::gWorldSFX.Play(Audio::REPLAYSFX_CAMERA_ZOOM_OUT, 100.0f, -1.0f, true, 100.0f);
     Audio::FadeFilterToFullStrength();
@@ -723,7 +723,7 @@ void cGame::ResetPowerups(bool clearPowerUps)
  */
 void cGame::ResetBowser()
 {
-    if (GameInfoManager::s_pInstance->IsTiltingFieldOn() || GameInfoManager::s_pInstance->mIsInStrikers101Mode)
+    if (GameInfoManager::Instance()->IsTiltingFieldOn() || GameInfoManager::Instance()->mIsInStrikers101Mode)
     {
         mBowserTimer.m_uPackedTime = 0;
         return;
@@ -731,17 +731,17 @@ void cGame::ResetBowser()
 
     if (GetConfigBool(Config::Global(), "bowser_repeat", false))
     {
-        g_pGame->m_pGameTweaks->unk308 = 1.0f;
-        g_pGame->m_pGameTweaks->unk30C = 4.0f;
-        g_pGame->m_pGameTweaks->unk310 = -1.0f;
+        g_pGame->m_pGameTweaks->fBowserChance = 1.0f;
+        g_pGame->m_pGameTweaks->fBowserStartTime = 4.0f;
+        g_pGame->m_pGameTweaks->fBowserEndTime = -1.0f;
     }
 
     GameTweaks* pTweaks_ = g_pGame->m_pGameTweaks;
-    if (nlRandomf(1.0f, &nlDefaultSeed) < pTweaks_->unk308)
+    if (nlRandomf(1.0f, &nlDefaultSeed) < pTweaks_->fBowserChance)
     {
         GameTweaks* pTweaks = g_pGame->m_pGameTweaks;
-        float fMinTime = pTweaks->unk30C;
-        float fMaxTime = pTweaks->unk310;
+        float fMinTime = pTweaks->fBowserStartTime;
+        float fMaxTime = pTweaks->fBowserEndTime;
 
         if (fMinTime < 1.0f)
         {
@@ -778,7 +778,7 @@ void cGame::ResetBowser()
  */
 void cGame::ResetBowserTimer(float seconds)
 {
-    if (seconds > 0.0f && !GameInfoManager::s_pInstance->IsTiltingFieldOn() && !GameInfoManager::s_pInstance->mIsInStrikers101Mode)
+    if (seconds > 0.0f && !GameInfoManager::Instance()->IsTiltingFieldOn() && !GameInfoManager::Instance()->mIsInStrikers101Mode)
     {
         mBowserTimer.SetSeconds(seconds);
         return;
@@ -825,7 +825,7 @@ void cGame::Update(float deltaTime)
                 {
                     ChangeGameState(GS_OVERTIME);
 
-                    nlSingleton<StatsTracker>::s_pInstance->mIsOvertime = true;
+                    nlSingleton<StatsTracker>::Instance()->mIsOvertime = true;
                     mInSuddenDeath = true;
                 }
             }
@@ -835,7 +835,7 @@ void cGame::Update(float deltaTime)
                 {
                     ChangeGameState(GS_END_GAME);
 
-                    nlSingleton<StatsTracker>::s_pInstance->TrackWinner(-1);
+                    nlSingleton<StatsTracker>::Instance()->TrackWinner(-1);
                     Audio::FadeFilterFromCurrentToZero();
                     FixedUpdateTask::mTimeScale = 1.0f;
                     ParticleUpdateTask::SetTimeScale(1.0f);
@@ -879,7 +879,7 @@ void cGame::Update(float deltaTime)
 
     UpdatePowerUpObjects(deltaTime);
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->IsTiltingFieldOn())
+    if (nlSingleton<GameInfoManager>::Instance()->IsTiltingFieldOn())
     {
         float tilt = nlMinEquals(nlMaxEquals(2.0f * (float)(g_pTeams[0]->m_nScore - g_pTeams[1]->m_nScore), -6.0f), 6.0f);
         float currentTilt = mfCheatTilt;

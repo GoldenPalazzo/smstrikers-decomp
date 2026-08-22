@@ -556,7 +556,7 @@ bool AudioLoader::ActivateDPL2(bool bEnableDPL2, bool bLoadSampleFile)
 /**
  * Offset/Address/Size: 0x356C | 0x80147338 | size: 0x80
  */
-bool AudioLoader::StartLoad(LoadingManager*)
+bool AudioLoader::StartLoad(LoadingManager* manager)
 {
     if (gbDisableAudio)
     {
@@ -1550,12 +1550,12 @@ void AudioLoader::SetupCharStadiumSoundTable()
     }
 
     eStadiumID stadium;
-    stadium = nlSingleton<GameInfoManager>::s_pInstance->GetStadium();
+    stadium = nlSingleton<GameInfoManager>::Instance()->GetStadium();
 
-    eCharacterClass homeCaptainClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0));
-    eCharacterClass awayCaptainClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1));
-    eCharacterClass homeSidekickClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0));
-    eCharacterClass awaySidekickClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1));
+    eCharacterClass homeCaptainClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::Instance()->GetTeam(0));
+    eCharacterClass awayCaptainClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::Instance()->GetTeam(1));
+    eCharacterClass homeSidekickClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::Instance()->GetSidekick(0));
+    eCharacterClass awaySidekickClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::Instance()->GetSidekick(1));
 
     SoundPropAccessor* homeCaptainPropTable = GetSoundPropTableFromPlayerStadium(stadium, homeCaptainClass);
     SoundPropAccessor* awayCaptainPropTable = GetSoundPropTableFromPlayerStadium(stadium, awayCaptainClass);
@@ -1642,7 +1642,7 @@ void AudioLoader::SetupCharStadiumSoundTable()
  */
 void AudioLoader::SetupBowserStadiumSoundTable(Bowser* bowser)
 {
-    eStadiumID stadium = nlSingleton<GameInfoManager>::s_pInstance->GetStadium();
+    eStadiumID stadium = nlSingleton<GameInfoManager>::Instance()->GetStadium();
     SoundPropAccessor* propTable = GetSoundPropTableFromPlayerStadium(stadium, (eCharacterClass)0x16);
     bowser->m_pCharacterSFX->SetSFX(propTable);
 }
@@ -1804,11 +1804,11 @@ bool AudioLoader::LoadInGameAudioData()
         }
     }
 
-    LoadStadiumSpecificSoundGroups(nlSingleton<GameInfoManager>::s_pInstance->GetStadium());
+    LoadStadiumSpecificSoundGroups(nlSingleton<GameInfoManager>::Instance()->GetStadium());
 
     if (!gbDisableReverb)
     {
-        if (Audio::InitializeReverb(nlSingleton<GameInfoManager>::s_pInstance->GetStadium(), 0) == false)
+        if (Audio::InitializeReverb(nlSingleton<GameInfoManager>::Instance()->GetStadium(), 0) == false)
         {
             nlPrintf("AudioLoader::LoadInGameAudioData(), could not initialize reverb!\n");
         }
@@ -1818,8 +1818,8 @@ bool AudioLoader::LoadInGameAudioData()
         }
     }
 
-    eCharacterClass homeCaptainClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0));
-    eCharacterClass awayCaptainClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1));
+    eCharacterClass homeCaptainClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::Instance()->GetTeam(0));
+    eCharacterClass awayCaptainClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::Instance()->GetTeam(1));
 
     int homeCaptainGroup;
     switch (homeCaptainClass)
@@ -1981,8 +1981,8 @@ bool AudioLoader::LoadInGameAudioData()
         }
     }
 
-    eCharacterClass homeSidekickClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0));
-    eCharacterClass awaySidekickClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1));
+    eCharacterClass homeSidekickClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::Instance()->GetSidekick(0));
+    eCharacterClass awaySidekickClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::Instance()->GetSidekick(1));
 
     int homeSidekickGroup;
     switch (homeSidekickClass)
@@ -2276,7 +2276,7 @@ void AudioLoader::ResetForRematch()
     }
 
     Audio::ResetPauseStatus();
-    nlSingleton<GameInfoManager>::s_pInstance->GetAudioOptions();
+    nlSingleton<GameInfoManager>::Instance()->GetAudioOptions();
     CrowdMood::SetCrowdVolume(0x7f, 0);
 }
 /**
@@ -2295,6 +2295,6 @@ void AudioLoader::InitCrowdFromStateTransition()
     }
 
     Audio::ResetPauseStatus();
-    nlSingleton<GameInfoManager>::s_pInstance->GetAudioOptions();
+    nlSingleton<GameInfoManager>::Instance()->GetAudioOptions();
     CrowdMood::SetCrowdVolume(0x7f, 0);
 }

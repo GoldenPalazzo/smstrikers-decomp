@@ -65,10 +65,10 @@ void IChooseCaptain::Initialize(const char* captainfilename, const char* sidekic
     mAllPushedPlayerSides[3] = -1;
     mNumTotalPushedPlayers = 0;
 
-    mHomeAwayTeam[0] = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0);
-    mHomeAwayTeam[1] = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
-    mHomeAwaySidekicks[0] = nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0);
-    mHomeAwaySidekicks[1] = nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1);
+    mHomeAwayTeam[0] = nlSingleton<GameInfoManager>::Instance()->GetTeam(0);
+    mHomeAwayTeam[1] = nlSingleton<GameInfoManager>::Instance()->GetTeam(1);
+    mHomeAwaySidekicks[0] = nlSingleton<GameInfoManager>::Instance()->GetSidekick(0);
+    mHomeAwaySidekicks[1] = nlSingleton<GameInfoManager>::Instance()->GetSidekick(1);
 
     mDidSwapCaptains[1] = false;
     mDidSwapCaptains[0] = false;
@@ -795,7 +795,7 @@ void IChooseCaptain::PushPlayerWithGameInfoDB()
 
     for (i = 0; i < 4; i++)
     {
-        side = nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide(i);
+        side = nlSingleton<GameInfoManager>::Instance()->GetPlayingSide(i);
         if (g_pFEInput->IsConnected((eFEINPUT_PAD)i))
         {
             if (side != -1)
@@ -814,7 +814,7 @@ void IChooseCaptain::PushPlayerWithGameInfoDB()
         }
         else
         {
-            nlSingleton<GameInfoManager>::s_pInstance->SetPlayingSide(i, -1);
+            nlSingleton<GameInfoManager>::Instance()->SetPlayingSide(i, -1);
         }
     }
 }

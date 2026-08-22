@@ -83,6 +83,9 @@ static u32 bootThisDol;
 static int CallResetFunctions(int final);
 static void Reset(u32 resetCode);
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80257748 | size: 0x84
+ */
 void OSRegisterResetFunction(OSResetFunctionInfo* info)
 {
     ASSERTLINE(208, info->func);
@@ -95,6 +98,9 @@ void OSUnregisterResetFunction(OSResetFunctionInfo* info)
     DEQUEUE_INFO(info, &ResetFunctionQueue);
 }
 
+/**
+ * Offset/Address/Size: 0x84 | 0x802577CC | size: 0xA8
+ */
 int __OSCallResetFunctions(BOOL final)
 {
     OSResetFunctionInfo* info;
@@ -123,6 +129,9 @@ int __OSCallResetFunctions(BOOL final)
 
 #ifdef __GEKKO__
 // clang-format off
+/**
+ * Offset/Address/Size: 0x12C | 0x80257874 | size: 0x70
+ */
 static asm void Reset(u32 resetCode) {
     nofralloc
     b L_000001BC
@@ -166,6 +175,9 @@ L_00000208:
 // clang-format on
 #endif
 
+/**
+ * Offset/Address/Size: 0x19C | 0x802578E4 | size: 0x68
+ */
 static void KillThreads(void)
 {
     OSThread* thread;
@@ -186,6 +198,9 @@ static void KillThreads(void)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x204 | 0x8025794C | size: 0x48
+ */
 void __OSDoHotReset(u32 resetCode)
 {
     OSDisableInterrupts();
@@ -227,6 +242,9 @@ void __OSShutdownDevices(BOOL doRecal)
     KillThreads();
 }
 
+/**
+ * Offset/Address/Size: 0x24C | 0x80257994 | size: 0x200
+ */
 void OSResetSystem(BOOL reset, u32 resetCode, BOOL forceMenu)
 {
     OSSram* sram;
@@ -273,6 +291,9 @@ void OSResetSystem(BOOL reset, u32 resetCode, BOOL forceMenu)
     memset(OSPhysicalToCached(0x30e2), 0, 1);
 }
 
+/**
+ * Offset/Address/Size: 0x44C | 0x80257B94 | size: 0x38
+ */
 u32 OSGetResetCode()
 {
     u32 resetCode;

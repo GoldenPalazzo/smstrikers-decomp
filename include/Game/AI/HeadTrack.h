@@ -4,7 +4,7 @@
 #include "NL/nlMath.h"
 #include "Game/PoseAccumulator.h"
 
-void CalcHeadTrackMatrix(unsigned short, unsigned short, cPoseAccumulator*, int);
+void CalcHeadTrackMatrix(unsigned short spin, unsigned short tilt, cPoseAccumulator* cPoseAccumulator, int headNodeIndex);
 
 class cHeadTrack
 {

@@ -1,3 +1,4 @@
+#define _CTYPE_INLINE
 #include "ctype.h"
 
 #define ctrl __control_char
@@ -49,6 +50,9 @@ unsigned char __lower_map[256] = {
 };
 
 /* 80365470-80365494 35FDB0 0024+00 0/0 4/4 0/0 .text            tolower */
+/**
+ * Offset/Address/Size: 0x0 | 0x802300DC | size: 0x24
+ */
 int tolower(int __c)
 {
     {

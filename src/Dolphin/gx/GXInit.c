@@ -165,6 +165,9 @@ static void DisableWriteGatherPipe(void)
     PPCMthid2(hid2);
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8024AE9C | size: 0xFC
+ */
 static GXTexRegion* __GXDefaultTexRegionCallback(const GXTexObj* t_obj, GXTexMapID id)
 {
     GXTexFmt fmt;
@@ -195,6 +198,9 @@ static GXTexRegion* __GXDefaultTexRegionCallback(const GXTexObj* t_obj, GXTexMap
     }
 }
 
+/**
+ * Offset/Address/Size: 0xFC | 0x8024AF98 | size: 0x24
+ */
 static GXTlutRegion* __GXDefaultTlutRegionCallback(u32 idx)
 {
     if (idx >= 20)
@@ -211,6 +217,9 @@ static void __GXDefaultVerifyCallback(GXWarningLevel level, u32 id, const char* 
 }
 #endif
 
+/**
+ * Offset/Address/Size: 0x120 | 0x8024AFBC | size: 0x190
+ */
 static int __GXShutdown(BOOL final)
 {
     u32 reg;
@@ -279,6 +288,9 @@ static int __GXShutdown(BOOL final)
         (reg) = (u32)__rlwimi((u32)(reg), (val), (shift), (32 - (shift) - (size)), (31 - (shift))); \
     } while (0);
 
+/**
+ * Offset/Address/Size: 0x2B0 | 0x8024B14C | size: 0x1A4
+ */
 void __GXInitRevisionBits(void)
 {
     u32 i;
@@ -325,6 +337,9 @@ void __GXInitRevisionBits(void)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x454 | 0x8024B2F0 | size: 0x600
+ */
 GXFifoObj* GXInit(void* base, u32 size)
 {
     u32 i;
@@ -412,10 +427,10 @@ GXFifoObj* GXInit(void* base, u32 size)
     {
         SET_REG_FIELD(0, __gxVerif->rasRegs[i], 8, 24, 0xFF);
     }
-    memset(__gxVerif->xfRegsDirty, 0, 0x50);
-    memset(__gxVerif->xfMtxDirty, 0, 0x100);
-    memset(__gxVerif->xfNrmDirty, 0, 0x60);
-    memset(__gxVerif->xfLightDirty, 0, 0x80);
+    memset(__gxVerif->xfRegsDirty, 0, sizeof(__gxVerif->xfRegsDirty));
+    memset(__gxVerif->xfMtxDirty, 0, sizeof(__gxVerif->xfMtxDirty));
+    memset(__gxVerif->xfNrmDirty, 0, sizeof(__gxVerif->xfNrmDirty));
+    memset(__gxVerif->xfLightDirty, 0, sizeof(__gxVerif->xfLightDirty));
 #endif
 
     freqBase = __OSBusClock / 500;
@@ -481,6 +496,9 @@ GXFifoObj* GXInit(void* base, u32 size)
     return &FifoObj;
 }
 
+/**
+ * Offset/Address/Size: 0xA54 | 0x8024B8F0 | size: 0x938
+ */
 void __GXInitGX(void)
 {
     GXRenderModeObj* rmode;

@@ -6,7 +6,7 @@
 class FELoader : public Loader
 {
 public:
-    virtual bool StartLoad(LoadingManager*);
+    virtual bool StartLoad(LoadingManager* manager);
 };
 
 #endif // _FELOADER_H_

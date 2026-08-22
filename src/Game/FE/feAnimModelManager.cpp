@@ -25,7 +25,7 @@ public:
     FEAnimModel(eCharacterClass cc, eGLView targetview);
     virtual ~FEAnimModel()
     {
-        FEAnimModelManager::s_pInstance->RemoveModelFromTweakList(this);
+        FEAnimModelManager::Instance()->RemoveModelFromTweakList(this);
         delete pInventorySHierarchy;
     }
     void Update(float fDeltaT);
@@ -135,7 +135,7 @@ void FEAnimModelManager::TweakModelPosition()
 /**
  * Offset/Address/Size: 0x0 | 0x800947AC | size: 0x210
  */
-void FEAnimModelManager::Update(float)
+void FEAnimModelManager::Update(float dt)
 {
     if (!mTweak3dModels)
         return;

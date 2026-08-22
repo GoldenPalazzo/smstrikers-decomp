@@ -2,6 +2,38 @@
 
 static void TRK_fill_mem(void* dest, int val, size_t count);
 
+void* TRK_memmove(void* dest, const void* src, size_t count)
+{
+    u8* s = (u8*)src;
+    u8* d = (u8*)dest;
+
+    if (d <= s)
+    {
+        s--;
+        d--;
+        count++;
+        while (--count)
+        {
+            *++d = *++s;
+        }
+    }
+    else
+    {
+        s += count;
+        d += count;
+        count++;
+        while (--count)
+        {
+            *--d = *--s;
+        }
+    }
+
+    return dest;
+}
+
+/**
+ * Offset/Address/Size: 0x30 | 0x80003130 | size: 0x24
+ */
 INIT void* TRK_memcpy(void* dest, const void* src, size_t count)
 {
     u8* s = (u8*)src - 1;
@@ -15,12 +47,18 @@ INIT void* TRK_memcpy(void* dest, const void* src, size_t count)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80003100 | size: 0x30
+ */
 INIT void* TRK_memset(void* dest, int val, size_t count)
 {
     TRK_fill_mem(dest, val, count);
     return dest;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80227320 | size: 0xB8
+ */
 static void TRK_fill_mem(void* dest, int value, size_t length)
 {
 #define cDest ((u8*)dest)

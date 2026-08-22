@@ -23,13 +23,13 @@ public:
     {
     }
 
-    void EvaluateFrom(DrawableCharacter&);
-    void Blend(const float*, const DrawableBall&, const DrawableBall&);
-    inline void RenderMotionBlur(DrawableObject&) const;
-    void RenderLighting(DrawableObject&) const;
+    void EvaluateFrom(DrawableCharacter& character);
+    void Blend(const float* blendFactors, const DrawableBall& lhs, const DrawableBall& rhs);
+    inline void RenderMotionBlur(DrawableObject& obj) const;
+    void RenderLighting(DrawableObject& obj) const;
     void Render() const;
     void Grab();
-    DrawableCharacter* IndexToPlayer(int) const;
+    DrawableCharacter* IndexToPlayer(int index) const;
 
     /* 0x00 */ RenderSnapshot* mRenderSnapshot; // offset 0x0, size 0x4
     /* 0x04 */ bool mVisible;                   // offset 0x4, size 0x1
@@ -44,9 +44,9 @@ public:
 }; // total size: 0x44
 
 template <>
-void DrawableBall::Replay<LoadFrame>(LoadFrame&);
+void DrawableBall::Replay<LoadFrame>(LoadFrame& frame);
 
 template <>
-void DrawableBall::Replay<SaveFrame>(SaveFrame&);
+void DrawableBall::Replay<SaveFrame>(SaveFrame& frame);
 
 #endif // _DRAWABLEBALL_H_

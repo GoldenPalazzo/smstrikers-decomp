@@ -186,7 +186,7 @@ ContactType PhysicsNPC::Contact(PhysicsObject* obj, dContact* info, int what)
 /**
  * Offset/Address/Size: 0x70 | 0x8013B528 | size: 0x50
  */
-bool PhysicsNPC::SetContactInfo(dContact* contact, PhysicsObject* /*other*/, bool first)
+bool PhysicsNPC::SetContactInfo(dContact* contact, PhysicsObject* other, bool first)
 {
     if (first)
     {

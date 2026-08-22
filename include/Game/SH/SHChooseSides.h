@@ -20,12 +20,12 @@ public:
         PAUSE = 4,
     };
 
-    SHChooseSides2(SHChooseSides2::eCSContext);
+    SHChooseSides2(SHChooseSides2::eCSContext context);
     ~SHChooseSides2();
     void SceneCreated();
-    void UpdateChooseSideComponent(float);
+    void UpdateChooseSideComponent(float fDeltaT);
     void BindChooseSideInstances();
-    void Update(float);
+    void Update(float fDeltaT);
 
     /* 0x1C */ eCSContext mContext;                              // size 0x4
     /* 0x20 */ FEScrollText* m_pTicker;                          // size 0x4

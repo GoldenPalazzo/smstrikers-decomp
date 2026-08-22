@@ -54,11 +54,10 @@ float FixedUpdateTask::GetPhysicsUpdateTick()
 /**
  * Offset/Address/Size: 0x280 | 0x8016E5B0 | size: 0x44
  */
-void FixedUpdateTask::DecrementFrameLock(float f)
+void FixedUpdateTask::DecrementFrameLock(float fDeltaT)
 {
-    float temp_f1 = mfFrameLockTime - f;
-    mfFrameLockTime = temp_f1;
-    if (temp_f1 < 0.f)
+    mfFrameLockTime -= fDeltaT;
+    if (mfFrameLockTime < 0.f)
     {
         nlTaskManager::SetNextState(2);
         mfFrameLockTime = 0.f;

@@ -318,7 +318,6 @@ void SetCharacterShadowUpdated(int index, bool updated)
 
 /**
  * Offset/Address/Size: 0xB44 | 0x80123B78 | size: 0x3E0
- * TODO: 99.82% match - r30 reuse for pPacket in second coplanar block (register allocation difference)
  */
 static void SubdivideAndRender(glQuad3& quad, eGLView view)
 {
@@ -599,7 +598,7 @@ static inline void CastPoint(nlVector3& p, const nlVector3& vLight)
     L.z = Q.z - vLight.z;
 
     float t = -((V.x * Q.x + V.y * Q.y + V.z * Q.z + V.w * Q.w)
-        / (V.x * L.x + V.y * L.y + V.z * L.z + V.w * L.w));
+                / (V.x * L.x + V.y * L.y + V.z * L.z + V.w * L.w));
 
     p.x = Q.x + t * L.x;
     p.y = Q.y + t * L.y;

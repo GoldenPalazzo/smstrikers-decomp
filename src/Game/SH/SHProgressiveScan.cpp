@@ -242,7 +242,7 @@ void ProgressiveScanScene::Update(float fDeltaT)
         mElapsedTime += fDeltaT;
         if (mElapsedTime >= 3.5f || g_pFEInput->JustReleased(FE_ALL_PADS, 0x100, false, NULL) || g_pFEInput->JustReleased(FE_ALL_PADS, 0x200, false, NULL))
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_HEALTH_WARNING, SCREEN_NOTHING, true);
+            nlSingleton<GameSceneManager>::Instance()->Push(SCENE_HEALTH_WARNING, SCREEN_NOTHING, true);
         }
     }
 }

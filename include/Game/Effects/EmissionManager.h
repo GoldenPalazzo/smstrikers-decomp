@@ -4,7 +4,7 @@
 #include "NL/gl/gl.h"
 #include "Game/Effects/EmissionController.h"
 
-void fxSetTerrain(unsigned long);
+void fxSetTerrain(unsigned long terrainID);
 u32 fxGetTerrain();
 
 class LoadFrame;
@@ -36,25 +36,25 @@ protected:
     }
 
 public:
-    static void KillOldest(int, bool);
-    void Replay(SaveFrame&);
-    void Replay(LoadFrame&);
-    static void AddError(const char*, ...);
+    static void KillOldest(int num, bool lingeringOnly);
+    void Replay(SaveFrame& frame);
+    void Replay(LoadFrame& frame);
+    static void AddError(const char* format, ...);
     static void ResetLingerers();
-    static void Destroy(unsigned long, const EffectsGroup*);
-    static void DestroyAll(bool);
-    static bool IsPlaying(unsigned long, const EffectsGroup*);
-    static void Kill(unsigned long, const EffectsGroup*);
-    static bool IsStillAlive(EmissionController*);
+    static void Destroy(unsigned long userData, const EffectsGroup* pEffectsGroup);
+    static void DestroyAll(bool exceptPersistent);
+    static bool IsPlaying(unsigned long userData, const EffectsGroup* pEffectsGroup);
+    static void Kill(unsigned long userData, const EffectsGroup* pEffectsGroup);
+    static bool IsStillAlive(EmissionController* controller);
     static EmissionController* Create(EffectsGroup* pEffectsGroup, unsigned short id);
     static efList* GetContainer();
     static void Render();
-    static void AddEffectsLight(const EffectsLight&);
-    static EffectsLight* GetLight(int);
+    static void AddEffectsLight(const EffectsLight& light);
+    static EffectsLight* GetLight(int index);
     static s32 GetNumLights();
-    static void Update(float);
+    static void Update(float dt);
     static bool Shutdown();
-    static bool Startup(eGLView);
+    static bool Startup(eGLView view);
 
     static EmissionManager& InstanceForReplayOnly();
 

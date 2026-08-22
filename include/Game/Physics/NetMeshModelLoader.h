@@ -77,13 +77,13 @@ public:
     typedef AVLTreeEntry<NetMeshVertex, int> VertexEntry;
     typedef AVLTreeEntry<NetMeshEdge, int> EdgeEntry;
 
-    NetMeshModelLoader(NetMesh&, unsigned long);
+    NetMeshModelLoader(NetMesh& netMesh, unsigned long netMeshDrawableObjectID);
     virtual ~NetMeshModelLoader();
     void LoadGeometryFromModel();
-    void AddEdge(const glModelPacket&, unsigned short, unsigned short);
-    void AddTriangleFromGeometry(const glModelPacket&, unsigned short*);
-    void ReadEdgesFromGeometryPacket(const glModelPacket&);
-    void ProcessEdges(const glModelPacket&, int);
+    void AddEdge(const glModelPacket& packet, unsigned short idx1, unsigned short idx2);
+    void AddTriangleFromGeometry(const glModelPacket& packet, unsigned short* vertexIndices);
+    void ReadEdgesFromGeometryPacket(const glModelPacket& packet);
+    void ProcessEdges(const glModelPacket& packet, int maxVertex);
     void CreateNetMeshFromVertexList();
 
     /* 0x04 */ NetMesh& m_NetMesh;

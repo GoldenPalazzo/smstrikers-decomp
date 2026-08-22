@@ -15,6 +15,9 @@ static u32 strnlen(const char* str, u32 maxlen)
     return maxlen;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80248BA0 | size: 0xF8
+ */
 int DVDCompareDiskID(const DVDDiskID* id1, const DVDDiskID* id2)
 {
 #ifdef DEBUG

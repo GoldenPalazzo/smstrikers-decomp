@@ -267,7 +267,7 @@ cPlayer::~cPlayer()
         m_pBall = NULL;
 
         f32 possessionTime = m_tBallPossessionTimer.GetSeconds();
-        StatsTracker::s_pInstance->TrackStat(STATS_POSSESION_TIME, m_pTeam->m_nSide, m_ID, 100.0f * possessionTime, 0, 0, 0);
+        StatsTracker::Instance()->TrackStat(STATS_POSSESION_TIME, m_pTeam->m_nSide, m_ID, 100.0f * possessionTime, 0, 0, 0);
 
         if (IsPlayingEffect(fxGetGroup("ball_sts_windup")))
         {

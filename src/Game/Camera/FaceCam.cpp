@@ -2,6 +2,10 @@
 
 #include "NL/gl/glMatrix.h"
 
+void FaceCam::SetToUserCharacter()
+{
+}
+
 /**
  * Offset/Address/Size: 0x12C | 0x801A8E6C | size: 0x40
  */

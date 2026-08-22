@@ -1,5 +1,8 @@
 #include "PowerPC_EABI_Support/MetroTRK/trk.h"
 
+/**
+ * Offset/Address/Size: 0x4F4 | 0x80227018 | size: 0x220
+ */
 DSError TRKSuppAccessFile(u32 file_handle, u8* data, size_t* count, DSIOResult* io_result, BOOL need_reply, BOOL read)
 {
     DSError error;
@@ -104,6 +107,9 @@ DSError TRKSuppAccessFile(u32 file_handle, u8* data, size_t* count, DSIOResult* 
     return error;
 }
 
+/**
+ * Offset/Address/Size: 0x314 | 0x80226E38 | size: 0x1E0
+ */
 DSError TRKRequestSend(TRKBuffer* msgBuf, int* bufferId, u32 p1, u32 p2, int p3)
 {
     int error = DS_NoError;
@@ -196,6 +202,9 @@ DSError TRKRequestSend(TRKBuffer* msgBuf, int* bufferId, u32 p1, u32 p2, int p3)
  * @note Address: 0x800BD7EC
  * @note Size: 0x11C
  */
+/**
+ * Offset/Address/Size: 0x1F8 | 0x80226D1C | size: 0x11C
+ */
 DSError HandleOpenFileSupportRequest(const char* path, u8 replyError, u32* param_3, DSIOResult* ioResult)
 {
     DSError error;
@@ -240,6 +249,9 @@ DSError HandleOpenFileSupportRequest(const char* path, u8 replyError, u32* param
 /**
  * @note Address: 0x800BD704
  * @note Size: 0xE8
+ */
+/**
+ * Offset/Address/Size: 0x110 | 0x80226C34 | size: 0xE8
  */
 DSError HandleCloseFileSupportRequest(int replyError, DSIOResult* ioResult)
 {
@@ -286,6 +298,9 @@ DSError HandleCloseFileSupportRequest(int replyError, DSIOResult* ioResult)
 /**
  * @note Address: 0x800BD5F4
  * @note Size: 0x110
+ */
+/**
+ * Offset/Address/Size: 0x0 | 0x80226B24 | size: 0x110
  */
 DSError HandlePositionFileSupportRequest(DSReplyError replyErr, u32* param_2, u8 param_3, DSIOResult* ioResult)
 {

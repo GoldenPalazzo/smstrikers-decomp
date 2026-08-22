@@ -42,7 +42,7 @@ GoalCamera::~GoalCamera()
  * Offset/Address/Size: 0x0 | 0x801AA59C | size: 0x670
  *
  */
-void GoalCamera::Update(float /*dt*/)
+void GoalCamera::Update(float dt)
 {
     nlVector3 vecUp;
     nlVector3 ballpos;

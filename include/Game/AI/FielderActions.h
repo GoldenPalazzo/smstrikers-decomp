@@ -19,10 +19,10 @@ struct PlayerAttackData : public EventData
     /* 0x10 */ float fAttackIntensity;
 }; // total size: 0x14
 
-void HyperStrikeEffectUpdate(EmissionController&);
-void OtherMatrixCamFinishedCallback(MatrixEffectCam*);
-void MatrixCamFinishedCallback(MatrixEffectCam*);
-nlVector3 GetClosestWallPoint(const nlVector3&);
+void HyperStrikeEffectUpdate(EmissionController& controller);
+void OtherMatrixCamFinishedCallback(MatrixEffectCam* pMatrixCam);
+void MatrixCamFinishedCallback(MatrixEffectCam* pMatrixCam);
+nlVector3 GetClosestWallPoint(const nlVector3& pos);
 
 // class Function1<void, EmissionController&>
 // {

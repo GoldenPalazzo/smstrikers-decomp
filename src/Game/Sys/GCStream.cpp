@@ -138,7 +138,7 @@ void GCAudioStreaming::AudioStream::_HdrReadCB(nlFile* pFile, void* pData, unsig
 /**
  * Offset/Address/Size: 0x17BC | 0x801C8F6C | size: 0xC0
  */
-void GCAudioStreaming::AudioStream::_WarmReadCB(nlFile*, void*, unsigned int Length, unsigned long User)
+void GCAudioStreaming::AudioStream::_WarmReadCB(nlFile* pFile, void* pData, unsigned int Length, unsigned long User)
 {
     READ_CB_INFO* pCBInfo = (READ_CB_INFO*)User;
     AudioStream* pStream = pCBInfo->pStream;
@@ -192,7 +192,7 @@ inline void GCAudioStreaming::AudioStreamBuffer::Update(
 /**
  * Offset/Address/Size: 0x1704 | 0x801C8EB4 | size: 0xB8
  */
-void GCAudioStreaming::AudioStream::_UpdateReadCB(nlFile*, void* pData, unsigned int Length, unsigned long User)
+void GCAudioStreaming::AudioStream::_UpdateReadCB(nlFile* pFile, void* pData, unsigned int Length, unsigned long User)
 {
     READ_CB_INFO* pCBInfo = (READ_CB_INFO*)User;
     AudioStream* pStream = pCBInfo->pStream;

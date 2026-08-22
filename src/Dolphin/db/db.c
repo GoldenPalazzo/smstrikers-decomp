@@ -7,6 +7,9 @@ u8* DBStackEnd = DBStack + (sizeof(DBStack) - 8);
 BOOL DBVerbose;
 DBInterface* __DBInterface;
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802441D8 | size: 0x28
+ */
 void DBInit(void)
 {
     __DBInterface = OSPhysicalToCached(0x40);
@@ -21,6 +24,9 @@ BOOL DBIsDebuggerPresent(void)
     return __DBInterface->bPresent;
 }
 
+/**
+ * Offset/Address/Size: 0x28 | 0x80244200 | size: 0x48
+ */
 void __DBExceptionDestinationAux(void)
 {
     u32* contextAddr;
@@ -34,6 +40,9 @@ void __DBExceptionDestinationAux(void)
 }
 
 // clang-format off
+/**
+ * Offset/Address/Size: 0x70 | 0x80244248 | size: 0x10
+ */
 asm void __DBExceptionDestination(void) {
     nofralloc
     mfmsr r3
@@ -43,6 +52,9 @@ asm void __DBExceptionDestination(void) {
 }
 // clang-format on
 
+/**
+ * Offset/Address/Size: 0x80 | 0x80244258 | size: 0x1C
+ */
 BOOL __DBIsExceptionMarked(__OSException exception)
 {
     u32 mask = (1 << exception);
@@ -64,6 +76,9 @@ void __DBSetPresent(u32 value)
     __DBInterface->bPresent = value;
 }
 
+/**
+ * Offset/Address/Size: 0x9C | 0x80244274 | size: 0x50
+ */
 void DBPrintf(char* str, ...)
 {
 }

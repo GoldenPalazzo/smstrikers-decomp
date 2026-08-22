@@ -12,31 +12,26 @@ StatsTracker* nlSingleton<StatsTracker>::s_pInstance = 0;
 
 static const char* STATS_FILE = "statsfile.csv";
 
-// /**
 //  */
 // void Format<BasicString<char, Detail::TempStringAllocator>, const char*, const char*, const char*, const char*, const char*>(const BasicString<char, Detail::TempStringAllocator>&, const char* const&, const char* const&, const char* const&, const char* const&, const char* const&)
 // {
 // }
 
-// /**
 //  */
 // void Format<BasicString<char, Detail::TempStringAllocator>, int, int, int, int, int, int, int>(const BasicString<char, Detail::TempStringAllocator>&, const int&, const int&, const int&, const int&, const int&, const int&, const int&)
 // {
 // }
 
-// /**
 //  */
 // void FormatImpl<BasicString<char, Detail::TempStringAllocator>>::operator%<int>(const int&)
 // {
 // }
 
-// /**
 //  */
 // void BasicString<char, Detail::TempStringAllocator>::AppendInPlace<Detail::TempStringAllocator>(const BasicString<char, Detail::TempStringAllocator>&)
 // {
 // }
 
-// /**
 //  */
 // void BasicString<char, Detail::TempStringAllocator>::Append<Detail::TempStringAllocator>(const BasicString<char, Detail::TempStringAllocator>&) const
 // {
@@ -261,7 +256,7 @@ void StatsTracker::eventHandler(Event* event, void* userData)
 
         assistplayer = data->pAssister;
 
-        s_pInstance->TrackStat(
+        Instance()->TrackStat(
             STATS_GOALS_FOR,
             data->uTeamIndex,
             data->pScorer->m_ID,
@@ -275,11 +270,11 @@ void StatsTracker::eventHandler(Event* event, void* userData)
             float gameDuration = g_pGame->m_fGameDuration;
             if (g_pGame->GetGameTime() >= gameDuration)
             {
-                TeamStats awayStats = s_pInstance->mCurrentTeamStats[0];
-                TeamStats homeStats = s_pInstance->mCurrentTeamStats[1];
+                TeamStats awayStats = Instance()->mCurrentTeamStats[0];
+                TeamStats homeStats = Instance()->mCurrentTeamStats[1];
                 if ((int)awayStats.mPlayerTotalStats.mNumGoalsFor != (int)homeStats.mPlayerTotalStats.mNumGoalsFor)
                 {
-                    s_pInstance->TrackWinner(-1);
+                    Instance()->TrackWinner(-1);
                 }
             }
         }
@@ -312,7 +307,7 @@ void StatsTracker::eventHandler(Event* event, void* userData)
         }
 
         fouler = (cPlayer*)data->pFouler;
-        s_pInstance->TrackStat(STATS_FOULS,
+        Instance()->TrackStat(STATS_FOULS,
             fouler->m_pTeam->m_nSide,
             fouler->m_ID,
             0,
@@ -346,7 +341,7 @@ void StatsTracker::eventHandler(Event* event, void* userData)
             }
         }
 
-        s_pInstance->TrackStat(STATS_SHOTS_ON_GOAL,
+        Instance()->TrackStat(STATS_SHOTS_ON_GOAL,
             data->pShooter->m_pTeam->m_nSide,
             data->pShooter->m_ID,
             0,
@@ -380,7 +375,7 @@ void StatsTracker::eventHandler(Event* event, void* userData)
             }
         }
 
-        s_pInstance->TrackStat(STATS_PASSES_MADE,
+        Instance()->TrackStat(STATS_PASSES_MADE,
             data->pPasser->m_pTeam->m_nSide,
             data->pPasser->m_ID,
             data->mPasserControllerID,
@@ -416,7 +411,7 @@ void StatsTracker::eventHandler(Event* event, void* userData)
 
         if (data->eResult == RECEIVEBALL_PASS_COMPLETE)
         {
-            s_pInstance->TrackStat(STATS_PASSES_RECEIVED,
+            Instance()->TrackStat(STATS_PASSES_RECEIVED,
                 data->pReceiver->m_pTeam->m_nSide,
                 data->pReceiver->m_ID,
                 0,
@@ -426,7 +421,7 @@ void StatsTracker::eventHandler(Event* event, void* userData)
         }
         else if (data->eResult == RECEIVEBALL_PASS_INTERCEPT)
         {
-            s_pInstance->TrackStat(STATS_PASSES_INTERCEPTED,
+            Instance()->TrackStat(STATS_PASSES_INTERCEPTED,
                 data->pReceiver->m_pTeam->m_nSide,
                 data->pReceiver->m_ID,
                 0,
@@ -463,7 +458,7 @@ void StatsTracker::eventHandler(Event* event, void* userData)
         }
 
         thrower = (cPlayer*)data->pThrower;
-        s_pInstance->TrackStat(STATS_POWERUPS_HIT,
+        Instance()->TrackStat(STATS_POWERUPS_HIT,
             thrower->m_pTeam->m_nSide,
             thrower->m_ID,
             data->nThrowerPadID,
@@ -499,7 +494,7 @@ void StatsTracker::eventHandler(Event* event, void* userData)
         }
 
         attacker = (cPlayer*)data->pAttacker;
-        s_pInstance->TrackStat(STATS_STEALS,
+        Instance()->TrackStat(STATS_STEALS,
             attacker->m_pTeam->m_nSide,
             attacker->m_ID,
             data->nAttackerPadID,
@@ -533,7 +528,7 @@ void StatsTracker::eventHandler(Event* event, void* userData)
             }
         }
 
-        s_pInstance->TrackStat(STATS_PERFECT_PASSES,
+        Instance()->TrackStat(STATS_PERFECT_PASSES,
             data->pPasser->m_pTeam->m_nSide,
             data->pPasser->m_ID,
             data->mPasserControllerID,
@@ -567,7 +562,7 @@ void StatsTracker::eventHandler(Event* event, void* userData)
             }
         }
 
-        s_pInstance->TrackStat(STATS_STS_ATTEMPTS,
+        Instance()->TrackStat(STATS_STS_ATTEMPTS,
             data->pShooter->m_pTeam->m_nSide,
             data->pShooter->m_ID,
             0,
@@ -624,17 +619,17 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
         AddUserStatByPad(STATS_GOALS_FOR, param3, param2);
         if (param1 == 6 || param1 == 2)
         {
-            nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_GOALS_FOR_STS, homeaway, playerindex, param2, param3, 0, 0);
+            nlSingleton<StatsTracker>::Instance()->TrackStat(STATS_GOALS_FOR_STS, homeaway, playerindex, param2, param3, 0, 0);
         }
         else if (param1 == 1)
         {
-            nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_GOALS_FOR_ONE_TIMERS, homeaway, playerindex, param2, param3, 0, 0);
+            nlSingleton<StatsTracker>::Instance()->TrackStat(STATS_GOALS_FOR_ONE_TIMERS, homeaway, playerindex, param2, param3, 0, 0);
         }
         if (param0 >= 0)
         {
-            nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_ASSISTS, homeaway, param0, 0, 0, 0, 0);
+            nlSingleton<StatsTracker>::Instance()->TrackStat(STATS_ASSISTS, homeaway, param0, 0, 0, 0, 0);
         }
-        nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_GOALS_AGAINST, ((homeaway == 0) ? 1 : 0), playerindex, param2, 0, 0, 0);
+        nlSingleton<StatsTracker>::Instance()->TrackStat(STATS_GOALS_AGAINST, ((homeaway == 0) ? 1 : 0), playerindex, param2, 0, 0, 0);
         break;
     case STATS_GOALS_AGAINST:
         AddStat(STATS_GOALS_AGAINST, homeaway, -1, param0);
@@ -718,7 +713,7 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
         AddStat(STATS_WIN, homeaway, -1, 1);
         mBasicGameInfo->mFinalScore[0] = param0;
         mBasicGameInfo->mFinalScore[1] = param1;
-        nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_LOSS, ((homeaway == 0) ? 1 : 0), 0, 0, 0, 0, 0);
+        nlSingleton<StatsTracker>::Instance()->TrackStat(STATS_LOSS, ((homeaway == 0) ? 1 : 0), 0, 0, 0, 0, 0);
 
         gameInfoManager = nlSingleton<GameInfoManager>::Instance();
         if (gameInfoManager->IsInCupMode() == 1)
@@ -752,7 +747,7 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
         AddStat(STATS_OT_WIN, homeaway, -1, 1);
         mBasicGameInfo->mFinalScore[0] = param0;
         mBasicGameInfo->mFinalScore[1] = param1;
-        nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_OT_LOSS, ((homeaway == 0) ? 1 : 0), 0, 0, 0, 0, 0);
+        nlSingleton<StatsTracker>::Instance()->TrackStat(STATS_OT_LOSS, ((homeaway == 0) ? 1 : 0), 0, 0, 0, 0, 0);
 
         gameInfoManager = nlSingleton<GameInfoManager>::Instance();
         if (gameInfoManager->IsInCupMode() == 1)
@@ -1090,7 +1085,7 @@ void StatsTracker::GetSortedTeamStats(TeamStats* source, int numsource, int* des
         {
             if (i + 1 >= numsource)
                 break;
-            u16 humanTeams = nlSingleton<GameInfoManager>::s_pInstance->mCurrentCup->mHumanTeams;
+            u16 humanTeams = nlSingleton<GameInfoManager>::Instance()->mCurrentCup->mHumanTeams;
             int a = source[tempsorted[i]].mNumPoints;
             int b = source[tempsorted[i + 1]].mNumPoints;
             unsigned int humanA = IsHumanControlled(humanTeams, source[tempsorted[i]].mTeamIndex);
@@ -1231,9 +1226,9 @@ void StatsTracker::CompileEndOfGameStats()
 
             gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumGamesPlayed++;
 
-            if (nlSingleton<GameInfoManager>::s_pInstance->IsInCupMode())
+            if (nlSingleton<GameInfoManager>::Instance()->IsInCupMode())
             {
-                if (gameInfoMgr->pGetTeamStatsByIndex(team)->mTeamIndex == nlSingleton<GameInfoManager>::s_pInstance->GetUserSelectedCupTeam())
+                if (gameInfoMgr->pGetTeamStatsByIndex(team)->mTeamIndex == nlSingleton<GameInfoManager>::Instance()->GetUserSelectedCupTeam())
                 {
                     AddMilestoneUserStat(STATS_GAMES_PLAYED, 1);
                     AddMilestoneUserStat(STATS_HITS_MADE, mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumHitsMade);
@@ -1260,7 +1255,7 @@ void StatsTracker::CompileEndOfGameStats()
 
     for (int i = 0; i < 4; i++)
     {
-        AccumulateUserStats(&nlSingleton<GameInfoManager>::s_pInstance->mUserStats[i], mCurrentUserStats[i]);
+        AccumulateUserStats(&nlSingleton<GameInfoManager>::Instance()->mUserStats[i], mCurrentUserStats[i]);
     }
 }
 
@@ -1278,13 +1273,13 @@ void StatsTracker::SimulateRemainingGames()
     u16 gamesPerRound;
     u16 roundsTotal;
 
-    round = nlSingleton<GameInfoManager>::s_pInstance->mCurrentCup->mRoundNumber;
-    gamesPerRound = nlSingleton<GameInfoManager>::s_pInstance->GetNumGamesPerRound(round);
+    round = nlSingleton<GameInfoManager>::Instance()->mCurrentCup->mRoundNumber;
+    gamesPerRound = nlSingleton<GameInfoManager>::Instance()->GetNumGamesPerRound(round);
     numGames = gamesPerRound;
-    roundsTotal = nlSingleton<GameInfoManager>::s_pInstance->GetNumRounds();
+    roundsTotal = nlSingleton<GameInfoManager>::Instance()->GetNumRounds();
     numRounds = roundsTotal;
-    userTeam = nlSingleton<GameInfoManager>::s_pInstance->GetUserSelectedCupTeam();
-    cup = nlSingleton<GameInfoManager>::s_pInstance->mCurrentCup;
+    userTeam = nlSingleton<GameInfoManager>::Instance()->GetUserSelectedCupTeam();
+    cup = nlSingleton<GameInfoManager>::Instance()->mCurrentCup;
 
     m_pSimulator->InitializeStats();
 
@@ -1323,7 +1318,7 @@ void StatsTracker::SimulateRemainingGames()
         SetBasicGameInfoPointer(cup->GetGameInfo(round, game), true);
         SimulateGame();
 
-        if (nlSingleton<GameInfoManager>::s_pInstance->GetResultsOfLastUserGame() != RESULT_USER_DOES_NOT_PLAYOFF_QUALIFY)
+        if (nlSingleton<GameInfoManager>::Instance()->GetResultsOfLastUserGame() != RESULT_USER_DOES_NOT_PLAYOFF_QUALIFY)
         {
             CompileEndOfGameStats();
         }
@@ -1345,12 +1340,12 @@ void StatsTracker::SimulateGame()
         if (rand < 20)
         {
             goalsFor++;
-            s_pInstance->TrackStat(STATS_GOALS_FOR, 0, 0, -1, 0, 1, 0);
+            Instance()->TrackStat(STATS_GOALS_FOR, 0, 0, -1, 0, 1, 0);
         }
         else if (rand < 40)
         {
             goalsAgainst++;
-            s_pInstance->TrackStat(STATS_GOALS_FOR, 1, 0, -1, 0, 1, 0);
+            Instance()->TrackStat(STATS_GOALS_FOR, 1, 0, -1, 0, 1, 0);
         }
     }
 
@@ -1358,22 +1353,22 @@ void StatsTracker::SimulateGame()
     {
         if ((int)nlRandom(100, &nlDefaultSeed) < 50)
         {
-            s_pInstance->TrackStat(STATS_GOALS_FOR, 0, 0, -1, 0, 1, 0);
-            s_pInstance->TrackStat(STATS_OT_WIN, 0, 0, goalsFor + 1, goalsAgainst, 0, 0);
+            Instance()->TrackStat(STATS_GOALS_FOR, 0, 0, -1, 0, 1, 0);
+            Instance()->TrackStat(STATS_OT_WIN, 0, 0, goalsFor + 1, goalsAgainst, 0, 0);
         }
         else
         {
-            s_pInstance->TrackStat(STATS_GOALS_FOR, 1, 0, -1, 0, 1, 0);
-            s_pInstance->TrackStat(STATS_OT_WIN, 1, 0, goalsFor, goalsAgainst + 1, 0, 0);
+            Instance()->TrackStat(STATS_GOALS_FOR, 1, 0, -1, 0, 1, 0);
+            Instance()->TrackStat(STATS_OT_WIN, 1, 0, goalsFor, goalsAgainst + 1, 0, 0);
         }
     }
     else if (goalsFor > goalsAgainst)
     {
-        s_pInstance->TrackStat(STATS_WIN, 0, 0, goalsFor, goalsAgainst, 0, 0);
+        Instance()->TrackStat(STATS_WIN, 0, 0, goalsFor, goalsAgainst, 0, 0);
     }
     else
     {
-        s_pInstance->TrackStat(STATS_WIN, 1, 0, goalsFor, goalsAgainst, 0, 0);
+        Instance()->TrackStat(STATS_WIN, 1, 0, goalsFor, goalsAgainst, 0, 0);
     }
 }
 
@@ -1848,7 +1843,7 @@ void StatsTracker::TrackWinner(int forfeitSide)
         scoreLeft = -5;
         if (startScoreRight < 3)
         {
-            nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_GOALS_FOR, 1, 0, 0, 0, 3 - startScoreRight, 0);
+            nlSingleton<StatsTracker>::Instance()->TrackStat(STATS_GOALS_FOR, 1, 0, 0, 0, 3 - startScoreRight, 0);
             scoreRight = 3;
         }
         wasForfeit = 1;
@@ -1858,7 +1853,7 @@ void StatsTracker::TrackWinner(int forfeitSide)
         scoreRight = -5;
         if (startScoreLeft < 3)
         {
-            nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_GOALS_FOR, 0, 0, 0, 0, 3 - startScoreLeft, 0);
+            nlSingleton<StatsTracker>::Instance()->TrackStat(STATS_GOALS_FOR, 0, 0, 0, 0, 3 - startScoreLeft, 0);
             scoreLeft = 3;
         }
         wasForfeit = 1;
@@ -1868,23 +1863,23 @@ void StatsTracker::TrackWinner(int forfeitSide)
 
     if (!mHasGameEnded)
     {
-        if (nlSingleton<GameInfoManager>::s_pInstance->IsInCupOrTournamentMode())
+        if (nlSingleton<GameInfoManager>::Instance()->IsInCupOrTournamentMode())
         {
             if (mIsOvertime && !wasForfeit)
             {
-                nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_OT_WIN, winningSide, 0, scoreLeft, scoreRight, 0, 0);
-                nlSingleton<GameInfoManager>::s_pInstance->SetRoundResult(1, winningSide);
+                nlSingleton<StatsTracker>::Instance()->TrackStat(STATS_OT_WIN, winningSide, 0, scoreLeft, scoreRight, 0, 0);
+                nlSingleton<GameInfoManager>::Instance()->SetRoundResult(1, winningSide);
             }
             else
             {
-                nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_WIN, winningSide, 0, scoreLeft, scoreRight, 0, 0);
-                nlSingleton<GameInfoManager>::s_pInstance->SetRoundResult(0, winningSide);
+                nlSingleton<StatsTracker>::Instance()->TrackStat(STATS_WIN, winningSide, 0, scoreLeft, scoreRight, 0, 0);
+                nlSingleton<GameInfoManager>::Instance()->SetRoundResult(0, winningSide);
             }
-            nlSingleton<StatsTracker>::s_pInstance->CompileEndOfGameStats();
+            nlSingleton<StatsTracker>::Instance()->CompileEndOfGameStats();
         }
         else
         {
-            nlSingleton<StatsTracker>::s_pInstance->mNumGamesWon[winningSide]++;
+            nlSingleton<StatsTracker>::Instance()->mNumGamesWon[winningSide]++;
         }
         mHasGameEnded = 1;
     }
@@ -1901,7 +1896,7 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
 
     if (gameDuration <= 0.0f)
     {
-        gameDuration = (float)nlSingleton<GameInfoManager>::s_pInstance->GetGameplayOptions().GameTime;
+        gameDuration = (float)nlSingleton<GameInfoManager>::Instance()->GetGameplayOptions().GameTime;
     }
 
     if (filename == 0)
@@ -1964,11 +1959,11 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
     int i;
     for (i = 0; i < 4; i++)
     {
-        if (nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((unsigned short)i) == 0)
+        if (nlSingleton<GameInfoManager>::Instance()->GetPlayingSide((unsigned short)i) == 0)
         {
             numHumans[0]++;
         }
-        else if (nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((unsigned short)i) == 1)
+        else if (nlSingleton<GameInfoManager>::Instance()->GetPlayingSide((unsigned short)i) == 1)
         {
             numHumans[1]++;
         }
@@ -2007,22 +2002,22 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
     if (allCaptains)
     {
         stats = Format(BasicString<char, Detail::TempStringAllocator>("{0},{1},{2},{3},{4},{5},{6},"),
-            GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)),
-            GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)),
-            GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1)),
-            GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1)),
-            TheWorldLoader.GetStadiumFilename(nlSingleton<GameInfoManager>::s_pInstance->GetStadium()),
+            GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam(0)),
+            GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam(0)),
+            GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam(1)),
+            GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam(1)),
+            TheWorldLoader.GetStadiumFilename(nlSingleton<GameInfoManager>::Instance()->GetStadium()),
             gameDuration,
             gameTime);
     }
     else
     {
         stats = Format(BasicString<char, Detail::TempStringAllocator>("{0},{1},{2},{3},{4},{5},{6},"),
-            GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)),
-            GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0)),
-            GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1)),
-            GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1)),
-            TheWorldLoader.GetStadiumFilename(nlSingleton<GameInfoManager>::s_pInstance->GetStadium()),
+            GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam(0)),
+            GetSidekickName(nlSingleton<GameInfoManager>::Instance()->GetSidekick(0)),
+            GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam(1)),
+            GetSidekickName(nlSingleton<GameInfoManager>::Instance()->GetSidekick(1)),
+            TheWorldLoader.GetStadiumFilename(nlSingleton<GameInfoManager>::Instance()->GetStadium()),
             gameDuration,
             gameTime);
     }
@@ -2031,7 +2026,7 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
     for (team = 0; team < 2; team++)
     {
         int possession = (int)(mCurrentTeamStats[team].mPlayerTotalStats.mBallPossessionTime / 100);
-        int difficulty = (int)nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[(short)team];
+        int difficulty = (int)nlSingleton<GameInfoManager>::Instance()->mCurrentDifficulty[(short)team];
 
         stats = stats.Append(Format(BasicString<char, Detail::TempStringAllocator>("{0},"), numHumans[team]))
                     .Append(Format(BasicString<char, Detail::TempStringAllocator>("{0},{1},{2},{3},{4},{5},{6},"),
@@ -2069,7 +2064,7 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
  */
 void StatsTracker::AwardCup(eUserGameResult gameResult)
 {
-    eUserGameResult neededResult = nlSingleton<GameInfoManager>::s_pInstance->mCupMatchRequirement;
+    eUserGameResult neededResult = nlSingleton<GameInfoManager>::Instance()->mCupMatchRequirement;
     mIsUserCupWinner = false;
 
     if (neededResult == RESULT_USER_LOSES)
@@ -2116,9 +2111,9 @@ void StatsTracker::AwardCup(eUserGameResult gameResult)
 
     if (mIsUserCupWinner == true)
     {
-        eTrophyType tourneyCup = nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode();
-        nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mTrophies[tourneyCup / 8] |= (1 << (tourneyCup % 8));
-        nlSingleton<GameInfoManager>::s_pInstance->SetResultsOfLastUserGame(RESULT_CUP_WIN);
+        eTrophyType tourneyCup = nlSingleton<GameInfoManager>::Instance()->GetTrophyTypeByCurrentMode();
+        nlSingleton<GameInfoManager>::Instance()->mUserInfo.mTrophies[tourneyCup / 8] |= (1 << (tourneyCup % 8));
+        nlSingleton<GameInfoManager>::Instance()->SetResultsOfLastUserGame(RESULT_CUP_WIN);
     }
 }
 
@@ -2143,11 +2138,11 @@ void StatsTracker::WriteCurrentlyPlaying() const
     }
 
     BasicString<char, Detail::TempStringAllocator> s = Format<BasicString<char, Detail::TempStringAllocator>, const char*, const char*, const char*, const char*, const char*>(BasicString<char, Detail::TempStringAllocator>("Home: {0} with {1}\nAway: {2} with {3}\nStadium: {4}\n"),
-        GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)),
-        GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0)),
-        GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1)),
-        GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1)),
-        TheWorldLoader.GetStadiumFilename(nlSingleton<GameInfoManager>::s_pInstance->GetStadium()));
+        GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam(0)),
+        GetSidekickName(nlSingleton<GameInfoManager>::Instance()->GetSidekick(0)),
+        GetTeamName(nlSingleton<GameInfoManager>::Instance()->GetTeam(1)),
+        GetSidekickName(nlSingleton<GameInfoManager>::Instance()->GetSidekick(1)),
+        TheWorldLoader.GetStadiumFilename(nlSingleton<GameInfoManager>::Instance()->GetStadium()));
 
     fwrite(s.c_str(), 1, s.size(), f);
     fclose(f);

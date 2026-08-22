@@ -39,17 +39,17 @@ public:
     {
     }
 
-    void TurnOnMeter(ShootToScoreMeter::STSMeterType, float);
-    void RumbleMeter(float, float, float);
+    void TurnOnMeter(ShootToScoreMeter::STSMeterType type, float yellowWidth);
+    void RumbleMeter(float rumbleIntensity, float xOffset, float zOffset);
     void DrawMeter();
-    void DrawColouredRegion(float, float, const nlColour&, const nlColour&, nlMatrix4, float);
-    void DrawIndicatorBar(float, const nlColour&, const nlMatrix4&, float);
-    void DrawTrailIndicatorBar(int, float, const nlColour&, const nlMatrix4&, float);
-    void UpdateAndRender(float);
-    void SetWhiteBarPosition(float);
-    void SetSavedWhiteBarPosition(float);
-    void SetGreenBarPosition(float);
-    void SetGreenRegionWidth(float);
+    void DrawColouredRegion(float startAngle, float endAngle, const nlColour& startColour, const nlColour& endColour, nlMatrix4 meterMatrix, float scale);
+    void DrawIndicatorBar(float angle, const nlColour& colour, const nlMatrix4& meterMatrix, float scale);
+    void DrawTrailIndicatorBar(int index, float angleDifference, const nlColour& colour, const nlMatrix4& meterMatrix, float scale);
+    void UpdateAndRender(float fDeltaT);
+    void SetWhiteBarPosition(float position);
+    void SetSavedWhiteBarPosition(float position);
+    void SetGreenBarPosition(float position);
+    void SetGreenRegionWidth(float width);
     void DrawCaptainMeter();
 
     /* 0x00 */ nlVector3 m_v3MeterPosition;            // size 0xC

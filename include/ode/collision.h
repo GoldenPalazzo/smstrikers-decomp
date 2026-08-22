@@ -63,7 +63,7 @@ extern "C"
 
     int dCollide(dGeomID o1, dGeomID o2, int flags, dContactGeom* contact, int skip);
     void dSpaceCollide(dSpaceID space, void* data, dNearCallback* callback);
-    void dSpaceCollide2(dGeomID o1, dGeomID o2, void* data,
+    void dSpaceCollide2(dGeomID g1, dGeomID g2, void* data,
         dNearCallback* callback);
 
     /* ************************************************************************ */

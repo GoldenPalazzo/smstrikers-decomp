@@ -77,7 +77,7 @@ float SpaceSearch::FindBestPosition(nlVector3& v3Dest, const nlVector3& v3Center
         fMaxRadius = 4.0f;
     }
 
-    m_unk_0x0C = fMaxRadius;
+    m_fMaxRadius = fMaxRadius;
 
     aFromAngle = (int)((float)aDirection - 0.5f * (float)aSearchCone);
     aToAngle = (int)((float)aDirection + 0.5f * (float)aSearchCone);
@@ -202,7 +202,7 @@ SSearchOpenLane::SSearchOpenLane(cPlayer* pPlayer1, cPlayer* pPlayer2)
 /**
  * Offset/Address/Size: 0x1060 | 0x800639B0 | size: 0x11C
  */
-float SSearchOpenLane::EvaluatePosition(const nlVector3& position, const nlVector3&, eFieldDirection, unsigned short)
+float SSearchOpenLane::EvaluatePosition(const nlVector3& position, const nlVector3& v3CenterPos, eFieldDirection eSearchDir, unsigned short aDirection)
 {
     float fWeightedSum = 0.0f;
     float fTotalWeight = 0.0f;
@@ -243,7 +243,7 @@ float SSearchOpenLane::EvaluatePosition(const nlVector3& position, const nlVecto
 /**
  * Offset/Address/Size: 0xF18 | 0x80063868 | size: 0x148
  */
-float SSearchIdealShot::EvaluatePosition(const nlVector3& position, const nlVector3&, eFieldDirection, unsigned short)
+float SSearchIdealShot::EvaluatePosition(const nlVector3& position, const nlVector3& v3CenterPos, eFieldDirection eSearchDir, unsigned short aDirection)
 {
     float fWeightedSum = 0.0f;
     float fTotalWeight = 0.0f;
@@ -425,7 +425,7 @@ float SSearchBestPass::EvaluatePosition(const nlVector3& position, const nlVecto
     nlVector2 v2GoalLine = { 0.0f, 0.0f };
     v2GoalLine.x = cField::GetGoalLineX(-m_fNetDirection);
 
-    float fIdealPositionScore = CalcIdealShootingPositionScore(position, v3OtherPosition, v2GoalLine, m_unk_0x0C);
+    float fIdealPositionScore = CalcIdealShootingPositionScore(position, v3OtherPosition, v2GoalLine, m_fMaxRadius);
     float fIdealPositionWeight = InterpolateRangeClamped(1.0f, 1.5f, 0.0f, 1.0f, 1.0f - fInOffensiveZone);
     fWeightedSum += 0.2f * (fIdealPositionScore * fIdealPositionWeight);
     fTotalWeight += 0.2f * fIdealPositionWeight;
@@ -594,7 +594,7 @@ SSearchCutAndBreak::SSearchCutAndBreak(cPlayer* pPlayer)
 /**
  * Offset/Address/Size: 0x5C | 0x800629AC | size: 0xFC
  */
-float SSearchCutAndBreak::EvaluatePosition(const nlVector3& v3TestPosition, const nlVector3&, eFieldDirection, unsigned short)
+float SSearchCutAndBreak::EvaluatePosition(const nlVector3& v3TestPosition, const nlVector3& v3CenterPos, eFieldDirection eSearchDir, unsigned short aDirection)
 {
     float fWeightedSum = 0.0f;
     float fTotalWeight = 0.0f;

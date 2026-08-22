@@ -147,6 +147,9 @@ static inline const nlVector3& GetBallVelocity(cBall* pBall)
     return pBall->m_v3Velocity;
 }
 
+/**
+ * Offset/Address/Size: 0x7188 | 0x80037F0C | size: 0xCC
+ */
 CommonDesireData::CommonDesireData(eFielderDesireState desireType)
 {
     m_DesireType = desireType;
@@ -233,6 +236,9 @@ bool cFielder::InitDesire(const sDesireParams* pParams, float fConfidence)
  */
 static const float g_fPostWhistleDelayToFinishAction = 2.0f;
 
+/**
+ * Offset/Address/Size: 0x620C | 0x80036F90 | size: 0x1BC
+ */
 bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, float fDuration, FuzzyVariant opt1, FuzzyVariant opt2)
 {
     bool bDesireInitSuccess;
@@ -603,6 +609,9 @@ void cFielder::UpdateDesireState(float fDeltaT)
         StartRunning();
     }
 }
+/**
+ * Offset/Address/Size: 0x469C | 0x80035420 | size: 0x64
+ */
 void cFielder::EndDesire(bool bCheckTimer)
 {
     bool bShouldSetDuration = true;
@@ -664,9 +673,6 @@ void cFielder::CleanUpDesire(eFielderDesireState eNewDesireState)
     m_eFielderDesireState = FIELDERDESIRE_NEED_DESIRE;
 }
 
-/**
- * Offset/Address/Size: 0x4204 | 0x80034F88 | size: 0x3C4
- */
 static const float g_fLooseBallActionRethinkTime = 0.3f;
 
 void cFielder::CleanDesireOneTimer()
@@ -699,6 +705,9 @@ void cFielder::InitDesireInterceptBall()
     m_pAvoidance->SetThingsToAvoid(0x1F);
 }
 
+/**
+ * Offset/Address/Size: 0x4204 | 0x80034F88 | size: 0x3C4
+ */
 void cFielder::DesireInterceptBall(float fDeltaT)
 {
     bool bTrackBall;
@@ -849,7 +858,7 @@ void cFielder::DesireInterceptBall(float fDeltaT)
     }
 }
 
-void cFielder::DesireFallThrough(float)
+void cFielder::DesireFallThrough(float fDeltaT)
 {
     if (GetGlobalPad() != NULL)
     {
@@ -2475,7 +2484,7 @@ void cFielder::InitDesirePass(cPlayer* pTarget, bool bHighPass)
     m_pAvoidance->SetThingsToAvoid(0);
 }
 
-void cFielder::DesirePass(float)
+void cFielder::DesirePass(float fDeltaT)
 {
     if (m_pBall != NULL)
     {
@@ -2500,12 +2509,12 @@ void cFielder::InitDesireShoot(bool bShootToScore, bool bChipShot)
             bool bDidHit = GenerateFilteredRandom() < pSkillTweaks->Shoot_CaptainS2SFirstButtonChance;
             if (bDidHit)
             {
-                m_DesireCommonVars.fMisc = g_pGame->m_pGameTweaks->unk294;
+                m_DesireCommonVars.fMisc = g_pGame->m_pGameTweaks->fShootToScorePerfectFirstButtonTime;
             }
             else
             {
                 float fRandomError = (float)(0.6f * GenerateFilteredRandom() - 0.30000001192092896);
-                m_DesireCommonVars.fMisc = fRandomError + g_pGame->m_pGameTweaks->unk294;
+                m_DesireCommonVars.fMisc = fRandomError + g_pGame->m_pGameTweaks->fShootToScorePerfectFirstButtonTime;
             }
             SetDesireDuration(100000000.0f, true);
             mActionShotVars.bIsShootToScore = true;
@@ -2519,7 +2528,7 @@ void cFielder::InitDesireShoot(bool bShootToScore, bool bChipShot)
     }
 }
 
-void cFielder::DesireShoot(float)
+void cFielder::DesireShoot(float fDeltaT)
 {
     if (m_pBall != NULL)
     {
@@ -2532,12 +2541,12 @@ void cFielder::DesireShoot(float)
                 bool bDidHit = GenerateFilteredRandom() < fChance;
                 if (bDidHit)
                 {
-                    m_DesireCommonVars.fMisc = -g_pGame->m_pGameTweaks->unk298;
+                    m_DesireCommonVars.fMisc = -g_pGame->m_pGameTweaks->fShootToScorePerfectSecondButtonTime;
                 }
                 else
                 {
                     float fRandomError = (float)(0.6f * GenerateFilteredRandom() - 0.30000001192092896);
-                    m_DesireCommonVars.fMisc = -(fRandomError + g_pGame->m_pGameTweaks->unk298);
+                    m_DesireCommonVars.fMisc = -(fRandomError + g_pGame->m_pGameTweaks->fShootToScorePerfectSecondButtonTime);
                 }
                 mActionShootToScoreVars.bShootWasPressed = false;
             }
@@ -2553,7 +2562,7 @@ void cFielder::DesireShoot(float)
             {
                 if (ShouldIClearBall())
                 {
-                    m_pShotMeter->m_fTime = 0.1f + (float)nlRandom((unsigned int)(g_pGame->m_pGameTweaks->unk2D0 - 0.2f), &nlDefaultSeed);
+                    m_pShotMeter->m_fTime = 0.1f + (float)nlRandom((unsigned int)(g_pGame->m_pGameTweaks->fShotWindupTime - 0.2f), &nlDefaultSeed);
                 }
                 m_pShotMeter->ShotReleased(this);
                 InitActionShot(mActionShotVars.bIsChipShot);
@@ -2571,7 +2580,7 @@ void cFielder::InitDesireDeke()
     m_pAvoidance->SetThingsToAvoid(0);
 }
 
-void cFielder::DesireDeke(float)
+void cFielder::DesireDeke(float fDeltaT)
 {
     bool bInitDekeAction = (m_eActionState != ACTION_DEKE);
     if (m_pBall != NULL && IsBallAwayFromCarrier())
@@ -2986,7 +2995,7 @@ void cFielder::InitDesireHit(cFielder* pTarget)
     m_pAvoidance->SetThingsToAvoid(0);
 }
 
-void cFielder::DesireHit(float)
+void cFielder::DesireHit(float fDeltaT)
 {
     if (IsActionDone())
     {
@@ -3005,7 +3014,7 @@ void cFielder::InitDesireUsePowerup(ePowerUpType ePowerup, cFielder* pTarget)
 /**
  * Offset/Address/Size: 0x41C | 0x800311A0 | size: 0x378
  */
-void cFielder::DesireUsePowerup(float)
+void cFielder::DesireUsePowerup(float fDeltaT)
 {
     extern float Offensive(cTeam*);
 
@@ -3116,7 +3125,7 @@ void cFielder::InitDesireWindupShot()
 /**
  * Offset/Address/Size: 0x0 | 0x80030D84 | size: 0x41C
  */
-void cFielder::DesireWindupShot(float)
+void cFielder::DesireWindupShot(float fDeltaT)
 {
     if (m_pBall == NULL)
     {
@@ -3138,7 +3147,7 @@ void cFielder::DesireWindupShot(float)
 
             m_DesireWindupForShotVars.bIsBallAwayFromCarrier = false;
 
-            m_DesireCommonVars.tMiscTimer.SetSeconds(g_pGame->m_pGameTweaks->unk2D0 / 3.0f);
+            m_DesireCommonVars.tMiscTimer.SetSeconds(g_pGame->m_pGameTweaks->fShotWindupTime / 3.0f);
         }
         else
         {
@@ -3157,7 +3166,7 @@ void cFielder::DesireWindupShot(float)
         }
         else
         {
-            float fTimer = (g_pGame->m_pGameTweaks->unk2D0 / 3.0f) - 0.05f;
+            float fTimer = (g_pGame->m_pGameTweaks->fShotWindupTime / 3.0f) - 0.05f;
             float fMinTimer = 0.1f;
             fMinTimer = (fMinTimer >= fTimer) ? fMinTimer : fTimer;
             m_DesireCommonVars.tMiscTimer.SetSeconds(fMinTimer);

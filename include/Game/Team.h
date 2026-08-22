@@ -55,50 +55,50 @@ enum eTeamID
     NUM_TEAMS = 9,
 };
 
-int MostDefensivePlayer(const void*, const void*);
-int MostOffensiveThreat(const void*, const void*);
-int BestAbleToInterceptBall(const void*, const void*);
+int MostDefensivePlayer(const void* a, const void* b);
+int MostOffensiveThreat(const void* a, const void* b);
+int BestAbleToInterceptBall(const void* a, const void* b);
 
 class cTeam
 {
 public:
-    cTeam(int);
+    cTeam(int nSide);
     ~cTeam();
-    void SetDifficulty(eDifficultyID);
+    void SetDifficulty(eDifficultyID difficulty);
     void ClearAllPowerUps();
     void ClearCurrentPowerUp();
-    void TogglePowerup(bool);
-    bool IncrementPowerupMeter(float);
+    void TogglePowerup(bool bIsSilent);
+    bool IncrementPowerupMeter(float fAdjustAmount);
     PowerUpTeamType GetCurrentPowerUp() const;
     bool IsCurrentNoPowerup() const;
     bool IsCurrentMushroom() const;
     bool IsCurrentStar() const;
     PowerUpTeamType GetPowerUpByIndex(int index) const;
-    void SetIsPowerUpNew(int, bool);
-    void SetCurrentPowerUp(ePowerUpType, int);
-    void SetPlayer(cPlayer*, int);
-    void SetGoalie(Goalie*);
+    void SetIsPowerUpNew(int index, bool isNew);
+    void SetCurrentPowerUp(ePowerUpType eNewPowerUpType, int nnumOfPowerups);
+    void SetPlayer(cPlayer* pPlayer, int nIndex);
+    void SetGoalie(Goalie* pGoalie);
     Goalie* GetGoalie();
-    cPlayer* GetControlledPlayer(cGlobalPad*);
+    cPlayer* GetControlledPlayer(cGlobalPad* pController);
     int GetNumAssignedControllers();
-    cFielder* GetFielder(int);
+    cFielder* GetFielder(int nIndex);
     cFielder* GetBallInterceptFielder(int i) { return m_pBallInterceptOrderedFielders[i]; }
-    cPlayer* GetPlayer(int);
+    cPlayer* GetPlayer(int nIndex);
     cTeam* GetOtherTeam();
     cNet* GetOtherNet();
-    void PreUpdate(float);
-    void Update(float);
+    void PreUpdate(float fDeltaT);
+    void Update(float fDeltaT);
     void UpdateControllers();
     void ResetCharacters();
     void StopGameplayEffectsAndSounds();
-    bool CalculateFormationPosition(nlVector3&, cFielder*, bool, float);
+    bool CalculateFormationPosition(nlVector3& v3DestPosition, cFielder* pFielder, bool bInPosition, float fBallPosFormationWeight);
     void AbortPlays();
     bool AssignSituation();
-    void UpdateTeamAI(float);
-    void UpdatePlays(float);
+    void UpdateTeamAI(float fDeltaT);
+    void UpdatePlays(float fDeltaT);
     void CalculateNewBallInterceptTimes();
-    void UpdateBallInterceptTime(float);
-    void AssignMarks(bool);
+    void UpdateBallInterceptTime(float fDeltaT);
+    void AssignMarks(bool bForceReMark);
     cFielder* GetCaptain();
     cFielder* GetStriker() const;
     cFielder* GetMidfield() const;

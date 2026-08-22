@@ -23,23 +23,23 @@ public:
 
     DrawableCharacter();
     ~DrawableCharacter();
-    DrawableCharacter& operator=(const DrawableCharacter&);
+    DrawableCharacter& operator=(const DrawableCharacter& other);
 
     void Free();
     cPN_SAnimController& GetAnimController() const;
-    void Grab(cCharacter&);
-    static void DrawableBowserHeadTrackCallback(unsigned int, unsigned int, cPoseAccumulator*, unsigned int, int);
+    void Grab(cCharacter& character);
+    static void DrawableBowserHeadTrackCallback(unsigned int ctx, unsigned int nParam2, cPoseAccumulator* poseAccumulator, unsigned int currentNodeIndex, int nParentIndex);
     void BuildNodeMatrices();
-    void Render(cCharacter&) const;
-    void SendToGl(const cCharacter&) const;
+    void Render(cCharacter& character) const;
+    void SendToGl(const cCharacter& character) const;
     void Grab(SkinAnimatedMovableNPC& npc);
     void Render(SkinAnimatedMovableNPC& npc) const;
-    void Blend(const float*, const DrawableCharacter&, const DrawableCharacter&);
-    void EvaluateFrom(const cPoseNode&, const nlVector3&, unsigned short);
+    void Blend(const float* blendFactors, const DrawableCharacter& lhs, const DrawableCharacter& rhs);
+    void EvaluateFrom(const cPoseNode& poseNode, const nlVector3& offset, unsigned short facingAngle);
     nlVector3 GetBallPosition() const;
     nlQuaternion GetBallOrientation() const;
 
-    static void RenderOnlyOneCharacter(const cCharacter&, bool);
+    static void RenderOnlyOneCharacter(const cCharacter& character, bool renderOpposingGoalieToo);
     static void RenderAllCharacters();
     static cCharacter* OnlyRenderingOneCharacter();
 

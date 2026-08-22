@@ -43,6 +43,9 @@ static XY XYPAL[12] = {
     { 0x009C, 0x02 },
 };
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8025D3D0 | size: 0xE4
+ */
 void SISetSamplingRate(u32 msec)
 {
     XY* xy;
@@ -79,6 +82,9 @@ void SISetSamplingRate(u32 msec)
     OSRestoreInterrupts(enabled);
 }
 
+/**
+ * Offset/Address/Size: 0xE4 | 0x8025D4B4 | size: 0x24
+ */
 void SIRefreshSamplingRate(void)
 {
     SISetSamplingRate(SamplingRate);

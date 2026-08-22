@@ -9,7 +9,7 @@ public:
     cKickOffCamera();
     /* 0x08 */ virtual ~cKickOffCamera();
     /* 0x0C */ virtual eCameraType GetType() { return eCameraType_KickOff; };
-    /* 0x10 */ virtual void Update(float);
+    /* 0x10 */ virtual void Update(float dt);
     /* 0x24 */ virtual const nlVector3& GetTargetPosition() const { return m_v3Target; };
     /* 0x20 */ virtual const nlVector3& GetCameraPosition() const { return m_v3Camera; };
     /* 0x14 */ virtual const nlMatrix4& GetViewMatrix() const { return m_matView; };
