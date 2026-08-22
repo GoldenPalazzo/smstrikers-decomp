@@ -171,6 +171,8 @@ public:
     void IncreaseGameNumber(bool shouldIncreaseRound);
     int GetNumHumanTeams();
     BaseCup* GetCup(GameInfoManager::eGameModes mode);
+    BaseCup* GetCurrentCup() const { return mCurrentCup; }
+    BaseCup* GetPreviousCup() const { return mPreviousCup; }
     bool IsUserQualified(GameInfoManager::eGameModes mode) const;
     eGameModes GetCurrentMode() const
     {

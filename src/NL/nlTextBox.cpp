@@ -3,6 +3,13 @@
 #include "NL/nlTextEscape.h"
 #include "NL/nlString.h"
 
+nlTextBox::nlTextBox()
+{
+    nlVec2Set(m_Position, 0.0f, 0.0f);
+    nlVec2Set(m_Size, 640.0f, 480.0f);
+    m_DrawOptions = AlignLeft;
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x80211F28 | size: 0x244
  */
@@ -11,7 +18,7 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
     int yDir = 1;
     const nlFont* pFont = DrawInfo.pFont;
     nlVector2 CurrentPos = DrawAt;
-    if (DrawInfo.DrawOptions & 0x800)
+    if (DrawInfo.DrawOptions & FlipY)
     {
         yDir = -1;
     }
@@ -19,7 +26,7 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
     CurrentPos.y = yWithOffset;
 
     int ascentAdj;
-    if (DrawInfo.DrawOptions & 0x200)
+    if (DrawInfo.DrawOptions & UseFullHeight)
     {
         ascentAdj = pFont->m_Metrics.InternalLeading;
     }
@@ -63,7 +70,7 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
 
             int length = (&CurrentRow + 1)->FirstChar - startIdx;
 
-            DrawInfo.pFont->DrawString(View, fontCharStr, CurrentPos, Color, Color, length, nlFont::PASS_TextAndEffect, (DrawInfo.DrawOptions & 0x800) != 0, matArg, &overridecolour);
+            DrawInfo.pFont->DrawString(View, fontCharStr, CurrentPos, Color, Color, length, nlFont::PASS_TextAndEffect, (DrawInfo.DrawOptions & FlipY) != 0, matArg, &overridecolour);
         }
 
         if (overridecolour.c[3] == 0)
@@ -88,6 +95,9 @@ void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont
     unsigned long WidthAtLastSpace = 0;
     unsigned char FirstChar = 1;
     unsigned char IsNewParagraph = 0;
+#if defined(VERSION_G4QJ01)
+    unsigned char IsNonBreakingSpace = 0;
+#endif
     const unsigned short* pCurrentChar;
     unsigned long CharWidth;
 
@@ -105,8 +115,18 @@ void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont
 
             if (esc.m_Type == ESC_NON_BREAKING_SPACE)
             {
-                unsigned long prevChar = FirstChar ? 0 : (pLastNonEsc != 0 ? (unsigned long)*pLastNonEsc : 0);
-                CharWidth = pFont->GetCharWidth(' ', (unsigned short)prevChar);
+#if defined(VERSION_G4QJ01)
+                if (pFont->IsJapanese())
+                {
+                    CharWidth = 0;
+                    IsNonBreakingSpace = 1;
+                }
+                else
+#endif
+                {
+                    unsigned long prevChar = FirstChar ? 0 : (pLastNonEsc != 0 ? (unsigned long)*pLastNonEsc : 0);
+                    CharWidth = pFont->GetCharWidth(' ', (unsigned short)prevChar);
+                }
             }
             else if (esc.m_Type == ESC_PARAGRAPH)
             {
@@ -121,7 +141,11 @@ void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont
             }
             pCurrentChar = esc.m_pEnd - 1;
         }
+#if defined(VERSION_G4QJ01)
+        else if (!IsNonBreakingSpace)
+#else
         else
+#endif
         {
             unsigned long prevChar = FirstChar ? 0 : (pLastNonEsc != 0 ? (unsigned long)*pLastNonEsc : 0);
             CharWidth = pFont->GetCharWidth(*pCurrentChar, (unsigned short)prevChar);
@@ -135,9 +159,13 @@ void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont
 
         FirstChar = 0;
 
-        if ((float)(CurrentRowWidth + CharWidth) > BoxSize.x)
+        if ((float)(CurrentRowWidth + CharWidth) > BoxSize.x
+#if defined(VERSION_G4QJ01)
+            && !IsNonBreakingSpace
+#endif
+        )
         {
-            if (!(DrawOptions & 0x400) && pLastSpace != 0)
+            if (!(DrawOptions & DontWrapOnSpaces) && pLastSpace != 0)
             {
                 CurrentRowWidth = WidthAtLastSpace;
                 pCurrentChar = pLastSpace + 1;
@@ -149,7 +177,7 @@ void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont
             if (DrawOptions & 0x3)
             {
                 int remaining = (int)(BoxSize.x - (float)CurrentRowWidth);
-                xOffset = remaining >> ((DrawOptions & 0x1) ? 1u : 0u);
+                xOffset = remaining >> ((DrawOptions & AlignCenter) ? 1u : 0u);
             }
             else
             {
@@ -172,6 +200,13 @@ void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont
             CurrentRowWidth = 0;
         }
 
+#if defined(VERSION_G4QJ01)
+        if (IsNonBreakingSpace)
+        {
+            IsNonBreakingSpace = 0;
+        }
+#endif
+
         CurrentRowWidth += CharWidth;
 
         if (IsNewParagraph)
@@ -183,12 +218,11 @@ void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont
         pCurrentChar++;
     }
 
-    // Final row
     int xOffset;
     if (DrawOptions & 0x3)
     {
         int remaining = (int)(BoxSize.x - (float)CurrentRowWidth);
-        xOffset = remaining >> ((DrawOptions & 0x1) ? 1u : 0u);
+        xOffset = remaining >> ((DrawOptions & AlignCenter) ? 1u : 0u);
     }
     else
     {
@@ -204,18 +238,18 @@ void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont
 
     if (DrawOptions & 0x30)
     {
-        int totalHeight = (int)DrawInfo.RowCount * (int)pFont->m_Metrics.Height;
-        if ((float)totalHeight > BoxSize.y)
+        int TotalHeight = (int)DrawInfo.RowCount * (int)pFont->m_Metrics.Height;
+        if ((float)TotalHeight > BoxSize.y)
         {
             DrawInfo.YOffset = 0;
         }
-        else if (DrawOptions & 0x10)
+        else if (DrawOptions & VAlignCenter)
         {
-            DrawInfo.YOffset = (signed short)((int)(BoxSize.y / 2.0f) - (totalHeight >> 1));
+            DrawInfo.YOffset = (signed short)((int)(BoxSize.y / 2.0f) - (TotalHeight >> 1));
         }
         else
         {
-            DrawInfo.YOffset = (signed short)((int)BoxSize.y - totalHeight);
+            DrawInfo.YOffset = (signed short)((int)BoxSize.y - TotalHeight);
         }
     }
     else

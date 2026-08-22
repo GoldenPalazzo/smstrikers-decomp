@@ -11,7 +11,12 @@
 
 enum eHubColour
 {
-    eHubColour_0 = 0
+    HUB_COLOUR_INVALID = -1,
+    HUB_COLOUR_RED = 0,
+    HUB_COLOUR_GREEN = 1,
+    HUB_COLOUR_BLUE = 2,
+    HUB_COLOUR_YELLOW = 3,
+    NUM_HUB_COLOURS = 4
 };
 
 enum eHubState
@@ -32,6 +37,8 @@ public:
     ~CupHubScene();
     void SceneCreated();
     void Update(float fDeltaT);
+    void Animate();
+    void MakeTextBoxReallyWide(TLTextInstance& textInstance);
     void EndCup();
     void ReturnToMainMenu();
     unsigned char UpdateDisplayedStat();
@@ -44,90 +51,42 @@ public:
     unsigned char UpdateKnockout2(float fDeltaT);
     void UpdateProgressIndicator();
     void ColourUserRow();
+    static unsigned char IsUserRow(eTeamID teamInRow);
     void HandleButtonComponent();
     void SetRoundColours(eHubColour* coloursArray, int sizeOfArray);
     void UpdateRoundMessage(bool hideMessage);
     void LoadCaptainImage();
 
-    /* 0x001C */ TeamStats mAllTeamStats[8];                     // size 0x200
-    /* 0x021C */ nlColour mTextColour;                           // size 0x4
-    /* 0x0220 */ bool mDoAnimations;                             // size 0x1
-    /* 0x0221 */ bool mUpdatingStats;                            // size 0x1
-    /* 0x0222 */ bool mKnockoutLoserAnimations;                  // size 0x1
-    /* 0x0223 */ bool mAllKnockoutAnimations;                    // size 0x1
-    /* 0x0224 */ bool mSuperTeamAnimation;                       // size 0x1
-    /* 0x0225 */ bool mHasHumanTeamPlayed;                       // size 0x1
-    /* 0x0226 */ bool mDoAutoSave;                               // size 0x1
-    /* 0x0227 */ bool mPlayPopSound;                             // size 0x1
-    /* 0x0228 */ float mRowMovement[8];                          // size 0x20
-    /* 0x0248 */ unsigned short mColumnsByRowsBuffers[5][8][32]; // size 0xA00
-    /* 0x0C48 */ unsigned short mProgressBuffer[128];            // size 0x100
-    /* 0x0D48 */ TLComponentInstance* mAnimComponents[8];        // size 0x20
-    /* 0x0D68 */ int mOldRanks[9];                               // size 0x24
-    /* 0x0D8C */ int mNewRanks[9];                               // size 0x24
-    /* 0x0DB0 */ int mStandingsIndices[8];                       // size 0x20
-    /* 0x0DD0 */ int mAnimatingKnockoutTeams[4];                 // size 0x10
-    /* 0x0DE0 */ int mCurrentKnockoutAnimationRound;             // size 0x4
-    /* 0x0DE4 */ unsigned short mOldStats[8][4];                 // size 0x40
-    /* 0x0E24 */ float mStatUpdateDelay;                         // size 0x4
-    /* 0x0E28 */ float mSlideSwitchDelay;                        // size 0x4
-    /* 0x0E2C */ eHubState mHubState;                            // size 0x4
-    /* 0x0E30 */ CupTickerManager mTickerManager;                // size 0x408
-    /* 0x1238 */ AsyncImage* mCaptainImage;                      // size 0x4
-    /* 0x123C */ ButtonComponent mButtons;                       // size 0x24
-}; // total size: 0x1260
-
-// class FEFinder<TLImageInstance, 2>
-// {
-// public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-// };
-
-// class FEFinder<TLTextInstance, 3>
-// {
-// public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-// };
-
-// class FEFinder<TLComponentInstance, 4>
-// {
-// public:
-//     void _Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-//     long); void Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//     InlineHasher); void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//     unsigned long); void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-//     long); void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-// };
-
-// class Function0<void>
-// {
-// public:
-//     void FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (CupHubScene::*)()>, CupHubScene*>>::~FunctorImpl();
-//     void FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (CupHubScene::*)()>, CupHubScene*>>::operator()();
-//     void FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (CupHubScene::*)()>, CupHubScene*>>::Clone() const;
-// };
-
-// class TeamStats
-// {
-// public:
-//     TeamStats();
-// };
-
-// class MemFun<CupHubScene, void>(void (CupHubScene
-// {
-// public:
-//     void *)());
-// };
-
-// class Bind<void, Detail
-// {
-// public:
-//     void MemFunImpl<void, void (CupHubScene::*)()>, CupHubScene*>(Detail::MemFunImpl<void, void (CupHubScene::*)()>, CupHubScene*
-//     const&);
-// };
+    /* 0x001C */ TeamStats mAllTeamStats[8];    // size 0x200
+    /* 0x021C */ nlColour mTextColour;          // size 0x4
+    /* 0x0220 */ bool mDoAnimations;            // size 0x1
+    /* 0x0221 */ bool mUpdatingStats;           // size 0x1
+    /* 0x0222 */ bool mKnockoutLoserAnimations; // size 0x1
+    /* 0x0223 */ bool mAllKnockoutAnimations;   // size 0x1
+    /* 0x0224 */ bool mSuperTeamAnimation;      // size 0x1
+    /* 0x0225 */ bool mHasHumanTeamPlayed;      // size 0x1
+    /* 0x0226 */ bool mDoAutoSave;              // size 0x1
+    /* 0x0227 */ bool mPlayPopSound;            // size 0x1
+    /* 0x0228 */ float mRowMovement[8];         // size 0x20
+#if defined(VERSION_G4QJ01)
+    /* 0x0248 */ unsigned short mColumnsByRowsBuffers[5][8][64]; // size 0x1400 (G4QJ01)
+#else
+    /* 0x0248 */ unsigned short mColumnsByRowsBuffers[5][8][32]; // size 0xA00 (G4QE01)
+#endif
+    /* 0x0C48 (G4QE01), 0x1648 (G4QJ01) */ unsigned short mProgressBuffer[128];     // size 0x100
+    /* 0x0D48 (G4QE01), 0x1748 (G4QJ01) */ TLComponentInstance* mAnimComponents[8]; // size 0x20
+    /* 0x0D68 (G4QE01), 0x1768 (G4QJ01) */ int mOldRanks[9];                        // size 0x24
+    /* 0x0D8C (G4QE01), 0x178C (G4QJ01) */ int mNewRanks[9];                        // size 0x24
+    /* 0x0DB0 (G4QE01), 0x17B0 (G4QJ01) */ int mStandingsIndices[8];                // size 0x20
+    /* 0x0DD0 (G4QE01), 0x17D0 (G4QJ01) */ int mAnimatingKnockoutTeams[4];          // size 0x10
+    /* 0x0DE0 (G4QE01), 0x17E0 (G4QJ01) */ int mCurrentKnockoutAnimationRound;      // size 0x4
+    /* 0x0DE4 (G4QE01), 0x17E4 (G4QJ01) */ unsigned short mOldStats[8][4];          // size 0x40
+    /* 0x0E24 (G4QE01), 0x1824 (G4QJ01) */ float mStatUpdateDelay;                  // size 0x4
+    /* 0x0E28 (G4QE01), 0x1828 (G4QJ01) */ float mSlideSwitchDelay;                 // size 0x4
+    /* 0x0E2C (G4QE01), 0x182C (G4QJ01) */ eHubState mHubState;                     // size 0x4
+    /* 0x0E30 (G4QE01), 0x1830 (G4QJ01) */ CupTickerManager mTickerManager;         // size 0x408
+    /* 0x1238 (G4QE01), 0x1C38 (G4QJ01) */ AsyncImage* mCaptainImage;               // size 0x4
+    /* 0x123C (G4QE01), 0x1C3C (G4QJ01) */ ButtonComponent mButtons;                // size 0x24
+}; // total size: 0x1260 (G4QE01), 0x1C60 (G4QJ01)
 
 #endif // _SHCUPHUB_H_

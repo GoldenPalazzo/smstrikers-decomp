@@ -452,7 +452,7 @@ void StadiumSelectSceneV2::Update(float fDeltaT)
             {
                 ChooseCaptainsSceneV2* scene = (ChooseCaptainsSceneV2*)GameSceneManager::Instance()->Push(
                     SCENE_CHOOSE_CAPTAINS, SCREEN_BACK, true);
-                scene->mDesiredSceneType = ChooseCaptainsSceneV2::SceneType_1;
+                scene->mDesiredSceneType = ChooseCaptainsSceneV2::ST_CHOOSE_SIDES;
                 FEAudio::PlayAnimAudioEvent("sfx_back", false);
                 return;
             }

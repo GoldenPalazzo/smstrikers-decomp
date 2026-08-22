@@ -61,9 +61,9 @@ block_relocations:
   - source: .text:0x801973DC
   - source: .text:0x801973E0
 
-# OS.c OSInit, OSThread.c __OSThreadInit, and __start.c reference __ArenaLo /
-# _stack_addr (linker-script symbols) by relocation, exactly like the
-# 100%-matching SDK sources. dtk cannot evaluate
+# OS.c OSInit, OSThread.c __OSThreadInit, __start.c, and dolphin_trk.c
+# reference __ArenaLo / _stack_addr / _db_stack_addr (linker-script symbols)
+# by relocation, exactly like the 100%-matching SDK sources. dtk cannot evaluate
 # the ldscript stack arithmetic (_stack_addr = ((_stack_end + ...) & ...)) during
 # target reconstruction, so without these it bakes literal hex addresses -- a cosmetic
 # fuzzy diff -- instead of the relocations our source emits. __ArenaHi (= $ARENAHI, a
@@ -95,3 +95,15 @@ add_relocations:
   - source: .init:0x80005414
     type: l
     target: _stack_addr
+  - source: .text:0x80229368
+    type: hi
+    target: _db_stack_addr
+  - source: .text:0x8022936C
+    type: l
+    target: _db_stack_addr
+  - source: .text:0x802293FC
+    type: hi
+    target: _db_stack_addr
+  - source: .text:0x80229400
+    type: l
+    target: _db_stack_addr

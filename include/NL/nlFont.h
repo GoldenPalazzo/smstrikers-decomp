@@ -99,6 +99,7 @@ public:
     unsigned char Load(const char* szFontName, char* pFontDescData, unsigned long HashId);
     void Unload();
 #if defined(VERSION_G4QJ01)
+    bool IsJapanese() const { return m_bIsJapanese; }
     void SetIsJapanese(bool isJapanese) { m_bIsJapanese = isJapanese; }
 #endif
 

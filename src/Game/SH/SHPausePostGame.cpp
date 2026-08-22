@@ -20,12 +20,6 @@ typedef BindExp1<void, MemFunImpl_PausePostGame_t, PausePostGameScene*> BindExp1
 
 #include "NL/nlFormat.h"
 
-namespace DoubleHighlite
-{
-static const char* SLIDE_IN = "in";
-static const char* SLIDE_OUT = "out";
-} // namespace DoubleHighlite
-
 static int gPadThatQuit = 8;
 
 extern nlLocalization* g_pLocalization;

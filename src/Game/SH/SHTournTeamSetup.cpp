@@ -13,12 +13,6 @@
 typedef Detail::MemFunImpl<void, void (TournTeamSetupSceneV2::*)(int)> MemFunImpl_Tourn_t;
 typedef BindExp2<void, MemFunImpl_Tourn_t, TournTeamSetupSceneV2*, int> BindExp2_Tourn_t;
 
-namespace DoubleHighlite
-{
-static const char* SLIDE_IN = "in";
-static const char* SLIDE_OUT = "out";
-} // namespace DoubleHighlite
-
 static unsigned long TOURN_CAPTAIN_DESCRIPTIONS[] = {
     0xFF68ABBA, 0xE2D37C19, 0x000465BA, 0x000BAD38, 0x0043DF21, 0x330C3072, 0x00C0A242, 0x00EC84AC, 0x69BFAF9D
 };

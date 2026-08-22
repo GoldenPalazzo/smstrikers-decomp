@@ -16,12 +16,6 @@
 extern bool DidContinueWithoutOperation();
 extern TLInstance* FindComponent(TLSlide*, const char*);
 
-namespace DoubleHighlite
-{
-static const char* SLIDE_IN = "in";
-static const char* SLIDE_OUT = "out";
-} // namespace DoubleHighlite
-
 static const eMenuState MenuToMenuStateMap[] = {
     MS_AUDIO,
     MS_VISUAL,

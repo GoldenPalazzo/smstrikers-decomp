@@ -26,12 +26,6 @@ static int sCurrentRow;
 
 typedef void FnTLComponentInstanceCb(TLComponentInstance*);
 
-namespace DoubleHighlite
-{
-static const char* SLIDE_IN = "in";
-static const char* SLIDE_OUT = "out";
-} // namespace DoubleHighlite
-
 /**
  * Offset/Address/Size: 0x1830 | 0x8010C680 | size: 0x24
  */

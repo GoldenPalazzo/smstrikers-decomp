@@ -37,15 +37,11 @@ using TakeGameMemSnapshot::LexicalCast;
 
 namespace DoubleHighlite
 {
-static const char* SLIDE_IN = "in";
-static const char* SLIDE_OUT = "out";
 static bool TEMPDISABLESOUND;
 } // namespace DoubleHighlite
 
 namespace SingleHighlite
 {
-static const char* SLIDE_IN = "in";
-static const char* SLIDE_OUT = "out";
 bool TEMPDISABLESOUND;
 } // namespace SingleHighlite
 

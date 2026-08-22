@@ -27,14 +27,6 @@ template <>
 WideBasicString LexicalCast<WideBasicString, const unsigned short*>(
     const unsigned short* const& value);
 
-namespace SingleHighlite
-{
-static char SLIDE_IN_TEXT[] = "in";
-static char SLIDE_OUT_TEXT[] = "out";
-static const char* SLIDE_IN = SLIDE_IN_TEXT;
-static const char* SLIDE_OUT = SLIDE_OUT_TEXT;
-} // namespace SingleHighlite
-
 static char* TEXT_NAMES[] = { "PLAYER", "PLAYER2", "PLAYER3", "PLAYER4", "PLAYER5" };
 
 static char* CUP_BRAG_TEXT[5][4] = {

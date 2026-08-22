@@ -21,12 +21,6 @@ extern nlColour MenuHighliteColour;
 extern nlColour SubMenuHighliteColour;
 extern nlColour SubMenuUnhighliteColour;
 
-namespace DoubleHighlite
-{
-static const char* SLIDE_IN = "in";
-static const char* SLIDE_OUT = "out";
-} // namespace DoubleHighlite
-
 static const char* MAIN_MENU_SLIDE = "Slide1";
 static const char* AUDIO_MENU_SLIDE = "Slide2";
 static const char* GAMEPLAY_MENU_SLIDE = "Slide3";

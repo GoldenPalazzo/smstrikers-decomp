@@ -36,6 +36,8 @@ struct BasicGameInfo
     /* 0x14 */ s16 mPadSides[4];
     /* 0x1C */ s16 mFinalScore[2];
 
+    eTeamID GetTeam(s16 index) const { return mTeamIndex[index]; }
+
     BasicGameInfo()
     {
         mTeamIndex[0] = TEAM_MARIO;

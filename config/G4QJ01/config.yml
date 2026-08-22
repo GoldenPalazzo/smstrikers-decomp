@@ -36,7 +36,8 @@ block_relocations:
   - source: .text:0x801993EC
   - source: .text:0x801993F0
 
-# __start.c and OSThread.c load the version-specific _stack_addr linker symbol.
+# __start.c, OSThread.c, and dolphin_trk.c load the version-specific stack
+# linker symbols.
 # dtk cannot evaluate the linker-script stack arithmetic while reconstructing
 # these objects, so preserve the retail relocation pairs instead of baked JP
 # addresses.
@@ -53,3 +54,15 @@ add_relocations:
   - source: .text:0x8025ADC4
     type: l
     target: _stack_addr
+  - source: .text:0x8022B3B8
+    type: hi
+    target: _db_stack_addr
+  - source: .text:0x8022B3BC
+    type: l
+    target: _db_stack_addr
+  - source: .text:0x8022B44C
+    type: hi
+    target: _db_stack_addr
+  - source: .text:0x8022B450
+    type: l
+    target: _db_stack_addr

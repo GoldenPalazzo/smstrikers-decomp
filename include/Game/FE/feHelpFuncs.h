@@ -79,6 +79,9 @@ extern const unsigned char PAD_COLOURS[4][3];
 
 namespace DoubleHighlite
 {
+static const char* SLIDE_IN = "in";
+static const char* SLIDE_OUT = "out";
+
 void CloseItem(TLComponentInstance* component);
 void OpenItem(TLComponentInstance* component);
 void TempDisableSound();
@@ -86,6 +89,9 @@ void TempDisableSound();
 
 namespace SingleHighlite
 {
+static const char* SLIDE_IN = "in";
+static const char* SLIDE_OUT = "out";
+
 void CloseItem(TLComponentInstance* component);
 void OpenItem(TLComponentInstance* component);
 void TempDisableSound();

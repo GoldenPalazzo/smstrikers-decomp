@@ -43,21 +43,21 @@ void EnableMetroTRKInterrupts(void)
 /**
  * Offset/Address/Size: 0x5C4 | 0x802298C4 | size: 0x58
  */
-u32 TRKTargetTranslate(u32 param_0)
+u32 TRKTargetTranslate(u32 address)
 {
-    if (param_0 >= lc_base)
+    if (address >= lc_base)
     {
 
-        if ((param_0 < lc_base + 0x4000) && ((gTRKCPUState.Extended1.DBAT3U & 3) != 0))
+        if ((address < lc_base + 0x4000) && ((gTRKCPUState.Extended1.DBAT3U & 3) != 0))
         {
-            return param_0;
+            return address;
         }
     }
-    if ((param_0 >= 0x7E000000) && (param_0 <= 0x80000000))
+    if ((address >= 0x7E000000) && (address <= 0x80000000))
     {
-        return param_0;
+        return address;
     }
-    return param_0 & 0x3FFFFFFF | 0x80000000;
+    return address & 0x3FFFFFFF | 0x80000000;
 }
 
 extern u8 gTRKInterruptVectorTable[];
@@ -74,33 +74,34 @@ void TRK_copy_vector(u32 offset)
  */
 void __TRK_copy_vectors(void)
 {
-    u32 r3 = lc_base;
-    u32* isrOffsetPtr;
-    int i;
-    u32 r29;
+    u32 exceptionMaskAddress = lc_base;
+    u32* isrOffsets;
+    int vectorIndex;
+    u32 exceptionMask;
 
-    if (r3 <= 0x44 && r3 + 0x4000 > 0x44 && gTRKCPUState.Extended1.DBAT3U & 3)
+    if (exceptionMaskAddress <= 0x44 && exceptionMaskAddress + 0x4000 > 0x44
+        && gTRKCPUState.Extended1.DBAT3U & 3)
     {
-        r3 = 0x44;
+        exceptionMaskAddress = 0x44;
     }
     else
     {
-        r3 = EXCEPTIONMASK_ADDR;
+        exceptionMaskAddress = EXCEPTIONMASK_ADDR;
     }
 
-    i = 0;
-    r29 = *(u32*)r3;
-    isrOffsetPtr = TRK_ISR_OFFSETS;
+    vectorIndex = 0;
+    exceptionMask = *(u32*)exceptionMaskAddress;
+    isrOffsets = TRK_ISR_OFFSETS;
 
     do
     {
-        if ((r29 & (1 << i)) && i != 4)
+        if ((exceptionMask & (1 << vectorIndex)) && vectorIndex != 4)
         {
-            TRK_copy_vector(isrOffsetPtr[i]);
+            TRK_copy_vector(isrOffsets[vectorIndex]);
         }
 
-        i++;
-    } while (i <= 14);
+        vectorIndex++;
+    } while (vectorIndex <= 14);
 }
 
 /**
@@ -114,142 +115,140 @@ DSError TRKInitializeTarget()
     return DS_NoError;
 }
 
-#define __dcbi(a, b)    asm { dcbi a, b }
-#define __dcbfASM(a, b) asm { dcbf a, b }
+#define __dcbi(a, b) asm { dcbi a, b }
 
-/**
- * Offset/Address/Size: 0x318 | 0x80229618 | size: 0x134
- */
-void TRK__read_aram(register int c, register u32 p2, void* p3)
+void TRK__read_aram(register int mainMemoryAddress, u32 aramAddress, void* length)
 {
-    u32 err;
-    int i;
-    register int counter;
-    u16 r;
-    u32 g;
-    u32 x;
-    u32 size;
+    u32 dmaStatus;
+    register int offset;
+    u16 interruptStatus;
+    u32 aramStart;
+    u32 dmaSize;
 
-    if ((size_t)p2 < 0x4000 || p2 + *(u32*)p3 > 0x8000000)
+    if ((size_t)aramAddress < 0x4000 || aramAddress + *(u32*)length > 0x8000000)
     {
         return;
     }
 
-    x = p2 & ~0x1F;
-    size = *(u32*)p3 + (p2 & 0x1F);
-    size = OSRoundUp32B(size);
-    counter = 0;
+    aramStart = aramAddress & ~0x1F;
+    dmaSize = *(u32*)length + (aramAddress & 0x1F);
+    dmaSize = OSRoundUp32B(dmaSize);
 
-    for (i = 0; i < size; i += 0x20)
+    for (offset = 0; offset < dmaSize; offset += 0x20)
     {
-        __dcbi(counter, c);
-        counter += 0x20;
+        __dcbi(offset, mainMemoryAddress);
     }
 
     do
     {
-        err = ARGetDMAStatus();
-    } while (err);
+        dmaStatus = ARGetDMAStatus();
+    } while (dmaStatus);
 
-    r = __ARGetInterruptStatus();
-    g = 0x8000000;
+    interruptStatus = __ARGetInterruptStatus();
     __ARClearInterrupt();
 
-    ARStartDMA(1, c, x, size);
+    ARStartDMA(1, mainMemoryAddress, aramStart, dmaSize);
 
     while (!__ARGetInterruptStatus())
     {
     }
 
-    if (!r)
+    if (!interruptStatus)
     {
         __ARClearInterrupt();
     }
 }
 
-/**
- * Offset/Address/Size: 0x12C | 0x8022942C | size: 0x1EC
- */
-void TRK__write_aram(register int c, register u32 p2, void* p3)
+static void __read_aram_1block(int mainMemoryAddress, u32 aramAddress)
 {
-    u8 buff[32] ALIGN_DECL(32);
-    u32 err;
-    register int count = c;
-    register u32 bf;
-    u32 uVar1;
-    u32 size;
-    u16 r;
-    register u32 g;
-    register int counter;
-    u32 i;
+    DCBlockInvalidate((void*)mainMemoryAddress);
+    __ARClearInterrupt();
+    ARStartDMA(1, mainMemoryAddress, aramAddress, 0x20);
 
-    if ((size_t)p2 < 0x4000 || p2 + *(u32*)p3 > 0x8000000)
+    while (!__ARGetInterruptStatus())
+    {
+    }
+}
+
+void TRK__write_aram(int mainMemoryAddress, u32 aramAddress, void* length)
+{
+    u8 block[32] ALIGN_DECL(32);
+    u32 dmaStatus;
+    register u32 blockAddress;
+    u32 aramStart;
+    u32 dmaSize;
+    u16 interruptStatus;
+    u32 address;
+    int offset;
+    u32 cacheOffset;
+
+    if ((size_t)aramAddress < 0x4000 || aramAddress + *(u32*)length > 0x8000000)
     {
         return;
     }
 
-    uVar1 = p2 & ~0x1f;
-    counter = 0;
-    size = *(u32*)p3 + (p2 & 0x1f);
-    size = OSRoundUp32B(size);
+    aramStart = aramAddress & ~0x1f;
+    offset = 0;
+    dmaSize = *(u32*)length + (aramAddress & 0x1f);
+    dmaSize = OSRoundUp32B(dmaSize);
 
-    for (i = 0; i < size; i += 0x20)
+    for (cacheOffset = 0; cacheOffset < dmaSize; cacheOffset += 0x20)
     {
-        __dcbf((void*)counter, count);
-        counter += 0x20;
+        __dcbf((void*)offset, mainMemoryAddress);
+        offset += 0x20;
     }
 
     do
     {
-        err = ARGetDMAStatus();
-    } while (err);
+        dmaStatus = ARGetDMAStatus();
+    } while (dmaStatus);
 
-    r = __ARGetInterruptStatus();
-    g = 0x8000000;
+    interruptStatus = __ARGetInterruptStatus();
+    address = 0x8000000;
 
-    counter = p2 & 0x1f;
-    if (counter)
+    offset = aramAddress & 0x1f;
+    if (offset)
     {
-        g = uVar1;
-        bf = (u32)buff;
-        __dcbi(r0, bf);
+        address = aramStart;
+        blockAddress = (u32)block;
+        __dcbi(r0, blockAddress);
         __ARClearInterrupt();
 
-        ARStartDMA(1, bf, uVar1, 0x20);
+        ARStartDMA(1, blockAddress, aramStart, 0x20);
 
         while (!__ARGetInterruptStatus())
         {
         }
 
-        TRK_memcpy((void*)c, buff, counter);
-        __dcbfASM(r0, c);
+        TRK_memcpy((void*)mainMemoryAddress, block, offset);
+        __dcbf((void*)mainMemoryAddress, 0);
     }
 
-    p2 += *(u32*)p3;
-    counter = p2 & 0x1f;
-    if (counter)
+    aramAddress += *(u32*)length;
+    offset = aramAddress & 0x1f;
+    if (offset)
     {
-        u32 val = p2 & ~0x1F;
-        if (val != g)
+        u32 aramEnd = aramAddress & ~0x1F;
+        if (aramEnd != address)
         {
-            bf = (u32)buff;
-            __dcbi(r0, bf);
+            blockAddress = (u32)block;
+            __dcbi(r0, blockAddress);
             __ARClearInterrupt();
-            ARStartDMA(1, bf, val, 0x20);
+            ARStartDMA(1, blockAddress, aramEnd, 0x20);
 
             while (!__ARGetInterruptStatus())
             {
             }
         }
-        g = c + p2;
-        TRK_memcpy((void*)g, (void*)(buff + counter), 0x20 - counter);
+        address = mainMemoryAddress + aramAddress;
+        TRK_memcpy((void*)address, (void*)(block + offset), 0x20 - offset);
 
-        __dcbfASM(r0, g);
+        __dcbf((void*)address, 0);
     }
     __sync();
     __ARClearInterrupt();
-    ARStartDMA(0, c, uVar1, size);
-    if (!r)
+    ARStartDMA(0, mainMemoryAddress, aramStart, dmaSize);
+    if (!interruptStatus)
     {
         while (!__ARGetInterruptStatus())
         {
@@ -270,7 +269,7 @@ asm void InitMetroTRK()
 	stw r3, 0(r1)
 	lis r3, gTRKCPUState@h
 	ori r3, r3, gTRKCPUState@l
-	stmw r0, ProcessorState_PPC.Default.GPR(r3) //Save the gprs
+	stmw r0, ProcessorState_PPC.Default.GPR(r3)
 	lwz r4, 0(r1)
 	addi r1, r1, 4
 	stw r1, ProcessorState_PPC.Default.GPR[1](r3)
@@ -280,46 +279,30 @@ asm void InitMetroTRK()
 	stw r4, ProcessorState_PPC.Default.PC(r3)
 	mfcr r4
 	stw r4, ProcessorState_PPC.Default.CR(r3)
-	//???
 	mfmsr r4
 	ori r3, r4, (1 << (31 - 16))
 	xori r3, r3, (1 << (31 - 16))
 	mtmsr r3
-	mtsrr1 r4 //Copy msr to srr1
-	//Save misc registers to gTRKCPUState
+	mtsrr1 r4
 	bl TRKSaveExtended1Block
 	lis r3, gTRKCPUState@h
 	ori r3, r3, gTRKCPUState@l
-	lmw r0, ProcessorState_PPC.Default.GPR(r3) //Restore the gprs
-	//Reset IABR and DABR
+	lmw r0, ProcessorState_PPC.Default.GPR(r3)
 	li r0, 0
 	mtspr  0x3f2, r0
 	mtspr  0x3f5, r0
-	//Restore stack pointer
 	lis r1, _db_stack_addr@h
 	ori r1, r1, _db_stack_addr@l
 	mr r3, r5
-	bl InitMetroTRKCommTable //Initialize comm table
-	/*
-	If InitMetroTRKCommTable returned 1 (failure), an invalid hardware
-	id or the id for GDEV was somehow passed. Since only BBA or NDEV
-	are supported, we return early. Otherwise, we proceed with
-	starting up TRK.
-	*/
+	bl InitMetroTRKCommTable
 	cmpwi r3, 1
 	bne initCommTableSuccess
-	/*
-	BUG: The code probably orginally reloaded gTRKCPUState here, but
-	as is it will read the returned value of InitMetroTRKCommTable
-	as a TRKCPUState struct pointer, causing the CPU to return to
-	a garbage code address.
-	*/
 	lwz r4, ProcessorState_PPC.Default.LR(r3)
 	mtlr r4
-	lmw r0, ProcessorState_PPC.Default.GPR(r3) //Restore the gprs
+	lmw r0, ProcessorState_PPC.Default.GPR(r3)
 	blr
 initCommTableSuccess:
-	b TRK_main //Jump to TRK_main
+	b TRK_main
 	blr
     // clang-format on
 }
@@ -335,7 +318,7 @@ asm void InitMetroTRK_BBA()
 	stw r3, 0(r1)
 	lis r3, gTRKCPUState@h
 	ori r3, r3, gTRKCPUState@l
-	stmw r0, ProcessorState_PPC.Default.GPR(r3) //Save the gprs
+	stmw r0, ProcessorState_PPC.Default.GPR(r3)
 	lwz r4, 0(r1)
 	addi r1, r1, 4
 	stw r1, ProcessorState_PPC.Default.GPR[1](r3)
@@ -345,44 +328,29 @@ asm void InitMetroTRK_BBA()
 	stw r4, ProcessorState_PPC.Default.PC(r3)
 	mfcr r4
 	stw r4, ProcessorState_PPC.Default.CR(r3)
-	//Turn on external interrupts
 	mfmsr r4
 	ori r3, r4, (1 << (31 - 16))
 	mtmsr r3
-	mtsrr1 r4 //Copy original msr to srr1
-	//Save misc registers to gTRKCPUState
+	mtsrr1 r4
 	bl TRKSaveExtended1Block
 	lis r3, gTRKCPUState@h
 	ori r3, r3, gTRKCPUState@l
-	lmw r0, ProcessorState_PPC.Default.GPR(r3) //Restore the gprs
-	//Reset IABR and DABR
+	lmw r0, ProcessorState_PPC.Default.GPR(r3)
 	li r0, 0
 	mtspr  0x3f2, r0
 	mtspr 0x3f5, r0
-	//Restore the stack pointer
 	lis r1, _db_stack_addr@h
 	ori r1, r1, _db_stack_addr@l
 	li r3, 2
-	bl InitMetroTRKCommTable //Initialize comm table as BBA hardware
-	/*
-	If InitMetroTRKCommTable returned 1 (failure), something went wrong
-	or whatever reason. If everything goes as expected, we proceed with
-	starting up TRK.
-	*/
+	bl InitMetroTRKCommTable
 	cmpwi r3, 1
 	bne initCommTableSuccess
-	/*
-	BUG: The code probably orginally reloaded gTRKCPUState here, but
-	as is it will read the returned value of InitMetroTRKCommTable
-	as a TRKCPUState struct pointer, causing the CPU to return to
-	a garbage code address.
-	*/
 	lwz r4, ProcessorState_PPC.Default.LR(r3)
 	mtlr r4
 	lmw r0, ProcessorState_PPC.Default.GPR(r3)
 	blr
 initCommTableSuccess:
-	b TRK_main //Jump to TRK_main
+	b TRK_main
 	blr
     // clang-format on
 }
