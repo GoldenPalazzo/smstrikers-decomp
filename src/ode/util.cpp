@@ -30,7 +30,7 @@
 //****************************************************************************
 // Auto disabling
 
-inline void dInternalHandleAutoDisabling(dxWorld* world, dReal stepsize)
+void dInternalHandleAutoDisabling(dxWorld* world, dReal stepsize)
 {
     dxBody* bb;
     for (bb = world->firstbody; bb; bb = (dxBody*)bb->next)

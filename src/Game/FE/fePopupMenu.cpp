@@ -590,7 +590,7 @@ void FEPopupMenu::Create(
     {
         WStr messageTemplate(LookupLoc(popupEntry->mMessage));
         WStr optionName;
-        eMenuState menuState = MENUSTATE_INVALID;
+        eMenuState menuState = MS_INVALID;
         OptionsScene* optionsScene;
 
         if (GameSceneManager::s_pInstance != NULL)

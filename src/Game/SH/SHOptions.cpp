@@ -9,12 +9,16 @@
 #include "Game/SH/SHSaveLoad.h"
 #include "Game/TrophyInfo.h"
 #include "NL/glx/glxSwap.h"
+#if defined(VERSION_G4QJ01)
+#include "NL/nlLocalization.h"
+#endif
 #include "NL/nlPrint.h"
 
 #include "NL/nlBind.h"
 
-extern bool DidContinueWithoutOperation();
-extern TLInstance* FindComponent(TLSlide*, const char*);
+#if defined(VERSION_G4QJ01)
+extern nlLocalization* g_pLocalization;
+#endif
 
 static const eMenuState MenuToMenuStateMap[] = {
     MS_AUDIO,
@@ -31,7 +35,7 @@ u32 OptionsScene::mUserInfoCRC;
 /**
  * Offset/Address/Size: 0x1460 | 0x800B4A1C | size: 0x8C
  */
-void ApplyChangesCB()
+static void ApplyChangesCB()
 {
     OptionsScene* scene = (OptionsScene*)nlSingleton<GameSceneManager>::Instance()->GetScene(SCENE_OPTIONS);
 
@@ -53,7 +57,7 @@ void ApplyChangesCB()
 /**
  * Offset/Address/Size: 0x1430 | 0x800B49EC | size: 0x30
  */
-void RevertChangesCB()
+static void RevertChangesCB()
 {
     OptionsScene* scene = (OptionsScene*)nlSingleton<GameSceneManager>::Instance()->GetScene(SCENE_OPTIONS);
     scene->mPopupResult = PR_REVERT_CHANGES;
@@ -65,7 +69,7 @@ void RevertChangesCB()
 OptionsScene::OptionsScene()
     : BaseSceneHandler()
     , m_subMenu(NULL)
-    , m_curMenuState(MENUSTATE_INVALID)
+    , m_curMenuState(MS_INVALID)
     , mButtons()
     , mMenuItems()
     , mPopupResult(PR_DO_NOTHING)
@@ -78,12 +82,12 @@ OptionsScene::OptionsScene()
         {
             if ((SaveLoadScene::mLastSaveLoadSuccess != 0) && (DidContinueWithoutOperation() == false))
             {
-                OptionsScene::mUserInfoCRC = nlChecksum32(&(nlSingleton<GameInfoManager>::Instance()->mUserInfo), 0x113C);
+                OptionsScene::mUserInfoCRC = nlChecksum32(&(nlSingleton<GameInfoManager>::Instance()->mUserInfo), sizeof(UserInfo));
             }
         }
         else if (mLastSelectedIndex == 0)
         {
-            OptionsScene::mUserInfoCRC = nlChecksum32(&(nlSingleton<GameInfoManager>::Instance()->mUserInfo), 0x113C);
+            OptionsScene::mUserInfoCRC = nlChecksum32(&(nlSingleton<GameInfoManager>::Instance()->mUserInfo), sizeof(UserInfo));
         }
     }
 
@@ -101,10 +105,6 @@ OptionsScene::~OptionsScene()
     }
 }
 
-typedef Detail::MemFunImpl<void, void (OptionsScene::*)(eMenuState)> MemFunImpl_Options_t;
-typedef BindExp2<void, MemFunImpl_Options_t, OptionsScene*, eMenuState> BindExp2_Options_t;
-typedef Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Options_t> FunctorImpl_Options_t;
-
 /**
  * Offset/Address/Size: 0xB5C | 0x800B4118 | size: 0x6E0
  */
@@ -113,32 +113,44 @@ void OptionsScene::SceneCreated()
     FEAudio::EnableSounds(false);
 
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
-    MenuItem<TLComponentInstance>* item;
 
     for (int i = 0; i < 6; i++)
     {
         char menuname[64];
-        nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
+        nlSNPrintf(menuname, sizeof(menuname), "MENU ITEM%d", i + 1);
 
-        TLInstance* foundInstance = FEFinder<TLInstance, 4>::Find<TLSlide>(
+        TLInstance* instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(menuname)));
-        TLComponentInstance* instance = (TLComponentInstance*)foundInstance;
+        TLComponentInstance* compinstance = (TLComponentInstance*)instance;
 
         if (MenuToMenuStateMap[i] == MS_NUMMENUSTATES)
         {
             if (!nlSingleton<GameInfoManager>::Instance()->HasTrophy(TROPHY_BOWSER_CUP))
             {
-                instance->m_bVisible = false;
+                compinstance->m_bVisible = false;
                 continue;
             }
         }
 
-        instance->SetActiveSlide(i == mLastSelectedIndex ? DoubleHighlite::SLIDE_IN : DoubleHighlite::SLIDE_OUT);
+        compinstance->SetActiveSlide(i == mLastSelectedIndex ? DoubleHighlite::SLIDE_IN : DoubleHighlite::SLIDE_OUT);
 
-        item = mMenuItems.AddItem(instance);
+        MenuItem<TLComponentInstance>* item = mMenuItems.AddItem(compinstance);
 
+#if defined(VERSION_G4QJ01)
+        {
+            MenuItem<TLComponentInstance>::Callback openFunc(
+                Bind<void>(MemFun<OptionsScene, void, TLComponentInstance*>(&OptionsScene::OpenItem), this, placeholder0));
+            item->SetCallback(ON_HIGHLIGHT, openFunc);
+        }
+
+        {
+            MenuItem<TLComponentInstance>::Callback closeFunc(
+                Bind<void>(MemFun<OptionsScene, void, TLComponentInstance*>(&OptionsScene::CloseItem), this, placeholder0));
+            item->SetCallback(ON_UNHIGHLIGHT, closeFunc);
+        }
+#else
         {
             MenuItem<TLComponentInstance>::Callback openFunc(DoubleHighlite::OpenItem);
             item->SetCallback(ON_HIGHLIGHT, openFunc);
@@ -148,16 +160,25 @@ void OptionsScene::SceneCreated()
             MenuItem<TLComponentInstance>::Callback closeFunc(DoubleHighlite::CloseItem);
             item->SetCallback(ON_UNHIGHLIGHT, closeFunc);
         }
+#endif
 
         {
-            MenuItem<TLComponentInstance>::Callback callback(Bind<void, MemFunImpl_Options_t, OptionsScene*, eMenuState>(
-                MemFun<OptionsScene, void, eMenuState>(&OptionsScene::ChangeMenuState),
-                this,
-                MenuToMenuStateMap[i]));
+            MenuItem<TLComponentInstance>::Callback callback(
+                Bind<void>(MemFun(&OptionsScene::ChangeMenuState), this, MenuToMenuStateMap[i]));
             item->SetCallback(ON_APPLY, callback);
         }
 
-        FindComponent(instance->GetActiveSlide(), "highlite");
+        FindComponent(compinstance->GetActiveSlide(), "highlite");
+
+#if defined(VERSION_G4QJ01)
+        if (i == 3)
+        {
+            if (AllCheatsLocked())
+            {
+                item->SetLockedFlag(true);
+            }
+        }
+#endif
 
         if (i == mLastSelectedIndex)
         {
@@ -167,34 +188,36 @@ void OptionsScene::SceneCreated()
         {
             item->RunCallback(ON_UNHIGHLIGHT);
 
-            TLSlide* slide = instance->GetActiveSlide();
-            instance->Update(1.0f + (slide->m_start + slide->m_duration));
+            TLSlide* slide = compinstance->GetActiveSlide();
+            compinstance->Update(1.0f + (slide->m_start + slide->m_duration));
         }
+
+#if defined(VERSION_G4QJ01)
+        if (i == 3)
+        {
+            TLComponentInstance* lockedComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+                compinstance->GetActiveSlide(),
+                InlineHasher(nlStringLowerHash("locked")));
+
+            if (lockedComp != NULL)
+            {
+                lockedComp->m_bVisible = item->IsLocked();
+            }
+        }
+#endif
     }
 
     mMenuItems.SetFlag(1);
     mMenuItems.SetActiveItemIndex(mLastSelectedIndex);
     mMenuItems.RunCallbackOnCurrent(ON_HIGHLIGHT);
 
-    m_pFEScene->m_pFEPackage->GetPresentation();
+    ChangeMenuState(MS_MAIN);
 
-    if (m_subMenu != NULL)
-    {
-        delete m_subMenu;
-        m_subMenu = NULL;
-    }
-
-    mMenuItems.SetActiveItemIndex(mLastSelectedIndex);
-    mMenuItems.RunCallbackOnCurrent(ON_HIGHLIGHT);
-
-    {
-        m_curMenuState = MS_MAIN;
-
-        mButtons.mButtonInstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-            presentation->m_currentSlide,
-            InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("buttons")));
-    }
+    TLComponentInstance* buttonComponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("buttons")));
+    mButtons.mButtonInstance = buttonComponent;
 
     mButtons.SetState(ButtonComponent::BS_A_AND_B);
 
@@ -204,18 +227,18 @@ void OptionsScene::SceneCreated()
 /**
  * Offset/Address/Size: 0xAF4 | 0x800B40B0 | size: 0x68
  */
-void OptionsScene::Update(float dt)
+void OptionsScene::Update(float fDeltaT)
 {
-    BaseSceneHandler::Update(dt);
+    BaseSceneHandler::Update(fDeltaT);
     mButtons.CentreButtons();
 
     if (m_curMenuState == MS_MAIN)
     {
-        UpdateForMain(dt);
+        UpdateForMain(fDeltaT);
     }
     else
     {
-        UpdateForSubOptionMenus(dt);
+        UpdateForSubOptionMenus(fDeltaT);
     }
 }
 
@@ -238,7 +261,7 @@ void OptionsScene::UpdateForMain(float fDeltaT)
 
         if (SaveLoadScene::IsIOEnabled())
         {
-            unsigned long currentcrc = nlChecksum32(&(nlSingleton<GameInfoManager>::Instance()->mUserInfo), 0x113C);
+            unsigned long currentcrc = nlChecksum32(&(nlSingleton<GameInfoManager>::Instance()->mUserInfo), sizeof(UserInfo));
 
             if (currentcrc != OptionsScene::mUserInfoCRC)
             {
@@ -296,25 +319,15 @@ void OptionsScene::UpdateForSubOptionMenus(float fDeltaT)
         }
         else if (mPopupResult == PR_APPLY_DELAYED_AUDIO_CHANGES)
         {
-            GameSceneManager* gsm = nlSingleton<GameSceneManager>::s_pInstance;
-            FEPopupMenu* scene;
-            if (gsm->mCurrentStackDepth != 0)
-            {
-                scene = (FEPopupMenu*)gsm->mBaseSceneHandlerStack[gsm->mCurrentStackDepth - 1];
-            }
-            else
-            {
-                scene = NULL;
-            }
+            FEPopupMenu* scene = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->GetCurrentScene();
 
             if (!scene->m_pFEScene->m_bValid)
             {
                 return;
             }
 
-            TLSlide* slide = scene->m_pFEPresentation->m_currentSlide;
-            f32 endTime = slide->m_start + slide->m_duration;
-            f32 curTime = slide->m_time;
+            f32 endTime = scene->m_pFEPresentation->m_currentSlide->m_start + scene->m_pFEPresentation->m_currentSlide->m_duration;
+            f32 curTime = scene->m_pFEPresentation->m_currentSlide->m_time;
 
             static float HACK_DELAY_UNTIL_APPLY = 0.0f;
 
@@ -337,18 +350,7 @@ void OptionsScene::UpdateForSubOptionMenus(float fDeltaT)
         }
 
         m_subMenu->GoBack();
-        m_pFEScene->m_pFEPackage->GetPresentation();
-
-        if (m_subMenu != NULL)
-        {
-            delete m_subMenu;
-            m_subMenu = NULL;
-        }
-
-        mMenuItems.SetActiveItemIndex(mLastSelectedIndex);
-        mMenuItems.RunCallbackOnCurrent(ON_HIGHLIGHT);
-
-        m_curMenuState = MS_MAIN;
+        ChangeMenuState(MS_MAIN);
 
         FEAudio::PlayAnimAudioEvent((mPopupResult == PR_APPLY_CHANGES) ? "sfx_accept" : "sfx_back", false);
 
@@ -366,18 +368,7 @@ void OptionsScene::UpdateForSubOptionMenus(float fDeltaT)
         else
         {
             m_subMenu->GoBack();
-            m_pFEScene->m_pFEPackage->GetPresentation();
-
-            if (m_subMenu != NULL)
-            {
-                delete m_subMenu;
-                m_subMenu = NULL;
-            }
-
-            mMenuItems.SetActiveItemIndex(mLastSelectedIndex);
-            mMenuItems.RunCallbackOnCurrent(ON_HIGHLIGHT);
-
-            m_curMenuState = MS_MAIN;
+            ChangeMenuState(MS_MAIN);
             FEAudio::PlayAnimAudioEvent("sfx_back", false);
             FEAudio::PlayAnimAudioEvent("sfx_screen_back", false);
             return;
@@ -409,29 +400,38 @@ void OptionsScene::ChangeMenuState(eMenuState newState)
         break;
     }
     case MS_AUDIO:
-        m_subMenu = new ((OptionsAudioMenuV2*)nlMalloc(sizeof(OptionsAudioMenuV2), 8, false))
+        m_subMenu = new (nlMalloc(sizeof(OptionsAudioMenuV2), 8, false))
             OptionsAudioMenuV2(pres, ButtonComponent::BS_B_ONLY, nlSingleton<GameInfoManager>::Instance()->mUserInfo.mAudioOptions);
         break;
     case MS_VISUAL:
-        m_subMenu = new ((OptionsVisualMenuV2*)nlMalloc(sizeof(OptionsVisualMenuV2), 8, false))
+        m_subMenu = new (nlMalloc(sizeof(OptionsVisualMenuV2), 8, false))
             OptionsVisualMenuV2(pres, ButtonComponent::BS_B_ONLY, nlSingleton<GameInfoManager>::Instance()->mUserInfo.mVisualOptions);
         break;
     case MS_GAMEPLAY:
     {
-        bool showLegend = nlSingleton<GameInfoManager>::Instance()->IsLegendSkillUnlocked();
-        m_subMenu = new ((OptionsGameplayMenuV2*)nlMalloc(sizeof(OptionsGameplayMenuV2), 8, false))
+        bool showlegend = nlSingleton<GameInfoManager>::Instance()->IsLegendSkillUnlocked();
+        m_subMenu = new (nlMalloc(sizeof(OptionsGameplayMenuV2), 8, false))
             OptionsGameplayMenuV2(pres,
                 ButtonComponent::BS_B_ONLY,
                 nlSingleton<GameInfoManager>::Instance()->mUserInfo.mGameplayOptions,
-                !showLegend ? 4 : -1);
+                !showlegend ? 4 : -1);
         break;
     }
     case MS_CHEATS:
-        m_subMenu = new ((OptionsCheatsMenu*)nlMalloc(sizeof(OptionsCheatsMenu), 8, false))
+#if defined(VERSION_G4QJ01)
+        if (AllCheatsLocked())
+        {
+            FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->Push(SCENE_POPUP_MENU, SCREEN_FORWARD, false);
+            popup->Create(POPUP_NO_CHEATS_UNLOCKED);
+            newState = MS_MAIN;
+            break;
+        }
+#endif
+        m_subMenu = new (nlMalloc(sizeof(OptionsCheatsMenu), 8, false))
             OptionsCheatsMenu(pres, ButtonComponent::BS_B_ONLY, nlSingleton<GameInfoManager>::Instance()->mUserInfo.mCheatOptions);
         break;
     case MS_SAVE_LOAD:
-        m_subMenu = new ((OptionsSaveLoad*)nlMalloc(sizeof(OptionsSaveLoad), 8, false))
+        m_subMenu = new (nlMalloc(sizeof(OptionsSaveLoad), 8, false))
             OptionsSaveLoad(pres, ButtonComponent::BS_A_AND_B);
         break;
     case MS_NUMMENUSTATES:
@@ -446,3 +446,97 @@ void OptionsScene::ChangeMenuState(eMenuState newState)
 
     m_curMenuState = newState;
 }
+
+#if defined(VERSION_G4QJ01)
+bool OptionsScene::AllCheatsLocked()
+{
+    GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::Instance();
+
+    if (gameInfo->IsCustomExplosiveUnlocked())
+    {
+        return false;
+    }
+    if (gameInfo->IsCustomFreezingUnlocked())
+    {
+        return false;
+    }
+    if (gameInfo->IsCustomShellsUnlocked())
+    {
+        return false;
+    }
+    if (gameInfo->IsCustomGiantUnlocked())
+    {
+        return false;
+    }
+    if (gameInfo->IsCustomEnhanceUnlocked())
+    {
+        return false;
+    }
+    if (gameInfo->IsGlassJawGoalieUnlocked())
+    {
+        return false;
+    }
+    if (gameInfo->IsUnlimtedPowerupsUnlocked())
+    {
+        return false;
+    }
+    if (gameInfo->IsTiltCheatUnlocked())
+    {
+        return false;
+    }
+    if (gameInfo->IsAllSTSCheatUnlocked())
+    {
+        return false;
+    }
+
+    return true;
+}
+
+void OptionsScene::OpenItem(TLComponentInstance* compinstance)
+{
+    DoubleHighlite::OpenItem(compinstance);
+
+    if (mMenuItems.GetMenuItem()->IsLocked())
+    {
+        TLTextInstance* text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            compinstance->GetActiveSlide(),
+            InlineHasher(nlStringLowerHash("pauseresume")));
+
+        if (g_pLocalization->m_CurrentLanguage == nlLocalization::LangJapanese)
+        {
+            text->m_LocStrId = 0x67452206;
+            text->m_OverloadFlags |= 8;
+        }
+        else
+        {
+            text->m_LocStrId = 0x2A68AC55;
+            text->m_OverloadFlags |= 8;
+        }
+    }
+
+    TLComponentInstance* lockedComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        compinstance->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("locked")));
+
+    if (lockedComp != NULL)
+    {
+        u8 locked = mMenuItems.GetMenuItem()->IsLocked();
+        lockedComp->m_bVisible = (bool)locked;
+    }
+}
+
+void OptionsScene::CloseItem(TLComponentInstance* compinstance)
+{
+    DoubleHighlite::CloseItem(compinstance);
+
+    TLComponentInstance* lockedComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        compinstance->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("locked")));
+
+    if (lockedComp != NULL)
+    {
+        u8 locked = mMenuItems.GetMenuItem()->IsLocked();
+        lockedComp->m_bVisible = (bool)locked;
+    }
+}
+#endif

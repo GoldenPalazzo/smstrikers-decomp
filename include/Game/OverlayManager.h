@@ -19,6 +19,17 @@ enum OverlaySlideName
     NUM_SLIDE_NAMES = 8,
 };
 
+static char* TEAM_SLIDE_NAMES[8] = {
+    "DAISY",
+    "DK",
+    "LUIGI",
+    "MARIO",
+    "PEACH",
+    "WALUIGI",
+    "WARIO",
+    "YOSHI"
+};
+
 class OverlayManager : public BaseGameSceneManager, public nlSingleton<OverlayManager>
 {
 public:

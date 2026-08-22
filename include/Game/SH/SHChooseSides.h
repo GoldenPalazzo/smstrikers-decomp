@@ -24,6 +24,8 @@ public:
     ~SHChooseSides2();
     void SceneCreated();
     void UpdateChooseSideComponent(float fDeltaT);
+    void SaveChanges();
+    void Proceed();
     void BindChooseSideInstances();
     void Update(float fDeltaT);
 
@@ -37,66 +39,5 @@ public:
     /* 0xE8 (G4QE01), 0xF8 (G4QJ01) */ int mProceedDelay;        // size 0x4
     /* 0xEC (G4QE01), 0xFC (G4QJ01) */ ButtonComponent mButtons; // size 0x24
 }; // total size: 0x110 (G4QE01), 0x120 (G4QJ01)
-
-// class FEFinder<TLInstance, 2>
-// {
-// public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-// };
-
-// class FEFinder<TLTextInstance, 3>
-// {
-// public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-// };
-
-// class FEFinder<TLComponentInstance, 4>
-// {
-// public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-// };
-
-// class FEFinder<TLInstance, 3>
-// {
-// public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLInstance>(TLInstance*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-// };
-
-// class FEFinder<TLInstance, 5>
-// {
-// public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-// };
-
-// class FEFinder<TLInstance, 4>
-// {
-// public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-// };
-
-// class FEFinder<TLImageInstance, 2>
-// {
-// public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-// };
-
-// class BasicString<char, Detail
-// {
-// public:
-//     void TempStringAllocator>::BasicString(const char*);
-// };
 
 #endif // _SHCHOOSESIDES_H_

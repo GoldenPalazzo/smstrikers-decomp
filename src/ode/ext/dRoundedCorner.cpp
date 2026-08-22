@@ -22,6 +22,24 @@ struct AABBDimensions
     float maxZ;
 };
 
+void dGeomRoundedCornerSetParams(dxGeom* geomID, float param, bool flag1, bool flag2)
+{
+    RoundedCornerData* data = (RoundedCornerData*)dGeomGetClassData(geomID);
+
+    data->param = param;
+    data->flag1 = flag1;
+    data->flag2 = flag2;
+}
+
+void dGeomRoundedCornerGetParams(dxGeom* geomID, float* param, bool* flag1, bool* flag2)
+{
+    RoundedCornerData* data = (RoundedCornerData*)dGeomGetClassData(geomID);
+
+    *param = data->param;
+    *flag1 = data->flag1;
+    *flag2 = data->flag2;
+}
+
 /**
  * Offset/Address/Size: 0x520 | 0x8021DFE8 | size: 0xD4
  */

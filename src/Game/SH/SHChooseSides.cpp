@@ -13,16 +13,13 @@
 #include "Game/Team.h"
 #include "NL/nlColour.h"
 #include "NL/nlConfig.h"
+#include "NL/nlLocalization.h"
 #include "NL/nlPrint.h"
 #include "NL/nlString.h"
 #include "NL/gl/glStruct.h"
 
 extern bool g_e3_Build;
-
-static inline void GetAllSides();
-static inline void SetAllSides(IChooseSide& cs);
-static inline eDifficultyID GetDifficulty0(GameInfoManager* gameInfo);
-static inline eDifficultyID GetDifficulty1(GameInfoManager* gameInfo);
+extern nlLocalization* g_pLocalization;
 
 /**
  * Offset/Address/Size: 0x21C8 | 0x800C6D88 | size: 0x194
@@ -137,7 +134,7 @@ void SHChooseSides2::SceneCreated()
 
     const gl_ScreenInfo* screenInfo = glGetScreenInfo();
 
-    FEScrollText* ticker = new (nlMalloc(0x22C, 8, false)) FEScrollText(scrollText, 0, screenInfo->ScreenWidth + 0x32);
+    FEScrollText* ticker = new (nlMalloc(sizeof(FEScrollText), 8, false)) FEScrollText(scrollText, 0, screenInfo->ScreenWidth + 0x32);
     m_pTicker = ticker;
 
     if (mContext == PAUSE)
@@ -155,8 +152,8 @@ void SHChooseSides2::SceneCreated()
 
         for (int i = 0; i < 3; i++)
         {
-            mAsyncImage[0][i] = new (nlMalloc(0x1C, 8, false)) AsyncImage(filename, NULL);
-            mAsyncImage[1][i] = new (nlMalloc(0x1C, 8, false)) AsyncImage(filename, NULL);
+            mAsyncImage[0][i] = new (nlMalloc(sizeof(AsyncImage), 8, false)) AsyncImage(filename, NULL);
+            mAsyncImage[1][i] = new (nlMalloc(sizeof(AsyncImage), 8, false)) AsyncImage(filename, NULL);
         }
 
         TLComponentInstance* captaincomponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
@@ -241,7 +238,7 @@ void SHChooseSides2::SceneCreated()
     {
         const char* filename = "art/fe/CaptainIconsUI.res";
 
-        AsyncImage* image0 = new (nlMalloc(0x1C, 8, false)) AsyncImage(filename, NULL);
+        AsyncImage* image0 = new (nlMalloc(sizeof(AsyncImage), 8, false)) AsyncImage(filename, NULL);
         mAsyncImage[0][0] = image0;
 
         mAsyncImage[0][0]->mImageInstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
@@ -249,7 +246,7 @@ void SHChooseSides2::SceneCreated()
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash("HOME_AWAY")));
 
-        AsyncImage* image1 = new (nlMalloc(0x1C, 8, false)) AsyncImage(filename, NULL);
+        AsyncImage* image1 = new (nlMalloc(sizeof(AsyncImage), 8, false)) AsyncImage(filename, NULL);
         mAsyncImage[1][0] = image1;
 
         mAsyncImage[1][0]->mImageInstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
@@ -423,21 +420,7 @@ void SHChooseSides2::UpdateChooseSideComponent(float fDeltaT)
             {
                 FEAudio::PlayAnimAudioEvent("sfx_back", false);
 
-                if (mContext == PAUSE)
-                {
-                    GetAllSides();
-                }
-                SetAllSides(mChooseSide);
-                if (mContext == PAUSE)
-                {
-                    g_pTeams[0]->UpdateControllers();
-                    g_pTeams[1]->UpdateControllers();
-                    nlSingleton<GameInfoManager>::Instance()->ApplyDifficultySettings();
-                    g_pGame->SetDifficulty(
-                        GetDifficulty0(nlSingleton<GameInfoManager>::s_pInstance),
-                        GetDifficulty1(nlSingleton<GameInfoManager>::s_pInstance),
-                        (eDifficultyID)3);
-                }
+                SaveChanges();
 
                 nlSingleton<OverlayManager>::Instance()->Push(IGSCENE_PAUSE, SCREEN_BACK, true);
                 break;
@@ -500,21 +483,7 @@ void SHChooseSides2::UpdateChooseSideComponent(float fDeltaT)
                 }
             }
 
-            if (mContext == PAUSE)
-            {
-                GetAllSides();
-            }
-            SetAllSides(mChooseSide);
-            if (mContext == PAUSE)
-            {
-                g_pTeams[0]->UpdateControllers();
-                g_pTeams[1]->UpdateControllers();
-                nlSingleton<GameInfoManager>::Instance()->ApplyDifficultySettings();
-                g_pGame->SetDifficulty(
-                    GetDifficulty0(nlSingleton<GameInfoManager>::s_pInstance),
-                    GetDifficulty1(nlSingleton<GameInfoManager>::s_pInstance),
-                    (eDifficultyID)3);
-            }
+            SaveChanges();
 
             if (nlSingleton<GameInfoManager>::Instance()->mIsInStrikers101Mode)
             {
@@ -535,18 +504,57 @@ void SHChooseSides2::UpdateChooseSideComponent(float fDeltaT)
     }
 }
 
-static inline FEPresentation* GetScenePresentation(SHChooseSides2* pScene)
+void SHChooseSides2::SaveChanges()
 {
-    return pScene->m_pFEPresentation;
+    if (mContext == PAUSE)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            nlSingleton<GameInfoManager>::Instance()->GetPlayingSide((u16)i);
+        }
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        nlSingleton<GameInfoManager>::Instance()->SetPlayingSide((u16)i, (short)mChooseSide.mPlayingSides[i]);
+    }
+
+    if (mContext == PAUSE)
+    {
+        g_pTeams[0]->UpdateControllers();
+        g_pTeams[1]->UpdateControllers();
+        nlSingleton<GameInfoManager>::Instance()->ApplyDifficultySettings();
+        g_pGame->SetDifficulty(
+            nlSingleton<GameInfoManager>::s_pInstance->GetDifficulty(0),
+            nlSingleton<GameInfoManager>::s_pInstance->GetDifficulty(1),
+            (eDifficultyID)3);
+    }
+}
+
+void SHChooseSides2::Proceed()
+{
+    FEAudio::PlayAnimAudioEvent("sfx_accept", false);
+
+    SaveChanges();
+
+    FrontEnd::SetControllerState();
+
+    if (mNextScene == SCENE_SUPER_LOADING)
+    {
+        nlSingleton<GameSceneManager>::Instance()->PushLoadingScene(true);
+    }
+    else
+    {
+        nlSingleton<GameSceneManager>::Instance()->Push(mNextScene, SCREEN_FORWARD, true);
+    }
 }
 
 /**
  * Offset/Address/Size: 0x350 | 0x800C4F10 | size: 0x46C
  */
-#pragma inline_depth(8)
 void SHChooseSides2::BindChooseSideInstances()
 {
-    FEPresentation* pPres = GetScenePresentation(this);
+    FEPresentation* pPres = GetPresentation();
 
     TLComponentInstance* choosesidecomponent = (TLComponentInstance*)FEFinder<TLInstance, 4>::Find<TLSlide>(
         pPres->m_currentSlide,
@@ -594,6 +602,22 @@ void SHChooseSides2::BindChooseSideInstances()
         colour.c[2] = PAD_COLOURS[i][2];
         colour.c[3] = 0xFF;
         mChooseSide.mInstanceTable[i + 8]->SetAssetColour(colour);
+
+#if defined(VERSION_G4QJ01)
+        if (g_pLocalization->m_CurrentLanguage == nlLocalization::LangJapanese)
+        {
+            nlSNPrintf(tempstring, 64, "%dp_controller", i + 1);
+
+            mChooseSide.mInstanceTable[i + 17] = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+                activeslide,
+                InlineHasher(nlStringLowerHash("group")),
+                InlineHasher(nlStringLowerHash(tempstring)));
+        }
+        else
+        {
+            mChooseSide.mInstanceTable[i + 17] = NULL;
+        }
+#endif
     }
 
     TLInstance* object = FEFinder<TLInstance, 2>::Find<TLSlide>(
@@ -619,33 +643,6 @@ void SHChooseSides2::BindChooseSideInstances()
 
     mChooseSide.ResetAndPositionControllers(false);
 }
-#pragma inline_depth()
-
-static inline void GetAllSides()
-{
-    for (int i = 0; i < 4; i++)
-    {
-        nlSingleton<GameInfoManager>::Instance()->GetPlayingSide((u16)i);
-    }
-}
-
-static inline void SetAllSides(IChooseSide& cs)
-{
-    for (int i = 0; i < 4; i++)
-    {
-        nlSingleton<GameInfoManager>::Instance()->SetPlayingSide((u16)i, (short)cs.mPlayingSides[i]);
-    }
-}
-
-static inline eDifficultyID GetDifficulty0(GameInfoManager* gameInfo)
-{
-    return gameInfo->mCurrentDifficulty[0];
-}
-
-static inline eDifficultyID GetDifficulty1(GameInfoManager* gameInfo)
-{
-    return gameInfo->mCurrentDifficulty[1];
-}
 
 /**
  * Offset/Address/Size: 0x0 | 0x800C4BC0 | size: 0x350
@@ -661,37 +658,7 @@ void SHChooseSides2::Update(float fDeltaT)
 
         if (mProceedDelay == 0)
         {
-            FEAudio::PlayAnimAudioEvent("sfx_accept", false);
-
-            if (mContext == PAUSE)
-            {
-                GetAllSides();
-            }
-
-            SetAllSides(mChooseSide);
-
-            if (mContext == PAUSE)
-            {
-                g_pTeams[0]->UpdateControllers();
-                g_pTeams[1]->UpdateControllers();
-                nlSingleton<GameInfoManager>::Instance()->ApplyDifficultySettings();
-                g_pGame->SetDifficulty(
-                    GetDifficulty0(nlSingleton<GameInfoManager>::s_pInstance),
-                    GetDifficulty1(nlSingleton<GameInfoManager>::s_pInstance),
-                    (eDifficultyID)3);
-            }
-
-            FrontEnd::SetControllerState();
-
-            if (mNextScene == SCENE_SUPER_LOADING)
-            {
-                nlSingleton<GameSceneManager>::Instance()->PushLoadingScene(true);
-            }
-            else
-            {
-                nlSingleton<GameSceneManager>::Instance()->Push(mNextScene, SCREEN_FORWARD, true);
-            }
-
+            Proceed();
             mProceedDelay = -1;
         }
     }

@@ -15,7 +15,6 @@
 #include "NL/nlSingleton.h"
 #include "types.h"
 
-extern FEInput* g_pFEInput;
 extern nlLocalization* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
@@ -44,7 +43,7 @@ int LessonScene::mLessonIndex = -1;
  * Offset/Address/Size: 0x508 | 0x8010A9B4 | size: 0x6C
  */
 LessonScene::LessonScene()
-    : mHUDScene(nullptr)
+    : mHUDScene(NULL)
 {
     // EMPTY
 }
@@ -68,8 +67,8 @@ void LessonScene::SceneCreated()
     TLTextInstance* bodytextinstance;
     TLComponentInstance* buttonComponent;
 
-    nlSNPrintf(title, 0x40, "LOC_TUTORIAL_INSTRUCTION_TITLE_%d", mLessonIndex);
-    nlSNPrintf(body, 0x40, "LOC_TUTORIAL_INSTRUCTION_BODY_%d", mLessonIndex);
+    nlSNPrintf(title, 64, "LOC_TUTORIAL_INSTRUCTION_TITLE_%d", mLessonIndex);
+    nlSNPrintf(body, 64, "LOC_TUTORIAL_INSTRUCTION_BODY_%d", mLessonIndex);
 
     titletextinstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,
@@ -117,7 +116,7 @@ void LessonScene::Update(float fDeltaT)
     }
     else
     {
-        scene = nullptr;
+        scene = NULL;
     }
 
     if (scene == (MoviePlayerScene*)this)
@@ -135,10 +134,21 @@ void LessonScene::Update(float fDeltaT)
         }
     }
 
-    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, nullptr))
+    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
     {
         MoviePlayerScene* movieScene = (MoviePlayerScene*)nlSingleton<OverlayManager>::Instance()->Push(IGSCENE_LESSON_MOVIE_PLAYER, SCREEN_FORWARD, false);
-        nlSNPrintf(filename, 0x80, "movies/lesson%d.thp", mLessonIndex);
+#if defined(VERSION_G4QJ01)
+        if (mLessonIndex == 6 && g_pLocalization->m_CurrentLanguage == nlLocalization::LangJapanese)
+        {
+            nlSNPrintf(filename, 128, "movies/lesson%djpn.thp", mLessonIndex);
+        }
+        else
+        {
+            nlSNPrintf(filename, 128, "movies/lesson%d.thp", mLessonIndex);
+        }
+#else
+        nlSNPrintf(filename, 128, "movies/lesson%d.thp", mLessonIndex);
+#endif
         movieScene->SetMovieDetails(filename, true, false);
         movieScene->mNextScene = IGSCENE_LESSON;
         movieScene->mPushWithPop = false;
@@ -147,7 +157,7 @@ void LessonScene::Update(float fDeltaT)
         return;
     }
 
-    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, nullptr))
+    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
     {
         LessonSelectScene* lessonScene = (LessonSelectScene*)nlSingleton<OverlayManager>::Instance()->Push(IGSCENE_LESSON_SELECT, SCREEN_BACK, true);
         lessonScene->mStartAnimAtEnd = true;
@@ -155,7 +165,7 @@ void LessonScene::Update(float fDeltaT)
         return;
     }
 
-    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x800, false, nullptr))
+    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x800, false, NULL))
     {
         FrontEnd::ExitMenuState();
         FEAudio::PlayAnimAudioEvent("sfx_back", NULL);

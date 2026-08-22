@@ -19,7 +19,7 @@ public:
     };
 
     void CentreButtons();
-    void SetState(ButtonComponent::ButtonState buttonstate); // not sure if this is correct
+    void SetState(ButtonComponent::ButtonState buttonstate);
     ~ButtonComponent();
     ButtonComponent();
     static int GetRenderedStringLength(const unsigned short* pString, const nlFont* pFont);

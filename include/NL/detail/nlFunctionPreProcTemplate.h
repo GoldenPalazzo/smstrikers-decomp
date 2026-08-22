@@ -214,7 +214,7 @@ template <typename Callable>
 inline typename NLF_CLASS<NLF_TEMPLATE_ARGUMENTS>::FunctorBase*
 NLF_CLASS<NLF_TEMPLATE_ARGUMENTS>::FunctorImpl<Callable>::Clone() const
 {
-    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mFunctor);
+    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(*this);
 }
 
 #if NLF_ARITY == 0

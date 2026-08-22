@@ -28,23 +28,73 @@
 extern void nlPrintf(const char*, ...);
 extern void nlBreak();
 
+static dMessageFunction* error_function = 0;
 static dMessageFunction* debug_function = 0;
 static dMessageFunction* message_function = 0;
 
-inline void printMessage(int num, const char* msg1, const char* msg2, va_list ap)
+extern "C" void dSetErrorHandler(dMessageFunction* fn)
 {
-    fflush(stderr);
-    fflush(stdout);
-    if (num)
-        fprintf(stderr, "\n%s %d: ", msg1, num);
-    else
-        fprintf(stderr, "\n%s: ", msg1);
+    error_function = fn;
+}
 
-    // vfprintf (stderr,msg2,ap);
+extern "C" void dSetDebugHandler(dMessageFunction* fn)
+{
+    debug_function = fn;
+}
+
+extern "C" void dSetMessageHandler(dMessageFunction* fn)
+{
+    message_function = fn;
+}
+
+extern "C" dMessageFunction* dGetErrorHandler()
+{
+    return error_function;
+}
+
+extern "C" dMessageFunction* dGetDebugHandler()
+{
+    return debug_function;
+}
+
+extern "C" dMessageFunction* dGetMessageHandler()
+{
+    return message_function;
+}
+
+static void printMessage(int num, const char* msg1, const char* msg2, va_list ap)
+{
+    if (num)
+        nlPrintf("\n%s %d: ", msg1, num);
+    else
+        nlPrintf("\n%s: ", msg1);
+
     nlPrintf(msg2, ap);
 
-    fprintf(stderr, "\n");
-    fflush(stderr);
+    nlPrintf("\n");
+}
+
+extern "C" void dError(int num, const char* msg, ...)
+{
+    va_list ap;
+    va_start(ap, msg);
+    if (error_function)
+    {
+        error_function(num, msg, ap);
+    }
+    else
+    {
+        if (num)
+        {
+            nlPrintf("\n%s %d: ", "ODE Error", num);
+        }
+        else
+        {
+            nlPrintf("\n%s: ", "ODE Error");
+        }
+        nlPrintf("\n");
+    }
+    exit(1);
 }
 
 /**

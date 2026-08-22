@@ -7,19 +7,19 @@
 #include "Game/FE/feScrollText.h"
 #include "Game/FE/feIMessenger.h"
 
-enum eMessengerState
-{
-    MS_INVALID = -1,
-    MS_OPENING = 0,
-    MS_OPEN = 1,
-    MS_CLOSING = 2,
-    MS_CLOSED = 3,
-    MS_NUMSTATES = 4,
-};
-
 class NSNMessengerScene : public FEIMessenger, public BaseOverlayHandler
 {
 public:
+    enum eMessengerState
+    {
+        MS_INVALID = -1,
+        MS_OPENING = 0,
+        MS_OPEN = 1,
+        MS_CLOSING = 2,
+        MS_CLOSED = 3,
+        MS_NUMSTATES = 4,
+    };
+
     NSNMessengerScene();
     ~NSNMessengerScene();
 

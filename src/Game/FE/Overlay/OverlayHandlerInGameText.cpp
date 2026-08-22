@@ -55,17 +55,6 @@ static inline const unsigned short* LookupLocHash(unsigned long key)
     return MissingLocString;
 }
 
-static char* TEAM_SLIDE_NAMES[8] = {
-    "DAISY",
-    "DK",
-    "LUIGI",
-    "MARIO",
-    "PEACH",
-    "WALUIGI",
-    "WARIO",
-    "YOSHI"
-}; // size: 0x20, address: 0x802BFE60
-
 static const char* OVERLAY_HANDLER_LAYER_NAME = "Layer"; // size: 0x4, address: 0x80395EAC
 
 static const struct InGameTextEntry IGTTable[8] = {

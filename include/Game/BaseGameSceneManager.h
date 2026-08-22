@@ -107,6 +107,10 @@ public:
     virtual ~BaseGameSceneManager();
     virtual BaseSceneHandler* Push(SceneList newscene, ScreenMovement movement, bool popfirst);
     BaseSceneHandler* GetScene(SceneList scene);
+    BaseSceneHandler* GetCurrentScene()
+    {
+        return mCurrentStackDepth != 0 ? mBaseSceneHandlerStack[mCurrentStackDepth - 1] : NULL;
+    }
     virtual void Pop();
     void PopEntireStack();
     int GetSceneType(BaseSceneHandler* handler);

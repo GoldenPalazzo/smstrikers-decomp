@@ -198,6 +198,7 @@ public:
     void OnPreGameState();
     void OnPostGameState();
     void ApplyDifficultySettings();
+    eDifficultyID GetDifficulty(int side) const { return mCurrentDifficulty[side]; }
     eTrophyType GetTrophyTypeByCurrentMode() const;
     bool IsPossibleCupMatch() const;
     void OnPreCupGameState();

@@ -78,7 +78,7 @@ static inline void removeObjectFromList(dObject* obj)
 
 // remove the joint from neighbour lists of all connected bodies
 
-static inline void removeJointReferencesFromAttachedBodies(dxJoint* j)
+static void removeJointReferencesFromAttachedBodies(dxJoint* j)
 {
     for (int i = 0; i < 2; i++)
     {
@@ -108,146 +108,146 @@ static inline void removeJointReferencesFromAttachedBodies(dxJoint* j)
     j->node[1].next = 0;
 }
 
-// //****************************************************************************
-// // debugging
+//****************************************************************************
+// debugging
 
-// // see if an object list loops on itself (if so, it's bad).
+// see if an object list loops on itself (if so, it's bad).
 
-// static int listHasLoops(dObject* first)
-// {
-//     if (first == 0 || first->next == 0)
-//         return 0;
-//     dObject *a = first, *b = first->next;
-//     int skip = 0;
-//     while (b)
-//     {
-//         if (a == b)
-//             return 1;
-//         b = b->next;
-//         if (skip)
-//             a = a->next;
-//         skip ^= 1;
-//     }
-//     return 0;
-// }
+static int listHasLoops(dObject* first)
+{
+    if (first == 0 || first->next == 0)
+        return 0;
+    dObject *a = first, *b = first->next;
+    int skip = 0;
+    while (b)
+    {
+        if (a == b)
+            return 1;
+        b = b->next;
+        if (skip)
+            a = a->next;
+        skip ^= 1;
+    }
+    return 0;
+}
 
-// // check the validity of the world data structures
+// check the validity of the world data structures
 
-// static void checkWorld(dxWorld* w)
-// {
-//     dxBody* b;
-//     dxJoint* j;
+static void checkWorld(dxWorld* w)
+{
+    dxBody* b;
+    dxJoint* j;
 
-//     // check there are no loops
-//     if (listHasLoops(w->firstbody))
-//         dDebug(0, "body list has loops");
-//     if (listHasLoops(w->firstjoint))
-//         dDebug(0, "joint list has loops");
+    // check there are no loops
+    if (listHasLoops(w->firstbody))
+        dDebug(0, "body list has loops");
+    if (listHasLoops(w->firstjoint))
+        dDebug(0, "joint list has loops");
 
-//     // check lists are well formed (check `tome' pointers)
-//     for (b = w->firstbody; b; b = (dxBody*)b->next)
-//     {
-//         if (b->next && b->next->tome != &b->next)
-//             dDebug(0, "bad tome pointer in body list");
-//     }
-//     for (j = w->firstjoint; j; j = (dxJoint*)j->next)
-//     {
-//         if (j->next && j->next->tome != &j->next)
-//             dDebug(0, "bad tome pointer in joint list");
-//     }
+    // check lists are well formed (check `tome' pointers)
+    for (b = w->firstbody; b; b = (dxBody*)b->next)
+    {
+        if (b->next && b->next->tome != &b->next)
+            dDebug(0, "bad tome pointer in body list");
+    }
+    for (j = w->firstjoint; j; j = (dxJoint*)j->next)
+    {
+        if (j->next && j->next->tome != &j->next)
+            dDebug(0, "bad tome pointer in joint list");
+    }
 
-//     // check counts
-//     int n = 0;
-//     for (b = w->firstbody; b; b = (dxBody*)b->next)
-//         n++;
-//     if (w->nb != n)
-//         dDebug(0, "body count incorrect");
-//     n = 0;
-//     for (j = w->firstjoint; j; j = (dxJoint*)j->next)
-//         n++;
-//     if (w->nj != n)
-//         dDebug(0, "joint count incorrect");
+    // check counts
+    int n = 0;
+    for (b = w->firstbody; b; b = (dxBody*)b->next)
+        n++;
+    if (w->nb != n)
+        dDebug(0, "body count incorrect");
+    n = 0;
+    for (j = w->firstjoint; j; j = (dxJoint*)j->next)
+        n++;
+    if (w->nj != n)
+        dDebug(0, "joint count incorrect");
 
-//     // set all tag values to a known value
-//     static int count = 0;
-//     count++;
-//     for (b = w->firstbody; b; b = (dxBody*)b->next)
-//         b->tag = count;
-//     for (j = w->firstjoint; j; j = (dxJoint*)j->next)
-//         j->tag = count;
+    // set all tag values to a known value
+    static int count = 0;
+    count++;
+    for (b = w->firstbody; b; b = (dxBody*)b->next)
+        b->tag = count;
+    for (j = w->firstjoint; j; j = (dxJoint*)j->next)
+        j->tag = count;
 
-//     // check all body/joint world pointers are ok
-//     for (b = w->firstbody; b; b = (dxBody*)b->next)
-//         if (b->world != w)
-//             dDebug(0, "bad world pointer in body list");
-//     for (j = w->firstjoint; j; j = (dxJoint*)j->next)
-//         if (j->world != w)
-//             dDebug(0, "bad world pointer in joint list");
+    // check all body/joint world pointers are ok
+    for (b = w->firstbody; b; b = (dxBody*)b->next)
+        if (b->world != w)
+            dDebug(0, "bad world pointer in body list");
+    for (j = w->firstjoint; j; j = (dxJoint*)j->next)
+        if (j->world != w)
+            dDebug(0, "bad world pointer in joint list");
 
-//     /*
-//     // check for half-connected joints - actually now these are valid
-//     for (j=w->firstjoint; j; j=(dxJoint*)j->next) {
-//       if (j->node[0].body || j->node[1].body) {
-//         if (!(j->node[0].body && j->node[1].body))
-//       dDebug (0,"half connected joint found");
-//       }
-//     }
-//     */
+    // check for half-connected joints
+    for (j = w->firstjoint; j; j = (dxJoint*)j->next)
+    {
+        if (j->node[0].body || j->node[1].body)
+        {
+            if (!(j->node[0].body && j->node[1].body))
+                dDebug(0, "half connected joint found");
+        }
+    }
 
-//     // check that every joint node appears in the joint lists of both bodies it
-//     // attaches
-//     for (j = w->firstjoint; j; j = (dxJoint*)j->next)
-//     {
-//         for (int i = 0; i < 2; i++)
-//         {
-//             if (j->node[i].body)
-//             {
-//                 int ok = 0;
-//                 for (dxJointNode* n = j->node[i].body->firstjoint; n; n = n->next)
-//                 {
-//                     if (n->joint == j)
-//                         ok = 1;
-//                 }
-//                 if (ok == 0)
-//                     dDebug(0, "joint not in joint list of attached body");
-//             }
-//         }
-//     }
+    // check that every joint node appears in the joint lists of both bodies it
+    // attaches
+    for (j = w->firstjoint; j; j = (dxJoint*)j->next)
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            if (j->node[i].body)
+            {
+                int ok = 0;
+                for (dxJointNode* n = j->node[i].body->firstjoint; n; n = n->next)
+                {
+                    if (n->joint == j)
+                        ok = 1;
+                }
+                if (ok == 0)
+                    dDebug(0, "joint not in joint list of attached body");
+            }
+        }
+    }
 
-//     // check all body joint lists (correct body ptrs)
-//     for (b = w->firstbody; b; b = (dxBody*)b->next)
-//     {
-//         for (dxJointNode* n = b->firstjoint; n; n = n->next)
-//         {
-//             if (&n->joint->node[0] == n)
-//             {
-//                 if (n->joint->node[1].body != b)
-//                     dDebug(0, "bad body pointer in joint node of body list (1)");
-//             }
-//             else
-//             {
-//                 if (n->joint->node[0].body != b)
-//                     dDebug(0, "bad body pointer in joint node of body list (2)");
-//             }
-//             if (n->joint->tag != count)
-//                 dDebug(0, "bad joint node pointer in body");
-//         }
-//     }
+    // check all body joint lists (correct body ptrs)
+    for (b = w->firstbody; b; b = (dxBody*)b->next)
+    {
+        for (dxJointNode* n = b->firstjoint; n; n = n->next)
+        {
+            if (&n->joint->node[0] == n)
+            {
+                if (n->joint->node[1].body != b)
+                    dDebug(0, "bad body pointer in joint node of body list (1)");
+            }
+            else
+            {
+                if (n->joint->node[0].body != b)
+                    dDebug(0, "bad body pointer in joint node of body list (2)");
+            }
+            if (n->joint->tag != count)
+                dDebug(0, "bad joint node pointer in body");
+        }
+    }
 
-//     // check all body pointers in joints, check they are distinct
-//     for (j = w->firstjoint; j; j = (dxJoint*)j->next)
-//     {
-//         if (j->node[0].body && (j->node[0].body == j->node[1].body))
-//             dDebug(0, "non-distinct body pointers in joint");
-//         if ((j->node[0].body && j->node[0].body->tag != count) || (j->node[1].body && j->node[1].body->tag != count))
-//             dDebug(0, "bad body pointer in joint");
-//     }
-// }
+    // check all body pointers in joints, check they are distinct
+    for (j = w->firstjoint; j; j = (dxJoint*)j->next)
+    {
+        if (j->node[0].body && (j->node[0].body == j->node[1].body))
+            dDebug(0, "non-distinct body pointers in joint");
+        if ((j->node[0].body && j->node[0].body->tag != count) || (j->node[1].body && j->node[1].body->tag != count))
+            dDebug(0, "bad body pointer in joint");
+    }
+}
 
-// void dWorldCheck(dxWorld* w)
-// {
-//     checkWorld(w);
-// }
+void dWorldCheck(dxWorld* w)
+{
+    checkWorld(w);
+}
 
 //****************************************************************************
 // body
@@ -376,20 +376,20 @@ void dBodySetRotation(dBodyID b, const dMatrix3 R)
         dGeomMoved(geom);
 }
 
-// void dBodySetQuaternion(dBodyID b, const dQuaternion q)
-// {
-//     dAASSERT(b && q);
-//     b->q[0] = q[0];
-//     b->q[1] = q[1];
-//     b->q[2] = q[2];
-//     b->q[3] = q[3];
-//     dNormalize4(b->q);
-//     dQtoR(b->q, b->R);
+void dBodySetQuaternion(dBodyID b, const dQuaternion q)
+{
+    dAASSERT(b && q);
+    b->q[0] = q[0];
+    b->q[1] = q[1];
+    b->q[2] = q[2];
+    b->q[3] = q[3];
+    dNormalize4(b->q);
+    dQtoR(b->q, b->R);
 
-//     // notify all attached geoms that this body has moved
-//     for (dxGeom* geom = b->geom; geom; geom = dGeomGetBodyNext(geom))
-//         dGeomMoved(geom);
-// }
+    // notify all attached geoms that this body has moved
+    for (dxGeom* geom = b->geom; geom; geom = dGeomGetBodyNext(geom))
+        dGeomMoved(geom);
+}
 
 /**
  * Offset/Address/Size: 0xD88 | 0x8022161C | size: 0x10
@@ -431,11 +431,11 @@ const dReal* dBodyGetRotation(dBodyID b)
     return b->R;
 }
 
-// const dReal* dBodyGetQuaternion(dBodyID b)
-// {
-//     dAASSERT(b);
-//     return b->q;
-// }
+const dReal* dBodyGetQuaternion(dBodyID b)
+{
+    dAASSERT(b);
+    return b->q;
+}
 
 /**
  * Offset/Address/Size: 0xD60 | 0x802215F4 | size: 0x8
@@ -501,111 +501,111 @@ void dBodyAddTorque(dBodyID b, dReal fx, dReal fy, dReal fz)
     b->tacc[2] += fz;
 }
 
-// void dBodyAddRelForce(dBodyID b, dReal fx, dReal fy, dReal fz)
-// {
-//     dAASSERT(b);
-//     dVector3 t1, t2;
-//     t1[0] = fx;
-//     t1[1] = fy;
-//     t1[2] = fz;
-//     t1[3] = 0;
-//     dMULTIPLY0_331(t2, b->R, t1);
-//     b->facc[0] += t2[0];
-//     b->facc[1] += t2[1];
-//     b->facc[2] += t2[2];
-// }
+void dBodyAddRelForce(dBodyID b, dReal fx, dReal fy, dReal fz)
+{
+    dAASSERT(b);
+    dVector3 t1, t2;
+    t1[0] = fx;
+    t1[1] = fy;
+    t1[2] = fz;
+    t1[3] = 0;
+    dMULTIPLY0_331(t2, b->R, t1);
+    b->facc[0] += t2[0];
+    b->facc[1] += t2[1];
+    b->facc[2] += t2[2];
+}
 
-// void dBodyAddRelTorque(dBodyID b, dReal fx, dReal fy, dReal fz)
-// {
-//     dAASSERT(b);
-//     dVector3 t1, t2;
-//     t1[0] = fx;
-//     t1[1] = fy;
-//     t1[2] = fz;
-//     t1[3] = 0;
-//     dMULTIPLY0_331(t2, b->R, t1);
-//     b->tacc[0] += t2[0];
-//     b->tacc[1] += t2[1];
-//     b->tacc[2] += t2[2];
-// }
+void dBodyAddRelTorque(dBodyID b, dReal fx, dReal fy, dReal fz)
+{
+    dAASSERT(b);
+    dVector3 t1, t2;
+    t1[0] = fx;
+    t1[1] = fy;
+    t1[2] = fz;
+    t1[3] = 0;
+    dMULTIPLY0_331(t2, b->R, t1);
+    b->tacc[0] += t2[0];
+    b->tacc[1] += t2[1];
+    b->tacc[2] += t2[2];
+}
 
-// void dBodyAddForceAtPos(dBodyID b, dReal fx, dReal fy, dReal fz,
-//     dReal px, dReal py, dReal pz)
-// {
-//     dAASSERT(b);
-//     b->facc[0] += fx;
-//     b->facc[1] += fy;
-//     b->facc[2] += fz;
-//     dVector3 f, q;
-//     f[0] = fx;
-//     f[1] = fy;
-//     f[2] = fz;
-//     q[0] = px - b->pos[0];
-//     q[1] = py - b->pos[1];
-//     q[2] = pz - b->pos[2];
-//     dCROSS(b->tacc, +=, q, f);
-// }
+void dBodyAddForceAtPos(dBodyID b, dReal fx, dReal fy, dReal fz,
+    dReal px, dReal py, dReal pz)
+{
+    dAASSERT(b);
+    b->facc[0] += fx;
+    b->facc[1] += fy;
+    b->facc[2] += fz;
+    dVector3 f, q;
+    f[0] = fx;
+    f[1] = fy;
+    f[2] = fz;
+    q[0] = px - b->pos[0];
+    q[1] = py - b->pos[1];
+    q[2] = pz - b->pos[2];
+    dCROSS(b->tacc, +=, q, f);
+}
 
-// void dBodyAddForceAtRelPos(dBodyID b, dReal fx, dReal fy, dReal fz,
-//     dReal px, dReal py, dReal pz)
-// {
-//     dAASSERT(b);
-//     dVector3 prel, f, p;
-//     f[0] = fx;
-//     f[1] = fy;
-//     f[2] = fz;
-//     f[3] = 0;
-//     prel[0] = px;
-//     prel[1] = py;
-//     prel[2] = pz;
-//     prel[3] = 0;
-//     dMULTIPLY0_331(p, b->R, prel);
-//     b->facc[0] += f[0];
-//     b->facc[1] += f[1];
-//     b->facc[2] += f[2];
-//     dCROSS(b->tacc, +=, p, f);
-// }
+void dBodyAddForceAtRelPos(dBodyID b, dReal fx, dReal fy, dReal fz,
+    dReal px, dReal py, dReal pz)
+{
+    dAASSERT(b);
+    dVector3 prel, f, p;
+    f[0] = fx;
+    f[1] = fy;
+    f[2] = fz;
+    f[3] = 0;
+    prel[0] = px;
+    prel[1] = py;
+    prel[2] = pz;
+    prel[3] = 0;
+    dMULTIPLY0_331(p, b->R, prel);
+    b->facc[0] += f[0];
+    b->facc[1] += f[1];
+    b->facc[2] += f[2];
+    dCROSS(b->tacc, +=, p, f);
+}
 
-// void dBodyAddRelForceAtPos(dBodyID b, dReal fx, dReal fy, dReal fz,
-//     dReal px, dReal py, dReal pz)
-// {
-//     dAASSERT(b);
-//     dVector3 frel, f;
-//     frel[0] = fx;
-//     frel[1] = fy;
-//     frel[2] = fz;
-//     frel[3] = 0;
-//     dMULTIPLY0_331(f, b->R, frel);
-//     b->facc[0] += f[0];
-//     b->facc[1] += f[1];
-//     b->facc[2] += f[2];
-//     dVector3 q;
-//     q[0] = px - b->pos[0];
-//     q[1] = py - b->pos[1];
-//     q[2] = pz - b->pos[2];
-//     dCROSS(b->tacc, +=, q, f);
-// }
+void dBodyAddRelForceAtPos(dBodyID b, dReal fx, dReal fy, dReal fz,
+    dReal px, dReal py, dReal pz)
+{
+    dAASSERT(b);
+    dVector3 frel, f;
+    frel[0] = fx;
+    frel[1] = fy;
+    frel[2] = fz;
+    frel[3] = 0;
+    dMULTIPLY0_331(f, b->R, frel);
+    b->facc[0] += f[0];
+    b->facc[1] += f[1];
+    b->facc[2] += f[2];
+    dVector3 q;
+    q[0] = px - b->pos[0];
+    q[1] = py - b->pos[1];
+    q[2] = pz - b->pos[2];
+    dCROSS(b->tacc, +=, q, f);
+}
 
-// void dBodyAddRelForceAtRelPos(dBodyID b, dReal fx, dReal fy, dReal fz,
-//     dReal px, dReal py, dReal pz)
-// {
-//     dAASSERT(b);
-//     dVector3 frel, prel, f, p;
-//     frel[0] = fx;
-//     frel[1] = fy;
-//     frel[2] = fz;
-//     frel[3] = 0;
-//     prel[0] = px;
-//     prel[1] = py;
-//     prel[2] = pz;
-//     prel[3] = 0;
-//     dMULTIPLY0_331(f, b->R, frel);
-//     dMULTIPLY0_331(p, b->R, prel);
-//     b->facc[0] += f[0];
-//     b->facc[1] += f[1];
-//     b->facc[2] += f[2];
-//     dCROSS(b->tacc, +=, p, f);
-// }
+void dBodyAddRelForceAtRelPos(dBodyID b, dReal fx, dReal fy, dReal fz,
+    dReal px, dReal py, dReal pz)
+{
+    dAASSERT(b);
+    dVector3 frel, prel, f, p;
+    frel[0] = fx;
+    frel[1] = fy;
+    frel[2] = fz;
+    frel[3] = 0;
+    prel[0] = px;
+    prel[1] = py;
+    prel[2] = pz;
+    prel[3] = 0;
+    dMULTIPLY0_331(f, b->R, frel);
+    dMULTIPLY0_331(p, b->R, prel);
+    b->facc[0] += f[0];
+    b->facc[1] += f[1];
+    b->facc[2] += f[2];
+    dCROSS(b->tacc, +=, p, f);
+}
 
 /**
  * Offset/Address/Size: 0xC6C | 0x80221500 | size: 0x8
@@ -647,153 +647,153 @@ void dBodySetTorque(dBodyID b, dReal x, dReal y, dReal z)
     b->tacc[2] = z;
 }
 
-// void dBodyGetRelPointPos(dBodyID b, dReal px, dReal py, dReal pz,
-//     dVector3 result)
-// {
-//     dAASSERT(b);
-//     dVector3 prel, p;
-//     prel[0] = px;
-//     prel[1] = py;
-//     prel[2] = pz;
-//     prel[3] = 0;
-//     dMULTIPLY0_331(p, b->R, prel);
-//     result[0] = p[0] + b->pos[0];
-//     result[1] = p[1] + b->pos[1];
-//     result[2] = p[2] + b->pos[2];
-// }
+void dBodyGetRelPointPos(dBodyID b, dReal px, dReal py, dReal pz,
+    dVector3 result)
+{
+    dAASSERT(b);
+    dVector3 prel, p;
+    prel[0] = px;
+    prel[1] = py;
+    prel[2] = pz;
+    prel[3] = 0;
+    dMULTIPLY0_331(p, b->R, prel);
+    result[0] = p[0] + b->pos[0];
+    result[1] = p[1] + b->pos[1];
+    result[2] = p[2] + b->pos[2];
+}
 
-// void dBodyGetRelPointVel(dBodyID b, dReal px, dReal py, dReal pz,
-//     dVector3 result)
-// {
-//     dAASSERT(b);
-//     dVector3 prel, p;
-//     prel[0] = px;
-//     prel[1] = py;
-//     prel[2] = pz;
-//     prel[3] = 0;
-//     dMULTIPLY0_331(p, b->R, prel);
-//     result[0] = b->lvel[0];
-//     result[1] = b->lvel[1];
-//     result[2] = b->lvel[2];
-//     dCROSS(result, +=, b->avel, p);
-// }
+void dBodyGetRelPointVel(dBodyID b, dReal px, dReal py, dReal pz,
+    dVector3 result)
+{
+    dAASSERT(b);
+    dVector3 prel, p;
+    prel[0] = px;
+    prel[1] = py;
+    prel[2] = pz;
+    prel[3] = 0;
+    dMULTIPLY0_331(p, b->R, prel);
+    result[0] = b->lvel[0];
+    result[1] = b->lvel[1];
+    result[2] = b->lvel[2];
+    dCROSS(result, +=, b->avel, p);
+}
 
-// void dBodyGetPointVel(dBodyID b, dReal px, dReal py, dReal pz,
-//     dVector3 result)
-// {
-//     dAASSERT(b);
-//     dVector3 p;
-//     p[0] = px - b->pos[0];
-//     p[1] = py - b->pos[1];
-//     p[2] = pz - b->pos[2];
-//     p[3] = 0;
-//     result[0] = b->lvel[0];
-//     result[1] = b->lvel[1];
-//     result[2] = b->lvel[2];
-//     dCROSS(result, +=, b->avel, p);
-// }
+void dBodyGetPointVel(dBodyID b, dReal px, dReal py, dReal pz,
+    dVector3 result)
+{
+    dAASSERT(b);
+    dVector3 p;
+    p[0] = px - b->pos[0];
+    p[1] = py - b->pos[1];
+    p[2] = pz - b->pos[2];
+    p[3] = 0;
+    result[0] = b->lvel[0];
+    result[1] = b->lvel[1];
+    result[2] = b->lvel[2];
+    dCROSS(result, +=, b->avel, p);
+}
 
-// void dBodyGetPosRelPoint(dBodyID b, dReal px, dReal py, dReal pz,
-//     dVector3 result)
-// {
-//     dAASSERT(b);
-//     dVector3 prel;
-//     prel[0] = px - b->pos[0];
-//     prel[1] = py - b->pos[1];
-//     prel[2] = pz - b->pos[2];
-//     prel[3] = 0;
-//     dMULTIPLY1_331(result, b->R, prel);
-// }
+void dBodyGetPosRelPoint(dBodyID b, dReal px, dReal py, dReal pz,
+    dVector3 result)
+{
+    dAASSERT(b);
+    dVector3 prel;
+    prel[0] = px - b->pos[0];
+    prel[1] = py - b->pos[1];
+    prel[2] = pz - b->pos[2];
+    prel[3] = 0;
+    dMULTIPLY1_331(result, b->R, prel);
+}
 
-// void dBodyVectorToWorld(dBodyID b, dReal px, dReal py, dReal pz,
-//     dVector3 result)
-// {
-//     dAASSERT(b);
-//     dVector3 p;
-//     p[0] = px;
-//     p[1] = py;
-//     p[2] = pz;
-//     p[3] = 0;
-//     dMULTIPLY0_331(result, b->R, p);
-// }
+void dBodyVectorToWorld(dBodyID b, dReal px, dReal py, dReal pz,
+    dVector3 result)
+{
+    dAASSERT(b);
+    dVector3 p;
+    p[0] = px;
+    p[1] = py;
+    p[2] = pz;
+    p[3] = 0;
+    dMULTIPLY0_331(result, b->R, p);
+}
 
-// void dBodyVectorFromWorld(dBodyID b, dReal px, dReal py, dReal pz,
-//     dVector3 result)
-// {
-//     dAASSERT(b);
-//     dVector3 p;
-//     p[0] = px;
-//     p[1] = py;
-//     p[2] = pz;
-//     p[3] = 0;
-//     dMULTIPLY1_331(result, b->R, p);
-// }
+void dBodyVectorFromWorld(dBodyID b, dReal px, dReal py, dReal pz,
+    dVector3 result)
+{
+    dAASSERT(b);
+    dVector3 p;
+    p[0] = px;
+    p[1] = py;
+    p[2] = pz;
+    p[3] = 0;
+    dMULTIPLY1_331(result, b->R, p);
+}
 
-// void dBodySetFiniteRotationMode(dBodyID b, int mode)
-// {
-//     dAASSERT(b);
-//     b->flags &= ~(dxBodyFlagFiniteRotation | dxBodyFlagFiniteRotationAxis);
-//     if (mode)
-//     {
-//         b->flags |= dxBodyFlagFiniteRotation;
-//         if (b->finite_rot_axis[0] != 0 || b->finite_rot_axis[1] != 0 || b->finite_rot_axis[2] != 0)
-//         {
-//             b->flags |= dxBodyFlagFiniteRotationAxis;
-//         }
-//     }
-// }
+void dBodySetFiniteRotationMode(dBodyID b, int mode)
+{
+    dAASSERT(b);
+    b->flags &= ~(dxBodyFlagFiniteRotation | dxBodyFlagFiniteRotationAxis);
+    if (mode)
+    {
+        b->flags |= dxBodyFlagFiniteRotation;
+        if (b->finite_rot_axis[0] != 0 || b->finite_rot_axis[1] != 0 || b->finite_rot_axis[2] != 0)
+        {
+            b->flags |= dxBodyFlagFiniteRotationAxis;
+        }
+    }
+}
 
-// void dBodySetFiniteRotationAxis(dBodyID b, dReal x, dReal y, dReal z)
-// {
-//     dAASSERT(b);
-//     b->finite_rot_axis[0] = x;
-//     b->finite_rot_axis[1] = y;
-//     b->finite_rot_axis[2] = z;
-//     if (x != 0 || y != 0 || z != 0)
-//     {
-//         dNormalize3(b->finite_rot_axis);
-//         b->flags |= dxBodyFlagFiniteRotationAxis;
-//     }
-//     else
-//     {
-//         b->flags &= ~dxBodyFlagFiniteRotationAxis;
-//     }
-// }
+void dBodySetFiniteRotationAxis(dBodyID b, dReal x, dReal y, dReal z)
+{
+    dAASSERT(b);
+    b->finite_rot_axis[0] = x;
+    b->finite_rot_axis[1] = y;
+    b->finite_rot_axis[2] = z;
+    if (x != 0 || y != 0 || z != 0)
+    {
+        dNormalize3(b->finite_rot_axis);
+        b->flags |= dxBodyFlagFiniteRotationAxis;
+    }
+    else
+    {
+        b->flags &= ~dxBodyFlagFiniteRotationAxis;
+    }
+}
 
-// int dBodyGetFiniteRotationMode(dBodyID b)
-// {
-//     dAASSERT(b);
-//     return ((b->flags & dxBodyFlagFiniteRotation) != 0);
-// }
+int dBodyGetFiniteRotationMode(dBodyID b)
+{
+    dAASSERT(b);
+    return ((b->flags & dxBodyFlagFiniteRotation) != 0);
+}
 
-// void dBodyGetFiniteRotationAxis(dBodyID b, dVector3 result)
-// {
-//     dAASSERT(b);
-//     result[0] = b->finite_rot_axis[0];
-//     result[1] = b->finite_rot_axis[1];
-//     result[2] = b->finite_rot_axis[2];
-// }
+void dBodyGetFiniteRotationAxis(dBodyID b, dVector3 result)
+{
+    dAASSERT(b);
+    result[0] = b->finite_rot_axis[0];
+    result[1] = b->finite_rot_axis[1];
+    result[2] = b->finite_rot_axis[2];
+}
 
-// int dBodyGetNumJoints(dBodyID b)
-// {
-//     dAASSERT(b);
-//     int count = 0;
-//     for (dxJointNode* n = b->firstjoint; n; n = n->next, count++)
-//         ;
-//     return count;
-// }
+int dBodyGetNumJoints(dBodyID b)
+{
+    dAASSERT(b);
+    int count = 0;
+    for (dxJointNode* n = b->firstjoint; n; n = n->next, count++)
+        ;
+    return count;
+}
 
-// dJointID dBodyGetJoint(dBodyID b, int index)
-// {
-//     dAASSERT(b);
-//     int i = 0;
-//     for (dxJointNode* n = b->firstjoint; n; n = n->next, i++)
-//     {
-//         if (i == index)
-//             return n->joint;
-//     }
-//     return 0;
-// }
+dJointID dBodyGetJoint(dBodyID b, int index)
+{
+    dAASSERT(b);
+    int i = 0;
+    for (dxJointNode* n = b->firstjoint; n; n = n->next, i++)
+    {
+        if (i == index)
+            return n->joint;
+    }
+    return 0;
+}
 
 /**
  * Offset/Address/Size: 0xC24 | 0x802214B8 | size: 0x20
@@ -815,11 +815,11 @@ void dBodyDisable(dBodyID b)
     b->flags |= dxBodyDisabled;
 }
 
-// int dBodyIsEnabled(dBodyID b)
-// {
-//     dAASSERT(b);
-//     return ((b->flags & dxBodyDisabled) == 0);
-// }
+int dBodyIsEnabled(dBodyID b)
+{
+    dAASSERT(b);
+    return ((b->flags & dxBodyDisabled) == 0);
+}
 
 /**
  * Offset/Address/Size: 0xBEC | 0x80221480 | size: 0x28
@@ -833,67 +833,67 @@ void dBodySetGravityMode(dBodyID b, int mode)
         b->flags |= dxBodyNoGravity;
 }
 
-// int dBodyGetGravityMode(dBodyID b)
-// {
-//     dAASSERT(b);
-//     return ((b->flags & dxBodyNoGravity) == 0);
-// }
+int dBodyGetGravityMode(dBodyID b)
+{
+    dAASSERT(b);
+    return ((b->flags & dxBodyNoGravity) == 0);
+}
 
 // body auto-disable functions
 
-// dReal dBodyGetAutoDisableLinearThreshold(dBodyID b)
-// {
-//     dAASSERT(b);
-//     return dSqrt(b->adis.linear_threshold);
-// }
+dReal dBodyGetAutoDisableLinearThreshold(dBodyID b)
+{
+    dAASSERT(b);
+    return dSqrt(b->adis.linear_threshold);
+}
 
-// void dBodySetAutoDisableLinearThreshold(dBodyID b, dReal linear_threshold)
-// {
-//     dAASSERT(b);
-//     b->adis.linear_threshold = linear_threshold * linear_threshold;
-// }
+void dBodySetAutoDisableLinearThreshold(dBodyID b, dReal linear_threshold)
+{
+    dAASSERT(b);
+    b->adis.linear_threshold = linear_threshold * linear_threshold;
+}
 
-// dReal dBodyGetAutoDisableAngularThreshold(dBodyID b)
-// {
-//     dAASSERT(b);
-//     return dSqrt(b->adis.angular_threshold);
-// }
+dReal dBodyGetAutoDisableAngularThreshold(dBodyID b)
+{
+    dAASSERT(b);
+    return dSqrt(b->adis.angular_threshold);
+}
 
-// void dBodySetAutoDisableAngularThreshold(dBodyID b, dReal angular_threshold)
-// {
-//     dAASSERT(b);
-//     b->adis.angular_threshold = angular_threshold * angular_threshold;
-// }
+void dBodySetAutoDisableAngularThreshold(dBodyID b, dReal angular_threshold)
+{
+    dAASSERT(b);
+    b->adis.angular_threshold = angular_threshold * angular_threshold;
+}
 
-// int dBodyGetAutoDisableSteps(dBodyID b)
-// {
-//     dAASSERT(b);
-//     return b->adis.idle_steps;
-// }
+int dBodyGetAutoDisableSteps(dBodyID b)
+{
+    dAASSERT(b);
+    return b->adis.idle_steps;
+}
 
-// void dBodySetAutoDisableSteps(dBodyID b, int steps)
-// {
-//     dAASSERT(b);
-//     b->adis.idle_steps = steps;
-// }
+void dBodySetAutoDisableSteps(dBodyID b, int steps)
+{
+    dAASSERT(b);
+    b->adis.idle_steps = steps;
+}
 
-// dReal dBodyGetAutoDisableTime(dBodyID b)
-// {
-//     dAASSERT(b);
-//     return b->adis.idle_time;
-// }
+dReal dBodyGetAutoDisableTime(dBodyID b)
+{
+    dAASSERT(b);
+    return b->adis.idle_time;
+}
 
-// void dBodySetAutoDisableTime(dBodyID b, dReal time)
-// {
-//     dAASSERT(b);
-//     b->adis.idle_time = time;
-// }
+void dBodySetAutoDisableTime(dBodyID b, dReal time)
+{
+    dAASSERT(b);
+    b->adis.idle_time = time;
+}
 
-// int dBodyGetAutoDisableFlag(dBodyID b)
-// {
-//     dAASSERT(b);
-//     return ((b->flags & dxBodyAutoDisable) != 0);
-// }
+int dBodyGetAutoDisableFlag(dBodyID b)
+{
+    dAASSERT(b);
+    return ((b->flags & dxBodyAutoDisable) != 0);
+}
 
 /**
  * Offset/Address/Size: 0xBC4 | 0x80221458 | size: 0x28
@@ -907,7 +907,7 @@ void dBodySetAutoDisableFlag(dBodyID b, int do_auto_disable)
         b->flags |= dxBodyAutoDisable;
 }
 
-inline void dBodySetAutoDisableDefaults(dBodyID b)
+void dBodySetAutoDisableDefaults(dBodyID b)
 {
     dAASSERT(b);
     dWorldID w = b->world;
@@ -919,7 +919,7 @@ inline void dBodySetAutoDisableDefaults(dBodyID b)
 //****************************************************************************
 // joints
 
-static inline void dJointInit(dxWorld* w, dxJoint* j)
+static void dJointInit(dxWorld* w, dxJoint* j)
 {
     dIASSERT(w && j);
     initObject(j, w);
@@ -960,23 +960,23 @@ dxJoint* createJoint(dWorldID w, dJointGroupID group, dxJoint::Vtable* vtable)
     return j;
 }
 
-// dxJoint* dJointCreateBall(dWorldID w, dJointGroupID group)
-// {
-//     dAASSERT(w);
-//     return createJoint(w, group, &__dball_vtable);
-// }
+dxJoint* dJointCreateBall(dWorldID w, dJointGroupID group)
+{
+    dAASSERT(w);
+    return createJoint(w, group, &__dball_vtable);
+}
 
-// dxJoint* dJointCreateHinge(dWorldID w, dJointGroupID group)
-// {
-//     dAASSERT(w);
-//     return createJoint(w, group, &__dhinge_vtable);
-// }
+dxJoint* dJointCreateHinge(dWorldID w, dJointGroupID group)
+{
+    dAASSERT(w);
+    return createJoint(w, group, &__dhinge_vtable);
+}
 
-// dxJoint* dJointCreateSlider(dWorldID w, dJointGroupID group)
-// {
-//     dAASSERT(w);
-//     return createJoint(w, group, &__dslider_vtable);
-// }
+dxJoint* dJointCreateSlider(dWorldID w, dJointGroupID group)
+{
+    dAASSERT(w);
+    return createJoint(w, group, &__dslider_vtable);
+}
 
 /**
  * Offset/Address/Size: 0x8AC | 0x80221140 | size: 0x204
@@ -991,35 +991,35 @@ dxJoint* dJointCreateContact(dWorldID w, dJointGroupID group,
     return j;
 }
 
-// dxJoint* dJointCreateHinge2(dWorldID w, dJointGroupID group)
-// {
-//     dAASSERT(w);
-//     return createJoint(w, group, &__dhinge2_vtable);
-// }
+dxJoint* dJointCreateHinge2(dWorldID w, dJointGroupID group)
+{
+    dAASSERT(w);
+    return createJoint(w, group, &__dhinge2_vtable);
+}
 
-// dxJoint* dJointCreateUniversal(dWorldID w, dJointGroupID group)
-// {
-//     dAASSERT(w);
-//     return createJoint(w, group, &__duniversal_vtable);
-// }
+dxJoint* dJointCreateUniversal(dWorldID w, dJointGroupID group)
+{
+    dAASSERT(w);
+    return createJoint(w, group, &__duniversal_vtable);
+}
 
-// dxJoint* dJointCreateFixed(dWorldID w, dJointGroupID group)
-// {
-//     dAASSERT(w);
-//     return createJoint(w, group, &__dfixed_vtable);
-// }
+dxJoint* dJointCreateFixed(dWorldID w, dJointGroupID group)
+{
+    dAASSERT(w);
+    return createJoint(w, group, &__dfixed_vtable);
+}
 
-// dxJoint* dJointCreateNull(dWorldID w, dJointGroupID group)
-// {
-//     dAASSERT(w);
-//     return createJoint(w, group, &__dnull_vtable);
-// }
+dxJoint* dJointCreateNull(dWorldID w, dJointGroupID group)
+{
+    dAASSERT(w);
+    return createJoint(w, group, &__dnull_vtable);
+}
 
-// dxJoint* dJointCreateAMotor(dWorldID w, dJointGroupID group)
-// {
-//     dAASSERT(w);
-//     return createJoint(w, group, &__damotor_vtable);
-// }
+dxJoint* dJointCreateAMotor(dWorldID w, dJointGroupID group)
+{
+    dAASSERT(w);
+    return createJoint(w, group, &__damotor_vtable);
+}
 
 /**
  * Offset/Address/Size: 0x780 | 0x80221014 | size: 0x12C
@@ -1145,61 +1145,61 @@ void dJointAttach(dxJoint* joint, dxBody* body1, dxBody* body2)
     }
 }
 
-// void dJointSetData(dxJoint* joint, void* data)
-// {
-//     dAASSERT(joint);
-//     joint->userdata = data;
-// }
+void dJointSetData(dxJoint* joint, void* data)
+{
+    dAASSERT(joint);
+    joint->userdata = data;
+}
 
-// void* dJointGetData(dxJoint* joint)
-// {
-//     dAASSERT(joint);
-//     return joint->userdata;
-// }
+void* dJointGetData(dxJoint* joint)
+{
+    dAASSERT(joint);
+    return joint->userdata;
+}
 
-inline int dJointGetType(dxJoint* joint)
+int dJointGetType(dxJoint* joint)
 {
     dAASSERT(joint);
     return joint->vtable->typenum;
 }
 
-// dBodyID dJointGetBody(dxJoint* joint, int index)
-// {
-//     dAASSERT(joint);
-//     if (index == 0 || index == 1)
-//     {
-//         if (joint->flags & dJOINT_REVERSE)
-//             return joint->node[1 - index].body;
-//         else
-//             return joint->node[index].body;
-//     }
-//     else
-//         return 0;
-// }
+dBodyID dJointGetBody(dxJoint* joint, int index)
+{
+    dAASSERT(joint);
+    if (index == 0 || index == 1)
+    {
+        if (joint->flags & dJOINT_REVERSE)
+            return joint->node[1 - index].body;
+        else
+            return joint->node[index].body;
+    }
+    else
+        return 0;
+}
 
-// void dJointSetFeedback(dxJoint* joint, dJointFeedback* f)
-// {
-//     dAASSERT(joint);
-//     joint->feedback = f;
-// }
+void dJointSetFeedback(dxJoint* joint, dJointFeedback* f)
+{
+    dAASSERT(joint);
+    joint->feedback = f;
+}
 
-// dJointFeedback* dJointGetFeedback(dxJoint* joint)
-// {
-//     dAASSERT(joint);
-//     return joint->feedback;
-// }
+dJointFeedback* dJointGetFeedback(dxJoint* joint)
+{
+    dAASSERT(joint);
+    return joint->feedback;
+}
 
-// int dAreConnected(dBodyID b1, dBodyID b2)
-// {
-//     dAASSERT(b1 && b2);
-//     // look through b1's neighbour list for b2
-//     for (dxJointNode* n = b1->firstjoint; n; n = n->next)
-//     {
-//         if (n->body == b2)
-//             return 1;
-//     }
-//     return 0;
-// }
+int dAreConnected(dBodyID b1, dBodyID b2)
+{
+    dAASSERT(b1 && b2);
+    // look through b1's neighbour list for b2
+    for (dxJointNode* n = b1->firstjoint; n; n = n->next)
+    {
+        if (n->body == b2)
+            return 1;
+    }
+    return 0;
+}
 
 /**
  * Offset/Address/Size: 0x1C0 | 0x80220A54 | size: 0x44
@@ -1293,6 +1293,22 @@ void dWorldDestroy(dxWorld* w)
     delete w;
 }
 
+void dWorldSetGravity(dWorldID w, dReal x, dReal y, dReal z)
+{
+    dAASSERT(w);
+    w->gravity[0] = x;
+    w->gravity[1] = y;
+    w->gravity[2] = z;
+}
+
+void dWorldGetGravity(dWorldID w, dVector3 g)
+{
+    dAASSERT(w);
+    g[0] = w->gravity[0];
+    g[1] = w->gravity[1];
+    g[2] = w->gravity[2];
+}
+
 /**
  * Offset/Address/Size: 0x30 | 0x802208C4 | size: 0x8
  */
@@ -1300,6 +1316,12 @@ void dWorldSetERP(dWorldID w, dReal erp)
 {
     dAASSERT(w);
     w->global_erp = erp;
+}
+
+dReal dWorldGetERP(dWorldID w)
+{
+    dAASSERT(w);
+    return w->global_erp;
 }
 
 /**
@@ -1311,6 +1333,19 @@ void dWorldSetCFM(dWorldID w, dReal cfm)
     w->global_cfm = cfm;
 }
 
+dReal dWorldGetCFM(dWorldID w)
+{
+    dAASSERT(w);
+    return w->global_cfm;
+}
+
+void dWorldStep(dWorldID w, dReal stepsize)
+{
+    dUASSERT(w, "bad world argument");
+    dUASSERT(stepsize > 0, "stepsize must be > 0");
+    dxProcessIslands(w, stepsize, &dInternalStepIsland);
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x80220894 | size: 0x28
  */
@@ -1319,4 +1354,246 @@ void dWorldQuickStep(dWorldID w, dReal stepsize)
     dUASSERT(w, "bad world argument");
     dUASSERT(stepsize > 0, "stepsize must be > 0");
     dxProcessIslands(w, stepsize, &dxQuickStepper);
+}
+
+void dWorldImpulseToForce(dWorldID w, dReal stepsize,
+    dReal ix, dReal iy, dReal iz,
+    dVector3 force)
+{
+    dAASSERT(w);
+    stepsize = dRecip(stepsize);
+    force[0] = stepsize * ix;
+    force[1] = stepsize * iy;
+    force[2] = stepsize * iz;
+    // @@@ force[3] = 0;
+}
+
+// world auto-disable functions
+
+dReal dWorldGetAutoDisableLinearThreshold(dWorldID w)
+{
+    dAASSERT(w);
+    return dSqrt(w->adis.linear_threshold);
+}
+
+void dWorldSetAutoDisableLinearThreshold(dWorldID w, dReal linear_threshold)
+{
+    dAASSERT(w);
+    w->adis.linear_threshold = linear_threshold * linear_threshold;
+}
+
+dReal dWorldGetAutoDisableAngularThreshold(dWorldID w)
+{
+    dAASSERT(w);
+    return dSqrt(w->adis.angular_threshold);
+}
+
+void dWorldSetAutoDisableAngularThreshold(dWorldID w, dReal angular_threshold)
+{
+    dAASSERT(w);
+    w->adis.angular_threshold = angular_threshold * angular_threshold;
+}
+
+int dWorldGetAutoDisableSteps(dWorldID w)
+{
+    dAASSERT(w);
+    return w->adis.idle_steps;
+}
+
+void dWorldSetAutoDisableSteps(dWorldID w, int steps)
+{
+    dAASSERT(w);
+    w->adis.idle_steps = steps;
+}
+
+dReal dWorldGetAutoDisableTime(dWorldID w)
+{
+    dAASSERT(w);
+    return w->adis.idle_time;
+}
+
+void dWorldSetAutoDisableTime(dWorldID w, dReal time)
+{
+    dAASSERT(w);
+    w->adis.idle_time = time;
+}
+
+int dWorldGetAutoDisableFlag(dWorldID w)
+{
+    dAASSERT(w);
+    return w->adis_flag;
+}
+
+void dWorldSetAutoDisableFlag(dWorldID w, int do_auto_disable)
+{
+    dAASSERT(w);
+    w->adis_flag = (do_auto_disable != 0);
+}
+
+void dWorldSetQuickStepNumIterations(dWorldID w, int num)
+{
+    dAASSERT(w);
+    w->qs.num_iterations = num;
+}
+
+int dWorldGetQuickStepNumIterations(dWorldID w)
+{
+    dAASSERT(w);
+    return w->qs.num_iterations;
+}
+
+void dWorldSetQuickStepW(dWorldID w, dReal param)
+{
+    dAASSERT(w);
+    w->qs.w = param;
+}
+
+dReal dWorldGetQuickStepW(dWorldID w)
+{
+    dAASSERT(w);
+    return w->qs.w;
+}
+
+void dWorldSetContactMaxCorrectingVel(dWorldID w, dReal vel)
+{
+    dAASSERT(w);
+    w->contactp.max_vel = vel;
+}
+
+dReal dWorldGetContactMaxCorrectingVel(dWorldID w)
+{
+    dAASSERT(w);
+    return w->contactp.max_vel;
+}
+
+void dWorldSetContactSurfaceLayer(dWorldID w, dReal depth)
+{
+    dAASSERT(w);
+    w->contactp.min_depth = depth;
+}
+
+dReal dWorldGetContactSurfaceLayer(dWorldID w)
+{
+    dAASSERT(w);
+    return w->contactp.min_depth;
+}
+
+//****************************************************************************
+// testing
+
+#define NUM 100
+
+#define DO(x)
+
+extern "C" void dTestDataStructures()
+{
+    int i;
+    DO(printf("testDynamicsStuff()\n"));
+
+    dBodyID body[NUM];
+    int nb = 0;
+    dJointID joint[NUM];
+    int nj = 0;
+
+    for (i = 0; i < NUM; i++)
+        body[i] = 0;
+    for (i = 0; i < NUM; i++)
+        joint[i] = 0;
+
+    DO(printf("creating world\n"));
+    dWorldID w = dWorldCreate();
+    checkWorld(w);
+
+    for (;;)
+    {
+        if (nb < NUM && dRandReal() > 0.5)
+        {
+            DO(printf("creating body\n"));
+            body[nb] = dBodyCreate(w);
+            DO(printf("\t--> %p\n", body[nb]));
+            nb++;
+            checkWorld(w);
+            DO(printf("%d BODIES, %d JOINTS\n", nb, nj));
+        }
+        if (nj < NUM && nb > 2 && dRandReal() > 0.5)
+        {
+            dBodyID b1 = body[dRand() % nb];
+            dBodyID b2 = body[dRand() % nb];
+            if (b1 != b2)
+            {
+                DO(printf("creating joint, attaching to %p,%p\n", b1, b2));
+                joint[nj] = dJointCreateBall(w, 0);
+                DO(printf("\t-->%p\n", joint[nj]));
+                checkWorld(w);
+                dJointAttach(joint[nj], b1, b2);
+                nj++;
+                checkWorld(w);
+                DO(printf("%d BODIES, %d JOINTS\n", nb, nj));
+            }
+        }
+        if (nj > 0 && nb > 2 && dRandReal() > 0.5)
+        {
+            dBodyID b1 = body[dRand() % nb];
+            dBodyID b2 = body[dRand() % nb];
+            if (b1 != b2)
+            {
+                int k = dRand() % nj;
+                DO(printf("reattaching joint %p\n", joint[k]));
+                dJointAttach(joint[k], b1, b2);
+                checkWorld(w);
+                DO(printf("%d BODIES, %d JOINTS\n", nb, nj));
+            }
+        }
+        if (nb > 0 && dRandReal() > 0.5)
+        {
+            int k = dRand() % nb;
+            DO(printf("destroying body %p\n", body[k]));
+            dBodyDestroy(body[k]);
+            checkWorld(w);
+            for (; k < (NUM - 1); k++)
+                body[k] = body[k + 1];
+            nb--;
+            DO(printf("%d BODIES, %d JOINTS\n", nb, nj));
+        }
+        if (nj > 0 && dRandReal() > 0.5)
+        {
+            int k = dRand() % nj;
+            DO(printf("destroying joint %p\n", joint[k]));
+            dJointDestroy(joint[k]);
+            checkWorld(w);
+            for (; k < (NUM - 1); k++)
+                joint[k] = joint[k + 1];
+            nj--;
+            DO(printf("%d BODIES, %d JOINTS\n", nb, nj));
+        }
+    }
+
+    /*
+    printf ("creating world\n");
+    dWorldID w = dWorldCreate();
+    checkWorld (w);
+    printf ("creating body\n");
+    dBodyID b1 = dBodyCreate (w);
+    checkWorld (w);
+    printf ("creating body\n");
+    dBodyID b2 = dBodyCreate (w);
+    checkWorld (w);
+    printf ("creating joint\n");
+    dJointID j = dJointCreateBall (w);
+    checkWorld (w);
+    printf ("attaching joint\n");
+    dJointAttach (j,b1,b2);
+    checkWorld (w);
+    printf ("destroying joint\n");
+    dJointDestroy (j);
+    checkWorld (w);
+    printf ("destroying body\n");
+    dBodyDestroy (b1);
+    checkWorld (w);
+    printf ("destroying body\n");
+    dBodyDestroy (b2);
+    checkWorld (w);
+    printf ("destroying world\n");
+    dWorldDestroy (w);
+    */
 }

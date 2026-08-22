@@ -13,6 +13,30 @@ struct FinitePlane
     float param;
 };
 
+void dGeomFinitePlaneSetParams(dxGeom* geomID, float a, float b, float c, float d, bool flag, float param)
+{
+    FinitePlane* planeData = (FinitePlane*)dGeomGetClassData(geomID);
+
+    planeData->a = a;
+    planeData->b = b;
+    planeData->c = c;
+    planeData->d = d;
+    planeData->flag = flag;
+    planeData->param = param;
+}
+
+void dGeomFinitePlaneGetParams(dxGeom* geomID, float* a, float* b, float* c, float* d, bool* flag, float* param)
+{
+    FinitePlane* planeData = (FinitePlane*)dGeomGetClassData(geomID);
+
+    *a = planeData->a;
+    *b = planeData->b;
+    *c = planeData->c;
+    *d = planeData->d;
+    *flag = planeData->flag;
+    *param = planeData->param;
+}
+
 /**
  * Offset/Address/Size: 0x314 | 0x8021D718 | size: 0x3B0
  */

@@ -4,6 +4,11 @@
 static u8 lengthwiseAxis = 0x2;
 s32 dColumnClassUser = -1;
 
+void dGeomColumnSetParams(dxGeom* geomID, float radius)
+{
+    *(float*)dGeomGetClassData(geomID) = radius;
+}
+
 /**
  * Offset/Address/Size: 0x5A4 | 0x8021D3D0 | size: 0x34
  */
