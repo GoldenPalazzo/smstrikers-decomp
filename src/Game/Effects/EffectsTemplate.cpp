@@ -47,9 +47,6 @@ float RandomizedValue(float base, float range)
     }
 }
 
-/**
- * Offset/Address/Size: 0xFD4 | 0x801F1B98 | size: 0x28C
- */
 static inline unsigned char& ColourComponent(nlColour* pColour, int index, int cindex)
 {
     return pColour[index].c[cindex];
@@ -74,6 +71,9 @@ static void BlendSpan(nlColour* pColour, int cindex, const ColourKey& k0, const 
     }
 }
 
+/**
+ * Offset/Address/Size: 0xFD4 | 0x801F1B98 | size: 0x28C
+ */
 static void GetColourComponent(SimpleParser* parser, nlColour* pColour, int cindex)
 {
     typedef DLListContainerBase<ColourKey, NewAdapter<DLListEntry<ColourKey> > > ColourKeyList;

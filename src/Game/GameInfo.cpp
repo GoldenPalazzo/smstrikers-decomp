@@ -844,9 +844,6 @@ void GameInfoManager::ResetPlayingSides()
     gameInfo->mPadSides[3] = -1;
 }
 
-/**
- * Offset/Address/Size: 0x8638 | 0x8017DCDC | size: 0x4D8
- */
 static const int THREE_TEAM_MATCHUPS[3][2] = {
     { 0, 1 },
     { 1, 2 },
@@ -943,6 +940,9 @@ static const int EIGHT_TEAM_MATCHUPS[28][2] = {
     { 0, 3 },
 };
 
+/**
+ * Offset/Address/Size: 0x8638 | 0x8017DCDC | size: 0x4D8
+ */
 void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* sklineup)
 {
     eGameModes gamemode = mCurrentMode;
@@ -1133,9 +1133,6 @@ void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* skli
     mCurrentCup->mCupStarted = true;
 }
 
-/**
- * Offset/Address/Size: 0x81CC | 0x8017D870 | size: 0x46C
- */
 static const eTrophyType MILESTONES[5] = {
     TROPHY_VETERAN_CUP,
     TROPHY_SNIPER_CUP,
@@ -1146,6 +1143,9 @@ static const eTrophyType MILESTONES[5] = {
 
 static const int BOWSER_KNOCKOUT_ORDER[4] = { 0, 3, 1, 2 };
 
+/**
+ * Offset/Address/Size: 0x81CC | 0x8017D870 | size: 0x46C
+ */
 unsigned char GameInfoManager::SetupBowserKnockout()
 {
     int teamIndices[8];

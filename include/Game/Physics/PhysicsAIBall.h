@@ -9,7 +9,7 @@ class cBall;
 class PhysicsAIBall : public PhysicsBall
 {
 public:
-    PhysicsAIBall(float);
+    PhysicsAIBall(float radius);
 
     /* 0x0C */ virtual int GetObjectType() const
     {
@@ -17,10 +17,10 @@ public:
     };
     /* 0x14 */ virtual void PreUpdate();
     /* 0x18 */ virtual void PostUpdate();
-    /* 0x20 */ virtual ContactType Contact(PhysicsObject*, dContact*, int);
+    /* 0x20 */ virtual ContactType Contact(PhysicsObject*obj, dContact*info, int numContacts);
 
-    static bool IsBallOutsideNet(const nlVector3&);
-    static bool DidBallJustEnterNet(const nlVector3&, nlVector3);
+    static bool IsBallOutsideNet(const nlVector3&ballPosition);
+    static bool DidBallJustEnterNet(const nlVector3&oldPosition, nlVector3 newPosition);
     void CheckIfBallWentThroughGoalPost();
     void CheckIfBallWentThroughGoalie();
 

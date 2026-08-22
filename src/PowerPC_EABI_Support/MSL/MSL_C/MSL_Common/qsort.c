@@ -19,6 +19,9 @@
         }                                                       \
     } while (0)
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80233B4C | size: 0x16C
+ */
 void qsort(void* table_base, size_t num_members, size_t member_size, _compare_function compare_members)
 {
     size_t l, r, j;

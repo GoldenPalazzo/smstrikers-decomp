@@ -34,11 +34,13 @@ functions that are defined in the public header files.
 
 //****************************************************************************
 
+/**
+ * Offset/Address/Size: 0xD54 | 0x8021CCA0 | size: 0x18C
+ */
 int dCollideSpheres(dVector3 p1, dReal r1,
     dVector3 p2, dReal r2, dContactGeom* c)
 {
     // printf ("d=%.2f  (%.2f %.2f %.2f) (%.2f %.2f %.2f) r1=%.2f r2=%.2f\n",
-    //	  d,p1[0],p1[1],p1[2],p2[0],p2[1],p2[2],r1,r2);
 
     dReal d = dDISTANCE(p1, p2);
     if (d > (r1 + r2))
@@ -68,6 +70,9 @@ int dCollideSpheres(dVector3 p1, dReal r1,
     return 1;
 }
 
+/**
+ * Offset/Address/Size: 0xCA8 | 0x8021CBF4 | size: 0xAC
+ */
 void dLineClosestApproach(const dVector3 pa, const dVector3 ua,
     const dVector3 pb, const dVector3 ub,
     dReal* alpha, dReal* beta)
@@ -108,6 +113,9 @@ void dLineClosestApproach(const dVector3 pa, const dVector3 ua,
 // PB between X and Y are globally the closest points if PA is in V(Y) and
 // PB is in V(X), where V(X) is the voronoi region of X.
 
+/**
+ * Offset/Address/Size: 0x654 | 0x8021C5A0 | size: 0x654
+ */
 void dClosestLineSegmentPoints(const dVector3 a1, const dVector3 a2,
     const dVector3 b1, const dVector3 b2,
     dVector3 cp1, dVector3 cp2)
@@ -268,6 +276,9 @@ void dClosestLineSegmentPoints(const dVector3 a1, const dVector3 a2,
 // in a piecewise fashion from t=0 to t=1, stopping at the point where
 // d|D(t)|^2/dt crosses from negative to positive.
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8021BF4C | size: 0x654
+ */
 void dClosestLineBoxPoints(const dVector3 p1, const dVector3 p2,
     const dVector3 c, const dMatrix3 R,
     const dVector3 side,

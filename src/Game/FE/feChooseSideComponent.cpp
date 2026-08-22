@@ -11,7 +11,11 @@ IChooseSide::IChooseSide()
 {
     mContext = CONTEXT_FE;
 
+#if defined(VERSION_G4QJ01)
+    for (int i = 0; i < 21; i++)
+#else
     for (int i = 0; i < 17; i++)
+#endif
     {
         mInstanceTable[i] = NULL;
     }

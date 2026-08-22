@@ -18,9 +18,9 @@ class InGameTextOverlay : public BaseOverlayHandler
 public:
     InGameTextOverlay();
     virtual ~InGameTextOverlay();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
     virtual void SceneCreated();
-    void SetSlide(OverlaySlideName);
+    void SetSlide(OverlaySlideName slideName);
     void DisplayFinalScore();
 
     /*  0x28 */ OverlaySlideName mCurrentSlideName;

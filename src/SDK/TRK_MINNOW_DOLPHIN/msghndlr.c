@@ -2,9 +2,11 @@
 
 static BOOL IsTRKConnected;
 
+/**
+ * Offset/Address/Size: 0xFC8 | 0x80226A7C | size: 0xA8
+ */
 void OutputData(void* data, int length)
 {
-    // u8 byte;
     int i;
     u8* datapointer = data;
 
@@ -20,11 +22,17 @@ void OutputData(void* data, int length)
     MWTRACE(8, "\n");
 }
 
+/**
+ * Offset/Address/Size: 0xFB8 | 0x80226A6C | size: 0x10
+ */
 int GetTRKConnected(void)
 {
     return IsTRKConnected;
 }
 
+/**
+ * Offset/Address/Size: 0xFAC | 0x80226A60 | size: 0xC
+ */
 void SetTRKConnected(int isConnected)
 {
     IsTRKConnected = isConnected;
@@ -66,12 +74,18 @@ inline void TRKDoUnsupported(void)
     // UNUSED FUNCTION
 }
 
+/**
+ * Offset/Address/Size: 0xF48 | 0x802269FC | size: 0x64
+ */
 DSError TRKDoConnect(TRKBuffer* buffer)
 {
     IsTRKConnected = TRUE;
     return TRKStandardACK(buffer, 0x80, DSREPLY_NoError);
 }
 
+/**
+ * Offset/Address/Size: 0xED0 | 0x80226984 | size: 0x78
+ */
 DSError TRKDoDisconnect(TRKBuffer* buffer)
 {
     TRKEvent event;
@@ -83,6 +97,9 @@ DSError TRKDoDisconnect(TRKBuffer* buffer)
     return DS_NoError;
 }
 
+/**
+ * Offset/Address/Size: 0xE78 | 0x8022692C | size: 0x58
+ */
 DSError TRKDoReset(TRKBuffer* buffer)
 {
     TRKStandardACK(buffer, 0x80, DSREPLY_NoError);
@@ -90,6 +107,9 @@ DSError TRKDoReset(TRKBuffer* buffer)
     return DS_NoError;
 }
 
+/**
+ * Offset/Address/Size: 0xE20 | 0x802268D4 | size: 0x58
+ */
 DSError TRKDoOverride(TRKBuffer* buffer)
 {
     TRKStandardACK(buffer, 0x80, DSREPLY_NoError);
@@ -97,12 +117,18 @@ DSError TRKDoOverride(TRKBuffer* buffer)
     return DS_NoError;
 }
 
-DSError TRKDoVersions(TRKBuffer*)
+/**
+ * Offset/Address/Size: 0xE18 | 0x802268CC | size: 0x8
+ */
+DSError TRKDoVersions(TRKBuffer* buffer)
 {
     return DS_NoError;
 }
 
-DSError TRKDoSupportMask(TRKBuffer*)
+/**
+ * Offset/Address/Size: 0xE10 | 0x802268C4 | size: 0x8
+ */
+DSError TRKDoSupportMask(TRKBuffer* buffer)
 {
     return DS_NoError;
 }
@@ -112,6 +138,9 @@ inline void TRKDoCPUType(void)
     // UNUSED FUNCTION
 }
 
+/**
+ * Offset/Address/Size: 0xBCC | 0x80226680 | size: 0x244
+ */
 DSError TRKDoReadMemory(TRKBuffer* buffer)
 {
     u8 buf[0x820] __attribute__((aligned(32)));
@@ -194,6 +223,9 @@ DSError TRKDoReadMemory(TRKBuffer* buffer)
     return TRKSendACK(buffer);
 }
 
+/**
+ * Offset/Address/Size: 0x990 | 0x80226444 | size: 0x23C
+ */
 DSError TRKDoWriteMemory(TRKBuffer* b)
 {
     u8 buf[0x820] __attribute__((aligned(32)));
@@ -270,6 +302,9 @@ DSError TRKDoWriteMemory(TRKBuffer* b)
     return TRKSendACK(b);
 }
 
+/**
+ * Offset/Address/Size: 0x6B0 | 0x80226164 | size: 0x2E0
+ */
 DSError TRKDoReadRegisters(TRKBuffer* b)
 {
     int error;
@@ -357,6 +392,9 @@ DSError TRKDoReadRegisters(TRKBuffer* b)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x420 | 0x80225ED4 | size: 0x290
+ */
 DSError TRKDoWriteRegisters(TRKBuffer* b)
 {
     int error;
@@ -456,7 +494,10 @@ void TRKDoFlushCache(void)
     // UNUSED FUNCTION
 }
 
-DSError TRKDoContinue(TRKBuffer*)
+/**
+ * Offset/Address/Size: 0x370 | 0x80225E24 | size: 0xB0
+ */
+DSError TRKDoContinue(TRKBuffer* buffer)
 {
     MWTRACE(1, "DoContinue\n");
     if (!TRKTargetStopped())
@@ -485,6 +526,9 @@ DSError TRKDoContinue(TRKBuffer*)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x150 | 0x80225C04 | size: 0x220
+ */
 DSError TRKDoStep(TRKBuffer* b)
 {
     DSError result;
@@ -544,6 +588,9 @@ DSError TRKDoStep(TRKBuffer* b)
     }
 }
 
+/**
+ * Offset/Address/Size: 0xA8 | 0x80225B5C | size: 0xA8
+ */
 DSError TRKDoStop(TRKBuffer* b)
 {
     MessageCommandID c;
@@ -572,6 +619,9 @@ DSError TRKDoStop(TRKBuffer* b)
     return DS_NoError;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80225AB4 | size: 0xA8
+ */
 DSError TRKDoSetOption(TRKBuffer* message)
 {
     u8 enable = message->data[0xc];

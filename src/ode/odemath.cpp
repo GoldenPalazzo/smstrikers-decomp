@@ -35,6 +35,9 @@
 
 float nlRecipSqrt(float, bool);
 
+/**
+ * Offset/Address/Size: 0x1F4 | 0x802206FC | size: 0x198
+ */
 void dNormalize3(dVector3 a)
 {
     dReal aa0, aa1, aa2, a0, a1, a2, l;
@@ -119,6 +122,9 @@ void dNormalize3 (dVector3 a)
 }
 */
 
+/**
+ * Offset/Address/Size: 0x144 | 0x8022064C | size: 0xB0
+ */
 void dNormalize4(dVector4 a)
 {
     dReal l = dDOT(a, a) + a[3] * a[3];
@@ -140,6 +146,9 @@ void dNormalize4(dVector4 a)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80220508 | size: 0x144
+ */
 void dPlaneSpace(const dVector3 n, dVector3 p, dVector3 q)
 {
     dAASSERT(n && p && q);

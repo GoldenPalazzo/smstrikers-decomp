@@ -38,78 +38,6 @@ static unsigned long CAPTAIN_DESCRIPTIONS[] = {
     0x69BFAF9D,
 };
 
-// /**
-//  * Offset/Address/Size: 0x4EC | 0x800DF878 | size: 0x15C
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x468 | 0x800DF7F4 | size: 0x84
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x430 | 0x800DF7BC | size: 0x38
-//  */
-// void FEFinder<TLTextInstance, 3>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800DF660 | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800DF5DC | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800DF5A4 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800DF448 | size: 0x15C
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800DF3C4 | size: 0x84
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800DF38C | size: 0x38
-//  */
-// void FEFinder<TLImageInstance, 2>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x237C | 0x800DF248 | size: 0x144
  */
@@ -244,7 +172,7 @@ void CupChooseCaptainSceneV2::SceneCreated()
 
         const gl_ScreenInfo* screenInfo = glGetScreenInfo();
 
-        FEScrollText* ticker = new (nlMalloc(0x22C, 0x20, true)) FEScrollText(scrollText, 0, screenInfo->ScreenWidth + 0x32);
+        FEScrollText* ticker = new (nlMalloc(sizeof(FEScrollText), 0x20, true)) FEScrollText(scrollText, 0, screenInfo->ScreenWidth + 0x32);
         mTicker = ticker;
         mTicker->SetDisplayMessage("CHOOSE_CAPTAIN_TICKER_CHOOSE_CAPTAIN");
     }
@@ -288,10 +216,10 @@ void CupChooseCaptainSceneV2::SceneCreated()
         InlineHasher(nlStringLowerHash("sidekick icon right")));
     mSidekickMiniHead->m_bVisible = false;
 
-    mCaptainGrid = new (nlMalloc(0x1C, 8, false)) ICaptainGridComponent(mComponents[1], false);
+    mCaptainGrid = new (nlMalloc(sizeof(ICaptainGridComponent), 8, false)) ICaptainGridComponent(mComponents[1], false);
     mCaptainGrid->BuildMapMenu();
 
-    mSKGrid = new (nlMalloc(0x1C, 8, false)) ISidekickGridComponent(mComponents[3], false);
+    mSKGrid = new (nlMalloc(sizeof(ISidekickGridComponent), 8, false)) ISidekickGridComponent(mComponents[3], false);
     mSKGrid->BuildMapMenu();
 
     UpdateImages();

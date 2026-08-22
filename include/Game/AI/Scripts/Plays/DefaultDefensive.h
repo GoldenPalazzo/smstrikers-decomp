@@ -9,13 +9,13 @@ class cFielder;
 
 namespace Fuzzy
 {
-FuzzyVariant AbortDefencePlay(cDecisionEntity*);
-FuzzyVariant DefaultDefencePlay(cDecisionEntity*);
-FuzzyVariant DefendPassInPlay(float, cDecisionEntity*);
-FuzzyVariant TryAttacking(float, cDecisionEntity*);
-FuzzyVariant AttackBallOwner(float, cDecisionEntity*);
-FuzzyVariant UsePowerupDefensive(float, cDecisionEntity*);
-FuzzyVariant GetPowerupTargetDefensive(cTeam*);
+FuzzyVariant AbortDefencePlay(cDecisionEntity* pEntity);
+FuzzyVariant DefaultDefencePlay(cDecisionEntity* pDecision);
+FuzzyVariant DefendPassInPlay(float fConfidence, cDecisionEntity* pEntity);
+FuzzyVariant TryAttacking(float fConfidence, cDecisionEntity* pEntity);
+FuzzyVariant AttackBallOwner(float fConfidence, cDecisionEntity* pEntity);
+FuzzyVariant UsePowerupDefensive(float fConfidence, cDecisionEntity* pEntity);
+FuzzyVariant GetPowerupTargetDefensive(cTeam* TheTeam);
 FuzzyVariant InGoodWindupPosition(cFielder*);
 } // namespace Fuzzy
 

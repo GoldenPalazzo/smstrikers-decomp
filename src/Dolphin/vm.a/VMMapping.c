@@ -19,6 +19,9 @@ static inline u32 VMToARAMOffset(u32 virtualAddr)
 }
 
 #pragma optimize_for_size off
+/**
+ * Offset/Address/Size: 0x0 | 0x8025F83C | size: 0x100
+ */
 BOOL VMAlloc(u32 address, u32 size)
 {
     static u32 g_nextARAMPageToCheck;
@@ -36,19 +39,6 @@ BOOL VMAlloc(u32 address, u32 size)
         return FALSE;
     }
 
-    /**
-     * Offset/Address/Size: 0x0 | 0x8025F83C | size: 0x100
-     * Matches at 100%. The function-local `static` matches the original's
-     * block-scope mangling (target symbol g_nextARAMPageToCheck$233 -- the
-     * $NNN form is MWCC's mangling for a block-scope static; our build emits
-     * g_nextARAMPageToCheck$NN with a different per-TU counter value, but the
-     * SDA relocation symbol-resolves either way).
-     *
-     * `#pragma optimize_for_size off` around VMAlloc prevents MWCC's -O4,s
-     * from swapping the inline r28-r31 saves/restores for _savegpr_28 /
-     * _restgpr_28 helper calls. The LUT functions below still need -O4,s
-     * to avoid the clear-loop unrolling, so the pragma is scoped to VMAlloc.
-     */
     for (i = 0; i < size; i += 0x1000)
     {
         u32 virtualPage = address + i;
@@ -78,6 +68,9 @@ BOOL VMAlloc(u32 address, u32 size)
 }
 #pragma optimize_for_size reset
 
+/**
+ * Offset/Address/Size: 0x100 | 0x8025F93C | size: 0x40
+ */
 u32 __VMTranslateVMPageToARAMPage(u32 virtualPage)
 {
     u32 aramPage = g_baseVMtoARAM[(virtualPage >> 12) & 0x1FFF] & 0x7FFFFFFF;
@@ -92,7 +85,7 @@ u32 __VMTranslateVMPageToARAMPage(u32 virtualPage)
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x8025F97C | size: 0x20
+ * Offset/Address/Size: 0x140 | 0x8025F97C | size: 0x20
  *
  * `#pragma optimize_for_size off` selects the neg/or/srwi nonzero-test
  * sequence; under the unit's -O4,s default MWCC emits the shorter
@@ -105,6 +98,9 @@ BOOL __VMDoesMappingExist(u32 virtualPage)
 }
 #pragma optimize_for_size reset
 
+/**
+ * Offset/Address/Size: 0x160 | 0x8025F99C | size: 0x38
+ */
 void __VMMappingErrorAlert(u32 virtualPage)
 {
     char msg[0x408];
@@ -112,18 +108,24 @@ void __VMMappingErrorAlert(u32 virtualPage)
     PPCHalt();
 }
 
+/**
+ * Offset/Address/Size: 0x198 | 0x8025F9D4 | size: 0x18
+ */
 void __VMSetARAMPageAsDirty(u32 virtualPage)
 {
     g_baseVMtoARAM[(virtualPage >> 12) & 0x1FFF] |= 0x80000000;
 }
 
+/**
+ * Offset/Address/Size: 0x1B0 | 0x8025F9EC | size: 0x14
+ */
 BOOL __VMIsARAMPageDirty(u32 virtualPage)
 {
     return g_baseVMtoARAM[(virtualPage >> 12) & 0x1FFF] >> 31;
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x8025FA00 | size: 0xA8
+ * Offset/Address/Size: 0x1C4 | 0x8025FA00 | size: 0xA8
  *
  * The LUT clear is a byte-offset loop that writes 0 straight into the global
  * base pointer (`g_baseVMtoARAM[offset]`), re-reading the global on every store.
@@ -153,7 +155,7 @@ void __VMAllocVirtualToARAMLUT(void)
 }
 
 /**
- * Offset/Address/Size: 0x60 | 0x8025FAA8 | size: 0xA0
+ * Offset/Address/Size: 0x26C | 0x8025FAA8 | size: 0xA0
  *
  * The 0x4000 arena bump is a single addi, so the prologue keeps the base in r3
  * (no `mr`) unlike the 0x8000 case above.

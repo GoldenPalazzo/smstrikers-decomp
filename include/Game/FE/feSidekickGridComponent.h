@@ -5,14 +5,14 @@
 class ISidekickGridComponent : public IGridComponent<eSidekickID>
 {
 public:
-    void SetVisibleInstanceTable(bool);
-    void MoveHighlightToTarget(eSidekickID);
+    void SetVisibleInstanceTable(bool visible);
+    void MoveHighlightToTarget(eSidekickID id);
     eSidekickID GetSelectedItem() const;
-    void Update(eFEINPUT_PAD);
+    void Update(eFEINPUT_PAD pad);
     void RebuildInstanceTable();
     void BuildMapMenu();
     ~ISidekickGridComponent();
-    ISidekickGridComponent(TLComponentInstance*, bool);
+    ISidekickGridComponent(TLComponentInstance* parentcomponent, bool ismirrored);
 };
 
 #endif // _FESIDEKICKGRIDCOMPONENT_H_

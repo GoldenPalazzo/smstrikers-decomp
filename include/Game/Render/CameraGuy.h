@@ -8,7 +8,7 @@ extern int g_nCameraTiltMax;
 extern u16 g_aCameraOOIConstraint;
 extern int g_nCameraSpinMax;
 
-static void CameraGuyHeadTrackUpdateCallback(unsigned int, unsigned int, cPoseAccumulator*, unsigned int, int);
+static void CameraGuyHeadTrackUpdateCallback(unsigned int ctx, unsigned int arg1, cPoseAccumulator* poseAccumulator, unsigned int arg3, int arg4);
 
 class cHeadTrack;
 
@@ -20,11 +20,11 @@ public:
     virtual ~CameraGuy();
     virtual SkinAnimatedNPC_Type GetSkinAnimatedNPC_Type() const { return SkinAnimatedNPC_CAMERA_GUY; };
     virtual void Render();
-    virtual void Update(float);
+    virtual void Update(float dt);
 
     virtual void Init();
 
-    void SetIdleAnim(cSAnim&);
+    void SetIdleAnim(cSAnim& pAnim);
 
     /* 0x5C */ cHeadTrack* mpHeadTrack; // offset 0x5C, size 0x4
 }; // total size: 0x60

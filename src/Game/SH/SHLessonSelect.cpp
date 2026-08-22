@@ -385,7 +385,6 @@ void LessonSelectScene::StartLesson()
 
 /**
  * Offset/Address/Size: 0x0 | 0x8010AE50 | size: 0x2E4
- * TODO: 99.59% scratch match - remaining i-diffs are SDA/string relocation offsets.
  */
 void SetTickerLesson(int lesson)
 {

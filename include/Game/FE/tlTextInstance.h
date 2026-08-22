@@ -21,7 +21,7 @@ class TLTextInstance : public TLInstance
 public:
     void SetScissorBox(u16 left, u16 top, u16 width, u16 height);
     void SetString(const unsigned short* utf16);
-    void SetStringId(const char* name);
+    void SetStringId(const char* id);
     const unsigned short* GetString() const;
     void SetMatrix(nlMatrix4* pMatrix)
     {

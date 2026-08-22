@@ -56,7 +56,7 @@ public:
         }
         *mStationaryTransform = transform;
     }
-    void GetRotation(nlMatrix4*) const;
+    void GetRotation(nlMatrix4* dest) const;
     nlVector3& GetPosition() const;
     void Deactivate();
     virtual ~ExplosionFragment();
@@ -82,14 +82,14 @@ public:
     virtual ExplodableCategoryData& GetCategoryData() const = 0;
     void Allocate();
     void DeAllocate();
-    void Update(float);
-    void Initialize(int);
+    void Update(float fDeltaT);
+    void Initialize(int numFragmentModels);
     virtual void SetUnexplodedModelVisibility(bool isVisible) = 0;
     virtual const nlMatrix4& GetWorldMatrix() const = 0;
     void Explode();
-    void InitializePhysicsObject(PhysicsObject*, const nlMatrix4&, bool);
-    void DestroyAllActiveFragments(bool);
-    void FindExplosionAngleRange(unsigned short&, unsigned short&) const;
+    void InitializePhysicsObject(PhysicsObject* pPhysicsObject, const nlMatrix4& worldMatrix, bool bIsStationary);
+    void DestroyAllActiveFragments(bool renewExplodables);
+    void FindExplosionAngleRange(unsigned short& min, unsigned short& max) const;
     EmissionController* GetAssociatedEffect() const { return mpAssociatedEffect; }
 
     /* 0x4, */ Vector<ExplosionFragment> mExplosionFragments; // offset 0x4, size 0xC
@@ -111,14 +111,14 @@ public:
     static SlotPool<SidelineExplodableNode> sSidelineExplodableNodeSlotPool;
 }; // total size: 0x8
 
-void SidelineExplodableTextureLoadCallback(unsigned long);
-void EmissionControllerFinished(EmissionController&, ExplosionFragment*);
-void UpdateEmissionControllerPosition(EmissionController&, ExplosionFragment*);
+void SidelineExplodableTextureLoadCallback(unsigned long textureId);
+void EmissionControllerFinished(EmissionController& ec, ExplosionFragment* p0);
+void UpdateEmissionControllerPosition(EmissionController& ec, ExplosionFragment* pFragment);
 
 class SidelineExplosionPhysicsObject : public PhysicsBox
 {
 public:
-    SidelineExplosionPhysicsObject(CollisionSpace*, PhysicsWorld*, float, float, float, ExplosionFragment*);
+    SidelineExplosionPhysicsObject(CollisionSpace* space, PhysicsWorld* world, float side1, float side2, float side3, ExplosionFragment* pExplosionFragment);
     virtual int GetObjectType() const { return 0x1C; }
     virtual bool SetContactInfo(dContact* contact, PhysicsObject* other, bool first);
     virtual ContactType Contact(PhysicsObject* other, dContact* contact, int what, PhysicsObject* otherObject);
@@ -139,21 +139,21 @@ class SidelineExplodableManager
 {
 public:
     static void CleanUp();
-    static void Update(float);
+    static void Update(float fDeltaT);
     static int GetNumExplodables();
     static void GetVisibilityOfExplodableModels(bool* visibility, int numExplodables);
     static void SetVisibilityOfUnexplodedModels(bool* visibility, int numExplodables);
-    static void TriggerExplosions(const nlVector3&, float);
-    static SidelineExplodable* GetClosestExplodable(const nlVector3&);
+    static void TriggerExplosions(const nlVector3& pos, float explosionRadius);
+    static SidelineExplodable* GetClosestExplodable(const nlVector3& pos);
     static void DestroyAllActiveFragments(bool renewExplodables);
-    static void RemoveSidelineExplodable(SidelineExplodable*);
-    static ExplosionFragment* GetFragmentFromHandle(unsigned short);
-    static void RegisterFragment(ExplosionFragment*, unsigned short);
-    static void AddSidelineExplodable(SidelineExplodable*);
+    static void RemoveSidelineExplodable(SidelineExplodable* pSidelineExplodable);
+    static ExplosionFragment* GetFragmentFromHandle(unsigned short handle);
+    static void RegisterFragment(ExplosionFragment* fragment, unsigned short handle);
+    static void AddSidelineExplodable(SidelineExplodable* pSidelineExplodable);
     static unsigned short GetDrawableFragmentFromPool();
-    static void ReturnDrawableFragmentToPool(unsigned short);
+    static void ReturnDrawableFragmentToPool(unsigned short handle);
     static void Initialize();
-    static void AssociateEffectWithNearbyFloatingCamera(EmissionController*);
+    static void AssociateEffectWithNearbyFloatingCamera(EmissionController* pEmissionController);
     static void UnAssociateEffectWithNearbyFloatingCamera(EmissionController* pEmissionController);
 
     static ExplosionFragment** sFragmentLookupTable;

@@ -4,6 +4,9 @@
 
 #include "__gx.h"
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80251580 | size: 0x174
+ */
 void GXProject(f32 x, f32 y, f32 z, const Mtx mtx, const f32* pm, const f32* vp, f32* sx, f32* sy, f32* sz)
 {
     Vec peye;
@@ -83,6 +86,9 @@ void __GXSetProjection(void)
 #endif
 }
 
+/**
+ * Offset/Address/Size: 0x174 | 0x802516F4 | size: 0xA4
+ */
 void GXSetProjection(const Mtx44 mtx, GXProjectionType type)
 {
     CHECK_GXBEGIN(295, "GXSetProjection");
@@ -107,6 +113,9 @@ void GXSetProjection(const Mtx44 mtx, GXProjectionType type)
     __GXData->bpSentNot = 1;
 }
 
+/**
+ * Offset/Address/Size: 0x218 | 0x80251798 | size: 0x8C
+ */
 void GXSetProjectionv(const f32* ptr)
 {
     CHECK_GXBEGIN(339, "GXSetProjectionv");
@@ -130,6 +139,9 @@ void GXSetProjectionv(const f32* ptr)
 
 #define qr0 0
 
+/**
+ * Offset/Address/Size: 0x2A4 | 0x80251824 | size: 0x48
+ */
 void GXGetProjectionv(f32* ptr)
 {
     ASSERTMSGLINE(370, ptr, "GXGet*: invalid null pointer");
@@ -247,6 +259,9 @@ static void WriteMTXPS4x2(const register f32 mtx[2][4], register volatile f32* d
         VERIF_MTXLIGHT((addr), *(u32*)&xfData); \
     } while (0)
 
+/**
+ * Offset/Address/Size: 0x2EC | 0x8025186C | size: 0x50
+ */
 void GXLoadPosMtxImm(const Mtx mtx, u32 id)
 {
     u32 reg;
@@ -295,6 +310,9 @@ void GXLoadPosMtxIndx(u16 mtx_indx, u32 id)
 #endif
 }
 
+/**
+ * Offset/Address/Size: 0x33C | 0x802518BC | size: 0x50
+ */
 void GXLoadNrmMtxImm(const Mtx mtx, u32 id)
 {
     u32 reg;
@@ -367,6 +385,9 @@ void GXLoadNrmMtxIndx3x3(u16 mtx_indx, u32 id)
 #endif
 }
 
+/**
+ * Offset/Address/Size: 0x38C | 0x8025190C | size: 0x34
+ */
 void GXSetCurrentMtx(u32 id)
 {
     CHECK_GXBEGIN(708, "GXSetCurrentMtx");
@@ -374,6 +395,9 @@ void GXSetCurrentMtx(u32 id)
     __GXSetMatrixIndex(GX_VA_PNMTXIDX);
 }
 
+/**
+ * Offset/Address/Size: 0x3C0 | 0x80251940 | size: 0xB4
+ */
 void GXLoadTexMtxImm(const f32 mtx[][4], u32 id, GXTexMtxType type)
 {
     u32 reg;
@@ -454,6 +478,9 @@ void GXLoadTexMtxIndx(u16 mtx_indx, u32 id, GXTexMtxType type)
 #endif
 }
 
+/**
+ * Offset/Address/Size: 0x474 | 0x802519F4 | size: 0x90
+ */
 void __GXSetViewport(void)
 {
     f32 sx;
@@ -508,11 +535,17 @@ void GXSetViewportJitter(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz,
     __GXData->bpSentNot = 1;
 }
 
+/**
+ * Offset/Address/Size: 0x504 | 0x80251A84 | size: 0x48
+ */
 void GXSetViewport(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz)
 {
     GXSetViewportJitter(left, top, wd, ht, nearz, farz, 1);
 }
 
+/**
+ * Offset/Address/Size: 0x54C | 0x80251ACC | size: 0x24
+ */
 void GXGetViewportv(f32* vp)
 {
     ASSERTMSGLINE(968, vp, "GXGet*: invalid null pointer");
@@ -567,6 +600,9 @@ void GXSetZScaleOffset(f32 scale, f32 offset)
     __GXData->bpSentNot = 1;
 }
 
+/**
+ * Offset/Address/Size: 0x570 | 0x80251AF0 | size: 0x78
+ */
 void GXSetScissor(u32 left, u32 top, u32 wd, u32 ht)
 {
     u32 tp;
@@ -615,6 +651,9 @@ void GXGetScissor(u32* left, u32* top, u32* wd, u32* ht)
     *ht = bm - tp + 1;
 }
 
+/**
+ * Offset/Address/Size: 0x5E8 | 0x80251B68 | size: 0x40
+ */
 void GXSetScissorBoxOffset(s32 x_off, s32 y_off)
 {
     u32 reg = 0;
@@ -636,6 +675,9 @@ void GXSetScissorBoxOffset(s32 x_off, s32 y_off)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x628 | 0x80251BA8 | size: 0x28
+ */
 void GXSetClipMode(GXClipMode mode)
 {
     CHECK_GXBEGIN(1151, "GXSetClipMode");
@@ -643,6 +685,9 @@ void GXSetClipMode(GXClipMode mode)
     __GXData->bpSentNot = 1;
 }
 
+/**
+ * Offset/Address/Size: 0x650 | 0x80251BD0 | size: 0x84
+ */
 void __GXSetMatrixIndex(GXAttr matIdxAttr)
 {
     if (matIdxAttr < GX_VA_TEX4MTXIDX)

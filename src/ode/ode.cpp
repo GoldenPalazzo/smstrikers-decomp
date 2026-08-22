@@ -252,6 +252,9 @@ static inline void removeJointReferencesFromAttachedBodies(dxJoint* j)
 //****************************************************************************
 // body
 
+/**
+ * Offset/Address/Size: 0x1024 | 0x802218B8 | size: 0x1BC
+ */
 dxBody* dBodyCreate(dxWorld* w)
 {
     dAASSERT(w);
@@ -285,6 +288,9 @@ dxBody* dBodyCreate(dxWorld* w)
     return b;
 }
 
+/**
+ * Offset/Address/Size: 0xE84 | 0x80221718 | size: 0x1A0
+ */
 void dBodyDestroy(dxBody* b)
 {
     dAASSERT(b);
@@ -317,18 +323,27 @@ void dBodyDestroy(dxBody* b)
     delete b;
 }
 
+/**
+ * Offset/Address/Size: 0xE7C | 0x80221710 | size: 0x8
+ */
 void dBodySetData(dBodyID b, void* data)
 {
     dAASSERT(b);
     b->userdata = data;
 }
 
+/**
+ * Offset/Address/Size: 0xE74 | 0x80221708 | size: 0x8
+ */
 void* dBodyGetData(dBodyID b)
 {
     dAASSERT(b);
     return b->userdata;
 }
 
+/**
+ * Offset/Address/Size: 0xE20 | 0x802216B4 | size: 0x54
+ */
 void dBodySetPosition(dBodyID b, dReal x, dReal y, dReal z)
 {
     dAASSERT(b);
@@ -341,6 +356,9 @@ void dBodySetPosition(dBodyID b, dReal x, dReal y, dReal z)
         dGeomMoved(geom);
 }
 
+/**
+ * Offset/Address/Size: 0xD98 | 0x8022162C | size: 0x88
+ */
 void dBodySetRotation(dBodyID b, const dMatrix3 R)
 {
     dAASSERT(b && R);
@@ -373,6 +391,9 @@ void dBodySetRotation(dBodyID b, const dMatrix3 R)
 //         dGeomMoved(geom);
 // }
 
+/**
+ * Offset/Address/Size: 0xD88 | 0x8022161C | size: 0x10
+ */
 void dBodySetLinearVel(dBodyID b, dReal x, dReal y, dReal z)
 {
     dAASSERT(b);
@@ -381,6 +402,9 @@ void dBodySetLinearVel(dBodyID b, dReal x, dReal y, dReal z)
     b->lvel[2] = z;
 }
 
+/**
+ * Offset/Address/Size: 0xD78 | 0x8022160C | size: 0x10
+ */
 void dBodySetAngularVel(dBodyID b, dReal x, dReal y, dReal z)
 {
     dAASSERT(b);
@@ -389,12 +413,18 @@ void dBodySetAngularVel(dBodyID b, dReal x, dReal y, dReal z)
     b->avel[2] = z;
 }
 
+/**
+ * Offset/Address/Size: 0xD70 | 0x80221604 | size: 0x8
+ */
 const dReal* dBodyGetPosition(dBodyID b)
 {
     dAASSERT(b);
     return b->pos;
 }
 
+/**
+ * Offset/Address/Size: 0xD68 | 0x802215FC | size: 0x8
+ */
 const dReal* dBodyGetRotation(dBodyID b)
 {
     dAASSERT(b);
@@ -407,18 +437,27 @@ const dReal* dBodyGetRotation(dBodyID b)
 //     return b->q;
 // }
 
+/**
+ * Offset/Address/Size: 0xD60 | 0x802215F4 | size: 0x8
+ */
 const dReal* dBodyGetLinearVel(dBodyID b)
 {
     dAASSERT(b);
     return b->lvel;
 }
 
+/**
+ * Offset/Address/Size: 0xD58 | 0x802215EC | size: 0x8
+ */
 const dReal* dBodyGetAngularVel(dBodyID b)
 {
     dAASSERT(b);
     return b->avel;
 }
 
+/**
+ * Offset/Address/Size: 0xCF4 | 0x80221588 | size: 0x64
+ */
 void dBodySetMass(dBodyID b, const dMass* mass)
 {
     dAASSERT(b && mass);
@@ -431,12 +470,18 @@ void dBodySetMass(dBodyID b, const dMass* mass)
     b->invMass = dRecip(b->mass.mass);
 }
 
+/**
+ * Offset/Address/Size: 0xCC4 | 0x80221558 | size: 0x30
+ */
 void dBodyGetMass(dBodyID b, dMass* mass)
 {
     dAASSERT(b && mass);
     memcpy(mass, &b->mass, sizeof(dMass));
 }
 
+/**
+ * Offset/Address/Size: 0xC9C | 0x80221530 | size: 0x28
+ */
 void dBodyAddForce(dBodyID b, dReal fx, dReal fy, dReal fz)
 {
     dAASSERT(b);
@@ -445,6 +490,9 @@ void dBodyAddForce(dBodyID b, dReal fx, dReal fy, dReal fz)
     b->facc[2] += fz;
 }
 
+/**
+ * Offset/Address/Size: 0xC74 | 0x80221508 | size: 0x28
+ */
 void dBodyAddTorque(dBodyID b, dReal fx, dReal fy, dReal fz)
 {
     dAASSERT(b);
@@ -559,18 +607,27 @@ void dBodyAddTorque(dBodyID b, dReal fx, dReal fy, dReal fz)
 //     dCROSS(b->tacc, +=, p, f);
 // }
 
+/**
+ * Offset/Address/Size: 0xC6C | 0x80221500 | size: 0x8
+ */
 const dReal* dBodyGetForce(dBodyID b)
 {
     dAASSERT(b);
     return b->facc;
 }
 
+/**
+ * Offset/Address/Size: 0xC64 | 0x802214F8 | size: 0x8
+ */
 const dReal* dBodyGetTorque(dBodyID b)
 {
     dAASSERT(b);
     return b->tacc;
 }
 
+/**
+ * Offset/Address/Size: 0xC54 | 0x802214E8 | size: 0x10
+ */
 void dBodySetForce(dBodyID b, dReal x, dReal y, dReal z)
 {
     dAASSERT(b);
@@ -579,6 +636,9 @@ void dBodySetForce(dBodyID b, dReal x, dReal y, dReal z)
     b->facc[2] = z;
 }
 
+/**
+ * Offset/Address/Size: 0xC44 | 0x802214D8 | size: 0x10
+ */
 void dBodySetTorque(dBodyID b, dReal x, dReal y, dReal z)
 {
     dAASSERT(b);
@@ -735,6 +795,9 @@ void dBodySetTorque(dBodyID b, dReal x, dReal y, dReal z)
 //     return 0;
 // }
 
+/**
+ * Offset/Address/Size: 0xC24 | 0x802214B8 | size: 0x20
+ */
 void dBodyEnable(dBodyID b)
 {
     dAASSERT(b);
@@ -743,6 +806,9 @@ void dBodyEnable(dBodyID b)
     b->adis_timeleft = b->adis.idle_time;
 }
 
+/**
+ * Offset/Address/Size: 0xC14 | 0x802214A8 | size: 0x10
+ */
 void dBodyDisable(dBodyID b)
 {
     dAASSERT(b);
@@ -755,6 +821,9 @@ void dBodyDisable(dBodyID b)
 //     return ((b->flags & dxBodyDisabled) == 0);
 // }
 
+/**
+ * Offset/Address/Size: 0xBEC | 0x80221480 | size: 0x28
+ */
 void dBodySetGravityMode(dBodyID b, int mode)
 {
     dAASSERT(b);
@@ -826,6 +895,9 @@ void dBodySetGravityMode(dBodyID b, int mode)
 //     return ((b->flags & dxBodyAutoDisable) != 0);
 // }
 
+/**
+ * Offset/Address/Size: 0xBC4 | 0x80221458 | size: 0x28
+ */
 void dBodySetAutoDisableFlag(dBodyID b, int do_auto_disable)
 {
     dAASSERT(b);
@@ -864,6 +936,9 @@ static inline void dJointInit(dxWorld* w, dxJoint* j)
     w->nj++;
 }
 
+/**
+ * Offset/Address/Size: 0xAB0 | 0x80221344 | size: 0x114
+ */
 dxJoint* createJoint(dWorldID w, dJointGroupID group, dxJoint::Vtable* vtable)
 {
     dIASSERT(w && vtable);
@@ -903,6 +978,9 @@ dxJoint* createJoint(dWorldID w, dJointGroupID group, dxJoint::Vtable* vtable)
 //     return createJoint(w, group, &__dslider_vtable);
 // }
 
+/**
+ * Offset/Address/Size: 0x8AC | 0x80221140 | size: 0x204
+ */
 dxJoint* dJointCreateContact(dWorldID w, dJointGroupID group,
     const dContact* c)
 {
@@ -943,6 +1021,9 @@ dxJoint* dJointCreateContact(dWorldID w, dJointGroupID group,
 //     return createJoint(w, group, &__damotor_vtable);
 // }
 
+/**
+ * Offset/Address/Size: 0x780 | 0x80221014 | size: 0x12C
+ */
 void dJointDestroy(dxJoint* j)
 {
     dAASSERT(j);
@@ -954,6 +1035,9 @@ void dJointDestroy(dxJoint* j)
     dFree(j, j->vtable->size);
 }
 
+/**
+ * Offset/Address/Size: 0x738 | 0x80220FCC | size: 0x48
+ */
 dJointGroupID dJointGroupCreate(int max_size)
 {
     // not any more ... dUASSERT (max_size > 0,"max size must be > 0");
@@ -962,6 +1046,9 @@ dJointGroupID dJointGroupCreate(int max_size)
     return group;
 }
 
+/**
+ * Offset/Address/Size: 0x538 | 0x80220DCC | size: 0x200
+ */
 void dJointGroupDestroy(dJointGroupID group)
 {
     dAASSERT(group);
@@ -969,6 +1056,9 @@ void dJointGroupDestroy(dJointGroupID group)
     delete group;
 }
 
+/**
+ * Offset/Address/Size: 0x358 | 0x80220BEC | size: 0x1E0
+ */
 void dJointGroupEmpty(dJointGroupID group)
 {
     // the joints in this group are detached starting from the most recently
@@ -1000,6 +1090,9 @@ void dJointGroupEmpty(dJointGroupID group)
     group->stack.freeAll();
 }
 
+/**
+ * Offset/Address/Size: 0x204 | 0x80220A98 | size: 0x154
+ */
 void dJointAttach(dxJoint* joint, dxBody* body1, dxBody* body2)
 {
     // check arguments
@@ -1108,6 +1201,9 @@ inline int dJointGetType(dxJoint* joint)
 //     return 0;
 // }
 
+/**
+ * Offset/Address/Size: 0x1C0 | 0x80220A54 | size: 0x44
+ */
 int dAreConnectedExcluding(dBodyID b1, dBodyID b2, int joint_type)
 {
     dAASSERT(b1 && b2);
@@ -1123,6 +1219,9 @@ int dAreConnectedExcluding(dBodyID b1, dBodyID b2, int joint_type)
 //****************************************************************************
 // world
 
+/**
+ * Offset/Address/Size: 0x10C | 0x802209A0 | size: 0xB4
+ */
 dxWorld* dWorldCreate()
 {
     dxWorld* w = new dxWorld;
@@ -1157,6 +1256,9 @@ dxWorld* dWorldCreate()
     return w;
 }
 
+/**
+ * Offset/Address/Size: 0x38 | 0x802208CC | size: 0xD4
+ */
 void dWorldDestroy(dxWorld* w)
 {
     // delete all bodies and joints
@@ -1191,18 +1293,27 @@ void dWorldDestroy(dxWorld* w)
     delete w;
 }
 
+/**
+ * Offset/Address/Size: 0x30 | 0x802208C4 | size: 0x8
+ */
 void dWorldSetERP(dWorldID w, dReal erp)
 {
     dAASSERT(w);
     w->global_erp = erp;
 }
 
+/**
+ * Offset/Address/Size: 0x28 | 0x802208BC | size: 0x8
+ */
 void dWorldSetCFM(dWorldID w, dReal cfm)
 {
     dAASSERT(w);
     w->global_cfm = cfm;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80220894 | size: 0x28
+ */
 void dWorldQuickStep(dWorldID w, dReal stepsize)
 {
     dUASSERT(w, "bad world argument");

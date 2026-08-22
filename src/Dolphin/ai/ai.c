@@ -47,6 +47,9 @@ static void __AISHandler(__OSInterrupt interrupt, OSContext* context);
 static void __AICallbackStackSwitch(void* cb);
 static void __AI_SRC_INIT(void);
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8023AEE8 | size: 0x44
+ */
 AIDCallback AIRegisterDMACallback(AIDCallback callback)
 {
     AIDCallback old_callback;
@@ -59,6 +62,9 @@ AIDCallback AIRegisterDMACallback(AIDCallback callback)
     return old_callback;
 }
 
+/**
+ * Offset/Address/Size: 0x44 | 0x8023AF2C | size: 0x88
+ */
 void AIInitDMA(u32 start_addr, u32 length)
 {
     BOOL old;
@@ -76,11 +82,17 @@ BOOL AIGetDMAEnableFlag(void)
     return (__DSPRegs[27] & (1 << 15)) >> 15;
 }
 
+/**
+ * Offset/Address/Size: 0xCC | 0x8023AFB4 | size: 0x18
+ */
 void AIStartDMA(void)
 {
     __DSPRegs[27] = __DSPRegs[27] | 0x8000;
 }
 
+/**
+ * Offset/Address/Size: 0xE4 | 0x8023AFCC | size: 0x18
+ */
 void AIStopDMA(void)
 {
     __DSPRegs[27] = __DSPRegs[27] & ~0x8000;
@@ -91,6 +103,9 @@ u32 AIGetDMABytesLeft(void)
     return (__DSPRegs[29] & 0x7FFF) << 5;
 }
 
+/**
+ * Offset/Address/Size: 0xFC | 0x8023AFE4 | size: 0x1C
+ */
 u32 AIGetDMAStartAddr(void)
 {
     return ((__DSPRegs[24] << 16) & 0x03FF0000) | (__DSPRegs[25] & 0xFFE0);
@@ -138,6 +153,9 @@ u32 AIGetStreamTrigger(void)
     return __AIRegs[3];
 }
 
+/**
+ * Offset/Address/Size: 0x118 | 0x8023B000 | size: 0xD8
+ */
 void AISetStreamPlayState(u32 state)
 {
     BOOL old;
@@ -165,11 +183,17 @@ void AISetStreamPlayState(u32 state)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x1F0 | 0x8023B0D8 | size: 0x10
+ */
 u32 AIGetStreamPlayState(void)
 {
     return __AIRegs[0] & 1;
 }
 
+/**
+ * Offset/Address/Size: 0x200 | 0x8023B0E8 | size: 0xE0
+ */
 void AISetDSPSampleRate(u32 rate)
 {
     BOOL old;
@@ -202,6 +226,9 @@ void AISetDSPSampleRate(u32 rate)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x2E0 | 0x8023B1C8 | size: 0x14
+ */
 u32 AIGetDSPSampleRate(void)
 {
     return GET_REG_FIELD(__AIRegs[0], 1, 6) ^ 1;
@@ -224,6 +251,9 @@ void __AI_DEBUG_set_stream_sample_rate(u32 rate)
     __AI_set_stream_sample_rate(rate);
 }
 
+/**
+ * Offset/Address/Size: 0x2F4 | 0x8023B1DC | size: 0xD4
+ */
 static void __AI_set_stream_sample_rate(u32 rate)
 {
     BOOL old;
@@ -253,31 +283,49 @@ static void __AI_set_stream_sample_rate(u32 rate)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x3C8 | 0x8023B2B0 | size: 0x10
+ */
 u32 AIGetStreamSampleRate(void)
 {
     return GET_REG_FIELD(__AIRegs[0], 1, 1);
 }
 
+/**
+ * Offset/Address/Size: 0x3D8 | 0x8023B2C0 | size: 0x1C
+ */
 void AISetStreamVolLeft(u8 vol)
 {
     OLD_SET_REG_FIELD(945, __AIRegs[1], 8, 0, vol);
 }
 
+/**
+ * Offset/Address/Size: 0x3F4 | 0x8023B2DC | size: 0x10
+ */
 u8 AIGetStreamVolLeft(void)
 {
     return GET_REG_FIELD(__AIRegs[1], 8, 0);
 }
 
+/**
+ * Offset/Address/Size: 0x404 | 0x8023B2EC | size: 0x1C
+ */
 void AISetStreamVolRight(u8 vol)
 {
     OLD_SET_REG_FIELD(986, __AIRegs[1], 8, 8, vol);
 }
 
+/**
+ * Offset/Address/Size: 0x420 | 0x8023B308 | size: 0x10
+ */
 u8 AIGetStreamVolRight(void)
 {
     return (__AIRegs[1] & (0xFF << 8)) >> 8;
 }
 
+/**
+ * Offset/Address/Size: 0x430 | 0x8023B318 | size: 0x16C
+ */
 void AIInit(u8* stack)
 {
     if (__AI_init_flag != TRUE)
@@ -313,11 +361,17 @@ void AIInit(u8* stack)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x59C | 0x8023B484 | size: 0xC
+ */
 void AIReset(void)
 {
     __AI_init_flag = FALSE;
 }
 
+/**
+ * Offset/Address/Size: 0x5A8 | 0x8023B490 | size: 0x7C
+ */
 static void __AISHandler(__OSInterrupt interrupt, OSContext* context)
 {
     OSContext exceptionContext;
@@ -333,6 +387,9 @@ static void __AISHandler(__OSInterrupt interrupt, OSContext* context)
     OSSetCurrentContext(context);
 }
 
+/**
+ * Offset/Address/Size: 0x624 | 0x8023B50C | size: 0xAC
+ */
 static void __AIDHandler(__OSInterrupt interrupt, OSContext* context)
 {
     OSContext exceptionContext;
@@ -361,6 +418,9 @@ static void __AIDHandler(__OSInterrupt interrupt, OSContext* context)
 }
 
 // clang-format off
+/**
+ * Offset/Address/Size: 0x6D0 | 0x8023B5B8 | size: 0x58
+ */
 static asm void __AICallbackStackSwitch(register void* cb) {
     nofralloc
     mflr r0
@@ -388,6 +448,9 @@ static asm void __AICallbackStackSwitch(register void* cb) {
 }
 // clang-format on
 
+/**
+ * Offset/Address/Size: 0x728 | 0x8023B610 | size: 0x1E4
+ */
 void __AI_SRC_INIT(void)
 {
     OSTime rising_32khz = 0;

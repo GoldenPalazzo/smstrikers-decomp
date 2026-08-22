@@ -142,84 +142,98 @@ class Bowser;
 class AIPlay;
 class AvoidController;
 class ShotMeter;
+class Goalie;
 
 class cFielder : public cPlayer
 {
 public:
-    cFielder(int, int, eCharacterClass, const int*, cSHierarchy*, cAnimInventory*, const CharacterPhysicsData*, FielderTweaks*, AnimRetargetList*);
+    cFielder(int nPlayerID, int nTeamID, eCharacterClass cc, const int* nModelID, cSHierarchy* pHierarchy, cAnimInventory* pAnimInventory,
+        const CharacterPhysicsData* pCharacterPhysicsData, FielderTweaks* pCharTweaks, AnimRetargetList* pAnimRetargetList);
     /* 0x08 */ virtual ~cFielder();
 
     /* 0x0C */ virtual void PostPhysicsUpdate();
     /* 0x10 */ // virtual void PrePhysicsUpdate(float);
-    /* 0x14 */ virtual void PreUpdate(float);
+    /* 0x14 */ virtual void PreUpdate(float fTime);
     /* 0x18 */ // virtual void SetAnimID(int);
-    /* 0x1C */ virtual void SetPosition(const nlVector3&);
-    /* 0x20 */ virtual void Update(float);
-    /* 0x24 */ virtual bool CanPickupBall(cBall*);
+    /* 0x1C */ virtual void SetPosition(const nlVector3& v3Position);
+    /* 0x20 */ virtual void Update(float fDeltaT);
+    /* 0x24 */ virtual bool CanPickupBall(cBall* pBall);
     /* 0x28 */ // virtual void CollideWithBallCallback(cBall*);
-    /* 0x2C */ virtual void CollideWithCharacterCallback(CollisionPlayerPlayerData*);
-    /* 0x30 */ virtual void CollideWithWallCallback(const CollisionPlayerWallData*);
+    /* 0x2C */ virtual void CollideWithCharacterCallback(CollisionPlayerPlayerData* pData);
+    /* 0x30 */ virtual void CollideWithWallCallback(const CollisionPlayerWallData* eventData);
     /* 0x34 */ // virtual void CollideWithWallCallback(const CollisionPlayerWallData*);
     /* 0x38 */ virtual void InitActionPostWhistle();
 
     void AbortPlay();
     void AbortPendingThoughts();
     void CalculateNewDesire();
+    float CalcJogRunBlendWeight() const;
+    float CalcRunTurboBlendWeight() const;
+    bool CanGetElectrocuted(const CollisionPlayerWallData* eventData);
     bool CanDoCaptainShootToScore();
     bool CanLooseBallShoot();
     bool CanLooseBallPass();
-    bool CanPassTargetAttemptOneTouch(cFielder*);
+    bool CanPassTargetAttemptOneTouch(cFielder* pPassTarget);
     bool CanReceivePass();
-    void SetMark(cFielder*);
+    void SetMark(cFielder* pMark);
     cFielder* GetMark() const { return m_pMark; }
     cFielder* GetMarker() const { return m_pMarker; }
-    bool CollideWithShellCallback(ePowerupSize, bool, const nlVector3&, const nlVector3&);
+    bool CollideWithShellCallback(ePowerupSize eSize, bool bUnknown, const nlVector3& rv3Pos1, const nlVector3& rv3Pos2);
+    void CollideWithSidelineFragmentCallback(const nlVector3& v3CollisionLocation, const nlVector3& v3CollisionVelocity);
     bool CollideWithFreezeCallback();
-    bool CollideWithBananaCallback(const nlVector3&);
-    void CollideWithChainCallback(ChainChomp*);
-    void CollideWithBowserCallback(Bowser*);
+    bool CollideWithBananaCallback(const nlVector3& rv3BananaPosition);
+    void CollideWithBobombCallback(const nlVector3& v3CollisionLocation, float fBombRadius);
+    void CollideWithChainCallback(ChainChomp* pChainChomp);
+    void CollideWithBowserCallback(Bowser* pBowser);
     void ClearPassTargetIfAmThePassTarget();
     bool UsePerfectPass();
     bool IsPlayingPowerupAnim();
-    bool IsCharacterInAir(bool) const;
+    bool IsCharacterInAir(bool bUseOffset) const;
     bool IsTurboing();
     bool IsRunning() const;
+    bool IsRunningWithBall() const;
     bool IsInvincible() const;
     bool IsBallAwayFromCarrier() const;
     bool IsReceivingVolleyPass() const;
     bool IsPreparingForOneTimer() const;
     void CleanUpAction();
     void CleanUpPowerupEffect();
-    void CalcRegularShot(nlVector3&, nlVector3&);
-    void CalcShootToScoreShot(nlVector3&, nlVector3&);
+    float GetShotProbability(float fValue, Goalie* pGoalie);
+    void CalcRegularShot(nlVector3& rv3Vel, nlVector3& rv3Target);
+    void CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3BallTarget);
     void SetSlideAttackSuccessFlag();
     void SetKickOffWaitTime();
-    void SetBombImpactTime(const nlVector3&, float);
-    void SetDesireDuration(float, bool);
-    void ShootBallDueToContact(const nlVector3&);
-    void ShootBallDueToContact(unsigned short);
+    void SetBombImpactTime(const nlVector3& v3BombImpactLocation, float fBombImpactRadius);
+    void SetDesireDuration(float fNewDuration, bool bRandomVariation);
+    void ShootBallDueToContact(const nlVector3& v3IncomingVelocity);
+    void ShootBallDueToContact(unsigned short aShootDirection);
     void DoClearBall();
     void DoHandleActiveShotMeter();
-    bool DoLooseBallContactFromIdle(nlVector3&, float&, nlVector3&, float&, unsigned short, const LooseBallContactAnimInfo*);
-    bool DoLooseBallContactFromRun(nlVector3&, float&, nlVector3&, float&, const LooseBallContactAnimInfo*, const nlVector3&);
-    bool DoLooseBallContactFromRunVolley(nlVector3&, float&, nlVector3&, float&, const LooseBallContactAnimInfo*, const nlVector3&);
-    void DoPenaltyCardBooking(cFielder*, ePenaltyType);
+    bool DoLooseBallContactFromIdle(nlVector3& v3AnimStartPosition, float& fAnimStartTime, nlVector3& v3BallContactPosition, float& fBallContactTime,
+        unsigned short aFutureFacingDirection, const LooseBallContactAnimInfo* pBestBallContactAnimInfo);
+    bool DoLooseBallContactFromRun(nlVector3& v3AnimStartPosition, float& fAnimStartTime, nlVector3& v3BallContactPosition, float& fBallContactTime,
+        const LooseBallContactAnimInfo* pBestBallContactAnimInfo, const nlVector3& v3PassIntercept);
+    bool DoLooseBallContactFromRunVolley(nlVector3& v3AnimStartPosition, float& fAnimStartTime, nlVector3& v3BallContactPosition, float& fBallContactTime,
+        const LooseBallContactAnimInfo* pBestBallContactAnimInfo, const nlVector3& v3PassIntercept);
+    void DoPenaltyCardBooking(cFielder* pFoulee, ePenaltyType eType);
     void DoPositioningInterceptBall();
-    void DoAwardPowerupStuff(eAwardPowerupType, float);
-    void DoCalcShootToScoreResult(float, float, float, float, float);
+    void DoAwardPowerupStuff(eAwardPowerupType eType, float fAmountOfAward);
+    void DoCalcShootToScoreResult(float fPerfectJumpTime, float fPerfectReleaseTime, float fActualJumpTime, float fActualReleaseTime, float fGreenWidth);
     cFielder* DoFindBestHitTarget();
-    void DoFindBestShotTarget(nlVector3&, float&, bool);
+    void DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed, bool bIsSTS);
     void DoRegularShooting();
     void DoDebugShooting();
-    void DoResetShotMeter(float);
+    void DoResetShotMeter(float fTime);
     bool IsActionDone() const;
-    void SetAction(eFielderActionState);
+    void SetAction(eFielderActionState actionState);
     void InitActionSlideAttackReact(cPlayer*, bool);
-    bool GetFormationPosition(nlVector3&, float);
-    LooseBallContactAnimInfo* GetOneTimerBallContactAnimInfo(unsigned short, const nlVector3&, const nlVector3&, bool, bool);
-    const LooseBallContactAnimInfo* GetReceivePassBallContactAnimInfo(cBall*, const nlVector3&, unsigned short, bool, bool);
-    void GetReceivePassBallContactOffset(nlVector3&, unsigned short, const LooseBallContactAnimInfo*);
-    bool IsFallenDown(float) const;
+    bool GetFormationPosition(nlVector3& v3DestPosition, float fBallPosFormationWeight);
+    LooseBallContactAnimInfo* GetOneTimerBallContactAnimInfo(unsigned short aFutureFacingDirection, const nlVector3& v3FuturePosition,
+        const nlVector3& v3OneTimerTarget, bool bLeadPass, bool bVolleyPass);
+    const LooseBallContactAnimInfo* GetReceivePassBallContactAnimInfo(cBall* pBall, const nlVector3& rv3Pos, unsigned short aAngle, bool bLeadPass,
+        bool bVolleyPass);
+    void GetReceivePassBallContactOffset(nlVector3& v3Offset, unsigned short aFacingDirection, const LooseBallContactAnimInfo* pBestBallContactAnimInfo);
+    bool IsFallenDown(float fThreshold) const;
     bool HasNoDesire() const;
     bool IsHitting() const;
     bool IsSlideTackling() const;
@@ -228,12 +242,12 @@ public:
     bool IsMidField() const;
     bool IsDefense() const;
     bool IsFrozen() const;
-    void SetFrozen(float);
-    float DoFindBestSlideAttackTarget(nlVector3&, nlVector3&);
+    void SetFrozen(float seconds);
+    float DoFindBestSlideAttackTarget(nlVector3& v3PositionOut, nlVector3& v3VelocityOut);
     bool CanBeBlownUp();
     void CanBreakOutOfSlideTackle();
-    eStrafeDirection CalculateStrafeDirection(unsigned short, unsigned short);
-    void CalcPointOnPerimeter(nlVector3&, const nlVector3&, float);
+    eStrafeDirection CalculateStrafeDirection(unsigned short aDesiredFacingDirection, unsigned short aDesiredMovementDirection);
+    void CalcPointOnPerimeter(nlVector3& dest, const nlVector3& fromPoint, float fFutureTimeDelta);
     void ClearTimers();
     void ClearVolleyPass();
     void CleanActionShootToScore();
@@ -254,10 +268,10 @@ public:
     void SetAttemptOneTouchPass();
     void SetAttemptOneTouchShot();
     s16 GetOneTouchShotDesire();
-    void SetStartAnimState(int);
+    void SetStartAnimState(int animState);
     void SetWindupWBAnimState();
     void SetStartWBAnimState();
-    void SetRunTurboAnimState(int, bool);
+    void SetRunTurboAnimState(int animID, bool bForceMirrorSwap);
     void SetHardStopAnimState();
     void SetHardStopRecoverAnimState();
     void SetHardStopTurnAnimState();
@@ -274,36 +288,46 @@ public:
     void SetIdleStrafeAnimState();
     void SetIdleAnimState();
     void SetIdleWBAnimState();
-    static void RunningSABcallback(unsigned int, cPN_SingleAxisBlender*);
+    static void JogRunSynchronizedWeightCallback(unsigned int nParam, cPN_SAnimController* pController);
+    static void JogRunSABcallback(unsigned int nParam1, cPN_SingleAxisBlender* pSAB);
+    static void RunningSABcallback(unsigned int nParam1, cPN_SingleAxisBlender* pSAB);
     void SetRunLeanSAB(const int* pSABAnims, int nNumSABAnims, int nPrimaryAnim);
-    void SetRunningAnimState(float);
+    void SetJogRunLeanSAB(
+        const int* pRunningAnims, int nNumRunningAnims, int nPrimaryRunningAnim, int nJogAnim, float fBlendTime, float fWeightSeek);
+    void SetRunningAnimState(float fBlendTime);
     void SetRunningTurboAnimState();
-    void SetRunningWBAnimState(float);
+    void SetRunningWBAnimState(float fBlendTime);
     bool ShouldIClearBall();
     bool ShouldILeadPass();
-    bool CanISlideAttack(const nlVector3&, const nlVector3&, float*);
-    void SetDesiredSpeedAndDirectionToPosition(float, const nlVector3&, eTurboRequest, float, float);
-    void SetDesiredSpeed(float, float);
-    float GetSpeedPowerupAdjusted(float);
+    bool CanISlideAttack(const nlVector3& v3Position, const nlVector3& v3Velocity, float* fTime);
+    void SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVector3& v3Pos, eTurboRequest turboRequest, float fInRadiusMult,
+        float fOutRadiusMult);
+    void SetDesiredSpeed(float fMinSpeed, float fMaxSpeed);
+    float GetSpeedPowerupAdjusted(float fSpeed);
     float GetSlideAttackSpeed();
-    bool SetDesire(eFielderDesireState, float);
+    bool SetDesire(eFielderDesireState eNewDesire, float fConfidence);
     u8 ShouldIStrafe();
+    bool ShouldITurboWithBall();
     bool ShouldITurboWithoutBall();
     void ShouldIWave();
-    void TestCollisionForInvicibility(cFielder*);
-    void TestButtonsToQueueActions(float);
+    void TestCollisionForInvicibility(cFielder* pOpponent);
+    void TestButtonsToQueueActions(float fTime);
     bool TestQueuedActions();
+    void TestOneTimerBallContact();
+    bool ShouldHoldShotMeter();
     void TestButtonsRunning();
-    void TestButtonsRunningWB(float);
+    void TestButtonsRunningWB(float fTime);
     void ThrowPowerup();
     ePowerUpType GetPowerupType() const { return m_ePowerup; }
-    void SetPowerup(ePowerUpType, int, cFielder*);
-    void UseTeamPowerup(cFielder*);
-    void UpdateActionState(float);
-    void UpdateHeadTracking(float);
-    void UpdateController(float);
+    void SetPowerup(ePowerUpType eNewPowerup, int nnumOfPowerups, cFielder* pTarget);
+    void UseTeamPowerup(cFielder* pTarget);
+    void UpdateActionState(float dt);
+    void UpdateHeadTracking(float fDeltaT);
+    void UpdateController(float fDeltaT);
     void UpdateMovementLoopSFX();
-    void UpdatePlay(float);
+    void UpdateTimers(float fDeltaT);
+    void UpdatePlay(float fTime);
+    nlVector3 GetAIDesiredPosition();
     float GetDistanceToDesiredPos();
     bool S2SShootWasPressed();
     void StartRunning();
@@ -311,32 +335,6 @@ public:
     bool DoAIReceivePassActionSelection();
     bool DoAIWindupActionSelection();
     void DoSpeedBoost();
-
-    inline bool IsRunningState()
-    {
-        bool isRunningWithBall;
-        bool result;
-
-        result = false;
-        if (m_eActionState != ACTION_RUNNING)
-        {
-            isRunningWithBall = result;
-            if (((u32)(m_eActionState - ACTION_RUNNING_WB) <= 1) || (m_eActionState == ACTION_RUNNING_WB_TURBO_TURN))
-            {
-                isRunningWithBall = true;
-            }
-            if (isRunningWithBall)
-            {
-                goto set_result;
-            }
-        }
-        else
-        {
-        set_result:
-            result = true;
-        }
-        return result;
-    }
 
     void DesireCutAndBreak(float);
     bool InitDesireCutAndBreak();

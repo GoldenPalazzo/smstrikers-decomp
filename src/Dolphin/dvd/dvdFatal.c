@@ -2,7 +2,6 @@
 
 static void (*FatalFunc)();
 
-// Shift JIS byte sequences matching the original binary strings.
 const char* Japanese = "\n\n\n\x83\x47\x83\x89\x81\x5B\x82\xAA\x94\xAD\x90\xB6\x82\xB5\x82\xDC\x82\xB5\x82\xBD\x81\x42\n\n"
                        "\x96\x7B\x91\xCC\x82\xCC\x83\x70\x83\x8F\x81\x5B\x83\x7B\x83\x5E\x83\x93\x82\xF0\x89\x9F\x82\xB5\x82\xC4\x93\x64\x8C\xB9\x82\xF0\x4F\x46\x46\x82\xC9\x82\xB5\x81\x41\n"
                        "\x96\x7B\x91\xCC\x82\xCC\x8E\xE6\x88\xB5\x90\xE0\x96\xBE\x8F\x91\x82\xCC\x8E\x77\x8E\xA6\x82\xC9\x8F\x5D\x82\xC1\x82\xC4\x82\xAD\x82\xBE\x82\xB3\x82\xA2\x81\x42";
@@ -12,7 +11,6 @@ const char* English = "\n\n\nAn error has occurred.\n"
                       "Nintendo GameCube Instruction Booklet\n"
                       "for further instructions.";
 
-// TODO: need solution to compile special characters in a cleaner way
 const char* const Europe[6] = {
     { "\n\n\nAn error has occurred.\n"
       "Turn the power off and refer to the\n"
@@ -85,6 +83,9 @@ int DVDSetAutoFatalMessaging(BOOL enable)
     return prev;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80248C98 | size: 0x30
+ */
 void __DVDPrintFatalMessage(void)
 {
     if (FatalFunc)

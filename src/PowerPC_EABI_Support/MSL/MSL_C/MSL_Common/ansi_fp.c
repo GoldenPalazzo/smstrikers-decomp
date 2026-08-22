@@ -122,9 +122,11 @@ inline void __ull2dec(decimal* result, unsigned long long integer)
     result->exp = (short)(result->sig.length - 1);
 }
 
+/**
+ * Offset/Address/Size: 0x3364 | 0x8022F63C | size: 0x278
+ */
 static void __timesdec(decimal* result, const decimal* x, const decimal* y)
 {
-    /* TODO: 96.17% match - setup block scheduling for y/x length loads still differs. */
     unsigned char mantissa[2 * SIGDIGLEN];
     int y_len = y->sig.length;
     int x_len = x->sig.length;
@@ -212,6 +214,9 @@ inline void __str2dec(decimal* d, const char* s, short exp)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x1BE0 | 0x8022DEB8 | size: 0x1784
+ */
 static void __two_exp(decimal* result, long exp)
 {
     decimal x2;
@@ -295,6 +300,9 @@ static void __two_exp(decimal* result, long exp)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x1AD4 | 0x8022DDAC | size: 0x10C
+ */
 static int __equals_dec(const decimal* x, const decimal* y)
 {
     if (x->sig.text[0] == 0)
@@ -369,6 +377,9 @@ inline int __less_dec(const decimal* x, const decimal* y)
     return x->exp < y->exp;
 }
 
+/**
+ * Offset/Address/Size: 0x15D8 | 0x8022D8B0 | size: 0x4FC
+ */
 static void __minus_dec(decimal* z, const decimal* x, const decimal* y)
 {
     int zlen, dexp;
@@ -464,6 +475,9 @@ done:
     z->sig.length = (unsigned char)(i - ib + 1);
 }
 
+/**
+ * Offset/Address/Size: 0x1224 | 0x8022D4FC | size: 0x3B4
+ */
 static void __num2dec_internal(decimal* d, double x)
 {
     char sgn = signbit(x) != 0;
@@ -500,6 +514,9 @@ static void __num2dec_internal(decimal* d, double x)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x1080 | 0x8022D358 | size: 0x1A4
+ */
 void __num2dec(const decform* f, double x, decimal* d)
 {
     short digits = f->digits;
@@ -517,6 +534,9 @@ void __num2dec(const decform* f, double x, decimal* d)
         d->sig.text[i] += '0';
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8022C2D8 | size: 0x1080
+ */
 double __dec2num(const decimal* d)
 {
     if (d->sig.length <= 0)

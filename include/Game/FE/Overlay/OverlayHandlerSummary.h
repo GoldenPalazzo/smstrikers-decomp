@@ -28,12 +28,12 @@ public:
         PAUSE = 1,
     };
 
-    SummaryOverlay(SummaryOverlay::eSummaryContext);
+    SummaryOverlay(SummaryOverlay::eSummaryContext context);
     ~SummaryOverlay();
     void SceneCreated();
-    void Update(float);
-    void DisplayMatchSummary(eSummaryType);
-    void DisplayUserSummary(eSummaryType);
+    void Update(float fDeltaT);
+    void DisplayMatchSummary(eSummaryType matchSummaryType);
+    void DisplayUserSummary(eSummaryType matchSummaryType);
 
     /* 0x028 */ eSummaryContext mContext;
     /* 0x02C */ eFEINPUT_PAD m_controllingInput;

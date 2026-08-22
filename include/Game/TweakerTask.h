@@ -6,7 +6,7 @@
 class TweakerTask : public nlTask
 {
 public:
-    virtual void Run(float);
+    virtual void Run(float dt);
     virtual const char* GetName() { return "Tweaker"; };
 }; // total size: 0x18
 

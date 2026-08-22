@@ -5,7 +5,7 @@
 
 namespace Audio
 {
-void AudioEventHandler(Event*, void*);
+void AudioEventHandler(Event* pEvent, void* data);
 } // namespace Audio
 
 #endif // _AUDIOEVENTHANDLER_H_

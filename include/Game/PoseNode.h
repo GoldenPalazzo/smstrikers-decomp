@@ -9,7 +9,7 @@ class cPoseNode
 {
 public:
     cPoseNode();
-    cPoseNode(int);
+    cPoseNode(int nNumChildren);
 
     /* 0x08 */ virtual ~cPoseNode();
     /* 0x14 */ virtual void Evaluate(int, float, cPoseAccumulator*) const = 0;
@@ -19,13 +19,13 @@ public:
     /* 0x20 */ virtual void BlendRootTrans(nlVector3* outBase, float weight, float* scratch) = 0;
     /* 0x24 */ virtual void BlendRootRot(unsigned short* outRot, float weight, float* scratch) = 0;
 
-    void GetRootRot(unsigned short*);
-    void GetRootTrans(nlVector3*, unsigned short);
-    void SetChild(int, cPoseNode*);
+    void GetRootRot(unsigned short* out);
+    void GetRootTrans(nlVector3* out, unsigned short ang);
+    void SetChild(int idx, cPoseNode* child);
     int GetNumChildren() const;
-    cPoseNode** GetChildPtr(int);
-    cPoseNode* GetChild(int) const;
-    cPoseNode* GetChild(int);
+    cPoseNode** GetChildPtr(int idx);
+    cPoseNode* GetChild(int idx) const;
+    cPoseNode* GetChild(int idx);
 
     template <typename T>
     void Replay(T& frame);

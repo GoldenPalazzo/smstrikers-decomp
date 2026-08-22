@@ -13,9 +13,9 @@ public:
     /* 0x24 */ virtual const nlVector3& GetCameraPosition() const { return m_vecCamera; };
     /* 0x18 */ float GetFOV() const { return m_Fov; };
     /* 0x14 */ virtual const nlMatrix4& GetViewMatrix() const { return m_matView; };
-    /* 0x10 */ void Update(float);
+    /* 0x10 */ void Update(float dt);
 
-    void UpdateCameraControls(float);
+    void UpdateCameraControls(float dt);
 
     /* 0x1C */ nlMatrix4 m_matView;
     /* 0x5C */ float m_Fov;

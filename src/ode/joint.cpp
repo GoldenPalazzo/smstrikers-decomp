@@ -37,6 +37,9 @@ transform is the identity.
 //****************************************************************************
 // contact
 
+/**
+ * Offset/Address/Size: 0x830 | 0x8021EAD8 | size: 0x4
+ */
 static void contactInit(dxJointContact* j)
 {
     // default frictionless contact. hmmm, this info gets overwritten straight
@@ -50,6 +53,9 @@ static void contactInit(dxJointContact* j)
 #endif
 }
 
+/**
+ * Offset/Address/Size: 0x76C | 0x8021EA14 | size: 0xC4
+ */
 static void contactGetInfo1(dxJointContact* j, dxJoint::Info1* info)
 {
     // make sure mu's >= 0, then calculate number of constraint rows and number
@@ -83,6 +89,9 @@ static void contactGetInfo1(dxJointContact* j, dxJoint::Info1* info)
     info->nub = nub;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8021E2A8 | size: 0x76C
+ */
 static void contactGetInfo2(dxJointContact* j, dxJoint::Info2* info)
 {
     int i, s = info->rowskip;

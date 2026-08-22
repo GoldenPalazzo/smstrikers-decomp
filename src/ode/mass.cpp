@@ -29,6 +29,9 @@
 
 // return 1 if ok, 0 if bad
 
+/**
+ * Offset/Address/Size: 0x69C | 0x8021FFE0 | size: 0x20C
+ */
 static int checkMass(dMass* m)
 {
     int i;
@@ -75,6 +78,9 @@ static int checkMass(dMass* m)
     return 1;
 }
 
+/**
+ * Offset/Address/Size: 0x654 | 0x8021FF98 | size: 0x48
+ */
 void dMassSetZero(dMass* m)
 {
     dAASSERT(m);
@@ -83,6 +89,9 @@ void dMassSetZero(dMass* m)
     dSetZero(m->I, sizeof(m->I) / sizeof(dReal));
 }
 
+/**
+ * Offset/Address/Size: 0x508 | 0x8021FE4C | size: 0x14C
+ */
 void dMassSetParameters(dMass* m, dReal themass,
     dReal cgx, dReal cgy, dReal cgz,
     dReal I11, dReal I22, dReal I33,
@@ -106,11 +115,14 @@ void dMassSetParameters(dMass* m, dReal themass,
     checkMass(m);
 }
 
-// void dMassSetSphere(dMass* m, dReal density, dReal radius)
-// {
-//     dMassSetSphereTotal(m, (REAL(4.0) / REAL(3.0)) * M_PI * radius * radius * radius * density, radius);
-// }
+void dMassSetSphere(dMass* m, dReal density, dReal radius)
+{
+    dMassSetSphereTotal(m, (REAL(4.0) / REAL(3.0)) * M_PI * radius * radius * radius * density, radius);
+}
 
+/**
+ * Offset/Address/Size: 0x478 | 0x8021FDBC | size: 0x90
+ */
 void dMassSetSphereTotal(dMass* m, dReal total_mass, dReal radius)
 {
     dAASSERT(m);
@@ -126,28 +138,31 @@ void dMassSetSphereTotal(dMass* m, dReal total_mass, dReal radius)
 #endif
 }
 
-// void dMassSetCappedCylinder(dMass* m, dReal density, int direction,
-//     dReal radius, dReal length)
-// {
-//     dReal M1, M2, Ia, Ib;
-//     dAASSERT(m);
-//     dUASSERT(direction >= 1 && direction <= 3, "bad direction number");
-//     dMassSetZero(m);
-//     M1 = M_PI * radius * radius * length * density;                           // cylinder mass
-//     M2 = (REAL(4.0) / REAL(3.0)) * M_PI * radius * radius * radius * density; // total cap mass
-//     m->mass = M1 + M2;
-//     Ia = M1 * (REAL(0.25) * radius * radius + (REAL(1.0) / REAL(12.0)) * length * length) + M2 * (REAL(0.4) * radius * radius + REAL(0.375) * radius * length + REAL(0.25) * length * length);
-//     Ib = (M1 * REAL(0.5) + M2 * REAL(0.4)) * radius * radius;
-//     m->_I(0, 0) = Ia;
-//     m->_I(1, 1) = Ia;
-//     m->_I(2, 2) = Ia;
-//     m->_I(direction - 1, direction - 1) = Ib;
+void dMassSetCappedCylinder(dMass* m, dReal density, int direction,
+    dReal radius, dReal length)
+{
+    dReal M1, M2, Ia, Ib;
+    dAASSERT(m);
+    dUASSERT(direction >= 1 && direction <= 3, "bad direction number");
+    dMassSetZero(m);
+    M1 = M_PI * radius * radius * length * density;                           // cylinder mass
+    M2 = (REAL(4.0) / REAL(3.0)) * M_PI * radius * radius * radius * density; // total cap mass
+    m->mass = M1 + M2;
+    Ia = M1 * (REAL(0.25) * radius * radius + (REAL(1.0) / REAL(12.0)) * length * length) + M2 * (REAL(0.4) * radius * radius + REAL(0.375) * radius * length + REAL(0.25) * length * length);
+    Ib = (M1 * REAL(0.5) + M2 * REAL(0.4)) * radius * radius;
+    m->_I(0, 0) = Ia;
+    m->_I(1, 1) = Ia;
+    m->_I(2, 2) = Ia;
+    m->_I(direction - 1, direction - 1) = Ib;
 
-// #ifndef dNODEBUG
-//     checkMass(m);
-// #endif
-// }
+#ifndef dNODEBUG
+    checkMass(m);
+#endif
+}
 
+/**
+ * Offset/Address/Size: 0x278 | 0x8021FBBC | size: 0x200
+ */
 void dMassSetCappedCylinderTotal(dMass* m, dReal total_mass, int direction,
     dReal a, dReal b)
 {
@@ -176,37 +191,43 @@ void dMassSetCappedCylinderTotal(dMass* m, dReal total_mass, int direction,
             m->_I(i, j) *= scale;
 }
 
-// void dMassSetCylinder(dMass* m, dReal density, int direction,
-//     dReal radius, dReal length)
-// {
-//     dMassSetCylinderTotal(m, M_PI * radius * radius * length * density, direction, radius, length);
-// }
+void dMassSetCylinder(dMass* m, dReal density, int direction,
+    dReal radius, dReal length)
+{
+    dMassSetCylinderTotal(m, M_PI * radius * radius * length * density, direction, radius, length);
+}
 
-// void dMassSetCylinderTotal(dMass* m, dReal total_mass, int direction,
-//     dReal radius, dReal length)
-// {
-//     dReal r2, I;
-//     dAASSERT(m);
-//     dMassSetZero(m);
-//     r2 = radius * radius;
-//     m->mass = total_mass;
-//     I = total_mass * (REAL(0.25) * r2 + (REAL(1.0) / REAL(12.0)) * length * length);
-//     m->_I(0, 0) = I;
-//     m->_I(1, 1) = I;
-//     m->_I(2, 2) = I;
-//     m->_I(direction - 1, direction - 1) = total_mass * REAL(0.5) * r2;
+void dMassSetCylinderTotal(dMass* m, dReal total_mass, int direction,
+    dReal radius, dReal length)
+{
+    dReal r2, I;
+    dAASSERT(m);
+    dMassSetZero(m);
+    r2 = radius * radius;
+    m->mass = total_mass;
+    I = total_mass * (REAL(0.25) * r2 + (REAL(1.0) / REAL(12.0)) * length * length);
+    m->_I(0, 0) = I;
+    m->_I(1, 1) = I;
+    m->_I(2, 2) = I;
+    m->_I(direction - 1, direction - 1) = total_mass * REAL(0.5) * r2;
 
-// #ifndef dNODEBUG
-//     checkMass(m);
-// #endif
-// }
+#ifndef dNODEBUG
+    checkMass(m);
+#endif
+}
 
+/**
+ * Offset/Address/Size: 0x198 | 0x8021FADC | size: 0xE0
+ */
 void dMassSetBox(dMass* m, dReal density,
     dReal lx, dReal ly, dReal lz)
 {
     dMassSetBoxTotal(m, lx * ly * lz * density, lx, ly, lz);
 }
 
+/**
+ * Offset/Address/Size: 0xC4 | 0x8021FA08 | size: 0xD4
+ */
 void dMassSetBoxTotal(dMass* m, dReal total_mass,
     dReal lx, dReal ly, dReal lz)
 {
@@ -222,6 +243,9 @@ void dMassSetBoxTotal(dMass* m, dReal total_mass,
 #endif
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8021F944 | size: 0xC4
+ */
 void dMassAdjust(dMass* m, dReal newmass)
 {
     dAASSERT(m);
@@ -236,110 +260,92 @@ void dMassAdjust(dMass* m, dReal newmass)
 #endif
 }
 
-// void dMassTranslate(dMass* m, dReal x, dReal y, dReal z)
-// {
-//     // if the body is translated by `a' relative to its point of reference,
-//     // the new inertia about the point of reference is:
-//     //
-//     //   I + mass*(crossmat(c)^2 - crossmat(c+a)^2)
-//     //
-//     // where c is the existing center of mass and I is the old inertia.
-
-//     int i, j;
-//     dMatrix3 ahat, chat, t1, t2;
-//     dReal a[3];
-
-//     dAASSERT(m);
-
-//     // adjust inertia matrix
-//     dSetZero(chat, 12);
-//     dCROSSMAT(chat, m->c, 4, +, -);
-//     a[0] = x + m->c[0];
-//     a[1] = y + m->c[1];
-//     a[2] = z + m->c[2];
-//     dSetZero(ahat, 12);
-//     dCROSSMAT(ahat, a, 4, +, -);
-//     dMULTIPLY0_333(t1, ahat, ahat);
-//     dMULTIPLY0_333(t2, chat, chat);
-//     for (i = 0; i < 3; i++)
-//         for (j = 0; j < 3; j++)
-//             m->_I(i, j) += m->mass * (t2[i * 4 + j] - t1[i * 4 + j]);
-
-//     // ensure perfect symmetry
-//     m->_I(1, 0) = m->_I(0, 1);
-//     m->_I(2, 0) = m->_I(0, 2);
-//     m->_I(2, 1) = m->_I(1, 2);
-
-//     // adjust center of mass
-//     m->c[0] += x;
-//     m->c[1] += y;
-//     m->c[2] += z;
-
-// #ifndef dNODEBUG
-//     checkMass(m);
-// #endif
-// }
-
-// void dMassRotate(dMass* m, const dMatrix3 R)
-// {
-//     // if the body is rotated by `R' relative to its point of reference,
-//     // the new inertia about the point of reference is:
-//     //
-//     //   R * I * R'
-//     //
-//     // where I is the old inertia.
-
-//     dMatrix3 t1;
-//     dReal t2[3];
-
-//     dAASSERT(m);
-
-//     // rotate inertia matrix
-//     dMULTIPLY2_333(t1, m->I, R);
-//     dMULTIPLY0_333(m->I, R, t1);
-
-//     // ensure perfect symmetry
-//     m->_I(1, 0) = m->_I(0, 1);
-//     m->_I(2, 0) = m->_I(0, 2);
-//     m->_I(2, 1) = m->_I(1, 2);
-
-//     // rotate center of mass
-//     dMULTIPLY0_331(t2, R, m->c);
-//     m->c[0] = t2[0];
-//     m->c[1] = t2[1];
-//     m->c[2] = t2[2];
-
-// #ifndef dNODEBUG
-//     checkMass(m);
-// #endif
-// }
-
-// void dMassAdd(dMass* a, const dMass* b)
-// {
-//     int i;
-//     dAASSERT(a && b);
-//     dReal denom = dRecip(a->mass + b->mass);
-//     for (i = 0; i < 3; i++)
-//         a->c[i] = (a->c[i] * a->mass + b->c[i] * b->mass) * denom;
-//     a->mass += b->mass;
-//     for (i = 0; i < 12; i++)
-//         a->I[i] += b->I[i];
-// }
-
-/**
- * Stub only for field order; unreferenced so the linker drops it.
- * Forces emission of specific constants/operations so the compiler lays out the related fields to match the original binary.
- */
-void mass_stub(float& v0, float& v1, float& v2, float& v3, float& v4, float& v5, float& v6, float& v7, float& v8, float& v9)
+void dMassTranslate(dMass* m, dReal x, dReal y, dReal z)
 {
-    v0 = 1.0f;
-    v1 = 0.0f;
-    v2 = 12.0f;
-    v3 = 0.25f;
-    v4 = 0.083333336f;
-    v5 = 0.5f;
-    v6 = 3.1415927f;
-    v7 = 4.1887903f;
-    v8 = 0.4f;
-    v9 = 0.375f;
+    // if the body is translated by `a' relative to its point of reference,
+    // the new inertia about the point of reference is:
+    //
+    //   I + mass*(crossmat(c)^2 - crossmat(c+a)^2)
+    //
+    // where c is the existing center of mass and I is the old inertia.
+
+    int i, j;
+    dMatrix3 ahat, chat, t1, t2;
+    dReal a[3];
+
+    dAASSERT(m);
+
+    // adjust inertia matrix
+    dSetZero(chat, 12);
+    dCROSSMAT(chat, m->c, 4, +, -);
+    a[0] = x + m->c[0];
+    a[1] = y + m->c[1];
+    a[2] = z + m->c[2];
+    dSetZero(ahat, 12);
+    dCROSSMAT(ahat, a, 4, +, -);
+    dMULTIPLY0_333(t1, ahat, ahat);
+    dMULTIPLY0_333(t2, chat, chat);
+    for (i = 0; i < 3; i++)
+        for (j = 0; j < 3; j++)
+            m->_I(i, j) += m->mass * (t2[i * 4 + j] - t1[i * 4 + j]);
+
+    // ensure perfect symmetry
+    m->_I(1, 0) = m->_I(0, 1);
+    m->_I(2, 0) = m->_I(0, 2);
+    m->_I(2, 1) = m->_I(1, 2);
+
+    // adjust center of mass
+    m->c[0] += x;
+    m->c[1] += y;
+    m->c[2] += z;
+
+#ifndef dNODEBUG
+    checkMass(m);
+#endif
+}
+
+void dMassRotate(dMass* m, const dMatrix3 R)
+{
+    // if the body is rotated by `R' relative to its point of reference,
+    // the new inertia about the point of reference is:
+    //
+    //   R * I * R'
+    //
+    // where I is the old inertia.
+
+    dMatrix3 t1;
+    dReal t2[3];
+
+    dAASSERT(m);
+
+    // rotate inertia matrix
+    dMULTIPLY2_333(t1, m->I, R);
+    dMULTIPLY0_333(m->I, R, t1);
+
+    // ensure perfect symmetry
+    m->_I(1, 0) = m->_I(0, 1);
+    m->_I(2, 0) = m->_I(0, 2);
+    m->_I(2, 1) = m->_I(1, 2);
+
+    // rotate center of mass
+    dMULTIPLY0_331(t2, R, m->c);
+    m->c[0] = t2[0];
+    m->c[1] = t2[1];
+    m->c[2] = t2[2];
+
+#ifndef dNODEBUG
+    checkMass(m);
+#endif
+}
+
+void dMassAdd(dMass* a, const dMass* b)
+{
+    int i;
+    dAASSERT(a && b);
+    dReal denom = dRecip(a->mass + b->mass);
+    for (i = 0; i < 3; i++)
+        a->c[i] = (a->c[i] * a->mass + b->c[i] * b->mass) * denom;
+    a->mass += b->mass;
+    for (i = 0; i < 12; i++)
+        a->I[i] += b->I[i];
 }

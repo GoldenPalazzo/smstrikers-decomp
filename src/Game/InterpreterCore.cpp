@@ -42,11 +42,9 @@ void InterpreterCore::LoadByteCode(void* data)
 /**
  * Offset/Address/Size: 0x4C4 | 0x8021360C | size: 0xE0
  */
-void InterpreterCore::CallFunction(unsigned long id)
+void InterpreterCore::CallFunction(unsigned long hash)
 {
-    u32 sp8;
-
-    FunctionEntryPoint* fnc_ptr = (FunctionEntryPoint*)nlBSearch<FunctionEntryPoint, u32>(id, m_Header->m_FunctionTable, m_Header->numFunctions);
+    FunctionEntryPoint* fnc_ptr = (FunctionEntryPoint*)nlBSearch<FunctionEntryPoint, u32>(hash, m_Header->m_FunctionTable, m_Header->numFunctions);
     m_IP = (u16*)((u8*)m_Header->m_CodeSegment + fnc_ptr->offset);
 
     m_SP = m_StackSegment;
@@ -102,14 +100,14 @@ void InterpreterCore::CallFunctionAt(unsigned long offset)
 /**
  * Offset/Address/Size: 0x3C0 | 0x80213508 | size: 0x40
  */
-bool InterpreterCore::FunctionExists(unsigned long id)
+bool InterpreterCore::FunctionExists(unsigned long hash)
 {
-    FunctionEntryPoint* temp_r3;
-    ByteCodeHeader* temp_r5;
+    FunctionEntryPoint* pEntry;
+    ByteCodeHeader* pHeader;
 
-    temp_r5 = m_Header;
-    temp_r3 = nlBSearch<FunctionEntryPoint, u32>(id, temp_r5->m_FunctionTable, temp_r5->numFunctions);
-    return temp_r3 != NULL;
+    pHeader = m_Header;
+    pEntry = nlBSearch<FunctionEntryPoint, u32>(hash, pHeader->m_FunctionTable, pHeader->numFunctions);
+    return pEntry != NULL;
 }
 
 /**

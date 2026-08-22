@@ -36,13 +36,13 @@ public:
     void Initialize();
     void Free();
     void Grab();
-    DrawablePowerup& GetPowerup(const PowerupBase&) const;
+    DrawablePowerup& GetPowerup(const PowerupBase& base) const;
     int NumDrawableObjects() const;
-    nlVector3 GetPositionForDrawableObject(int) const;
+    nlVector3 GetPositionForDrawableObject(int i) const;
     void Invalidate();
-    void Render(float) const;
-    void RenderDebugInfo(const RenderSnapshot&, const RenderSnapshot&, float) const;
-    void Blend(const float*, const RenderSnapshot&, const RenderSnapshot&);
+    void Render(float deltaTime) const;
+    void RenderDebugInfo(const RenderSnapshot& previous, const RenderSnapshot& current, float fBlend) const;
+    void Blend(const float* blendFactors, const RenderSnapshot& lhs, const RenderSnapshot& rhs);
     RenderSnapshot& GetMutable();
     inline DrawableCharacter& GetCharacter(int index)
     {

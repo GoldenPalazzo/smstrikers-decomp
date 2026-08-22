@@ -7,8 +7,6 @@
 #include "Game/Render/Bowser.h"
 #include "Game/Render/ChainChomp.h"
 
-// void nlListAddStart<ListEntry<SkinAnimatedNPC*>>(ListEntry<SkinAnimatedNPC*>**, ListEntry<SkinAnimatedNPC*>*, ListEntry<SkinAnimatedNPC*>**);
-
 struct NPCTemplate
 {
     /* 0x00 */ bool loaded;            // offset 0x0, size 0x1
@@ -22,10 +20,10 @@ public:
     NPCManager();
     virtual ~NPCManager();
 
-    void UpdateNPCs(float);
+    void UpdateNPCs(float dt);
     void RenderNPCs();
-    void UpdateAINPCs(float);
-    void CreateNPCTemplate(int, bool);
+    void UpdateAINPCs(float dt);
+    void CreateNPCTemplate(int templateIndex, bool loadTextures);
 
     /* 0x04 */ cInventory<cSAnim>* mpInventorySAnim;
     /* 0x08 */ cInventory<cSHierarchy>* mpInventorySHierarchy;
@@ -38,13 +36,11 @@ public:
 // class ListContainerBase<SkinAnimatedNPC*, NewAdapter<ListEntry<SkinAnimatedNPC*>>>
 // {
 // public:
-//     void DeleteEntry(ListEntry<SkinAnimatedNPC*>*);
 // };
 
 // class nlWalkList<ListEntry<SkinAnimatedNPC*>, ListContainerBase<SkinAnimatedNPC*, NewAdapter<ListEntry<SkinAnimatedNPC*>>>>(ListEntry<SkinAnimatedNPC*>*, ListContainerBase<SkinAnimatedNPC*, NewAdapter<ListEntry<SkinAnimatedNPC*>>>*, void (ListContainerBase<SkinAnimatedNPC*, NewAdapter<ListEntry<SkinAnimatedNPC*>>>
 // {
 // public:
-//     void *)(ListEntry<SkinAnimatedNPC*>*));
 // };
 
 #endif // _NPCMANAGER_H_

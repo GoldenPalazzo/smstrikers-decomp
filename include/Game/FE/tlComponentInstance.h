@@ -10,10 +10,10 @@ class TLComponentInstance : public TLInstance
 {
 public:
     TLSlide* GetActiveSlide();
-    void SetActiveSlide(TLSlide*);
-    void SetActiveSlide(unsigned long);
-    void SetActiveSlide(const char*);
-    void Update(float);
+    void SetActiveSlide(TLSlide* slide);
+    void SetActiveSlide(unsigned long hash);
+    void SetActiveSlide(const char* name);
+    void Update(float dt);
 
     /* 0x80 */ f32 m_fCurrentTime;
 }; // total size: 0x84

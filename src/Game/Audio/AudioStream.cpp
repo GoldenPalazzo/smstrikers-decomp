@@ -181,7 +181,7 @@ void Audio::DestroyTrackMgr()
  */
 void Audio::CreatePriorityStreams()
 {
-    PriorityStream* stream = new (nlMalloc(0x78, 8, false)) PriorityStream(*g_pTrackManager->CreateTrack("Priority", MasterVolume::VG_Special));
+    PriorityStream* stream = new (nlMalloc(sizeof(PriorityStream), 8, false)) PriorityStream(*g_pTrackManager->CreateTrack("Priority", MasterVolume::VG_Special));
     g_pPriorityStream = stream;
 }
 

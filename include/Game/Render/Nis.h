@@ -138,25 +138,25 @@ public:
         /* 0x0C */ const char* target;
         /* 0x10 */ TriggerParams params;
 
-        void FireEffect(const Nis&) const;
-        void Fire(Nis&) const;
+        void FireEffect(const Nis& nis) const;
+        void Fire(Nis& nis) const;
     }; // total size: 0x24
 
-    Nis(NisHeader&, char*, int);
+    Nis(NisHeader& header, char* data, int size);
     ~Nis();
     char* Name() const;
     void Update(float dt);
-    void UpdateTriggers(float, float, float);
-    void SelectCamera(cAnimCamera&, int);
-    bool SelectRandomCamera(cAnimCamera&);
+    void UpdateTriggers(float oldTime, float newTime, float duration);
+    void SelectCamera(cAnimCamera& camera, int cameraIndex);
+    bool SelectRandomCamera(cAnimCamera& camera);
     void Render();
     nlVector3 Offset() const;
-    void AddTrigger(NisTriggerType, float, const char*, const char*, Nis::TriggerParams*);
+    void AddTrigger(NisTriggerType triggerType, float frameNumber, const char* name, const char* target, Nis::TriggerParams* trigParams);
     void StopAllOutstandingNisAudio();
-    NisAudioData* RemoveNisAudioData(NisAudioData*);
-    NisAudioData* StopNisAudio(NisAudioData*, bool);
-    void StopNisAudio(NisAudioType, const char*);
-    void AddNisAudioData(NisAudioType, unsigned long, const char*, bool, bool, unsigned long);
+    NisAudioData* RemoveNisAudioData(NisAudioData* pNisAudioData);
+    NisAudioData* StopNisAudio(NisAudioData* pNisAudioData, bool bNisEndedNormally);
+    void StopNisAudio(NisAudioType type, const char* str);
+    void AddNisAudioData(NisAudioType type, unsigned long index, const char* str, bool isEmitter, bool stopAtNisEnd, unsigned long soundType);
 
     /* 0x000 */ NisHeader* mHeader;                                             // offset 0x0, size 0x4
     /* 0x004 */ NisTarget mTarget;                                              // offset 0x4, size 0x4

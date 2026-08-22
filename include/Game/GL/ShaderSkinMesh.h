@@ -81,7 +81,7 @@ public:
     void SetMorphDeltas(int numDeltas, const MorphDelta* p);
 
     void StitchModel();
-    void AttachSkinData(unsigned long, const nlMatrix4*);
+    void AttachSkinData(unsigned long program, const nlMatrix4* pReflect);
 
     /* 0x08 */ nlAVLTree<unsigned long, SkinMatrix, DefaultKeyCompare<unsigned long> > boneMatrices; // offset 0x8, size 0x14
     /* 0x1C */ nlAVLTree<unsigned long, SkinMatrix, DefaultKeyCompare<unsigned long> > poseMatrices; // offset 0x1C, size 0x14

@@ -12,9 +12,9 @@ public:
 
     ~GLMeshWriter() { }
     virtual bool End();
-    virtual void Normal(const nlVector3&);
-    virtual void Texcoord(const nlVector2&);
-    void Texcoord(short, short);
+    virtual void Normal(const nlVector3& n);
+    virtual void Texcoord(const nlVector2& uv);
+    void Texcoord(short u, short v);
 
 }; // total size: 0x70
 

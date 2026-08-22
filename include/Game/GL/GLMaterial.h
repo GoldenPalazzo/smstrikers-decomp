@@ -16,8 +16,8 @@ public:
     GLMaterialList();
     ~GLMaterialList();
 
-    void SetMaterials(int, const GLMaterialEntry*);
-    GLMaterialEntry* FindMaterial(unsigned long) const;
+    void SetMaterials(int numMats, const GLMaterialEntry* pEntries);
+    GLMaterialEntry* FindMaterial(unsigned long searchId) const;
 
     /* 0x00 */ u32 m_uHashID;
     /* 0x04 */ s32 m_nNumMaterials;

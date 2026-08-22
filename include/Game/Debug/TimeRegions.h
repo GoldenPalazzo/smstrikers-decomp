@@ -21,7 +21,7 @@ public:
         , m_unk10(0)
         , m_unk14(0)
     {
-        ListEntry<TimeRegion*>* entry = (ListEntry<TimeRegion*>*)nlMalloc(8, 8, false);
+        ListEntry<TimeRegion*>* entry = (ListEntry<TimeRegion*>*)nlMalloc(sizeof(ListEntry<TimeRegion*>), 8, false);
         if (entry != nullptr)
         {
             entry->next = nullptr;

@@ -12,11 +12,17 @@ namespace
 static WiperCallback wiperCallback;
 }
 
+/**
+ * Offset/Address/Size: 0x314 | 0x80127624 | size: 0xC
+ */
 void WiperCallback::TransitionFinished()
 {
     mTransitionActive = false;
 };
-void WiperCallback::TransitionProgressed(float) { };
+/**
+ * Offset/Address/Size: 0x320 | 0x80127630 | size: 0x4
+ */
+void WiperCallback::TransitionProgressed(float fDeltaT) { };
 
 /**
  * Offset/Address/Size: 0x2FC | 0x8012760C | size: 0x18
@@ -109,7 +115,19 @@ void Wiper::Render(float dt)
     ScreenTransitionManager::s_pInstance->Render(dt);
 }
 
+/**
+ * Offset/Address/Size: 0x32C | 0x8012763C | size: 0x4
+ */
 void ScreenTransitionCallback::TransitionFinished() { };
-void ScreenTransitionCallback::TransitionProgressed(float) { };
+/**
+ * Offset/Address/Size: 0x330 | 0x80127640 | size: 0x4
+ */
+void ScreenTransitionCallback::TransitionProgressed(float fDeltaT) { };
+/**
+ * Offset/Address/Size: 0x324 | 0x80127634 | size: 0x4
+ */
 void ScreenTransitionCallback::Cut() { };
+/**
+ * Offset/Address/Size: 0x328 | 0x80127638 | size: 0x4
+ */
 void ScreenTransitionCallback::SequenceSwitch() { };

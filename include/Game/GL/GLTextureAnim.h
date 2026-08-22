@@ -20,7 +20,7 @@ public:
     void SetTexture(int frameIndex, const GLAnimTex& animTex);
     GLAnimTex* GetTexture(int frameIndex);
     u32 GetTextureHandle(float time);
-    void Update(float deltaTime);
+    void Update(float dt);
 
     /* 0x00 */ s32 m_unk_0x00;
     /* 0x04 */ s32 m_frameCount;

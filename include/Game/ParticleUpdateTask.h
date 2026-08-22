@@ -6,12 +6,12 @@
 class ParticleUpdateTask : public nlTask
 {
 public:
-    virtual void Run(float);
+    virtual void Run(float dt);
     virtual const char* GetName()
     {
         return "Particle Update";
     }
-    static void SetTimeScale(float);
+    static void SetTimeScale(float timeScale);
 
     static float sfTimeScale;
 }; // total size: 0x18

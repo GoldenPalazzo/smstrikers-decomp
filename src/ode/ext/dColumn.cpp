@@ -73,10 +73,10 @@ int dCollideColumnColumn(dxGeom* o1, dxGeom* o2, int flags, dContactGeom* contac
     {
         if (distSquared > 0.0f)
         {
-            f64 temp_f1_2 = __frsqrte(distSquared);
-            f64 temp_f1_3 = 0.5 * temp_f1_2 * -(((f64)distSquared * (temp_f1_2 * temp_f1_2)) - 3.0);
-            f64 temp_f1_4 = 0.5 * temp_f1_3 * -(((f64)distSquared * (temp_f1_3 * temp_f1_3)) - 3.0);
-            x = (f32)((f64)distSquared * (0.5 * temp_f1_4 * -(((f64)distSquared * (temp_f1_4 * temp_f1_4)) - 3.0)));
+            f64 rsqrt0 = __frsqrte(distSquared);
+            f64 rsqrt1 = 0.5 * rsqrt0 * -(((f64)distSquared * (rsqrt0 * rsqrt0)) - 3.0);
+            f64 rsqrt2 = 0.5 * rsqrt1 * -(((f64)distSquared * (rsqrt1 * rsqrt1)) - 3.0);
+            x = (f32)((f64)distSquared * (0.5 * rsqrt2 * -(((f64)distSquared * (rsqrt2 * rsqrt2)) - 3.0)));
         }
         else if (distSquared < 0.0)
         {
@@ -84,36 +84,36 @@ int dCollideColumnColumn(dxGeom* o1, dxGeom* o2, int flags, dContactGeom* contac
         }
         else
         {
-            f32 sp8 = distSquared;
-            s32 temp_r4 = *(s32*)&sp8 & 0x7F800000;
-            s32 var_r0;
-            switch (temp_r4)
+            f32 classify_val = distSquared;
+            s32 exp_bits = *(s32*)&classify_val & 0x7F800000;
+            s32 fp_class;
+            switch (exp_bits)
             {
             case 0x7F800000:
-                if (*(s32*)&sp8 & 0x7FFFFF)
+                if (*(s32*)&classify_val & 0x7FFFFF)
                 {
-                    var_r0 = 1;
+                    fp_class = 1;
                 }
                 else
                 {
-                    var_r0 = 2;
+                    fp_class = 2;
                 }
                 break;
             case 0x0:
-                if (*(s32*)&sp8 & 0x7FFFFF)
+                if (*(s32*)&classify_val & 0x7FFFFF)
                 {
-                    var_r0 = 5;
+                    fp_class = 5;
                 }
                 else
                 {
-                    var_r0 = 3;
+                    fp_class = 3;
                 }
                 break;
             default:
-                var_r0 = 4;
+                fp_class = 4;
                 break;
             }
-            if (var_r0 == 1)
+            if (fp_class == 1)
             {
                 x = *(f32*)&__float_nan;
             }
@@ -125,12 +125,12 @@ int dCollideColumnColumn(dxGeom* o1, dxGeom* o2, int flags, dContactGeom* contac
 
         contact->normal[ax1] = (pos1[ax1] - pos2[ax1]) / x;
         {
-            f32 temp_f4_3 = ((x + radius2) - radius1) / 2.0f;
+            f32 halfOverlap = ((x + radius2) - radius1) / 2.0f;
             contact->normal[ax2] = (pos1[ax2] - pos2[ax2]) / x;
 
             contact->normal[lengthwiseAxis] = 0.0f;
-            contact->pos[ax1] = (contact->normal[ax1] * temp_f4_3) + pos2[ax1];
-            contact->pos[ax2] = (contact->normal[ax2] * temp_f4_3) + pos2[ax2];
+            contact->pos[ax1] = (contact->normal[ax1] * halfOverlap) + pos2[ax1];
+            contact->pos[ax2] = (contact->normal[ax2] * halfOverlap) + pos2[ax2];
             contact->pos[lengthwiseAxis] = 0.0f;
         }
         contact->depth = radius2 - (x - radius2);

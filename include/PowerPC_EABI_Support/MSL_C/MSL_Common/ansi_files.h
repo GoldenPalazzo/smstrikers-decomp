@@ -119,8 +119,8 @@ typedef struct _files {
 
 extern files __files;
 extern DSIOResult __close_console(__file_handle file);
-extern DSIOResult __write_console(__file_handle file, unsigned char* buf, size_t* count, __idle_proc idle_fn);
-extern DSIOResult __read_console(__file_handle file, unsigned char* buf, size_t* count, __idle_proc idle_fn);
+extern DSIOResult __write_console(__file_handle handle, unsigned char* buffer, size_t* count, __idle_proc idle_fn);
+extern DSIOResult __read_console(__file_handle file, unsigned char* buffer, size_t* count, __idle_proc idle_fn);
 
 extern DSIOResult __close_file(__file_handle file);
 extern DSIOResult __write_file(__file_handle file, unsigned char* buf, size_t* count, __idle_proc idle_fn);

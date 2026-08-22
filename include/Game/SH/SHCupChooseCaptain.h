@@ -21,15 +21,15 @@ public:
         CUP_STATE_READY = 2,
     };
 
-    CupChooseCaptainSceneV2(bool);
+    CupChooseCaptainSceneV2(bool isSuperCup);
     virtual ~CupChooseCaptainSceneV2();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
     virtual void SceneCreated();
     void UpdateCaptainName();
     void UpdateSKName();
-    void ChangeState(CupChooseCaptainSceneV2::eCupCaptainState, CupChooseCaptainSceneV2::eCupCaptainState);
+    void ChangeState(CupChooseCaptainSceneV2::eCupCaptainState from, CupChooseCaptainSceneV2::eCupCaptainState to);
     void CreateLineup();
-    void StartSidekickMiniHead(eSidekickID);
+    void StartSidekickMiniHead(eSidekickID sidekickId);
     void UpdateImages();
 
     /* 0x1C */ TLComponentInstance* mComponents[5];                                      // size 0x14
@@ -58,25 +58,16 @@ public:
 // class FEFinder<TLImageInstance, 2>
 // {
 // public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
 // };
 
 // class FEFinder<TLComponentInstance, 4>
 // {
 // public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
 // };
 
 // class FEFinder<TLTextInstance, 3>
 // {
 // public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
 // };
 
 #endif // _SHCUPCHOOSECAPTAIN_H_

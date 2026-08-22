@@ -8,8 +8,8 @@ class GoalieFatigue
 public:
     GoalieFatigue();
     void Reset();
-    void Update(float);
-    void RegisterShot(float);
+    void Update(float dt);
+    void RegisterShot(float fLevel);
 
     /* 0x00 */ f32 mfEnergyLevel;
     /* 0x04 */ f32 mfRecoverRate;

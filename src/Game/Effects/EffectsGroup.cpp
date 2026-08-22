@@ -734,6 +734,9 @@ static EffectsGroup* fxGetGroup(unsigned long hashID)
     return pGroupMap->FindGet(hashID, &group) ? *group : nullptr;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x801F2A48 | size: 0xA4
+ */
 EffectsGroup* fxGetGroup(const char* groupName)
 {
     return fxGetGroup(nlStringHash(groupName));

@@ -22,10 +22,10 @@ HealthWarningSceneV2::HealthWarningSceneV2()
     mPressButtonImage = NULL;
     mElapsedTime = 0.0f;
 
-    AsyncImage* messageImage = new (nlMalloc(0x1C, 0x20, 1)) AsyncImage(messageImageFilename, NULL);
+    AsyncImage* messageImage = new (nlMalloc(sizeof(AsyncImage), 0x20, 1)) AsyncImage(messageImageFilename, NULL);
     mMessageImage = messageImage;
 
-    AsyncImage* pressButtonImage = new (nlMalloc(0x1C, 0x20, 1)) AsyncImage(messageImageFilename, NULL);
+    AsyncImage* pressButtonImage = new (nlMalloc(sizeof(AsyncImage), 0x20, 1)) AsyncImage(messageImageFilename, NULL);
     mPressButtonImage = pressButtonImage;
 }
 

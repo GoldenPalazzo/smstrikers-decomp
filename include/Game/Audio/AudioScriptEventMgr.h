@@ -66,7 +66,7 @@ public:
     static void Init();
     static void Purge();
     void Update();
-    static void FireEvent(AudioScriptEventMgr::AUDIO_EVENT, AudioScriptEventMgr::AUDIO_EVENT_TEAM);
+    static void FireEvent(AudioScriptEventMgr::AUDIO_EVENT Event, AudioScriptEventMgr::AUDIO_EVENT_TEAM Team);
 };
 
 struct AUDIO_EVENT_RECORD;
@@ -74,7 +74,7 @@ struct AUDIO_EVENT_RECORD;
 class _AudioEventRaiser
 {
 public:
-    void RaiseEvent(AUDIO_EVENT_RECORD*);
+    void RaiseEvent(AUDIO_EVENT_RECORD* pEvent);
 };
 
 #endif // _AUDIOSCRIPTEVENTMGR_H_

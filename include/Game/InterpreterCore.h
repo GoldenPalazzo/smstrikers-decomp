@@ -28,15 +28,15 @@ struct ByteCodeHeader
 class InterpreterCore
 {
 public:
-    InterpreterCore(unsigned int stackSize);
+    InterpreterCore(unsigned int size);
 
     /* 0x08 */ virtual ~InterpreterCore();
     /* 0x0C */ virtual void DoFunctionCall(unsigned int) = 0;
 
-    void LoadByteCode(void* byteCode);
-    void CallFunction(unsigned long id);
-    void CallFunctionAt(unsigned long address);
-    bool FunctionExists(unsigned long id);
+    void LoadByteCode(void* data);
+    void CallFunction(unsigned long hash);
+    void CallFunctionAt(unsigned long offset);
+    bool FunctionExists(unsigned long hash);
     void Run();
     void StopWithUndo();
     void Step();
@@ -50,7 +50,6 @@ protected:
     }
 
 public:
-
     /* 0x04 */ u32 m_Return;
     /* 0x08 */ ByteCodeHeader* m_Header;
     /* 0x0C */ u32* m_StackSegment;

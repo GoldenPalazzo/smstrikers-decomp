@@ -251,8 +251,6 @@ void PhysicsAIBall::PreUpdate()
 void PhysicsAIBall::PostUpdate()
 {
     extern bool gbEnableBallGoalieSweepTest;
-    extern void* __vt__9EventData[];
-    extern void* __vt__23CollisionBallGroundData[];
 
     nlVector3 v3IncidentVel;
     CollisionBallGroundData* pEventData;
@@ -273,12 +271,7 @@ void PhysicsAIBall::PostUpdate()
 
             if (v3IncidentVel.z < -1.0f)
             {
-                pEventData = (CollisionBallGroundData*)((u8*)g_pEventManager->CreateValidEvent(0x24, 0x3C) + 0x10);
-                if (pEventData != NULL)
-                {
-                    *(void**)pEventData = __vt__9EventData;
-                    *(void**)pEventData = __vt__23CollisionBallGroundData;
-                }
+                pEventData = new ((u8*)g_pEventManager->CreateValidEvent(0x24, 0x3C) + 0x10) CollisionBallGroundData();
 
                 CollisionBallGroundData* pGroundData = (CollisionBallGroundData*)pEventData;
                 s32 bIsShot = 0;
@@ -519,7 +512,7 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalie()
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x80133C58 | size: 0x310
+ * Offset/Address/Size: 0x224 | 0x80133C58 | size: 0x310
  */
 void PhysicsAIBall::CheckIfBallWentThroughGoalPost()
 {

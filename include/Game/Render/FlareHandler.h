@@ -36,9 +36,9 @@ public:
 
     void Initialize();
     void Cleanup();
-    void AddHalo(const nlMatrix4&);
-    void AddGlow(const nlMatrix4&);
-    void AddFace(const FlareStruct*, GLMeshWriter*);
+    void AddHalo(const nlMatrix4& mat);
+    void AddGlow(const nlMatrix4& mat);
+    void AddFace(const FlareStruct* pFlare, GLMeshWriter* pMeshWriter);
     void Render();
 
     /* 0x0, */ nlMatrix4 viewMatrix;

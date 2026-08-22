@@ -9,6 +9,9 @@ void __OSSystemCallVectorEnd(void);
 
 #ifdef __GEKKO__
 // clang-format off
+/**
+ * Offset/Address/Size: 0x0 | 0x80258C68 | size: 0x20
+ */
 static asm void SystemCallVector(void) {
 entry __OSSystemCallVectorStart
     nofralloc
@@ -25,6 +28,9 @@ entry __OSSystemCallVectorEnd
 // clang-format on
 #endif
 
+/**
+ * Offset/Address/Size: 0x20 | 0x80258C88 | size: 0x64
+ */
 void __OSInitSystemCall(void)
 {
     void* addr = (void*)OSPhysicalToCached(0xC00);

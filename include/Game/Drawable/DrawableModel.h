@@ -22,14 +22,14 @@ struct BallShadowParams
 };
 
 void CleanBoundingBoxCache();
-void RenderBoundingBox(const glModel*, const nlMatrix4&);
+void RenderBoundingBox(const glModel* model, const nlMatrix4& matrix);
 float GetCoPlanar0Z();
-void SetCoPlanarZ(float);
+void SetCoPlanarZ(float z);
 float GetCoPlanarZ();
-void SetPlanarShadowOpacity(float);
+void SetPlanarShadowOpacity(float opacity);
 float GetPlanarShadowOpacity();
-void DrawPlanarShadow(const glModel*, const nlMatrix4&, float, bool, bool, bool, unsigned long);
-void GetAABBDimensions(const glModel*, AABBDimensions&, unsigned long);
+void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float shadowTranslucency, bool ignorePacketMatrices, bool isModelPosed, bool bFieldOnlyShadow, unsigned long boundingBoxCacheKey);
+void GetAABBDimensions(const glModel* model, AABBDimensions& dimensions, unsigned long boundingBoxCacheKey);
 
 class DrawableModel : public DrawableObject
 {
@@ -55,9 +55,9 @@ public:
     /* 0x10 */ virtual void DrawPlanarShadow();
     /* 0x14 */ virtual bool IsDrawableModel() { return true; };
     /* 0x18 */ virtual DrawableModel* AsDrawableModel() { return this; };
-    /* 0x1C */ virtual void GetAABBDimensions(AABBDimensions&, bool) const;
+    /* 0x1C */ virtual void GetAABBDimensions(AABBDimensions& dims, bool param) const;
 
-    void DrawModel(const nlMatrix4&);
+    void DrawModel(const nlMatrix4& worldMatrix);
 
     inline glModel* GetModel() const { return m_pModel; }
 
@@ -91,21 +91,11 @@ public:
 // class nlAVLTreeSlotPool<unsigned long, AABBDimensions, DefaultKeyCompare<unsigned long>>
 // {
 // public:
-//     void ~nlAVLTreeSlotPool();
 // };
 
 // class AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>
 // {
 // public:
-//     void Clear();
-//     void DestroyTree(void (AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, AABBDimensions>*));
-//     void PostorderTraversal(AVLTreeEntry<unsigned long, AABBDimensions>*, void (AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, AABBDimensions>*));
-//     void CastUp(AVLTreeNode*) const;
-//     void DeleteEntry(AVLTreeEntry<unsigned long, AABBDimensions>*);
-//     void ~AVLTreeBase();
-//     void CompareNodes(AVLTreeNode*, AVLTreeNode*);
-//     void CompareKey(void*, AVLTreeNode*);
-//     void AllocateEntry(void*, void*);
 // };
 
 #endif // _DRAWABLEMODEL_H_

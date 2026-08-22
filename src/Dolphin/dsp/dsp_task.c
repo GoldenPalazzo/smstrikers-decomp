@@ -14,6 +14,9 @@ DSPTaskInfo* __DSP_tmp_task;
 DSPTaskInfo* __DSP_rude_task;
 int __DSP_rude_task_pending;
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802444D4 | size: 0x424
+ */
 void __DSPHandler(__OSInterrupt intr, OSContext* context)
 {
     u8 unused[4];
@@ -178,6 +181,9 @@ void __DSPHandler(__OSInterrupt intr, OSContext* context)
     OSSetCurrentContext(context);
 }
 
+/**
+ * Offset/Address/Size: 0x424 | 0x802448F8 | size: 0x1A0
+ */
 void __DSP_exec_task(DSPTaskInfo* curr, DSPTaskInfo* next)
 {
     ASSERTMSGLINE(552, next != NULL, "__DSP_exec_task(): NULL task. It is to weep.\n");
@@ -254,6 +260,9 @@ void __DSP_exec_task(DSPTaskInfo* curr, DSPTaskInfo* next)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x5C4 | 0x80244A98 | size: 0x18C
+ */
 void __DSP_boot_task(DSPTaskInfo* task)
 {
     volatile u32 mail;
@@ -313,6 +322,9 @@ void __DSP_boot_task(DSPTaskInfo* task)
     __DSP_debug_printf("__DSP_boot_task()  : Start Vector  : 0x%08X\n", task->dsp_init_vector);
 }
 
+/**
+ * Offset/Address/Size: 0x750 | 0x80244C24 | size: 0xA0
+ */
 void __DSP_insert_task(DSPTaskInfo* task)
 {
     DSPTaskInfo* temp;
@@ -374,6 +386,9 @@ void __DSP_add_task(DSPTaskInfo* task)
     __DSP_debug_printf("__DSP_add_task() : Added task    : 0x%08X\n", (u32)task);
 }
 
+/**
+ * Offset/Address/Size: 0x7F0 | 0x80244CC4 | size: 0x94
+ */
 void __DSP_remove_task(DSPTaskInfo* task)
 {
     ASSERTMSGLINE(813, task != NULL, "__DSP_remove_task(): NULL task! Why? WHY?!?!\n");

@@ -21,11 +21,11 @@ public:
 class nlTaskManager
 {
 public:
-    static void SetTimeDilation(float);
-    static void SetNextState(unsigned int state);
+    static void SetTimeDilation(float timeDilation);
+    static void SetNextState(unsigned int nextState);
     static void RunAllTasks();
-    static void AddTask(nlTask*, unsigned int, unsigned int);
-    static void Startup(unsigned int);
+    static void AddTask(nlTask* task, unsigned int priority, unsigned int statesActive);
+    static void Startup(unsigned int initialState);
     static void Shutdown();
     static void RemoveTask(nlTask*);
     static void RemoveAllTasks();
@@ -39,6 +39,8 @@ public:
     /* 0x10 */ u32 m_PrevState;
     /* 0x14 */ f32 m_fCurrentTimeDelta;
     /* 0x18 */ bool m_Locked;
+
+    nlTaskManager() { }
 }; // total size: 0x1C
 
 extern u8 g_DoStackWatermarkTests;

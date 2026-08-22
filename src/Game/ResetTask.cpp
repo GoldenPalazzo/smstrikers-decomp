@@ -23,7 +23,7 @@ extern bool g_bEnableGamecubePadMonkey;
 /**
  * Offset/Address/Size: 0x1EC | 0x801733F8 | size: 0x110
  */
-void ResetTask::Run(float)
+void ResetTask::Run(float dt)
 {
     if (DVDGetDriveStatus() == -1)
     {

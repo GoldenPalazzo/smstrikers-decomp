@@ -237,13 +237,13 @@ public:
     };
     virtual ~cWorldSFX();
     virtual void Init();
-    virtual void SetSFX(SoundPropAccessor*);
+    virtual void SetSFX(SoundPropAccessor* pSoundPropAccessor);
     virtual unsigned long Play(Audio::SoundAttributes& attributes);
 
-    unsigned long Play(Audio::eWorldSFX, float, float, bool, float);
-    unsigned long PlayRandomReaction(Audio::cWorldSFX::CrowdReactionType, float, float, int, float);
+    unsigned long Play(Audio::eWorldSFX sfx, float volume, float delayTime, bool keepTrack, float panning);
+    unsigned long PlayRandomReaction(Audio::cWorldSFX::CrowdReactionType dType, float volume, float delayTime, int groupPriority, float fDefaultVolAdjustment);
 
-    void Stop(Audio::eWorldSFX, cGameSFX::StopFlag);
+    void Stop(Audio::eWorldSFX sfx, cGameSFX::StopFlag flag);
 };
 
 extern Audio::cWorldSFX gWorldSFX;

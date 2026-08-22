@@ -15,9 +15,9 @@ class MemoryAllocator
 public:
     unsigned int LargestFreeBlock();
     unsigned int TotalFreeMemory();
-    void Initialize(void*, unsigned int);
-    void* Allocate(unsigned long, unsigned int, bool);
-    void Free(void*);
+    void Initialize(void* memory, unsigned int size);
+    void* Allocate(unsigned long size, unsigned int alignment, bool fromEnd);
+    void Free(void* p);
 
     /* 0x0 */ FreeBlockList* m_free_block_list;
 };

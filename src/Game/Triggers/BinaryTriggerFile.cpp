@@ -2,6 +2,9 @@
 
 #include "NL/nlFile.h"
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802142DC | size: 0x78
+ */
 BinaryTriggerFile::BinaryTriggerFile(const char* FileName)
 {
     m_pFileData = NULL;

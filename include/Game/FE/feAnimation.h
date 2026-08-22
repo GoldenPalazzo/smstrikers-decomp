@@ -47,8 +47,8 @@ class FEAnimation /* size >= 0x1C */
 public:
     virtual ~FEAnimation() { }
 
-    void Update(float);
-    void AnimateTargetAtTimeWithVector3(float);
+    void Update(float fCurrentTime);
+    void AnimateTargetAtTimeWithVector3(float fCurrentTime);
 
     /* 0x04 */ FEAnimation* m_next;
     /* 0x08 */ FEAnimation* m_prev;

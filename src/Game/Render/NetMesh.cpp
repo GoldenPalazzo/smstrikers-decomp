@@ -456,22 +456,22 @@ void NetMesh::AddForcesToBall(const nlVector3& position, PhysicsSphere* sphere)
     {
         if (s_bUseStretchLimit && sphere && (m_fBallPenetrationDepth > s_fNetStretchLimit))
         {
-            nlVector3& temp_r3 = sphere->GetLinearVelocity();
+            nlVector3& v3LinearVelocity = sphere->GetLinearVelocity();
 
-            forceMagnitude = (m_v3BallPenetrationNormal.x * temp_r3.x)
-                           + (m_v3BallPenetrationNormal.y * temp_r3.y)
-                           + (m_v3BallPenetrationNormal.z * temp_r3.z);
+            forceMagnitude = (m_v3BallPenetrationNormal.x * v3LinearVelocity.x)
+                           + (m_v3BallPenetrationNormal.y * v3LinearVelocity.y)
+                           + (m_v3BallPenetrationNormal.z * v3LinearVelocity.z);
 
             nlVec3Set(vel,
                 forceMagnitude * m_v3BallPenetrationNormal.x,
                 forceMagnitude * m_v3BallPenetrationNormal.y,
                 forceMagnitude * m_v3BallPenetrationNormal.z);
 
-            nlVector3& temp_r3_2 = sphere->GetLinearVelocity();
+            nlVector3& v3CurrentVelocity = sphere->GetLinearVelocity();
             nlVec3Set(vel,
-                temp_r3_2.x - vel.x,
-                temp_r3_2.y - vel.y,
-                temp_r3_2.z - vel.z);
+                v3CurrentVelocity.x - vel.x,
+                v3CurrentVelocity.y - vel.y,
+                v3CurrentVelocity.z - vel.z);
 
             sphere->SetLinearVelocity(vel);
         }

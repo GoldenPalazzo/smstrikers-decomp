@@ -37,6 +37,6 @@ public:
     /* 0x9 */ bool m_bDetail;
 }; // total size: 0xC
 
-EffectsTexturing* fxGetTexturing(eEffectsTextureType);
+EffectsTexturing* fxGetTexturing(eEffectsTextureType type);
 
 #endif // _CHARACTEREFFECTS_H_

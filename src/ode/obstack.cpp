@@ -37,6 +37,9 @@
 //****************************************************************************
 // dObStack
 
+/**
+ * Offset/Address/Size: 0x304 | 0x802204F0 | size: 0x18
+ */
 dObStack::dObStack()
 {
     first = 0;
@@ -45,6 +48,9 @@ dObStack::dObStack()
     current_ofs = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x28C | 0x80220478 | size: 0x78
+ */
 dObStack::~dObStack()
 {
     // free all arenas
@@ -58,6 +64,9 @@ dObStack::~dObStack()
     }
 }
 
+/**
+ * Offset/Address/Size: 0x138 | 0x80220324 | size: 0x154
+ */
 void* dObStack::alloc(int num_bytes)
 {
     if ((size_t)num_bytes > MAX_ALLOC_SIZE)
@@ -95,6 +104,9 @@ void* dObStack::alloc(int num_bytes)
     return c;
 }
 
+/**
+ * Offset/Address/Size: 0xF8 | 0x802202E4 | size: 0x40
+ */
 void dObStack::freeAll()
 {
     last = first;
@@ -105,6 +117,9 @@ void dObStack::freeAll()
     }
 }
 
+/**
+ * Offset/Address/Size: 0xA8 | 0x80220294 | size: 0x50
+ */
 void* dObStack::rewind()
 {
     current_arena = first;
@@ -118,6 +133,9 @@ void* dObStack::rewind()
         return 0;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802201EC | size: 0xA8
+ */
 void* dObStack::next(int num_bytes)
 {
     // this functions like alloc, except that no new storage is ever allocated

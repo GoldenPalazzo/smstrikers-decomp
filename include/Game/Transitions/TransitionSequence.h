@@ -19,7 +19,7 @@ public:
 
     virtual ~TransitionSequence();
     virtual void Update(float dt);
-    virtual void Render(eGLView view);
+    virtual void Render(eGLView glView);
     virtual void Reset();
     virtual bool IsFinished();
     virtual void Cancel();

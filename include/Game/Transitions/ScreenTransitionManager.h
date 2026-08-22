@@ -26,7 +26,7 @@ class ScreenTransitionCallback
 {
 public:
     virtual inline void TransitionFinished();
-    virtual inline void TransitionProgressed(float);
+    virtual inline void TransitionProgressed(float fDeltaT);
     virtual inline void Cut();
     virtual inline void SequenceSwitch();
 };
@@ -36,7 +36,7 @@ class ScreenTransitionManager : public nlSingleton<ScreenTransitionManager>
 public:
     ScreenTransitionManager();
     virtual ~ScreenTransitionManager();
-    void Render(float);
+    void Render(float dt);
     void CancelAllTransitions();
     void DeleteAllTransitions();
     void AddTransitionToMap(char* name, ScreenTransition* pTransition);
@@ -62,43 +62,26 @@ public:
 // class nlAVLTree<unsigned long, ScreenTransition*, DefaultKeyCompare<unsigned long> >
 // {
 // public:
-//     void ~nlAVLTree();
 // };
 
 // class BasicString < char, Detail
 // {
 // public:
-//     void TempStringAllocator > ::BasicString();
 // };
 
 // class Vector < BasicString < char, Detail
 // {
 // public:
-//     void TempStringAllocator >, DefaultAllocator > ::reserve(int);
-//     void TempStringAllocator >, DefaultAllocator > ::insert(BasicString<char, Detail::TempStringAllocator>*, const BasicString<char, Detail::TempStringAllocator>*, const BasicString<char, Detail::TempStringAllocator>*);
-//     void TempStringAllocator >, DefaultAllocator > ::push_back(const BasicString<char, Detail::TempStringAllocator>&);
 // };
 
 // class AVLTreeBase<unsigned long, ScreenTransition*, NewAdapter<AVLTreeEntry<unsigned long, ScreenTransition*> >, DefaultKeyCompare<unsigned long> >
 // {
 // public:
-//     void DeleteEntry(AVLTreeEntry<unsigned long, ScreenTransition*>*);
-//     void AllocateEntry(void*, void*);
-//     void CompareKey(void*, AVLTreeNode*);
-//     void CompareNodes(AVLTreeNode*, AVLTreeNode*);
-//     void DeleteValue(AVLTreeEntry<unsigned long, ScreenTransition*>*);
-//     void Clear();
-//     void ~AVLTreeBase();
-//     void CastUp(AVLTreeNode*) const;
-//     void PostorderTraversal(AVLTreeEntry<unsigned long, ScreenTransition*>*, void (AVLTreeBase<unsigned long, ScreenTransition*, NewAdapter<AVLTreeEntry<unsigned long, ScreenTransition*> >, DefaultKeyCompare<unsigned long> >::*)(AVLTreeEntry<unsigned long, ScreenTransition*>*));
-//     void DestroyTree(void (AVLTreeBase<unsigned long, ScreenTransition*, NewAdapter<AVLTreeEntry<unsigned long, ScreenTransition*> >, DefaultKeyCompare<unsigned long> >::*)(AVLTreeEntry<unsigned long, ScreenTransition*>*));
-//     void DeleteValues();
 // };
 
 // class NewAdapter<AVLTreeEntry<unsigned long, ScreenTransition*> >
 // {
 // public:
-//     void Delete(AVLTreeEntry<unsigned long, ScreenTransition*>*);
 // };
 
 #endif // _SCREENTRANSITIONMANAGER_H_

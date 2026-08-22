@@ -1,5 +1,8 @@
 #include "dolphin/thp.h"
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8028CD14 | size: 0x464
+ */
 u32 THPAudioDecode(s16* audioBuffer, u8* audioFrame, s32 flag)
 {
     THPAudioRecordHeader* header;
@@ -166,6 +169,9 @@ u32 THPAudioDecode(s16* audioBuffer, u8* audioFrame, s32 flag)
     return header->sampleSize;
 }
 
+/**
+ * Offset/Address/Size: 0x464 | 0x8028D178 | size: 0x90
+ */
 static s32 __THPAudioGetNewSample(THPAudioDecodeInfo* info)
 {
     s32 sample;
@@ -192,6 +198,9 @@ static s32 __THPAudioGetNewSample(THPAudioDecodeInfo* info)
     return sample;
 }
 
+/**
+ * Offset/Address/Size: 0x4F4 | 0x8028D208 | size: 0x3C
+ */
 static void __THPAudioInitialize(THPAudioDecodeInfo* info, u8* ptr)
 {
     info->encodeData = ptr;

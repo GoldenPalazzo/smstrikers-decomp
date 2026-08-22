@@ -2241,7 +2241,7 @@ void cFielder::InitActionBombReact(const nlVector3& v3BombPosition, float fRadiu
 
     if (!IsFallenDown(0.0f))
     {
-        PlayAttackReactionSounds(g_pGame->m_pGameTweaks->unk24C);
+        PlayAttackReactionSounds(g_pGame->m_pGameTweaks->fBombHitReactionVolume);
     }
 
     if (IsFrozen())
@@ -3822,7 +3822,7 @@ void cFielder::InitActionSlideAttack(cFielder* pTarget, float fTime)
     SetAnimState(0x64, true, 0.2f, false, false);
     InitMovementCoast();
 
-    m_tSlideAttackTimer.SetSeconds(g_pGame->m_pGameTweaks->unk2A4);
+    m_tSlideAttackTimer.SetSeconds(g_pGame->m_pGameTweaks->fSlideAttackTimeToSlide);
 
     mActionSlideAttackVars.eSlideAttackState = SLIDE_ATTACK_DOWN;
     mActionSlideAttackVars.bAttackSucceeded = false;
@@ -3857,7 +3857,7 @@ void cFielder::InitActionSlideAttack(cFielder* pTarget, float fTime)
         fInterceptTime = fTime;
     }
 
-    fMaxTime = g_pGame->m_pGameTweaks->unk2A4 + g_pGame->m_pGameTweaks->unk2A8;
+    fMaxTime = g_pGame->m_pGameTweaks->fSlideAttackTimeToSlide + g_pGame->m_pGameTweaks->fSlideAttackTimeToDecelrate;
 
     if (fInterceptTime >= 0.0f && fInterceptTime <= fMaxTime)
     {
@@ -4077,7 +4077,7 @@ void cFielder::ActionSlideAttack(float fDeltaTime)
         {
             mActionSlideAttackVars.eSlideAttackState = SLIDE_ATTACK_DECELERATE;
             InitMovementDecelerateExponential(g_pGame->m_pGameTweaks->unk2AC);
-            m_tSlideAttackTimer.SetSeconds(g_pGame->m_pGameTweaks->unk2A8);
+            m_tSlideAttackTimer.SetSeconds(g_pGame->m_pGameTweaks->fSlideAttackTimeToDecelrate);
             m_fDesiredSpeed = 0.0f;
         }
         break;

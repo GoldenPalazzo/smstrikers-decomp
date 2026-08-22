@@ -36,9 +36,9 @@ public:
     };
 
     int MessageLength(FEInGameMessengerManager::eInGameMessages msg) const { return m_messageList[msg].size(); }
-    void ShowMessage(FEInGameMessengerManager::eInGameMessages);
-    void Update(float);
-    void EnterNewTimeState(FEInGameMessengerManager::eTimeStates);
+    void ShowMessage(FEInGameMessengerManager::eInGameMessages msg);
+    void Update(float fDeltaT);
+    void EnterNewTimeState(FEInGameMessengerManager::eTimeStates timeState);
     ~FEInGameMessengerManager();
 
     static const float TIMESTATE_TIMES[4];
@@ -59,7 +59,6 @@ public:
 // {
 // public:
 //     void eInGameMessages,
-//     NewAdapter<ListEntry<FEInGameMessengerManager::eInGameMessages>>>::DeleteEntry(ListEntry<FEInGameMessengerManager::eInGameMessages>*);
 // };
 
 // class nlWalkList<ListEntry<FEInGameMessengerManager
@@ -69,21 +68,18 @@ public:
 //     NewAdapter<ListEntry<FEInGameMessengerManager::eInGameMessages>>>>(ListEntry<FEInGameMessengerManager::eInGameMessages>*,
 //     ListContainerBase<FEInGameMessengerManager::eInGameMessages, NewAdapter<ListEntry<FEInGameMessengerManager::eInGameMessages>>>*, void
 //     (ListContainerBase<FEInGameMessengerManager::eInGameMessages,
-//     NewAdapter<ListEntry<FEInGameMessengerManager::eInGameMessages>>>::*)(ListEntry<FEInGameMessengerManager::eInGameMessages>*));
 // };
 
 // class nlListRemoveStart<ListEntry<FEInGameMessengerManager
 // {
 // public:
 //     void eInGameMessages>>(ListEntry<FEInGameMessengerManager::eInGameMessages>**,
-//     ListEntry<FEInGameMessengerManager::eInGameMessages>**);
 // };
 
 // class nlListAddEnd<ListEntry<FEInGameMessengerManager
 // {
 // public:
 //     void eInGameMessages>>(ListEntry<FEInGameMessengerManager::eInGameMessages>**,
-//     ListEntry<FEInGameMessengerManager::eInGameMessages>**, ListEntry<FEInGameMessengerManager::eInGameMessages>*);
 // };
 
 #endif // _FEINGAMEMESSENGERMANAGER_H_

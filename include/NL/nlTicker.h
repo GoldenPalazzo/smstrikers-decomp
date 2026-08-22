@@ -3,8 +3,8 @@
 
 #include "types.h"
 
-f32 nlGetTickerDifference(uint arg0, uint arg1);
-uint nlSubtractTicks(uint, uint);
+f32 nlGetTickerDifference(uint startTick, uint endTick);
+uint nlSubtractTicks(uint startTick, uint endTick);
 u32 nlGetTicker();
 void nlInitTicker();
 

@@ -60,7 +60,7 @@ void SkinMatrix::Get4x3(float* out) const
 /**
  * Offset/Address/Size: 0x0 | 0x801E0508 | size: 0x2C
  */
-void nlMultMatrices(SkinMatrix& arg0, const SkinMatrix& arg1, const SkinMatrix& arg2)
+void nlMultMatrices(SkinMatrix& out, const SkinMatrix& a, const SkinMatrix& b)
 {
-    PSMTXConcat(reinterpret_cast<CMtxP>(arg2.m), reinterpret_cast<CMtxP>(arg1.m), reinterpret_cast<MtxPtr>(arg0.m));
+    PSMTXConcat(reinterpret_cast<CMtxP>(b.m), reinterpret_cast<CMtxP>(a.m), reinterpret_cast<MtxPtr>(out.m));
 }

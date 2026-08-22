@@ -32,10 +32,10 @@ public:
     {
     }
 
-    void Insert(efBaseNode*);
-    void Append(efBaseNode*);
+    void Insert(efBaseNode* node);
+    void Append(efBaseNode* node);
     efBaseNode* Remove();
-    efBaseNode* Remove(efBaseNode*);
+    efBaseNode* Remove(efBaseNode* node);
 
     /* 0x0, */ struct efBaseNode* m_headNode;
     /* 0x4, */ struct efBaseNode* m_tailNode;

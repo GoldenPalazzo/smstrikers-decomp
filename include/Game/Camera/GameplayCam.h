@@ -34,7 +34,7 @@ class GameplayCameraZoomLevel
 public:
     GameplayCameraZoomLevel();
     void CalcDesiredTarget();
-    void Update(float, bool);
+    void Update(float fDeltaT, bool forceNeutral);
 
     /* 0x00 */ const CameraData* m_CameraData;
     /* 0x04 */ float m_fDesiredTargetX;
@@ -54,7 +54,7 @@ class GameplayCamera : public cBaseCamera
 public:
     GameplayCamera();
     /* 0x0C */ virtual eCameraType GetType() { return eCameraType_Gameplay; };
-    /* 0x10 */ virtual void Update(float);
+    /* 0x10 */ virtual void Update(float deltaTime);
     /* 0x20 */ virtual const nlVector3& GetTargetPosition() const { return m_v3Target; };
     /* 0x24 */ virtual const nlVector3& GetCameraPosition() const { return m_v3Camera; };
     /* 0x14 */ virtual const nlMatrix4& GetViewMatrix() const { return m_matView; };

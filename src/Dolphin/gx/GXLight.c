@@ -15,6 +15,9 @@ typedef struct
     f32 ldir[3];
 } __GXLightObjInt_struct;
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8024ECA0 | size: 0x1C
+ */
 void GXInitLightAttn(GXLightObj* lt_obj, f32 a0, f32 a1, f32 a2, f32 k0, f32 k1, f32 k2)
 {
     __GXLightObjInt_struct* obj;
@@ -30,6 +33,9 @@ void GXInitLightAttn(GXLightObj* lt_obj, f32 a0, f32 a1, f32 a2, f32 k0, f32 k1,
     obj->k[2] = k2;
 }
 
+/**
+ * Offset/Address/Size: 0x1C | 0x8024ECBC | size: 0x10
+ */
 void GXInitLightAttnA(GXLightObj* lt_obj, f32 a0, f32 a1, f32 a2)
 {
     __GXLightObjInt_struct* obj;
@@ -143,6 +149,9 @@ void GXInitLightSpot(GXLightObj* lt_obj, f32 cutoff, GXSpotFn spot_func)
     obj->a[2] = a2;
 }
 
+/**
+ * Offset/Address/Size: 0x2C | 0x8024ECCC | size: 0xD0
+ */
 void GXInitLightDistAttn(GXLightObj* lt_obj, f32 ref_dist, f32 ref_br, GXDistAttnFn dist_func)
 {
     f32 k0, k1, k2;
@@ -187,6 +196,9 @@ void GXInitLightDistAttn(GXLightObj* lt_obj, f32 ref_dist, f32 ref_br, GXDistAtt
     obj->k[2] = k2;
 }
 
+/**
+ * Offset/Address/Size: 0xFC | 0x8024ED9C | size: 0x10
+ */
 void GXInitLightPos(GXLightObj* lt_obj, f32 x, f32 y, f32 z)
 {
     __GXLightObjInt_struct* obj;
@@ -237,6 +249,9 @@ void GXGetLightDir(const GXLightObj* lt_obj, f32* nx, f32* ny, f32* nz)
     *nz = -obj->ldir[2];
 }
 
+/**
+ * Offset/Address/Size: 0x10C | 0x8024EDAC | size: 0xE4
+ */
 void GXInitSpecularDir(GXLightObj* lt_obj, f32 nx, f32 ny, f32 nz)
 {
     f32 mag;
@@ -283,6 +298,9 @@ void GXInitSpecularDirHA(GXLightObj* lt_obj, f32 nx, f32 ny, f32 nz, f32 hx, f32
     obj->lpos[2] = nz * -1000000000000000000.0f;
 }
 
+/**
+ * Offset/Address/Size: 0x1F0 | 0x8024EE90 | size: 0xC
+ */
 void GXInitLightColor(GXLightObj* lt_obj, GXColor color)
 {
     __GXLightObjInt_struct* obj;
@@ -381,6 +399,9 @@ static inline void PushLight(const register GXLightObj* lt_obj, register void* d
 #endif // clang-format on
 }
 
+/**
+ * Offset/Address/Size: 0x1FC | 0x8024EE9C | size: 0x7C
+ */
 void GXLoadLightObjImm(const GXLightObj* lt_obj, GXLightID light)
 {
     u32 addr;
@@ -460,6 +481,9 @@ void GXLoadLightObjIndx(u32 lt_obj_indx, GXLightID light)
 
 #define GXCOLOR_AS_U32(color) (*((u32*)&(color)))
 
+/**
+ * Offset/Address/Size: 0x278 | 0x8024EF18 | size: 0xE8
+ */
 void GXSetChanAmbColor(GXChannelID chan, GXColor amb_color)
 {
     u32 reg;
@@ -510,6 +534,9 @@ void GXSetChanAmbColor(GXChannelID chan, GXColor amb_color)
     __GXData->ambColor[colIdx] = reg;
 }
 
+/**
+ * Offset/Address/Size: 0x360 | 0x8024F000 | size: 0xE8
+ */
 void GXSetChanMatColor(GXChannelID chan, GXColor mat_color)
 {
     u32 reg;
@@ -560,6 +587,9 @@ void GXSetChanMatColor(GXChannelID chan, GXColor mat_color)
     __GXData->matColor[colIdx] = reg;
 }
 
+/**
+ * Offset/Address/Size: 0x448 | 0x8024F0E8 | size: 0x3C
+ */
 void GXSetNumChans(u8 nChans)
 {
     CHECK_GXBEGIN(857, "GXSetNumChans");
@@ -570,6 +600,9 @@ void GXSetNumChans(u8 nChans)
     __GXData->dirtyState |= 4;
 }
 
+/**
+ * Offset/Address/Size: 0x484 | 0x8024F124 | size: 0xB0
+ */
 void GXSetChanCtrl(GXChannelID chan, GXBool enable, GXColorSrc amb_src, GXColorSrc mat_src, u32 light_mask, GXDiffuseFn diff_fn,
     GXAttnFn attn_fn)
 {

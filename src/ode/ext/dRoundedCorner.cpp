@@ -74,7 +74,7 @@ static void dRoundedCornerAABB(dxGeom* geomID, float* aabb)
 /**
  * Offset/Address/Size: 0x30C | 0x8021DDD4 | size: 0x214
  */
-int dCollideRoundedCornerSphere(dxGeom* cornerGeomID, dxGeom* sphereGeomID, int, dContactGeom* contact, int)
+int dCollideRoundedCornerSphere(dxGeom* cornerGeomID, dxGeom* sphereGeomID, int flags, dContactGeom* contact, int skip)
 {
     f32 classify_val;
     f32 s_radius;
@@ -193,7 +193,7 @@ int dCollideRoundedCornerSphere(dxGeom* cornerGeomID, dxGeom* sphereGeomID, int,
 /**
  * Offset/Address/Size: 0x104 | 0x8021DBCC | size: 0x208
  */
-int dCollideRoundedCornerColumn(dxGeom* cor_GeomID, dxGeom* col_GeomID, int, dContactGeom* contact, int)
+int dCollideRoundedCornerColumn(dxGeom* cor_GeomID, dxGeom* col_GeomID, int flags, dContactGeom* contact, int skip)
 {
     f32 col_radius;
     f32 classify_val;

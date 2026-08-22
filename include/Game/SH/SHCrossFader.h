@@ -22,7 +22,7 @@ public:
     CrossFaderScene();
     ~CrossFaderScene();
     void SceneCreated();
-    void Update(float);
+    void Update(float fDeltaT);
 
     /* 0x1C */ int mNumImages;
     /* 0x20 */ int mCurrentImage;
@@ -37,17 +37,13 @@ public:
 // class FEFinder<TLImageInstance, 2>
 // {
 // public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
 //     void _Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
 //     long); void Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//     InlineHasher);
 // };
 
 // class FEResourceManager
 // {
 // public:
-//     void Run(float);
 // };
 
 #endif // _SHCROSSFADER_H_

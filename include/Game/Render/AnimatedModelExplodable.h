@@ -20,10 +20,10 @@ public:
     static ExplodableCategoryData sCategoryData[NUM_ANIMATED_MODEL_EXPLODABLE_CATEGORIES];
     static bool bIsModelLoaded[2];
     static void CleanUp();
-    AnimatedModelExplodable(AnimatedModelExplodableCategory, SkinAnimatedNPC*);
+    AnimatedModelExplodable(AnimatedModelExplodableCategory category, SkinAnimatedNPC* pAnimatedNPC);
     ~AnimatedModelExplodable();
     virtual ExplodableCategoryData& GetCategoryData() const;
-    void SetUnexplodedModelVisibility(bool);
+    void SetUnexplodedModelVisibility(bool isVisible);
     virtual const nlMatrix4& GetWorldMatrix() const;
     static bool LoadGeometry();
 

@@ -35,24 +35,23 @@ class ReplayCamera : public cBaseCamera
 public:
     ReplayCamera();
     /* 0x0C */ virtual eCameraType GetType() { return eCameraType_Replay; };
-    /* 0x10 */ virtual void Update(float);
+    /* 0x10 */ virtual void Update(float fDeltaT);
     /* 0x14 */ virtual const nlMatrix4& GetViewMatrix() const;
     /* 0x20 */ virtual const nlVector3& GetTargetPosition() const { return mLookAt; };
     /* 0x24 */ virtual const nlVector3& GetCameraPosition() const { return mPosition; };
     /* 0x18 */ virtual float GetFOV() const { return mFov; };
 
     static void UpdateTweakMode();
-    void ManualUpdate(float);
-    void SetSideOfInterest(int);
-    void CutTo(ReplayCameraPosition);
-    float GetFov(ReplayCameraPosition) const;
-    nlVector3 GetPosition(ReplayCameraPosition, float) const;
+    void ManualUpdate(float deltaT);
+    void SetSideOfInterest(int sideOfInterest);
+    void CutTo(ReplayCameraPosition camPos);
+    float GetFov(ReplayCameraPosition position) const;
+    nlVector3 GetPosition(ReplayCameraPosition position, float direction) const;
 
 private:
     static void Dampen(nlVector3& from, const nlVector3& to, float dampFactor);
 
 public:
-
     /* 0x1C */ f32 mDeltaFov;
     /* 0x20 */ f32 mFov;
     /* 0x24 */ s32 mSideOfInterest;

@@ -78,12 +78,12 @@ unsigned char nlLocalization::Load(nlLanguage Language, bool ingameloc)
  */
 void nlLocalization::Initialize()
 {
-    void* ptr = nlMalloc(16, 8, false);
-    if (ptr != 0)
+    nlLocalization* pLocalization = (nlLocalization*)nlMalloc(sizeof(nlLocalization), 8, false);
+    if (pLocalization != NULL)
     {
-        ((unsigned long*)ptr)[0] = 0;
-        ((unsigned long*)ptr)[1] = 0;
-        ((unsigned long*)ptr)[2] = 0;
+        pLocalization->m_pFile = NULL;
+        pLocalization->m_LookupTable = NULL;
+        pLocalization->m_FirstString = NULL;
     }
-    g_pLocalization = ptr;
+    g_pLocalization = pLocalization;
 }

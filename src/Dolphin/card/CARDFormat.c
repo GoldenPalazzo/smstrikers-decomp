@@ -1,6 +1,9 @@
 #include "__os.h"
 #include "__card.h"
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80242260 | size: 0x144
+ */
 static void FormatCallback(s32 chan, s32 result)
 {
     CARDControl* card;
@@ -40,6 +43,9 @@ error:
     callback(chan, result);
 }
 
+/**
+ * Offset/Address/Size: 0x144 | 0x802423A4 | size: 0x658
+ */
 s32 __CARDFormatRegionAsync(s32 chan, u16 encode, CARDCallback callback)
 {
     CARDControl* card;
@@ -131,6 +137,9 @@ s32 __CARDFormatRegion(s32 chan, u16 encode)
     return __CARDSync(chan);
 }
 
+/**
+ * Offset/Address/Size: 0x79C | 0x802429FC | size: 0x48
+ */
 s32 CARDFormatAsync(s32 chan, CARDCallback callback)
 {
     return __CARDFormatRegionAsync(chan, __CARDGetFontEncode(), callback);

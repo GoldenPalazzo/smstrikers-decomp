@@ -28,8 +28,8 @@ public:
         }
 
         const nlVector3* GetPosition() const;
-        void GetNormal(nlVector3& out) const;
-        void GetTextureCoord(nlVector2& out) const;
+        void GetNormal(nlVector3& normal) const;
+        void GetTextureCoord(nlVector2& txtCoord) const;
 
         bool operator==(const NetMeshVertex& o) const { return mpPacket == o.mpPacket && mIndex == o.mIndex; }
         bool operator<(const NetMeshVertex& o) const { return mpPacket < o.mpPacket || (mpPacket == o.mpPacket && mIndex < o.mIndex); }

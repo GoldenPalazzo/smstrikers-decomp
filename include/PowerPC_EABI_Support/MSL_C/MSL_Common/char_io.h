@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-int fputs(const char* str, FILE* stream);
+int fputs(const char* s, FILE* stream);
 int __put_char(int c, FILE* stream);
 
 #ifdef __cplusplus

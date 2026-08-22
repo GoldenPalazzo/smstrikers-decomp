@@ -17,66 +17,66 @@ void ClockManager::Initialize()
 /**
  * Offset/Address/Size: 0x238 | 0x80212BF0 | size: 0x1A0
  */
-void ClockManager::Update(float arg8)
+void ClockManager::Update(float fDeltaT)
 {
-    ClockCallback temp_r12;
-    ClockCallback temp_r12_2;
+    ClockCallback callback;
+    ClockCallback callback2;
 
-    Clock* var_r31;
-    Clock* temp_r30;
+    Clock* pClock;
+    Clock* next;
 
     if (m_activeList != NULL)
     {
         m_bUpdatingClocks = true;
-        var_r31 = m_activeList->m_next;
+        pClock = m_activeList->m_next;
 
     loop_2:
-        temp_r30 = var_r31->m_next;
-        if ((var_r31->m_clockState == CLOCK_PAUSED) || !(var_r31->m_uActiveStates & nlTaskManager::m_pInstance->m_CurrState))
+        next = pClock->m_next;
+        if ((pClock->m_clockState == CLOCK_PAUSED) || !(pClock->m_uActiveStates & nlTaskManager::m_pInstance->m_CurrState))
         {
-            if (var_r31 != m_activeList)
+            if (pClock != m_activeList)
             {
-                var_r31 = temp_r30;
+                pClock = next;
                 goto loop_2;
             }
         }
         else
         {
-            var_r31->m_fTimer = (f32)((arg8 * var_r31->m_fTimeScale) + var_r31->m_fTimer);
-            if (var_r31->m_fTimeScale >= 0.f)
+            pClock->m_fTimer = (f32)((fDeltaT * pClock->m_fTimeScale) + pClock->m_fTimer);
+            if (pClock->m_fTimeScale >= 0.f)
             {
-                if (var_r31->m_fTimer >= var_r31->m_fEndTime)
+                if (pClock->m_fTimer >= pClock->m_fEndTime)
                 {
-                    var_r31->m_clockState = CLOCK_DONE;
-                    var_r31->m_fTimer = (f32)var_r31->m_fEndTime;
-                    temp_r12 = var_r31->m_callback;
-                    if (temp_r12 != NULL)
+                    pClock->m_clockState = CLOCK_DONE;
+                    pClock->m_fTimer = (f32)pClock->m_fEndTime;
+                    callback = pClock->m_callback;
+                    if (callback != NULL)
                     {
-                        temp_r12(var_r31->m_uParam1, var_r31->m_uParam2);
+                        callback(pClock->m_uParam1, pClock->m_uParam2);
                     }
-                    nlDLRingRemove<Clock>(&m_activeList, var_r31);
-                    nlDLRingAddEnd<Clock>(&m_inactiveList, var_r31);
+                    nlDLRingRemove<Clock>(&m_activeList, pClock);
+                    nlDLRingAddEnd<Clock>(&m_inactiveList, pClock);
                 }
             }
             else
             {
-                if (var_r31->m_fTimer <= var_r31->m_fEndTime)
+                if (pClock->m_fTimer <= pClock->m_fEndTime)
                 {
-                    var_r31->m_clockState = CLOCK_DONE;
-                    var_r31->m_fTimer = (f32)var_r31->m_fEndTime;
-                    temp_r12_2 = var_r31->m_callback;
-                    if (temp_r12_2 != NULL)
+                    pClock->m_clockState = CLOCK_DONE;
+                    pClock->m_fTimer = (f32)pClock->m_fEndTime;
+                    callback2 = pClock->m_callback;
+                    if (callback2 != NULL)
                     {
-                        temp_r12_2(var_r31->m_uParam1, var_r31->m_uParam2);
+                        callback2(pClock->m_uParam1, pClock->m_uParam2);
                     }
-                    nlDLRingRemove<Clock>(&m_activeList, var_r31);
-                    nlDLRingAddEnd<Clock>(&m_inactiveList, var_r31);
+                    nlDLRingRemove<Clock>(&m_activeList, pClock);
+                    nlDLRingAddEnd<Clock>(&m_inactiveList, pClock);
                 }
             }
 
-            if ((var_r31 != m_activeList) && (m_activeList != NULL))
+            if ((pClock != m_activeList) && (m_activeList != NULL))
             {
-                var_r31 = temp_r30;
+                pClock = next;
                 goto loop_2;
             }
         }

@@ -6,11 +6,11 @@
 class cNet
 {
 public:
-    cNet(int);
+    cNet(int nIndex);
     ~cNet();
     float GetGoalLineX() const;
-    void GetPostLocation(nlVector3&, unsigned int, float) const;
-    static void SetNetDimensions(float, float, float, float);
+    void GetPostLocation(nlVector3& v3PostPosition, unsigned int uPostNum, float fYAdjust) const;
+    static void SetNetDimensions(float fWidth, float fHeight, float fPostRadius, float fPostOffsetFromGoalLine);
     static void ShowNets();
     static float GetNetHeight()
     {

@@ -1,4 +1,3 @@
-#pragma pool_data off
 
 #include "Game/Drawable/DrawableObj.h"
 #include "NL/nlMath.h"
@@ -84,7 +83,6 @@ void DrawableObject::GetAABBDimensions(AABBDimensions& dim, bool param) const
 }
 
 // /**
-//  * Offset/Address/Size: 0x0 | 0x8011FE00 | size: 0x4
 //  */
 // void DrawableObject::DrawPlanarShadow()
 // {

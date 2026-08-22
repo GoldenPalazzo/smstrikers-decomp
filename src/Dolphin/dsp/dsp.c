@@ -22,11 +22,17 @@ extern int __DSP_rude_task_pending;
 
 static BOOL __DSP_init_flag;
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802442C4 | size: 0x10
+ */
 u32 DSPCheckMailToDSP(void)
 {
     return (__DSPRegs[0] & (1 << 15)) >> 15;
 }
 
+/**
+ * Offset/Address/Size: 0x10 | 0x802442D4 | size: 0x10
+ */
 u32 DSPCheckMailFromDSP(void)
 {
     return (__DSPRegs[2] & (1 << 15)) >> 15;
@@ -37,11 +43,17 @@ u32 DSPReadCPUToDSPMbox(void)
     return (__DSPRegs[0] << 16) | __DSPRegs[1];
 }
 
+/**
+ * Offset/Address/Size: 0x20 | 0x802442E4 | size: 0x18
+ */
 u32 DSPReadMailFromDSP(void)
 {
     return (__DSPRegs[2] << 16) | __DSPRegs[3];
 }
 
+/**
+ * Offset/Address/Size: 0x38 | 0x802442FC | size: 0x14
+ */
 void DSPSendMailToDSP(u32 mail)
 {
     __DSPRegs[0] = mail >> 16;
@@ -60,6 +72,9 @@ void DSPAssertInt(void)
     OSRestoreInterrupts(old);
 }
 
+/**
+ * Offset/Address/Size: 0x4C | 0x80244310 | size: 0xC4
+ */
 void DSPInit(void)
 {
     BOOL old;
@@ -136,6 +151,9 @@ u32 DSPGetDMAStatus(void)
     return (__DSPRegs[5] & (1 << 9));
 }
 
+/**
+ * Offset/Address/Size: 0x110 | 0x802443D4 | size: 0x70
+ */
 DSPTaskInfo* DSPAddTask(DSPTaskInfo* task)
 {
     BOOL old;
@@ -154,6 +172,9 @@ DSPTaskInfo* DSPAddTask(DSPTaskInfo* task)
     return task;
 }
 
+/**
+ * Offset/Address/Size: 0x180 | 0x80244444 | size: 0x40
+ */
 DSPTaskInfo* DSPCancelTask(DSPTaskInfo* task)
 {
     BOOL old;

@@ -64,15 +64,15 @@ public:
     ~NetMesh();
 
     void Allocate(int numParticles, int numDistanceConstraints, int numPositionConstraints);
-    int SetPositionConstraint(int, const nlVector3&);
+    int SetPositionConstraint(int particleIndex, const nlVector3& v3Position);
     void SetDistanceConstraint(int nParticleA, int nParticleB, float fDistance);
     void UpdateUntilRelaxed();
-    void Update(float, const nlVector3&, const nlVector3&, bool, PhysicsSphere*);
-    void JoltNet(float);
-    void SatisfyConstraints(const nlVector3&, bool);
-    void AddForcesToBall(const nlVector3&, PhysicsSphere*);
-    void Initialize(unsigned long);
-    void SetTriStripIndices(int, const unsigned short*);
+    void Update(float dt, const nlVector3& ballPosition, const nlVector3& ballPrevPosition, bool bExaggerateBallSize, PhysicsSphere* sphere);
+    void JoltNet(float zDisplacement);
+    void SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerateBallSize);
+    void AddForcesToBall(const nlVector3& position, PhysicsSphere* sphere);
+    void Initialize(unsigned long netMeshDrawableObjectID);
+    void SetTriStripIndices(int numIndices, const unsigned short* indices);
     static void SetDontUseLowestNetTextureLOD(bool value);
     void SetTexture(unsigned long texture);
 

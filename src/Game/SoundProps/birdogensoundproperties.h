@@ -19,10 +19,4 @@ public:
 extern BIRDOSoundPropAccessor gBIRDOSoundPropAccessor;
 extern SoundPropAccessor* gpBIRDOSoundPropAccessor;
 
-// class SoundPropAccessor
-// {
-// public:
-//     void SetSoundPropTable(SoundProperties*);
-// };
-
 #endif // _BIRDOGENSOUNDPROPERTIES_H_

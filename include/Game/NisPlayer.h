@@ -43,23 +43,23 @@ public:
     /* 0x08 */ virtual ~NisPlayer();
     /* 0x0C */ virtual void DoFunctionCall(unsigned int);
 
-    void SetExtraNameFilter(const char*);
+    void SetExtraNameFilter(const char* filter);
     void ResetEffects();
-    void Effect(float, const char*, const char*, NisEffectLifetime);
-    bool IsMirrored(NisTarget, const char*, NisWinnerType) const;
-    int TargetToIndex(NisTarget, int, NisWinnerType) const;
-    void EventHandler(Event*);
+    void Effect(float frame, const char* name, const char* target, NisEffectLifetime lifetime);
+    bool IsMirrored(NisTarget target, const char* name, NisWinnerType winnerType) const;
+    int TargetToIndex(NisTarget target, int index, NisWinnerType winnerType) const;
+    void EventHandler(Event* event);
     static void EventHandler(Event* event, void* userData) { ((NisPlayer*)userData)->EventHandler(event); }
     void PlayCharacterDirection();
-    void Load(const char*, NisTarget, NisUseStadiumOffset, NisUseFilter, NisWinnerType);
-    BasicString<char, Detail::TempStringAllocator> GetTargetFilter(NisTarget, NisWinnerType) const;
-    static void AsyncLoad(nlFile*, void*, unsigned int, unsigned long);
-    void LoadTriggers(Nis&);
-    void Load(char*, unsigned int, NisHeader&);
+    void Load(const char* nisType, NisTarget target, NisUseStadiumOffset useStadiumOffset, NisUseFilter useFilter, NisWinnerType winnerType);
+    BasicString<char, Detail::TempStringAllocator> GetTargetFilter(NisTarget target, NisWinnerType winnerType) const;
+    static void AsyncLoad(nlFile* file, void* buffer, unsigned int size, unsigned long param);
+    void LoadTriggers(Nis& nis);
+    void Load(char* buffer, unsigned int size, NisHeader& nisHeader);
     void Render() const;
     bool Play();
     void Reset();
-    void Update(float);
+    void Update(float deltaT);
     void HandleAsyncs();
     bool WorldIsFrozen() const;
     float TimeLeft() const;

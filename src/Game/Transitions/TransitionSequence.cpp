@@ -259,7 +259,7 @@ void TransitionSequence::Initialize(SimpleParser* parser)
         }
         else if (nlStrCmp<char>(token, "transition") == 0)
         {
-            ScriptedScreenTransition* transition = new (nlMalloc(0x1C, 8, false)) ScriptedScreenTransition();
+            ScriptedScreenTransition* transition = new (nlMalloc(sizeof(ScriptedScreenTransition), 8, false)) ScriptedScreenTransition();
             transition->InitializeFromParser(parser);
             pTrans[m_nNumTransitions] = transition;
             m_nNumTransitions++;
@@ -287,7 +287,7 @@ void TransitionSequence::Initialize(SimpleParser* parser)
         }
         else if (nlStrCmp<char>(token, "model") == 0)
         {
-            ModeledScreenTransition* transition = new (nlMalloc(0xC4, 8, false)) ModeledScreenTransition();
+            ModeledScreenTransition* transition = new (nlMalloc(sizeof(ModeledScreenTransition), 8, false)) ModeledScreenTransition();
             transition->LoadFromParser(parser);
             pTrans[m_nNumTransitions] = transition;
             m_nNumTransitions++;

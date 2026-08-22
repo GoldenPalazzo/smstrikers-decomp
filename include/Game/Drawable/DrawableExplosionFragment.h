@@ -10,7 +10,7 @@ public:
     template <typename T>
     void Replay(T&);
 
-    void Blend(const float*, const DrawableExplosionFragment&, const DrawableExplosionFragment&);
+    void Blend(const float* w, const DrawableExplosionFragment& a, const DrawableExplosionFragment& b);
     void Render() const;
     void Grab();
 

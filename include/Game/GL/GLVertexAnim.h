@@ -19,8 +19,8 @@ class GLVertexAnim
 public:
     GLVertexAnim();
 
-    glModel* GetModel(int);
-    void Update(float);
+    glModel* GetModel(int frame);
+    void Update(float dt);
     void Reset();
 
     /* 0x00 */ u32 m_uHashID;

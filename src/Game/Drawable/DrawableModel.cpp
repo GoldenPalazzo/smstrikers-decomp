@@ -802,12 +802,6 @@ void DrawableModel::DrawPlanarShadow()
 
 static void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matrix, float& x0, float& x1, float& y0, float& y1, unsigned long userData);
 
-/**
- * Offset/Address/Size: 0x964 | 0x80120770 | size: 0x290
- * Matches 100%. The shadow-matrix construction is shared with DrawPlanarShadow
- * via MakePlanarShadowMatrix; the `register float` scaffolding locals that used
- * to be interleaved between the corner stores are gone.
- */
 static inline void MakePlanarShadowMatrix(nlMatrix4& shadowMatrix, const nlMatrix4& objectToWorldMatrix)
 {
     const nlVector3& lightVector = *(const nlVector3*)(*(u32*)((u8*)WorldManager::s_World + 0x138) + 4);
@@ -832,6 +826,9 @@ static inline void MakePlanarShadowMatrix(nlMatrix4& shadowMatrix, const nlMatri
     shadowMatrix.m44 = 1.0f;
 }
 
+/**
+ * Offset/Address/Size: 0x964 | 0x80120770 | size: 0x290
+ */
 static void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matrix, float& x0, float& x1, float& y0, float& y1, unsigned long userData)
 {
     AABBDimensions dimensions;

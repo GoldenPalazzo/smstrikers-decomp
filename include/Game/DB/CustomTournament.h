@@ -17,13 +17,12 @@ enum eTournamentMode
 class CustomTournament
 {
 public:
-    // void @class$264CustomTournament_cpp::@class$264CustomTournament_cpp();
     CustomTournament();
     ~CustomTournament();
     BaseCup* ConstructCup();
     int GetSaveDataSize() const;
-    void SerializeData(void*) const;
-    void DeserializeData(void*);
+    void SerializeData(void* buffer) const;
+    void DeserializeData(void* buffer);
 
     union
     {
@@ -54,92 +53,36 @@ public:
 // class Knockout<8>
 // {
 // public:
-//     void DeserializeData(void*);
-//     void SerializeData(void*) const;
-//     void GetSaveDataSize() const;
-//     void GetRoundResults(int);
-//     void GetNumRounds();
-//     void GetNumTeams();
-//     void GetTeamStats(int);
-//     void GetGameInfo(int, int);
 // };
 
 // class Cup<7, 14>
 // {
 // public:
-//     void DeserializeData(void*);
-//     void SerializeData(void*) const;
-//     void GetSaveDataSize() const;
-//     void GetRoundResults(int);
-//     void GetNumRounds();
-//     void GetNumTeams();
-//     void GetTeamStats(int);
-//     void GetGameInfo(int, int);
 // };
 
 // class Cup<5, 10>
 // {
 // public:
-//     void DeserializeData(void*);
-//     void SerializeData(void*) const;
-//     void GetSaveDataSize() const;
-//     void GetRoundResults(int);
-//     void GetNumRounds();
-//     void GetNumTeams();
-//     void GetTeamStats(int);
-//     void GetGameInfo(int, int);
 // };
 
 // class Cup<3, 6>
 // {
 // public:
-//     void DeserializeData(void*);
-//     void SerializeData(void*) const;
-//     void GetSaveDataSize() const;
-//     void GetRoundResults(int);
-//     void GetNumRounds();
-//     void GetNumTeams();
-//     void GetTeamStats(int);
-//     void GetGameInfo(int, int);
 // };
 
 // class Cup<7, 7>
 // {
 // public:
-//     void DeserializeData(void*);
-//     void SerializeData(void*) const;
-//     void GetSaveDataSize() const;
-//     void GetRoundResults(int);
-//     void GetNumRounds();
-//     void GetNumTeams();
-//     void GetTeamStats(int);
-//     void GetGameInfo(int, int);
 // };
 
 // class Cup<5, 5>
 // {
 // public:
-//     void DeserializeData(void*);
-//     void SerializeData(void*) const;
-//     void GetSaveDataSize() const;
-//     void GetRoundResults(int);
-//     void GetNumRounds();
-//     void GetNumTeams();
-//     void GetTeamStats(int);
-//     void GetGameInfo(int, int);
 // };
 
 // class Cup<3, 3>
 // {
 // public:
-//     void DeserializeData(void*);
-//     void SerializeData(void*) const;
-//     void GetSaveDataSize() const;
-//     void GetRoundResults(int);
-//     void GetNumRounds();
-//     void GetNumTeams();
-//     void GetTeamStats(int);
-//     void GetGameInfo(int, int);
 // };
 
 #endif // _CUSTOMTOURNAMENT_H_

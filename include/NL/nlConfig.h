@@ -121,22 +121,22 @@ public:
         virtual void TagValuePair(const BasicString<char, Detail::TempStringAllocator>&, const BasicString<char, Detail::TempStringAllocator>&) { }
     }; // total size: 0x4
 
-    void Parse(const char*, Parser&);
-    static BasicString<char, Detail::TempStringAllocator> LoadFileAsString(const char*);
-    void Set(const char*, const BasicString<char, Detail::TempStringAllocator>&);
-    void Set(const char*, const char*);
-    void Set(const char*, float);
-    void Set(const char*, bool);
-    void Set(const char*, int);
-    char* CopyString(const char*, bool);
-    u32 Hash(const char*) const;
+    void Parse(const char* s, Parser& parser);
+    static BasicString<char, Detail::TempStringAllocator> LoadFileAsString(const char* filename);
+    void Set(const char* key, const BasicString<char, Detail::TempStringAllocator>& value);
+    void Set(const char* tag, const char* value);
+    void Set(const char* tag, float value);
+    void Set(const char* tag, bool value);
+    void Set(const char* tag, int value);
+    char* CopyString(const char* str, bool makeUpperCase);
+    u32 Hash(const char* str) const;
 
     template <typename T>
     void Set(const char* key, T value);
-    TagValuePair& FindTvp(const char*);
-    bool IsBool(const char*, bool&) const;
-    bool Exists(const char*) const;
-    void LoadFromFile(const char*);
+    TagValuePair& FindTvp(const char* tag);
+    bool IsBool(const char* str, bool& b) const;
+    bool Exists(const char* tag) const;
+    void LoadFromFile(const char* filename);
     void LoadFromString(const char*);
     void ApplyToFile(const char*, const char*);
 
@@ -152,54 +152,15 @@ public:
         return tvp.Get<T>();
     }
 
-    // BasicString<char, Detail::TempStringAllocator> TagValuePair::Get<BasicString<char, Detail::TempStringAllocator> >() const
-    // {
-    //     BasicString<char, Detail::TempStringAllocator> result;
-
-    //     if (type == _BOOL)
-    //     {
-    //         result = LexicalCast<BasicString<char, Detail::TempStringAllocator>, bool>(value.b);
-    //     }
-    //     else if (type == _INT)
-    //     {
-    //         result = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(value.i);
-    //     }
-    //     else if (type == _FLOAT)
-    //     {
-    //         result = LexicalCast<BasicString<char, Detail::TempStringAllocator>, float>(value.f);
-    //     }
-    //     else if (type == _STRING)
-    //     {
-    //         result = LexicalCast<BasicString<char, Detail::TempStringAllocator>, const char*>(value.s);
-    //     }
-    //     else
-    //     {
-    //         // Default to empty string for unknown types
-    //         result.mData = nullptr;
-    //         result.m_size = 0;
-    //         result.m_capacity = 0;
-    //         result.m_refCount = 1;
-    //     }
-
-    //     return result;
-    // }
-
     static Config& Global();
 
     ~Config();
     Config() { };
-    Config(AllocateWhere);
+    Config(AllocateWhere allocateWhere);
 
     /* 0x0 */ TagValuePair* mTvpHash;
     /* 0x4 */ char* mStringMemory;
     /* 0x8 */ char* mStringEnd;
-
-    // Parser::TagValuePair(const BasicString<char, Detail::TempStringAllocator>&, const BasicString<char, Detail::TempStringAllocator>&);
-    // Parser::Section(const BasicString<char, Detail::TempStringAllocator>&);
-    // Parser::Comment(const BasicString<char, Detail::TempStringAllocator>&);
-    // Parser::EmptyLine();
-    // TagValuePair::TagValuePair();
-    // Set<BasicString<char, Detail::TempStringAllocator>>(const char*, BasicString<char, Detail::TempStringAllocator>);
 }; // total size: 0xC
 
 inline Config::IteratorBase::IteratorBase(Config& config, Type type)
@@ -235,16 +196,6 @@ inline const char* Config::IteratorBase::Tag() const
 }
 
 typedef Config::TagValuePair TagValuePair;
-
-// class BasicString<char, Detail
-// {
-// public:
-//     BasicString<char, Detail::TempStringAllocator>::Trim(const char*) const;
-//     BasicString<char, Detail::TempStringAllocator>::TrimInPlace(const char*);
-//     BasicString<char, Detail::TempStringAllocator>::Append<Detail::TempStringAllocator>(const BasicString<char,
-//     Detail::TempStringAllocator>&) const; BasicString<char,
-//     Detail::TempStringAllocator>::AppendInPlace<Detail::TempStringAllocator>(const BasicString<char, Detail::TempStringAllocator>&);
-// };
 
 template <>
 inline BasicString<char, Detail::TempStringAllocator> Config::Get<BasicString<char, Detail::TempStringAllocator> >(

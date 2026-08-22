@@ -9,10 +9,10 @@
 class ProgressiveScanScene : public BaseSceneHandler
 {
 public:
-    ProgressiveScanScene(bool);
+    ProgressiveScanScene(bool doRGB60Instead);
     virtual ~ProgressiveScanScene();
     virtual void SceneCreated();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
     void SwitchMessageImage();
 
     /* 0x1C */ AsyncImage* mUseProgressiveImage[2];

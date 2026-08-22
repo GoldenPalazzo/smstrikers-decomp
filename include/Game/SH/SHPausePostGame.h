@@ -14,12 +14,12 @@ public:
     PausePostGameScene();
     virtual ~PausePostGameScene();
     virtual void SceneCreated();
-    virtual void Update(float);
+    virtual void Update(float dt);
 
     void OnSelectRematch();
     void OnSelectQuit();
     void OnSelectChangeTeams();
-    void SetText(TLTextInstance&, const BasicString<unsigned short, Detail::TempStringAllocator>&);
+    void SetText(TLTextInstance& textinstance, const BasicString<unsigned short, Detail::TempStringAllocator>& string);
 
     /* 0x01C */ MenuList<TLComponentInstance> mMenuItems; // size 0x214
     /* 0x230 */ unsigned short mScoreBuffer[2][8];        // size 0x20
@@ -30,23 +30,16 @@ public:
 // class FEFinder<TLTextInstance, 3>
 // {
 // public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
 // };
 
 // class FEFinder<TLComponentInstance, 4>
 // {
 // public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
 // };
 
 // class Function1<void, TLComponentInstance*>
 // {
 // public:
-//     void FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (PausePostGameScene::*)()>, PausePostGameScene*>>::~FunctorImpl();
 //     void FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (PausePostGameScene::*)()>,
 //     PausePostGameScene*>>::operator()(TLComponentInstance*); void FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void
 //     (PausePostGameScene::*)()>, PausePostGameScene*>>::Clone() const;
@@ -55,27 +48,23 @@ public:
 // class MemFun<PausePostGameScene, void>(void (PausePostGameScene
 // {
 // public:
-//     void *)());
 // };
 
 // class Bind<void, Detail
 // {
 // public:
 //     void MemFunImpl<void, void (PausePostGameScene::*)()>, PausePostGameScene*>(Detail::MemFunImpl<void, void (PausePostGameScene::*)()>,
-//     PausePostGameScene* const&);
 // };
 
 // class Format<BasicString<unsigned short, Detail
 // {
 // public:
 //     void TempStringAllocator>, unsigned short[8]>(const BasicString<unsigned short, Detail::TempStringAllocator>&, const unsigned
-//     short(&)[8]);
 // };
 
 // class FormatImpl<BasicString<unsigned short, Detail
 // {
 // public:
-//     void TempStringAllocator>>::operator%<const unsigned short*>(const unsigned short* const&);
 // };
 
 #endif // _SHPAUSEPOSTGAME_H_

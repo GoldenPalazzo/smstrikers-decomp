@@ -22,13 +22,13 @@ ProgressiveScanScene::ProgressiveScanScene(bool doRGB60Instead)
     mSelectorComponent = NULL;
     mElapsedTime = 0.0f;
 
-    AsyncImage* useProgressiveImage0 = new (nlMalloc(0x1C, 0x20, 1)) AsyncImage(MESSAGES_FILE_NAME, NULL);
+    AsyncImage* useProgressiveImage0 = new (nlMalloc(sizeof(AsyncImage), 0x20, 1)) AsyncImage(MESSAGES_FILE_NAME, NULL);
     mUseProgressiveImage[0] = useProgressiveImage0;
 
-    AsyncImage* useProgressiveImage1 = new (nlMalloc(0x1C, 0x20, 1)) AsyncImage(MESSAGES_FILE_NAME, NULL);
+    AsyncImage* useProgressiveImage1 = new (nlMalloc(sizeof(AsyncImage), 0x20, 1)) AsyncImage(MESSAGES_FILE_NAME, NULL);
     mUseProgressiveImage[1] = useProgressiveImage1;
 
-    AsyncImage* confirmationImage = new (nlMalloc(0x1C, 0x20, 1)) AsyncImage(MESSAGES_FILE_NAME, NULL);
+    AsyncImage* confirmationImage = new (nlMalloc(sizeof(AsyncImage), 0x20, 1)) AsyncImage(MESSAGES_FILE_NAME, NULL);
     mConfirmationImage = confirmationImage;
 
     if (mDoRGB60Instead)
@@ -44,14 +44,12 @@ ProgressiveScanScene::ProgressiveScanScene(bool doRGB60Instead)
 /**
  * Offset/Address/Size: 0x107C | 0x8011154C | size: 0xCC
  */
-#pragma inline_depth(8)
 ProgressiveScanScene::~ProgressiveScanScene()
 {
     delete mUseProgressiveImage[0];
     delete mUseProgressiveImage[1];
     delete mConfirmationImage;
 }
-#pragma inline_depth()
 
 extern unsigned long nlStringLowerHash(const char*);
 extern int nlSNPrintf(char*, unsigned long, const char*, ...);
@@ -143,7 +141,6 @@ void ProgressiveScanScene::SceneCreated()
 /**
  * Offset/Address/Size: 0x940 | 0x80110E10 | size: 0x3C8
  */
-#pragma inline_depth(8)
 void ProgressiveScanScene::Update(float fDeltaT)
 {
     BaseSceneHandler::Update(fDeltaT);
@@ -249,8 +246,10 @@ void ProgressiveScanScene::Update(float fDeltaT)
         }
     }
 }
-#pragma inline_depth()
 
+/**
+ * Offset/Address/Size: 0x0 | 0x801104D0 | size: 0x940
+ */
 void ProgressiveScanScene::SwitchMessageImage()
 {
     const char* confirmationText = mUseProgressiveMode ? "Yes" : "No";

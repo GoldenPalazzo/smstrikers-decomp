@@ -3,6 +3,9 @@
 
 #include "__gx.h"
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80251C54 | size: 0x848
+ */
 void GXSetGPMetric(GXPerf0 perf0, GXPerf1 perf1)
 {
     u32 reg;
@@ -355,6 +358,9 @@ void GXSetGPMetric(GXPerf0 perf0, GXPerf1 perf1)
 }
 
 #pragma scheduling off
+/**
+ * Offset/Address/Size: 0x848 | 0x8025249C | size: 0x1A8
+ */
 void GXReadGPMetric(u32* cnt0, u32* cnt1)
 {
     u32 cpCtr0, cpCtr1, cpCtr2, cpCtr3;
@@ -463,6 +469,9 @@ void GXReadGPMetric(u32* cnt0, u32* cnt1)
 }
 #pragma scheduling reset
 
+/**
+ * Offset/Address/Size: 0x9F0 | 0x80252644 | size: 0x10
+ */
 void GXClearGPMetric(void)
 {
     u32 reg;

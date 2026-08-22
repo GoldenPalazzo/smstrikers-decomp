@@ -45,7 +45,6 @@ cDecisionEntity* GetDecisionEntity(eDecisionEntity type, unsigned long id)
 cDecisionEntity::cDecisionEntity(eDecisionEntity type, unsigned long id, FuzzyVariant (*dtf)(cDecisionEntity*), FuzzyVariant (*af)(cDecisionEntity*))
     : m_LastSelectedAction(SAT_NONE, 0.0f)
 {
-    FORCE_DONT_INLINE;
     m_lQueuedActions.m_pEnd = NULL;
     m_lQueuedActions.m_pStart = NULL;
     m_type = type;
@@ -321,7 +320,7 @@ ScriptAction* cDecisionEntity::FindDesireAction(int eDesireType, FuzzyVariant pa
 /**
  * Offset/Address/Size: 0x0 | 0x80017F5C | size: 0x304
  */
-bool cDecisionEntity::SelectAction(eScriptActionSelection actionSelection, float)
+bool cDecisionEntity::SelectAction(eScriptActionSelection actionSelection, float fDeltaT)
 {
     nlList<ScriptAction>* pQueuedActions = &m_lQueuedActions;
     if (pQueuedActions->m_pStart == NULL)

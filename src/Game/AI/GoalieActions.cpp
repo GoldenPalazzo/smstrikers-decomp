@@ -303,11 +303,11 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
             || (dYc = m_v3Position.y - pBall->m_v3Position.y,
                    dXc = m_v3Position.x - pBall->m_v3Position.x,
                    dXc * dXc + dYc * dYc)
-                < fCatchRadSq
+                   < fCatchRadSq
             || (dYg = m_v3Position.y - fGuessY,
                    dXg = m_v3Position.x - fGuessX,
                    dXg * dXg + dYg * dYg)
-                < fCatchRadSq)
+                   < fCatchRadSq)
         {
             PlayNewAnim(mpLooseBallInfo->mnAnimID);
             InitMovementFromAnim(0, v3Zero, 1.0f, false);
@@ -603,7 +603,7 @@ void Goalie::ActionLooseBallPursueRolling(float deltaTime)
 /**
  * Offset/Address/Size: 0x35A8 | 0x80051AE4 | size: 0x88
  */
-void Goalie::ActionLooseBallSetup(float)
+void Goalie::ActionLooseBallSetup(float fDeltaT)
 {
     if ((mnOffplayPending)
         || (!IsLooseBallClose(SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fLooseBallChaseDistance))
@@ -1382,7 +1382,7 @@ inline void Goalie::CheckForLimbEndZoneCollision()
 /**
  * Offset/Address/Size: 0x20BC | 0x800505F8 | size: 0x51C
  */
-void Goalie::ActionSave(float)
+void Goalie::ActionSave(float fDeltaT)
 {
     CheckForLimbEndZoneCollision();
 
@@ -1784,7 +1784,7 @@ void Goalie::ActionChipShotStumble(float deltaTime)
 /**
  * Offset/Address/Size: 0x1904 | 0x8004FE40 | size: 0x9C
  */
-void Goalie::ActionDiveRecover(float)
+void Goalie::ActionDiveRecover(float fDeltaT)
 {
     if (m_pBall == nullptr)
     {
@@ -2026,7 +2026,7 @@ void Goalie::ActionPreCrouch(float deltaTime)
 /**
  * Offset/Address/Size: 0xF9C | 0x8004F4D8 | size: 0x3C0
  */
-void Goalie::ActionPursueBallCarrier(float)
+void Goalie::ActionPursueBallCarrier(float fDeltaT)
 {
     if (!CheckForSTSAttack())
     {
@@ -2142,7 +2142,7 @@ static inline cPlayer* GetBallOwner(cBall* pBall, cBall** ppBall)
 /**
  * Offset/Address/Size: 0xCCC | 0x8004F208 | size: 0x2D0
  */
-void Goalie::ActionPursueBallPounce(float)
+void Goalie::ActionPursueBallPounce(float fDeltaT)
 {
     float animTime = m_pCurrentAnimController->m_fTime;
 
@@ -2235,7 +2235,7 @@ void Goalie::ActionPursueBallPounce(float)
 /**
  * Offset/Address/Size: 0xA7C | 0x8004EFB8 | size: 0x250
  */
-void Goalie::ActionOffplay(float)
+void Goalie::ActionOffplay(float fDeltaT)
 {
     if (ShouldStartCrossBlend(0x90))
     {
@@ -2555,7 +2555,7 @@ void Goalie::ActionSTSAttack(float deltaTime)
 /**
  * Offset/Address/Size: 0x168 | 0x8004E6A4 | size: 0x150
  */
-void Goalie::ActionSnapBall(float)
+void Goalie::ActionSnapBall(float fDeltaT)
 {
     unsigned short aRootRot;
     float fTimeLeft;
@@ -2611,7 +2611,7 @@ void Goalie::ActionSnapBall(float)
 /**
  * Offset/Address/Size: 0x0 | 0x8004E53C | size: 0x168
  */
-void Goalie::ActionGrabBall(float)
+void Goalie::ActionGrabBall(float fDeltaT)
 {
     bool bShouldInitMove = false;
     if (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f)

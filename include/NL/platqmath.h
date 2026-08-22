@@ -34,11 +34,11 @@ inline void nlQuatIdentity(nlQuaternion& q0)
     q0.w = 1.f;
 }
 
-void nlQuatScale(nlQuaternion& result, const nlQuaternion& input, float scaleFactor);
-f32 nlQuatDot(const nlQuaternion& quat1, const nlQuaternion& quat2);
-void nlMultQuat(nlQuaternion& result, const nlQuaternion& quat1, const nlQuaternion& quat2);
-void nlMatrixToQuat(nlQuaternion& result, const nlMatrix4& rotationMatrix);
-void nlQuatToMatrix(nlMatrix4& resultMatrix, const nlQuaternion& inputQuat);
-void nlQuatSlerp(nlQuaternion& result, const nlQuaternion& startQuat, const nlQuaternion& endQuat, float interpolationFactor);
+void nlQuatScale(nlQuaternion& out, const nlQuaternion& in, float scale);
+f32 nlQuatDot(const nlQuaternion& q1, const nlQuaternion& q2);
+void nlMultQuat(nlQuaternion& out, const nlQuaternion& q1, const nlQuaternion& q2);
+void nlMatrixToQuat(nlQuaternion& out, const nlMatrix4& in);
+void nlQuatToMatrix(nlMatrix4& out, const nlQuaternion& quat);
+void nlQuatSlerp(nlQuaternion& out, const nlQuaternion& q1, const nlQuaternion& q2, float t);
 
 #endif // _PLATQMATH_H_

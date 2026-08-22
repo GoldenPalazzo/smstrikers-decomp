@@ -52,16 +52,16 @@ class GLMeshWriterCore
 public:
     GLMeshWriterCore();
     /* 0x08*/ ~GLMeshWriterCore();
-    /* 0x0C*/ virtual bool Begin(int, eGLPrimitive, int, const eGLStream*, bool);
+    /* 0x0C*/ virtual bool Begin(int numVerts, eGLPrimitive prim, int numStreams, const eGLStream* pStreamIDs, bool bPermanent);
     /* 0x10*/ virtual bool End();
-    /* 0x14*/ virtual void Colour(const nlColour&);
+    /* 0x14*/ virtual void Colour(const nlColour& c);
     void Colour(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
-    /* 0x18*/ virtual void ColourPlat(unsigned long);
+    /* 0x18*/ virtual void ColourPlat(unsigned long rgba);
     /* 0x1C*/ virtual void Normal(const nlVector3&) = 0;
-    /* 0x20*/ virtual void Texcoord(const nlVector2&);
+    /* 0x20*/ virtual void Texcoord(const nlVector2& uv);
     void Texcoord(float u, float v);
-    /* 0x24*/ virtual void Vertex(const nlVector3&);
-    /* 0x28*/ virtual void Vertex(const nlVector4&);
+    /* 0x24*/ virtual void Vertex(const nlVector3& pos);
+    /* 0x28*/ virtual void Vertex(const nlVector4& pos);
     void Position(const nlVector3&);
     void Position(float, float, float);
     glModel* GetModel();

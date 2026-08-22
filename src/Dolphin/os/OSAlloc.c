@@ -80,6 +80,9 @@ static Cell* DLExtract(Cell* list, Cell* cell) {
     return list;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802543BC | size: 0xAC
+ */
 static Cell* DLInsert(Cell* list, Cell* cell) {
     Cell* prev;
     Cell* next;
@@ -147,6 +150,9 @@ static s32 DLSize(Cell* list) {
     return size;
 }
 
+/**
+ * Offset/Address/Size: 0xAC | 0x80254468 | size: 0xFC
+ */
 void* OSAllocFromHeap(int heap, u32 size) {
     HeapDesc* hd;
     Cell* cell;
@@ -321,6 +327,9 @@ void* OSAllocFixed(void* rstart, void* rend) {
     return (void*)*(u32*)rstart;
 }
 
+/**
+ * Offset/Address/Size: 0x1A8 | 0x80254564 | size: 0x7C
+ */
 void OSFreeToHeap(int heap, void* ptr) {
     HeapDesc* hd;
     Cell* cell;
@@ -343,6 +352,9 @@ void OSFreeToHeap(int heap, void* ptr) {
     hd->free = DLInsert(hd->free, cell);
 }
 
+/**
+ * Offset/Address/Size: 0x224 | 0x802545E0 | size: 0x10
+ */
 int OSSetCurrentHeap(int heap) {
     int prev;
 
@@ -354,6 +366,9 @@ int OSSetCurrentHeap(int heap) {
     return prev;
 }
 
+/**
+ * Offset/Address/Size: 0x234 | 0x802545F0 | size: 0x70
+ */
 void* OSInitAlloc(void* arenaStart, void* arenaEnd, int maxHeaps) {
     u32 arraySize;
     int i;
@@ -383,6 +398,9 @@ void* OSInitAlloc(void* arenaStart, void* arenaEnd, int maxHeaps) {
     return arenaStart;
 }
 
+/**
+ * Offset/Address/Size: 0x2A4 | 0x80254660 | size: 0x6C
+ */
 int OSCreateHeap(void* start, void* end) {
     int heap;
     HeapDesc* hd;

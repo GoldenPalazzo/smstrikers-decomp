@@ -82,50 +82,51 @@ enum ePadActions
 class cPlayer : public cCharacter
 {
 public:
-    cPlayer(int nPlayerID, eCharacterClass cc, const int* nModelID, cSHierarchy* pHierarchy, cAnimInventory* pAnimInventory, const CharacterPhysicsData* pPhysicsData, PlayerTweaks* pPlayerTweaks, AnimRetargetList* pAnimRetargetList, eClassTypes eNewClassType);
+    cPlayer(int nPlayerID, eCharacterClass characterClass, const int* nModelID, cSHierarchy* hierarchy, cAnimInventory* animInventory, const CharacterPhysicsData* physData, PlayerTweaks* playerTweaks, AnimRetargetList* animRetargetList, eClassTypes classType);
     virtual ~cPlayer();
 
-    int GetUniqueID(int) const;
-    float SuggestPassTargetPosition(nlVector3&, cPlayer*, bool, bool);
-    bool SuggestPassDirection(nlVector3&, cPlayer*, bool, bool);
-    void SetNoPickUpTime(float);
-    nlVector3 GetAIDefNetLocation(const nlVector3*);
-    nlVector3 GetAIOffNetLocation(const nlVector3*);
-    bool CanPickupBallFromPass(cBall*);
-    virtual bool CanPickupBall(cBall*);
+    int GetUniqueID(int nTeamID) const;
+    float SuggestPassTargetPosition(nlVector3& suggestedTarget, cPlayer* fromPlayer, bool volleyPass, bool bIsPerfectPass);
+    bool SuggestPassDirection(nlVector3& suggestedDirection, cPlayer* fromPlayer, bool volleyPass, bool bIsPerfectPass);
+    void SetNoPickUpTime(float NewNoPickUpTime);
+    nlVector3 GetAIDefNetLocation(const nlVector3* v3ReferencePos);
+    nlVector3 GetAIOffNetLocation(const nlVector3* v3ReferencePos);
+    bool CanPickupBallFromPass(cBall* pBall);
+    virtual bool CanPickupBall(cBall* pBall);
     virtual void PostPhysicsUpdate();
-    virtual void PreUpdate(float);
-    virtual void PrePhysicsUpdate(float);
-    static void PlayerHeadTrackCallback(unsigned int, unsigned int, cPoseAccumulator*, unsigned int, int);
-    cPN_SingleAxisBlender* CreateSingleAxisBlender(const int*, int, int, void (*)(unsigned int, cPN_SingleAxisBlender*), float, cPN_SAnimController*);
-    virtual void CollideWithBallCallback(cBall*);
-    virtual void CollideWithCharacterCallback(CollisionPlayerPlayerData*);
-    virtual void CollideWithWallCallback(const CollisionPlayerWallData*);
-    void SetPowerupAnimState(int);
+    virtual void PreUpdate(float dt);
+    virtual void PrePhysicsUpdate(float dt);
+    static void PlayerHeadTrackCallback(unsigned int nSelf, unsigned int nParam2, cPoseAccumulator* pPoseAccumulator,
+        unsigned int nJointIndex, int nParentIndex);
+    cPN_SingleAxisBlender* CreateSingleAxisBlender(const int* pSABAnims, int nNumSABAnims, int nPrimaryAnim, void (*fWeightCB)(unsigned int, cPN_SingleAxisBlender*), float fWeightSeek, cPN_SAnimController* pSynchingController);
+    virtual void CollideWithBallCallback(cBall* pBall);
+    virtual void CollideWithCharacterCallback(CollisionPlayerPlayerData* pData);
+    virtual void CollideWithWallCallback(const CollisionPlayerWallData* pData);
+    void SetPowerupAnimState(int animID);
     void ClearSwapControllerTimer();
-    void ClearPowerupAnimState(bool);
-    void DoRegularPassing(cPlayer*, bool, bool, bool, bool);
+    void ClearPowerupAnimState(bool bIsEndGame);
+    void DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllowLeadPass, bool bParam3, bool bParam4);
     void ResetUnPossessionTimer();
     void ReleaseBall();
     cGlobalPad* GetGlobalPad();
     cPlayer* DoFindBestPassTarget(bool bAllowLeadPass, bool bIsPerfectPass);
     bool IsCaptain() const;
-    bool IsOnSameTeam(cPlayer*);
+    bool IsOnSameTeam(cPlayer* other);
     cTeam* GetTeam() const { return m_pTeam; }
     int GetBallJointIndex() const { return m_nBallJointIndex; }
     void SetAIPad(cAIPad* pPad);
-    void PlayAttackReactionSounds(float);
-    void PickupBall(cBall*);
-    cFielder* GetClosestOpponentFielder(nlVector3*);
-    float DoFlashLight(const nlVector3&, unsigned short, float, float, float);
-    static float DoFlashLight(const nlVector3&, const nlVector3&, unsigned short, float, float, float);
-    virtual void SetAnimID(int);
-    void GetAnimatedBallOrientation(nlQuaternion&);
-    virtual void Update(float);
+    void PlayAttackReactionSounds(float fScale);
+    void PickupBall(cBall* pBall);
+    cFielder* GetClosestOpponentFielder(nlVector3* pPosition);
+    float DoFlashLight(const nlVector3& Position, unsigned short aDirection, float fAngleWeighting, float fIgnoreObjectCloserThanThis, float fIgnoreObjectFartherThanThis);
+    static float DoFlashLight(const nlVector3& Position1, const nlVector3& Position2, unsigned short aDirection, float fAngleWeighting, float fIgnoreObjectCloserThanThis, float fIgnoreObjectFartherThanThis);
+    virtual void SetAnimID(int animID);
+    void GetAnimatedBallOrientation(nlQuaternion& qRetval);
+    virtual void Update(float fDeltaT);
     u8 SwapController();
     void SetDesiredFacingDirection();
-    void ResetDesiredDirections(unsigned short);
-    void SetSpaceSearch(SpaceSearch*);
+    void ResetDesiredDirections(unsigned short direction);
+    void SetSpaceSearch(SpaceSearch* pSpaceSearch);
     virtual void InitActionPostWhistle() { };
 
     /* 0x12C */ s32 m_ID;                                // offset 0x12C, size 0x4

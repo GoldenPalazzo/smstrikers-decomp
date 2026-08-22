@@ -60,7 +60,7 @@ static void OnGamePause();
 /**
  * Offset/Address/Size: 0x0 | 0x801423B4 | size: 0x1A18
  */
-void Audio::AudioEventHandler(Event* pEvent, void*)
+void Audio::AudioEventHandler(Event* pEvent, void* data)
 {
     Bowser* pBowser;
     bool bOnlySlot0;

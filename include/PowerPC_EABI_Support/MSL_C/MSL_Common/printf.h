@@ -9,7 +9,7 @@ extern "C"
 {
 #endif
 
-    int fprintf(FILE* stream, const char* format, ...);
+    int fprintf(FILE* file, const char* format, ...);
     int printf(const char* format, ...);
     int sprintf(char* s, const char* format, ...);
     int snprintf(char* s, size_t n, const char* format, ...);

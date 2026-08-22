@@ -32,12 +32,19 @@ public:
     static void TweenSetPosCallback(void*, const float*);
     void SaveChanges();
 
-    /* 0x00 */ int mPlayingSides[4];           // size 0x10
-    /* 0x10 */ bool mPlayerReady[4];           // size 0x4
+    /* 0x00 */ int mPlayingSides[4]; // size 0x10
+    /* 0x10 */ bool mPlayerReady[4]; // size 0x4
+#if defined(VERSION_G4QJ01)
+    /* 0x14 */ TLInstance* mInstanceTable[21]; // size 0x54
+    /* 0x68 */ float mControllerDestPos[3];    // size 0xC
+    /* 0x74 */ FETweenManager mTweenManager;   // size 0x38
+    /* 0xAC */ Context mContext;               // size 0x4
+#else
     /* 0x14 */ TLInstance* mInstanceTable[17]; // size 0x44
     /* 0x58 */ float mControllerDestPos[3];    // size 0xC
     /* 0x64 */ FETweenManager mTweenManager;   // size 0x38
     /* 0x9C */ Context mContext;               // size 0x4
-}; // total size: 0xA0
+#endif
+}; // total size: 0xA0 (G4QE01), 0xB0 (G4QJ01)
 
 #endif // _FECHOOSESIDECOMPONENT_H_

@@ -22,22 +22,22 @@ enum eCameraMessage
 
 class DrawableObject;
 
-void FireCameraRumbleFilter(float, float);
+void FireCameraRumbleFilter(float fRumbleX, float fRumbleY);
 
 class cCameraManager
 {
 public:
     static void Startup();
     static void Shutdown();
-    static void Update(float);
+    static void Update(float fDeltaT);
     static void UpdateGameCameraType();
     static bool HasCamera(cBaseCamera* pCamera);
     static void PushCamera(cBaseCamera* pCamera);
     static void Remove(const cBaseCamera& camera);
     static void Remove(eCameraType type, bool bDeleteAfterRemoving);
-    static void PushCameraWithTransition(cBaseCamera*, float, eCameraTransition, void (*)(eCameraMessage));
-    static cBaseCamera* PopCameraWithTransition(float, eCameraTransition, void (*)(eCameraMessage));
-    static unsigned char IsObjectOccludingField(const DrawableObject*);
+    static void PushCameraWithTransition(cBaseCamera* pCamera, float fDuration, eCameraTransition transition, void (*pCallback)(eCameraMessage));
+    static cBaseCamera* PopCameraWithTransition(float fDuration, eCameraTransition transition, void (*pCallback)(eCameraMessage));
+    static unsigned char IsObjectOccludingField(const DrawableObject* drawable);
     static unsigned char IsPointOccludingField(const nlVector3& pos);
     static float GetDistanceFromCameraToObject(const nlVector3& objectPosition);
     static void GetViewVector(nlVector3& viewVector);

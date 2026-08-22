@@ -84,9 +84,6 @@ void PhysicsBall::CalcSurfaceVelocity(nlVector3& v3VelocityOut)
     nlVec3Set(v3VelocityOut, x, y, z);
 }
 
-// const uint vec_zero[3] __attribute__((section(".rodata"))) = {0, 0, 0};
-// const nlVector3 vec_zero __attribute__((section(".rodata"))) = nlVector3(0.f, 0.f, 0.f);
-
 /**
  * Offset/Address/Size: 0x17C | 0x80134E90 | size: 0x51C
  */
@@ -360,7 +357,6 @@ void PhysicsBall::PreUpdate()
 void PhysicsBall::PreCollide()
 {
     m_bIsSupportedByGround = false;
-    // return (int)m_bIsSupportedByGround;
 }
 
 /**

@@ -834,7 +834,7 @@ static inline void UpdateVertexAnims(GLInventory* self, float dt)
 }
 
 /**
- * Offset/Address/Size: 0x3DC | 0x801E2298 | size: 0x334
+ * Offset/Address/Size: 0x0 | 0x801E2298 | size: 0x334
  */
 void GLInventory::Update(float deltaTime)
 {

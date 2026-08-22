@@ -9,12 +9,12 @@ class PlatTexture;
 extern PlatTexture* ResolvedWhiteTexture;
 extern PlatTexture* ResolvedBlackTexture;
 
-void glplatAttachPacket(eGLView, unsigned long, const glModelPacket*);
-glModelPacket* glplatModifyPacket(eGLView, const glModelPacket*);
+void glplatAttachPacket(eGLView view, unsigned long layer, const glModelPacket* pPacket);
+glModelPacket* glplatModifyPacket(eGLView view, const glModelPacket* pPacket);
 void glAppStartup();
 void* glAppGetOnePassFresnelUserData();
 void* glAppGetNoFogUserData();
 void* glAppGetCoPlanarUserData();
-char* gld_ViewName(int);
+char* gld_ViewName(int view);
 
 #endif // _GLAPPATTACH_H_

@@ -8,7 +8,7 @@ class cShootToScoreCamera : public cBaseCamera
 public:
     cShootToScoreCamera();
     virtual ~cShootToScoreCamera();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
 
     virtual const nlVector3& GetCameraPosition() const
     {
@@ -43,19 +43,12 @@ public:
 // class FaceCam : public cBaseCamera
 // {
 // public:
-//     FaceCam(float);
-//     virtual ~FaceCam() { };
 //     virtual eCameraType GetType()
 //     {
-//         return eCameraType_FaceCloseup;
 //     };
-//     virtual void Update(float);
 //     virtual const nlMatrix4& GetViewMatrix() const
 //     {
-//         return mViewMatrix;
 //     };
-//     virtual const nlVector3& GetCameraPosition() const;
-//     virtual const nlVector3& GetTargetPosition() const;
 
 //     /* 0x1C */ cCharacter* mpCharacter;
 //     /* 0x20 */ float mDistance;

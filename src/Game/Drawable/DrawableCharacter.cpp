@@ -745,7 +745,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
         u8 isMapped = 0;
         if (character.m_uNormalTextureID != character.m_uSwapTextureID)
         {
-            gl_ModifyAddMapping(eGLModifier_1, character.m_uNormalTextureID, character.m_uSwapTextureID);
+            gl_ModifyAddMapping(GLMod_DiffuseTex, character.m_uNormalTextureID, character.m_uSwapTextureID);
             isMapped = 1;
         }
 

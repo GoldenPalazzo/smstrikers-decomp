@@ -27,18 +27,18 @@ bool WorldManager::LoadWorld(const char* szBaseName, bool forfe)
 /**
  * Offset/Address/Size: 0xAC | 0x8019AD0C | size: 0x90
  */
-void WorldManager::UpdateWorld(float dt)
+void WorldManager::UpdateWorld(float timeDelta)
 {
-    u32 temp_r3;
+    u32 taskState;
     World::m_uCurrentFrameCount += 1;
-    if (0.f != dt)
+    if (0.f != timeDelta)
     {
-        temp_r3 = nlTaskManager::m_pInstance->m_CurrState;
-        if ((temp_r3 != 0x10U) && ((u32)(temp_r3 + 0xFFFE0000) != 0U))
+        taskState = nlTaskManager::m_pInstance->m_CurrState;
+        if ((taskState != 0x10U) && ((u32)(taskState + 0xFFFE0000) != 0U))
         {
-            s_World->Update(dt);
+            s_World->Update(timeDelta);
         }
-        s_World->UpdateInReplay(dt);
+        s_World->UpdateInReplay(timeDelta);
     }
 }
 

@@ -107,6 +107,9 @@ void cCameraManager::Shutdown()
     delete pRumbleFilter;
 }
 
+/**
+ * Offset/Address/Size: 0x10CC | 0x801A7754 | size: 0x664
+ */
 void cCameraManager::Update(float fDeltaT)
 {
     nlVector3 v3TransTo;

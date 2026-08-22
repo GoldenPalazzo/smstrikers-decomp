@@ -47,15 +47,13 @@ SpoilsScene::~SpoilsScene()
  */
 void SpoilsScene::Update(float dt)
 {
-    extern s32 mLastSelectedIndex__11SpoilsScene;
-
     BaseSceneHandler::Update(dt);
     mButtons.CentreButtons();
 
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
     {
         mMenuItems.RunCallbackOnCurrent(ON_APPLY);
-        mLastSelectedIndex__11SpoilsScene = mMenuItems.GetActiveItemIndex();
+        mLastSelectedIndex = mMenuItems.GetActiveItemIndex();
         FEAudio::PlayAnimAudioEvent("sfx_accept", false);
         return;
     }
@@ -63,7 +61,7 @@ void SpoilsScene::Update(float dt)
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
     {
         nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_MAIN_MENU, SCREEN_BACK, true);
-        mLastSelectedIndex__11SpoilsScene = 0;
+        mLastSelectedIndex = 0;
         return;
     }
 

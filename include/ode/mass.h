@@ -26,81 +26,99 @@
 #include <ode/common.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-struct dMass;
-typedef struct dMass dMass;
+    struct dMass;
+    typedef struct dMass dMass;
 
+    void dMassSetZero(dMass* m);
 
-void dMassSetZero (dMass *);
+    void dMassSetParameters(dMass* m, dReal themass,
+        dReal cgx, dReal cgy, dReal cgz,
+        dReal I11, dReal I22, dReal I33,
+        dReal I12, dReal I13, dReal I23);
 
-void dMassSetParameters (dMass *, dReal themass,
-			 dReal cgx, dReal cgy, dReal cgz,
-			 dReal I11, dReal I22, dReal I33,
-			 dReal I12, dReal I13, dReal I23);
+    void dMassSetSphere(dMass*m, dReal density, dReal radius);
+    void dMassSetSphereTotal(dMass* m, dReal total_mass, dReal radius);
 
-void dMassSetSphere (dMass *, dReal density, dReal radius);
-void dMassSetSphereTotal (dMass *, dReal total_mass, dReal radius);
+    void dMassSetCappedCylinder(dMass*m, dReal density, int direction,
+        dReal radius, dReal length);
+    void dMassSetCappedCylinderTotal(dMass* m, dReal total_mass, int direction,
+        dReal a, dReal b);
 
-void dMassSetCappedCylinder (dMass *, dReal density, int direction,
-			     dReal radius, dReal length);
-void dMassSetCappedCylinderTotal (dMass *, dReal total_mass, int direction,
-				  dReal radius, dReal length);
+    void dMassSetCylinder(dMass*m, dReal density, int direction,
+        dReal radius, dReal length);
+    void dMassSetCylinderTotal(dMass*m, dReal total_mass, int direction,
+        dReal radius, dReal length);
 
-void dMassSetCylinder (dMass *, dReal density, int direction,
-		       dReal radius, dReal length);
-void dMassSetCylinderTotal (dMass *, dReal total_mass, int direction,
-			    dReal radius, dReal length);
+    void dMassSetBox(dMass* m, dReal density,
+        dReal lx, dReal ly, dReal lz);
+    void dMassSetBoxTotal(dMass* m, dReal total_mass,
+        dReal lx, dReal ly, dReal lz);
 
-void dMassSetBox (dMass *, dReal density,
-		  dReal lx, dReal ly, dReal lz);
-void dMassSetBoxTotal (dMass *, dReal total_mass,
-		       dReal lx, dReal ly, dReal lz);
+    void dMassAdjust(dMass* m, dReal newmass);
 
-void dMassAdjust (dMass *, dReal newmass);
+    void dMassTranslate(dMass*m, dReal x, dReal y, dReal z);
 
-void dMassTranslate (dMass *, dReal x, dReal y, dReal z);
+    void dMassRotate(dMass*m, const dMatrix3 R);
 
-void dMassRotate (dMass *, const dMatrix3 R);
+    void dMassAdd(dMass* a, const dMass* b);
 
-void dMassAdd (dMass *a, const dMass *b);
-
-
-
-struct dMass {
-  dReal mass;
-  dVector4 c;
-  dMatrix3 I;
+    struct dMass
+    {
+        dReal mass;
+        dVector4 c;
+        dMatrix3 I;
 
 #ifdef __cplusplus
 #ifndef dODE_SMStricker_Patch
-  dMass()
-    { dMassSetZero (this); }
+        dMass()
+        {
+            dMassSetZero(this);
+        }
 #endif
-  void setZero()
-    { dMassSetZero (this); }
-  void setParameters (dReal themass, dReal cgx, dReal cgy, dReal cgz,
-		      dReal I11, dReal I22, dReal I33,
-		      dReal I12, dReal I13, dReal I23)
-    { dMassSetParameters (this,themass,cgx,cgy,cgz,I11,I22,I33,I12,I13,I23); }
-  void setSphere (dReal density, dReal radius)
-    { dMassSetSphere (this,density,radius); }
-  void setCappedCylinder (dReal density, int direction, dReal a, dReal b)
-    { dMassSetCappedCylinder (this,density,direction,a,b); }
-  void setBox (dReal density, dReal lx, dReal ly, dReal lz)
-    { dMassSetBox (this,density,lx,ly,lz); }
-  void adjust (dReal newmass)
-    { dMassAdjust (this,newmass); }
-  void translate (dReal x, dReal y, dReal z)
-    { dMassTranslate (this,x,y,z); }
-  void rotate (const dMatrix3 R)
-    { dMassRotate (this,R); }
-  void add (const dMass *b)
-    { dMassAdd (this,b); }
+        void setZero()
+        {
+            dMassSetZero(this);
+        }
+        void setParameters(dReal themass, dReal cgx, dReal cgy, dReal cgz,
+            dReal I11, dReal I22, dReal I33,
+            dReal I12, dReal I13, dReal I23)
+        {
+            dMassSetParameters(this, themass, cgx, cgy, cgz, I11, I22, I33, I12, I13, I23);
+        }
+        void setSphere(dReal density, dReal radius)
+        {
+            dMassSetSphere(this, density, radius);
+        }
+        void setCappedCylinder(dReal density, int direction, dReal a, dReal b)
+        {
+            dMassSetCappedCylinder(this, density, direction, a, b);
+        }
+        void setBox(dReal density, dReal lx, dReal ly, dReal lz)
+        {
+            dMassSetBox(this, density, lx, ly, lz);
+        }
+        void adjust(dReal newmass)
+        {
+            dMassAdjust(this, newmass);
+        }
+        void translate(dReal x, dReal y, dReal z)
+        {
+            dMassTranslate(this, x, y, z);
+        }
+        void rotate(const dMatrix3 R)
+        {
+            dMassRotate(this, R);
+        }
+        void add(const dMass* b)
+        {
+            dMassAdd(this, b);
+        }
 #endif
-};
-
+    };
 
 #ifdef __cplusplus
 }

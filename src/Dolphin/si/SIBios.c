@@ -41,11 +41,17 @@ static void AlarmHandler(OSAlarm* alarm, OSContext* context);
 static void GetTypeCallback(s32 chan, u32 error, OSContext* context);
 static int SIGetResponseRaw(s32 chan);
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8025BCE0 | size: 0x20
+ */
 BOOL SIBusy(void)
 {
     return (Si.chan != -1) ? TRUE : FALSE;
 }
 
+/**
+ * Offset/Address/Size: 0x20 | 0x8025BD00 | size: 0x3C
+ */
 BOOL SIIsChanBusy(s32 chan)
 {
     return Packet[chan].chan != -1 || Si.chan == chan;
@@ -61,6 +67,9 @@ static void SIClearTCInterrupt(void)
     __SIRegs[SI_COMCSR_IDX] = reg;
 }
 
+/**
+ * Offset/Address/Size: 0x5C | 0x8025BD3C | size: 0x2FC
+ */
 static u32 CompleteTransfer(void)
 {
     u32 sr;
@@ -146,6 +155,9 @@ static void SITransferNext(s32 chan)
 
 #define CHAN_NONE -1
 
+/**
+ * Offset/Address/Size: 0x358 | 0x8025C038 | size: 0x344
+ */
 static void SIInterruptHandler(__OSInterrupt interrupt, OSContext* context)
 {
     u32 reg;
@@ -223,6 +235,9 @@ static void SIInterruptHandler(__OSInterrupt interrupt, OSContext* context)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x69C | 0x8025C37C | size: 0x98
+ */
 static BOOL SIEnablePollingInterrupt(BOOL enable)
 {
     BOOL enabled;
@@ -255,6 +270,9 @@ static BOOL SIEnablePollingInterrupt(BOOL enable)
     return rc;
 }
 
+/**
+ * Offset/Address/Size: 0x734 | 0x8025C414 | size: 0xCC
+ */
 BOOL SIRegisterPollingHandler(__OSInterruptHandler handler)
 {
     BOOL enabled;
@@ -285,6 +303,9 @@ BOOL SIRegisterPollingHandler(__OSInterruptHandler handler)
     return FALSE;
 }
 
+/**
+ * Offset/Address/Size: 0x800 | 0x8025C4E0 | size: 0xF4
+ */
 BOOL SIUnregisterPollingHandler(__OSInterruptHandler handler)
 {
     BOOL enabled;
@@ -319,6 +340,9 @@ BOOL SIUnregisterPollingHandler(__OSInterruptHandler handler)
     return FALSE;
 }
 
+/**
+ * Offset/Address/Size: 0x8F4 | 0x8025C5D4 | size: 0xB4
+ */
 void SIInit(void)
 {
     OSRegisterVersion(__SIVersion);
@@ -341,6 +365,9 @@ void SIInit(void)
     SIGetType(3);
 }
 
+/**
+ * Offset/Address/Size: 0x9A8 | 0x8025C688 | size: 0x20C
+ */
 static int __SITransfer(s32 chan, void* output, u32 outputBytes, void* input, u32 inputBytes, SICallback callback)
 {
     BOOL enabled;
@@ -423,6 +450,9 @@ u32 SISync(void)
     return sr;
 }
 
+/**
+ * Offset/Address/Size: 0xBB4 | 0x8025C894 | size: 0x7C
+ */
 u32 SIGetStatus(s32 chan)
 {
     BOOL enabled;
@@ -446,6 +476,9 @@ u32 SIGetStatus(s32 chan)
     return sr;
 }
 
+/**
+ * Offset/Address/Size: 0xC30 | 0x8025C910 | size: 0x14
+ */
 void SISetCommand(s32 chan, u32 command)
 {
     ASSERTMSGLINE(752, (chan >= 0) && (chan < 4), "SISetCommand(): invalid channel.");
@@ -458,11 +491,17 @@ u32 SIGetCommand(s32 chan)
     return __SIRegs[chan * 3];
 }
 
+/**
+ * Offset/Address/Size: 0xC44 | 0x8025C924 | size: 0x10
+ */
 void SITransferCommands(void)
 {
     __SIRegs[SI_STATUS_IDX] = SI_COMCSR_TCINT_MASK;
 }
 
+/**
+ * Offset/Address/Size: 0xC54 | 0x8025C934 | size: 0x6C
+ */
 u32 SISetXY(u32 x, u32 y)
 {
     u32 poll;
@@ -483,6 +522,9 @@ u32 SISetXY(u32 x, u32 y)
     return poll;
 }
 
+/**
+ * Offset/Address/Size: 0xCC0 | 0x8025C9A0 | size: 0x9C
+ */
 u32 SIEnablePolling(u32 poll)
 {
     BOOL enabled;
@@ -510,6 +552,9 @@ u32 SIEnablePolling(u32 poll)
     return poll;
 }
 
+/**
+ * Offset/Address/Size: 0xD5C | 0x8025CA3C | size: 0x6C
+ */
 u32 SIDisablePolling(u32 poll)
 {
     BOOL enabled;
@@ -531,6 +576,9 @@ u32 SIDisablePolling(u32 poll)
     return poll;
 }
 
+/**
+ * Offset/Address/Size: 0xDC8 | 0x8025CAA8 | size: 0xD4
+ */
 static BOOL SIGetResponseRaw(s32 chan)
 {
     u32 sr;
@@ -547,6 +595,9 @@ static BOOL SIGetResponseRaw(s32 chan)
     return FALSE;
 }
 
+/**
+ * Offset/Address/Size: 0xE9C | 0x8025CB7C | size: 0xC4
+ */
 BOOL SIGetResponse(s32 chan, void* data)
 {
     BOOL rc;
@@ -568,6 +619,9 @@ BOOL SIGetResponse(s32 chan, void* data)
     return rc;
 }
 
+/**
+ * Offset/Address/Size: 0xF60 | 0x8025CC40 | size: 0x8C
+ */
 static void AlarmHandler(OSAlarm* alarm, OSContext* context)
 {
     s32 chan;
@@ -588,6 +642,9 @@ static void AlarmHandler(OSAlarm* alarm, OSContext* context)
     }
 }
 
+/**
+ * Offset/Address/Size: 0xFEC | 0x8025CCCC | size: 0x16C
+ */
 BOOL SITransfer(s32 chan, void* output, u32 outputBytes, void* input, u32 inputBytes,
     SICallback callback, OSTime delay)
 {
@@ -654,6 +711,9 @@ static void CallTypeAndStatusCallback(s32 chan, u32 type)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x1158 | 0x8025CE38 | size: 0x298
+ */
 static void GetTypeCallback(s32 chan, u32 error, OSContext* context)
 {
     u32 type;
@@ -730,6 +790,9 @@ static void GetTypeCallback(s32 chan, u32 error, OSContext* context)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x13F0 | 0x8025D0D0 | size: 0x1C4
+ */
 u32 SIGetType(s32 chan)
 {
     static u32 cmdTypeAndStatus;
@@ -776,6 +839,9 @@ u32 SIGetType(s32 chan)
     return type;
 }
 
+/**
+ * Offset/Address/Size: 0x15B4 | 0x8025D294 | size: 0x13C
+ */
 u32 SIGetTypeAsync(s32 chan, SITypeCallback callback)
 {
     BOOL enabled;

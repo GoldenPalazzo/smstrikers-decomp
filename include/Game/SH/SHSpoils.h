@@ -20,9 +20,9 @@ public:
 
     SpoilsScene();
     virtual ~SpoilsScene();
-    virtual void Update(float);
+    virtual void Update(float dt);
     virtual void SceneCreated();
-    void ShowSpoils(SpoilsScene::eSpoils);
+    void ShowSpoils(SpoilsScene::eSpoils spoils);
 
     /* 0x01C */ MenuList<TLComponentInstance> mMenuItems; // size 0x214
     /* 0x230 */ ButtonComponent mButtons;                 // size 0x24

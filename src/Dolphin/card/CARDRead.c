@@ -5,6 +5,9 @@
 // prototypes
 static void ReadCallback(s32 chan, s32 result);
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80243380 | size: 0x1B8
+ */
 s32 __CARDSeek(CARDFileInfo* fileInfo, s32 length, s32 offset, CARDControl** pcard)
 {
     CARDControl* card;
@@ -59,6 +62,9 @@ s32 __CARDSeek(CARDFileInfo* fileInfo, s32 length, s32 offset, CARDControl** pca
     return CARD_RESULT_READY;
 }
 
+/**
+ * Offset/Address/Size: 0x1B8 | 0x80243538 | size: 0x130
+ */
 static void ReadCallback(s32 chan, s32 result)
 {
     CARDControl* card;
@@ -109,6 +115,9 @@ error:
     callback(chan, result);
 }
 
+/**
+ * Offset/Address/Size: 0x2E8 | 0x80243668 | size: 0x144
+ */
 s32 CARDReadAsync(CARDFileInfo* fileInfo, void* buf, s32 length, s32 offset, CARDCallback callback)
 {
     CARDControl* card;

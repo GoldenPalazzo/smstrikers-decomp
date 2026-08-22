@@ -3,7 +3,7 @@
 
 #include "printf.h"
 
-int nlVSNPrintf(char*, unsigned long, const char*, __va_list arg);
-int nlSNPrintf(char*, unsigned long, const char*, ...);
+int nlVSNPrintf(char* buffer, unsigned long size, const char* format, __va_list args);
+int nlSNPrintf(char* buffer, unsigned long size, const char* format, ...);
 
 #endif // _NLPRINT_H_

@@ -66,14 +66,6 @@ static SoundProperties BIRDOSoundProperties[]
 BIRDOSoundPropAccessor gBIRDOSoundPropAccessor;
 SoundPropAccessor* gpBIRDOSoundPropAccessor = &gBIRDOSoundPropAccessor;
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801ADA98 | size: 0x8
-//  */
-// void SoundPropAccessor::SetSoundPropTable(SoundProperties* pTable)
-// {
-//     m_pTable = pTable;
-// }
-
 /**
  * Offset/Address/Size: 0xF0 | 0x801ADA88 | size: 0x10
  */

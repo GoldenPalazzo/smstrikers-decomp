@@ -4,8 +4,6 @@
 #include "NL/nlTokenizer.h"
 #include "PowerPC_EABI_Support/MSL_C/MSL_Common/ctype.h"
 
-// static Config* sGlobal = nullptr;
-
 /**
  * Offset/Address/Size: 0x0 | 0x801D2C64 | size: 0x13EC
  */
@@ -105,7 +103,7 @@ static inline void InitFileStringData(BString::Data* data, char* buffer, char* e
 
 static inline BString::Data* NewFileStringData(char* begin, char* end)
 {
-    BString::Data* data = (BString::Data*)nlMalloc(0x10, 8, true);
+    BString::Data* data = (BString::Data*)nlMalloc(sizeof(BString::Data), 8, true);
     InitFileStringData(data, begin, end);
     return data;
 }
@@ -571,7 +569,7 @@ void SetTagValuePair::Section(const BasicString<char, Detail::TempStringAllocato
 }
 
 /**
- * Offset/Address/Size: 0x1C | 0x801D5830 | size: 0x20
+ * Offset/Address/Size: 0x2BCC | 0x801D5830 | size: 0x20
  */
 #pragma dont_inline on
 template <typename T>
@@ -598,59 +596,3 @@ void SetTagValuePair::TagValuePair(const BasicString<char, Detail::TempStringAll
 
     mConfig.Set<BasicString<char, Detail::TempStringAllocator> >(tagWithSection.c_str(), rhs);
 }
-
-/**
- * Offset/Address/Size: 0x0 | 0x801D5814 | size: 0x4
- */
-// Config::Parser::TagValuePair(const BasicString<char, Detail::TempStringAllocator>&, const BasicString<char,
-// Detail::TempStringAllocator>&)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x4 | 0x801D5818 | size: 0x4
- */
-// void Config::Parser::Section(const BasicString<char, Detail::TempStringAllocator>&)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x8 | 0x801D581C | size: 0x4
- */
-// void Config::Parser::Comment(const BasicString<char, Detail::TempStringAllocator>&)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0xC | 0x801D5820 | size: 0x4
- */
-// void Config::Parser::EmptyLine()
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x0 | 0x801D5850 | size: 0xBC
- */
-// Trim is defined in nlBasicString.h (weak/template out-of-line body).
-
-/**
- * Offset/Address/Size: 0xBC | 0x801D590C | size: 0xBC4
- */
-// BasicString<char, Detail::TempStringAllocator>::TrimInPlace(const char*)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0xC80 | 0x801D64D0 | size: 0xBC
- */
-// BasicString<char, Detail::TempStringAllocator>::Append<Detail::TempStringAllocator>(const BasicString<char,
-// Detail::TempStringAllocator>&) const
-// {
-// }
-
-/**
- * Offset/Address/Size: 0xD3C | 0x801D658C | size: 0x1E4
- */
-// BasicString<char, Detail::TempStringAllocator>::AppendInPlace<Detail::TempStringAllocator>(const BasicString<char,
-// Detail::TempStringAllocator>&)
-// defined inline in nlBasicString.h

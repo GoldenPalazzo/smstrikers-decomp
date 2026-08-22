@@ -136,20 +136,20 @@ u32 GLTextureAnim::GetTextureHandle(float time)
 /**
  * Offset/Address/Size: 0x0 | 0x801E7988 | size: 0x120
  */
-void GLTextureAnim::Update(float deltaTime)
+void GLTextureAnim::Update(float dt)
 {
-    s32 temp_r0_2;
-    s32 temp_r0_3;
-    s32 temp_r4;
-    s32 temp_r4_2;
-    s32 temp_r4_3;
+    s32 backwardFrame;
+    s32 advancedFrame;
+    s32 nextFrame;
+    s32 forwardFrame;
+    s32 frameCount;
 
     if (m_isStopped || m_frameCount < 2)
     {
         return;
     }
 
-    m_currentTime += deltaTime;
+    m_currentTime += dt;
     GLAnimTex* frame = m_frames + m_currentFrame;
 
     if (m_currentTime >= frame->time)
@@ -158,9 +158,9 @@ void GLTextureAnim::Update(float deltaTime)
         switch (m_mode)
         {
         case 0:
-            temp_r4 = m_currentFrame + 1;
-            m_currentFrame = temp_r4;
-            if (temp_r4 >= m_frameCount)
+            nextFrame = m_currentFrame + 1;
+            m_currentFrame = nextFrame;
+            if (nextFrame >= m_frameCount)
             {
                 m_currentFrame = 0;
                 return;
@@ -169,9 +169,9 @@ void GLTextureAnim::Update(float deltaTime)
         case 1:
             if (m_direction > 0)
             {
-                temp_r4_2 = m_currentFrame + 1;
-                m_currentFrame = temp_r4_2;
-                if (temp_r4_2 >= m_frameCount)
+                forwardFrame = m_currentFrame + 1;
+                m_currentFrame = forwardFrame;
+                if (forwardFrame >= m_frameCount)
                 {
                     m_currentFrame -= 2;
                     m_direction = -1;
@@ -180,9 +180,9 @@ void GLTextureAnim::Update(float deltaTime)
             }
             else
             {
-                temp_r0_2 = m_currentFrame - 1;
-                m_currentFrame = temp_r0_2;
-                if (temp_r0_2 < 0)
+                backwardFrame = m_currentFrame - 1;
+                m_currentFrame = backwardFrame;
+                if (backwardFrame < 0)
                 {
                     m_currentFrame = 1;
                     m_direction = 1;
@@ -191,12 +191,12 @@ void GLTextureAnim::Update(float deltaTime)
             }
             break;
         case 2:
-            temp_r0_3 = m_currentFrame + 1;
-            m_currentFrame = temp_r0_3;
-            temp_r4_3 = m_frameCount;
-            if (temp_r0_3 >= temp_r4_3)
+            advancedFrame = m_currentFrame + 1;
+            m_currentFrame = advancedFrame;
+            frameCount = m_frameCount;
+            if (advancedFrame >= frameCount)
             {
-                m_currentFrame = temp_r4_3 - 1;
+                m_currentFrame = frameCount - 1;
                 return;
             }
             break;

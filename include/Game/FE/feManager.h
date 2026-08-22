@@ -32,16 +32,16 @@ public:
     };
 
     static void ReturnToFE();
-    static void UpdateForGame(float);
-    static void Update(float);
+    static void UpdateForGame(float fDeltaT);
+    static void Update(float fTimeDelta);
     static void ExitMenuState();
-    static void EnterMenuState(FrontEnd::MenuEnterType);
+    static void EnterMenuState(FrontEnd::MenuEnterType menuType);
     static void ExitWinnerScreen();
-    static void EnterStartScreen(bool);
+    static void EnterStartScreen(bool bStraightToKickoff);
     static void SetControllerState();
     static void Destroy();
     static bool Initialize();
-    static void FEEventHandler(Event*, void*);
+    static void FEEventHandler(Event* pEvent, void* pParam);
 
     static eFEState m_feStateCurrent;  // size: 0x4, address: 0x80395408
     static eFEState m_feStatePending;  // size: 0x4, address: 0x8039540C

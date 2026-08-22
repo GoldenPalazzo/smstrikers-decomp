@@ -2,26 +2,26 @@
 #define _SHCHOOSECUP_H_
 
 #include "Game/BaseSceneHandler.h"
-#include "Game/FE/TLComponentInstance.h"
+#include "Game/FE/tlComponentInstance.h"
 #include "Game/FE/feAsyncImage.h"
 #include "Game/FE/feButtonComponent.h"
 #include "Game/FE/feScrollText.h"
 #include "Game/Team.h"
 #include "Game/TrophyTextures.h"
 
-void continueCup(bool);
-void startNewCup(bool);
-void confirmedNewCup(bool);
+void continueCup(bool isSuperCup);
+void startNewCup(bool isSuperCup);
+void confirmedNewCup(bool isSuperCup);
 
 class ChooseCupSceneV2 : public BaseSceneHandler
 {
 public:
-    ChooseCupSceneV2(bool);
+    ChooseCupSceneV2(bool isSuperCup);
     ~ChooseCupSceneV2();
     void SceneCreated();
-    void Update(float);
+    void Update(float fDeltaT);
     void DisplayCup();
-    void SetCurrentChamp(eTeamID, bool, TLComponentInstance*);
+    void SetCurrentChamp(eTeamID currentChamp, bool isCPUChamp, TLComponentInstance* cupInProgressComponent);
     void Proceed();
 
     /* 0x1C, */ bool mIsSuperCup;                      // size 0x1
@@ -47,32 +47,23 @@ public:
 //     long); void Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
 //     InlineHasher); void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
 //     unsigned long); void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-//     long); void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
 // };
 
 // class FEFinder<TLTextInstance, 3>
 // {
 // public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
 // };
 
 // class FEFinder<TLImageInstance, 2>
 // {
 // public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
 // };
 
 // class BasicString<unsigned short, Detail
 // {
 // public:
-//     void TempStringAllocator>::Append(const unsigned short*) const;
 //     void TempStringAllocator>::AppendInPlace<Detail::TempStringAllocator>(const BasicString<unsigned short,
 //     Detail::TempStringAllocator>&); void TempStringAllocator>::Append<Detail::TempStringAllocator>(const BasicString<unsigned short,
-//     Detail::TempStringAllocator>&) const;
 // };
 
 #endif // _SHCHOOSECUP_H_

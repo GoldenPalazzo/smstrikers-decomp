@@ -122,7 +122,6 @@ void ScreenTransitionManager::DeleteAllTransitions()
  */
 void ScreenTransitionManager::AddTransitionToMap(char* name, ScreenTransition* pTransition)
 {
-    FORCE_DONT_INLINE;
     u32 transitionHash = glHash(name);
     m_TransitionMap.Add(transitionHash, pTransition);
 
@@ -159,7 +158,6 @@ void ScreenTransitionManager::EnableRandomTransition(const char* filter)
  */
 void ScreenTransitionManager::SelectRandomTransition(const char* filter)
 {
-    FORCE_DONT_INLINE;
     Vector<BasicString<char, Detail::TempStringAllocator>, DefaultAllocator> candidates;
     candidates.mData = nullptr;
     candidates.mSize = 0;
@@ -251,21 +249,21 @@ void ScreenTransitionManager::AddTransitions(char* loadedData, unsigned long fil
         else if (nlStrCmp<char>(pToken, "sequence") == 0)
         {
             nlStrNCpy<char>(szNameBuffer, parser.NextTokenOnLine(true), 0x40);
-            TransitionSequence* transitionSequence = new (nlMalloc(0x20, 8, 0)) TransitionSequence();
+            TransitionSequence* transitionSequence = new (nlMalloc(sizeof(TransitionSequence), 8, 0)) TransitionSequence();
             transitionSequence->Initialize(&parser);
             AddTransitionToMap(szNameBuffer, transitionSequence);
         }
         else if (nlStrCmp<char>(pToken, "transition") == 0)
         {
             nlStrNCpy<char>(szNameBuffer, parser.NextTokenOnLine(true), 0x40);
-            ScriptedScreenTransition* scriptedTransition = new (nlMalloc(0x1C, 8, 0)) ScriptedScreenTransition();
+            ScriptedScreenTransition* scriptedTransition = new (nlMalloc(sizeof(ScriptedScreenTransition), 8, 0)) ScriptedScreenTransition();
             scriptedTransition->InitializeFromParser(&parser);
             AddTransitionToMap(szNameBuffer, scriptedTransition);
         }
         else if (nlStrCmp<char>(pToken, "model") == 0)
         {
             nlStrNCpy<char>(szNameBuffer, parser.NextTokenOnLine(true), 0x40);
-            ModeledScreenTransition* modeledTransition = new (nlMalloc(0xC4, 8, 0)) ModeledScreenTransition();
+            ModeledScreenTransition* modeledTransition = new (nlMalloc(sizeof(ModeledScreenTransition), 8, 0)) ModeledScreenTransition();
             modeledTransition->LoadFromParser(&parser);
             AddTransitionToMap(szNameBuffer, modeledTransition);
         }

@@ -9,8 +9,8 @@ class cPlayer;
 
 namespace Fuzzy
 {
-FuzzyVariant AbortLoosePlay(cDecisionEntity*);
-FuzzyVariant DefaultLoosePlay(cDecisionEntity*);
+FuzzyVariant AbortLoosePlay(cDecisionEntity* pDecision);
+FuzzyVariant DefaultLoosePlay(cDecisionEntity* pDecision);
 FuzzyVariant GetBestBallInterceptor(cTeam*);
 FuzzyVariant GoalieAndGonnaPickupBall(cPlayer*);
 } // namespace Fuzzy

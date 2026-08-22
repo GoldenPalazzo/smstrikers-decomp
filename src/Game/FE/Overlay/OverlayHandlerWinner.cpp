@@ -22,69 +22,6 @@ static char* WINNER_TEXTURES[9][3] = {
 
 static const char* WINNER_HANDLER_LAYER_NAME = "Layer";
 
-// /**
-//  * Offset/Address/Size: 0x4EC | 0x80106C80 | size: 0x15C
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x468 | 0x80106BFC | size: 0x84
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x430 | 0x80106BC4 | size: 0x38
-//  */
-// void FEFinder<TLTextInstance, 3>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x80106A68 | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x801069E4 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x801069AC | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x80106850 | size: 0x15C
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x801067CC | size: 0x84
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80106794 | size: 0x38
-//  */
-// void FEFinder<TLImageInstance, 2>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x10C0 | 0x8010672C | size: 0x68
  */
@@ -105,12 +42,6 @@ WinnerOverlay::~WinnerOverlay()
     delete mWinnerAction;
     delete mWinnerActionOutline;
 }
-
-/**
- * Offset/Address/Size: 0x304 | 0x80105970 | size: 0xCE0
- * TODO: 99.70% match - later localization wide-string construction still
- * swaps the result pointer and string data registers.
- */
 
 template <typename StringType, typename ValueType>
 StringType Format(const StringType&, const ValueType&);
@@ -140,6 +71,9 @@ static inline const unsigned short* LookupWinnerLocHash(unsigned long key)
     return MissingLocString;
 }
 
+/**
+ * Offset/Address/Size: 0x304 | 0x80105970 | size: 0xCE0
+ */
 void WinnerOverlay::SceneCreated()
 {
     int scoreLeft = g_pTeams[0]->m_nScore;
@@ -168,7 +102,7 @@ void WinnerOverlay::SceneCreated()
         formatted = Format(unformatted, scoreRightWideString, scoreLeftWideString);
     }
 
-    memcpy(mScoresBuffer, formatted.c_str(), 0x40);
+    memcpy(mScoresBuffer, formatted.c_str(), sizeof(mScoresBuffer));
 
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     presentation->SetActiveSlide("MENU IN2");
@@ -182,7 +116,7 @@ void WinnerOverlay::SceneCreated()
     BasicString<unsigned short, Detail::TempStringAllocator> unformattedName(LookupWinnerLocHash(0x8610A152));
     BasicString<unsigned short, Detail::TempStringAllocator> formattedName(Format(unformattedName, winnerNameWideString.c_str()));
 
-    memcpy(mWinnerBuffer, formattedName.c_str(), 0x40);
+    memcpy(mWinnerBuffer, formattedName.c_str(), sizeof(mWinnerBuffer));
 
     for (int i = 0; i < 2; i++)
     {

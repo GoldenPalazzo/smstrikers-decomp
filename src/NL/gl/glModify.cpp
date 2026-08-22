@@ -2,14 +2,14 @@
 #include "NL/gl/glMemory.h"
 #include <string.h>
 
-struct Modifier
+struct GLModifier
 {
-    /* 0x00 */ eGLModifier m_modifier;
-    /* 0x04 */ s32 m_unk_0x04;
-    /* 0x08 */ s32 m_unk_0x08;
+    /* 0x00 */ eGLModifier type;
+    /* 0x04 */ s32 was;
+    /* 0x08 */ s32 willBe;
 };
 
-static Modifier glModifier[6];
+static GLModifier glModifier[6];
 static u32 glNumModifiers = 0;
 
 static const unsigned long GLTT_Diffuse_bit = 1UL << 0;
@@ -18,22 +18,22 @@ static const unsigned long GLTT_Gloss_bit = 1UL << 4;
 /**
  * Offset/Address/Size: 0x0 | 0x801D903C | size: 0x30
  */
-void gl_ModifyAddMapping(eGLModifier arg0, unsigned long arg1)
+void gl_ModifyAddMapping(eGLModifier modifier, unsigned long willBe)
 {
-    glModifier[glNumModifiers].m_modifier = arg0;
-    glModifier[glNumModifiers].m_unk_0x04 = -1;
-    glModifier[glNumModifiers].m_unk_0x08 = arg1;
+    glModifier[glNumModifiers].type = modifier;
+    glModifier[glNumModifiers].was = -1;
+    glModifier[glNumModifiers].willBe = willBe;
     glNumModifiers++;
 }
 
 /**
  * Offset/Address/Size: 0x30 | 0x801D906C | size: 0x2C
  */
-void gl_ModifyAddMapping(eGLModifier arg0, unsigned long arg1, unsigned long arg2)
+void gl_ModifyAddMapping(eGLModifier modifier, unsigned long was, unsigned long willBe)
 {
-    glModifier[glNumModifiers].m_modifier = arg0;
-    glModifier[glNumModifiers].m_unk_0x04 = arg1;
-    glModifier[glNumModifiers].m_unk_0x08 = arg2;
+    glModifier[glNumModifiers].type = modifier;
+    glModifier[glNumModifiers].was = was;
+    glModifier[glNumModifiers].willBe = willBe;
     glNumModifiers++;
 }
 
@@ -42,11 +42,11 @@ void gl_ModifyAddMapping(eGLModifier arg0, unsigned long arg1, unsigned long arg
  */
 void gl_ModifyClearLastMapping()
 {
-    s32 temp_r0;
+    s32 lastIndex;
 
-    temp_r0 = glNumModifiers - 1;
-    glNumModifiers = temp_r0;
-    if (temp_r0 < 0)
+    lastIndex = glNumModifiers - 1;
+    glNumModifiers = lastIndex;
+    if (lastIndex < 0)
     {
         glNumModifiers = 0;
     }
@@ -60,16 +60,16 @@ void gl_ModifyClearMappings()
     glNumModifiers = 0;
 }
 
-/**
- * Offset/Address/Size: 0x84 | 0x801D90C0 | size: 0x1F8
- */
 static inline glModelPacket* gl_ModifyClonePacket(const glModelPacket* pPacket)
 {
-    glModelPacket* packet = (glModelPacket*)glFrameAlloc(0x4A, GLM_Header);
-    memcpy(packet, pPacket, 0x4A);
+    glModelPacket* packet = (glModelPacket*)glFrameAlloc(sizeof(glModelPacket), GLM_Header);
+    memcpy(packet, pPacket, sizeof(glModelPacket));
     return packet;
 }
 
+/**
+ * Offset/Address/Size: 0x84 | 0x801D90C0 | size: 0x1F8
+ */
 glModelPacket* gl_Modify(const glModelPacket* pPacket)
 {
     glModelPacket* newPacket = NULL;
@@ -77,55 +77,55 @@ glModelPacket* gl_Modify(const glModelPacket* pPacket)
 
     for (i = 0; i < (s32)glNumModifiers; i++)
     {
-        switch (glModifier[i].m_modifier)
+        switch (glModifier[i].type)
         {
-        case eGLModifier_0:
-            if (pPacket->state.program == glModifier[i].m_unk_0x04)
+        case GLMod_Program:
+            if (pPacket->state.program == glModifier[i].was)
             {
                 if (newPacket == NULL)
                 {
                     newPacket = gl_ModifyClonePacket(pPacket);
                 }
-                newPacket->state.program = glModifier[i].m_unk_0x08;
+                newPacket->state.program = glModifier[i].willBe;
             }
             break;
 
-        case eGLModifier_1:
-            if ((u32)glModifier[i].m_unk_0x04 == 0xFFFFFFFF)
+        case GLMod_DiffuseTex:
+            if ((u32)glModifier[i].was == 0xFFFFFFFF)
             {
                 if (newPacket == NULL)
                 {
                     newPacket = gl_ModifyClonePacket(pPacket);
                 }
-                newPacket->state.texture[0] = glModifier[i].m_unk_0x08;
+                newPacket->state.texture[0] = glModifier[i].willBe;
                 newPacket->state.texconfig |= GLTT_Diffuse_bit;
             }
-            else if (pPacket->state.texture[0] == glModifier[i].m_unk_0x04)
+            else if (pPacket->state.texture[0] == glModifier[i].was)
             {
                 if (newPacket == NULL)
                 {
                     newPacket = gl_ModifyClonePacket(pPacket);
                 }
-                newPacket->state.texture[0] = glModifier[i].m_unk_0x08;
+                newPacket->state.texture[0] = glModifier[i].willBe;
                 newPacket->state.texconfig |= GLTT_Diffuse_bit;
             }
             break;
 
-        case eGLModifier_2:
+        case GLMod_GlossTex:
             if (newPacket == NULL)
             {
                 newPacket = gl_ModifyClonePacket(pPacket);
             }
-            newPacket->state.texture[4] = glModifier[i].m_unk_0x08;
+            newPacket->state.texture[4] = glModifier[i].willBe;
             newPacket->state.texconfig |= GLTT_Gloss_bit;
             break;
 
-        case eGLModifier_3:
+        case GLMod_TextureMask:
             if (newPacket == NULL)
             {
                 newPacket = gl_ModifyClonePacket(pPacket);
             }
-            newPacket->state.texconfig &= glModifier[i].m_unk_0x08;
+            newPacket->state.texconfig &= glModifier[i].willBe;
             break;
         }
     }

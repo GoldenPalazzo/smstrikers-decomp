@@ -98,23 +98,23 @@ public:
         /* 0x2C */ PhysicsBoneVolume* m_boneVolume;
     }; // total size: 0x30
 
-    PhysicsCharacterBase(CollisionSpace*, PhysicsWorld*, float);
+    PhysicsCharacterBase(CollisionSpace* collisionSpace, PhysicsWorld* physicsWorld, float centreOfMassHeight);
     virtual ~PhysicsCharacterBase();
     virtual int GetObjectType() const { return 0x08; };
-    virtual void UpdatePose(cPoseAccumulator*, float);
+    virtual void UpdatePose(cPoseAccumulator* pose, float heightOffset);
     virtual PhysicsBoneID ResolvePhysicsBoneIDFromName(const char*) = 0;
 
     int GetNumBoneVolumePoints(bool includeEndpoints) const;
-    void GetBoneVolumePoints(nlVector3*, bool);
-    void SetCharacterPosition(const nlVector3&);
-    bool BaseSetContactInfo(dContact*, PhysicsObject*, bool);
+    void GetBoneVolumePoints(nlVector3* points, bool includeEndpoints);
+    void SetCharacterPosition(const nlVector3& pos);
+    bool BaseSetContactInfo(dContact* contact, PhysicsObject* other, bool first);
     void BasePreCollide();
-    void ContainObject(PhysicsObject*);
+    void ContainObject(PhysicsObject* obj);
     void ReleaseObject();
-    void SetFacingDirection(unsigned short);
-    void AddBoneVolumes(PhysicsWorld*, CollisionSpace*, cPoseAccumulator*, const CharacterPhysicsData*, unsigned long, unsigned long);
-    PhysicsBoneVolume* AddBoneVolume(PhysicsObject*, unsigned int, unsigned int, nlMatrix4&, PhysicsBoneID);
-    void GetBonePositions(PhysicsBoneID, nlVector3&, nlVector3&);
+    void SetFacingDirection(unsigned short angle);
+    void AddBoneVolumes(PhysicsWorld* physicsWorld, CollisionSpace* collisionSpace, cPoseAccumulator* poseAccumulator, const CharacterPhysicsData* pPhysicsData, unsigned long categoryBitmask, unsigned long collisionBitmask);
+    PhysicsBoneVolume* AddBoneVolume(PhysicsObject* object, unsigned int boneIndex, unsigned int transformHandle, nlMatrix4& transform, PhysicsBoneID id);
+    void GetBonePositions(PhysicsBoneID boneID, nlVector3& v3CurPos, nlVector3& v3PrevPos);
     PhysicsBoneID GetBoneIDForSubObject(const PhysicsObject* obj) const;
 
     /* 0x38 */ unsigned char m_IsSupported;                       // offset 0x38, size 0x1

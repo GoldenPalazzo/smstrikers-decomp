@@ -8,7 +8,7 @@ class SuperTeamScene : public BaseSceneHandler
 {
 public:
     virtual ~SuperTeamScene();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
     virtual void SceneCreated();
 
     /* 0x1C */ ButtonComponent mButtons;
@@ -17,9 +17,6 @@ public:
 // class FEFinder<TLComponentInstance, 4>
 // {
 // public:
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
 // };
 
 #endif // _SHSUPERTEAM_H_

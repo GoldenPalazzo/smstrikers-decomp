@@ -19,13 +19,13 @@ class CrowdManager
 public:
     void Initialize();
     void Uninitialize();
-    void SetStadium(const char*);
-    u32 GetTextureHandle(unsigned long) const;
-    void Replay(LoadFrame&);
-    void Replay(SaveFrame&);
-    void SetState(eCrowdState, bool);
-    void Update(float);
-    void EventHandler(Event*);
+    void SetStadium(const char* stadium);
+    u32 GetTextureHandle(unsigned long id) const;
+    void Replay(LoadFrame& frame);
+    void Replay(SaveFrame& frame);
+    void SetState(eCrowdState state, bool force);
+    void Update(float deltaTime);
+    void EventHandler(Event* event);
     static void EventHandler(Event* event, void* userData) { ((CrowdManager*)userData)->EventHandler(event); }
     inline void SetFrameConstant();
 

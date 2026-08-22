@@ -27,6 +27,6 @@ public:
     /* 0x08 */ CharacterPhysicsElement* pPhysicsElements;
 }; // total size: 0xC
 
-bool LoadCharacterPhysicsElements(const char*, CharacterPhysicsData*);
+bool LoadCharacterPhysicsElements(const char* szPhysicsElementsFilename, CharacterPhysicsData* pPhysicsData);
 
 #endif // _CHARACTERPHYSICSELEMENT_H_

@@ -1,7 +1,7 @@
 #include "Game/OverlayHandlerInGameText.h"
 #include "Game/BaseSceneHandler.h"
 #include "Game/DB/StatsTracker.h"
-#include "Game/FE/FEPresentation.h"
+#include "Game/FE/fePresentation.h"
 #include "Game/FE/tlTextInstance.h"
 #include "Game/FE/tlSlide.h"
 #include "Game/Game.h"
@@ -80,24 +80,13 @@ static const struct InGameTextEntry IGTTable[8] = {
 }; // size: 0x60, address: 0x802AD8E0
 
 /**
- * Offset/Address/Size: 0xBC | 0x800FC998 | size: 0x208
+ * Offset/Address/Size: 0x18EC | 0x800FC998 | size: 0x208
  */
 /*
 void BasicString<unsigned short, Detail::TempStringAllocator>::AppendInPlace<Detail::TempStringAllocator>(const BasicString<unsigned short, Detail::TempStringAllocator>&)
 {
 }
 */
-/**
- * Offset/Address/Size: 0x2D4 | 0x800FC3DC | size: 0x84
- */
-#pragma dont_inline on
-#pragma dont_inline reset
-
-/**
- * Offset/Address/Size: 0x358 | 0x800FC460 | size: 0x84
- */
-#pragma dont_inline on
-#pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0xF44 | 0x800FBFF0 | size: 0xA8
@@ -113,7 +102,6 @@ InGameTextOverlay::InGameTextOverlay()
 /**
  * Offset/Address/Size: 0xED8 | 0x800FBF84 | size: 0x6C
  */
-#pragma inline_depth(16)
 InGameTextOverlay::~InGameTextOverlay()
 {
 }
@@ -251,7 +239,7 @@ void InGameTextOverlay::DisplayFinalScore()
 
         TLTextInstance* winnerNameTextInstance = (TLTextInstance*)winnerNameInstance;
 
-        memcpy(mWinnerBuffer, formattedName.c_str(), 0x40);
+        memcpy(mWinnerBuffer, formattedName.c_str(), sizeof(mWinnerBuffer));
         winnerNameTextInstance->SetString(mWinnerBuffer);
 
         eTeamID team = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0);
@@ -291,6 +279,6 @@ void InGameTextOverlay::DisplayFinalScore()
         }
     }
 
-    memcpy(mScoresBuffer, formatted.c_str(), 0x40);
+    memcpy(mScoresBuffer, formatted.c_str(), sizeof(mScoresBuffer));
     pTextInstance->SetString(mScoresBuffer);
 }

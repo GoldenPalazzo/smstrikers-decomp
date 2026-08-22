@@ -5,6 +5,9 @@ void* gTRKInputPendingPtr;
 
 // #pragma clang diagnostic push
 // #pragma clang diagnostic ignored "-Wsometimes-uninitialized"
+/**
+ * Offset/Address/Size: 0x17C | 0x80225774 | size: 0x13C
+ */
 MessageBufferID TRKTestForPacket()
 {
     u8 payloadBuf[0x880];
@@ -56,6 +59,9 @@ MessageBufferID TRKTestForPacket()
     return result;
 }
 
+/**
+ * Offset/Address/Size: 0x11C | 0x80225714 | size: 0x60
+ */
 void TRKGetInput(void)
 {
     MessageBufferID id = TRKTestForPacket();
@@ -70,6 +76,9 @@ void TRKGetInput(void)
     }
 }
 
+/**
+ * Offset/Address/Size: 0xCC | 0x802256C4 | size: 0x50
+ */
 void TRKProcessInput(int bufferIdx)
 {
     TRKEvent event;
@@ -80,6 +89,9 @@ void TRKProcessInput(int bufferIdx)
     TRKPostEvent(&event);
 }
 
+/**
+ * Offset/Address/Size: 0x8 | 0x80225600 | size: 0xC4
+ */
 DSError TRKInitializeSerialHandler()
 {
     gTRKFramingState.msgBufID = -1;
@@ -96,6 +108,9 @@ DSError TRKInitializeSerialHandler()
     return DS_NoError;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802255F8 | size: 0x8
+ */
 DSError TRKTerminateSerialHandler(void)
 {
     return DS_NoError;

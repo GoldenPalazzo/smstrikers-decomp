@@ -15,16 +15,16 @@ class ICaptainGridComponent : public IGridComponent<eTeamID>
 {
 public:
     void SetAllItemsActive();
-    virtual void MoveHighlightToTarget(eTeamID);
+    virtual void MoveHighlightToTarget(eTeamID teamID);
     eTeamID GetSelectedItem() const;
-    bool IsValid(eTeamID);
-    void SetValid(eTeamID, bool);
+    bool IsValid(eTeamID teamID);
+    void SetValid(eTeamID teamID, bool valid);
     void UpdateSuperTeamIconState();
-    void Update(eFEINPUT_PAD);
+    void Update(eFEINPUT_PAD pad);
     void RebuildInstanceTable();
     void BuildMapMenu();
     ~ICaptainGridComponent();
-    ICaptainGridComponent(TLComponentInstance*, bool);
+    ICaptainGridComponent(TLComponentInstance* parentcomponent, bool ismirrored);
 };
 
 #endif // _FECAPTAINGRIDCOMPONENT_H_

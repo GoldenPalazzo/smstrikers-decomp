@@ -180,7 +180,6 @@ static inline void DestroyNPCList(nlListContainer<SkinAnimatedNPC*>* npcList)
 
 /**
  * Offset/Address/Size: 0x4D8 | 0x8016639C | size: 0x3D4
- * TODO: this needs a review - strange stuff going on here...
  */
 NPCManager::~NPCManager()
 {

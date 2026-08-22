@@ -109,7 +109,7 @@ nlVector3& AvoidController::GetLastRepulsionVector(eAvoidableThings things)
  * Offset/Address/Size: 0x12BC | 0x80008910 | size: 0xECC
  */
 #pragma opt_lifetimes off
-void AvoidController::Update(float)
+void AvoidController::Update(float fDeltaT)
 {
     nlVector3 vAccumulated_v3 = v3Zero;
     float fTotalWeight_v3 = 0.0f;
@@ -802,9 +802,6 @@ bool AvoidController::CalcDesiredVelocityToAvoidCorner(
     return bHitSideline;
 }
 
-/**
- * Offset/Address/Size: 0x41C | 0x80007A70 | size: 0x4AC
- */
 static inline f32 ClampRunningWBSpeed(f32 speed, f32 maxSpeed)
 {
     if (speed <= maxSpeed)
@@ -813,6 +810,9 @@ static inline f32 ClampRunningWBSpeed(f32 speed, f32 maxSpeed)
         return maxSpeed;
 }
 
+/**
+ * Offset/Address/Size: 0x41C | 0x80007A70 | size: 0x4AC
+ */
 bool AvoidController::AvoidSidelines()
 {
     bool bHitSideline;
@@ -1031,7 +1031,7 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
     if (m_VeryCloseToSideline)
     {
         f32 fDotNormalVel = rRepulsionDir.x * m_SidelineNormal.x
-            + rRepulsionDir.y * m_SidelineNormal.y;
+                          + rRepulsionDir.y * m_SidelineNormal.y;
 
         if (fDotNormalVel < -0.1f)
         {
@@ -1047,8 +1047,8 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
                 v3Repulsion.z = fRepulsionMag * fSidelineDirZ;
 
                 f32 fScale = (fRepulsionDirZ * fSidelineDirZ
-                    + (rRepulsionDir.x * m_SidelineDirection.x + rRepulsionDir.y * m_SidelineDirection.y))
-                    / nlGetLengthSquared3D(m_SidelineDirection.x, m_SidelineDirection.y, fSidelineDirZ);
+                                 + (rRepulsionDir.x * m_SidelineDirection.x + rRepulsionDir.y * m_SidelineDirection.y))
+                           / nlGetLengthSquared3D(m_SidelineDirection.x, m_SidelineDirection.y, fSidelineDirZ);
                 f32 fParallelY = fScale * m_SidelineDirection.y;
                 f32 fParallelX = fScale * m_SidelineDirection.x;
                 f32 fParallelZ = fScale * fSidelineDirZ;

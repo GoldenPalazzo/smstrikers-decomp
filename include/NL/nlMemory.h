@@ -4,6 +4,16 @@
 #include "dolphin/os.h"
 #include <stddef.h>
 
+inline unsigned long KB(unsigned long size)
+{
+    return size << 10;
+}
+
+inline unsigned long MB(unsigned long size)
+{
+    return KB(KB(size));
+}
+
 inline void* operator new(unsigned long, void* p)
 {
     return p;
@@ -29,8 +39,8 @@ void* operator new(size_t size, size_t alignment) {
 
 void nlFree(void* ptr);
 void* nlMalloc(unsigned long size, unsigned int alignment, bool atEnd);
-void* nlMalloc(unsigned long);
-void* operator new(unsigned long);
+void* nlMalloc(unsigned long size);
+void* operator new(unsigned long size);
 
 inline void* operator new(unsigned long size, unsigned int alignment, bool atEnd)
 {
@@ -48,8 +58,8 @@ void operator delete[](void* ptr);
 void operator delete(void* ptr);
 unsigned int nlVirtualTotalFree();
 unsigned int nlVirtualLargestBlock();
-void nlVirtualFree(void*);
-void* nlVirtualAlloc(unsigned long, bool);
+void nlVirtualFree(void* ptr);
+void* nlVirtualAlloc(unsigned long size, bool bZero);
 void nlInitMemory();
 
 #ifdef __cplusplus

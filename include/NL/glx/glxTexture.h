@@ -138,9 +138,9 @@ public:
     ~PlatTexture();
 
     void Prepare();
-    void Swizzle(bool);
-    void Create(int, int, eGXTextureFormat, int, bool, bool);
-    void CreateWithMemory(int, int, eGXTextureFormat, int, const void*);
+    void Swizzle(bool bDeleteLinear);
+    void Create(int width, int height, eGXTextureFormat format, int numLevels, bool bLinearData, bool bNewResourceMemory);
+    void CreateWithMemory(int width, int height, eGXTextureFormat format, int numLevels, const void* pTextureData);
 
     /* 0x00 */ int m_Magic;
     /* 0x04 */ u16 m_Width;
@@ -158,19 +158,19 @@ public:
     /* 0x44 */ _GXTlutObj m_TlutObj; // size 0xC
 }; // total size: 0x50
 
-void glplatTextureReplace(unsigned long, const void*, unsigned long);
-void glplatTextureAdd(unsigned long, const void*, unsigned long);
+void glplatTextureReplace(unsigned long handle, const void* textureData, unsigned long size);
+void glplatTextureAdd(unsigned long handle, const void* textureData, unsigned long size);
 PlatTexture* glx_CreatePlatTexture();
-int glplatTextureGetNumBits(int);
+int glplatTextureGetNumBits(int component);
 u32 glplatTextureGetHeight();
 u32 glplatTextureGetWidth();
-bool glplatTextureLoad(unsigned long);
+bool glplatTextureLoad(unsigned long texture);
 bool glplatEndLoadTextureBundle(void* data, unsigned long size);
 bool glplatBeginLoadTextureBundle(const char* filename, void (*callback)(void*, unsigned long, void*), void* param);
 bool glplatLoadTextureBundle(const char* filename);
-PlatTexture* glx_MakeTexture(GXTextureHeader* header, unsigned long handle);
+PlatTexture* glx_MakeTexture(GXTextureHeader* header, unsigned long texhandle);
 bool glx_AddTex(unsigned long handle, PlatTexture* pTex);
-PlatTexture* glx_GetTex(unsigned long, bool, bool);
+PlatTexture* glx_GetTex(unsigned long handle, bool bMissingFatal, bool bAllowGrids);
 bool glx_SetGridMode(bool bGrid);
 void glxInitTex();
 void glx_BackupTexMarkerLevel(int level);
@@ -181,7 +181,7 @@ glxTextureLoadCallback_t glx_SetLoadCallback(glxTextureLoadCallback_t callback);
 class TexDestructor
 {
 public:
-    void CallDestructor(const unsigned long&, PlatTexture** tex);
+    void CallDestructor(const unsigned long& index, PlatTexture** tex);
 };
 
 #endif // _GLXTEXTURE_H_

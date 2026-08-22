@@ -4,42 +4,42 @@
 /**
  * Offset/Address/Size: 0x4A4 | 0x801C2668 | size: 0x74
  */
-u32 GCTextureSize(eGXTextureFormat fmt, int w, int h, int levels, unsigned long /*unused*/)
+u32 GCTextureSize(eGXTextureFormat format, int width, int height, int numLevels, unsigned long texhandle)
 {
-    unsigned long total = 0;
+    unsigned long size = 0;
 
     for (;;)
     {
         int row_bytes;
-        if ((int)fmt == 2)
+        if ((int)format == 2)
         {
-            s32 sign = (u32)w >> 31;
-            row_bytes = (sign + w) >> 1;
+            s32 sign = (u32)width >> 31;
+            row_bytes = (sign + width) >> 1;
         }
-        else if ((int)fmt == 3)
+        else if ((int)format == 3)
         {
-            row_bytes = w << 2;
+            row_bytes = width << 2;
         }
-        else if ((int)fmt == 6 || (int)fmt == 8 || (int)fmt == 4)
+        else if ((int)format == 6 || (int)format == 8 || (int)format == 4)
         {
-            row_bytes = w;
+            row_bytes = width;
         }
         else
         {
-            row_bytes = w << 1;
+            row_bytes = width << 1;
         }
 
-        total += (unsigned long)(h * row_bytes);
+        size += (unsigned long)(height * row_bytes);
 
-        levels -= 1;
-        if (levels == 0)
+        numLevels -= 1;
+        if (numLevels == 0)
             break;
 
-        w >>= 1;
-        h >>= 1;
+        width >>= 1;
+        height >>= 1;
     }
 
-    return total;
+    return size;
 }
 
 /**

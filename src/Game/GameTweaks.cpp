@@ -219,13 +219,13 @@ void GameTweaks::Init()
     unk234 = cfg.Get<float>("Medium Powerup Volume Coefficient", 0.75f);
     unk238 = cfg.Get<float>("Large Powerup Volume Coefficient", 1.0f);
     unk23C = cfg.Get<float>("Perfect Pass Trail SFX Fade Start Time", 0.5f);
-    unk240 = cfg.Get<float>("Min Hit Intensity to play BODY_HIT_HARD SFX", 0.9f);
+    fMinHitIntensityForHardBodyHitSFX = cfg.Get<float>("Min Hit Intensity to play BODY_HIT_HARD SFX", 0.9f);
     unk244 = cfg.Get<float>("Slide Attack Hit Reaction Volume", 0.75f);
     unk248 = cfg.Get<float>("S2S Ball Hit Reaction Volume", 0.75f);
-    unk24C = cfg.Get<float>("Bomb Hit Reaction Volume", 0.75f);
+    fBombHitReactionVolume = cfg.Get<float>("Bomb Hit Reaction Volume", 0.75f);
     unk250 = cfg.Get<float>("Bomb Shockwave Reaction Volume", 0.75f);
-    unk254 = cfg.Get<float>("Small Shell Hit Reaction Volume", 0.75f);
-    unk258 = cfg.Get<float>("Medium Shell Hit Reaction Volume", 0.75f);
+    fSmallShellHitReactionVolume = cfg.Get<float>("Small Shell Hit Reaction Volume", 0.75f);
+    fMediumShellHitReactionVolume = cfg.Get<float>("Medium Shell Hit Reaction Volume", 0.75f);
     unk25C = cfg.Get<float>("Large Shell Hit Reaction Volume", 0.75f);
     unk264 = cfg.Get<float>("Goalie Drop Kick Hit Reaction Volume", 0.75f);
     unk268 = cfg.Get<float>("Ball Hit Wall Max Audible Velocity", 35.0f);
@@ -246,16 +246,16 @@ void GameTweaks::Init()
     unk298 = cfg.Get<float>("S2S Perfect Second Button Time", 0.12f);
     unk29C = cfg.Get<float>("S2S Perfect Distance Min", 0.02f);
     unk2A0 = cfg.Get<float>("S2S Perfect Distance Max", 0.02f);
-    unk2A4 = cfg.Get<float>("Slide Attack Maximum Time", 0.35f);
-    unk2A8 = cfg.Get<float>("Slide Attack Fail Up Time", 0.35f);
+    fSlideAttackTimeToSlide = cfg.Get<float>("Slide Attack Maximum Time", 0.35f);
+    fSlideAttackTimeToDecelrate = cfg.Get<float>("Slide Attack Fail Up Time", 0.35f);
     unk2AC = cfg.Get<float>("Slide Attack Deceleration", 0.5f);
-    unk2B0 = cfg.Get<float>("Left Trigger Pressure", 0.7f);
+    fLeftTriggerDownPressure = cfg.Get<float>("Left Trigger Pressure", 0.7f);
     unk2B4 = cfg.Get<float>("Indicator Distance Above Head", 0.4525f);
     unk2B8 = cfg.Get<float>("Indicator Pixel Clearance", 6.0f);
-    unk2BC = cfg.Get<float>("Clear Ball Min Ground Speed", 0.0f);
-    unk2C0 = cfg.Get<float>("Clear Ball Max Ground Speed", 0.0f);
-    unk2C4 = cfg.Get<float>("Clear Ball Min Z Speed", 0.0f);
-    unk2C8 = cfg.Get<float>("Clear Ball Max Z Speed", 0.0f);
+    fClearBallGroundMinSpeed = cfg.Get<float>("Clear Ball Min Ground Speed", 0.0f);
+    fClearBallGroundMaxSpeed = cfg.Get<float>("Clear Ball Max Ground Speed", 0.0f);
+    fClearBallMinZSpeed = cfg.Get<float>("Clear Ball Min Z Speed", 0.0f);
+    fClearBallMaxZSpeed = cfg.Get<float>("Clear Ball Max Z Speed", 0.0f);
     unk2D0 = cfg.Get<float>("Shot Windup Seconds", 0.75f);
     unk2D4 = cfg.Get<float>("Shot Net Open Angle", 45.0f);
     unk2D8 = cfg.Get<float>("Shot Ratings Weight", 0.5f);
@@ -264,11 +264,11 @@ void GameTweaks::Init()
     unk2E4 = cfg.Get<float>("Chip Shot Goalie Out Weight", 0.0f);
     unk2E8 = cfg.Get<float>("Chip Shot Net Open Weight", 0.0f);
     unk2EC = cfg.Get<float>("Shot Meter Max Onetimer Speed", 0.0f);
-    unk2F0 = cfg.Get<float>("Shot Offset From Post", 0.3f);
-    unk2F4 = cfg.Get<float>("Chip Shot Offset From Post", 0.3f);
-    unk2F8 = cfg.Get<float>("High Shot Distance", 18.0f);
-    unk2FC = cfg.Get<float>("Shot Width Variance", 0.12f);
-    unk300 = cfg.Get<float>("Shot Height Variance", 0.06f);
+    fShotPostOffset = cfg.Get<float>("Shot Offset From Post", 0.3f);
+    fChipShotPostOffset = cfg.Get<float>("Chip Shot Offset From Post", 0.3f);
+    fShotHighDistance = cfg.Get<float>("High Shot Distance", 18.0f);
+    fShotWidthVariance = cfg.Get<float>("Shot Width Variance", 0.12f);
+    fShotHeightVariance = cfg.Get<float>("Shot Height Variance", 0.06f);
     unk304 = cfg.Get<float>("Bowser Radius", 1.0f);
     unk308 = cfg.Get<float>("Bowser Chance", 0.5f);
     unk30C = cfg.Get<float>("Bowser Start Time", 30.0f);
@@ -526,6 +526,6 @@ void SkillTweaks::Init(eDifficultyID diff, bool blend)
 /**
  * Offset/Address/Size: 0x0 | 0x800401EC | size: 0x4
  */
-void SkillTweaks::HookupTweakeables(int)
+void SkillTweaks::HookupTweakeables(int nSide)
 {
 }

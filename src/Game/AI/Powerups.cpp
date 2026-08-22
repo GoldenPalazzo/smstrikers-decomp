@@ -80,14 +80,16 @@ struct PowerupRegistry
         }
     }
 
-    enum { NUM_POWERUP_REGISTRY_ENTRIES = 25 };
+    enum
+    {
+        NUM_POWERUP_REGISTRY_ENTRIES = 25
+    };
 
     /* 0x0 */ Pair registry[NUM_POWERUP_REGISTRY_ENTRIES];
 }; // total size: 0xC8
 
 PowerupModelPool powerupModelPool;
 PowerupRegistry powerupRegistry;
-
 
 const char* uFREEZE_SHELL_STREAK_TEXTURE = "global/blueshellstreak";
 const char* uSPINY_SHELL_STREAK_TEXTURE = "global/redshellstreak";
@@ -99,8 +101,6 @@ const char* uBOBOMB_STREAK_TEXTURE = "global/bobombstreak";
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 static u8 gbAlwaysSurround;
-
-// extern Audio::cWorldSFX gPowerupSFX;
 
 SlotPool<FreezeShell> FreezeShell::m_FreezeShellSlotPool(16, 16);
 SlotPool<GreenShell> GreenShell::m_GreenShellSlotPool(16, 16);
@@ -121,14 +121,12 @@ const char* uBANANA_STREAK_TEXTURE;
 } // namespace
 
 // /**
-//  * Offset/Address/Size: 0x114 | 0x80060A74 | size: 0xD74
 //  */
 // void FormatImpl<BasicString<char, Detail::TempStringAllocator>>::operator%<int>(const int&)
 // {
 // }
 
 // /**
-//  * Offset/Address/Size: 0x0 | 0x80060960 | size: 0x114
 //  */
 // void Format<BasicString<char, Detail::TempStringAllocator>, int>(const BasicString<char, Detail::TempStringAllocator>&, const int&)
 // {
@@ -327,7 +325,6 @@ void PowerupThrowPosition(int nThrowOrder, eThrowStyle eStyle, PowerupBase* pNew
     default:
         break;
     }
-
 }
 
 /**
@@ -811,7 +808,6 @@ PowerupBase* FindPowerUp(unsigned long hashOfDrawable)
 }
 
 // /**
-//  * Offset/Address/Size: 0x4C00 | 0x8005F4EC | size: 0x2B4
 //  */
 /**
  * Offset/Address/Size: 0x4C00 | 0x8005F4EC | size: 0x2B4
@@ -1194,14 +1190,12 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
     nChanceForBanana = nChanceForBanana + (((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForBanana + (g_pGame->m_pGameTweaks->nChanceForBanana + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForBanana)) + nDifference;
 
     nChanceForBoBomb = ((nChanceForBanana) > 0 ? (nChanceForBanana) : 0);
-    nChanceForBoBomb =
-        nChanceForBoBomb
-        + (((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForBoBomb
-            + (g_pGame->m_pGameTweaks->nChanceForBoBomb
-                + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForBoBomb));
+    nChanceForBoBomb = nChanceForBoBomb
+                     + (((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForBoBomb
+                         + (g_pGame->m_pGameTweaks->nChanceForBoBomb
+                             + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForBoBomb));
 
-    nChanceForMushroom =
-        ((nChanceForBoBomb) > 0 ? (nChanceForBoBomb) : 0);
+    nChanceForMushroom = ((nChanceForBoBomb) > 0 ? (nChanceForBoBomb) : 0);
     nChanceForMushroom = nChanceForMushroom + (((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForMushroom + (g_pGame->m_pGameTweaks->nChanceForMushroom + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForMushroom)) + nDifference;
 
     nChanceForGreenShell = g_pGame->m_pGameTweaks->nChanceForGreenShell + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForGreenShell + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForGreenShell + ((nChanceForMushroom) > 0 ? (nChanceForMushroom) : 0) + nDifference;
@@ -1214,49 +1208,23 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
     switch (nlSingleton<GameInfoManager>::s_pInstance->GetCustomPowerups())
     {
     case CP_FREEZING:
-        nChanceForChainChomp =
-            nChanceForStar =
-            nChanceForSpinyShell =
-            nChanceForRedShell =
-            nChanceForBanana =
-            nChanceForBoBomb =
-            nChanceForMushroom =
-            nChanceForGreenShell = 0;
+        nChanceForChainChomp = nChanceForStar = nChanceForSpinyShell = nChanceForRedShell = nChanceForBanana = nChanceForBoBomb = nChanceForMushroom = nChanceForGreenShell = 0;
         powerUpType = POWER_UP_FREEZE_SHELL;
         break;
     case CP_GIANT:
-        nChanceForStar =
-            nChanceForMushroom =
-            nChanceForBanana = 0;
+        nChanceForStar = nChanceForMushroom = nChanceForBanana = 0;
         powerUpType = POWER_UP_GREEN_SHELL;
         break;
     case CP_SHELLS:
-        nChanceForChainChomp =
-            nChanceForStar =
-            nChanceForBanana =
-            nChanceForBoBomb =
-            nChanceForMushroom = 0;
+        nChanceForChainChomp = nChanceForStar = nChanceForBanana = nChanceForBoBomb = nChanceForMushroom = 0;
         powerUpType = POWER_UP_GREEN_SHELL;
         break;
     case CP_ENCHANCEMENT:
-        nChanceForChainChomp =
-            nChanceForSpinyShell =
-            nChanceForRedShell =
-            nChanceForBanana =
-            nChanceForBoBomb =
-            nChanceForGreenShell =
-            nChanceForFreezeShell = 0;
+        nChanceForChainChomp = nChanceForSpinyShell = nChanceForRedShell = nChanceForBanana = nChanceForBoBomb = nChanceForGreenShell = nChanceForFreezeShell = 0;
         powerUpType = POWER_UP_MUSHROOM;
         break;
     case CP_EXPLOSIVE:
-        nChanceForChainChomp =
-            nChanceForStar =
-            nChanceForSpinyShell =
-            nChanceForRedShell =
-            nChanceForBanana =
-            nChanceForMushroom =
-            nChanceForGreenShell =
-            nChanceForFreezeShell = 0;
+        nChanceForChainChomp = nChanceForStar = nChanceForSpinyShell = nChanceForRedShell = nChanceForBanana = nChanceForMushroom = nChanceForGreenShell = nChanceForFreezeShell = 0;
         powerUpType = POWER_UP_BOBOMB;
         break;
     default:
@@ -1569,7 +1537,7 @@ check_event:
 /**
  * Offset/Address/Size: 0x3374 | 0x8005DC60 | size: 0x540
  */
-void PowerupBase::ThrowAt(cFielder* pThrower, Bowser*)
+void PowerupBase::ThrowAt(cFielder* pThrower, Bowser* pBowser)
 {
     ePowerUpType type;
     unsigned long soundID;
@@ -2048,9 +2016,8 @@ void PowerupBase::Destroy(bool bSilent)
             Event* pEvent = g_pEventManager->CreateValidEvent(0x2C, 0x34);
             CollisionBobombDataLayout* pEventData = (CollisionBobombDataLayout*)new ((u8*)pEvent + 0x10) CollisionBobombData();
             pEventData->v3ExplosionLocation = m_v3Position;
-            pEventData->fExplosionRadius =
-                g_pGame->GetGameTweaks()->fPowerupExplosionRadius * (float)meSize
-                + g_pGame->GetGameTweaks()->fPowerupExplosionRadius;
+            pEventData->fExplosionRadius = g_pGame->GetGameTweaks()->fPowerupExplosionRadius * (float)meSize
+                                         + g_pGame->GetGameTweaks()->fPowerupExplosionRadius;
             pEventData->pThrower = m_pThrower;
             pEventData->nThrowerPadID = m_nThrowerPadID;
             pEventData->bIsFreezeBomb = (m_eType == POWER_UP_FREEZE_SHELL);
@@ -2354,9 +2321,6 @@ void PowerupBase::UpdateTransform()
     }
 }
 
-/**
- * Offset/Address/Size: 0x2360 | 0x8005CC4C | size: 0x16C
- */
 static inline void RegisterPowerup(unsigned long hashID, PowerupBase* powerup)
 {
     int j = 0;
@@ -2372,6 +2336,9 @@ static inline void RegisterPowerup(unsigned long hashID, PowerupBase* powerup)
     nlBreak();
 }
 
+/**
+ * Offset/Address/Size: 0x2360 | 0x8005CC4C | size: 0x16C
+ */
 void PowerupBase::Init(cFielder* pFielder, Bowser* pBowser)
 {
     int i;
@@ -2484,7 +2451,6 @@ unsigned long PowerupBase::GetSoundType(ePowerUpType type, PowerupBase::PowerupS
 }
 
 // /**
-//  * Offset/Address/Size: 0x22F0 | 0x8005CBDC | size: 0x70
 //  */
 // PhysicsShell::~PhysicsShell()
 // {
@@ -3204,7 +3170,7 @@ void Bobomb::Update(float dt)
 /**
  * Offset/Address/Size: 0x80 | 0x8005A96C | size: 0x3A8
  */
-void Bobomb::ThrowAt(cFielder*, Bowser*)
+void Bobomb::ThrowAt(cFielder* pThrower, Bowser* pBowser)
 {
     if (gBobombAnticipationVoiceID == -1)
     {

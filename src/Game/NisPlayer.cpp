@@ -460,7 +460,7 @@ void NisPlayer::Load(char* buffer, unsigned int size, NisHeader& nisHeader)
         if (j >= 4)
             continue;
 
-        Nis* nis = new (nlMalloc(0x740, 8, false)) Nis(nisHeader, buffer, size);
+        Nis* nis = new (nlMalloc(sizeof(Nis), 8, false)) Nis(nisHeader, buffer, size);
         mLoaded[i] = nis;
         LoadTriggers(*mLoaded[i]);
         return;
@@ -493,7 +493,6 @@ void NisPlayer::LoadTriggers(Nis& nis)
                 name.erase(name.begin(), name.begin() + i);
 
                 BasicString<char, Detail::TempStringAllocator> all("all");
-                // TODO: Restore the BasicString insert adapter once it preserves retail weak emission order.
                 char* insertAt = name.begin();
                 BasicString<char, Detail::TempStringAllocator>::Data* sourceData = all.mData;
                 const char* insertBegin;

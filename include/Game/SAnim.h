@@ -138,20 +138,20 @@ class cSAnim : public cIdentifier
 public:
     typedef char* MemType;
 
-    static cSAnim* Initialize(nlChunk*);
+    static cSAnim* Initialize(nlChunk* pChunk);
     static u8 IsValidChunkID(u32 id)
     {
         return (id & 0x80FFFFFF) == 0x80017000;
     }
 
-    void BlendRot(int, int, float, float, cPoseAccumulator*, bool) const;
-    void BlendScale(int, int, float, float, cPoseAccumulator*, bool) const;
-    void BlendTrans(int, int, float, float, cPoseAccumulator*, bool) const;
+    void BlendRot(int nodeIndex, int remappedNodeIndex, float tNorm, float weight, cPoseAccumulator* acc, bool additive) const;
+    void BlendScale(int nodeIndex, int remappedNodeIndex, float tNorm, float weight, cPoseAccumulator* acc, bool additive) const;
+    void BlendTrans(int nAccumulatorNode, int nSAnimNode, float fTime, float fWeight, cPoseAccumulator* pAccumulator, bool bMirror) const;
     void Destroy();
-    void GetRootRot(float, unsigned short*) const;
-    void GetRootTrans(float, nlVector3*) const;
-    void CreateCallback(float time, unsigned int param1, void (*funcCallback)(unsigned int));
-    float GetMorphWeight(int index, float t) const;
+    void GetRootRot(float fTime, unsigned short* pRootRot) const;
+    void GetRootTrans(float t, nlVector3* out) const;
+    void CreateCallback(float fTime, unsigned int nParam1, void (*funcCallback)(unsigned int));
+    float GetMorphWeight(int channel, float fTime) const;
 
     cSAnimCallback* GetCallbackList() const
     {

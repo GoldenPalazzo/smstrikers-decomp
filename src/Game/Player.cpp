@@ -42,11 +42,6 @@ static int g_nWarioHeadTiltMax = DegreesToAngle(-10.0f);
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 static const float g_fPassInterceptNoPickupTimer = 0.5f;
 
-static inline const float& GetPassInterceptNoPickupTimer()
-{
-    return g_fPassInterceptNoPickupTimer;
-}
-
 inline float max_float(float a, float b)
 {
     return (a >= b) ? a : b;
@@ -87,9 +82,6 @@ static inline cFielder* GetAIOrderedFielder(cTeam* pTeam, s32 i)
     return pTeam->m_pAIOrderedFielders[i];
 }
 
-/**
- * Offset/Address/Size: 0x2298 | 0x800597E8 | size: 0x138
- */
 static inline cPlayer* GetClosestPlayerOnTeam(cPlayer* pSelf, cTeam* pTeam, int nNumPlayers, nlVector3* pPosition)
 {
     cPlayer* pClosestPlayer = NULL;
@@ -175,9 +167,9 @@ static inline void UpdateTimers(cPlayer* self, float fDeltaT)
  * Offset/Address/Size: 0x2FAC | 0x8005A4FC | size: 0x380
  */
 cPlayer::cPlayer(
-    int arg0,
+    int nPlayerID,
     eCharacterClass characterClass,
-    const int* arg2,
+    const int* nModelID,
     cSHierarchy* hierarchy,
     cAnimInventory* animInventory,
     const CharacterPhysicsData* physData,
@@ -186,7 +178,7 @@ cPlayer::cPlayer(
     eClassTypes classType)
     : cCharacter(
           characterClass,
-          arg2,
+          nModelID,
           hierarchy,
           animInventory,
           physData,
@@ -194,7 +186,7 @@ cPlayer::cPlayer(
           playerTweaks->fPhysCapsuleRadius,
           animRetargetList,
           classType)
-    , m_ID(arg0)
+    , m_ID(nPlayerID)
     , m_bIsContactingWall(false)
     , m_ePositionSeekState(PSS_ARRIVED)
     , m_eBallRotationMode(BRM_MATCH_VELOCITY)
@@ -275,7 +267,7 @@ cPlayer::~cPlayer()
         m_pBall = NULL;
 
         f32 possessionTime = m_tBallPossessionTimer.GetSeconds();
-        StatsTracker::s_pInstance->TrackStat((ePlayerStats)0xF, m_pTeam->m_nSide, m_ID, 100.0f * possessionTime, 0, 0, 0);
+        StatsTracker::s_pInstance->TrackStat(STATS_POSSESION_TIME, m_pTeam->m_nSide, m_ID, 100.0f * possessionTime, 0, 0, 0);
 
         if (IsPlayingEffect(fxGetGroup("ball_sts_windup")))
         {
@@ -591,13 +583,17 @@ float cPlayer::DoFlashLight(
     return fDistBetween * fInvWeight + fAngleWeighting * (f32)(u16)angleAbs;
 }
 
+/**
+ * Offset/Address/Size: 0x23D4 | 0x80059924 | size: 0x64
+ */
 void cPlayer::CollideWithBallCallback(cBall* pBall)
 {
     if (pBall->m_pPassTarget != NULL)
     {
         if (pBall->m_pPassTarget != this)
         {
-            m_tNoPickupPassInterceptTimer.SetSeconds(GetPassInterceptNoPickupTimer());
+            const float& fNoPickupTimer = g_fPassInterceptNoPickupTimer;
+            m_tNoPickupPassInterceptTimer.SetSeconds(fNoPickupTimer);
         }
     }
 
@@ -610,11 +606,14 @@ void cPlayer::CollideWithBallCallback(cBall* pBall)
 /**
  * Offset/Address/Size: 0x23D0 | 0x80059920 | size: 0x4
  */
-void cPlayer::CollideWithCharacterCallback(CollisionPlayerPlayerData*)
+void cPlayer::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
 {
     // EMPTY
 }
 
+/**
+ * Offset/Address/Size: 0x2298 | 0x800597E8 | size: 0x138
+ */
 cFielder* cPlayer::GetClosestOpponentFielder(nlVector3* pPosition)
 {
     return (cFielder*)GetClosestPlayerOnTeam(this, m_pTeam->GetOtherTeam(), 4, pPosition);
@@ -773,7 +772,7 @@ void cPlayer::PlayAttackReactionSounds(float fScale)
     Audio::SoundAttributes soundAttr;
     soundAttr.Init();
 
-    if (fScale >= g_pGame->m_pGameTweaks->unk240 && m_eClassType != GOALIE)
+    if (fScale >= g_pGame->m_pGameTweaks->fMinHitIntensityForHardBodyHitSFX && m_eClassType != GOALIE)
     {
         soundAttr.SetSoundType(Audio::CHARSFX_HIT_BODY_BONE, true);
     }
@@ -1027,6 +1026,9 @@ void cPlayer::ResetUnPossessionTimer()
     }
 }
 
+/**
+ * Offset/Address/Size: 0xA10 | 0x80057F60 | size: 0xBCC
+ */
 void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllowLeadPass, bool bParam3, bool bParam4)
 {
     g_pBall->m_tNoPickupTimer.SetSeconds(0.1f);
@@ -1426,7 +1428,7 @@ void cPlayer::SetPowerupAnimState(int animID)
 /**
  * Offset/Address/Size: 0x858 | 0x80057DA8 | size: 0x38
  */
-void cPlayer::CollideWithWallCallback(const CollisionPlayerWallData*)
+void cPlayer::CollideWithWallCallback(const CollisionPlayerWallData* pData)
 {
     if (this != g_pBall->m_pOwner)
     {
@@ -1489,7 +1491,8 @@ cPN_SingleAxisBlender* cPlayer::CreateSingleAxisBlender(
 /**
  * Offset/Address/Size: 0x5D0 | 0x80057B20 | size: 0x148
  */
-void cPlayer::PlayerHeadTrackCallback(unsigned int nSelf, unsigned int, cPoseAccumulator* pPoseAccumulator, unsigned int nJointIndex, int)
+void cPlayer::PlayerHeadTrackCallback(unsigned int nSelf, unsigned int nParam2, cPoseAccumulator* pPoseAccumulator,
+    unsigned int nJointIndex, int nParentIndex)
 {
     cPlayer& self = *(cPlayer*)(void*)nSelf;
     nlMatrix4 m4HeadMatrix;
@@ -1743,10 +1746,10 @@ int cPlayer::GetUniqueID(int nTeamID) const
     return nTeamID + m_ID;
 }
 
-bool cPlayer::SuggestPassDirection(nlVector3& suggestedDirection, cPlayer* fromPlayer, bool volleyPass, bool param3)
+bool cPlayer::SuggestPassDirection(nlVector3& suggestedDirection, cPlayer* fromPlayer, bool volleyPass, bool bIsPerfectPass)
 {
     nlVector3 bestOpenPosition;
-    float bestPositionScore = SuggestPassTargetPosition(bestOpenPosition, fromPlayer, volleyPass, param3);
+    float bestPositionScore = SuggestPassTargetPosition(bestOpenPosition, fromPlayer, volleyPass, bIsPerfectPass);
 
     nlVec3Sub(suggestedDirection, bestOpenPosition, m_v3Position);
     bool leadPass = bestPositionScore < 0.3f;
@@ -1780,10 +1783,10 @@ bool cPlayer::SuggestPassDirection(nlVector3& suggestedDirection, cPlayer* fromP
     return leadPass;
 }
 
-float cPlayer::SuggestPassTargetPosition(nlVector3& suggestedTarget, cPlayer* fromPlayer, bool volleyPass, bool param3)
+float cPlayer::SuggestPassTargetPosition(nlVector3& suggestedTarget, cPlayer* fromPlayer, bool volleyPass, bool bIsPerfectPass)
 {
     eFieldDirection passDirection = (eFieldDirection)Fuzzy::GetPassDirection(fromPlayer, this).mData.i;
-    SSearchBestPass* search = new (nlMalloc(sizeof(SSearchBestPass), 8, false)) SSearchBestPass(fromPlayer, this, volleyPass, param3);
+    SSearchBestPass* search = new (nlMalloc(sizeof(SSearchBestPass), 8, false)) SSearchBestPass(fromPlayer, this, volleyPass, bIsPerfectPass);
     if (m_pSpaceSearch != NULL)
     {
         delete m_pSpaceSearch;

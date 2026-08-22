@@ -54,12 +54,12 @@ class EventManager
 {
 public:
     EventManager(unsigned long uEventCount, unsigned long uEventSize);
-    static void Create(unsigned long, unsigned long);
+    static void Create(unsigned long uEventCount, unsigned long uEventSize);
     void SetupDestArray();
-    EventHandler* AddEventHandler(EventCallback, void*, unsigned long);
-    void RemoveEventHandler(EventHandler*);
-    void AllocateEvents(unsigned long, unsigned long);
-    void AllocateDestArray(unsigned long, unsigned long);
+    EventHandler* AddEventHandler(EventCallback pEventHandlerFunc, void* pParam, unsigned long uDestinationMask);
+    void RemoveEventHandler(EventHandler* h);
+    void AllocateEvents(unsigned long uEventCount, unsigned long uEventSize);
+    void AllocateDestArray(unsigned long count, unsigned long maskDefault);
     Event* GetFreeEvent();
     Event* CreateValidEvent(unsigned long eventID, unsigned long uSize);
     void DispatchEvents();

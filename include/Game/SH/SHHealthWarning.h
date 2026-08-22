@@ -10,7 +10,7 @@ public:
     HealthWarningSceneV2();
     virtual ~HealthWarningSceneV2();
     virtual void SceneCreated();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
 
     /* 0x1C */ AsyncImage* mMessageImage;
     /* 0x20 */ AsyncImage* mPressButtonImage;

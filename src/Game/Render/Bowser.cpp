@@ -614,7 +614,7 @@ void Bowser::Update(float fDeltaT)
 /**
  * Offset/Address/Size: 0x3054 | 0x8015BDC8 | size: 0x208
  */
-void Bowser::CollisionCallback(PhysicsObject* pPhysObj, PhysicsObject* pObjA, const nlVector3&)
+void Bowser::CollisionCallback(PhysicsObject* pPhysObj, PhysicsObject* pObjA, const nlVector3& v3Pos)
 {
     Bowser* pObj = (Bowser*)((PhysicsNPC*)pPhysObj)->mpAINPC;
     cCharacter* pCharacter = NULL;
@@ -1464,7 +1464,6 @@ void Bowser::SetTiltParameters(float fYAxisTilt)
 
 /**
  * Offset/Address/Size: 0x954 | 0x801596C8 | size: 0x6F0
- * TODO: 99.79% match - r28/r30 controller and blender register swap in second leave/setup path
  */
 bool Bowser::CheckForAbort()
 {

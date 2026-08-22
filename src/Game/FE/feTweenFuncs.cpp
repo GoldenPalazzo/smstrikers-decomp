@@ -26,9 +26,7 @@ float easeinelastic(float t, float b, float c, float d)
 
     t = t - 1.0f;
     p = (float)(0.3 * (double)d);
-    float q = p;
-    q *= 0.25f;
-    u16 idx = (u16)(s32)(10430.378f * ((6.2831855f * ((t * d) - q)) / p));
+    u16 idx = (u16)(s32)(10430.378f * ((6.2831855f * ((t * d) - p / 4.0f)) / p));
     float sinv = nlSin(idx);
     double pow_d = pow(2.0, (double)(10.0f * t));
     double prod = ((double)c) * pow_d;
@@ -38,29 +36,26 @@ float easeinelastic(float t, float b, float c, float d)
 /**
  * Offset/Address/Size: 0x10 | 0x800A2ED4 | size: 0xF4
  */
-float easeoutelastic(float arg0, float arg1, float arg2, float arg3)
+float easeoutelastic(float t, float b, float c, float d)
 {
     float p;
-    float q;
     float sinv;
     double prod;
 
-    if (arg0 == 0.0f)
+    if (t == 0.0f)
     {
-        return arg1;
+        return b;
     }
-    arg0 = arg0 / arg3;
-    if (arg0 == 1.0f)
+    t = t / d;
+    if (t == 1.0f)
     {
-        return arg1 + arg2;
+        return b + c;
     }
 
-    p = (float)(0.3 * (double)arg3);
-    q = p;
-    q *= 0.25f;
-    sinv = nlSin((u16)(s32)(10430.378f * ((6.2831855f * ((arg0 * arg3) - q)) / p)));
-    prod = arg2 * pow(2.0, -10.0f * arg0);
-    return (float)(arg1 + ((prod * sinv) + arg2));
+    p = (float)(0.3 * (double)d);
+    sinv = nlSin((u16)(s32)(10430.378f * ((6.2831855f * ((t * d) - p / 4.0f)) / p)));
+    prod = c * pow(2.0, -10.0f * t);
+    return (float)(b + ((prod * sinv) + c));
 }
 
 /**
@@ -72,20 +67,3 @@ float linear(float t, float b, float c, float d)
 }
 
 } // namespace TweenFunctions
-
-/**
- * Stub only for field order; unreferenced so the linker drops it.
- * Forces emission of specific constants/operations so the compiler lays out the related fields to match the original binary.
- */
-void feTweenFuncs_stub(float& v0, float& v1, double& v2, float& v3, float& v4, float& v5, double& v6, float& v7, float& v8)
-{
-    v0 = 0.0f;
-    v1 = 1.0f;
-    v2 = 0.3;
-    v3 = 10430.378f;
-    v4 = 6.2831855f;
-    v5 = 0.25f;
-    v6 = 2.0;
-    v7 = -10.0f;
-    v8 = 10.0f;
-}

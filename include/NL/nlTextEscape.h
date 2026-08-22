@@ -26,7 +26,7 @@ public:
 
     nlColour GetExtendedColour();
 
-    nlEscapeSequence(const unsigned short*);
+    nlEscapeSequence(const unsigned short* str);
 
     /* 0x00 */ ESCAPE_TYPE m_Type;
     /* 0x04 */ unsigned short m_Extended[16];

@@ -15,20 +15,6 @@ s32 g_pPadRemapArray[38] = {
     0x00000020, 0x00000040, 0x00000008, 0x00000004, 0x00000004, 0x00000040, 0x00000020, 0x00000100, 0x00000010, 0x00000100, 0x00000200, 0x00000001, 0x00000002, 0x00000008, 0x00000004, 0x00000100, 0x00000200, 0x00000400, 0x00000800, 0x00001000, 0x00000020, 0x00000040, 0x00000400, 0x00000010, 0x00000800, 0x00000200, 0x00000100, 0x00000100, 0x00000200, 0x00000800, 0x00000800, 0x00000800, 0x00000020, 0x00001000, 0x00000010, 0x00000010, 0x00001000, 0x00001000
 };
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801935F8 | size: 0x128
-//  */
-// void Format<BasicString<char, Detail::TempStringAllocator>, int, int>(const BasicString<char, Detail::TempStringAllocator>&, const int&, const int&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801935B0 | size: 0x48
-//  */
-// cGlobalPad::~cGlobalPad()
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x10F8 | 0x80193418 | size: 0x198
  */
@@ -63,8 +49,6 @@ void InitPads()
 
 /**
  * Offset/Address/Size: 0x0 | 0x80192320 | size: 0x10F8
- * TODO: 98.90% match - format-template literal ptr is hoisted into r15 across iterations,
- * adding one preserved register and bumping the stack frame from 0x90 to 0xa0.
  */
 void UpdateMonkeyState(int monkeySet)
 {

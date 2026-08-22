@@ -4,6 +4,9 @@
 
 #include "__gx.h"
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8024DCA0 | size: 0x80
+ */
 void __GXSetDirtyState(void)
 {
     u32 dState = __GXData->dirtyState;
@@ -36,6 +39,9 @@ void __GXSetDirtyState(void)
     __GXData->dirtyState = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x80 | 0x8024DD20 | size: 0xD0
+ */
 void GXBegin(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts)
 {
     ASSERTMSGLINE(359, vtxfmt < GX_MAX_VTXFMT, "GXBegin: Format Index is out of range");
@@ -62,6 +68,9 @@ void GXBegin(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts)
     GX_WRITE_U16(nverts);
 }
 
+/**
+ * Offset/Address/Size: 0x150 | 0x8024DDF0 | size: 0x88
+ */
 void __GXSendFlushPrim(void)
 {
     u32 i;
@@ -76,6 +85,9 @@ void __GXSendFlushPrim(void)
     __GXData->bpSentNot = 1;
 }
 
+/**
+ * Offset/Address/Size: 0x1D8 | 0x8024DE78 | size: 0x40
+ */
 void GXSetLineWidth(u8 width, GXTexOffset texOffsets)
 {
     CHECK_GXBEGIN(440, "GXSetLineWidth");
@@ -93,6 +105,9 @@ void GXGetLineWidth(u8* width, GXTexOffset* texOffsets)
     *texOffsets = GET_REG_FIELD(__GXData->lpSize, 3, 16);
 }
 
+/**
+ * Offset/Address/Size: 0x218 | 0x8024DEB8 | size: 0x40
+ */
 void GXSetPointSize(u8 pointSize, GXTexOffset texOffsets)
 {
     CHECK_GXBEGIN(484, "GXSetPointSize");
@@ -110,6 +125,9 @@ void GXGetPointSize(u8* pointSize, GXTexOffset* texOffsets)
     *texOffsets = GET_REG_FIELD(__GXData->lpSize, 3, 19);
 }
 
+/**
+ * Offset/Address/Size: 0x258 | 0x8024DEF8 | size: 0x48
+ */
 void GXEnableTexOffsets(GXTexCoordID coord, u8 line_enable, u8 point_enable)
 {
     CHECK_GXBEGIN(529, "GXEnableTexOffsets");
@@ -122,6 +140,9 @@ void GXEnableTexOffsets(GXTexCoordID coord, u8 line_enable, u8 point_enable)
     __GXData->bpSentNot = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x2A0 | 0x8024DF40 | size: 0x28
+ */
 void GXSetCullMode(GXCullMode mode)
 {
     GXCullMode hwMode;
@@ -173,6 +194,9 @@ void GXGetCullMode(GXCullMode* mode)
 #endif
 }
 
+/**
+ * Offset/Address/Size: 0x2C8 | 0x8024DF68 | size: 0x34
+ */
 void GXSetCoPlanar(GXBool enable)
 {
     u32 reg;
@@ -185,6 +209,9 @@ void GXSetCoPlanar(GXBool enable)
     GX_WRITE_RAS_REG(__GXData->genMode);
 }
 
+/**
+ * Offset/Address/Size: 0x2FC | 0x8024DF9C | size: 0x24
+ */
 void __GXSetGenMode(void)
 {
     GX_WRITE_RAS_REG(__GXData->genMode);

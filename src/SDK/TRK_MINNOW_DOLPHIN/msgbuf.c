@@ -11,6 +11,9 @@ inline void TRKSetBufferUsed(TRKBuffer* msg, BOOL state)
     msg->isInUse = state;
 }
 
+/**
+ * Offset/Address/Size: 0x7C8 | 0x80225584 | size: 0x74
+ */
 DSError TRKInitializeMessageBuffers(void)
 {
     int i;
@@ -25,6 +28,9 @@ DSError TRKInitializeMessageBuffers(void)
     return DS_NoError;
 }
 
+/**
+ * Offset/Address/Size: 0x700 | 0x802254BC | size: 0xC8
+ */
 DSError TRKGetFreeBuffer(int* msgID, TRKBuffer** outMsg)
 {
     TRKBuffer* buf;
@@ -58,6 +64,9 @@ DSError TRKGetFreeBuffer(int* msgID, TRKBuffer** outMsg)
     return error;
 }
 
+/**
+ * Offset/Address/Size: 0x6D4 | 0x80225490 | size: 0x2C
+ */
 void* TRKGetBuffer(int idx)
 {
     TRKBuffer* buf = NULL;
@@ -69,6 +78,9 @@ void* TRKGetBuffer(int idx)
     return buf;
 }
 
+/**
+ * Offset/Address/Size: 0x670 | 0x8022542C | size: 0x64
+ */
 void TRKReleaseBuffer(int idx)
 {
     TRKBuffer* msg;
@@ -81,6 +93,9 @@ void TRKReleaseBuffer(int idx)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x630 | 0x802253EC | size: 0x40
+ */
 void TRKResetBuffer(TRKBuffer* msg, BOOL keepData)
 {
     msg->length = 0;
@@ -92,6 +107,9 @@ void TRKResetBuffer(TRKBuffer* msg, BOOL keepData)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x600 | 0x802253BC | size: 0x30
+ */
 DSError TRKSetBufferPosition(TRKBuffer* msg, u32 pos)
 {
     DSError error = DS_NoError;
@@ -115,6 +133,9 @@ DSError TRKSetBufferPosition(TRKBuffer* msg, u32 pos)
 }
 
 // #pragma dont_inline on
+/**
+ * Offset/Address/Size: 0x55C | 0x80225318 | size: 0xA4
+ */
 DSError TRKAppendBuffer(TRKBuffer* msg, const void* data, size_t length)
 {
     DSError error = DS_NoError; // r31
@@ -155,10 +176,13 @@ DSError TRKAppendBuffer(TRKBuffer* msg, const void* data, size_t length)
 }
 // #pragma dont_inline reset
 
+/**
+ * Offset/Address/Size: 0x4D0 | 0x8022528C | size: 0x8C
+ */
 DSError TRKReadBuffer(TRKBuffer* msg, void* data, size_t length)
 {
     DSError error = DS_NoError;
-    unsigned int bytesLeft; // this has to be unsigned int not u32 to match lmfao.
+    unsigned int bytesLeft;
 
     // Return if no bytes to read
     if (length == 0)
@@ -227,6 +251,9 @@ inline DSError TRKAppendBuffer1_ui32(TRKBuffer* buffer, const u32 data)
     return TRKAppendBuffer(buffer, (const void*)bigEndianData, sizeof(data));
 }
 
+/**
+ * Offset/Address/Size: 0x3D4 | 0x80225190 | size: 0xFC
+ */
 DSError TRKAppendBuffer1_ui64(TRKBuffer* buffer, const u64 data)
 {
     u8* bigEndianData;
@@ -254,6 +281,9 @@ DSError TRKAppendBuffer1_ui64(TRKBuffer* buffer, const u64 data)
     return TRKAppendBuffer(buffer, (const void*)bigEndianData, sizeof(data));
 }
 
+/**
+ * Offset/Address/Size: 0x36C | 0x80225128 | size: 0x68
+ */
 DSError TRKAppendBuffer_ui8(TRKBuffer* buffer, const u8* data, int count)
 {
     DSError err;
@@ -267,6 +297,9 @@ DSError TRKAppendBuffer_ui8(TRKBuffer* buffer, const u8* data, int count)
     return err;
 }
 
+/**
+ * Offset/Address/Size: 0x270 | 0x8022502C | size: 0xFC
+ */
 DSError TRKAppendBuffer_ui32(TRKBuffer* buffer, const u32* data, int count)
 {
     DSError err;
@@ -347,6 +380,9 @@ inline DSError TRKReadBuffer1_ui32(TRKBuffer* buffer, u32* data)
     return err;
 }
 
+/**
+ * Offset/Address/Size: 0x188 | 0x80224F44 | size: 0xE8
+ */
 DSError TRKReadBuffer1_ui64(TRKBuffer* buffer, u64* data)
 {
     DSError err;
@@ -383,6 +419,9 @@ DSError TRKReadBuffer1_ui64(TRKBuffer* buffer, u64* data)
     return err;
 }
 
+/**
+ * Offset/Address/Size: 0xF0 | 0x80224EAC | size: 0x98
+ */
 DSError TRKReadBuffer_ui8(TRKBuffer* buffer, u8* data, int count)
 {
     DSError err;
@@ -396,6 +435,9 @@ DSError TRKReadBuffer_ui8(TRKBuffer* buffer, u8* data, int count)
     return err;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80224DBC | size: 0xF0
+ */
 DSError TRKReadBuffer_ui32(TRKBuffer* buffer, u32* data, int count)
 {
     DSError err;

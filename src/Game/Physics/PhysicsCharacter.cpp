@@ -24,7 +24,6 @@ static float sfBallStuckHackShoveMagnitude = 10.0f;
     asm { rlwimi dest, src, shift, bit, bit }
 /**
  * Offset/Address/Size: 0x10D0 | 0x801372E8 | size: 0xFC
- * TODO: this is a hack... should also work with the bitfields
  */
 PhysicsCharacter::PhysicsCharacter(float radius, float heightScale)
     : PhysicsCharacterBase(g_CollisionSpace, g_PhysicsWorld, radius + (heightScale / 2.0f))

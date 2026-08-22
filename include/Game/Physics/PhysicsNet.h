@@ -21,16 +21,15 @@ public:
     static float sfPhysicsNetDepth;
     static bool sbSweepTestEnabled;
     static float sfWallSoftness;
-    // static bool sbTestLowerHorizontalGoalpost;
 
-    PhysicsNet(CollisionSpace*, bool);
+    PhysicsNet(CollisionSpace* space, bool positive_x);
     virtual ~PhysicsNet();
     virtual int GetObjectType() const { return 0x1b; };
 
-    static bool IsAGoalPost(PhysicsObject*);
-    static bool IsAGoalWall(PhysicsObject*);
-    bool SweepTestForBallContact(const nlVector3&, const nlVector3&, const nlVector3&, float, nlVector3&, nlVector3&, PhysicsObject**) const;
-    static void StaticInit(CollisionSpace*);
+    static bool IsAGoalPost(PhysicsObject* obj);
+    static bool IsAGoalWall(PhysicsObject* obj);
+    bool SweepTestForBallContact(const nlVector3& startPos, const nlVector3& endPos, const nlVector3& ballVelocity, float ballRadius, nlVector3& contactPos, nlVector3& contactNormal, PhysicsObject** hitObject) const;
+    static void StaticInit(CollisionSpace* pCollisionSpace);
     static void StaticDestroy();
 
     /* 0x4, */ PhysicsFinitePlane* mpBackWall;

@@ -222,7 +222,7 @@ void GameRenderTask::Run(float fDeltaT)
 
     if (g_bWhiteDiffuse)
     {
-        gl_ModifyAddMapping(eGLModifier_1, whiteTexture);
+        gl_ModifyAddMapping(GLMod_DiffuseTex, whiteTexture);
     }
 
     if (g_bTexelDensity)
@@ -263,7 +263,7 @@ void GameRenderTask::Run(float fDeltaT)
 
     if (mask)
     {
-        gl_ModifyAddMapping(eGLModifier_3, ~mask);
+        gl_ModifyAddMapping(GLMod_TextureMask, ~mask);
     }
 
     WorldManager::RenderWorld();

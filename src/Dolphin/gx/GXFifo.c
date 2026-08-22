@@ -95,6 +95,9 @@ static void GXBreakPointHandler(__OSInterrupt interrupt, OSContext* context)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8024C228 | size: 0x134
+ */
 static void GXCPInterruptHandler(__OSInterrupt interrupt, OSContext* context)
 {
     __GXData->cpStatus = GX_GET_CP_REG(0);
@@ -112,6 +115,9 @@ static void GXCPInterruptHandler(__OSInterrupt interrupt, OSContext* context)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x134 | 0x8024C35C | size: 0x6C
+ */
 void GXInitFifoBase(GXFifoObj* fifo, void* base, u32 size)
 {
     __GXFifoObj* realFifo = (__GXFifoObj*)fifo;
@@ -131,6 +137,9 @@ void GXInitFifoBase(GXFifoObj* fifo, void* base, u32 size)
     GXInitFifoPtrs(fifo, base, base);
 }
 
+/**
+ * Offset/Address/Size: 0x1A0 | 0x8024C3C8 | size: 0x70
+ */
 void GXInitFifoPtrs(GXFifoObj* fifo, void* readPtr, void* writePtr)
 {
     __GXFifoObj* realFifo = (__GXFifoObj*)fifo;
@@ -154,6 +163,9 @@ void GXInitFifoPtrs(GXFifoObj* fifo, void* readPtr, void* writePtr)
     OSRestoreInterrupts(enabled);
 }
 
+/**
+ * Offset/Address/Size: 0x210 | 0x8024C438 | size: 0xC
+ */
 void GXInitFifoLimits(GXFifoObj* fifo, u32 hiWatermark, u32 loWatermark)
 {
     __GXFifoObj* realFifo = (__GXFifoObj*)fifo;
@@ -170,7 +182,9 @@ void GXInitFifoLimits(GXFifoObj* fifo, u32 hiWatermark, u32 loWatermark)
 
 #define GX_SET_PI_REG(offset, val) (*(volatile u32*)((volatile u32*)(__piReg) + (offset)) = val)
 
-// NONMATCHING DEBUG
+/**
+ * Offset/Address/Size: 0x21C | 0x8024C444 | size: 0x128
+ */
 void GXSetCPUFifo(GXFifoObj* fifo)
 {
     __GXFifoObj* realFifo = (__GXFifoObj*)fifo;
@@ -217,6 +231,9 @@ void GXSetCPUFifo(GXFifoObj* fifo)
     OSRestoreInterrupts(enabled);
 }
 
+/**
+ * Offset/Address/Size: 0x344 | 0x8024C56C | size: 0x178
+ */
 void GXSetGPFifo(GXFifoObj* fifo)
 {
     __GXFifoObj* realFifo = (__GXFifoObj*)fifo;
@@ -469,6 +486,9 @@ void GXGetFifoLimits(const GXFifoObj* fifo, u32* hi, u32* lo)
     *lo = realFifo->loWatermark;
 }
 
+/**
+ * Offset/Address/Size: 0x4BC | 0x8024C6E4 | size: 0x44
+ */
 GXBreakPtCallback GXSetBreakPtCallback(GXBreakPtCallback cb)
 {
     GXBreakPtCallback oldcb = BreakPointCB;
@@ -512,6 +532,9 @@ void GXDisableBreakPt(void)
     OSRestoreInterrupts(enabled);
 }
 
+/**
+ * Offset/Address/Size: 0x500 | 0x8024C728 | size: 0x4C
+ */
 void __GXFifoInit(void)
 {
     __OSSetInterruptHandler(0x11, GXCPInterruptHandler);
@@ -522,24 +545,36 @@ void __GXFifoInit(void)
     GPFifo = NULL;
 }
 
+/**
+ * Offset/Address/Size: 0x54C | 0x8024C774 | size: 0x24
+ */
 static void __GXFifoReadEnable(void)
 {
     SET_REG_FIELD(0, __GXData->cpEnable, 1, 0, 1);
     GX_SET_CP_REG(1, __GXData->cpEnable);
 }
 
+/**
+ * Offset/Address/Size: 0x570 | 0x8024C798 | size: 0x24
+ */
 static void __GXFifoReadDisable(void)
 {
     SET_REG_FIELD(0, __GXData->cpEnable, 1, 0, 0);
     GX_SET_CP_REG(1, __GXData->cpEnable);
 }
 
+/**
+ * Offset/Address/Size: 0x594 | 0x8024C7BC | size: 0x34
+ */
 static void __GXFifoLink(u8 en)
 {
     SET_REG_FIELD(LINE(1242, 1242, 1299), __GXData->cpEnable, 1, 4, (en != 0) ? 1 : 0);
     GX_SET_CP_REG(1, __GXData->cpEnable);
 }
 
+/**
+ * Offset/Address/Size: 0x5C8 | 0x8024C7F0 | size: 0x30
+ */
 static void __GXWriteFifoIntEnable(u8 hiWatermarkEn, u8 loWatermarkEn)
 {
     SET_REG_FIELD(LINE(1264, 1264, 1321), __GXData->cpEnable, 1, 2, hiWatermarkEn);
@@ -547,6 +582,9 @@ static void __GXWriteFifoIntEnable(u8 hiWatermarkEn, u8 loWatermarkEn)
     GX_SET_CP_REG(1, __GXData->cpEnable);
 }
 
+/**
+ * Offset/Address/Size: 0x5F8 | 0x8024C820 | size: 0x30
+ */
 static void __GXWriteFifoIntReset(u8 hiWatermarkClr, u8 loWatermarkClr)
 {
     SET_REG_FIELD(LINE(1288, 1288, 1345), __GXData->cpClr, 1, 0, hiWatermarkClr);
@@ -615,6 +653,9 @@ GXFifoObj* GXGetCPUFifo(void)
     return (GXFifoObj*)CPUFifo;
 }
 
+/**
+ * Offset/Address/Size: 0x628 | 0x8024C850 | size: 0x8
+ */
 GXFifoObj* GXGetGPFifo(void)
 {
     return (GXFifoObj*)GPFifo;
@@ -634,7 +675,6 @@ u32 GXResetOverflowCount(void)
     return oldcount;
 }
 
-// NONMATCHING
 volatile void* GXRedirectWriteGatherPipe(void* ptr)
 {
     u32 reg = 0;
@@ -670,7 +710,6 @@ volatile void* GXRedirectWriteGatherPipe(void* ptr)
     return (volatile void*)GXFIFO_ADDR;
 }
 
-// NONMATCHING
 void GXRestoreWriteGatherPipe(void)
 {
     u32 reg = 0;

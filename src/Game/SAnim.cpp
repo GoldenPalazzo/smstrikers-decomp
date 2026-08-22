@@ -402,19 +402,19 @@ void cSAnim::GetRootTrans(float t, nlVector3* out) const
 /**
  * Offset/Address/Size: 0x160 | 0x801E9374 | size: 0x80
  */
-void cSAnim::CreateCallback(float time, unsigned int param1, void (*funcCallback)(unsigned int))
+void cSAnim::CreateCallback(float fTime, unsigned int nParam1, void (*funcCallback)(unsigned int))
 {
-    cSAnimCallback* temp_r3;
-    temp_r3 = (cSAnimCallback*)nlMalloc(0x10, 8, 0);
+    cSAnimCallback* pCallback;
+    pCallback = (cSAnimCallback*)nlMalloc(sizeof(cSAnimCallback), 8, 0);
 
-    if (temp_r3 != NULL)
+    if (pCallback != NULL)
     {
-        temp_r3->m_fTime = time;
-        temp_r3->m_nParam1 = param1;
-        temp_r3->m_funcCallback = funcCallback;
+        pCallback->m_fTime = fTime;
+        pCallback->m_nParam1 = nParam1;
+        pCallback->m_funcCallback = funcCallback;
     }
 
-    nlListAddStart<cSAnimCallback>(&m_pCallbackList, temp_r3, NULL);
+    nlListAddStart<cSAnimCallback>(&m_pCallbackList, pCallback, NULL);
 }
 
 /**

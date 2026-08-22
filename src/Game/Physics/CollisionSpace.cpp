@@ -6,6 +6,9 @@ class SimpleCollisionSpace : public CollisionSpace
 {
 public:
     SimpleCollisionSpace(PhysicsWorld*);
+    /**
+     * Offset/Address/Size: 0x1D0 | 0x801FE5B8 | size: 0x70
+     */
     virtual ~SimpleCollisionSpace() { };
 };
 

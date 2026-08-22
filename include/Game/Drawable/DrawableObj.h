@@ -26,7 +26,7 @@ public:
     /* 0x14 */ virtual void DrawPlanarShadow() { };
     /* 0x18 */ virtual bool IsDrawableModel() { return false; };
     /* 0x1C */ virtual DrawableModel* AsDrawableModel() { return NULL; }
-    /* 0x20 */ virtual void GetAABBDimensions(AABBDimensions&, bool) const;
+    /* 0x20 */ virtual void GetAABBDimensions(AABBDimensions& dim, bool param) const;
 
     nlMatrix4& GetWorldMatrix() const;
     unsigned long GetHashID() const { return m_uHashID; }

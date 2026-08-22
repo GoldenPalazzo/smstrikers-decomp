@@ -33,6 +33,9 @@ void C_MTXFrustum(Mtx44 m, f32 t, f32 b, f32 l, f32 r, f32 n, f32 f)
     m[3][3] = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80252870 | size: 0xD0
+ */
 void C_MTXPerspective(Mtx44 m, f32 fovY, f32 aspect, f32 n, f32 f)
 {
     f32 angle;
@@ -65,6 +68,9 @@ void C_MTXPerspective(Mtx44 m, f32 fovY, f32 aspect, f32 n, f32 f)
     m[3][3] = 0;
 }
 
+/**
+ * Offset/Address/Size: 0xD0 | 0x80252940 | size: 0x98
+ */
 void C_MTXOrtho(Mtx44 m, f32 t, f32 b, f32 l, f32 r, f32 n, f32 f)
 {
     f32 tmp;
@@ -116,6 +122,9 @@ void C_MTX44Identity(Mtx44 m)
     m[3][3] = 1.0f;
 }
 
+/**
+ * Offset/Address/Size: 0x168 | 0x802529D8 | size: 0x34
+ */
 void PSMTX44Identity(register Mtx44 m)
 {
     register f32 c1 = 1.0f;
@@ -164,6 +173,9 @@ void C_MTX44Copy(const Mtx44 src, Mtx44 dst)
 }
 
 // clang-format off
+/**
+ * Offset/Address/Size: 0x19C | 0x80252A0C | size: 0x44
+ */
 asm void PSMTX44Copy(const register Mtx44 src, register Mtx44 dst)
 {
     nofralloc
@@ -232,6 +244,9 @@ void C_MTX44Concat(const Mtx44 a, const Mtx44 b, Mtx44 ab)
 }
 
 // clang-format off
+/**
+ * Offset/Address/Size: 0x1E0 | 0x80252A50 | size: 0x104
+ */
 asm void PSMTX44Concat(const register Mtx44 a, const register Mtx44 b, register Mtx44 ab)
 {
     nofralloc
@@ -344,6 +359,9 @@ void C_MTX44Transpose(const Mtx44 src, Mtx44 xPose)
 }
 
 // clang-format off
+/**
+ * Offset/Address/Size: 0x2E4 | 0x80252B54 | size: 0x64
+ */
 asm void PSMTX44Transpose(const register Mtx44 src, register Mtx44 xPose) {
     nofralloc
     psq_l f0, 0x0(src), 0, 0
@@ -382,6 +400,9 @@ asm void PSMTX44Transpose(const register Mtx44 src, register Mtx44 xPose) {
         b = tmp;   \
     }
 
+/**
+ * Offset/Address/Size: 0x348 | 0x80252BB8 | size: 0x3F0
+ */
 u32 C_MTX44Inverse(const Mtx44 src, Mtx44 inv)
 {
     Mtx44 gjm;
@@ -586,6 +607,9 @@ void C_MTX44Scale(Mtx44 m, f32 xS, f32 yS, f32 zS)
     m[3][3] = 1.0f;
 }
 
+/**
+ * Offset/Address/Size: 0x738 | 0x80252FA8 | size: 0x34
+ */
 void PSMTX44Scale(register Mtx44 m, register f32 xS, register f32 yS, register f32 zS)
 {
     register f32 c_zero = 0.0f;

@@ -46,7 +46,7 @@ static inline float CalculateDefensiveThreat()
 /**
  * Offset/Address/Size: 0x5590 | 0x8008AC48 | size: 0x43C
  */
-FuzzyVariant Fuzzy::AbortDefencePlay(cDecisionEntity*)
+FuzzyVariant Fuzzy::AbortDefencePlay(cDecisionEntity* pEntity)
 {
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;

@@ -14,41 +14,6 @@ GCAudioStreaming::AudioBufferMgr g_BufferMgr;
 nlStaticSortedSlot<GCAudioStreaming::AudioStream*, 7> g_Streams;
 static bool g_StreamingInitd;
 
-// /**
-//  * Offset/Address/Size: 0x30 | 0x801C778C | size: 0x24
-//  */
-// void nlStaticSortedSlot<GCAudioStreaming::AudioStream*, 7>::GetNewEntry()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x20 | 0x801C777C | size: 0x10
-//  */
-// void nlStaticSortedSlot<GCAudioStreaming::AudioStream*, 7>::FreeEntry(GCAudioStreaming::AudioStream**)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x14 | 0x801C7770 | size: 0xC
-//  */
-// void nlStaticSortedSlot<GCAudioStreaming::AudioStream*, 7>::FreeLookup()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801C775C | size: 0x14
-//  */
-// void nlStaticSortedSlot<GCAudioStreaming::AudioStream*, 7>::ExpandLookup()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x5B8 | 0x801C767C | size: 0xCC
-//  */
-// void 0x801C7748..0x801C775C | size: 0x14
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x574 | 0x801C7638 | size: 0x44
  */

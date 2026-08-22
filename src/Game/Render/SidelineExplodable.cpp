@@ -88,7 +88,7 @@ void UpdateEmissionControllerPosition(EmissionController& ec, ExplosionFragment*
 /**
  * Offset/Address/Size: 0x2128 | 0x80169488 | size: 0xC
  */
-void EmissionControllerFinished(EmissionController&, ExplosionFragment* p0)
+void EmissionControllerFinished(EmissionController& ec, ExplosionFragment* p0)
 {
     p0->mpSmokeEmissionController = NULL;
 }
@@ -183,12 +183,10 @@ void SidelineExplodable::Initialize(int numFragmentModels)
 /**
  * Offset/Address/Size: 0x1C9C | 0x80168FFC | size: 0x28
  */
-#pragma dont_inline on
 void SidelineExplodable::Allocate()
 {
     mExplosionFragments.resize(mNumFragmentModels);
 }
-#pragma dont_inline reset
 
 void SidelineExplodable::DeAllocate()
 {
@@ -266,7 +264,6 @@ void SidelineExplodable::DestroyAllActiveFragments(bool renewExplodables)
                     }
                 }
             }
-
         }
     }
 
@@ -479,7 +476,7 @@ void SidelineExplodable::FindExplosionAngleRange(unsigned short& min, unsigned s
 /**
  * Offset/Address/Size: 0xC04 | 0x80167F64 | size: 0x4
  */
-void SidelineExplodableTextureLoadCallback(unsigned long)
+void SidelineExplodableTextureLoadCallback(unsigned long textureId)
 {
 }
 
@@ -807,9 +804,6 @@ SidelineExplosionPhysicsObject::SidelineExplosionPhysicsObject(CollisionSpace* s
     SetCollide(0xFF);
 }
 
-/**
- * Offset/Address/Size: 0x358 | 0x801676B8 | size: 0x1B0
- */
 struct SwizzledVelocityProxy
 {
     float y_field;
@@ -829,6 +823,9 @@ struct PhysicsCharacterProxy
     CharacterVelocityProxy* m_pAICharacter;
 };
 
+/**
+ * Offset/Address/Size: 0x358 | 0x801676B8 | size: 0x1B0
+ */
 ContactType SidelineExplosionPhysicsObject::Contact(PhysicsObject* other, dContact* contact, int what, PhysicsObject* otherObject)
 {
     if (mpExplosionFragment->mfRemainingLifespan < (0.5f * ExplosionFragment::sfFadeOutTime))

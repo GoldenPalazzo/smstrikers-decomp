@@ -141,8 +141,7 @@ static inline void PlayRandomOhBig(float delay, float fVol, int priority)
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x80153FD8 | size: 0x96C
- * TODO: 99.93% match - register allocation differences in cases 4, 5, 14
+ * Offset/Address/Size: 0x1A0 | 0x80153FD8 | size: 0x96C
  */
 void SoundEventScript::DoFunctionCall(unsigned int func)
 {
@@ -411,7 +410,7 @@ void SoundEventScript::DoFunctionCall(unsigned int func)
  */
 void SoundEventScript::CreateInstance()
 {
-    pInstance = new (nlMalloc(0x68, 8, 0)) SoundEventScript();
+    pInstance = new (nlMalloc(sizeof(SoundEventScript), 8, 0)) SoundEventScript();
 }
 
 /**

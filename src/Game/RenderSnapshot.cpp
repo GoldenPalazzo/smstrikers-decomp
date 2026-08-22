@@ -24,10 +24,10 @@ float g_AllActorsHidden;
  */
 void RenderSnapshot::Initialize()
 {
-    DrawableNetMesh* pNetMesh = new (nlMalloc(0x28, 8, false)) DrawableNetMesh(true);
+    DrawableNetMesh* pNetMesh = new (nlMalloc(sizeof(DrawableNetMesh), 8, false)) DrawableNetMesh(true);
     mpNetMeshPositiveX = pNetMesh;
 
-    pNetMesh = new (nlMalloc(0x28, 8, false)) DrawableNetMesh(false);
+    pNetMesh = new (nlMalloc(sizeof(DrawableNetMesh), 8, false)) DrawableNetMesh(false);
     mpNetMeshNegativeX = pNetMesh;
 
     for (int i = 0; i < 20; i++)
@@ -298,7 +298,7 @@ void RenderSnapshot::Render(float deltaTime) const
 /**
  * Offset/Address/Size: 0x218 | 0x80112EEC | size: 0x4
  */
-void RenderSnapshot::RenderDebugInfo(const RenderSnapshot&, const RenderSnapshot&, float) const
+void RenderSnapshot::RenderDebugInfo(const RenderSnapshot& previous, const RenderSnapshot& current, float fBlend) const
 {
 }
 

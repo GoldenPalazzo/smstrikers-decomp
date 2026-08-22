@@ -17,8 +17,8 @@ public:
     SlotPoolBase();
     ~SlotPoolBase();
 
-    static void BaseAddNewBlock(SlotPoolBase* pool, unsigned int entrySize);
-    static void BaseFreeBlocks(SlotPoolBase* pool, unsigned int entrySize);
+    static void BaseAddNewBlock(SlotPoolBase* slotPool, unsigned int slotSize);
+    static void BaseFreeBlocks(SlotPoolBase* slotPool, unsigned int slotSize);
 
     /* 0x00 */ u32 m_Initial;              // Secondary slot count
     /* 0x04 */ u32 m_Delta;                // Primary slot count
@@ -38,8 +38,8 @@ struct SlotPoolEntry
     SlotPoolEntry* next;
 };
 
-static void DefaultSlotPoolFree(void*);
-static void* DefaultSlotPoolAllocator(unsigned long);
+static void DefaultSlotPoolFree(void* data);
+static void* DefaultSlotPoolAllocator(unsigned long size);
 
 template <typename T>
 class BasicSlotPool : public SlotPoolBase

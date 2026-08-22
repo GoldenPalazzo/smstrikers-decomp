@@ -32,11 +32,11 @@ struct SkinMatrix
 {
     /* 0x00 */ float m[3][4]; // offset 0x0, size 0x30
 
-    void Set(const nlMatrix4&);
-    void Get(nlMatrix4&) const;
-    void Get4x3(float*) const;
+    void Set(const nlMatrix4& in);
+    void Get(nlMatrix4& out) const;
+    void Get4x3(float* out) const;
 }; // total size: 0x30
 
-void nlMultMatrices(SkinMatrix&, const SkinMatrix&, const SkinMatrix&);
+void nlMultMatrices(SkinMatrix& out, const SkinMatrix& a, const SkinMatrix& b);
 
 #endif // _GLSKINMESH_H_

@@ -54,7 +54,7 @@ void FrontEnd::ReturnToFE()
 /**
  * Offset/Address/Size: 0x44 | 0x80094CC8 | size: 0x1A0
  */
-void FrontEnd::UpdateForGame(float)
+void FrontEnd::UpdateForGame(float fDeltaT)
 {
     if (m_bGameOver)
         return;
@@ -217,7 +217,7 @@ void FrontEnd::Update(float fTimeDelta)
         nlTaskManager::SetNextState(1);
         g_pBall->SetVisible(false);
 
-        m_pPauseMenuCamera = new (nlMalloc(0xAC, 8, false)) cAnimCamera();
+        m_pPauseMenuCamera = new (nlMalloc(sizeof(cAnimCamera), 8, false)) cAnimCamera();
         ((cAnimCamera*)m_pPauseMenuCamera)->SelectCameraAnimation("pause");
         cCameraManager::PushCamera((cBaseCamera*)m_pPauseMenuCamera);
         ((cAnimCamera*)m_pPauseMenuCamera)->m_fAnimationSpeed = 0.3f;
@@ -343,7 +343,7 @@ void FrontEnd::ExitWinnerScreen()
 /**
  * Offset/Address/Size: 0x7A8 | 0x8009542C | size: 0x48
  */
-void FrontEnd::EnterStartScreen(bool)
+void FrontEnd::EnterStartScreen(bool bStraightToKickoff)
 {
     bool isInStrikers101 = false;
     if (GameInfoManager::s_pInstance->mIsInStrikers101Mode)

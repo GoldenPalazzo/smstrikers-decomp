@@ -97,7 +97,7 @@ bool PadMonkey::PlatJustReleased(int button, bool remap)
 /**
  * Offset/Address/Size: 0x1F0 | 0x80194988 | size: 0x8
  */
-f32 PadMonkey::GetButtonStateTime(int, bool)
+f32 PadMonkey::GetButtonStateTime(int button, bool remap)
 {
     return 0.0f;
 }
@@ -154,7 +154,5 @@ void PadMonkey::Update(float dt)
  */
 void PadMonkey::SetButtonChance(int button, float pct)
 {
-    // const int idx = GetButtonIndex(button);
-    // float* chance = (float*)((char*)this + 0xA4);
     m_buttonChance[GetButtonIndex(button)] = pct;
 }

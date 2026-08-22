@@ -10,6 +10,6 @@ void ComUpdateTask::Initialize()
 /**
  * Offset/Address/Size: 0x0 | 0x80170AD4 | size: 0x4
  */
-void ComUpdateTask::Run(float)
+void ComUpdateTask::Run(float dt)
 {
 }

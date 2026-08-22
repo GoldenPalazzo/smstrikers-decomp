@@ -92,9 +92,6 @@ bool IsPointInCone(const nlVector3& v3Point, const nlVector3& v3Pivot, const nlV
     return false;
 }
 
-/**
- * Offset/Address/Size: 0x110C | 0x80006BB8 | size: 0xF8
- */
 #undef abs
 extern "C" int abs(int n);
 
@@ -103,6 +100,9 @@ static inline s16 AngleDiff(u16 a, u16 b)
     return (s16)(a - b);
 }
 
+/**
+ * Offset/Address/Size: 0x110C | 0x80006BB8 | size: 0xF8
+ */
 unsigned short SeekDirection(unsigned short aCurrent, unsigned short aDesired, float fSeekSpeed, float fFalloff, float fDeltaT)
 {
     u16 current = aCurrent;

@@ -22,27 +22,27 @@ void nlFlushFileDebug(void* fp)
 /**
  * Offset/Address/Size: 0x40 | 0x801CE994 | size: 0x50
  */
-void nlWriteLineDebug(void* fp, const char* str, bool arg2)
+void nlWriteLineDebug(void* file, const char* buffer, bool flush)
 {
-    fputs(str, (FILE*)fp);
-    if (arg2 != 0)
+    fputs(buffer, (FILE*)file);
+    if (flush != 0)
     {
-        fflush((FILE*)fp);
+        fflush((FILE*)file);
     }
 }
 
 /**
  * Offset/Address/Size: 0x90 | 0x801CE9E4 | size: 0x4C
  */
-void* nlOpenFileDebug(const char* str, bool arg1, bool arg2)
+void* nlOpenFileDebug(const char* fileName, bool bBinary, bool bAppend)
 {
-    if (arg1 != 0)
+    if (bBinary != 0)
     {
-        return (void*)fopen(str, "wb");
+        return (void*)fopen(fileName, "wb");
     }
-    if (arg2 != 0)
+    if (bAppend != 0)
     {
-        return (void*)fopen(str, "awt");
+        return (void*)fopen(fileName, "awt");
     }
-    return (void*)fopen(str, "wt");
+    return (void*)fopen(fileName, "wt");
 }

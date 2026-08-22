@@ -50,6 +50,9 @@ typedef struct
  * @note Address: 0x800CA0C0
  * @note Size: 0x548
  */
+/**
+ * Offset/Address/Size: 0xB00 | 0x802347B8 | size: 0x548
+ */
 static const char* parse_format(const char* format_string, scan_format* format)
 {
     const char* s = format_string;
@@ -290,6 +293,9 @@ static const char* parse_format(const char* format_string, scan_format* format)
     return ((const char*)s + 1);
 }
 
+/**
+ * Offset/Address/Size: 0x154 | 0x80233E0C | size: 0x9AC
+ */
 static int __sformatter(int (*ReadProc)(void*, int, int), void* ReadProcArg, const char* format_str, va_list arg)
 {
     int num_chars, chars_read, items_assigned, conversions;
@@ -673,6 +679,9 @@ exit:
     return items_assigned;
 }
 
+/**
+ * Offset/Address/Size: 0xC4 | 0x80233D7C | size: 0x90
+ */
 int __StringRead(void* pPtr, int ch, int act)
 {
     char ret;
@@ -747,6 +756,9 @@ inline int vsscanf(const char* s, const char* format, va_list arg)
 /**
  * @note Address: 0x800C95C0
  * @note Size: 0xC4
+ */
+/**
+ * Offset/Address/Size: 0x0 | 0x80233CB8 | size: 0xC4
  */
 int sscanf(const char* s, const char* pFormat, ...)
 {

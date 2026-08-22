@@ -22,7 +22,7 @@ public:
     virtual ~CollisionSpace();
     void PreUpdate();
     void PreCollide();
-    void CallPreCollide(PhysicsObject*);
+    void CallPreCollide(PhysicsObject* object);
     void DoCollide(void* data, dNearCallback* callback);
 
     /* 0x04 */ dSpaceID m_spaceID;

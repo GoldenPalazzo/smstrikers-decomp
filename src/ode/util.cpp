@@ -97,6 +97,9 @@ static inline dReal sinc(dReal x)
 // given a body b, apply its linear and angular rotation over the time
 // interval h, thereby adjusting its position and orientation.
 
+/**
+ * Offset/Address/Size: 0x4E4 | 0x80223F30 | size: 0x398
+ */
 void dxStepBody(dxBody* b, dReal h)
 {
     int j;
@@ -226,6 +229,9 @@ void dxStepBody(dxBody* b, dReal h)
 // bodies will not be included in the simulation. disabled bodies are
 // re-enabled if they are found to be part of an active island.
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80223A4C | size: 0x4E4
+ */
 void dxProcessIslands(dxWorld* world, dReal stepsize, dstepper_fn_t stepper)
 {
     dxBody *b, *bb, **body;

@@ -1,10 +1,16 @@
 #include "PowerPC_EABI_Support/MetroTRK/trk.h"
 
+/**
+ * Offset/Address/Size: 0x170 | 0x80225AAC | size: 0x8
+ */
 DSError TRKInitializeDispatcher(void)
 {
     return DS_NoError;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8022593C | size: 0x170
+ */
 DSError TRKDispatchMessage(TRKBuffer* msg)
 {
     u32 err;

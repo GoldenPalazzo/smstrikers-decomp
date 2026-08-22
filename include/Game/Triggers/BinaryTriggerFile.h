@@ -29,7 +29,7 @@ struct TRIGGER_RECORD
 class BinaryTriggerFile
 {
 public:
-    BinaryTriggerFile(const char*);
+    BinaryTriggerFile(const char* FileName);
 
     /* 0x00 */ u32 m_FileSize;
     /* 0x04 */ FILE_HEADER* m_pFileData;

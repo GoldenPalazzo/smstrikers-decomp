@@ -5,17 +5,18 @@
 
 enum eGLModifier
 {
-    eGLModifier_0,
-    eGLModifier_1,
-    eGLModifier_2,
-    eGLModifier_3
+    GLMod_Program,
+    GLMod_DiffuseTex,
+    GLMod_GlossTex,
+    GLMod_TextureMask,
+    GLMod_Num
 };
 
-void gl_ModifyAddMapping(eGLModifier, unsigned long);
-void gl_ModifyAddMapping(eGLModifier, unsigned long, unsigned long);
+void gl_ModifyAddMapping(eGLModifier modifier, unsigned long willBe);
+void gl_ModifyAddMapping(eGLModifier modifier, unsigned long was, unsigned long willBe);
 void gl_ModifyClearLastMapping();
 void gl_ModifyClearMappings();
-glModelPacket* gl_Modify(const glModelPacket*);
+glModelPacket* gl_Modify(const glModelPacket* pPacket);
 u32 gl_ModifyGetNum();
 
 #endif // _GLMODIFY_H_

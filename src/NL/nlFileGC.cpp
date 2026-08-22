@@ -156,19 +156,6 @@ AsyncToVirMemBufferLoad::AsyncToVirMemBufferLoad()
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x801D0F54 | size: 0x20
- */
-// nlRingIsEnd<AsyncEntry>(AsyncEntry*, AsyncEntry*)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x20 | 0x801D0F74 | size: 0xCC
- */
-// 0x8028D538..0x8028D53C | size: 0x4
-// {
-// }
-/**
  * Offset/Address/Size: 0x1DD0 | 0x801D0B24 | size: 0xA4
  */
 void nlRegHandleDVDMessageCB(const Function<void(int)>& cb)
@@ -269,10 +256,6 @@ void nlFlushFileCash()
     // EMPTY
 }
 
-/**
- * Offset/Address/Size: 0x1308 | 0x801D005C | size: 0x6E0
- */
-
 static inline void HandleGCIOErrors(GCFile* pFile)
 {
     long Status;
@@ -311,6 +294,9 @@ static inline void HandleGCIOErrors(GCFile* pFile)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x1308 | 0x801D005C | size: 0x6E0
+ */
 static unsigned char UpdateReadState(AsyncEntry* pEntry)
 {
     static char readBuffer32ByteLength[32] ATTRIBUTE_ALIGN(32);
@@ -598,8 +584,8 @@ void nlInitFileSystem()
         nlArrayAllocator<TDEVChunkFile>* pAlloc;
 
         fileSystem = eGC_TDEV;
-        pFile = (TDEVChunkFile*)nlMalloc(0x400, 8, false);
-        pAlloc = (nlArrayAllocator<TDEVChunkFile>*)nlMalloc(4, 8, false);
+        pFile = (TDEVChunkFile*)nlMalloc(sizeof(TDEVChunkFile) * 32, 8, false);
+        pAlloc = (nlArrayAllocator<TDEVChunkFile>*)nlMalloc(sizeof(nlArrayAllocator<TDEVChunkFile>), 8, false);
 
         if (pAlloc != NULL)
         {
@@ -623,8 +609,8 @@ void nlInitFileSystem()
         nlArrayAllocator<DolphinFile>* pAlloc;
 
         fileSystem = eGC_DVDOPEN;
-        pFile = (DolphinFile*)nlMalloc(0x900, 8, false);
-        pAlloc = (nlArrayAllocator<DolphinFile>*)nlMalloc(4, 8, false);
+        pFile = (DolphinFile*)nlMalloc(sizeof(DolphinFile) * 32, 8, false);
+        pAlloc = (nlArrayAllocator<DolphinFile>*)nlMalloc(sizeof(nlArrayAllocator<DolphinFile>), 8, false);
 
         if (pAlloc != NULL)
         {
@@ -649,7 +635,7 @@ void nlInitFileSystem()
     {
         AsyncManager* pManager;
 
-        pManager = (AsyncManager*)nlMalloc(0xA08, 8, false);
+        pManager = (AsyncManager*)nlMalloc(sizeof(AsyncManager), 8, false);
         if (pManager != NULL)
         {
             s32 i;
@@ -791,10 +777,9 @@ void nlServiceFileSystem()
 /**
  * Offset/Address/Size: 0x6F8 | 0x801CF44C | size: 0x34
  */
-void nlReadAsync(nlFile* file, void* buffer, unsigned int size, ReadAsyncCallback callback, unsigned long arg4)
+void nlReadAsync(nlFile* file, void* buffer, unsigned int size, ReadAsyncCallback callback, unsigned long uParam)
 {
-    FORCE_DONT_INLINE;
-    GameCubeReadAsync((GCFile*)file, callback, buffer, (u32)size, arg4);
+    GameCubeReadAsync((GCFile*)file, callback, buffer, (u32)size, uParam);
 }
 
 /**
@@ -1058,7 +1043,6 @@ void nlAsyncLoadFileToVirtualMemory(nlFile* file, int size, void* buffer, ReadAs
 void nlReadAsyncToVirtualMemory(nlFile* file, void* buffer, int size, ReadAsyncCallback callback, unsigned long param,
     unsigned long chunkSize, void* userData)
 {
-    FORCE_DONT_INLINE;
     int i;
     for (i = 0; i < 4; i++)
     {

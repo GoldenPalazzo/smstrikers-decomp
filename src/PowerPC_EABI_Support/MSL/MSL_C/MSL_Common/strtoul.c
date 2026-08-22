@@ -28,6 +28,9 @@ enum scan_states
  * Size:	000348
  * TODO: 97.82% match - r24/r25 swap (scan_state/overflow), r28/r29/r30 rotation (base/ReadProc/ReadProcArg)
  */
+/**
+ * Offset/Address/Size: 0x4CC | 0x8023663C | size: 0x378
+ */
 u32 __strtoul(int base, int max_width, int (*ReadProc)(void*, int, int), void* ReadProcArg, int* chars_scanned, int* negative,
     int* overflow)
 {
@@ -196,6 +199,9 @@ u32 __strtoul(int base, int max_width, int (*ReadProc)(void*, int, int), void* R
  * --INFO--
  * Address:	80219DFC
  * Size:	0003CC
+ */
+/**
+ * Offset/Address/Size: 0xC0 | 0x80236230 | size: 0x40C
  */
 u64 __strtoull(int base, int max_width, int (*ReadProc)(void*, int, int), void* ReadProcArg, int* chars_scanned, int* negative,
     int* overflow)
@@ -450,6 +456,9 @@ s32 strtol(const char* str, char** end, int base)
     return svalue;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80236170 | size: 0xC0
+ */
 int atoi(const char* str)
 {
     return strtol(str, NULL, 10);

@@ -48,37 +48,37 @@ void TLInstance::SetAssetPosition(float x, float y, float z)
 /**
  * Offset/Address/Size: 0x6C | 0x8020FFEC | size: 0x8C
  */
-bool TLInstance::IsValidAtTime(float arg0)
+bool TLInstance::IsValidAtTime(float fCurrentTime)
 {
-    float temp_f0;
-    float temp_f2;
-    float temp_f3;
-    bool var_r0;
+    float sinceStart;
+    float duration;
+    float elapsed;
+    bool valid;
 
-    var_r0 = true;
-    temp_f0 = arg0 - m_fStartTime;
-    if (!(temp_f0 > 0.0001f))
+    valid = true;
+    sinceStart = fCurrentTime - m_fStartTime;
+    if (!(sinceStart > 0.0001f))
     {
-        if (!((float)fabs(temp_f0) <= 0.0001f))
+        if (!((float)fabs(sinceStart) <= 0.0001f))
         {
-            var_r0 = false;
+            valid = false;
         }
     }
 
-    if (var_r0 != 0)
+    if (valid != 0)
     {
-        var_r0 = 1;
-        temp_f2 = m_fDuration;
-        temp_f3 = arg0 - m_fStartTime;
-        if (!((m_fDuration - temp_f3) > 0.0001f))
+        valid = 1;
+        duration = m_fDuration;
+        elapsed = fCurrentTime - m_fStartTime;
+        if (!((m_fDuration - elapsed) > 0.0001f))
         {
-            if (!((float)fabs(temp_f3 - temp_f2) <= 0.0001f))
+            if (!((float)fabs(elapsed - duration) <= 0.0001f))
             {
-                var_r0 = false;
+                valid = false;
             }
         }
 
-        if (var_r0)
+        if (valid)
         {
             return true;
         }

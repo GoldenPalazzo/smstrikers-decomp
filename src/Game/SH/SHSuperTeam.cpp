@@ -6,33 +6,8 @@
 #include "Game/SH/SHCupHub.h"
 #include "Game/Audio/WorldAudio.h"
 
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800F6184 | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                          unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800F6100 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                       unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800F60C8 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                      InlineHasher)
-// {
-// }
-
 /**
- * Offset/Address/Size: 0x0 | 0x800F6050 | size: 0x78
+ * Offset/Address/Size: 0x15C | 0x800F6050 | size: 0x78
  */
 SuperTeamScene::~SuperTeamScene()
 {

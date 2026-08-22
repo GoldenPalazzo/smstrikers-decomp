@@ -30,8 +30,8 @@ struct RumbleActionState
     /* 0x10 */ f32 timer;
 }; /* size = 0x14 */
 
-void UpdateRumbleActions(float);
-void BeginRumbleAction(eRumbleActionPreset, cGlobalPad*);
-void StopRumbleAction(cGlobalPad*);
+void UpdateRumbleActions(float dt);
+void BeginRumbleAction(eRumbleActionPreset preset, cGlobalPad* pad);
+void StopRumbleAction(cGlobalPad* pad);
 
 #endif // _RUMBLEACTIONS_H_

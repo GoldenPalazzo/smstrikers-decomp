@@ -23,11 +23,10 @@
 
 #include "Game/Camera/CameraMan.h"
 #include "Game/Character.h"
+#include "Game/Effects/ParticleSystem.h"
 #include "Game/Game.h"
 #include "Game/GameInfo.h"
 #include "Game/WorldManager.h"
-
-extern glModel* (*m_LightingCallback__14ParticleSystem)(glModel*);
 
 static inline float GetAspectRatio()
 {
@@ -215,13 +214,12 @@ void SetupMatrices()
 
     glViewSetViewMatrix(GLV_CameraSpace, glGetIdentityMatrix());
 
-    m_LightingCallback__14ParticleSystem = cb_ParticleLighting;
+    ParticleSystem::m_LightingCallback = cb_ParticleLighting;
 }
 
 /**
  * Offset/Address/Size: 0x1068 | 0x8016F748 | size: 0x450
  */
-#pragma optimization_level 2
 static void SetupRenderInfo()
 {
     static bool bGotWait;
@@ -368,11 +366,7 @@ static void SetupRenderInfo()
 
     glConstantSet("glxswap/vwait", vwait);
 }
-#pragma optimization_level 4
 
-/**
- * Offset/Address/Size: 0x950 | 0x8016F030 | size: 0x718
- */
 static inline void meshTexcoord(GLMeshWriterCore& w, const nlVector2& tc)
 {
     w.Texcoord(tc);
@@ -394,6 +388,9 @@ struct LineStreams
 
 static inline LineStreams MakeLineStreams();
 
+/**
+ * Offset/Address/Size: 0x950 | 0x8016F030 | size: 0x718
+ */
 static void DrawSafeFrame()
 {
     extern u32 glx_GetScaledXFBWidth();
@@ -639,7 +636,6 @@ static void DrawGrid(int spacing)
 void BeginFrameTask::Run(float dt)
 {
     extern bool g_bCoPlanarPerObject;
-    extern volatile u8 m_AllowInFront__14ParticleSystem;
 
     g_FrameCounter.StartTimer(0);
 
@@ -740,10 +736,10 @@ void BeginFrameTask::Run(float dt)
     switch (nlTaskManager::m_pInstance->m_CurrState)
     {
     case 0x10:
-        m_AllowInFront__14ParticleSystem = 0;
+        ParticleSystem::m_AllowInFront = 0;
         break;
     default:
-        m_AllowInFront__14ParticleSystem = 1;
+        ParticleSystem::m_AllowInFront = 1;
         break;
     }
 

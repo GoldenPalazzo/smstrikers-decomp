@@ -141,12 +141,12 @@ void cPlatPad::StopRumble()
 /**
  * Offset/Address/Size: 0x5C0 | 0x801C3570 | size: 0x78
  */
-void cPlatPad::StartRumble(float param1, float param2, float param3)
+void cPlatPad::StartRumble(float fDuration, float fIntensity, float fFrequency)
 {
     if (m_bDisableRumble == 0)
     {
         PADControlMotor(m_padIndex, 1);
-        padStatus[0].m_GameCubePads[m_padIndex].fRumbleTimer = param1;
+        padStatus[0].m_GameCubePads[m_padIndex].fRumbleTimer = fDuration;
         padStatus[0].m_GameCubePads[m_padIndex].bRumbleActive = 1;
     }
 }
@@ -194,7 +194,7 @@ f32 cPlatPad::AnalogLeftX()
 /**
  * Offset/Address/Size: 0x6AC | 0x801C365C | size: 0x8
  */
-f32 cPlatPad::GetPressureDerivative(int, bool)
+f32 cPlatPad::GetPressureDerivative(int button, bool remap)
 {
     return 0.f;
 }

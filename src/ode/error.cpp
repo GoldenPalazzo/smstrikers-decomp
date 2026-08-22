@@ -47,6 +47,9 @@ inline void printMessage(int num, const char* msg1, const char* msg2, va_list ap
     fflush(stderr);
 }
 
+/**
+ * Offset/Address/Size: 0xF4 | 0x8021E1B0 | size: 0xF8
+ */
 extern "C" void dDebug(int num, const char* msg, ...)
 {
     va_list ap;
@@ -71,6 +74,9 @@ extern "C" void dDebug(int num, const char* msg, ...)
     nlBreak();
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8021E0BC | size: 0xF4
+ */
 extern "C" void dMessage(int num, const char* msg, ...)
 {
     va_list ap;

@@ -22,7 +22,7 @@ AsyncImage::AsyncImage(const char* filename, const char* texturename)
     mTextureSize = 0;
     mLoadState = LS_IDLE;
 
-    mBundleFile = new (nlMalloc(0x1C, 0x20, 1)) BundleFile();
+    mBundleFile = new (nlMalloc(sizeof(BundleFile), 0x20, 1)) BundleFile();
     mBundleFile->Open(filename);
 
     int hash;

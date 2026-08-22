@@ -79,9 +79,6 @@ nlFont* FontManager::GetFontByHashID(unsigned long hashID)
     return start->entry;
 }
 
-/**
- * Offset/Address/Size: 0x0 | 0x80209694 | size: 0x2A8
- */
 static inline bool LoadFontDescription(BundleFile& fileBundle, unsigned long fileHashID, const char* szFontFileName, const char* szFontName, nlFont** pNewFont)
 {
     BundleFileDirectoryEntry entry;
@@ -127,6 +124,9 @@ static inline void AddFontEntry(BasicSlotPool<DLListEntry<nlFont*> >& alloc, DLL
     nlDLRingAddEnd(head, entry);
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80209694 | size: 0x2A8
+ */
 bool FontManager::LoadFont(const char* bundlePath, const char* fontName, const char* fontFileName)
 {
     BundleFile bundleFile;

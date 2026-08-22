@@ -1,5 +1,8 @@
 #include "__card.h"
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80243C94 | size: 0x1F8
+ */
 static void UpdateIconOffsets(CARDDir* ent, CARDStat* stat)
 {
     u32 offset;
@@ -66,6 +69,9 @@ static void UpdateIconOffsets(CARDDir* ent, CARDStat* stat)
     stat->offsetData = offset;
 }
 
+/**
+ * Offset/Address/Size: 0x1F8 | 0x80243E8C | size: 0x114
+ */
 s32 CARDGetStatus(s32 chan, s32 fileNo, CARDStat* stat)
 {
     CARDControl* card;
@@ -107,6 +113,9 @@ s32 CARDGetStatus(s32 chan, s32 fileNo, CARDStat* stat)
     return __CARDPutControlBlock(card, result);
 }
 
+/**
+ * Offset/Address/Size: 0x30C | 0x80243FA0 | size: 0x174
+ */
 s32 CARDSetStatusAsync(s32 chan, s32 fileNo, CARDStat* stat, CARDCallback callback)
 {
     CARDControl* card;

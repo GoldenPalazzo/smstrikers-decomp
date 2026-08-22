@@ -14,8 +14,8 @@ public:
     MilestoneTrophyScene();
     ~MilestoneTrophyScene();
     void SceneCreated();
-    void Update(float);
-    void CreateTrophyScene(eTrophyType, ButtonComponent::ButtonState, bool);
+    void Update(float fDeltaT);
+    void CreateTrophyScene(eTrophyType trophy, ButtonComponent::ButtonState state, bool isNew);
     void ChangeSlides();
 
     /* 0x01C */ eTrophyType mTrophy;                       // size 0x4

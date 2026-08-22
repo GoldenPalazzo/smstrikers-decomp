@@ -187,8 +187,6 @@ static inline unsigned long StrategicQuestionHash(
 
 /**
  * Offset/Address/Size: 0xF1B0 | 0x80079380 | size: 0x7D4
- * TODO: 99.90% match - the inlined Lookup's cache pointer colours r30 where
- * retail uses r26; every other instruction is identical.
  */
 FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
 {
@@ -238,8 +236,6 @@ FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
 
 /**
  * Offset/Address/Size: 0xE9DC | 0x80078BAC | size: 0x7D4
- * TODO: 99.90% match - the inlined Lookup's cache pointer colours r30 where
- * retail uses r26; every other instruction is identical.
  */
 FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
 {
@@ -481,9 +477,6 @@ FuzzyVariant Fuzzy::ShouldIStrafeMark(cFielder* TheFielder)
     return bestValue;
 }
 
-/**
- * Offset/Address/Size: 0xD188 | 0x80077358 | size: 0x7A4
- */
 extern cFielder* g_pScriptCurrentFielder;
 extern cFielder* g_pScriptBallOwner;
 
@@ -491,6 +484,9 @@ float Marking(cFielder*, cPlayer*);
 float UpfieldFrom(cPlayer*, cPlayer*);
 float Incapacitated(cPlayer*);
 
+/**
+ * Offset/Address/Size: 0xD188 | 0x80077358 | size: 0x7A4
+ */
 FuzzyVariant Fuzzy::ShouldIMarkBallOwner(cFielder* pFielder)
 {
     FuzzyVariant bestValue;
@@ -1299,7 +1295,6 @@ FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* The
 
 /**
  * Offset/Address/Size: 0x95A0 | 0x80073770 | size: 0xB98
- * TODO: 98.92% match - cache lookup stack slots and register colouring.
  */
 FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
 {

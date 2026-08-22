@@ -76,7 +76,7 @@ void CrowdManager::SetStadium(const char* stadium)
 /**
  * Offset/Address/Size: 0x918 | 0x80164794 | size: 0x20
  */
-u32 CrowdManager::GetTextureHandle(unsigned long) const
+u32 CrowdManager::GetTextureHandle(unsigned long id) const
 {
     if (m_CurrentTexture == 0xFFFFFFFF)
     {

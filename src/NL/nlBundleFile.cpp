@@ -50,7 +50,7 @@ void BundleFile::ReadFileByIndex(unsigned long index, void* buffer, unsigned lon
 /**
  * Offset/Address/Size: 0x398 | 0x801E8964 | size: 0xC4
  */
-void BundleFile::ReadFile(unsigned long hash, void* buffer, unsigned long arg3)
+void BundleFile::ReadFile(unsigned long hash, void* buffer, unsigned long size)
 {
     u32 index = FindHashIndex(hash);
     BundleFileDirectoryEntry* entry = &m_pDirectory[index];
@@ -61,7 +61,7 @@ void BundleFile::ReadFile(unsigned long hash, void* buffer, unsigned long arg3)
 /**
  * Offset/Address/Size: 0x45C | 0x801E8A28 | size: 0x118
  */
-void BundleFile::ReadFile(const char* filename, void* pBuffer, unsigned long)
+void BundleFile::ReadFile(const char* filename, void* pBuffer, unsigned long size)
 {
     LoadFile(HashFilename(filename), pBuffer);
 }
@@ -73,7 +73,7 @@ bool BundleFile::GetFileInfoByIndex(unsigned long index, BundleFileDirectoryEntr
 {
     if (index < (u32)m_pHeader->nNumFiles)
     {
-        memcpy((void*)entry, (void*)&m_pDirectory[index], 0xC);
+        memcpy((void*)entry, (void*)&m_pDirectory[index], sizeof(BundleFileDirectoryEntry));
         return 1;
     }
     return 0;
@@ -93,7 +93,7 @@ bool BundleFile::GetFileInfo(unsigned long hash, BundleFileDirectoryEntry* entry
 
     if (index < (u32)m_pHeader->nNumFiles)
     {
-        memcpy((void*)entry, &m_pDirectory[index], 0xC);
+        memcpy((void*)entry, &m_pDirectory[index], sizeof(BundleFileDirectoryEntry));
         return 1;
     }
 
@@ -114,7 +114,7 @@ bool BundleFile::GetFileInfo(const char* filename, BundleFileDirectoryEntry* ent
 
     if (index < (u32)m_pHeader->nNumFiles)
     {
-        memcpy((void*)entry, &m_pDirectory[index], 0xC);
+        memcpy((void*)entry, &m_pDirectory[index], sizeof(BundleFileDirectoryEntry));
         return 1;
     }
 
@@ -189,14 +189,14 @@ BundleFile::BundleFile()
     m_readUserParam = 0;
     m_pHeader = 0;
     m_pDirectory = 0;
-    m_pHeader = (BundleFileHeader*)nlMalloc(0x10, 0x20, 0);
-    memset(m_pHeader, 0, 0x10);
+    m_pHeader = (BundleFileHeader*)nlMalloc(sizeof(BundleFileHeader), 0x20, 0);
+    memset(m_pHeader, 0, sizeof(BundleFileHeader));
 }
 
 /**
  * Offset/Address/Size: 0x9E4 | 0x801E8FB0 | size: 0x50
  */
-static void cbFileReadAsyncCallback(nlFile*, void* buffer, unsigned int arg, unsigned long bundlePtr)
+static void cbFileReadAsyncCallback(nlFile* file, void* buffer, unsigned int arg, unsigned long bundlePtr)
 {
     BundleFile* bundleFile = (BundleFile*)bundlePtr;
     bundleFile->m_pReadCallback(buffer, arg, bundleFile->m_readUserParam);

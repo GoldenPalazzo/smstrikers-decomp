@@ -121,18 +121,18 @@ void dFinitePlaneAABB(dxGeom* geomID, float* aabb)
 /**
  * Offset/Address/Size: 0x100 | 0x8021D504 | size: 0x214
  */
-int dCollideFinitePlaneSphere(dxGeom* planeGeomID, dxGeom* sphereGeomID, int, dContactGeom* contact, int)
+int dCollideFinitePlaneSphere(dxGeom* planeGeomID, dxGeom* sphereGeomID, int flags, dContactGeom* contact, int skip)
 {
-    dMatrix4 sp28;
-    dVector3 sp18;
-    dVector3 sp8;
+    dMatrix4 TInv;
+    dVector3 spherePos4;
+    dVector3 planeLocalPosition;
     f32 plane_a;
     f32 plane_b;
     f32 plane_c;
     f32 plane_d;
     f32 radius;
     f32 plane_param;
-    f32 var_f25;
+    f32 dist;
     u32 plane_flag;
     float* plane_rot;
     float* plane_pos;
@@ -151,23 +151,23 @@ int dCollideFinitePlaneSphere(dxGeom* planeGeomID, dxGeom* sphereGeomID, int, dC
     sphere_pos = (float*)dGeomGetPosition(sphereGeomID);
     plane_rot = (float*)dGeomGetRotation(planeGeomID);
 
-    dInvertRigidTransformation(&sp28[0], plane_rot, plane_pos);
-    dVector4Set(sp18, sphere_pos[0], sphere_pos[1], sphere_pos[2], 1.0f);
-    dMultiplyMatrix4Vector4(&sp8[0], &sp28[0], sp18);
+    dInvertRigidTransformation(&TInv[0], plane_rot, plane_pos);
+    dVector4Set(spherePos4, sphere_pos[0], sphere_pos[1], sphere_pos[2], 1.0f);
+    dMultiplyMatrix4Vector4(&planeLocalPosition[0], &TInv[0], spherePos4);
 
     if (plane_flag != 0)
     {
-        var_f25 = sp8[2];
+        dist = planeLocalPosition[2];
     }
     else
     {
-        var_f25 = (f32)fabs(sp8[2]);
+        dist = (f32)fabs(planeLocalPosition[2]);
     }
 
-    if ((var_f25 < radius) && (sp8[0] > plane_a) && (sp8[0] < plane_b) && (sp8[1] > plane_c) && (sp8[1] < plane_d))
+    if ((dist < radius) && (planeLocalPosition[0] > plane_a) && (planeLocalPosition[0] < plane_b) && (planeLocalPosition[1] > plane_c) && (planeLocalPosition[1] < plane_d))
     {
         dExtractColumn3(contact->normal, plane_rot, 2);
-        if ((sp8[2] > 0.0f) || (plane_flag != 0))
+        if ((planeLocalPosition[2] > 0.0f) || (plane_flag != 0))
         {
             dVectorScale(contact->normal, -1.0f);
         }
@@ -175,7 +175,7 @@ int dCollideFinitePlaneSphere(dxGeom* planeGeomID, dxGeom* sphereGeomID, int, dC
         contact->pos[0] = (f32)((contact->normal[0] * radius) + sphere_pos[0]);
         contact->pos[1] = (f32)((contact->normal[1] * radius) + sphere_pos[1]);
         contact->pos[2] = (f32)((contact->normal[2] * radius) + sphere_pos[2]);
-        contact->depth = (f32)(radius - var_f25);
+        contact->depth = (f32)(radius - dist);
 
         if ((plane_param != -1.0f) && (contact->depth > plane_param))
         {

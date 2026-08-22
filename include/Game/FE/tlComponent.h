@@ -15,8 +15,8 @@ public:
     {
         return m_pActiveSlide;
     }
-    void SetActiveSlide(unsigned long);
-    void SetActiveSlide(const char*);
+    void SetActiveSlide(unsigned long hash);
+    void SetActiveSlide(const char* name);
 
     /* 0x68 */ TLSlide* pChildren;
     /* 0x6C */ TLSlide* m_pActiveSlide;

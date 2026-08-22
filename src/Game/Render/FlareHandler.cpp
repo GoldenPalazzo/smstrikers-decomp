@@ -41,7 +41,7 @@ void FlareHandler::Cleanup()
  */
 void FlareHandler::AddHalo(const nlMatrix4& mat)
 {
-    FlareStruct* p = new (nlMalloc(0x20, 8, false)) FlareStruct();
+    FlareStruct* p = new (nlMalloc(sizeof(FlareStruct), 8, false)) FlareStruct();
 
     p->type = Flare_Halo;
 
@@ -69,7 +69,7 @@ void FlareHandler::AddHalo(const nlMatrix4& mat)
  */
 void FlareHandler::AddGlow(const nlMatrix4& mat)
 {
-    FlareStruct* p = new (nlMalloc(0x20, 8, false)) FlareStruct();
+    FlareStruct* p = new (nlMalloc(sizeof(FlareStruct), 8, false)) FlareStruct();
 
     p->type = Flare_Glow;
 

@@ -27,16 +27,16 @@ public:
     void BindChooseSideInstances();
     void Update(float);
 
-    /* 0x1C */ eCSContext mContext;           // size 0x4
-    /* 0x20 */ FEScrollText* m_pTicker;       // size 0x4
-    /* 0x24 */ float mSoundDelay;             // size 0x4
-    /* 0x28 */ SceneList mNextScene;          // size 0x4
-    /* 0x2C */ SceneList mBackScene;          // size 0x4
-    /* 0x30 */ AsyncImage* mAsyncImage[2][3]; // size 0x18
-    /* 0x48 */ IChooseSide mChooseSide;       // size 0xA0
-    /* 0xE8 */ int mProceedDelay;             // size 0x4
-    /* 0xEC */ ButtonComponent mButtons;      // size 0x24
-}; // total size: 0x110
+    /* 0x1C */ eCSContext mContext;                              // size 0x4
+    /* 0x20 */ FEScrollText* m_pTicker;                          // size 0x4
+    /* 0x24 */ float mSoundDelay;                                // size 0x4
+    /* 0x28 */ SceneList mNextScene;                             // size 0x4
+    /* 0x2C */ SceneList mBackScene;                             // size 0x4
+    /* 0x30 */ AsyncImage* mAsyncImage[2][3];                    // size 0x18
+    /* 0x48 */ IChooseSide mChooseSide;                          // size 0xA0 (G4QE01), 0xB0 (G4QJ01)
+    /* 0xE8 (G4QE01), 0xF8 (G4QJ01) */ int mProceedDelay;        // size 0x4
+    /* 0xEC (G4QE01), 0xFC (G4QJ01) */ ButtonComponent mButtons; // size 0x24
+}; // total size: 0x110 (G4QE01), 0x120 (G4QJ01)
 
 // class FEFinder<TLInstance, 2>
 // {

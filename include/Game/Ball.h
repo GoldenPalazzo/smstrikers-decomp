@@ -46,38 +46,38 @@ public:
         return m_v3Velocity;
     }
 
-    float PredictLandingSpotAndTime(nlVector3&);
+    float PredictLandingSpotAndTime(nlVector3& v3Dest);
     void KillBlurHandler();
     void ClearPassTarget();
-    void SetPassTargetTimer(float);
-    void SetPassTarget(cPlayer*, const nlVector3&, bool);
-    void SetAngularVelocity(const nlVector3&);
-    void WarpTo(const nlVector3&);
-    void UpdateOrientation(float);
-    void Update(float);
-    void ShootAtFast(nlVector3&, const nlVector3&, float);
-    void ShootRelease(const nlVector3&, eSpinType);
-    void Shoot(const nlVector3&, const nlVector3&, eSpinType, bool, bool, bool);
-    void SetVisible(bool);
-    void SetVelocity(const nlVector3&, eSpinType, const nlVector3*);
-    void SetPerfectPass(bool, bool);
-    void SetPosition(const nlVector3&);
-    void SetOwner(cPlayer*);
+    void SetPassTargetTimer(float seconds);
+    void SetPassTarget(cPlayer* passTargetPlayer, const nlVector3& pos, bool bVolley);
+    void SetAngularVelocity(const nlVector3& v3Velocity);
+    void WarpTo(const nlVector3& toPos);
+    void UpdateOrientation(float fDeltaT);
+    void Update(float fDeltaT);
+    void ShootAtFast(nlVector3& v3Vel, const nlVector3& v3Target, float fDesiredTime);
+    void ShootRelease(const nlVector3& v3Velocity, eSpinType SpinType);
+    void Shoot(const nlVector3& v3Dir, const nlVector3& v3Spin, eSpinType spinType, bool bCanDamage, bool bParam5, bool bParam6);
+    void SetVisible(bool visible);
+    void SetVelocity(const nlVector3& velocity, eSpinType spin, const nlVector3* pAngularVelocity);
+    void SetPerfectPass(bool bFlag, bool bNoEvent);
+    void SetPosition(const nlVector3& pos);
+    void SetOwner(cPlayer* pOwner);
     bool IsBuzzerBeaterSet() const;
-    void HandleBuzzerBeater(float);
+    void HandleBuzzerBeater(float seconds);
     void ClearBallBlur();
     void ClearShotInProgress();
-    void InitiateBallBlur(eBallShotEffectType, cPlayer*);
-    bool GetInNet(int&);
+    void InitiateBallBlur(eBallShotEffectType effectType, cPlayer* pPlayer);
+    bool GetInNet(int& nSide);
     cPlayer* GetPassTargetFielder() const;
     cPlayer* GetOwnerGoalie();
     cFielder* GetOwnerFielder();
     nlVector3* GetDrawablePosition() const;
     nlVector3* GetAIVelocity() const;
-    void PostPhysicsUpdate(float);
+    void PostPhysicsUpdate(float fDeltaT);
     void CollideWithWallCallback();
     void CollideWithGroundCallback();
-    void CollideWithCharacterCallback(cPlayer*, const nlVector3&);
+    void CollideWithCharacterCallback(cPlayer* pCharacter, const nlVector3& v3PreBallVelocity);
     void ClearBallEffects();
     void ClearOwner();
 
@@ -173,33 +173,26 @@ extern cBall* g_pBall;
 // class BasicString<char, Detail
 // {
 // public:
-//     void TempStringAllocator>::AppendInPlace(const char*);
-//     void TempStringAllocator>::insert(char*, const char*, const char*);
-//     void TempStringAllocator>::~BasicString();
 // };
 
 // class FuzzyVariant
 // {
 // public:
-//     void Reset();
 // };
 
 // class Variant
 // {
 // public:
-//     void Reset();
 // };
 
 // class PassBallData
 // {
 // public:
-//     void GetID();
 // };
 
 // class EventData
 // {
 // public:
-//     void GetID();
 // };
 
 #endif // _BALL_H_

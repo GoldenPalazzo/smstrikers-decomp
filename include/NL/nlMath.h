@@ -420,15 +420,15 @@ struct nlPolar
     /* 0x04 */ float r;
 }; // size: 0x8
 
-void nlInvertRotTransMatrix(nlMatrix4&, const nlMatrix4&);
-void nlQuatNLerp(nlQuaternion&, const nlQuaternion&, const nlQuaternion&, float);
-void nlQuatInverse(nlQuaternion&, const nlQuaternion&);
-void nlQuatNormalize(nlQuaternion&, const nlQuaternion&);
-void nlMakeQuat(nlQuaternion&, const nlVector3&, float);
-void nlCartesianToPolar(nlPolar&, const nlVector3&);
-void nlAddPolarToCartesian(nlVector3&, const nlPolar&);
-void nlPolarToCartesian(nlVector3&, const nlPolar&);
-void nlPolarToCartesian(float&, float&, unsigned short, float);
-void nlCartesianToPolar(nlPolar&, float, float);
+void nlInvertRotTransMatrix(nlMatrix4& out, const nlMatrix4& in);
+void nlQuatNLerp(nlQuaternion& out, const nlQuaternion& q1, const nlQuaternion& q2, float t);
+void nlQuatInverse(nlQuaternion& out, const nlQuaternion& in);
+void nlQuatNormalize(nlQuaternion& out, const nlQuaternion& in);
+void nlMakeQuat(nlQuaternion& out, const nlVector3& v3RotationAxis, float ang_rad);
+void nlCartesianToPolar(nlPolar& out, const nlVector3& in);
+void nlAddPolarToCartesian(nlVector3& result, const nlPolar& polar);
+void nlPolarToCartesian(nlVector3& v, const nlPolar& polar);
+void nlPolarToCartesian(float& x, float& y, unsigned short angle, float radius);
+void nlCartesianToPolar(nlPolar& out, float x, float y);
 
 #endif

@@ -30,8 +30,14 @@ public:
         m_v2EndScale.y = 1.0f;
     }
 
+    /**
+     * Offset/Address/Size: 0x1870 | 0x8020819C | size: 0x5C
+     */
     virtual ~ScaleModel() { }
 
+    /**
+     * Offset/Address/Size: 0x18CC | 0x802081F8 | size: 0xBC
+     */
     virtual void InitializeFromParser(SimpleParser* parser)
     {
         m_v2StartScale.x = atof(parser->NextTokenOnLine(true));
@@ -53,6 +59,9 @@ public:
         m_v2EndScale.y = val;
     }
 
+    /**
+     * Offset/Address/Size: 0x1988 | 0x802082B4 | size: 0x8C
+     */
     virtual void ApplyModifier(glPoly2& poly, float time)
     {
         float x = ((1.0f - time) * m_v2StartScale.x) + (time * m_v2EndScale.x);
@@ -81,8 +90,14 @@ public:
         nlColourSet(m_cEndColour, 0xFF, 0xFF, 0xFF, 0xFF);
     }
 
+    /**
+     * Offset/Address/Size: 0x1638 | 0x80207F64 | size: 0x5C
+     */
     virtual ~ColourBlend() { }
 
+    /**
+     * Offset/Address/Size: 0x1694 | 0x80207FC0 | size: 0x11C
+     */
     virtual void InitializeFromParser(SimpleParser* parser)
     {
         m_cStartColour.c[0] = atoi(parser->NextTokenOnLine(true));
@@ -123,6 +138,9 @@ public:
         m_cEndColour.c[3] = val;
     }
 
+    /**
+     * Offset/Address/Size: 0x17B0 | 0x802080DC | size: 0xC0
+     */
     virtual void ApplyModifier(glPoly2& poly, float time)
     {
         nlColour col;
@@ -154,8 +172,14 @@ public:
         m_v2EndShift.y = 1.0f;
     }
 
+    /**
+     * Offset/Address/Size: 0x1494 | 0x80207DC0 | size: 0x5C
+     */
     virtual ~ScaleTexture() { }
 
+    /**
+     * Offset/Address/Size: 0x14F0 | 0x80207E1C | size: 0xBC
+     */
     virtual void InitializeFromParser(SimpleParser* parser)
     {
         m_v2StartShift.x = atof(parser->NextTokenOnLine(true));
@@ -177,6 +201,9 @@ public:
         m_v2EndShift.y = val;
     }
 
+    /**
+     * Offset/Address/Size: 0x15AC | 0x80207ED8 | size: 0x8C
+     */
     virtual void ApplyModifier(glPoly2& poly, float time)
     {
         float x = ((1.0f - time) * m_v2StartShift.x) + (time * m_v2EndShift.x);
@@ -207,8 +234,14 @@ public:
         m_v2EndShift.y = 0.0f;
     }
 
+    /**
+     * Offset/Address/Size: 0x12F0 | 0x80207C1C | size: 0x5C
+     */
     virtual ~TranslateModel() { }
 
+    /**
+     * Offset/Address/Size: 0x134C | 0x80207C78 | size: 0xBC
+     */
     virtual void InitializeFromParser(SimpleParser* parser)
     {
         m_v2StartShift.x = atof(parser->NextTokenOnLine(true));
@@ -230,6 +263,9 @@ public:
         m_v2EndShift.y = val;
     }
 
+    /**
+     * Offset/Address/Size: 0x1408 | 0x80207D34 | size: 0x8C
+     */
     virtual void ApplyModifier(glPoly2& poly, float time)
     {
         float x = ((1.0f - time) * m_v2StartShift.x) + (time * m_v2EndShift.x);
@@ -260,8 +296,14 @@ public:
         m_v2EndShift.y = 0.0f;
     }
 
+    /**
+     * Offset/Address/Size: 0x114C | 0x80207A78 | size: 0x5C
+     */
     virtual ~TranslateTexture() { }
 
+    /**
+     * Offset/Address/Size: 0x11A8 | 0x80207AD4 | size: 0xBC
+     */
     virtual void InitializeFromParser(SimpleParser* parser)
     {
         m_v2StartShift.x = atof(parser->NextTokenOnLine(true));
@@ -283,6 +325,9 @@ public:
         m_v2EndShift.y = val;
     }
 
+    /**
+     * Offset/Address/Size: 0x1264 | 0x80207B90 | size: 0x8C
+     */
     virtual void ApplyModifier(glPoly2& poly, float time)
     {
         float x = ((1.0f - time) * m_v2StartShift.x) + (time * m_v2EndShift.x);
@@ -314,8 +359,14 @@ public:
         m_v3Axis.z = 1.0f;
     }
 
+    /**
+     * Offset/Address/Size: 0xF40 | 0x8020786C | size: 0x5C
+     */
     virtual ~RotateModel() { }
 
+    /**
+     * Offset/Address/Size: 0xF9C | 0x802078C8 | size: 0xC8
+     */
     virtual void InitializeFromParser(SimpleParser* parser)
     {
         f32 angleEnd;
@@ -334,6 +385,9 @@ public:
         m_angleEnd = angleEnd;
     }
 
+    /**
+     * Offset/Address/Size: 0x1064 | 0x80207990 | size: 0xE8
+     */
     virtual void ApplyModifier(glPoly2& poly, float time)
     {
         nlMatrix4 m4;
@@ -378,8 +432,14 @@ public:
         m_v3Axis.z = 1.0f;
     }
 
+    /**
+     * Offset/Address/Size: 0xD34 | 0x80207660 | size: 0x5C
+     */
     virtual ~RotateTexture() { }
 
+    /**
+     * Offset/Address/Size: 0xD90 | 0x802076BC | size: 0xC8
+     */
     virtual void InitializeFromParser(SimpleParser* parser)
     {
         f32 angleEnd;
@@ -398,6 +458,9 @@ public:
         m_angleEnd = angleEnd;
     }
 
+    /**
+     * Offset/Address/Size: 0xE58 | 0x80207784 | size: 0xE8
+     */
     virtual void ApplyModifier(glPoly2& poly, float time)
     {
         nlMatrix4 m4;
@@ -439,16 +502,28 @@ public:
         m_fEndBlend = 1.0f;
     }
 
+    /**
+     * Offset/Address/Size: 0xC04 | 0x80207530 | size: 0x5C
+     */
     virtual ~ScreenBlur() { }
 
+    /**
+     * Offset/Address/Size: 0xC60 | 0x8020758C | size: 0x84
+     */
     virtual void InitializeFromParser(SimpleParser* parser)
     {
         m_fStartBlend = parseFloat(parser->NextTokenOnLine(true), 1.0f);
         m_fEndBlend = parseFloat(parser->NextTokenOnLine(true), 1.0f);
     }
 
+    /**
+     * Offset/Address/Size: 0xCE4 | 0x80207610 | size: 0x4
+     */
     virtual void ApplyModifier(glPoly2& poly, float time) { }
 
+    /**
+     * Offset/Address/Size: 0xCE8 | 0x80207614 | size: 0x4C
+     */
     virtual void Cleanup()
     {
         glViewSetFilter(GLV_ScreenBlur, GLFilter_None);
@@ -470,10 +545,19 @@ public:
         m_nTexture = glHash("target/backbuffer");
     }
 
+    /**
+     * Offset/Address/Size: 0xB04 | 0x80207430 | size: 0x5C
+     */
     virtual ~ScreenGrab() { }
 
+    /**
+     * Offset/Address/Size: 0xB60 | 0x8020748C | size: 0x4
+     */
     virtual void InitializeFromParser(SimpleParser* parser) { }
 
+    /**
+     * Offset/Address/Size: 0xB64 | 0x80207490 | size: 0x64
+     */
     virtual void ApplyModifier(glPoly2& poly, float time)
     {
         if (m_bDoGrab)
@@ -488,6 +572,9 @@ public:
         }
     }
 
+    /**
+     * Offset/Address/Size: 0xBC8 | 0x802074F4 | size: 0x3C
+     */
     virtual void Cleanup()
     {
         glViewSetFilter(GLV_ScreenGrab, GLFilter_None);
@@ -521,10 +608,19 @@ public:
         m_m3UV.m11 = 0.5f;
     };
 
+    /**
+     * Offset/Address/Size: 0xA14 | 0x80207340 | size: 0x5C
+     */
     virtual ~ToScreenCoordinates() { }
 
+    /**
+     * Offset/Address/Size: 0xA70 | 0x8020739C | size: 0x4
+     */
     virtual void InitializeFromParser(SimpleParser* parser) { }
 
+    /**
+     * Offset/Address/Size: 0xA74 | 0x802073A0 | size: 0x90
+     */
     virtual void ApplyModifier(glPoly2& poly, float time)
     {
         for (int i = 0; i < 4; i++)
@@ -708,7 +804,7 @@ void ScriptedScreenTransition::InitializeFromParser(SimpleParser* parser)
         }
     }
 
-    pModifiers[m_nModifiers] = new (nlMalloc(0x4C, 8, false)) TransitionModifiers::ToScreenCoordinates();
+    pModifiers[m_nModifiers] = new (nlMalloc(sizeof(TransitionModifiers::ToScreenCoordinates), 8, false)) TransitionModifiers::ToScreenCoordinates();
     m_nModifiers += 1;
 
     m_pModifiers = (TransitionModifierInterface**)nlMalloc(m_nModifiers * sizeof(TransitionModifierInterface*), 8, 0);
@@ -722,46 +818,46 @@ TransitionModifierInterface* ScriptedScreenTransition::GetModifierFromName(char*
 {
     if (nlStrCmp<char>(pName, "modelscale") == 0)
     {
-        return new (nlMalloc(0x14, 8, false)) TransitionModifiers::ScaleModel();
+        return new (nlMalloc(sizeof(TransitionModifiers::ScaleModel), 8, false)) TransitionModifiers::ScaleModel();
     }
 
     if (nlStrCmp<char>(pName, "colour") == 0)
     {
-        return new (nlMalloc(0xC, 8, false)) TransitionModifiers::ColourBlend();
+        return new (nlMalloc(sizeof(TransitionModifiers::ColourBlend), 8, false)) TransitionModifiers::ColourBlend();
     }
 
     if (nlStrCmp<char>(pName, "texturescale") == 0)
     {
-        return new (nlMalloc(0x14, 8, false)) TransitionModifiers::ScaleTexture();
+        return new (nlMalloc(sizeof(TransitionModifiers::ScaleTexture), 8, false)) TransitionModifiers::ScaleTexture();
     }
 
     if (nlStrCmp<char>(pName, "modelshift") == 0)
     {
-        return new (nlMalloc(0x14, 8, false)) TransitionModifiers::TranslateModel();
+        return new (nlMalloc(sizeof(TransitionModifiers::TranslateModel), 8, false)) TransitionModifiers::TranslateModel();
     }
 
     if (nlStrCmp<char>(pName, "textureshift") == 0)
     {
-        return new (nlMalloc(0x14, 8, false)) TransitionModifiers::TranslateTexture();
+        return new (nlMalloc(sizeof(TransitionModifiers::TranslateTexture), 8, false)) TransitionModifiers::TranslateTexture();
     }
     if (nlStrCmp<char>(pName, "modelrotate") == 0)
     {
-        return new (nlMalloc(0x18, 8, false)) TransitionModifiers::RotateModel();
+        return new (nlMalloc(sizeof(TransitionModifiers::RotateModel), 8, false)) TransitionModifiers::RotateModel();
     }
 
     if (nlStrCmp<char>(pName, "texturerotate") == 0)
     {
-        return new (nlMalloc(0x18, 8, false)) TransitionModifiers::RotateTexture();
+        return new (nlMalloc(sizeof(TransitionModifiers::RotateTexture), 8, false)) TransitionModifiers::RotateTexture();
     }
 
     if (nlStrCmp<char>(pName, "screenblur") == 0)
     {
-        return new (nlMalloc(0xC, 8, false)) TransitionModifiers::ScreenBlur();
+        return new (nlMalloc(sizeof(TransitionModifiers::ScreenBlur), 8, false)) TransitionModifiers::ScreenBlur();
     }
 
     if (nlStrCmp<char>(pName, "screengrab") == 0)
     {
-        return new (nlMalloc(0xC, 8, false)) TransitionModifiers::ScreenGrab();
+        return new (nlMalloc(sizeof(TransitionModifiers::ScreenGrab), 8, false)) TransitionModifiers::ScreenGrab();
     }
     return NULL;
 }

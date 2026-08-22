@@ -12,7 +12,7 @@ class HUDOverlay : public BaseOverlayHandler
 public:
     HUDOverlay();
     virtual ~HUDOverlay();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
     virtual void SceneCreated();
     void SetSlideIn();
     void SetSlideOut();
@@ -22,7 +22,7 @@ public:
     void UpdateScore();
     void DisplayNewScore();
     void ResetScores();
-    void SwapPowerUps(int);
+    void SwapPowerUps(int homeAway);
 
     /*0x28*/ TLImageInstance* m_pImagePowerUps[2][2][2];
     /*0x48*/ TLImageInstance* m_pImageFlares[2][2][2];

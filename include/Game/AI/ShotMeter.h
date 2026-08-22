@@ -16,8 +16,8 @@ enum eShotMeterState
 class ShotMeter
 {
 public:
-    void Update(float, bool);
-    void Abort(cFielder*);
+    void Update(float fDeltaT, bool bHoldTime);
+    void Abort(cFielder* pFielder);
     void CalcOneTimerValue(cFielder* pFielder, bool bWasPerfectPass);
     float GetTotalDuration() const;
     float GetShotAimValue() const
@@ -25,7 +25,7 @@ public:
         return mfSShotAimValue;
     }
     void Reset();
-    void ShotReleased(cFielder*);
+    void ShotReleased(cFielder* pFielder);
 
     /* 0x00 */ eShotMeterState m_eShotMeterState;
     /* 0x04 */ float m_fTime;

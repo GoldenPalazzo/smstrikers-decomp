@@ -41,6 +41,9 @@ struct CROWD_SETTINGS
 bool g_Initd;
 
 template <typename T>
+/**
+ * Offset/Address/Size: 0x3C78 | 0x8015138C | size: 0x10
+ */
 void Increment(T& Value)
 {
     Value = (T)(Value + 1);
@@ -73,6 +76,9 @@ static const RANDOM_STREAMS g_RandomChants = { };
 static const RANDOM_STREAMS g_RandomHeckles = { };
 
 template <int N>
+/**
+ * Offset/Address/Size: 0x3C10 | 0x80151324 | size: 0x68
+ */
 float NDimDistance(float* A, float* B)
 {
     float sum = 0.0f;
@@ -85,6 +91,9 @@ float NDimDistance(float* A, float* B)
 }
 
 template <typename T>
+/**
+ * Offset/Address/Size: 0x3ADC | 0x801511F0 | size: 0x134
+ */
 static void WarmRandomStream(const RANDOM_STREAMS& RandomStreams, T* pStream)
 {
     if (g_Settings.NoStreaming)
@@ -123,8 +132,6 @@ unsigned char CrowdMood::IsStreamLocked()
 
 /**
  * Offset/Address/Size: 0x3780 | 0x80150E94 | size: 0x1C8
- * TODO: 96.49% match - two branch-opcode diffs remain in stream setup:
- *       compiler emits `beq` after `cmplwi m_BufferCount, 0`, target emits `ble`.
  */
 void ChangeCrowdVolume(float NewVolume)
 {
@@ -1039,12 +1046,11 @@ void CrowdMood::Update(float dt)
             targetArray = g_CrowdState.DestinationMood;
         }
 
-        f32 normalizedInterp =
-            (fabsf(g_CrowdState.Interpolant - 1.0f) <= 0.0001f)
-                ? 1.0f
-                : ((g_CrowdState.Interpolant >= g_CrowdState.InterpolantMidpoint)
-                      ? (g_CrowdState.Interpolant - g_CrowdState.InterpolantMidpoint) / (1.0f - g_CrowdState.InterpolantMidpoint)
-                      : g_CrowdState.Interpolant / g_CrowdState.InterpolantMidpoint);
+        f32 normalizedInterp = (fabsf(g_CrowdState.Interpolant - 1.0f) <= 0.0001f)
+                                 ? 1.0f
+                                 : ((g_CrowdState.Interpolant >= g_CrowdState.InterpolantMidpoint)
+                                           ? (g_CrowdState.Interpolant - g_CrowdState.InterpolantMidpoint) / (1.0f - g_CrowdState.InterpolantMidpoint)
+                                           : g_CrowdState.Interpolant / g_CrowdState.InterpolantMidpoint);
 
         g_CrowdState.SinceMoodDest = 0.0f;
         f32 complement = 1.0f - normalizedInterp;

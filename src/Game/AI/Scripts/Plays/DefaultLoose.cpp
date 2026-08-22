@@ -28,7 +28,7 @@ static inline float NotGoaliePickup(const FuzzyVariant& value)
 /**
  * Offset/Address/Size: 0x15CC | 0x8008C650 | size: 0x43C
  */
-FuzzyVariant Fuzzy::AbortLoosePlay(cDecisionEntity*)
+FuzzyVariant Fuzzy::AbortLoosePlay(cDecisionEntity* pDecision)
 {
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;

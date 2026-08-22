@@ -19,8 +19,8 @@ public:
     {
         return m_time;
     }
-    void Update(float);
-    void UpdateAsset(TLInstance*, float);
+    void Update(float time);
+    void UpdateAsset(TLInstance* instance, float time);
 
     /* 0x00 */ TLSlide* m_next;
     /* 0x04 */ char pad0[0x4];

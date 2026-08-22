@@ -69,12 +69,12 @@ public:
     /* 0xF0 */ bool m_bMatchLifespan;
 };
 
-EffectsTemplate* fxGetTemplate(unsigned long);
+EffectsTemplate* fxGetTemplate(unsigned long hashID);
 bool fxUnloadTemplates();
-bool fxLoadTemplateBundle(void*, unsigned long);
-bool fxLoadTemplateBundle(const char*);
-float RandomizedValue(float, float);
-float RandomizedValue(float);
+bool fxLoadTemplateBundle(void* data, unsigned long size);
+bool fxLoadTemplateBundle(const char* filename);
+float RandomizedValue(float base, float range);
+float RandomizedValue(float value);
 
 inline float RandomizedValue(const fxRange& value)
 {

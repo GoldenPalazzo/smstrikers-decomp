@@ -11,33 +11,33 @@ extern "C"
 /**
  * Offset/Address/Size: 0x0 | 0x801B6568 | size: 0x64
  */
-void glxCopyMatrix(float (&arg0)[3][4], const nlMatrix4& arg1)
+void glxCopyMatrix(float (&mo)[3][4], const nlMatrix4& mi)
 {
     // Row 0: copy from nlMatrix4 row 0 to target row 0
-    arg0[0][0] = arg1.e2[0][0]; // offset 0x00
-    arg0[0][1] = arg1.e2[1][0]; // offset 0x04
-    arg0[0][2] = arg1.e2[2][0]; // offset 0x08
-    arg0[0][3] = arg1.e2[3][0]; // offset 0x0C
+    mo[0][0] = mi.e2[0][0]; // offset 0x00
+    mo[0][1] = mi.e2[1][0]; // offset 0x04
+    mo[0][2] = mi.e2[2][0]; // offset 0x08
+    mo[0][3] = mi.e2[3][0]; // offset 0x0C
 
     // Row 1: copy from nlMatrix4 row 1 to target row 1
-    arg0[1][0] = arg1.e2[0][1]; // offset 0x10
-    arg0[1][1] = arg1.e2[1][1]; // offset 0x14
-    arg0[1][2] = arg1.e2[2][1]; // offset 0x18
-    arg0[1][3] = arg1.e2[3][1]; // offset 0x1C
+    mo[1][0] = mi.e2[0][1]; // offset 0x10
+    mo[1][1] = mi.e2[1][1]; // offset 0x14
+    mo[1][2] = mi.e2[2][1]; // offset 0x18
+    mo[1][3] = mi.e2[3][1]; // offset 0x1C
 
     // Row 2: copy from nlMatrix4 row 2 to target row 2
-    arg0[2][0] = arg1.e2[0][2]; // offset 0x20
-    arg0[2][1] = arg1.e2[1][2]; // offset 0x24
-    arg0[2][2] = arg1.e2[2][2]; // offset 0x28
-    arg0[2][3] = arg1.e2[3][2]; // offset 0x2C
+    mo[2][0] = mi.e2[0][2]; // offset 0x20
+    mo[2][1] = mi.e2[1][2]; // offset 0x24
+    mo[2][2] = mi.e2[2][2]; // offset 0x28
+    mo[2][3] = mi.e2[3][2]; // offset 0x2C
 }
 
 /**
  * Offset/Address/Size: 0x64 | 0x801B65CC | size: 0x24
  */
-void glxCopyMatrix(float (&arg0)[4][4], const nlMatrix4& arg1)
+void glxCopyMatrix(float (&mo)[4][4], const nlMatrix4& mi)
 {
-    memcpy(arg0, arg1.e2, sizeof(arg1.e2));
+    memcpy(mo, mi.e2, sizeof(mi.e2));
 }
 
 /**

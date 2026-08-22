@@ -4,17 +4,17 @@
 /**
  * Offset/Address/Size: 0x0 | 0x801DF160 | size: 0x20
  */
-void glTextureReplace(unsigned long arg0, const void* arg1, unsigned long arg2)
+void glTextureReplace(unsigned long texture, const void* buffer, unsigned long length)
 {
-    glplatTextureReplace(arg0, arg1, arg2);
+    glplatTextureReplace(texture, buffer, length);
 }
 
 /**
  * Offset/Address/Size: 0x20 | 0x801DF180 | size: 0x20
  */
-void glTextureAdd(unsigned long arg0, const void* arg1, unsigned long arg2)
+void glTextureAdd(unsigned long texture, const void* buffer, unsigned long length)
 {
-    glplatTextureAdd(arg0, arg1, arg2);
+    glplatTextureAdd(texture, buffer, length);
 }
 
 /**
@@ -44,7 +44,7 @@ u32 glTextureGetWidth()
 /**
  * Offset/Address/Size: 0xA0 | 0x801DF200 | size: 0x20
  */
-bool glTextureLoad(unsigned long arg0)
+bool glTextureLoad(unsigned long texture)
 {
-    return glplatTextureLoad(arg0);
+    return glplatTextureLoad(texture);
 }

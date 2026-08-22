@@ -16,12 +16,12 @@ class AnimRetargetList : public cIdentifier
 public:
     typedef char* MemType;
 
-    static AnimRetargetList* Initialize(nlChunk*);
+    static AnimRetargetList* Initialize(nlChunk* chunkData);
     static bool IsValidChunkID(u32 id)
     {
         return (id & 0x80FFFFFF) == 0x80017104;
     }
-    AnimRetarget* GetAnimRetargetWithSignature(const cSAnim*);
+    AnimRetarget* GetAnimRetargetWithSignature(const cSAnim* anim);
 
     /* 0x8 */ long m_NumAnimRetargets;
     /* 0xC */ AnimRetarget* m_pAnimRetarget;

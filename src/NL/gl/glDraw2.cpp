@@ -163,7 +163,6 @@ bool glAttachPoly2(eGLView view, unsigned long numPolys, glPoly2* pPolys, unsign
             {
                 // Declare pPacket (the packet iterator) before newModel so MWCC
                 // colors it into the lower callee-saved reg r20 and newModel into
-                // r21, matching the target (DWARF lists pPacket before newModel).
                 glModelPacket* pPacket;
                 glModel* newModel = glModelDupNoStreams(writer.GetModel(), true, false);
                 pPacket = newModel->packets;

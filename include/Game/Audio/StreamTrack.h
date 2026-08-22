@@ -15,7 +15,7 @@ class StereoAudioStream;
 
 namespace Audio
 {
-bool TrackMgrFileNameParamLookup(const char*, char*, unsigned long);
+bool TrackMgrFileNameParamLookup(const char* param, char* out, unsigned long size);
 } // namespace Audio
 
 namespace AudioStreamTrack

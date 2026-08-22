@@ -4,6 +4,9 @@
 static void WriteCallback(s32 chan, s32 result);
 static void EraseCallback(s32 chan, s32 result);
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802437AC | size: 0x170
+ */
 static void WriteCallback(s32 chan, s32 result)
 {
     CARDControl* card;
@@ -62,6 +65,9 @@ static void WriteCallback(s32 chan, s32 result)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x170 | 0x8024391C | size: 0xB0
+ */
 static void EraseCallback(s32 chan, s32 result)
 {
     CARDControl* card;
@@ -90,6 +96,9 @@ static void EraseCallback(s32 chan, s32 result)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x220 | 0x802439CC | size: 0x114
+ */
 s32 CARDWriteAsync(CARDFileInfo* fileInfo, void* buf, s32 length, s32 offset, CARDCallback callback)
 {
     CARDControl* card;

@@ -3039,6 +3039,9 @@ bool SetPitchBendOnSFX(unsigned long uVoiceID, unsigned short pitch)
     return PlatAudio::SetPitchBendOnSFX(uVoiceID, pitch);
 }
 
+/**
+ * Offset/Address/Size: 0xDD4 | 0x8013D2E8 | size: 0x20
+ */
 void SetOutputMode(MusyXOutputType outputType)
 {
     PlatAudio::SetOutputMode(outputType);

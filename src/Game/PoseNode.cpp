@@ -11,10 +11,10 @@ cPoseNode::cPoseNode()
 /**
  * Offset/Address/Size: 0x1E0 | 0x801E91E0 | size: 0x1C
  */
-cPoseNode::cPoseNode(int arg0)
+cPoseNode::cPoseNode(int nNumChildren)
 {
     m_numChildren = 0;
-    m_numChildren = arg0;
+    m_numChildren = nNumChildren;
 }
 
 /**
@@ -99,7 +99,7 @@ void cPoseNode::GetRootTrans(nlVector3* out, unsigned short ang)
  */
 void cPoseNode::GetRootRot(unsigned short* out)
 {
-    float temp = 0.0f;
+    float fAccumulatedWeight = 0.0f;
     *out = 0;
-    BlendRootRot(out, 1.0f, &temp);
+    BlendRootRot(out, 1.0f, &fAccumulatedWeight);
 }

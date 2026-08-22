@@ -11,7 +11,7 @@ extern "C" {
 DSError TRKInitializeMessageBuffers(void);
 
 DSError TRKSetBufferPosition(TRKBuffer* msg, u32 pos);
-void* TRKGetBuffer(int);
+void* TRKGetBuffer(int idx);
 void TRKResetBuffer(TRKBuffer* msg, BOOL keepData);
 void* TRKGetBuffer(int idx);
 void TRKReleaseBuffer(int idx);

@@ -703,6 +703,9 @@ wint_t __wFileRead(void* File, wint_t ch, int Action)
     return 0; /* to satisfy compiler */
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80236E54 | size: 0x98
+ */
 wint_t __wStringRead(void* isc, wint_t ch, int Action)
 {
     wchar_t RetVal;

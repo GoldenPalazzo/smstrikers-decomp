@@ -51,10 +51,10 @@ struct nlString
     u32 refcount;
 };
 
-void nlStrToWcs(const char*, unsigned short*, unsigned long);
-void nlZeroMemory(void*, unsigned long);
-u32 nlStringLowerHash(const char*);
-u32 nlStringHash(const char*);
+void nlStrToWcs(const char* str, unsigned short* wstr, unsigned long maxLen);
+void nlZeroMemory(void* p, unsigned long numBytes);
+u32 nlStringLowerHash(const char* str);
+u32 nlStringHash(const char* str);
 
 template <typename CharT>
 unsigned long nlStrLen(const CharT*);

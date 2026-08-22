@@ -38,10 +38,10 @@ class SkillTweaks
 public:
     SkillTweaks();
     /* 0x04 */ virtual ~SkillTweaks();
-    /* 0x08 */ virtual void Init(eDifficultyID, bool);
+    /* 0x08 */ virtual void Init(eDifficultyID diff, bool blend);
 
-    static SkillTweaks* GetSkillTweaks(int);
-    void HookupTweakeables(int);
+    static SkillTweaks* GetSkillTweaks(int idx);
+    void HookupTweakeables(int nSide);
 
 public:
     /* 0x04 */ f32 Shoot_CaptainS2SFirstButtonChance;
@@ -99,7 +99,7 @@ public:
 class GameTweaks : public TweaksBase
 {
 public:
-    GameTweaks(const char*);
+    GameTweaks(const char* name);
     virtual ~GameTweaks() { }
     void Init();
 
@@ -304,13 +304,13 @@ public:
     /* 0x234 */ float unk234;
     /* 0x238 */ float unk238;
     /* 0x23C */ float unk23C;
-    /* 0x240 */ float unk240;
+    /* 0x240 */ float fMinHitIntensityForHardBodyHitSFX;
     /* 0x244 */ float unk244;
     /* 0x248 */ float unk248;
-    /* 0x24C */ float unk24C;
+    /* 0x24C */ float fBombHitReactionVolume;
     /* 0x250 */ float unk250;
-    /* 0x254 */ float unk254;
-    /* 0x258 */ float unk258;
+    /* 0x254 */ float fSmallShellHitReactionVolume;
+    /* 0x258 */ float fMediumShellHitReactionVolume;
     /* 0x25C */ float unk25C;
     /* 0x260 */ float unk260;
     /* 0x264 */ float unk264;
@@ -329,16 +329,16 @@ public:
     /* 0x298 */ float unk298;
     /* 0x29C */ float unk29C;
     /* 0x2A0 */ float unk2A0;
-    /* 0x2A4 */ float unk2A4;
-    /* 0x2A8 */ float unk2A8;
+    /* 0x2A4 */ float fSlideAttackTimeToSlide;
+    /* 0x2A8 */ float fSlideAttackTimeToDecelrate;
     /* 0x2AC */ float unk2AC;
-    /* 0x2B0 */ float unk2B0;
+    /* 0x2B0 */ float fLeftTriggerDownPressure;
     /* 0x2B4 */ float unk2B4;
     /* 0x2B8 */ float unk2B8;
-    /* 0x2BC */ float unk2BC;
-    /* 0x2C0 */ float unk2C0;
-    /* 0x2C4 */ float unk2C4;
-    /* 0x2C8 */ float unk2C8;
+    /* 0x2BC */ float fClearBallGroundMinSpeed;
+    /* 0x2C0 */ float fClearBallGroundMaxSpeed;
+    /* 0x2C4 */ float fClearBallMinZSpeed;
+    /* 0x2C8 */ float fClearBallMaxZSpeed;
     /* 0x2CC */ float unk2CC;
     /* 0x2D0 */ float unk2D0;
     /* 0x2D4 */ float unk2D4;
@@ -348,11 +348,11 @@ public:
     /* 0x2E4 */ float unk2E4;
     /* 0x2E8 */ float unk2E8;
     /* 0x2EC */ float unk2EC;
-    /* 0x2F0 */ float unk2F0;
-    /* 0x2F4 */ float unk2F4;
-    /* 0x2F8 */ float unk2F8;
-    /* 0x2FC */ float unk2FC;
-    /* 0x300 */ float unk300;
+    /* 0x2F0 */ float fShotPostOffset;
+    /* 0x2F4 */ float fChipShotPostOffset;
+    /* 0x2F8 */ float fShotHighDistance;
+    /* 0x2FC */ float fShotWidthVariance;
+    /* 0x300 */ float fShotHeightVariance;
     /* 0x304 */ float unk304;
     /* 0x308 */ float unk308;
     /* 0x30C */ float unk30C;
@@ -374,8 +374,6 @@ public:
 // class Config
 // {
 // public:
-//     void Get<float>(const char*, float);
-//     void Get<int>(const char*, int);
 // };
 
 #endif // _GAMETWEAKS_H_

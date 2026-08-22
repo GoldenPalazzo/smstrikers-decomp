@@ -9,11 +9,11 @@
 class PhysicsCompositeObject : public PhysicsObject
 {
 public:
-    PhysicsCompositeObject(PhysicsWorld*);
+    PhysicsCompositeObject(PhysicsWorld* physicsWorld);
     virtual ~PhysicsCompositeObject();
     virtual int GetObjectType() const { return 0x9; };
-    void AdjustTransform(int, nlMatrix4&);
-    int AddObject(PhysicsObject*);
+    void AdjustTransform(int i, nlMatrix4& m);
+    int AddObject(PhysicsObject* object);
 
     /* 0x2C */ nlDLListContainer<PhysicsTransform*> m_Components;
     /* 0x34 */ int numComponents;

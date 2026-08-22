@@ -9,7 +9,6 @@
 // AddObject, AdjustTransform). This TU is built with `-inline deferred`,
 // under which MWCC emits bottom-up; the reversal makes .text emit forward
 // AND places the weak vtable copy (GetObjectType) before the DLListContainer
-// DeleteEntry linkonce, matching the target .o layout. Do not reorder.
 
 /**
  * Offset/Address/Size: 0x274 | 0x801FF91C | size: 0x54
@@ -58,7 +57,7 @@ PhysicsCompositeObject::~PhysicsCompositeObject()
 int PhysicsCompositeObject::AddObject(PhysicsObject* object)
 {
     object->MakeStatic();
-    PhysicsTransform* transform = new (nlMalloc(0x30, 8, false)) PhysicsTransform();
+    PhysicsTransform* transform = new (nlMalloc(sizeof(PhysicsTransform), 8, false)) PhysicsTransform();
 
     transform->Attach(object, this);
 
@@ -115,65 +114,3 @@ void PhysicsCompositeObject::AdjustTransform(int i, nlMatrix4& m)
 call_transform:
     transformObj->SetSubObjectTransform(m, PhysicsObject::RELATIVE_TO_PARENT);
 }
-
-/**
- * Offset/Address/Size: 0x0 | 0x801FF970 | size: 0x8
- */
-// int PhysicsCompositeObject::GetObjectType() const
-// {
-//     return 0x9;
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801FF978 | size: 0x24
-//  */
-// void DLListContainerBase<PhysicsTransform*, NewAdapter<DLListEntry<PhysicsTransform*>>>::DeleteEntry(DLListEntry<PhysicsTransform*>*)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x0 | 0x801FF99C | size: 0x3C
- * nlWalkDLRing<Entry, Container> is emitted WEAK via implicit instantiation
- * from the m_Components member destructor (~DLListContainerBase ->
- * container cleanup -> nlWalkDLRing). An explicit `template void ...`
- * instantiation directive here would force GLOBAL linkage and mismatch the
- * target's weak symbol, so it is intentionally omitted.
- */
-
-// /**
-//  * Offset/Address/Size: 0x3C | 0x801FF9D8 | size: 0x20
-//  */
-// void nlDLRingIsEnd<DLListEntry<PhysicsTransform*>>(DLListEntry<PhysicsTransform*>*, DLListEntry<PhysicsTransform*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x5C | 0x801FF9F8 | size: 0x18
-//  */
-// void nlDLRingGetStart<DLListEntry<PhysicsTransform*>>(DLListEntry<PhysicsTransform*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x74 | 0x801FFA10 | size: 0x3C
-//  */
-// void nlDLRingAddEnd<DLListEntry<PhysicsTransform*>>(DLListEntry<PhysicsTransform*>**, DLListEntry<PhysicsTransform*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xB0 | 0x801FFA4C | size: 0x38
-//  */
-// void nlDLRingAddStart<DLListEntry<PhysicsTransform*>>(DLListEntry<PhysicsTransform*>**, DLListEntry<PhysicsTransform*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801FFA84 | size: 0x60
-//  */
-// void nlWalkRing<DLListEntry<PhysicsTransform*>, DLListContainerBase<PhysicsTransform*,
-// NewAdapter<DLListEntry<PhysicsTransform*>>>>(DLListEntry<PhysicsTransform*>*, DLListContainerBase<PhysicsTransform*,
-// NewAdapter<DLListEntry<PhysicsTransform*>>>*, void (DLListContainerBase<PhysicsTransform*,
-// NewAdapter<DLListEntry<PhysicsTransform*>>>::*)(DLListEntry<PhysicsTransform*>*))
-// {
-// }

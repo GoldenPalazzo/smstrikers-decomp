@@ -1,10 +1,8 @@
 #include "PowerPC_EABI_Support/MetroTRK/trk.h"
 
-extern u32 fn_80228F78(u32, u32, u8, __file_handle*);
-extern u32 fn_80228F80(u32, u32);
-extern u32 fn_80228F70(u32, u32, size_t*, unsigned char*);
-extern u32 fn_80228F88(u32, u32, fpos_t*, u8);
-
+/**
+ * Offset/Address/Size: 0x584 | 0x8022A4C0 | size: 0xBC
+ */
 DSIOResult __read_console(__file_handle file, unsigned char* buffer, size_t* count, __idle_proc idle_fn)
 {
     u32 r0;
@@ -17,7 +15,7 @@ DSIOResult __read_console(__file_handle file, unsigned char* buffer, size_t* cou
         return DS_IOError;
 
     countTemp = *count;
-    r0 = fn_80228F70(DSMSG_ReadFile, 0, &countTemp, buffer);
+    r0 = TRKAccessFile(DSMSG_ReadFile, 0, &countTemp, buffer);
     *count = countTemp;
 
     switch ((u8)r0)
@@ -31,6 +29,9 @@ DSIOResult __read_console(__file_handle file, unsigned char* buffer, size_t* cou
     return DS_IOError;
 }
 
+/**
+ * Offset/Address/Size: 0x4C8 | 0x8022A404 | size: 0xBC
+ */
 DSIOResult __TRK_write_console(__file_handle file, unsigned char* buffer, size_t* count, __idle_proc idle_fn)
 {
     u32 r0;
@@ -43,7 +44,7 @@ DSIOResult __TRK_write_console(__file_handle file, unsigned char* buffer, size_t
         return DS_IOError;
 
     countTemp = *count;
-    r0 = fn_80228F70(DSMSG_WriteFile, 1, &countTemp, buffer);
+    r0 = TRKAccessFile(DSMSG_WriteFile, 1, &countTemp, buffer);
     *count = countTemp;
 
     switch ((u8)r0)
@@ -57,6 +58,9 @@ DSIOResult __TRK_write_console(__file_handle file, unsigned char* buffer, size_t
     return DS_IOError;
 }
 
+/**
+ * Offset/Address/Size: 0x444 | 0x8022A380 | size: 0x84
+ */
 DSIOResult __close_console(__file_handle file)
 {
     u32 r0;
@@ -66,7 +70,7 @@ DSIOResult __close_console(__file_handle file)
         return DS_IOError;
     }
 
-    r0 = fn_80228F80(DSMSG_CloseFile, file);
+    r0 = TRKCloseFile(DSMSG_CloseFile, file);
 
     switch ((u8)r0)
     {
@@ -79,6 +83,9 @@ DSIOResult __close_console(__file_handle file)
     return DS_IOError;
 }
 
+/**
+ * Offset/Address/Size: 0x390 | 0x8022A2CC | size: 0xB4
+ */
 DSIOResult __read_file(__file_handle file, unsigned char* buf, size_t* count, __idle_proc idle_fn)
 {
     u32 r0;
@@ -90,7 +97,7 @@ DSIOResult __read_file(__file_handle file, unsigned char* buf, size_t* count, __
     }
 
     countTemp = *count;
-    r0 = fn_80228F70(DSMSG_ReadFile, file, &countTemp, buf);
+    r0 = TRKAccessFile(DSMSG_ReadFile, file, &countTemp, buf);
     *count = countTemp;
 
     switch ((u8)r0)
@@ -104,6 +111,9 @@ DSIOResult __read_file(__file_handle file, unsigned char* buf, size_t* count, __
     return DS_IOError;
 }
 
+/**
+ * Offset/Address/Size: 0x2DC | 0x8022A218 | size: 0xB4
+ */
 DSIOResult __write_file(__file_handle file, unsigned char* buf, size_t* count, __idle_proc idle_fn)
 {
     u32 r0;
@@ -115,7 +125,7 @@ DSIOResult __write_file(__file_handle file, unsigned char* buf, size_t* count, _
     }
 
     countTemp = *count;
-    r0 = fn_80228F70(DSMSG_WriteFile, file, &countTemp, buf);
+    r0 = TRKAccessFile(DSMSG_WriteFile, file, &countTemp, buf);
     *count = countTemp;
 
     switch ((u8)r0)
@@ -129,6 +139,9 @@ DSIOResult __write_file(__file_handle file, unsigned char* buf, size_t* count, _
     return DS_IOError;
 }
 
+/**
+ * Offset/Address/Size: 0x160 | 0x8022A09C | size: 0x17C
+ */
 DSIOResult __open_file(const char* name, file_modes mode, __file_handle* handle)
 {
     u32 r0;
@@ -184,7 +197,7 @@ DSIOResult __open_file(const char* name, file_modes mode, __file_handle* handle)
         trk_mode |= 0x08;
     }
 
-    r0 = fn_80228F78(DSMSG_OpenFile, (u32)name, (u8)trk_mode, handle);
+    r0 = TRKOpenFile(DSMSG_OpenFile, (u32)name, (u8)trk_mode, handle);
 
     switch ((u8)r0)
     {
@@ -197,6 +210,9 @@ DSIOResult __open_file(const char* name, file_modes mode, __file_handle* handle)
     return DS_IOError;
 }
 
+/**
+ * Offset/Address/Size: 0xDC | 0x8022A018 | size: 0x84
+ */
 DSIOResult __close_file(__file_handle file)
 {
     u32 r0;
@@ -206,7 +222,7 @@ DSIOResult __close_file(__file_handle file)
         return DS_IOError;
     }
 
-    r0 = fn_80228F80(DSMSG_CloseFile, file);
+    r0 = TRKCloseFile(DSMSG_CloseFile, file);
 
     switch ((u8)r0)
     {
@@ -219,6 +235,9 @@ DSIOResult __close_file(__file_handle file)
     return DS_IOError;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80229F3C | size: 0xDC
+ */
 DSIOResult __position_file(__file_handle handle, fpos_t* position, int mode, __idle_proc idle_proc)
 {
     u32 r0;
@@ -244,7 +263,7 @@ DSIOResult __position_file(__file_handle handle, fpos_t* position, int mode, __i
         modeConverted = 2;
     }
 
-    r0 = fn_80228F88(DSMSG_PositionFile, handle, position, (u8)modeConverted);
+    r0 = TRKPositionFile(DSMSG_PositionFile, handle, position, (u8)modeConverted);
 
     switch ((u8)r0)
     {

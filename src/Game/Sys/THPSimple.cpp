@@ -213,7 +213,7 @@ static void __THPAsyncCancelCB(nlFile*, void*, unsigned int, unsigned long, void
  */
 extern "C" int THPSimpleInit(long audioSystem)
 {
-    memset(&SimpleControl, 0, 0x1BC);
+    memset(&SimpleControl, 0, sizeof(SimpleControl));
     LCEnable();
 
     if (!THPInit())
@@ -296,7 +296,7 @@ extern "C" int THPSimpleOpen(const char* fileName)
     }
 
     nlRead(SimpleControl.file, WorkBuffer, sizeof(WorkBuffer));
-    memcpy(((THPSimpleControlWork*)&SimpleControl)->magic, WorkBuffer, 0x30);
+    memcpy(((THPSimpleControlWork*)&SimpleControl)->magic, WorkBuffer, sizeof(THPHeader));
 
     if (strcmp(((THPSimpleControlWork*)&SimpleControl)->magic, "THP") != 0)
     {
@@ -434,7 +434,7 @@ extern "C" unsigned long THPSimpleCalcNeedMemory(int numReadBuffers, int numAudi
 }
 
 /**
- * Offset/Address/Size: 0x116C | 0x801CCDD0 | size: 0x3CC
+ * Offset/Address/Size: 0xE6C | 0x801CCDD0 | size: 0x3CC
  */
 extern "C" int THPSimpleSetBuffer(unsigned char* buffer)
 {
@@ -444,7 +444,7 @@ extern "C" int THPSimpleSetBuffer(unsigned char* buffer)
     unsigned long numAudio;
     PlatTexture* tex;
 
-    if (SimpleControl.open && SimpleControl.playing == 0)
+    if (SimpleControl.open && SimpleControl.preFetchState == 0)
     {
         if (SimpleControl.audioState == 1)
         {
@@ -461,9 +461,9 @@ extern "C" int THPSimpleSetBuffer(unsigned char* buffer)
 
         for (i = 0; i < (unsigned long)NumReadBuffers; i++)
         {
-            SimpleControl.readBuffers[i].mPtr = ptr;
+            SimpleControl.readBuffer[i].mPtr = ptr;
             ptr += (SimpleControl.bufSize + 31) & ~31;
-            SimpleControl.readBuffers[i].mIsValid = 0;
+            SimpleControl.readBuffer[i].mIsValid = 0;
         }
 
         if (SimpleControl.audioExist)
@@ -486,12 +486,12 @@ extern "C" int THPSimpleSetBuffer(unsigned char* buffer)
 
 static inline void update_read_idx()
 {
-    register s32 readIdx = SimpleControl.readIdx;
-    if (readIdx + 1 >= NumReadBuffers)
-        readIdx = 0;
+    register s32 readIndex = SimpleControl.readIndex;
+    if (readIndex + 1 >= NumReadBuffers)
+        readIndex = 0;
     else
-        readIdx = readIdx + 1;
-    SimpleControl.readIdx = readIdx;
+        readIndex = readIndex + 1;
+    SimpleControl.readIndex = readIndex;
 }
 
 /**
@@ -499,46 +499,46 @@ static inline void update_read_idx()
  */
 static void __THPSimpleDVDCallback(nlFile* file, void* buffer, unsigned int bytesRead, unsigned long offset)
 {
-    SimpleControl.dvdBusy = 0;
+    SimpleControl.readProgress = 0;
 
-    SimpleControl.readBuffers[SimpleControl.readIdx].mFrameNumber = SimpleControl.frameCount;
-    SimpleControl.frameCount++;
-    SimpleControl.readBuffers[SimpleControl.readIdx].mIsValid = TRUE;
+    SimpleControl.readBuffer[SimpleControl.readIndex].mFrameNumber = SimpleControl.totalReadFrame;
+    SimpleControl.totalReadFrame++;
+    SimpleControl.readBuffer[SimpleControl.readIndex].mIsValid = TRUE;
 
-    SimpleControl.totalRead += SimpleControl.nextSize;
-    SimpleControl.nextSize = *(u32*)SimpleControl.readBuffers[SimpleControl.readIdx].mPtr;
+    SimpleControl.curOffset += SimpleControl.readSize;
+    SimpleControl.readSize = *(u32*)SimpleControl.readBuffer[SimpleControl.readIndex].mPtr;
 
     update_read_idx();
 
-    if (SimpleControl.readBuffers[SimpleControl.readIdx].mIsValid != 0)
+    if (SimpleControl.readBuffer[SimpleControl.readIndex].mIsValid != 0)
     {
         return;
     }
 
-    if (SimpleControl.unk74 != 0)
+    if (SimpleControl.dvdError != 0)
     {
         return;
     }
 
-    if (SimpleControl.playing != 1)
+    if (SimpleControl.preFetchState != 1)
     {
         return;
     }
 
-    if (SimpleControl.frameCount > SimpleControl.numFrames - 1)
+    if (SimpleControl.totalReadFrame > SimpleControl.numFrames - 1)
     {
         if (SimpleControl.loop != 1)
         {
             return;
         }
-        SimpleControl.frameCount = 0;
-        SimpleControl.totalRead = SimpleControl.movieDataOffsets;
-        SimpleControl.nextSize = SimpleControl.firstFrameSize;
+        SimpleControl.totalReadFrame = 0;
+        SimpleControl.curOffset = SimpleControl.movieDataOffsets;
+        SimpleControl.readSize = SimpleControl.firstFrameSize;
     }
 
-    SimpleControl.dvdBusy = 1;
-    nlSeek(SimpleControl.file, SimpleControl.totalRead, 0);
-    nlReadAsync(SimpleControl.file, SimpleControl.readBuffers[SimpleControl.readIdx].mPtr, SimpleControl.nextSize, __THPSimpleDVDCallback, 0);
+    SimpleControl.readProgress = 1;
+    nlSeek(SimpleControl.file, SimpleControl.curOffset, 0);
+    nlReadAsync(SimpleControl.file, SimpleControl.readBuffer[SimpleControl.readIndex].mPtr, SimpleControl.readSize, __THPSimpleDVDCallback, 0);
 }
 
 /**
@@ -549,7 +549,7 @@ extern "C" int THPSimplePreLoad(long loop)
     unsigned long i;
     unsigned long readNum;
 
-    if (SimpleControl.open && SimpleControl.playing == 0)
+    if (SimpleControl.open && SimpleControl.preFetchState == 0)
     {
         readNum = NumReadBuffers;
         if (loop == 0 && SimpleControl.numFrames < (unsigned long)NumReadBuffers)
@@ -559,31 +559,31 @@ extern "C" int THPSimplePreLoad(long loop)
 
         for (i = 0; i < readNum; i++)
         {
-            nlSeek(SimpleControl.file, SimpleControl.totalRead, 0);
-            nlRead(SimpleControl.file, SimpleControl.readBuffers[SimpleControl.readIdx].mPtr, SimpleControl.nextSize);
+            nlSeek(SimpleControl.file, SimpleControl.curOffset, 0);
+            nlRead(SimpleControl.file, SimpleControl.readBuffer[SimpleControl.readIndex].mPtr, SimpleControl.readSize);
 
-            long idx = SimpleControl.readIdx;
-            SimpleControl.totalRead += SimpleControl.nextSize;
-            SimpleControl.nextSize = *(long*)SimpleControl.readBuffers[idx].mPtr;
-            SimpleControl.readBuffers[idx].mIsValid = 1;
-            SimpleControl.readBuffers[SimpleControl.readIdx].mFrameNumber = SimpleControl.frameCount;
+            long idx = SimpleControl.readIndex;
+            SimpleControl.curOffset += SimpleControl.readSize;
+            SimpleControl.readSize = *(long*)SimpleControl.readBuffer[idx].mPtr;
+            SimpleControl.readBuffer[idx].mIsValid = 1;
+            SimpleControl.readBuffer[SimpleControl.readIndex].mFrameNumber = SimpleControl.totalReadFrame;
 
-            SimpleControl.readIdx = (SimpleControl.readIdx + 1 >= NumReadBuffers) ? 0 : SimpleControl.readIdx + 1;
-            SimpleControl.frameCount++;
+            SimpleControl.readIndex = (SimpleControl.readIndex + 1 >= NumReadBuffers) ? 0 : SimpleControl.readIndex + 1;
+            SimpleControl.totalReadFrame++;
 
-            if ((unsigned long)SimpleControl.frameCount > SimpleControl.numFrames - 1)
+            if ((unsigned long)SimpleControl.totalReadFrame > SimpleControl.numFrames - 1)
             {
                 if (SimpleControl.loop == 1)
                 {
-                    SimpleControl.frameCount = 0;
-                    SimpleControl.totalRead = SimpleControl.movieDataOffsets;
-                    SimpleControl.nextSize = SimpleControl.firstFrameSize;
+                    SimpleControl.totalReadFrame = 0;
+                    SimpleControl.curOffset = SimpleControl.movieDataOffsets;
+                    SimpleControl.readSize = SimpleControl.firstFrameSize;
                 }
             }
         }
 
         SimpleControl.loop = loop;
-        SimpleControl.playing = 1;
+        SimpleControl.preFetchState = 1;
         return 1;
     }
 
@@ -615,9 +615,9 @@ extern "C" int THPSimpleLoadStop()
 
     if (SimpleControl.open && SimpleControl.audioState == 0)
     {
-        SimpleControl.playing = 0;
+        SimpleControl.preFetchState = 0;
 
-        if (SimpleControl.dvdBusy != 0)
+        if (SimpleControl.readProgress != 0)
         {
             nlCancelPendingAsyncReads(SimpleControl.file, __THPAsyncCancelCB);
 
@@ -627,12 +627,12 @@ extern "C" int THPSimpleLoadStop()
                 OSYieldThread();
             }
 
-            SimpleControl.dvdBusy = 0;
+            SimpleControl.readProgress = 0;
         }
 
         for (i = 0; i < 16; i++)
         {
-            SimpleControl.readBuffers[i].mIsValid = 0;
+            SimpleControl.readBuffer[i].mIsValid = 0;
         }
 
         SimpleControl.audioBuffer[0].mValidSample = 0;
@@ -642,11 +642,11 @@ extern "C" int THPSimpleLoadStop()
         SimpleControl.audioBuffer[4].mValidSample = 0;
         SimpleControl.audioBuffer[5].mValidSample = 0;
         SimpleControl.textureSet.mFrameNumber = -1;
-        SimpleControl.totalRead = SimpleControl.movieDataOffsets;
-        SimpleControl.nextSize = SimpleControl.firstFrameSize;
-        SimpleControl.readIdx = 0;
-        SimpleControl.frameCount = 0;
-        SimpleControl.unk74 = 0;
+        SimpleControl.curOffset = SimpleControl.movieDataOffsets;
+        SimpleControl.readSize = SimpleControl.firstFrameSize;
+        SimpleControl.readIndex = 0;
+        SimpleControl.totalReadFrame = 0;
+        SimpleControl.dvdError = 0;
         SimpleControl.nextDecodeIndex = 0;
         SimpleControl.audioDecodeIndex = 0;
         SimpleControl.audioOutputIndex = 0;

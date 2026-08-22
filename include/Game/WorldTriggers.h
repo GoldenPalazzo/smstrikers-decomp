@@ -3,6 +3,6 @@
 
 #include "NL/nlMath.h"
 
-void EmitCameraFlash(const nlVector3&);
+void EmitCameraFlash(const nlVector3& position);
 
 #endif // _WORLDTRIGGERS_H_

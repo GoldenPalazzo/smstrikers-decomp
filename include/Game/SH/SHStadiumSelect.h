@@ -11,8 +11,8 @@
 
 struct StadiumEntry
 {
-    /* 0x0 */ eStadiumID stadiumID;
-    /* 0x4 */ const char* imagePath;
+    /* 0x0 */ eStadiumID mStadiumID;
+    /* 0x4 */ const char* mFilename;
 }; // total size: 0x8
 
 enum Direction
@@ -24,15 +24,27 @@ enum Direction
 class StadiumSelectSceneV2 : public BaseSceneHandler
 {
 public:
+    static const int NUM_IMAGES = 7;
+
     StadiumSelectSceneV2();
     virtual ~StadiumSelectSceneV2();
     virtual void SceneCreated();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
+    static bool IsStadiumUnlocked(eStadiumID stadium);
+    static bool CanProceed(eStadiumID stadium);
+    static void OnMenuBack();
     void OnSelectStadium();
+    eStadiumID GetSelectedStadium();
+    void CopyToTempTextureBuffer(void* source);
+    void PrepareTempTextureBuffer();
     void ResetFromRight();
     void ResetFromLeft();
+    void Copy(char source, char dest);
 
-    /* 0x01C */ AsyncImage* mImages[7];                          // size 0x1C
+private:
+    AsyncImage* GetImage(int index) { return mImages[index]; }
+
+    /* 0x01C */ AsyncImage* mImages[NUM_IMAGES];                 // size 0x1C
     /* 0x038 */ void* mTempTextureBuffer;                        // size 0x4
     /* 0x03C */ int mTempTextureBufferSize;                      // size 0x4
     /* 0x040 */ FEScrollText* m_pTicker;                         // size 0x4

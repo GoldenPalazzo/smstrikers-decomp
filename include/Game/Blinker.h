@@ -16,10 +16,10 @@ enum eBlinkState
 class Blinker
 {
 public:
-    void Blink(glModel*);
+    void Blink(glModel* model);
 
-    void Update(float);
-    Blinker(const char*, unsigned long, GLMaterialList*, GLMaterialList*, unsigned long);
+    void Update(float fDeltaT);
+    Blinker(const char* szBaseName, unsigned long model0Hash, GLMaterialList* mats0, GLMaterialList* mats1, unsigned long eyesHash);
 
     /* 0x00 */ u32 m_uModel0Hash;
     /* 0x04 */ GLMaterialList* m_pMats[2];

@@ -4,6 +4,9 @@
 #include "buffer_io.h"
 #include "wchar_io.h"
 
+/**
+ * Offset/Address/Size: 0x28C | 0x8022FEBC | size: 0x214
+ */
 char* fgets(char* s, int n, FILE* file)
 {
     char* p;
@@ -132,6 +135,9 @@ char* fgets(char* s, int n, FILE* file)
     return s;
 }
 
+/**
+ * Offset/Address/Size: 0xD4 | 0x8022FD04 | size: 0x1B8
+ */
 int __put_char(int c, FILE* stream)
 {
     int ret;
@@ -196,6 +202,9 @@ exit:
     return ret;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8022FC30 | size: 0xD4
+ */
 int fputs(const char* s, FILE* stream)
 {
     char c;

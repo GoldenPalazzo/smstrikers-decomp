@@ -23,7 +23,7 @@ FEPadData g_aFEPadData[4];
  */
 void FEInput::Initialize()
 {
-    g_pFEInput = new ((u8*)nlMalloc(0x30, 8, false)) FEInput();
+    g_pFEInput = new ((u8*)nlMalloc(sizeof(FEInput), 8, false)) FEInput();
 }
 
 /**
@@ -31,7 +31,6 @@ void FEInput::Initialize()
  */
 FEInput::FEInput()
 {
-    FORCE_DONT_INLINE;
     for (int i = 0; i < 4; i++)
     {
         m_nExclusiveInputSceneHashIDStack[i].m_pBaseSceneHandler = nullptr;
@@ -45,7 +44,6 @@ FEInput::FEInput()
  */
 void FEInput::Reset()
 {
-    FORCE_DONT_INLINE;
     m_bEnableInput[0] = true;
     m_bEnableInput[1] = true;
     m_bEnableInput[2] = true;
@@ -53,7 +51,7 @@ void FEInput::Reset()
     m_InputLockDepth = 0;
     m_bInputAllowed = true;
     EnableAnalogToDPadMapping(FE_ALL_PADS, false);
-    memset(g_aFEPadData, 0, 0x270);
+    memset(g_aFEPadData, 0, sizeof(g_aFEPadData));
 }
 
 /**

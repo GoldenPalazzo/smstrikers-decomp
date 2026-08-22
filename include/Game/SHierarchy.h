@@ -12,33 +12,35 @@ class cSHierarchy : public cIdentifier
 public:
     typedef char* MemType;
 
+    void Dump() const;
     bool PreserveBoneLength(int i) const;
     nlVector3& GetTranslationOffset(int i) const;
-    s32 GetParent(int i) const;
-    s32 GetPushPop(int i) const;
-    s32 GetMirroredNode(int i) const;
-    s32 GetNumChildren(int i) const;
+    int GetParent(int i) const;
+    int GetPushPop(int i) const;
+    int GetMirroredNode(int i) const;
+    int GetNumChildren(int i) const;
     u32 GetNodeID(int i) const;
-    s32 GetNodeIndexByID(unsigned int id) const;
-    s32 GetChild(int i, int j) const;
+    int GetNodeIndexByID(unsigned int id) const;
+    int GetChild(int i, int j) const;
     void BuildPushPopFlags(int nNode, int nParentDepth, int& nCurrentDepth);
     static cSHierarchy* Initialize(nlChunk* pChunk);
     static bool IsValidChunkID(u32 id)
     {
         return (id & 0x80FFFFFF) == 0x80018000;
     }
-    inline u32* GetNodeIDs() const { return m_pNodeID; }
-    inline s32 GetNodeCount() const { return m_nNumNodes; }
+    inline int GetNumNodes() const { return m_nNumNodes; }
+    inline int GetPelvisNodeIndex() const { return m_nPelvisNodeIndex; }
+    inline int GetSpineNodeIndex() const { return m_nSpineNodeIndex; }
 
-    /* 0x08 */ s32 m_nNumNodes;
+    /* 0x08 */ int m_nNumNodes;
     /* 0x0C */ u32* m_pNodeID;
-    /* 0x10 */ s32* m_pParent;
-    /* 0x14 */ s32* m_pNumChildren;
-    /* 0x18 */ s32** m_pChildren;
-    /* 0x1C */ s32* m_pPushPop;
-    /* 0x20 */ s32* m_pMirrorTable;
-    /* 0x24 */ s32 m_nPelvisNodeIndex;
-    /* 0x28 */ s32 m_nSpineNodeIndex;
+    /* 0x10 */ int* m_pParent;
+    /* 0x14 */ int* m_pNumChildren;
+    /* 0x18 */ int** m_pChildren;
+    /* 0x1C */ int* m_pPushPop;
+    /* 0x20 */ int* m_pMirrorTable;
+    /* 0x24 */ int m_nPelvisNodeIndex;
+    /* 0x28 */ int m_nSpineNodeIndex;
     /* 0x2C */ nlVector3* m_pV3TranslationOffset;
     /* 0x30 */ u8* m_pPreserveBoneLength;
 };

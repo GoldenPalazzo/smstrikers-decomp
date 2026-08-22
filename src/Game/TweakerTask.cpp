@@ -10,7 +10,6 @@ extern bool g_bEnableGamecubePadMonkey;
  */
 void TweakerTask::Run(float dt)
 {
-    u8 temp_ret;
     if (!g_bEnableGamecubePadMonkey)
     {
         cGlobalPad* pad = cPadManager::GetPad(0);

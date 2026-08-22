@@ -80,19 +80,19 @@ class FormationEval
 {
 public:
     FormationEval();
-    FormationEval(FormationManager*, eFormationType, const FormationSpec*);
+    FormationEval(FormationManager* pMgr, eFormationType type, const FormationSpec* spec);
     virtual ~FormationEval() { }
-    virtual void CalculateDesiredLocation(nlVector3&, cFielder*, bool);
+    virtual void CalculateDesiredLocation(nlVector3& destPosition, cFielder* pFielder, bool bExtrapolate);
     virtual cPlayer* GetKeyPlayer();
-    virtual void GetKeyPositions(cFielder*, nlVector3&, nlVector3*, bool);
+    virtual void GetKeyPositions(cFielder* pFielder, nlVector3& v3KeyAIPosition, nlVector3* pKeyFormationAIPosition, bool bExtrapolate);
     virtual float GetWeight();
-    virtual float IsFielderInPosition(cFielder*, nlVector3, bool);
-    virtual void SortPlayers(const nlVector2*);
-    virtual void Update(float);
-    static FormationEval* Create(FormationManager*, eFormationType, eFormationSet, eFormation);
-    void AssignPositionsToFielders(unsigned int*, float (*)[4]);
-    static void AILocToFieldLoc(nlVector3&, const nlVector3&, int);
-    static void FieldLocToAILoc(nlVector3&, const nlVector3&, int);
+    virtual float IsFielderInPosition(cFielder* pFielder, nlVector3 v3Pos, bool bExtended);
+    virtual void SortPlayers(const nlVector2* v2Center);
+    virtual void Update(float fDeltaT);
+    static FormationEval* Create(FormationManager* pManager, eFormationType formType, eFormationSet formSetID, eFormation formID);
+    void AssignPositionsToFielders(unsigned int* pFielderPosAssignments, float (*fFielderToPositionDistance)[4]);
+    static void AILocToFieldLoc(nlVector3& dest, const nlVector3& ai_location, int nTeamID);
+    static void FieldLocToAILoc(nlVector3& dest, const nlVector3& field_location, int nTeamID);
 
     /* 0x04 */ eFormationType m_eFormationType;
     /* 0x08 */ const FormationSpec* m_pFormationSpec;
@@ -105,15 +105,15 @@ public:
 class FormationBallPosition : public FormationEval
 {
 public:
-    FormationBallPosition(FormationManager*, eFormationType, const FormationSet*);
-    FormationBallPosition(FormationManager*, eFormationType, const FormationSpec*);
+    FormationBallPosition(FormationManager* pMgr, eFormationType type, const FormationSet* set);
+    FormationBallPosition(FormationManager* pMgr, eFormationType type, const FormationSpec* spec);
     ~FormationBallPosition();
-    void CalculateDesiredLocation(nlVector3&, cFielder*, bool);
+    void CalculateDesiredLocation(nlVector3& destPosition, cFielder* pFielder, bool bExtrapolate);
     float GetWeight();
     float GetBlendFactor();
-    void CalcBallPosition(nlVector2&);
-    void Update(float);
-    bool SelectClosestBallFormations(const nlVector2&);
+    void CalcBallPosition(nlVector2& v2DestAIBallPos);
+    void Update(float fDeltaT);
+    bool SelectClosestBallFormations(const nlVector2& v2AIBallLoc);
 
     /* 0x28 */ const FormationSet* m_pFormationSet;
     /* 0x2C */ FormationBallPosition* m_pNextClosestFormation;
@@ -122,16 +122,16 @@ public:
 class FormationOffensive : public FormationEval
 {
 public:
-    FormationOffensive(FormationManager*, eFormationType, const FormationSpec*);
-    float IsFielderInPosition(cFielder*, nlVector3, bool);
+    FormationOffensive(FormationManager* pMgr, eFormationType type, const FormationSpec* spec);
+    float IsFielderInPosition(cFielder* pFielder, nlVector3 v3DesiredPosition, bool bInPosition);
     float GetWeight();
 };
 
 class FormationDefensive : public FormationEval
 {
 public:
-    FormationDefensive(FormationManager*, eFormationType, const FormationSpec*);
-    float IsFielderInPosition(cFielder*, nlVector3, bool);
+    FormationDefensive(FormationManager* pMgr, eFormationType type, const FormationSpec* spec);
+    float IsFielderInPosition(cFielder* pFielder, nlVector3 v3DesiredPosition, bool bInPosition);
     float GetWeight();
 };
 
@@ -145,17 +145,17 @@ struct CachedPosition
 class FormationManager
 {
 public:
-    FormationManager(cTeam*);
+    FormationManager(cTeam* pTeam);
     ~FormationManager();
 
     static void LoadFormationSets();
     static void UnloadFormationSets();
-    static FormationSpec* GetFormationSpec(eFormation);
-    void Update(float);
+    static FormationSpec* GetFormationSpec(eFormation specType);
+    void Update(float dt);
     void ChooseNewFormations();
-    void SetNewFormationEval(eFormationType, eFormation);
-    void SetNewFormationEval(eFormationType, eFormationSet);
-    bool CalculateFielderPosition(nlVector3&, cFielder*, bool, float);
+    void SetNewFormationEval(eFormationType formType, eFormation formation);
+    void SetNewFormationEval(eFormationType formType, eFormationSet formSet);
+    bool CalculateFielderPosition(nlVector3& v3DestPosition, cFielder* pFielder, bool bInPosition, float fBallPosFormationWeight);
 
     /* 0x00 */ cTeam* m_pTeam;
     /* 0x04 */ FormationEval* m_pFormations[3];

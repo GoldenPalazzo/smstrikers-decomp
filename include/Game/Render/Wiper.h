@@ -11,7 +11,7 @@ struct WiperCallback : public ScreenTransitionCallback
         mTransitionActive = false;
     }
     virtual inline void TransitionFinished();
-    virtual inline void TransitionProgressed(float);
+    virtual inline void TransitionProgressed(float fDeltaT);
 
     /* 0x04 */ bool mTransitionActive;
 }; // total size: 0x8
@@ -40,8 +40,8 @@ public:
     bool WipeInProgress() const;
     bool CutHasOccured() const;
     static Wiper& Instance();
-    void DoWipe(const char*);
-    void Render(float);
+    void DoWipe(const char* wipe);
+    void Render(float dt);
 };
 
 #endif // _WIPER_H_

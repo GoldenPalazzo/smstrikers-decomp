@@ -49,6 +49,9 @@ void __VMBASEDSIServiceException(OSContext* context, u32 faultAddr);
 asm void __VMBASEISIServiceExceptionPrep(register OSContext* context);
 void __VMBASEISIServiceException(OSContext* context);
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8025FB48 | size: 0xCC
+ */
 void VMBASEInit(VMSwapPageInCallback cb)
 {
     u32 oldInterrupts;
@@ -98,6 +101,9 @@ void VMBASEInit(VMSwapPageInCallback cb)
     OSRestoreInterrupts(oldInterrupts);
 }
 
+/**
+ * Offset/Address/Size: 0xCC | 0x8025FC14 | size: 0x94
+ */
 void VMBASESetPageTableEntry(u32 virtualAddr, u32 physicalAddr, u32 mramPage)
 {
     u32* pteAddr = __VMBASEVirtualAddrToPageTableAddr(virtualAddr);
@@ -113,6 +119,9 @@ void VMBASESetPageTableEntry(u32 virtualAddr, u32 physicalAddr, u32 mramPage)
     OSRestoreInterrupts(oldInterrupts);
 }
 
+/**
+ * Offset/Address/Size: 0x160 | 0x8025FCA8 | size: 0x8C
+ */
 void VMBASEClearPageTableEntry(u32 virtualAddr, u32 mramPage)
 {
     u32 oldInterrupts = OSDisableInterrupts();
@@ -129,24 +138,36 @@ void VMBASEClearPageTableEntry(u32 virtualAddr, u32 mramPage)
     OSRestoreInterrupts(oldInterrupts);
 }
 
+/**
+ * Offset/Address/Size: 0x1EC | 0x8025FD34 | size: 0x28
+ */
 BOOL VMBASEIsPageValid(u32 virtualAddr)
 {
     u32* pteAddr = __VMBASEVirtualAddrToPageTableAddr(virtualAddr);
     return (BOOL)((pteAddr[0] >> 31) & 1);
 }
 
+/**
+ * Offset/Address/Size: 0x214 | 0x8025FD5C | size: 0x28
+ */
 BOOL VMBASEIsPageReferenced(u32 virtualAddr)
 {
     u32* pteAddr = __VMBASEVirtualAddrToPageTableAddr(virtualAddr);
     return (BOOL)((pteAddr[1] & 0x100) != 0);
 }
 
+/**
+ * Offset/Address/Size: 0x23C | 0x8025FD84 | size: 0x28
+ */
 BOOL VMBASEIsPageDirty(u32 virtualAddr)
 {
     u32* pteAddr = __VMBASEVirtualAddrToPageTableAddr(virtualAddr);
     return (BOOL)((pteAddr[1] >> 7) & 1);
 }
 
+/**
+ * Offset/Address/Size: 0x264 | 0x8025FDAC | size: 0x90
+ */
 void VMBASESetPageReferenced(u32 virtualAddr, BOOL referenced)
 {
     u32 oldInterrupts = OSDisableInterrupts();
@@ -167,6 +188,9 @@ void VMBASESetPageReferenced(u32 virtualAddr, BOOL referenced)
 }
 
 #pragma scheduling off
+/**
+ * Offset/Address/Size: 0x2F4 | 0x8025FE3C | size: 0x10
+ */
 asm void __VMBASEClearPageFromTLB(register u32 virtualAddr) {
     // clang-format off
     nofralloc
@@ -179,21 +203,33 @@ asm void __VMBASEClearPageFromTLB(register u32 virtualAddr) {
 }
 #pragma scheduling reset
 
+/**
+ * Offset/Address/Size: 0x304 | 0x8025FE4C | size: 0x10
+ */
 u32 VMBASEGetVirtualAddrFromPageInMRAM(u32 mramPage)
 {
     return g_vmBaseVMReversePageTable[mramPage];
 }
 
+/**
+ * Offset/Address/Size: 0x314 | 0x8025FE5C | size: 0x10
+ */
 void __VMBASESetVirtualAddressForPageInMRAM(u32 mramPage, u32 virtualAddr)
 {
     g_vmBaseVMReversePageTable[mramPage] = virtualAddr;
 }
 
+/**
+ * Offset/Address/Size: 0x324 | 0x8025FE6C | size: 0xC
+ */
 BOOL VMBASEIsPageLocked(u32 mramPage)
 {
     return g_vmBaseLockedPageTable[mramPage];
 }
 
+/**
+ * Offset/Address/Size: 0x330 | 0x8025FE78 | size: 0x28
+ */
 void VMBASESetPageLocked(u32 mramPage, BOOL locked)
 {
     if (locked)
@@ -205,11 +241,17 @@ void VMBASESetPageLocked(u32 mramPage, BOOL locked)
 }
 
 #pragma dont_inline on
+/**
+ * Offset/Address/Size: 0x358 | 0x8025FEA0 | size: 0x8
+ */
 void __VMBASESetSwapPageCallback(VMSwapPageInCallback cb)
 {
     cbVMSwapPageIn = cb;
 }
 
+/**
+ * Offset/Address/Size: 0x360 | 0x8025FEA8 | size: 0x3C
+ */
 void __VMBASEInitPageTable(void)
 {
     u32 arenaLo = (u32)OSGetArenaLo();
@@ -220,6 +262,9 @@ void __VMBASEInitPageTable(void)
     __VMBASEInvalidatePageTable();
 }
 
+/**
+ * Offset/Address/Size: 0x39C | 0x8025FEE4 | size: 0x30
+ */
 void __VMBASEInitLockedPageTable(void)
 {
     g_vmBaseLockedPageTable = (u8*)OSGetArenaLo();
@@ -227,6 +272,9 @@ void __VMBASEInitLockedPageTable(void)
     __VMBASEInvalidateLockedPageTable();
 }
 
+/**
+ * Offset/Address/Size: 0x3CC | 0x8025FF14 | size: 0x30
+ */
 void __VMBASEInitReversePageTable(void)
 {
     void* lo = OSGetArenaLo();
@@ -235,6 +283,9 @@ void __VMBASEInitReversePageTable(void)
     __VMBASEInvalidateReversePageTable();
 }
 
+/**
+ * Offset/Address/Size: 0x3FC | 0x8025FF44 | size: 0x158
+ */
 void __VMBASEInvalidatePageTable(void)
 {
     void __VMBASEInvalidateEntireTLB();
@@ -253,6 +304,9 @@ void __VMBASEInvalidatePageTable(void)
     OSRestoreInterrupts(oldInterrupts);
 }
 
+/**
+ * Offset/Address/Size: 0x554 | 0x8026009C | size: 0xD8
+ */
 void __VMBASEInvalidateLockedPageTable(void)
 {
     u32 offset;
@@ -268,6 +322,9 @@ void __VMBASEInvalidateLockedPageTable(void)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x62C | 0x80260174 | size: 0x78
+ */
 void __VMBASEInvalidateReversePageTable(void)
 {
     u32 offset;
@@ -278,12 +335,18 @@ void __VMBASEInvalidateReversePageTable(void)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x6A4 | 0x802601EC | size: 0x18
+ */
 u32* __VMBASEVirtualAddrToPageTableAddr(u32 virtualAddr)
 {
     return (u32*)((u32)g_vmBasePageTable | ((virtualAddr >> 6) & 0xFFC0) | ((virtualAddr >> 19) & 0x38));
 }
 
 #pragma scheduling off
+/**
+ * Offset/Address/Size: 0x6BC | 0x80260204 | size: 0x58
+ */
 void __VMBASEInvalidateEntireTLB(void)
 {
     // clang-format off
@@ -315,6 +378,9 @@ void __VMBASEInvalidateEntireTLB(void)
 }
 #pragma scheduling reset
 
+/**
+ * Offset/Address/Size: 0x714 | 0x8026025C | size: 0x54
+ */
 void __VMBASESetupVMRegisters(void)
 {
     register u32 msr;
@@ -344,6 +410,9 @@ void __VMBASESetupVMRegisters(void)
 }
 
 #pragma scheduling off
+/**
+ * Offset/Address/Size: 0x768 | 0x802602B0 | size: 0x48
+ */
 static asm void __VMBASESetupSDR1(register u32 srr1, register u32 sdr1, register u32 unused)
 {
     // clang-format off
@@ -375,6 +444,9 @@ entry __VMBASESetupVMRegisters_End
 }
 #pragma scheduling reset
 
+/**
+ * Offset/Address/Size: 0x7B0 | 0x802602F8 | size: 0x17C
+ */
 void __VMBASESetupExceptionHandlers(void)
 {
     register void* icbiAddr;
@@ -468,6 +540,9 @@ void __VMBASESetupExceptionHandlers(void)
 #pragma dont_inline reset
 
 #pragma scheduling off
+/**
+ * Offset/Address/Size: 0x92C | 0x80260474 | size: 0xF4
+ */
 static asm void __VMBASEDSIExceptionHandler(__OSException exception, OSContext* context)
 {
     // clang-format off
@@ -568,6 +643,9 @@ entry __VMBASEDSIExceptionHandler_SetBranchBack
 #pragma scheduling reset
 
 #pragma scheduling off
+/**
+ * Offset/Address/Size: 0xA20 | 0x80260568 | size: 0x50
+ */
 asm void __VMBASEDSIServiceExceptionPrep(register OSContext* context, register u32 faultAddr)
 {
     // clang-format off
@@ -599,6 +677,9 @@ asm void __VMBASEDSIServiceExceptionPrep(register OSContext* context, register u
 }
 #pragma scheduling reset
 
+/**
+ * Offset/Address/Size: 0xA70 | 0x802605B8 | size: 0x64
+ */
 void __VMBASEDSIServiceException(OSContext* context, u32 faultAddr)
 {
     OSContext tempContext;
@@ -611,6 +692,9 @@ void __VMBASEDSIServiceException(OSContext* context, u32 faultAddr)
 }
 
 #pragma scheduling off
+/**
+ * Offset/Address/Size: 0xAD4 | 0x8026061C | size: 0xF4
+ */
 static asm void __VMBASEISIExceptionHandler(__OSException exception, OSContext* context)
 {
     // clang-format off
@@ -711,6 +795,9 @@ entry __VMBASEISIExceptionHandler_SetBranchBack
 #pragma scheduling reset
 
 #pragma scheduling off
+/**
+ * Offset/Address/Size: 0xBC8 | 0x80260710 | size: 0x4C
+ */
 asm void __VMBASEISIServiceExceptionPrep(register OSContext* context)
 {
     // clang-format off
@@ -741,6 +828,9 @@ asm void __VMBASEISIServiceExceptionPrep(register OSContext* context)
 }
 #pragma scheduling reset
 
+/**
+ * Offset/Address/Size: 0xC14 | 0x8026075C | size: 0x58
+ */
 void __VMBASEISIServiceException(OSContext* context)
 {
     OSContext tempContext;

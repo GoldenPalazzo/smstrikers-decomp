@@ -19,7 +19,7 @@ extern "C"
     int atoi(const char* str);
 
     typedef int (*_compare_function)(const void*, const void*);
-    void qsort(void*, size_t, size_t, _compare_function);
+    void qsort(void* table_base, size_t num_members, size_t member_size, _compare_function compare_members);
 
 #ifdef __cplusplus
 }

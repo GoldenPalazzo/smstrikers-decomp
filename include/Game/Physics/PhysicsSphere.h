@@ -9,10 +9,10 @@ class PhysicsWorld;
 class PhysicsSphere : public PhysicsObject
 {
 public:
-    PhysicsSphere(CollisionSpace*, PhysicsWorld*, float);
+    PhysicsSphere(CollisionSpace*collisionSpace, PhysicsWorld*world, float radius);
     // virtual ~PhysicsSphere() { };
     virtual int GetObjectType() const { return 0x0A; };
-    void SetRadius(float);
+    void SetRadius(float radius);
     float GetRadius();
 }; // total size: 0x2C
 

@@ -8,10 +8,10 @@
 class RayCollider
 {
 public:
-    RayCollider(float, const nlVector3&, const nlVector3&);
+    RayCollider(float length, const nlVector3& pos, const nlVector3& dir);
     ~RayCollider();
 
-    virtual bool DoCollide(CollisionSpace*);
+    virtual bool DoCollide(CollisionSpace* space);
 
     /* 0x04 */ dGeomID m_rayID;
     /* 0x08 */ PhysicsObject* m_collidedObj;

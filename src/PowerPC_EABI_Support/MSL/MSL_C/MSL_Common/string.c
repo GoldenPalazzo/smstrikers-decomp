@@ -4,6 +4,9 @@
 #define K2 0xFEFEFEFF
 
 /* 80368BE4-80368C00 363524 001C+00 0/0 28/28 8/8 .text            strlen */
+/**
+ * Offset/Address/Size: 0x2FC | 0x802350BC | size: 0x1C
+ */
 size_t strlen(const char* str)
 {
     size_t len = -1;
@@ -18,6 +21,9 @@ size_t strlen(const char* str)
 }
 
 /* 80368B2C-80368BE4 36346C 00B8+00 0/0 131/131 13/13 .text            strcpy */
+/**
+ * Offset/Address/Size: 0x244 | 0x80235004 | size: 0xB8
+ */
 char* strcpy(char* dst, const char* src)
 {
     register unsigned char *destb, *fromb;
@@ -94,6 +100,9 @@ bytecopy:
 }
 
 /* 80368AE8-80368B2C 363428 0044+00 0/0 9/9 1/1 .text            strncpy */
+/**
+ * Offset/Address/Size: 0x200 | 0x80234FC0 | size: 0x44
+ */
 char* strncpy(char* dst, const char* src, size_t n)
 {
     const unsigned char* p = (const unsigned char*)src - 1;
@@ -116,6 +125,9 @@ char* strncpy(char* dst, const char* src, size_t n)
 }
 
 /* 80368994-80368ABC 3632D4 0128+00 0/0 155/155 279/279 .text            strcmp */
+/**
+ * Offset/Address/Size: 0xD8 | 0x80234E98 | size: 0x128
+ */
 int strcmp(const char* str1, const char* str2)
 {
     register unsigned char* left = (unsigned char*)str1;
@@ -212,6 +224,9 @@ bytecopy:
 }
 
 /* 80368954-80368994 363294 0040+00 0/0 6/6 0/0 .text            strncmp */
+/**
+ * Offset/Address/Size: 0x98 | 0x80234E58 | size: 0x40
+ */
 int strncmp(const char* str1, const char* str2, size_t n)
 {
     const unsigned char* p1 = (unsigned char*)str1 - 1;
@@ -235,6 +250,9 @@ int strncmp(const char* str1, const char* str2, size_t n)
 }
 
 /* 80368924-80368954 363264 0030+00 0/0 3/3 0/0 .text            strchr */
+/**
+ * Offset/Address/Size: 0x68 | 0x80234E28 | size: 0x30
+ */
 char* strchr(const char* str, int c)
 {
     const unsigned char* p = (unsigned char*)str - 1;
@@ -252,6 +270,9 @@ char* strchr(const char* str, int c)
     return chr ? NULL : (char*)p;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80234DC0 | size: 0x68
+ */
 char* strstr(const char* str, const char* pat)
 {
     const unsigned char* s1 = (const unsigned char*)str - 1;

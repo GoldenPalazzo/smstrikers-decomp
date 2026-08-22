@@ -16,10 +16,10 @@ public:
         MODE_OLD = 2,
     };
 
-    PauseOptionsScene(PauseOptionsScene::Mode);
+    PauseOptionsScene(PauseOptionsScene::Mode mode);
     virtual ~PauseOptionsScene();
     virtual void SceneCreated();
-    virtual void Update(float);
+    virtual void Update(float dt);
 
     /* 0x28 */ Mode m_desiredMode;
     /* 0x2C */ OptionsSubMenu* m_pauseMenu;

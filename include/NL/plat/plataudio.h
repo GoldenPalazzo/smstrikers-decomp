@@ -35,8 +35,8 @@ enum MusyXOutputType
 };
 
 void PrintSoundStackInfo();
-void musyXFree(void*);
-void* musyXAlloc(u32);
+void musyXFree(void* addr);
+void* musyXAlloc(u32 size);
 
 struct AudioFileData;
 class nlFile;
@@ -166,54 +166,54 @@ extern bool gUsingDolbyProLogic2;
 // internal linkage rather than the static-member linkage the original had - InitEmitter is called
 // from audio.cpp and AudioEventHandler.cpp and must stay externally visible.
 u32 GetSndIDError();
-bool IsSFXPlaying(unsigned long);
-void InitEmitter(unsigned long);
-bool RemoveEmitter(SFXEmitter*);
-bool RemoveEmitter(unsigned long);
-SFXEmitter* GetSFXEmitter(unsigned long);
-SFXEmitter* GetFreeEmitter(unsigned long&);
-SND_VOICEID GetEmitterVoiceID(SFXEmitter*);
-bool IsEmitterActive(SFXEmitter*);
-void Update3DSFXEmitter(SFXEmitter*, const nlVector3&, const nlVector3&, float);
-unsigned long Add3DSFXEmitter(const EmitterStartInfo&);
-void Remove3DSFXListener(SND_LISTENER*);
-void Update3DSFXListener(SND_LISTENER*, const nlVector3&, const nlVector3&, const nlVector3&, const nlVector3&, float);
-void Add3DSFXListener(SND_LISTENER*, const nlVector3&, const nlVector3&, const nlVector3&, const nlVector3&, float, float, float, float,
-    bool, float);
+bool IsSFXPlaying(unsigned long uVoiceID);
+void InitEmitter(unsigned long index);
+bool RemoveEmitter(SFXEmitter* pSFXEmitter);
+bool RemoveEmitter(unsigned long index);
+SFXEmitter* GetSFXEmitter(unsigned long index);
+SFXEmitter* GetFreeEmitter(unsigned long& index);
+SND_VOICEID GetEmitterVoiceID(SFXEmitter* pSFXEmitter);
+bool IsEmitterActive(SFXEmitter* pSFXEmitter);
+void Update3DSFXEmitter(SFXEmitter* pSFXEmitter, const nlVector3& position, const nlVector3& direction, float maxVol);
+unsigned long Add3DSFXEmitter(const EmitterStartInfo& info);
+void Remove3DSFXListener(SND_LISTENER* pListener);
+void Update3DSFXListener(SND_LISTENER* pListener, const nlVector3& position, const nlVector3& direction, const nlVector3& heading, const nlVector3& up, float overallEmitterVol);
+void Add3DSFXListener(SND_LISTENER* pListener, const nlVector3& position, const nlVector3& direction, const nlVector3& heading, const nlVector3& up, float frontAudibleDist, float backAudibleDist, float overallEmitterVol, float volPosOffset,
+    bool bUseDoppler, float fSpeedOfSound);
 bool SetPitchBendOnSFX(SND_VOICEID uVoiceID, u16 pitch);
-bool SetFilterFreqOnSFX(SND_VOICEID uVoiceID, u16 freq);
+bool SetFilterFreqOnSFX(SND_VOICEID uVoiceID, u16 value);
 bool SetMIDIControllerVal14Bit(SND_VOICEID uVoiceID, u8 ctrl, u16 value);
 void SetVolGroupVolume(u8 volGroup, float fVol, u16 fadeTime);
 bool SetSFXVolumeGroup(u32 uSFXID, u8 volGroup);
-bool SetSFXReverbVol(unsigned long, float);
-void SetSFXVolume(unsigned long, float);
-bool StopSFX(unsigned long);
-unsigned long PlaySFX(const SFXStartInfo&);
-bool UnloadAllSoundGroupsOnStack(AudioFileData&, unsigned long);
-bool UnloadAllSoundGroups(AudioFileData&);
-bool UnloadSoundGroup(AudioFileData&, unsigned long);
-bool LoadSoundGroup(AudioFileData&, unsigned long, unsigned long, bool);
-void SetupSoundBuffers(AudioFileData&, bool);
+bool SetSFXReverbVol(unsigned long uVoiceID, float fVol);
+void SetSFXVolume(unsigned long uVoiceID, float fVolume);
+bool StopSFX(unsigned long uVoiceID);
+unsigned long PlaySFX(const SFXStartInfo& info);
+bool UnloadAllSoundGroupsOnStack(AudioFileData& fileData, unsigned long stackEnum);
+bool UnloadAllSoundGroups(AudioFileData& fileData);
+bool UnloadSoundGroup(AudioFileData& fileData, unsigned long groupEnum);
+bool LoadSoundGroup(AudioFileData& fileData, unsigned long groupEnum, unsigned long stackEnum, bool bUseARAMStreamCallback);
+void SetupSoundBuffers(AudioFileData& fileData, bool bStream);
 void StopAllSound();
 void Shutdown();
-bool Initialize(bool);
+bool Initialize(bool bUseDPL2);
 void PurgeSampleFileBuffer();
 bool IsEntireSampleFileInMem();
-unsigned char ReadEntireSampleFileIntoMemSync(const char*);
-unsigned char ReadEntireSampleFileIntoMem(const char*);
-bool UpdateAuxEffectA(MusyXEffectType, void*);
-bool AddAuxEffectA(MusyXEffectType, void*, unsigned char);
+unsigned char ReadEntireSampleFileIntoMemSync(const char* sampleFile);
+unsigned char ReadEntireSampleFileIntoMem(const char* sampleFile);
+bool UpdateAuxEffectA(MusyXEffectType type, void* auxEffectSettings);
+bool AddAuxEffectA(MusyXEffectType type, void* auxEffectSettings, unsigned char studio);
 bool ShutdownAuxEffectA();
 bool DeactivateDPL2();
 bool ActivateDPL2();
-void SetOutputMode(MusyXOutputType);
+void SetOutputMode(MusyXOutputType output);
 } // namespace PlatAudio
 
 class ARAMTransferHelperLoadEntireFile
 {
 public:
-    static void LoadEntireFileCallback(nlFile*, void*, unsigned int, unsigned long);
-    static void* sndPushGroupCallback(unsigned long, unsigned long);
+    static void LoadEntireFileCallback(nlFile* pFile, void* buffer, unsigned int size, unsigned long uParam);
+    static void* sndPushGroupCallback(unsigned long uOffset, unsigned long uSize);
 
     unsigned char* m_pARAMXferBlockBaseAddress; // offset 0x0
 
@@ -226,7 +226,7 @@ public:
 class ARAMTransferHelper
 {
 public:
-    static void* sndPushGroupCallback(unsigned long, unsigned long);
+    static void* sndPushGroupCallback(unsigned long uOffset, unsigned long uSize);
 
     unsigned char* m_pARAMXferBlockBaseAddress; // offset 0x0
     unsigned long m_uCachedDataOffset;          // offset 0x4

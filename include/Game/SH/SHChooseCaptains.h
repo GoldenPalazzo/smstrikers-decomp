@@ -31,14 +31,14 @@ public:
     void CreateTicker();
 
     /* 0x01C */ IChooseCaptain mChooseCaptain; // size 0xCC
-    /* 0x0E8 */ IChooseSide mChooseSide;       // size 0xA0
-    /* 0x188 */ TLComponentInstance* mChooseSideComponent;
-    /* 0x18C */ ButtonComponent mButtons;
-    /* 0x1B0 */ SceneType mSceneType;
-    /* 0x1B4 */ SceneType mDesiredSceneType;
-    /* 0x1B8 */ FEScrollText* mTicker;
-    /* 0x1BC */ int mMoveForwardFrameDelay;
-}; // total size: 0x1C0
+    /* 0x0E8 */ IChooseSide mChooseSide;       // size 0xA0 (G4QE01), 0xB0 (G4QJ01)
+    /* 0x188 (G4QE01), 0x198 (G4QJ01) */ TLComponentInstance* mChooseSideComponent;
+    /* 0x18C (G4QE01), 0x19C (G4QJ01) */ ButtonComponent mButtons;
+    /* 0x1B0 (G4QE01), 0x1C0 (G4QJ01) */ SceneType mSceneType;
+    /* 0x1B4 (G4QE01), 0x1C4 (G4QJ01) */ SceneType mDesiredSceneType;
+    /* 0x1B8 (G4QE01), 0x1C8 (G4QJ01) */ FEScrollText* mTicker;
+    /* 0x1BC (G4QE01), 0x1CC (G4QJ01) */ int mMoveForwardFrameDelay;
+}; // total size: 0x1C0 (G4QE01), 0x1D0 (G4QJ01)
 
 // class FEFinder<TLTextInstance, 3>
 // {

@@ -606,7 +606,7 @@ ModeledScreenTransition* ModeledScreenTransition::LoadFromParser(SimpleParser* p
 void ModeledScreenTransition::CreateInstance(TransitionModelStore& modelInfo)
 {
     m_nModels = modelInfo.nModels;
-    m_pModels = (glModel*)glModelDupArrayNoStreams(modelInfo.pModels, modelInfo.nModels, false, true);
+    m_pModels = glModelDupArrayNoStreams(modelInfo.pModels, modelInfo.nModels, false, true);
 
     for (unsigned long j = 0; j < m_nModels; j++)
     {

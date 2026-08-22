@@ -123,11 +123,11 @@ struct SoundAttributes
     // /* 0x7B */ s8 m_unk_0x7B;
     // /* 0x7C */ s8 m_unk_0x7C;
 
-    void UseStationaryPosVector(const nlVector3&);
-    void UseVectors(const nlVector3&, const nlVector3&);
-    void UseVectorPtrs(const nlVector3*, const nlVector3*);
-    void UsePhysObj(PhysicsObject*);
-    void SetSoundType(unsigned long, bool);
+    void UseStationaryPosVector(const nlVector3&position);
+    void UseVectors(const nlVector3&p, const nlVector3&d);
+    void UseVectorPtrs(const nlVector3*v1, const nlVector3*v2);
+    void UsePhysObj(PhysicsObject*obj);
+    void SetSoundType(unsigned long soundType, bool bIs3D);
     void Init();
 }; // total size: 0x7C
 
@@ -143,52 +143,52 @@ enum VOLUME_GROUP
 };
 
 float GetVoiceVolume();
-void SetVoiceVolume(float, int);
-void SetVolume(VOLUME_GROUP, float);
-float GetVolume(VOLUME_GROUP);
+void SetVoiceVolume(float volume, int time);
+void SetVolume(VOLUME_GROUP group, float volume);
+float GetVolume(VOLUME_GROUP group);
 
 }; // namespace MasterVolume
 
 void FadeFilterFromCurrentToZero();
 void FadeFilterToFullStrength();
-void PitchBend(float, float, float, float);
-void FadeFilter(float, float, float, float);
+void PitchBend(float currentVal, float fadeToVal, float fadeDuration, float fadeTimeStart);
+void FadeFilter(float currentVal, float fadeToVal, float fadeDuration, float fadeTimeStart);
 void ClearFadeData();
-bool IsEmitterActive(SFXEmitter*);
-u32 GetEmitterVoiceID(SFXEmitter*);
-bool Remove3DSFXEmitter(SFXEmitter*);
-unsigned long Add3DSFXEmitter(const EmitterStartInfo&);
-SFXEmitter* GetFreeEmitter(unsigned long&);
-SFXEmitter* GetEmitter(unsigned long);
+bool IsEmitterActive(SFXEmitter*emitter);
+u32 GetEmitterVoiceID(SFXEmitter*emitter);
+bool Remove3DSFXEmitter(SFXEmitter*emitter);
+unsigned long Add3DSFXEmitter(const EmitterStartInfo&emitterStartInfo);
+SFXEmitter* GetFreeEmitter(unsigned long&id);
+SFXEmitter* GetEmitter(unsigned long id);
 extern SND_LISTENER gListener;
 extern unsigned long uSFXVolume;
-void SetListenerActive(bool);
+void SetListenerActive(bool active);
 bool IsListenerActive();
-void SetOutputMode(MusyXOutputType);
-bool SetPitchBendOnSFX(unsigned long, unsigned short);
-bool SetFilterFreqOnSFX(unsigned long, unsigned short);
-bool ActivateFilterOnSFX(unsigned long, bool);
-void SetPitchBendOnAllDialogueSFX(unsigned short);
-void ActivateFilterOnAllCurrentSFX(bool);
-void SetVolGroupVolume(int, float, int);
-void SetSFXVolumeGroup(unsigned long, int);
-void SetSFXVolume(unsigned long, float);
+void SetOutputMode(MusyXOutputType outputType);
+bool SetPitchBendOnSFX(unsigned long uVoiceID, unsigned short pitch);
+bool SetFilterFreqOnSFX(unsigned long uVoiceID, unsigned short freq);
+bool ActivateFilterOnSFX(unsigned long uVoiceID, bool bOn);
+void SetPitchBendOnAllDialogueSFX(unsigned short pitch);
+void ActivateFilterOnAllCurrentSFX(bool bOn);
+void SetVolGroupVolume(int volGroup, float fVol, int fadeTime);
+void SetSFXVolumeGroup(unsigned long uSFXID, int volGroup);
+void SetSFXVolume(unsigned long voiceID, float volume);
 void Update3DSFXEmitters();
-void UpdateFades(float);
-void Update(float);
+void UpdateFades(float fDeltaT);
+void Update(float fDeltaT);
 int GetSndIDError();
-bool IsSFXPlaying(unsigned long);
-bool StopSFX(unsigned long);
-unsigned long PlaySFXEventFromScript(const SoundEventData&, const char*, float, float);
+bool IsSFXPlaying(unsigned long sfxID);
+bool StopSFX(unsigned long sfxID);
+unsigned long PlaySFXEventFromScript(const SoundEventData&sfxEventData, const char*szSFXType, float fVol, float fDelay);
 void StopCharSFXbyStr(const char* szSFXType, NisCharacterClass charIdentifier);
 void StopWorldSFXbyStr(const char* szSFXType);
 int PlayCharSFXbyStr(const char* szSFXType, NisCharacterClass charIdentifier, float fVol, float fDelay, bool bIs3D, bool bKeepTrack, const nlVector3* pInitialPosVector, const nlVector3* pInitialDirVector, unsigned long* pType);
 unsigned long PlayWorldSFXbyStr(const char* szSFXType, float fVol, float fDelay, bool bIs3D, bool bKeepTrack, const nlVector3* pInitialPosVector, const nlVector3* pInitialDirVector, unsigned long* pType);
 void RemoveDelayedSFX(unsigned long index);
-int IsDelayedCharSFX(unsigned long type, cGameSFX* pOwnerSFX);
-int AddDelayedSFX(const Audio::SoundAttributes&, unsigned long, float, float, cGameSFX*);
-unsigned long PlaySFXbyID(const Audio::SoundAttributes&, unsigned long, float, float, int);
-unsigned long PlaySFX(const SFXStartInfo&);
+int IsDelayedCharSFX(unsigned long sfxType, cGameSFX* pOwner);
+int AddDelayedSFX(const Audio::SoundAttributes&sfxData, unsigned long uSFXID, float volume, float delay, cGameSFX*pOwnerSFX);
+unsigned long PlaySFXbyID(const Audio::SoundAttributes&attrs, unsigned long sfxID, float fVol, float fRevVol, int volGroup);
+unsigned long PlaySFX(const SFXStartInfo&info);
 float GetAudioTimer();
 void Shutdown();
 void Silence();
@@ -200,7 +200,7 @@ void LoadWorldSFX();
 void UnloadInGameSFX();
 void LoadInGameSFX();
 bool IsInited();
-bool Initialize(bool);
+bool Initialize(bool bInit);
 bool ShutdownReverb();
 // void InitializeReverb(eStadiumID, unsigned char);
 

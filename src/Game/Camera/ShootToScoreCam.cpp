@@ -22,7 +22,7 @@ cShootToScoreCamera::~cShootToScoreCamera()
 /**
  * Offset/Address/Size: 0x0 | 0x801AA464 | size: 0x34
  */
-void cShootToScoreCamera::Update(float)
+void cShootToScoreCamera::Update(float fDeltaT)
 {
     glMatrixLookAt(m_matView, m_v3Camera, m_v3Target, mUpVector);
 }

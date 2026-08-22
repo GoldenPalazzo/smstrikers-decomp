@@ -328,7 +328,7 @@ void C_QUATDivide(const Quaternion* p, const Quaternion* q, Quaternion* r);
 // PS versions
 void PSQUATAdd(const Quaternion* p, const Quaternion* q, Quaternion* r);
 void PSQUATSubtract(const Quaternion* p, const Quaternion* q, Quaternion* r);
-void PSQUATMultiply(const Quaternion* p, const Quaternion* q, Quaternion* pq);
+void PSQUATMultiply(const Quaternion* a, const Quaternion* b, Quaternion* ab);
 void PSQUATScale(const Quaternion* q, Quaternion* r, f32 scale);
 f32 PSQUATDotProduct(const Quaternion* p, const Quaternion* q);
 void PSQUATNormalize(const Quaternion* src, Quaternion* unit);
@@ -359,7 +359,7 @@ void PSQUATDivide(const Quaternion* p, const Quaternion* q, Quaternion* r);
 void C_QUATExp(const Quaternion* q, Quaternion* r);
 void C_QUATLogN(const Quaternion* q, Quaternion* r);
 void C_QUATMakeClosest(const Quaternion* q, const Quaternion* qto, Quaternion* r);
-void C_QUATRotAxisRad(Quaternion* r, const Vec* axis, f32 rad);
+void C_QUATRotAxisRad(Quaternion* q, const Vec* axis, f32 rad);
 void C_QUATMtx(Quaternion* r, const Mtx m);
 void C_QUATLerp(const Quaternion* p, const Quaternion* q, Quaternion* r, f32 t);
 

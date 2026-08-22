@@ -96,7 +96,6 @@ void* DefaultSlotPoolAllocator(unsigned long size)
 }
 
 // /**
-//  * Offset/Address/Size: 0x0 | 0x801D25E8 | size: 0x28
 //  */
 // // nlListAddStart<SlotPoolEntry>(SlotPoolEntry**, SlotPoolEntry*, SlotPoolEntry**)
 // void nlListAddStart(SlotPoolEntry**, SlotPoolEntry*, SlotPoolEntry**)
@@ -104,7 +103,6 @@ void* DefaultSlotPoolAllocator(unsigned long size)
 // }
 
 // /**
-//  * Offset/Address/Size: 0x28 | 0x801D2610 | size: 0x28
 //  */
 // // nlListAddStart<SlotPoolBlock>(SlotPoolBlock**, SlotPoolBlock*, SlotPoolBlock**)
 // void nlListAddStart(SlotPoolBlock**, SlotPoolBlock*, SlotPoolBlock**)

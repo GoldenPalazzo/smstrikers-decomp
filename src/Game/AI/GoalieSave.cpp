@@ -394,6 +394,9 @@ public:
 
     bool IsValid() const { return m_Entry != NULL; }
     DLListEntry<MyMiniData*>* Current() const { return m_Entry; }
+    /**
+     * Offset/Address/Size: 0x2C48 | 0x80056068 | size: 0x58
+     */
     void Clear() { m_Entry = NULL; }
     void Next() { m_Entry = m_Entry->m_next; }
 
@@ -416,7 +419,7 @@ static void InsertSorted(nlDLListContainer<MyMiniData*>& list, MyMiniData* data)
         {
             if (nlDLRingIsStart(head, current))
             {
-                DLListEntry<MyMiniData*>* entry = (DLListEntry<MyMiniData*>*)nlMalloc(0xC, 8, 0);
+                DLListEntry<MyMiniData*>* entry = (DLListEntry<MyMiniData*>*)nlMalloc(sizeof(DLListEntry<MyMiniData*>), 8, 0);
                 if (entry != NULL)
                 {
                     entry->m_next = NULL;
@@ -436,7 +439,7 @@ static void InsertSorted(nlDLListContainer<MyMiniData*>& list, MyMiniData* data)
                 head = current->m_prev;
             }
 
-            DLListEntry<MyMiniData*>* entry = (DLListEntry<MyMiniData*>*)nlMalloc(0xC, 8, 0);
+            DLListEntry<MyMiniData*>* entry = (DLListEntry<MyMiniData*>*)nlMalloc(sizeof(DLListEntry<MyMiniData*>), 8, 0);
             if (entry != NULL)
             {
                 entry->m_next = NULL;
@@ -457,7 +460,7 @@ static void InsertSorted(nlDLListContainer<MyMiniData*>& list, MyMiniData* data)
         }
     }
 
-    DLListEntry<MyMiniData*>* entry = (DLListEntry<MyMiniData*>*)nlMalloc(0xC, 8, 0);
+    DLListEntry<MyMiniData*>* entry = (DLListEntry<MyMiniData*>*)nlMalloc(sizeof(DLListEntry<MyMiniData*>), 8, 0);
     if (entry != NULL)
     {
         entry->m_next = NULL;
@@ -1168,7 +1171,7 @@ SaveData* GoalieSave::GetRandomSTSSaveData()
 /**
  * Offset/Address/Size: 0xDCC | 0x800541EC | size: 0x58
  */
-bool GoalieSave::TriggerCallback(float fTime, float fDuration, unsigned long uEventID, float, void* pUserData)
+bool GoalieSave::TriggerCallback(float fTime, float fDuration, unsigned long uEventID, float fIntensity, void* pUserData)
 {
     SaveData* pSaveData = (SaveData*)pUserData;
 

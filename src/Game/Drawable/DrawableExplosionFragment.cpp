@@ -11,29 +11,29 @@
  */
 void DrawableExplosionFragment::Grab()
 {
-    ExplosionFragment* frag = SidelineExplodableManager::GetFragmentFromHandle(mID);
-    if (frag == NULL)
+    ExplosionFragment* fragment = SidelineExplodableManager::GetFragmentFromHandle(mID);
+    if (fragment == NULL)
     {
         mVisible = false;
         return;
     }
 
     mVisible = true;
-    mFragmentModelHash = frag->mFragmentModelHash;
+    mFragmentModelHash = fragment->mFragmentModelHash;
 
-    mPosition = frag->ExplosionFragment::GetPosition();
+    mPosition = fragment->ExplosionFragment::GetPosition();
 
     static nlMatrix4 temp;
-    frag->ExplosionFragment::GetRotation(&temp);
+    fragment->ExplosionFragment::GetRotation(&temp);
     nlMatrixToQuat(mOrientation, temp);
 
-    if (frag->mfRemainingLifespan > ExplosionFragment::sfFadeOutTime)
+    if (fragment->mfRemainingLifespan > ExplosionFragment::sfFadeOutTime)
     {
         mOpacity = 1.0f;
     }
     else
     {
-        float ratio = frag->mfRemainingLifespan;
+        float ratio = fragment->mfRemainingLifespan;
         ratio /= ExplosionFragment::sfFadeOutTime;
         mOpacity = ratio;
     }

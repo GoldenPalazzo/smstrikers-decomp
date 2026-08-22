@@ -20,23 +20,23 @@ enum eChainChompState
     CHAIN_STATE_LEAVE = 4,
 };
 
-void UpdateChainEmitter(EmissionController&);
+void UpdateChainEmitter(EmissionController& controller);
 
 class ChainChomp : public SkinAnimatedMovableNPC
 {
 public:
-    ChainChomp(cSHierarchy&, int, PhysicsNPC&, cInventory<cSAnim>*);
+    ChainChomp(cSHierarchy& pHierarchy, int nModelID, PhysicsNPC& rPhysObj, cInventory<cSAnim>* pInventorySAnim);
     virtual ~ChainChomp();
     virtual SkinAnimatedNPC_Type GetSkinAnimatedNPC_Type() const { return SkinAnimatedNPC_CHAIN_CHOMP; };
-    virtual void Update(float);
-    static void CollisionCallback(PhysicsObject*, PhysicsObject*, const nlVector3&);
-    void FindTarget(cTeam*);
-    void Fall(cFielder*, cFielder*);
-    void Hide(bool);
+    virtual void Update(float fDeltaT);
+    static void CollisionCallback(PhysicsObject* pPhysObj, PhysicsObject* pObjA, const nlVector3& v3Pos);
+    void FindTarget(cTeam* pTeam);
+    void Fall(cFielder* pThrower, cFielder* pTarget);
+    void Hide(bool bIsEndGame);
     bool IsHidden() const;
     bool AvoidSidelines();
-    virtual void Move(float);
-    virtual void DrawShadow(const cPoseAccumulator&, const nlMatrix4&);
+    virtual void Move(float fDeltaT);
+    virtual void DrawShadow(const cPoseAccumulator& pa, const nlMatrix4& worldMatrix);
     void Leave();
     void EmitTrail();
 

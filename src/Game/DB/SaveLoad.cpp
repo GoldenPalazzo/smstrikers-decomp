@@ -1399,6 +1399,20 @@ inline unsigned long DeleteCallbacks::CardMountCB(unsigned long channel, long re
         return -1;
     }
 
+#if defined(VERSION_G4QJ01)
+    s64 serialID = g_MemCards[channel]->GetSerialID();
+    if (mLastKnownMemCardID.serialID != serialID)
+    {
+        MemCard* card = g_MemCards[channel];
+        card->m_State = IS_IDLE;
+        card->m_CardState = CS_IDLE;
+        CARDUnmount(card->m_Slot);
+        InOperation = false;
+        g_Callback(-1001);
+        return -1;
+    }
+#endif
+
     typedef unsigned long (DeleteCallbacks::*MemberCB)(unsigned long, long, void*);
     MemberCB cb = &DeleteCallbacks::DeleteDoneCB;
 
@@ -1802,7 +1816,7 @@ long SaveLoad::StartMemoryCardIDCheck(int slot, void (*callback)(long))
 /**
  * Offset/Address/Size: 0x264 | 0x80189BC0 | size: 0x12C
  */
-int SaveLoad::GetSaveBlockSize(int)
+int SaveLoad::GetSaveBlockSize(int slot)
 {
     int dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
     int numBlocks = 0;

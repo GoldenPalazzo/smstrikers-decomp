@@ -108,8 +108,8 @@ class AudioSettings
 public:
     AudioSettings();
     void InitializeDefaults();
-    void ForceApplySettings(bool);
-    void ApplySettings(bool, bool);
+    void ForceApplySettings(bool bUpdateMode);
+    void ApplySettings(bool bApplyMode, bool bUpdateMode);
 
     /* 0x00 */ int MusicVolume;
     /* 0x04 */ int SFXVolume;

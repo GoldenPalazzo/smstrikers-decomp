@@ -28,7 +28,6 @@ class cSHierarchy;
 class cAnimInventory;
 class CharacterPhysicsData;
 class AnimRetargetList;
-// class cPoseAccumulator;
 class GLSkinMesh;
 class glModel;
 class EmissionController;
@@ -101,57 +100,57 @@ class cCharacter //: public PhysicsCharacterBase
 {
 public:
     virtual ~cCharacter();
-    cCharacter(eCharacterClass, const int*, cSHierarchy*, cAnimInventory*, const CharacterPhysicsData*, float, float, AnimRetargetList*,
-        eClassTypes);
+    cCharacter(eCharacterClass cc, const int* nModelID, cSHierarchy* pHierarchy, cAnimInventory* pAnimInventory, const CharacterPhysicsData* pPhysicsData, float fPhysicsCapsuleHeight, float fPhysicsCapsuleWidth, AnimRetargetList* pAnimRetargetList,
+        eClassTypes eNewClassType);
 
     virtual void PostPhysicsUpdate();
-    virtual void PrePhysicsUpdate(float);
-    virtual void PreUpdate(float);
-    virtual void SetAnimID(int);
+    virtual void PrePhysicsUpdate(float dt);
+    virtual void PreUpdate(float dt);
+    virtual void SetAnimID(int animID);
 
     void AddRandomDirt();
-    void SetElectrocutionTextureEnabled(bool);
-    void PerformBlinking(GLSkinMesh*, glModel*) const;
-    void UpdateBlinking(float);
-    void PlayRandomCharDialogue(unsigned long, PosUpdateMethod, float, float);
-    int Play3DSFX(Audio::eCharSFX, PosUpdateMethod, float);
+    void SetElectrocutionTextureEnabled(bool isEnabled);
+    void PerformBlinking(GLSkinMesh* skinMesh, glModel* model) const;
+    void UpdateBlinking(float fDeltaT);
+    void PlayRandomCharDialogue(unsigned long dialogueType, PosUpdateMethod posUpdateMethod, float f1, float f2);
+    int Play3DSFX(Audio::eCharSFX sfxType, PosUpdateMethod posUpdateMethod, float fMaxVol);
     void StopPlayingAllTrackedSFX();
-    void StopSFX(Audio::eCharSFX);
-    int PlaySFX(Audio::SoundAttributes&);
-    void SetSFX(SoundPropAccessor*);
-    void UpdateMovementState(float);
-    bool IsPlayingEffect(const EffectsGroup*) const;
-    void EndEffect(const EffectsGroup*);
-    void KillEffect(const EffectsGroup*);
-    bool ShouldStartCrossBlend(int);
-    void SetVelocity(const nlVector3&);
-    virtual void SetPosition(const nlVector3&);
-    void SetFacingDirection(unsigned short);
+    void StopSFX(Audio::eCharSFX sfxType);
+    int PlaySFX(Audio::SoundAttributes& attributes);
+    void SetSFX(SoundPropAccessor* pSoundPropAccessor);
+    void UpdateMovementState(float fDeltaT);
+    bool IsPlayingEffect(const EffectsGroup* effectGroup) const;
+    void EndEffect(const EffectsGroup* effectGroup);
+    void KillEffect(const EffectsGroup* effectGroup);
+    bool ShouldStartCrossBlend(int animID);
+    void SetVelocity(const nlVector3& velocity);
+    virtual void SetPosition(const nlVector3& position);
+    void SetFacingDirection(unsigned short dir);
     void SetAnimState(int animID, bool useBlendTime, float fNonDefaultBlendTime, bool bRestartCyclic, bool bForceMirrorSwap);
     float SeekSpeedExponential(float currentValue, float targetValue, float responsiveness, float deltaTime);
     void ResetEffects();
     void CreateWorldMatrix();
-    void PoseSkinMesh(cPoseAccumulator*);
+    void PoseSkinMesh(cPoseAccumulator* pPoseAccumulator);
     void PoseLocalSpace();
-    cPN_SAnimController* NewAnimController(int, bool, bool, void (*)(unsigned int, cPN_SAnimController*), unsigned int);
+    cPN_SAnimController* NewAnimController(int animID, bool bRestartCyclic, bool bForceMirrorSwap, void (*funcPlaybackSpeedCallback)(unsigned int, cPN_SAnimController*), unsigned int nPlaybackSpeedCallbackParam);
     static void MatchAnimSpeedToCharacterSpeed(unsigned int nParam, cPN_SAnimController* pController);
     void InitMovementStrafing(float fDirectionSeekSpeed, float fDirectionSeekFalloff, float fAccel, float fDecel);
-    void InitMovementRunningNoTurn(float, float);
-    void InitMovementRunning(float, float, float, float);
-    void InitMovementNone(float, float);
-    void InitMovementFromAnimSeek(float, float);
-    void InitMovementFromAnim(short, const nlVector3&, float, bool);
-    void InitMovementDecelerateExponential(float);
+    void InitMovementRunningNoTurn(float fAccel, float fDecel);
+    void InitMovementRunning(float fDirectionSeekSpeed, float fDirectionSeekFalloff, float fAccel, float fDecel);
+    void InitMovementNone(float fDirectionSeekSpeed, float fDirectionSeekFalloff);
+    void InitMovementFromAnimSeek(float fDirectionSeekSpeed, float fDirectionSeekFalloff);
+    void InitMovementFromAnim(short fDirectionSeekSpeed, const nlVector3& v3AnimMoveAdjust, float fAdjustEndTime, bool bBlended);
+    void InitMovementDecelerateExponential(float fDecel);
     void InitMovementCoast();
     void EndBlur();
-    void InitBlur(int);
+    void InitBlur(int nLength);
     nlVector3& GetPrevJointPosition(int jointIndex);
-    void GetCurrentAnimFuture(int, float, nlVector3&, nlVector3&, unsigned short&);
+    void GetCurrentAnimFuture(int nJointIndex, float fTime, nlVector3& v3Out, nlVector3& v3FutureRoot, unsigned short& outFacing);
     void GetJointPositionFuture(nlVector3* v3Out, int nAnimIndex, int nJointIndex, float fTime, bool bAddRootTrans, bool bAddRootRot, bool bUsePrevPosition);
-    nlVector3& GetJointPosition(int) const;
-    s16 GetFacingDeltaToPosition(const nlVector3&);
-    s16 CalcAnimTurnAdjust(unsigned short, unsigned short, int);
-    void AttachEffect(EmissionController*);
+    nlVector3& GetJointPosition(int jointIndex) const;
+    s16 GetFacingDeltaToPosition(const nlVector3& position);
+    s16 CalcAnimTurnAdjust(unsigned short aFacingDirection, unsigned short aDesiredFacingDirection, int nAnimID);
+    void AttachEffect(EmissionController* pEmissionController);
     void AdjustPoseMatrices();
     GLSkinMesh* GetSkinMesh() const;
 
@@ -205,7 +204,7 @@ public:
         return m_aActualFacingDirection;
     }
 
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
 
     /* 0x04 */ eCharacterClass m_eCharacterClass;
     /* 0x08 */ const CharacterPhysicsData* m_pPhysicsData;
@@ -271,28 +270,21 @@ public:
 // class cPN_SAnimController
 // {
 // public:
-//     ~cPN_SAnimController();
 // };
 
 // class cHeadTrack
 // {
 // public:
-//     virtual ~cHeadTrack();
 // };
 
 // class PhysicsCharacter
 // {
 // public:
-//     ~PhysicsCharacter();
 // };
 
 // class GLSkinMesh
 // {
 // public:
-//     virtual ~GLSkinMesh();
-//     virtual void fnc_unk08();
-//     virtual void PoseSkinMesh(cPoseAccumulator*);
-//     // ... todo: wrong place, and more virtual fnc
 
 //     /* 0x04 */ glModel* pModel;
 // };

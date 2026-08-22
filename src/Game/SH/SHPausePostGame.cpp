@@ -204,50 +204,50 @@ void PausePostGameScene::SceneCreated()
         u8 hasAway = PausePostGameHasSide(game, 1);
         if (hasAway)
         {
-        if (absdiff == 0)
-        {
-            const unsigned short* formatLoc;
-            formatLoc = LookupLocHash(0x317831E4);
+            if (absdiff == 0)
+            {
+                const unsigned short* formatLoc;
+                formatLoc = LookupLocHash(0x317831E4);
 
-            BasicString<char, Detail::TempStringAllocator> score = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(
-                wins0 + wins1 + 1);
-            unsigned short wscore[8];
-            nlStrToWcs(score.c_str(), wscore, 8);
+                BasicString<char, Detail::TempStringAllocator> score = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(
+                    wins0 + wins1 + 1);
+                unsigned short wscore[8];
+                nlStrToWcs(score.c_str(), wscore, 8);
 
-            BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), wscore);
-            SetText(*message, formatted);
-        }
-        else if (absdiff <= 2)
-        {
-            const unsigned short* formatLoc;
-            formatLoc = LookupLocHash(0x29199065);
+                BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), wscore);
+                SetText(*message, formatted);
+            }
+            else if (absdiff <= 2)
+            {
+                const unsigned short* formatLoc;
+                formatLoc = LookupLocHash(0x29199065);
 
-            eTeamID winningteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)((pointdiff > 0) ? 0 : 1));
+                eTeamID winningteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)((pointdiff > 0) ? 0 : 1));
 
-            BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), LookupLocHash(GetLOCCharacterName(winningteam, true, false)));
-            SetText(*message, formatted);
-        }
-        else if (absdiff <= 6)
-        {
-            const unsigned short* formatLoc;
-            formatLoc = LookupLocHash(0x1214A3EB);
+                BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), LookupLocHash(GetLOCCharacterName(winningteam, true, false)));
+                SetText(*message, formatted);
+            }
+            else if (absdiff <= 6)
+            {
+                const unsigned short* formatLoc;
+                formatLoc = LookupLocHash(0x1214A3EB);
 
-            eTeamID loosingteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)((pointdiff > 0) ? 1 : 0));
+                eTeamID loosingteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)((pointdiff > 0) ? 1 : 0));
 
-            BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), LookupLocHash(GetLOCCharacterName(loosingteam, true, false)));
-            SetText(*message, formatted);
-        }
-        else
-        {
-            const unsigned short* formatLoc;
-            formatLoc = LookupLocHash(0xAACD893B);
+                BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), LookupLocHash(GetLOCCharacterName(loosingteam, true, false)));
+                SetText(*message, formatted);
+            }
+            else
+            {
+                const unsigned short* formatLoc;
+                formatLoc = LookupLocHash(0xAACD893B);
 
-            eTeamID loosingteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)((pointdiff > 0) ? 1 : 0));
+                eTeamID loosingteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)((pointdiff > 0) ? 1 : 0));
 
-            BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), LookupLocHash(GetLOCCharacterName(loosingteam, true, false)));
-            SetText(*message, formatted);
-        }
-        return;
+                BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), LookupLocHash(GetLOCCharacterName(loosingteam, true, false)));
+                SetText(*message, formatted);
+            }
+            return;
         }
     }
     {
@@ -319,6 +319,9 @@ void PausePostGameScene::SceneCreated()
     }
 }
 
+/**
+ * Offset/Address/Size: 0x28C | 0x80107390 | size: 0x37C
+ */
 void PausePostGameScene::Update(float dt)
 {
     BaseSceneHandler::Update(dt);

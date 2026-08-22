@@ -78,7 +78,7 @@ void operator delete(void* ptr)
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x801D20A0 | size: 0x24
+ * Offset/Address/Size: 0x1BC | 0x801D20A0 | size: 0x24
  */
 unsigned int nlVirtualTotalFree()
 {
@@ -86,7 +86,7 @@ unsigned int nlVirtualTotalFree()
 }
 
 /**
- * Offset/Address/Size: 0x24 | 0x801D20C4 | size: 0x24
+ * Offset/Address/Size: 0x1E0 | 0x801D20C4 | size: 0x24
  */
 unsigned int nlVirtualLargestBlock()
 {
@@ -94,7 +94,7 @@ unsigned int nlVirtualLargestBlock()
 }
 
 /**
- * Offset/Address/Size: 0x48 | 0x801D20E8 | size: 0x28
+ * Offset/Address/Size: 0x204 | 0x801D20E8 | size: 0x28
  */
 void nlVirtualFree(void* ptr)
 {
@@ -102,7 +102,7 @@ void nlVirtualFree(void* ptr)
 }
 
 /**
- * Offset/Address/Size: 0x70 | 0x801D2110 | size: 0x30
+ * Offset/Address/Size: 0x22C | 0x801D2110 | size: 0x30
  */
 void* nlVirtualAlloc(unsigned long size, bool bZero)
 {
@@ -110,7 +110,7 @@ void* nlVirtualAlloc(unsigned long size, bool bZero)
 }
 
 /**
- * Offset/Address/Size: 0xA0 | 0x801D2140 | size: 0x1B8
+ * Offset/Address/Size: 0x25C | 0x801D2140 | size: 0x1B8
  */
 void nlInitMemory()
 {

@@ -15,7 +15,7 @@ extern FuzzyVariant fvNotSet;
 /**
  * Offset/Address/Size: 0x6B9C | 0x80093628 | size: 0x43C
  */
-FuzzyVariant Fuzzy::AbortOffensivePlay(cDecisionEntity*)
+FuzzyVariant Fuzzy::AbortOffensivePlay(cDecisionEntity* pDecision)
 {
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;

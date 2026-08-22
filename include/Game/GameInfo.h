@@ -96,16 +96,16 @@ public:
     TeamStats* pGetTeamStatsByIndex(unsigned short index);
     void SetPreviousTeamStats();
     eStadiumID GetStadium() const;
-    BasicGameInfo* GetMatchupInfo(short, unsigned short) const;
-    void SetUserSelectedCupTeam(eTeamID);
-    void SetUserSelectedCupSidekick(eSidekickID);
+    BasicGameInfo* GetMatchupInfo(short round, unsigned short matchup) const;
+    void SetUserSelectedCupTeam(eTeamID team);
+    void SetUserSelectedCupSidekick(eSidekickID sidekick);
     eUserGameResult GetResultsOfLastUserGame() const;
-    void SetResultsOfLastUserGame(eUserGameResult);
+    void SetResultsOfLastUserGame(eUserGameResult result);
     s16 GetCurrentRoundNumber() const;
-    s16 GetNextRoundNumber(short) const;
-    s16 GetPreviousRoundNumber(short) const;
+    s16 GetNextRoundNumber(short roundParam) const;
+    s16 GetPreviousRoundNumber(short roundParam) const;
     signed short GetFirstRoundNumber() const;
-    u16 GetNumGamesPerRound(int) const;
+    u16 GetNumGamesPerRound(int round) const;
     u16 GetNumGamesPerRound(BaseCup* currentCup, int round) const
     {
         unsigned short returnValue;
@@ -156,33 +156,33 @@ public:
         return returnValue;
     }
     eTeamID GetUserSelectedCupTeam() const;
-    void SetStadium(eStadiumID);
-    eStadiumID PickStadium(bool, eStadiumID) const;
-    short GetPlayingSide(unsigned short) const;
-    void SetPlayingSide(unsigned short, short);
+    void SetStadium(eStadiumID stadiumID);
+    eStadiumID PickStadium(bool isLastRound, eStadiumID excludeStadium) const;
+    short GetPlayingSide(unsigned short padnumber) const;
+    void SetPlayingSide(unsigned short padnumber, short side);
     u16 GetNumPlayers() const;
     void ResetPlayingSides();
-    void SetupRoundRobinSchedule(eTeamID*, eSidekickID*);
+    void SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* sklineup);
     unsigned char SetupBowserKnockout();
-    void SetupTournamentKnockout(eTeamID*, eSidekickID*);
-    unsigned char SetupKnockoutRound(short);
-    unsigned char DetermineNextMatchups(int);
+    void SetupTournamentKnockout(eTeamID* lineup, eSidekickID* sklineup);
+    unsigned char SetupKnockoutRound(short round);
+    unsigned char DetermineNextMatchups(int dnmflags);
     void IncreaseRoundNumber();
-    void IncreaseGameNumber(bool);
+    void IncreaseGameNumber(bool shouldIncreaseRound);
     int GetNumHumanTeams();
-    BaseCup* GetCup(GameInfoManager::eGameModes);
-    bool IsUserQualified(GameInfoManager::eGameModes) const;
+    BaseCup* GetCup(GameInfoManager::eGameModes mode);
+    bool IsUserQualified(GameInfoManager::eGameModes mode) const;
     eGameModes GetCurrentMode() const
     {
         return mCurrentMode;
     }
-    void SetMode(GameInfoManager::eGameModes);
+    void SetMode(GameInfoManager::eGameModes mode);
     unsigned long GetMemoryCardDataSize() const;
-    void GetMemoryCardData(void*);
-    void SetMemoryCardData(void*);
-    u8 CheckSaveIDChanged(void*);
-    bool HasTrophy(eTrophyType) const;
-    eMilestoneColour GetMilestoneLevel(eTrophyType) const;
+    void GetMemoryCardData(void* pData);
+    void SetMemoryCardData(void* pData);
+    u8 CheckSaveIDChanged(void* pData);
+    bool HasTrophy(eTrophyType trophyType) const;
+    eMilestoneColour GetMilestoneLevel(eTrophyType trophy) const;
     bool IsInRegularCupMode() const;
     bool IsInSuperCupMode() const;
     bool IsInCupMode() const;
@@ -201,7 +201,7 @@ public:
     void OnPreCupGameState();
     void OnPostCupGameState();
     void DetermineNextCupScreen();
-    signed char DetermineUserPlacement(Spoil*);
+    signed char DetermineUserPlacement(Spoil* pSpoil);
     void TimeStampCupEnd();
     eTeamID FindWinningTeam();
     bool IsKongaUnlocked() const;
@@ -221,7 +221,7 @@ public:
     bool IsCustomExplosiveUnlocked() const;
     bool IsCustomFreezingUnlocked() const;
     bool HasHumanGameBeenPlayed() const;
-    void SetRoundResult(bool, int);
+    void SetRoundResult(bool inOvertime, int winningSide);
     bool IsStunnedGoaliesOn() const;
     bool IsInfinitePowerupsOn() const;
     bool IsTiltingFieldOn() const;

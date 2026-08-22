@@ -11,9 +11,9 @@ struct glModel
     /* 0x0C */ glModelPacket* packets;
 }; // total size: 0x10
 
-void* glModelDupArrayNoStreams(const glModel*, unsigned long, bool, bool);
-glModel* glModelDupNoStreams(const glModel*, bool, bool);
-glModel* glModelDup(const glModel*, bool);
+glModel* glModelDupArrayNoStreams(const glModel* pModelArray, unsigned long nModels, bool bUserDup, bool bPermanent);
+glModel* glModelDupNoStreams(const glModel* pModel, bool bUserDup, bool bPermanent);
+glModel* glModelDup(const glModel* pModel, bool bUserDup);
 glModelPacket* glModelPacketDup(const glModelPacket* pPacket, bool bUserDup);
 
 #endif // _GLMODEL_H_

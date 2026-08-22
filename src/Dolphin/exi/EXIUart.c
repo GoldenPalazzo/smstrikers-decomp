@@ -13,6 +13,9 @@ int ReadUARTN(void);
 int WriteUARTN(void* buf, u32 len);
 void __OSEnableBarnacle(s32 chan, u32 dev);
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8024A8E4 | size: 0x18C
+ */
 static BOOL ProbeBarnacle(s32 chan, u32 dev, u32* revision)
 {
     int err;
@@ -59,6 +62,9 @@ static BOOL ProbeBarnacle(s32 chan, u32 dev, u32* revision)
     return FALSE;
 }
 
+/**
+ * Offset/Address/Size: 0x18C | 0x8024AA70 | size: 0x1BC
+ */
 void __OSEnableBarnacle(s32 chan, u32 dev)
 {
     u32 id;
@@ -103,6 +109,9 @@ void __OSEnableBarnacle(s32 chan, u32 dev)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x348 | 0x8024AC2C | size: 0x70
+ */
 int InitializeUART(void)
 {
     if (BarnacleEnabled == 0xA5FF005A)
@@ -145,6 +154,9 @@ static int QueueLength(void)
     return 0x10 - (cmd >> 0x18);
 }
 
+/**
+ * Offset/Address/Size: 0x3B8 | 0x8024AC9C | size: 0x200
+ */
 int WriteUARTN(void* buf, u32 len)
 {
     u32 cmd;

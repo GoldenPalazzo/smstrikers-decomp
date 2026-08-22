@@ -186,14 +186,12 @@ static inline dReal dot (int n, dRealPtr x, dRealPtr y)
 	return sum;
 }
 
-
 // x = y + z*alpha
 
 static inline void add (int n, dRealMutablePtr x, dRealPtr y, dRealPtr z, dReal alpha)
 {
 	for (int i=0; i<n; i++) x[i] = y[i] + z[i]*alpha;
 }
-
 
 static void CG_LCP (int m, int nb, dRealMutablePtr J, int *jb, dxBody * const *body,
 	dRealPtr invI, dRealMutablePtr lambda, dRealMutablePtr fc, dRealMutablePtr b,
@@ -318,6 +316,9 @@ static int compare_index_error(const void* a, const void* b)
 
 #endif
 
+/**
+ * Offset/Address/Size: 0x134C | 0x80222DC0 | size: 0x898
+ */
 static void SOR_LCP(int m, int nb, dRealMutablePtr J, int* jb, dxBody* const* body,
     dRealPtr invI, dRealMutablePtr lambda, dRealMutablePtr fc, dRealMutablePtr b,
     dRealMutablePtr lo, dRealMutablePtr hi, dRealPtr cfm, int* findex,
@@ -524,8 +525,6 @@ static void SOR_LCP(int m, int nb, dRealMutablePtr J, int* jb, dxBody* const* bo
             }
 
             //@@@ a trick that may or may not help
-            // dReal ramp = (1-((dReal)(iteration+1)/(dReal)num_iterations));
-            // delta *= ramp;
 
             // update fc.
             // @@@ potential optimization: SIMD for this and the b2 >= 0 case
@@ -553,10 +552,7 @@ static void SOR_LCP(int m, int nb, dRealMutablePtr J, int* jb, dxBody* const* bo
 }
 
 /**
- * Offset/Address/Size: 0x21E9B4 | 0x80221A74 | size: 0x134C
- * TODO: 99.97% match - three loop-tail induction-variable updates in the
- * post-SOR velocity loop emit in a rotated order (body cursor advance before
- * the store instead of after it).
+ * Offset/Address/Size: 0x0 | 0x80221A74 | size: 0x134C
  */
 void dxQuickStepper(dxWorld* world, dxBody* const* body, int nb,
     dxJoint* const* _joint, int nj, dReal stepsize)

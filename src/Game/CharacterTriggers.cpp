@@ -202,17 +202,6 @@ EmissionController* EmitGeneric(cCharacter* pCharacter, const char* baseName, co
     return pControl;
 }
 
-/**
- * Offset/Address/Size: 0x2B1C | 0x801A18CC | size: 0x21FC
- * TODO: not matched. Target .data anon counters show this function's exclusive
- * strings (tackle_react @1874, bomb_landing @1975, landing @2019, pull_head_out
- * @2074, shoot_to_score_jump @2535, toad_goal_hi_0_dust @2636, landing_feet
- * @2681) interleaved between OTHER functions' string clusters, which means the
- * original implemented the trigger cases as small static inline helper
- * functions scattered through the file (each helper owns its case's string
- * slot), not as one flat switch. Restructure case bodies into static inline
- * helpers to attack both the code match and the .data/.sdata ordering.
- */
 extern cCharacter* g_pCurrentlyUpdatingCharacter;
 
 static void EmitTackleReactTrigger(cCharacter* pCharacter);
@@ -232,6 +221,9 @@ static void EmitTackleImpactTrigger(cCharacter* pCharacter);
 static void EmitBallPassDialogueTrigger(cCharacter* pCharacter);
 static nlMatrix4& GetHeadNodeMatrix(cCharacter* pHeadCharacter);
 
+/**
+ * Offset/Address/Size: 0x2B1C | 0x801A18CC | size: 0x21FC
+ */
 void CharacterTriggerHandler(unsigned int uParam)
 {
     class AnimTriggerCallbackInfo
@@ -1092,9 +1084,8 @@ static inline EmissionController* CreateChipShotDivotEffect(cPlayer* pCharacter)
 
 /**
  * Offset/Address/Size: 0x1B10 | 0x801A08C0 | size: 0xB48
- * TODO: 99.85% match - BasicString constructor r25/r29 swap remains.
  */
-void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlayer*, bool bSilent)
+void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlayer* pPassTarget, bool bSilent)
 {
     EmissionController* pControl = NULL;
     EmissionController* pGlowControl = NULL;

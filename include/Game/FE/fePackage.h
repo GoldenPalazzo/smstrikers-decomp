@@ -10,7 +10,7 @@ class TLComponent;
 class FEPackage
 {
 public:
-    void Update(float);
+    void Update(float deltaTime);
     FEPresentation* GetPresentation() const;
 
     /* 0x00 */ TLComponent* m_pComponentList;

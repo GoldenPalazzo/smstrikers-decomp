@@ -18,11 +18,11 @@ extern "C"
         AMC_EXI_UNSELECTED
     } AmcExiError;
 
-    void EXI2_Init(vu8**, AmcEXICallback);
+    void EXI2_Init(vu8** buf, AmcEXICallback callback);
     void EXI2_EnableInterrupts(void);
     int EXI2_Poll(void);
-    AmcExiError EXI2_ReadN(void*, u32);
-    AmcExiError EXI2_WriteN(const void*, u32);
+    AmcExiError EXI2_ReadN(void* buf, u32 len);
+    AmcExiError EXI2_WriteN(const void* buf, u32 len);
     void EXI2_Reserve(void);
     void EXI2_Unreserve(void);
     BOOL AMC_IsStub(void);

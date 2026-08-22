@@ -433,6 +433,9 @@ static inline const FormationSpec* GetFormationSpecInline(int id)
     return spec;
 }
 
+/**
+ * Offset/Address/Size: 0x1E00 | 0x8003A050 | size: 0x22C
+ */
 FormationEval* FormationEval::Create(FormationManager* pManager, eFormationType formType, eFormationSet formSetID, eFormation formID)
 {
     FormationEval* pNewFormation = NULL;
@@ -1447,9 +1450,6 @@ void FormationBallPosition::CalculateDesiredLocation(nlVector3& destPosition, cF
     }
 }
 
-/**
- * Offset/Address/Size: 0x0 | 0x80038250 | size: 0x2C0
- */
 void FormationBallPosition::CalcBallPosition(nlVector2& v2DestAIBallPos)
 {
     nlVector3 v3AIBallLoc;
@@ -1509,6 +1509,9 @@ float FormationBallPosition::GetBlendFactor()
     return fBlendFactor;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80038250 | size: 0x2C0
+ */
 float FormationBallPosition::GetWeight()
 {
     nlVector2 vAIBallPos;

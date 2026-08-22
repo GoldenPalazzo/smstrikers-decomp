@@ -34,12 +34,12 @@ public:
     virtual void Reset() { m_fCurrentTime = 0.0f; };
     virtual float Time() const { return m_fCurrentTime / m_fLength; };
     virtual float GetTransitionLength() { return m_fLength; };
-    virtual void Update(float);
-    virtual void Render(eGLView);
+    virtual void Update(float dt);
+    virtual void Render(eGLView view);
     virtual void Cancel();
 
     void InitializeFromParser(SimpleParser* parser);
-    TransitionModifierInterface* GetModifierFromName(char*);
+    TransitionModifierInterface* GetModifierFromName(char* pName);
 
     /* 0x04 */ TransitionModifierInterface** m_pModifiers; // offset 0x4, size 0x4
     /* 0x08 */ int m_nModifiers;                           // offset 0x8, size 0x4

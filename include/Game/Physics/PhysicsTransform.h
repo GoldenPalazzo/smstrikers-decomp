@@ -15,10 +15,10 @@ public:
     virtual ~PhysicsTransform();
     virtual int GetObjectType() const { return m_SubObject->GetObjectType(); };
 
-    void SetSubObjectTransform(const nlMatrix4&, PhysicsObject::CoordinateType);
-    void SetSubObjectPosition(const nlVector3&, PhysicsObject::CoordinateType);
+    void SetSubObjectTransform(const nlMatrix4& transform, PhysicsObject::CoordinateType coordinateType);
+    void SetSubObjectPosition(const nlVector3& position, PhysicsObject::CoordinateType coordinateType);
     void Release();
-    void Attach(PhysicsObject*, PhysicsObject*);
+    void Attach(PhysicsObject* obj1, PhysicsObject* obj2);
 
     /* 0x2c */ PhysicsObject* m_SubObject;
 };

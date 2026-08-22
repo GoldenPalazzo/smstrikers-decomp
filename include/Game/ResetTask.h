@@ -15,7 +15,7 @@ void HandleSoftReset();
 class ResetTask : public nlTask
 {
 public:
-    virtual void Run(float);
+    virtual void Run(float dt);
     virtual const char* GetName() { return "Reset"; };
 
     static s32 s_ResetMode;

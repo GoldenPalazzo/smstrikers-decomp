@@ -1,23 +1,15 @@
 #include "__card.h"
 
-// BOOL __CARDCompareFileName(CARDDir* ent, const char* fileName) {
-//     char* entName = (char*)ent->fileName;
-//     char c1;
-//     char c2;
-//     int n = CARD_FILENAME_MAX;
-
-//     while (--n >= 0) {
 //         if ((c1 = *entName++) != (c2 = *fileName++))
-//             return FALSE;
 //         else if (c2 == '\0')
-//             return TRUE;
 //     }
 
 //     if (*fileName == '\0')
-//         return TRUE;
-//     return FALSE;
 // }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80242A44 | size: 0x68
+ */
 BOOL __CARDCompareFileName(CARDDir* entry, const char* fileName)
 {
     char* entName;
@@ -47,6 +39,9 @@ BOOL __CARDCompareFileName(CARDDir* entry, const char* fileName)
     return FALSE;
 }
 
+/**
+ * Offset/Address/Size: 0x68 | 0x80242AAC | size: 0x94
+ */
 s32 __CARDAccess(CARDControl* card, CARDDir* ent)
 {
     const DVDDiskID* diskID = card->diskID;
@@ -62,6 +57,9 @@ s32 __CARDAccess(CARDControl* card, CARDDir* ent)
     return CARD_RESULT_NOPERM;
 }
 
+/**
+ * Offset/Address/Size: 0xFC | 0x80242B40 | size: 0x134
+ */
 s32 __CARDIsWritable(CARDControl* card, CARDDir* ent)
 {
     const DVDDiskID* diskID = card->diskID;
@@ -85,6 +83,9 @@ s32 __CARDIsWritable(CARDControl* card, CARDDir* ent)
     return result;
 }
 
+/**
+ * Offset/Address/Size: 0x230 | 0x80242C74 | size: 0xF4
+ */
 s32 __CARDIsReadable(CARDControl* card, CARDDir* ent)
 {
     s32 result = __CARDIsWritable(card, ent);
@@ -96,6 +97,9 @@ s32 __CARDIsReadable(CARDControl* card, CARDDir* ent)
     return result;
 }
 
+/**
+ * Offset/Address/Size: 0x324 | 0x80242D68 | size: 0x150
+ */
 s32 __CARDGetFileNo(CARDControl* card, const char* fileName, s32* pfileNo)
 {
     CARDDir* dir;
@@ -160,6 +164,9 @@ s32 CARDFastOpen(s32 chan, s32 fileNo, CARDFileInfo* fileInfo)
     return __CARDPutControlBlock(card, result);
 }
 
+/**
+ * Offset/Address/Size: 0x474 | 0x80242EB8 | size: 0x11C
+ */
 s32 CARDOpen(s32 chan, const char* fileName, CARDFileInfo* fileInfo)
 {
     CARDControl* card;
@@ -194,6 +201,9 @@ s32 CARDOpen(s32 chan, const char* fileName, CARDFileInfo* fileInfo)
     return __CARDPutControlBlock(card, result);
 }
 
+/**
+ * Offset/Address/Size: 0x590 | 0x80242FD4 | size: 0x54
+ */
 s32 CARDClose(CARDFileInfo* fileInfo)
 {
     CARDControl* card;
@@ -210,6 +220,9 @@ s32 CARDClose(CARDFileInfo* fileInfo)
     return __CARDPutControlBlock(card, CARD_RESULT_READY);
 }
 
+/**
+ * Offset/Address/Size: 0x5E4 | 0x80243028 | size: 0x8
+ */
 BOOL __CARDIsOpened(CARDControl* card, s32 fileNo)
 {
     return FALSE;

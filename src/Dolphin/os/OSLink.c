@@ -534,6 +534,9 @@ BOOL OSUnlink(OSModuleInfo* oldModule)
     return TRUE;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80257364 | size: 0x18
+ */
 void __OSModuleInit(void)
 {
     __OSModuleInfoList.head = __OSModuleInfoList.tail = 0;

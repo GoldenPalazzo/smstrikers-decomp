@@ -196,10 +196,10 @@ void gl_ViewStartup()
         view = (eGLView)i;
         gl_ViewEnable[i] = TRUE;
 
-        pView = (glView*)nlMalloc(0xFC, 8, FALSE);
+        pView = (glView*)nlMalloc(sizeof(glView), 8, FALSE);
         if (pView != NULL)
         {
-            renderList = new (nlMalloc(0x30, 8, FALSE)) GLRenderList();
+            renderList = new (nlMalloc(sizeof(GLRenderList), 8, FALSE)) GLRenderList();
             pView->renderList = renderList;
             pView->preViewCallback = NULL;
             pView->postViewCallback = NULL;
@@ -295,7 +295,7 @@ void gl_ViewReset()
 void glViewAttachPacket(eGLView view, const glModelPacket* packet)
 {
     glModel model;
-    memset(&model, 0, 0x10);
+    memset(&model, 0, sizeof(glModel));
     model.numPackets = 1;
     model.packets = (glModelPacket*)packet;
 

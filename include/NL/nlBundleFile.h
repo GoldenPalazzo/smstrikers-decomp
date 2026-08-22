@@ -22,22 +22,22 @@ typedef struct
     /* 0x08 */ u32 m_length;
 } BundleFileDirectoryEntry, *BundleFileDirectoryEntryPtr;
 
-static void cbFileReadAsyncCallback(nlFile*, void*, unsigned int, unsigned long);
+static void cbFileReadAsyncCallback(nlFile* file, void* buffer, unsigned int arg, unsigned long bundlePtr);
 
 class BundleFile
 {
 public:
-    void ReadFileAsync(unsigned long, void*, unsigned long, FileReadAsyncCallback callback, unsigned long);
-    void ReadFileAsync(const char*, void*, unsigned long, FileReadAsyncCallback callback, unsigned long);
-    void LoadFile(const char*, void*);
-    void ReadFileByIndex(unsigned long, void*, unsigned long);
-    void ReadFile(unsigned long, void*, unsigned long);
-    void ReadFile(const char*, void*, unsigned long);
-    bool GetFileInfoByIndex(unsigned long, BundleFileDirectoryEntry*);
-    bool GetFileInfo(unsigned long, BundleFileDirectoryEntry*, bool);
-    bool GetFileInfo(const char*, BundleFileDirectoryEntry*, bool);
+    void ReadFileAsync(unsigned long hash, void* buffer, unsigned long size, FileReadAsyncCallback callback, unsigned long userParam);
+    void ReadFileAsync(const char* filename, void* buffer, unsigned long size, FileReadAsyncCallback callback, unsigned long userParam);
+    void LoadFile(const char* filename, void* pBuffer);
+    void ReadFileByIndex(unsigned long index, void* buffer, unsigned long size);
+    void ReadFile(unsigned long hash, void* buffer, unsigned long size);
+    void ReadFile(const char* filename, void* pBuffer, unsigned long size);
+    bool GetFileInfoByIndex(unsigned long index, BundleFileDirectoryEntry* entry);
+    bool GetFileInfo(unsigned long hash, BundleFileDirectoryEntry* entry, bool printError);
+    bool GetFileInfo(const char* filename, BundleFileDirectoryEntry* entry, bool printError);
     void Close();
-    bool Open(const char*);
+    bool Open(const char* filename);
 
     ~BundleFile();
     BundleFile();

@@ -84,7 +84,7 @@ Blinker::Blinker(const char* szBaseName, unsigned long model0Hash, GLMaterialLis
 
     m_bValid = 0;
     m_uModel0Hash = model0Hash;
-    memcpy(&m_fBlinkTimes, BlinkTimes, 0x10);
+    memcpy(&m_fBlinkTimes, BlinkTimes, sizeof(m_fBlinkTimes));
 
     m_pMats[0] = mats0;
     m_pMats[1] = mats1;

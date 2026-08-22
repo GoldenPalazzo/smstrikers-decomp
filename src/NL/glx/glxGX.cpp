@@ -143,13 +143,13 @@ u32 gxSetNumTevStages(unsigned long numTEV)
  */
 u32 gxSetNumChans(unsigned long numChans)
 {
-    u32 temp_r31 = gx_numChans;
+    u32 prev = gx_numChans;
     if (numChans != gx_numChans)
     {
         GXSetNumChans(numChans);
         gx_numChans = numChans;
     }
-    return temp_r31;
+    return prev;
 }
 
 /**
@@ -157,13 +157,13 @@ u32 gxSetNumChans(unsigned long numChans)
  */
 _GXCullMode gxSetCullMode(_GXCullMode mode)
 {
-    _GXCullMode temp_r31 = gx_cullmode;
-    if (mode != temp_r31)
+    _GXCullMode prev = gx_cullmode;
+    if (mode != prev)
     {
         GXSetCullMode(mode);
         gx_cullmode = mode;
     }
-    return temp_r31;
+    return prev;
 }
 
 /**
@@ -225,57 +225,57 @@ void gxSaveZMode()
 /**
  * Offset/Address/Size: 0x458 | 0x801C1940 | size: 0x88
  */
-void gxSetZMode(bool arg0, _GXCompare arg1, bool arg2)
+void gxSetZMode(bool bTest, _GXCompare func, bool bWrite)
 {
-    if ((arg0 != (u8)gx_ztest) || (arg1 != (s32)gx_zfunc) || (arg2 != (u8)gx_zwrite))
+    if ((bTest != (u8)gx_ztest) || (func != (s32)gx_zfunc) || (bWrite != (u8)gx_zwrite))
     {
-        GXSetZMode(arg0, arg1, arg2);
-        gx_ztest = arg0;
-        gx_zfunc = arg1;
-        gx_zwrite = arg2;
+        GXSetZMode(bTest, func, bWrite);
+        gx_ztest = bTest;
+        gx_zfunc = func;
+        gx_zwrite = bWrite;
     }
 }
 
 /**
  * Offset/Address/Size: 0x4E0 | 0x801C19C8 | size: 0x5C
  */
-bool gxSetZCompLoc(bool arg0)
+bool gxSetZCompLoc(bool bBefore)
 {
-    bool temp_r31 = gx_zcomploc;
-    if (arg0 != (u8)gx_zcomploc)
+    bool bPrev = gx_zcomploc;
+    if (bBefore != (u8)gx_zcomploc)
     {
-        GXSetZCompLoc((u32)(-(s32)arg0 | arg0) >> 0x1FU);
-        gx_zcomploc = arg0;
+        GXSetZCompLoc((u32)(-(s32)bBefore | bBefore) >> 0x1FU);
+        gx_zcomploc = bBefore;
     }
-    return temp_r31;
+    return bPrev;
 }
 
 /**
  * Offset/Address/Size: 0x53C | 0x801C1A24 | size: 0x5C
  */
-bool gxSetAlphaUpdate(bool arg0)
+bool gxSetAlphaUpdate(bool bOn)
 {
-    bool prev = gx_alphaupdate;
-    if (arg0 != gx_alphaupdate)
+    bool bPrev = gx_alphaupdate;
+    if (bOn != gx_alphaupdate)
     {
-        GXSetAlphaUpdate(arg0 != 0);
-        gx_alphaupdate = arg0;
+        GXSetAlphaUpdate(bOn != 0);
+        gx_alphaupdate = bOn;
     }
-    return prev;
+    return bPrev;
 }
 
 /**
  * Offset/Address/Size: 0x598 | 0x801C1A80 | size: 0x5C
  */
-bool gxSetColourUpdate(bool arg0)
+bool gxSetColourUpdate(bool bOn)
 {
-    bool prev = gx_colourupdate;
-    if (arg0 != gx_colourupdate)
+    bool bPrev = gx_colourupdate;
+    if (bOn != gx_colourupdate)
     {
-        GXSetColorUpdate(arg0 != 0);
-        gx_colourupdate = arg0;
+        GXSetColorUpdate(bOn != 0);
+        gx_colourupdate = bOn;
     }
-    return prev;
+    return bPrev;
 }
 
 /**
@@ -296,27 +296,27 @@ uint gxSetDither(bool dither)
 /**
  * Offset/Address/Size: 0x650 | 0x801C1B38 | size: 0x58
  */
-uint gxSetTevAlphaIn(int stage, int arg1, _GXTevAlphaArg arg2)
+uint gxSetTevAlphaIn(int stage, int component, _GXTevAlphaArg arg)
 {
-    s32 temp_r0 = arg1 * 4;
-    u8* temp_r7 = ((u8*)&gx_alphaArg) + (stage * 0x10);
-    s32 temp_r31 = *(GXTevAlphaArg*)(temp_r7 + temp_r0);
-    *(GXTevAlphaArg*)(temp_r7 + temp_r0) = arg2;
-    GXSetTevAlphaIn((GXTevStageID)stage, ((GXTevAlphaArg*)temp_r7)[0], ((GXTevAlphaArg*)temp_r7)[1], ((GXTevAlphaArg*)temp_r7)[2], ((GXTevAlphaArg*)temp_r7)[3]);
-    return (uint)temp_r31;
+    s32 componentOffset = component * 4;
+    u8* pStageArgs = ((u8*)&gx_alphaArg) + (stage * 0x10);
+    s32 prev = *(GXTevAlphaArg*)(pStageArgs + componentOffset);
+    *(GXTevAlphaArg*)(pStageArgs + componentOffset) = arg;
+    GXSetTevAlphaIn((GXTevStageID)stage, ((GXTevAlphaArg*)pStageArgs)[0], ((GXTevAlphaArg*)pStageArgs)[1], ((GXTevAlphaArg*)pStageArgs)[2], ((GXTevAlphaArg*)pStageArgs)[3]);
+    return (uint)prev;
 }
 
 /**
  * Offset/Address/Size: 0x6A8 | 0x801C1B90 | size: 0x5C
  */
-void gxSetTevAlphaIn(int arg0, _GXTevAlphaArg arg1, _GXTevAlphaArg arg2, _GXTevAlphaArg arg3, _GXTevAlphaArg arg4)
+void gxSetTevAlphaIn(int stage, _GXTevAlphaArg a, _GXTevAlphaArg b, _GXTevAlphaArg c, _GXTevAlphaArg d)
 {
-    GXSetTevAlphaIn((GXTevStageID)arg0, arg1, arg2, arg3, arg4);
-    u32 idx = arg0 * 4;
-    gx_alphaArg[0][idx] = arg1;
-    gx_alphaArg[0][idx + 1] = arg2;
-    gx_alphaArg[0][idx + 2] = arg3;
-    gx_alphaArg[0][idx + 3] = arg4;
+    GXSetTevAlphaIn((GXTevStageID)stage, a, b, c, d);
+    u32 idx = stage * 4;
+    gx_alphaArg[0][idx] = a;
+    gx_alphaArg[0][idx + 1] = b;
+    gx_alphaArg[0][idx + 2] = c;
+    gx_alphaArg[0][idx + 3] = d;
 }
 
 /**

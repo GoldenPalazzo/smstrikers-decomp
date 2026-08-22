@@ -40,13 +40,13 @@ struct gl_ScreenInfo
     /* 0x24 */ bool FSAA;
 }; // total size: 0x28
 
-void glplatViewProjectPoint(eGLView, const nlVector3&, nlVector3&);
+void glplatViewProjectPoint(eGLView view, const nlVector3& v3world, nlVector3& v3NDC);
 void glplatEndFrame();
 void glplatBeginFrame();
 void glplatFinish();
 void glplatAbortFrame();
 void glplatSendFrame();
-void glx_Fog(bool);
+void glx_Fog(bool enable);
 bool glx_GetFog();
 bool glplatPostStartup();
 bool glplatStartup(gl_ScreenInfo* screenInfo);
@@ -55,11 +55,11 @@ void glx_SetRGB60Mode();
 void glx_SetInterlacedMode();
 void glx_SetProgressiveMode();
 u32 glx_GetResetCode();
-void glx_SwitchVideoMode(_GXRenderModeObj*, eVideoMode);
+void glx_SwitchVideoMode(_GXRenderModeObj* rmode, eVideoMode mode);
 bool glplatPreStartup();
-void virt_cb(unsigned long, unsigned long, unsigned long, unsigned long, int);
-void glx_ClearXFB(void*);
+void virt_cb(unsigned long faultAddr, unsigned long mainAddr, unsigned long pageIndex, unsigned long elapsed, int wroteBack);
+void glx_ClearXFB(void* cache);
 u32 glx_GetTargetFPS();
 u32 glx_GetScaledXFBWidth();
-void glx_SetFog(int);
+void glx_SetFog(int type);
 #endif // _GLPLAT_H_

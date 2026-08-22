@@ -11,7 +11,7 @@ class Goalie;
 class SavePositionData
 {
 public:
-    void Init(Goalie*, int);
+    void Init(Goalie* pGoalie, int animID);
 
     /* 0x00 */ int mnAnimID;
     /* 0x04 */ float mfAnimDistance;
@@ -22,9 +22,9 @@ public:
 class SaveData
 {
 public:
-    static float LookupFatigueValue(Goalie*, const SaveInfo&);
-    void Init(Goalie*, const SaveInfo&, unsigned int);
-    void PostInit(const SaveInfo&);
+    static float LookupFatigueValue(Goalie* pGoalie, const SaveInfo& info);
+    void Init(Goalie* pGoalie, const SaveInfo& info, unsigned int uIndex);
+    void PostInit(const SaveInfo& info);
     float GetMilestoneTime(int milestone) const
     {
         return mfMilestonePercent[milestone] * mfDuration;
@@ -61,24 +61,24 @@ public:
 
 class GoalieSave
 {
-    static void FindVerticalBoundingPoints(SaveData*, const nlVector3&, SaveData**, SaveData**);
+    static void FindVerticalBoundingPoints(SaveData* pSaveData, const nlVector3& v3TargetPoint, SaveData** pLoPoint, SaveData** pHiPoint);
 
 public:
-    static SaveData* FindSaveData(int);
+    static SaveData* FindSaveData(int animID);
     static void ClearData();
-    static void InitData(Goalie*);
+    static void InitData(Goalie* pGoalie);
     static SaveData* FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3LocalPos, float fTime, bool bDoNearSearch, unsigned int uSaveType, bool bFromTakeoff);
-    static SaveData* FindBestInList(SaveBlendInfo&, nlListContainer<SaveData*>&, const nlVector3&, float, unsigned int, bool);
-    static SaveData* GetClosestBlendedPos(SaveBlendInfo&, const nlVector3&, SaveData*);
-    static SaveData* GetMissChipSaveData(bool, bool);
-    static SaveData* GetRandomSTSMissData(bool);
-    static SaveData* GetSTSSpinMissData(bool);
+    static SaveData* FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<SaveData*>& SaveList, const nlVector3& v3LocalPos, float fTime, unsigned int uSaveType, bool bFromTakeoff);
+    static SaveData* GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVector3& v3TargetPos, SaveData* pSaveData);
+    static SaveData* GetMissChipSaveData(bool bLeft, bool bFar);
+    static SaveData* GetRandomSTSMissData(bool bCatchAnimOnly);
+    static SaveData* GetSTSSpinMissData(bool bLeft);
     static SaveData* GetRandomSTSSaveData();
-    static bool TriggerCallback(float, float, unsigned long, float, void*);
-    static void AddAreaToGrid(SaveData*);
-    static void AddSegmentToGrid(SaveData*, SaveData*);
-    static void AddChainToGrid(SaveData*, bool);
-    static void AddToGrid(SaveData*);
+    static bool TriggerCallback(float fTime, float fDuration, unsigned long uEventID, float fIntensity, void* pUserData);
+    static void AddAreaToGrid(SaveData* pSaveData);
+    static void AddSegmentToGrid(SaveData* pStartSaveData, SaveData* pEndSaveData);
+    static void AddChainToGrid(SaveData* pSaveData, bool bVertical);
+    static void AddToGrid(SaveData* pSaveData);
     static void ClearGrid();
     static float GridSectionWidth();
     static float GridSectionHeight();

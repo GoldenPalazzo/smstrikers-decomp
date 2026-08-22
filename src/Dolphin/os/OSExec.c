@@ -10,6 +10,9 @@ extern volatile u8 g_unk_800030E2 AT_ADDRESS(0x800030E2);
 
 static int Prepared;
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80255E84 | size: 0x188
+ */
 static int PackArgs(void* addr, s32 argc, char** argv)
 {
     s32 numArgs;
@@ -58,6 +61,9 @@ static int PackArgs(void* addr, s32 argc, char** argv)
 
 #ifdef __GEKKO__
 // clang-format off
+/**
+ * Offset/Address/Size: 0x188 | 0x8025600C | size: 0x3C
+ */
 static asm void Run(register void* entryPoint) {
     nofralloc
 
@@ -92,6 +98,9 @@ static void StartDol(const OSExecParams* params, void* entry)
     Run(entry);
 }
 
+/**
+ * Offset/Address/Size: 0x1C4 | 0x80256048 | size: 0x6C
+ */
 static void ReadDisc(void* addr, s32 length, s32 offset)
 {
     DVDCommandBlock block;
@@ -118,6 +127,9 @@ static void ReadDisc(void* addr, s32 length, s32 offset)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x230 | 0x802560B4 | size: 0xC
+ */
 static void Callback(s32, DVDCommandBlock*)
 {
     Prepared = TRUE;
@@ -133,6 +145,9 @@ static int IsStreamEnabled()
     return FALSE;
 }
 
+/**
+ * Offset/Address/Size: 0x23C | 0x802560C0 | size: 0x40
+ */
 void __OSGetExecParams(OSExecParams* params)
 {
     if (0x80000000 <= (u32)__OSExecParams)
@@ -184,6 +199,9 @@ static void StopStreaming()
     }
 }
 
+/**
+ * Offset/Address/Size: 0x27C | 0x80256100 | size: 0xC4
+ */
 static int GetApploaderPosition(void)
 {
     static s32 apploaderPosition;
@@ -263,6 +281,9 @@ static BOOL IsNewApploader(AppLoaderStruct* header)
     return strncmp(header->date, "2004/02/01", 10) > 0 ? TRUE : FALSE;
 }
 
+/**
+ * Offset/Address/Size: 0x340 | 0x802561C4 | size: 0x484
+ */
 void __OSBootDolSimple(u32 doloffset, u32 restartCode, void* regionStart, void* regionEnd, BOOL argsUseDefault, s32 argc, char** argv)
 {
     OSExecParams* params;
@@ -342,6 +363,9 @@ void __OSBootDolSimple(u32 doloffset, u32 restartCode, void* regionStart, void* 
     }
 }
 
+/**
+ * Offset/Address/Size: 0x7C4 | 0x80256648 | size: 0x19C
+ */
 void __OSBootDol(u32 doloffset, u32 restartCode, const char** argv)
 {
     char doloffInString[20];

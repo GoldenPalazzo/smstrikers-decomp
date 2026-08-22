@@ -103,7 +103,7 @@ extern double atan __P((double));
 extern double atan2 __P((double, double));
 extern double cos __P((double));
 extern double sin __P((double));
-extern double tan __P((double));
+extern double tan __P((double x));
 
 extern double cosh __P((double));
 extern double sinh __P((double));
@@ -119,10 +119,10 @@ extern double modf __P((double, double*));
 extern double pow __P((double, double));
 extern double sqrt __P((double));
 
-extern double ceil __P((double));
+extern double ceil __P((double x));
 extern double fabs __P((double));
 extern double floor __P((double));
-extern double fmod __P((double, double));
+extern double fmod __P((double x, double y));
 
 extern double erf __P((double));
 extern double erfc __P((double));
@@ -191,7 +191,7 @@ extern double __ieee754_asin __P((double));
 extern double __ieee754_atan2 __P((double, double));
 extern double __ieee754_exp __P((double));
 extern double __ieee754_cosh __P((double));
-extern double __ieee754_fmod __P((double, double));
+extern double __ieee754_fmod __P((double x, double y));
 extern double __ieee754_pow __P((double, double));
 extern double __ieee754_lgamma_r __P((double, int*));
 extern double __ieee754_gamma_r __P((double, int*));

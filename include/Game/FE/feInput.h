@@ -36,19 +36,19 @@ struct FEInput
     FEInput();
     virtual ~FEInput() { };
 
-    void EnableAnalogToDPadMapping(eFEINPUT_PAD, bool);
-    void SetAutoRepeatParams(eFEINPUT_PAD, int, float, float);
-    void Update(float);
-    bool HasInputLock(BaseSceneHandler*) const;
-    void PopExclusiveInputLock(BaseSceneHandler*);
-    void PushExclusiveInputLock(BaseSceneHandler*, int);
-    void EnableInputIfSceneHasFocus(BaseSceneHandler*);
-    bool JustReleased(eFEINPUT_PAD, int, bool, eFEINPUT_PAD*);
-    bool JustPressed(eFEINPUT_PAD, int, bool, eFEINPUT_PAD*);
-    bool IsAutoPressed(eFEINPUT_PAD, int, bool, eFEINPUT_PAD*);
-    bool IsPressed(eFEINPUT_PAD, int, bool, eFEINPUT_PAD*);
-    bool IsConnected(eFEINPUT_PAD);
-    cGlobalPad* GetGlobalPad(eFEINPUT_PAD) const;
+    void EnableAnalogToDPadMapping(eFEINPUT_PAD pad, bool enable);
+    void SetAutoRepeatParams(eFEINPUT_PAD pad, int button, float initialdelay, float repeatrate);
+    void Update(float dt);
+    bool HasInputLock(BaseSceneHandler* pRequestingSceneHandler) const;
+    void PopExclusiveInputLock(BaseSceneHandler* pRequestingSceneHandler);
+    void PushExclusiveInputLock(BaseSceneHandler* pRequestingSceneHandler, int customID);
+    void EnableInputIfSceneHasFocus(BaseSceneHandler* pSceneHandler);
+    bool JustReleased(eFEINPUT_PAD pad, int button, bool remap, eFEINPUT_PAD* pOutPad);
+    bool JustPressed(eFEINPUT_PAD pad, int button, bool remap, eFEINPUT_PAD* pOutPad);
+    bool IsAutoPressed(eFEINPUT_PAD pad, int button, bool remap, eFEINPUT_PAD* pOutPad);
+    bool IsPressed(eFEINPUT_PAD pad, int button, bool remap, eFEINPUT_PAD* pOutPad);
+    bool IsConnected(eFEINPUT_PAD pad);
+    cGlobalPad* GetGlobalPad(eFEINPUT_PAD pad) const;
     void Reset();
 
     static int* m_pRemapArray;

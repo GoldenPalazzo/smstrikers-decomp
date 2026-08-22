@@ -59,7 +59,7 @@ MilestoneTrophyScene::MilestoneTrophyScene()
 {
     const char* trophyImagePath = "art/fe/TrophiesUI.res";
 
-    AsyncImage* trophyImage = new (nlMalloc(0x1C, 0x20, true)) AsyncImage(trophyImagePath, NULL);
+    AsyncImage* trophyImage = new (nlMalloc(sizeof(AsyncImage), 0x20, true)) AsyncImage(trophyImagePath, NULL);
     mAsyncTrophy = trophyImage;
 }
 

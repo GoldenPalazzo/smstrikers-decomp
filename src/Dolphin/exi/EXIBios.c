@@ -36,6 +36,9 @@ extern void __OSEnableBarnacle(s32 chan, u32 dev);
 u32 EXIClearInterrupts(s32 chan, int exi, int tc, int ext);
 static int __EXIProbe(s32 chan);
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80248F08 | size: 0xF4
+ */
 static void SetExiInterruptMask(s32 chan, EXIControl* exi)
 {
     EXIControl* exi2;
@@ -105,6 +108,9 @@ static void CompleteTransfer(s32 chan)
     }
 }
 
+/**
+ * Offset/Address/Size: 0xF4 | 0x80248FFC | size: 0x25C
+ */
 int EXIImm(s32 chan, void* buf, s32 len, u32 type, EXICallback callback)
 {
     EXIControl* exi;
@@ -150,6 +156,9 @@ int EXIImm(s32 chan, void* buf, s32 len, u32 type, EXICallback callback)
     return 1;
 }
 
+/**
+ * Offset/Address/Size: 0x350 | 0x80249258 | size: 0xA0
+ */
 int EXIImmEx(s32 chan, void* buf, s32 len, u32 mode)
 {
     s32 xLen;
@@ -172,6 +181,9 @@ int EXIImmEx(s32 chan, void* buf, s32 len, u32 mode)
     return 1;
 }
 
+/**
+ * Offset/Address/Size: 0x3F0 | 0x802492F8 | size: 0xEC
+ */
 int EXIDma(s32 chan, void* buf, s32 len, u32 type, EXICallback callback)
 {
     EXIControl* exi;
@@ -208,6 +220,9 @@ int EXIDma(s32 chan, void* buf, s32 len, u32 type, EXICallback callback)
     return 1;
 }
 
+/**
+ * Offset/Address/Size: 0x4DC | 0x802493E4 | size: 0x24C
+ */
 int EXISync(s32 chan)
 {
     EXIControl* exi;
@@ -244,6 +259,9 @@ int EXISync(s32 chan)
     return rc;
 }
 
+/**
+ * Offset/Address/Size: 0x728 | 0x80249630 | size: 0x48
+ */
 u32 EXIClearInterrupts(s32 chan, int exi, int tc, int ext)
 {
     u32 cpr;
@@ -273,6 +291,9 @@ u32 EXIClearInterrupts(s32 chan, int exi, int tc, int ext)
     return cpr;
 }
 
+/**
+ * Offset/Address/Size: 0x770 | 0x80249678 | size: 0x7C
+ */
 EXICallback EXISetExiCallback(s32 chan, EXICallback exiCallback)
 {
     EXIControl* exi;
@@ -306,6 +327,9 @@ void EXIProbeReset()
     __EXIProbe(1);
 }
 
+/**
+ * Offset/Address/Size: 0x7EC | 0x802496F4 | size: 0x174
+ */
 static int __EXIProbe(s32 chan)
 {
     EXIControl* exi;
@@ -363,6 +387,9 @@ static int __EXIProbe(s32 chan)
     return rc;
 }
 
+/**
+ * Offset/Address/Size: 0x960 | 0x80249868 | size: 0x80
+ */
 int EXIProbe(s32 chan)
 {
     EXIControl* exi = &Ecb[chan];
@@ -378,6 +405,9 @@ int EXIProbe(s32 chan)
     return rc;
 }
 
+/**
+ * Offset/Address/Size: 0x9E0 | 0x802498E8 | size: 0xB4
+ */
 s32 EXIProbeEx(s32 chan)
 {
     if (EXIProbe(chan))
@@ -417,6 +447,9 @@ static int __EXIAttach(s32 chan, EXICallback extCallback)
     return 1;
 }
 
+/**
+ * Offset/Address/Size: 0xA94 | 0x8024999C | size: 0x10C
+ */
 int EXIAttach(s32 chan, EXICallback extCallback)
 {
     EXIControl* exi;
@@ -439,6 +472,9 @@ int EXIAttach(s32 chan, EXICallback extCallback)
     return rc;
 }
 
+/**
+ * Offset/Address/Size: 0xBA0 | 0x80249AA8 | size: 0xBC
+ */
 int EXIDetach(s32 chan)
 {
     EXIControl* exi;
@@ -513,6 +549,9 @@ int EXISelectSD(s32 chan, u32 dev, u32 freq)
     return 1;
 }
 
+/**
+ * Offset/Address/Size: 0xC5C | 0x80249B64 | size: 0x12C
+ */
 int EXISelect(s32 chan, u32 dev, u32 freq)
 {
     EXIControl* exi;
@@ -559,6 +598,9 @@ int EXISelect(s32 chan, u32 dev, u32 freq)
     return 1;
 }
 
+/**
+ * Offset/Address/Size: 0xD88 | 0x80249C90 | size: 0x110
+ */
 int EXIDeselect(s32 chan)
 {
     EXIControl* exi;
@@ -606,6 +648,9 @@ int EXIDeselect(s32 chan)
     return 1;
 }
 
+/**
+ * Offset/Address/Size: 0xE98 | 0x80249DA0 | size: 0xC8
+ */
 static void EXIIntrruptHandler(__OSInterrupt interrupt, OSContext* context)
 {
     s32 chan;
@@ -630,6 +675,9 @@ static void EXIIntrruptHandler(__OSInterrupt interrupt, OSContext* context)
     }
 }
 
+/**
+ * Offset/Address/Size: 0xF60 | 0x80249E68 | size: 0x218
+ */
 static void TCIntrruptHandler(__OSInterrupt interrupt, OSContext* context)
 {
     s32 chan;
@@ -659,6 +707,9 @@ static void TCIntrruptHandler(__OSInterrupt interrupt, OSContext* context)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x1178 | 0x8024A080 | size: 0xD0
+ */
 static void EXTIntrruptHandler(__OSInterrupt interrupt, OSContext* context)
 {
     s32 chan;
@@ -686,6 +737,9 @@ static void EXTIntrruptHandler(__OSInterrupt interrupt, OSContext* context)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x1248 | 0x8024A150 | size: 0x1D4
+ */
 void EXIInit()
 {
     u32 id;
@@ -726,6 +780,9 @@ void EXIInit()
     OSRegisterVersion(__EXIVersion);
 }
 
+/**
+ * Offset/Address/Size: 0x141C | 0x8024A324 | size: 0xF4
+ */
 int EXILock(s32 chan, u32 dev, EXICallback unlockedCallback)
 {
     EXIControl* exi;
@@ -766,6 +823,9 @@ int EXILock(s32 chan, u32 dev, EXICallback unlockedCallback)
     return 1;
 }
 
+/**
+ * Offset/Address/Size: 0x1510 | 0x8024A418 | size: 0xDC
+ */
 int EXIUnlock(s32 chan)
 {
     EXIControl* exi;
@@ -798,6 +858,9 @@ int EXIUnlock(s32 chan)
     return 1;
 }
 
+/**
+ * Offset/Address/Size: 0x15EC | 0x8024A4F4 | size: 0x18
+ */
 u32 EXIGetState(s32 chan)
 {
     EXIControl* exi;
@@ -807,12 +870,18 @@ u32 EXIGetState(s32 chan)
     return exi->state;
 }
 
+/**
+ * Offset/Address/Size: 0x1604 | 0x8024A50C | size: 0x28
+ */
 static void UnlockedHandler(s32 chan, OSContext* context)
 {
     u32 id;
     EXIGetID(chan, 0, &id);
 }
 
+/**
+ * Offset/Address/Size: 0x162C | 0x8024A534 | size: 0x3B0
+ */
 s32 EXIGetID(s32 chan, u32 dev, u32* id)
 {
     EXIControl* exi = &Ecb[chan];

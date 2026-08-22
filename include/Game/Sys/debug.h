@@ -29,9 +29,9 @@ enum eDEBUG_CHANNEL
 namespace tDebugPrintManager
 {
 
-int Print(eDEBUG_CHANNEL, const char*, ...);
+int Print(eDEBUG_CHANNEL channel, const char* format, ...);
 void Initialize();
-bool ParseDebugChannelFile(const char*);
+bool ParseDebugChannelFile(const char* path);
 
 } // namespace tDebugPrintManager
 

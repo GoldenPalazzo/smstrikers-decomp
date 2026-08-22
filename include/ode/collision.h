@@ -99,33 +99,33 @@ extern "C"
     };
 
     dGeomID dCreateSphere(dSpaceID space, dReal radius);
-    void dGeomSphereSetRadius(dGeomID sphere, dReal radius);
-    dReal dGeomSphereGetRadius(dGeomID sphere);
-    dReal dGeomSpherePointDepth(dGeomID sphere, dReal x, dReal y, dReal z);
+    void dGeomSphereSetRadius(dGeomID g, dReal radius);
+    dReal dGeomSphereGetRadius(dGeomID g);
+    dReal dGeomSpherePointDepth(dGeomID g, dReal x, dReal y, dReal z);
 
     dGeomID dCreateBox(dSpaceID space, dReal lx, dReal ly, dReal lz);
-    void dGeomBoxSetLengths(dGeomID box, dReal lx, dReal ly, dReal lz);
-    void dGeomBoxGetLengths(dGeomID box, dVector3 result);
-    dReal dGeomBoxPointDepth(dGeomID box, dReal x, dReal y, dReal z);
+    void dGeomBoxSetLengths(dGeomID g, dReal lx, dReal ly, dReal lz);
+    void dGeomBoxGetLengths(dGeomID g, dVector3 result);
+    dReal dGeomBoxPointDepth(dGeomID g, dReal x, dReal y, dReal z);
 
     dGeomID dCreatePlane(dSpaceID space, dReal a, dReal b, dReal c, dReal d);
-    void dGeomPlaneSetParams(dGeomID plane, dReal a, dReal b, dReal c, dReal d);
-    void dGeomPlaneGetParams(dGeomID plane, dVector4 result);
-    dReal dGeomPlanePointDepth(dGeomID plane, dReal x, dReal y, dReal z);
+    void dGeomPlaneSetParams(dGeomID g, dReal a, dReal b, dReal c, dReal d);
+    void dGeomPlaneGetParams(dGeomID g, dVector4 result);
+    dReal dGeomPlanePointDepth(dGeomID g, dReal x, dReal y, dReal z);
 
     // dGeomID dCreateFinitePlane(dSpaceID space, dReal a, dReal b, dReal c, dReal d, bool flag, float param); // added
 
     dGeomID dCreateCCylinder(dSpaceID space, dReal radius, dReal length);
-    void dGeomCCylinderSetParams(dGeomID ccylinder, dReal radius, dReal length);
-    void dGeomCCylinderGetParams(dGeomID ccylinder, dReal* radius, dReal* length);
-    dReal dGeomCCylinderPointDepth(dGeomID ccylinder, dReal x, dReal y, dReal z);
+    void dGeomCCylinderSetParams(dGeomID g, dReal radius, dReal length);
+    void dGeomCCylinderGetParams(dGeomID g, dReal* radius, dReal* length);
+    dReal dGeomCCylinderPointDepth(dGeomID g, dReal x, dReal y, dReal z);
 
     dGeomID dCreateRay(dSpaceID space, dReal length);
-    void dGeomRaySetLength(dGeomID ray, dReal length);
-    dReal dGeomRayGetLength(dGeomID ray);
-    void dGeomRaySet(dGeomID ray, dReal px, dReal py, dReal pz,
+    void dGeomRaySetLength(dGeomID g, dReal length);
+    dReal dGeomRayGetLength(dGeomID g);
+    void dGeomRaySet(dGeomID g, dReal px, dReal py, dReal pz,
         dReal dx, dReal dy, dReal dz);
-    void dGeomRayGet(dGeomID ray, dVector3 start, dVector3 dir);
+    void dGeomRayGet(dGeomID g, dVector3 start, dVector3 dir);
 
     /*
      * Set/get ray flags that influence ray collision detection.
@@ -154,8 +154,8 @@ extern "C"
         const dVector3 b1, const dVector3 b2,
         dVector3 cp1, dVector3 cp2);
 
-    int dBoxTouchesBox(const dVector3 _p1, const dMatrix3 R1,
-        const dVector3 side1, const dVector3 _p2,
+    int dBoxTouchesBox(const dVector3 p1, const dMatrix3 R1,
+        const dVector3 side1, const dVector3 p2,
         const dMatrix3 R2, const dVector3 side2);
 
     void dInfiniteAABB(dGeomID geom, dReal aabb[6]);

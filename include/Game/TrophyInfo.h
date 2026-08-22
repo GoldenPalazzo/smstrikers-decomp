@@ -33,6 +33,6 @@ enum eTrophyType
     NUM_TROPHIES = 13,
 };
 
-const char* GetThrophyModelName(eTrophyType);
+const char* GetThrophyModelName(eTrophyType type);
 
 #endif // _TROPHYINFO_H_

@@ -17,52 +17,52 @@ class SaveLoad
 {
 public:
     static bool CardBusy();
-    static long StartSave(int, void (*)(long));
-    static long StartLoad(int, void (*)(long), bool, bool);
+    static long StartSave(int slot, void (*callback)(long));
+    static long StartLoad(int Slot, void (*pCB)(long), bool PerformLoad, bool testOnly);
     static bool DidGameIDChange();
-    static long StartDelete(int, void (*)(long));
-    static long StartFormat(int, void (*)(long));
-    static long StartFileExistsCheck(int, void (*)(long));
-    static long StartMemoryCardIDCheck(int, void (*)(long));
-    static int GetSaveBlockSize(int);
-    static u8 HasEnoughFreeSpace(int);
+    static long StartDelete(int slot, void (*callback)(long));
+    static long StartFormat(int slot, void (*callback)(long));
+    static long StartFileExistsCheck(int slot, void (*callback)(long));
+    static long StartMemoryCardIDCheck(int slot, void (*callback)(long));
+    static int GetSaveBlockSize(int slot);
+    static u8 HasEnoughFreeSpace(int Slot);
     static void FreeAllCallbackMemory();
-    static void RememberCurrentMemCardSerialID(int);
+    static void RememberCurrentMemCardSerialID(int id);
 };
 
 class MemoryCardIDCallbacks
 {
 public:
-    unsigned long CardMountCB(unsigned long, long, void*);
+    unsigned long CardMountCB(unsigned long channel, long result, void* data);
 };
 
 class FileExistsCallbacks
 {
 public:
-    unsigned long CardMountCB(unsigned long, long, void*);
+    unsigned long CardMountCB(unsigned long channel, long result, void* data);
 };
 
 class FormatCallbacks
 {
 public:
-    unsigned long FormatDoneCB(unsigned long, long, void*);
-    unsigned long CardMountCB(unsigned long, long, void*);
+    unsigned long FormatDoneCB(unsigned long channel, long result, void* data);
+    unsigned long CardMountCB(unsigned long channel, long result, void* data);
 };
 
 class DeleteCallbacks
 {
 public:
-    unsigned long DeleteDoneCB(unsigned long, long, void*);
-    unsigned long CardMountCB(unsigned long, long, void*);
+    unsigned long DeleteDoneCB(unsigned long channel, long result, void* data);
+    unsigned long CardMountCB(unsigned long channel, long result, void* data);
 };
 
 class LoadCallbacks
 {
 public:
     LoadCallbacks();
-    unsigned long LoadIconDataDoneCB(unsigned long, long, void*);
-    unsigned long ReadDoneCB(unsigned long, long, void*);
-    unsigned long CardMountCB(unsigned long, long, void*);
+    unsigned long LoadIconDataDoneCB(unsigned long Slot, long Result, void* pUserData);
+    unsigned long ReadDoneCB(unsigned long Slot, long Result, void* pUserData);
+    unsigned long CardMountCB(unsigned long channel, long result, void* data);
 
     /* 0x00 */ void* m_pReadBuffer;
     /* 0x04 */ unsigned long m_AlignedReadBufferDataSize;
@@ -80,11 +80,11 @@ class SaveCallbacks
 {
 public:
     SaveCallbacks();
-    unsigned long FileWriteCB(unsigned long, long, void*);
-    long DoSave(unsigned long);
-    unsigned long FileWriteIconCB(unsigned long, long, void*);
-    unsigned long CreateFileCB(unsigned long, long, void*);
-    unsigned long CardMountCB(unsigned long, long, void*);
+    unsigned long FileWriteCB(unsigned long Slot, long Result, void* pUserData);
+    long DoSave(unsigned long Slot);
+    unsigned long FileWriteIconCB(unsigned long Slot, long Result, void* pUserData);
+    unsigned long CreateFileCB(unsigned long Slot, long Result, void* pUserData);
+    unsigned long CardMountCB(unsigned long Slot, long Result, void* pUserData);
 
     /* 0x00 */ MemCard::MC_FILE* m_pSaveFile;
     /* 0x04 */ void* m_pSaveGameBuffer;

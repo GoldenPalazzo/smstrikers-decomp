@@ -60,7 +60,7 @@ void glGetMatrix(unsigned long matrix, nlMatrix4& m)
  */
 u32 glAllocMatrix()
 {
-    u32 p = glplatFrameAlloc(sizeof(nlMatrix4), GLM_Matrix);
+    u32 p = (u32)glplatFrameAlloc(sizeof(nlMatrix4), GLM_Matrix);
     if (p == 0U)
     {
         p = -1U;

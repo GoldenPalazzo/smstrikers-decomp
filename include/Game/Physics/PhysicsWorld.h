@@ -18,21 +18,21 @@ public:
     PhysicsWorld();
     ~PhysicsWorld();
 
-    void DoCollisions(PhysicsObject*, nlListContainer<PhysicsObject*>&);
+    void DoCollisions(PhysicsObject* obj, nlListContainer<PhysicsObject*>& container);
     static void SpaceCollideCallback(void* data, dxGeom* geom1, dxGeom* geom2);
-    void Update(float, bool);
+    void Update(float quickStepSize, bool doClear);
     void PostUpdate();
     void PreUpdate();
     void Collide();
-    void DoCollide(CollisionSpace*);
-    void PostUpdate(PhysicsObject*);
-    void PreUpdate(PhysicsObject*);
-    void PreUpdate(CollisionSpace*);
-    void PreCollide(PhysicsObject*);
-    void PreCollide(CollisionSpace*);
-    void AddCollisionSpace(CollisionSpace*);
-    void SetERP(float);
-    void SetCFM(float);
+    void DoCollide(CollisionSpace* collisionSpace);
+    void PostUpdate(PhysicsObject* object);
+    void PreUpdate(PhysicsObject* object);
+    void PreUpdate(CollisionSpace* collisionSpace);
+    void PreCollide(PhysicsObject* object);
+    void PreCollide(CollisionSpace* collisionSpace);
+    void AddCollisionSpace(CollisionSpace* collisionSpace);
+    void SetERP(float erp);
+    void SetCFM(float cfm);
 
     /* 0x00 */ dWorldID m_World;
     /* 0x04 */ dJointGroupID m_ContactGroup;

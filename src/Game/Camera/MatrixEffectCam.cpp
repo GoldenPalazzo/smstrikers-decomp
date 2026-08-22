@@ -1,4 +1,3 @@
-#pragma pool_data off
 
 // #include "NL/math.h"
 
@@ -133,16 +132,16 @@ void MatrixEffectCam::Update(float dt)
             }
             else
             {
-                const float temp_f2_3 = mfDesiredHeightAboveTarget - mfCurrentCameraHeightAboveTarget;
-                const float temp_f1_4 = (mfDesiredHeightAboveTarget - mfCurrentCameraHeightAboveTarget) / (mfZoomTime - mfElapsedTime);
+                const float heightRemaining = mfDesiredHeightAboveTarget - mfCurrentCameraHeightAboveTarget;
+                const float heightRate = (mfDesiredHeightAboveTarget - mfCurrentCameraHeightAboveTarget) / (mfZoomTime - mfElapsedTime);
 
-                if ((float)fabs(temp_f1_4 * dt) < temp_f2_3)
+                if ((float)fabs(heightRate * dt) < heightRemaining)
                 {
-                    mfCurrentCameraHeightAboveTarget = mfCurrentCameraHeightAboveTarget + temp_f1_4 * dt;
+                    mfCurrentCameraHeightAboveTarget = mfCurrentCameraHeightAboveTarget + heightRate * dt;
                 }
                 else
                 {
-                    mfCurrentCameraHeightAboveTarget = mfCurrentCameraHeightAboveTarget + temp_f2_3;
+                    mfCurrentCameraHeightAboveTarget = mfCurrentCameraHeightAboveTarget + heightRemaining;
                 }
             }
         }

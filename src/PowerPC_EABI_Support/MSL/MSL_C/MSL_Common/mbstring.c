@@ -14,6 +14,9 @@
  * @note Address: 0x800C6EFC
  * @note Size: 0xEC
  */
+/**
+ * Offset/Address/Size: 0x238 | 0x8023150C | size: 0xEC
+ */
 static int is_utf8_complete(const char* s, size_t n)
 {
     if (n == 0)
@@ -79,6 +82,9 @@ static int is_utf8_complete(const char* s, size_t n)
 /**
  * @note Address: 0x800C6DDC
  * @note Size: 0x120
+ */
+/**
+ * Offset/Address/Size: 0x118 | 0x802313EC | size: 0x120
  */
 int mbtowc(wchar_t* pwc, const char* s, size_t n)
 {
@@ -214,6 +220,9 @@ inline int mbstowcs(wchar_t* pwc, const char* s, size_t n)
 /**
  * @note Address: 0x800C6CC4
  * @note Size: 0x118
+ */
+/**
+ * Offset/Address/Size: 0x0 | 0x802312D4 | size: 0x118
  */
 size_t wcstombs(char* s, const wchar_t* pwcs, size_t n)
 {

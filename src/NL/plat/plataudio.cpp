@@ -76,7 +76,6 @@ struct MidiFileData
 
 struct EffectSettings
 {
-    // todo: implement
 };
 
 namespace PlatAudio

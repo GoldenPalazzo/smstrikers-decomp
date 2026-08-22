@@ -24,6 +24,9 @@ void C_MTXIdentity(Mtx m)
     m[2][3] = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80252654 | size: 0x2C
+ */
 void PSMTXIdentity(register Mtx m)
 {
     register f32 c_zero = 0.0f;
@@ -121,6 +124,9 @@ void C_MTXConcat(const Mtx a, const Mtx b, Mtx ab)
 }
 
 // clang-format off
+/**
+ * Offset/Address/Size: 0x2C | 0x80252680 | size: 0xCC
+ */
 asm void PSMTXConcat(const register Mtx a, const register Mtx b, register Mtx ab) {
     nofralloc
     stwu r1, -64(r1)
@@ -196,7 +202,6 @@ void C_MTXConcatArray(const Mtx a, const Mtx* srcBase, Mtx* dstBase, u32 count)
 
 #if DEBUG
 #pragma push
-#pragma optimization_level 1
 // This function will not compile at optimization level 0
 #endif
 void PSMTXConcatArray(const register Mtx a, const register Mtx* srcBase, register Mtx* dstBase, register u32 count)
@@ -535,6 +540,9 @@ u32 C_MTXInvXpose(const Mtx src, Mtx invX)
 }
 
 // clang-format off
+/**
+ * Offset/Address/Size: 0xF8 | 0x8025274C | size: 0xC8
+ */
 asm u32 PSMTXInvXpose(const register Mtx src, register Mtx invX) {
 	psq_l f0, 0(src), 1, 0
 	psq_l f1, 4(src), 0, 0
@@ -848,6 +856,9 @@ void C_MTXTrans(Mtx m, f32 xT, f32 yT, f32 zT)
     m[2][3] = zT;
 }
 
+/**
+ * Offset/Address/Size: 0x1C0 | 0x80252814 | size: 0x34
+ */
 void PSMTXTrans(register Mtx m, register f32 xT, register f32 yT, register f32 zT)
 {
     register f32 c0 = 0.0f;
@@ -932,6 +943,9 @@ void C_MTXScale(Mtx m, f32 xS, f32 yS, f32 zS)
     m[2][3] = 0;
 }
 
+/**
+ * Offset/Address/Size: 0x1F4 | 0x80252848 | size: 0x28
+ */
 void PSMTXScale(register Mtx m, register f32 xS, register f32 yS, register f32 zS)
 {
     register f32 c0 = 0.0f;

@@ -4,7 +4,6 @@
 #include "Game/Debug/FrameCounter.h"
 
 // /**
-//  * Offset/Address/Size: 0x0 | 0x8016E6D4 | size: 0xC
 //  */
 // void EndFrameTask::GetName()
 // {

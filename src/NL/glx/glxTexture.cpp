@@ -67,7 +67,7 @@ void glx_AdvanceTexMarkerLevel()
 /**
  * Offset/Address/Size: 0x197C | 0x801B8C38 | size: 0x48
  */
-inline void TexDestructor::CallDestructor(const unsigned long&, PlatTexture** tex)
+inline void TexDestructor::CallDestructor(const unsigned long& index, PlatTexture** tex)
 {
     PlatTexture* pTex;
     void* linearData;
@@ -129,7 +129,7 @@ static PlatTexture* glx_MakeGridTexture(int w, int h)
     u8 bits[4] = { 5, 6, 5, 0 };
     PlatTexture* pTex = new (nlMalloc(sizeof(PlatTexture), 8, false)) PlatTexture();
     pTex->Create(w, h, GXTex_RGB565, 1, true, true);
-    memcpy(pTex->m_Bits, bits, 4);
+    memcpy(pTex->m_Bits, bits, sizeof(pTex->m_Bits));
     u16 gridColor = 0xFFFF;
     int x;
     int y;
@@ -211,7 +211,7 @@ static PlatTexture* glx_GetGridTexture(int width, int height)
     }
 
     PlatTexture* newTexture = glx_MakeGridTexture(width, height);
-    ListEntry<PlatTexture*>* listEntry = new (nlMalloc(8, 8, false)) ListEntry<PlatTexture*>(newTexture);
+    ListEntry<PlatTexture*>* listEntry = new (nlMalloc(sizeof(ListEntry<PlatTexture*>), 8, false)) ListEntry<PlatTexture*>(newTexture);
 
     nlListAddStart<ListEntry<PlatTexture*> >(&gridTextures.m_Head, listEntry, &gridTextures.m_Tail);
     return gridTextures.m_Head->entry;
@@ -316,9 +316,9 @@ PlatTexture* glx_MakeTexture(GXTextureHeader* header, unsigned long texhandle)
         pTex->m_SwizzledData = NULL;
         pTex->m_LinearData = NULL;
         pTex->m_PaletteData = NULL;
-        memset(&pTex->m_TexObj, 0, 0x20);
-        memset(&pTex->m_TlutObj, 0, 0xC);
-        memset(pTex->m_Bits, 0xFF, 4);
+        memset(&pTex->m_TexObj, 0, sizeof(pTex->m_TexObj));
+        memset(&pTex->m_TlutObj, 0, sizeof(pTex->m_TlutObj));
+        memset(pTex->m_Bits, 0xFF, sizeof(pTex->m_Bits));
     }
 
     numLevels = header->numLevels;
@@ -341,7 +341,7 @@ PlatTexture* glx_MakeTexture(GXTextureHeader* header, unsigned long texhandle)
     pTex->m_SwizzledData = glResourceAlloc(GCTextureSize(format, width, height, numLevels, -1), GLM_TextureData);
     pTex->m_LinearData = NULL;
 
-    memcpy(pTex->m_Bits, header->numBits, 4);
+    memcpy(pTex->m_Bits, header->numBits, sizeof(pTex->m_Bits));
 
     pTex->m_bMissingTexture = header->missingTexture ? true : false;
 
@@ -397,7 +397,6 @@ bool glplatLoadTextureBundle(const char* filename)
     uNumFiles = pHeader->numTextures;
     uSize = uNumFiles * sizeof(glTexBundleDict);
     // Keep dictionarySize as its own copy: passing uSize directly instead costs
-    // 4 bytes in glplatLoadTextureBundle (464 -> 460) and breaks this Matching TU.
     const unsigned long dictionarySize = uSize;
 
     pDictionary = (glTexBundleDict*)nlMalloc((uBaseOffset = dictionarySize), 0x20, 1);
@@ -513,10 +512,10 @@ bool glplatTextureLoad(unsigned long texture)
     PlatTexture* pTex = glx_GetTex(texture, 0, 0);
     if (pTex == NULL)
     {
-        memset(&texobj, 0, 0x50);
+        memset(&texobj, 0, sizeof(texobj));
         return false;
     }
-    memcpy(&texobj, pTex, 0x50);
+    memcpy(&texobj, pTex, sizeof(texobj));
     return true;
 }
 
@@ -622,9 +621,9 @@ PlatTexture* glx_CreatePlatTexture()
         pTex->m_SwizzledData = NULL;
         pTex->m_LinearData = NULL;
         pTex->m_PaletteData = NULL;
-        memset(&pTex->m_TexObj, 0, 0x20);
-        memset(&pTex->m_TlutObj, 0, 0xC);
-        memset(pTex->m_Bits, 0xFF, 4);
+        memset(&pTex->m_TexObj, 0, sizeof(pTex->m_TexObj));
+        memset(&pTex->m_TlutObj, 0, sizeof(pTex->m_TlutObj));
+        memset(pTex->m_Bits, 0xFF, sizeof(pTex->m_Bits));
     }
     return pTex;
 }

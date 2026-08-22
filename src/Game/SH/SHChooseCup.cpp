@@ -41,110 +41,6 @@ static inline const unsigned short* LookupLocHash(unsigned long hash)
     return MissingLocString;
 }
 
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800DCC08 | size: 0x208
-//  */
-// void BasicString<unsigned short, Detail::TempStringAllocator>::AppendInPlace<Detail::TempStringAllocator>(const BasicString<unsigned
-// short, Detail::TempStringAllocator>&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800DCB4C | size: 0xBC
-//  */
-// void BasicString<unsigned short, Detail::TempStringAllocator>::Append<Detail::TempStringAllocator>(const BasicString<unsigned short,
-// Detail::TempStringAllocator>&) const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x680 | 0x800DCAC8 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x648 | 0x800DCA90 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher, InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x4EC | 0x800DC934 | size: 0x15C
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x468 | 0x800DC8B0 | size: 0x84
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x430 | 0x800DC878 | size: 0x38
-//  */
-// void FEFinder<TLImageInstance, 2>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800DC71C | size: 0x15C
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800DC698 | size: 0x84
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800DC660 | size: 0x38
-//  */
-// void FEFinder<TLTextInstance, 3>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800DC504 | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800DC480 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800DC448 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x20B8 | 0x800DC33C | size: 0x10C
  */
@@ -354,7 +250,7 @@ void ChooseCupSceneV2::SceneCreated()
     TLTextInstance* scrollText = findText.byRef(slide, (InlineHasher&)sB, (InlineHasher&)s9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
 
     gl_ScreenInfo* screenInfo = glGetScreenInfo();
-    FEScrollText* ticker = new (nlMalloc(0x22C, 0x20, true)) FEScrollText(scrollText, 0, screenInfo->ScreenWidth + 0x32);
+    FEScrollText* ticker = new (nlMalloc(sizeof(FEScrollText), 0x20, true)) FEScrollText(scrollText, 0, screenInfo->ScreenWidth + 0x32);
     mTicker = ticker;
     mTicker->SetDisplayMessage("CHOOSE_CUP_TICKER");
 
@@ -827,7 +723,7 @@ void ChooseCupSceneV2::DisplayCup()
 
         BasicString<unsigned short, Detail::TempStringAllocator> descriptor = firstHalf.Append(secondHalf);
 
-        memcpy(mDescriptorBuffer, descriptor.c_str(), 0x200);
+        memcpy(mDescriptorBuffer, descriptor.c_str(), sizeof(mDescriptorBuffer));
         mDescriptorBuffer[0xFF] = 0;
 
         pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
@@ -945,7 +841,7 @@ void ChooseCupSceneV2::SetCurrentChamp(eTeamID currentChamp, bool isCPUChamp, TL
                 BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocString("CUPCHAMP")),
                 LookupLocHash(GetLOCCharacterName(currentChamp, false, false))));
 
-        memcpy(mChampBuffer, formatted.c_str(), 0x200);
+        memcpy(mChampBuffer, formatted.c_str(), sizeof(mChampBuffer));
         pText->SetString(mChampBuffer);
     }
     else

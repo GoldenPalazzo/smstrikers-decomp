@@ -304,18 +304,18 @@ public:
         // stride is 0xC and this ordering is what reproduces LockReel exactly.
     }; // total size: 0xC
 
-    Replay(char*, int, int);
+    Replay(char* memory, int memorySize, int maxFrameSize);
     ~Replay();
 
-    Frame* Next(Frame*, int) const;
-    float TimeOfLastOccurence(unsigned int) const;
+    Frame* Next(Frame* frame, int reelIdx) const;
+    float TimeOfLastOccurence(unsigned int events) const;
     void NewFrame();
-    bool IsReelValid(int) const;
-    bool DidOccurInLastNumSeconds(unsigned int, float) const;
-    bool LockReel(float, int, int);
+    bool IsReelValid(int reelIdx) const;
+    bool DidOccurInLastNumSeconds(unsigned int events, float seconds) const;
+    bool LockReel(float numSeconds, int idx, int quality);
     float BeginTime() const;
     float EndTime() const;
-    void PlayReel(int);
+    void PlayReel(int reelIdx);
 
     template <typename T>
     void Play(float time, T& previous, T& current, float* blend) const;

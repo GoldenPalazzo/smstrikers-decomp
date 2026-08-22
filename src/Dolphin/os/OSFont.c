@@ -224,6 +224,9 @@ static BOOL IsSjisTrailByte(u8 c)
     return (0x40 <= c && c <= 0xFC) && (c != 0x7F);
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802567E4 | size: 0x174
+ */
 static int GetFontCode(u16 encode, u16 code)
 {
     if (encode == OS_FONT_ENCODE_SJIS)
@@ -358,6 +361,9 @@ static u32 GetFontSize(u8* buf)
     return 0;
 }
 
+/**
+ * Offset/Address/Size: 0x174 | 0x80256958 | size: 0x64
+ */
 u16 OSGetFontEncode(void)
 {
     if (FontEncode != 0xFFFF)
@@ -519,6 +525,9 @@ u32 OSLoadFont(OSFontHeader* fontData, void* tmp)
     return size;
 }
 
+/**
+ * Offset/Address/Size: 0x1D8 | 0x802569BC | size: 0x13C
+ */
 static char* ParseStringS(u16 encode, const char* string, OSFontHeader** pfont, int* pfontCode)
 {
     OSFontHeader* font;

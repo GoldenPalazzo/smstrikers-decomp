@@ -57,28 +57,28 @@ class cFielder;
 class Bowser : public SkinAnimatedMovableNPC
 {
 public:
-    Bowser(cSHierarchy&, int, PhysicsNPC&, cInventory<cSAnim>*);
+    Bowser(cSHierarchy& rSHierarchy, int nTeam, PhysicsNPC& rPhysNPC, cInventory<cSAnim>* pInventorySAnim);
     virtual ~Bowser();
     virtual SkinAnimatedNPC_Type GetSkinAnimatedNPC_Type() const { return SkinAnimatedNPC_BOWSER; };
-    virtual void Update(float);
-    static void CollisionCallback(PhysicsObject*, PhysicsObject*, const nlVector3&);
+    virtual void Update(float fDeltaT);
+    static void CollisionCallback(PhysicsObject* pPhysObj, PhysicsObject* pObjA, const nlVector3& v3Pos);
     void ActionInit();
     void ActionThrow();
     void ActionRoll();
     void ActionStomp();
-    void ActionDescend(float);
+    void ActionDescend(float fBlendTime);
     void ActionFall();
     void ActionJump();
     void ActionHide();
     void ActionReset();
     void ActionLeave();
-    void SetBowserAnimState(eBowserAnim, ePlayMode, float);
-    void SetBowserFeatherAnimState(eBowserAnim, float);
-    void ClearBowserFeatherAnimState(bool);
-    void Move(float);
-    eBowserMoveResult GravityMove(float);
+    void SetBowserAnimState(eBowserAnim anim, ePlayMode playMode, float fBlendTime);
+    void SetBowserFeatherAnimState(eBowserAnim anim, float fBlendTime);
+    void ClearBowserFeatherAnimState(bool bBlendOut);
+    void Move(float fDeltaT);
+    eBowserMoveResult GravityMove(float fDeltaT);
     void ActionIdle();
-    static void SetTiltParameters(float);
+    static void SetTiltParameters(float fYAxisTilt);
     bool CheckForAbort();
     bool IsTilted() const;
     static void UpdateFireEmitter(EmissionController& controller);
@@ -90,10 +90,10 @@ public:
     void SetupBaseSFX();
     void PlaySFX(Audio::eCharSFX type, PosUpdateMethod posUpdateMethod, float fDelay, bool bIs3D);
     void CheckFootSteps();
-    static bool CheckTargetBounds(nlVector3&);
+    static bool CheckTargetBounds(nlVector3& v3Target);
     float GetHeadSpin() const;
     float GetHeadTilt() const;
-    void DrawShadow(const cPoseAccumulator&, const nlMatrix4&);
+    void DrawShadow(const cPoseAccumulator& poseAccumulator, const nlMatrix4& matrix);
 
     /* 0x080 */ nlMatrix4 mLastHeadMatrix;
     /* 0x0C0 */ cHeadTrack* mpHeadTrack;

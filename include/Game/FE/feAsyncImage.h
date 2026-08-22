@@ -22,14 +22,14 @@ enum LoadState
 class AsyncImage
 {
 public:
-    AsyncImage(const char*, const char*);
+    AsyncImage(const char* filename, const char* texturename);
     virtual ~AsyncImage();
-    void QueueLoad(const char*, bool);
-    bool Update(bool);
+    void QueueLoad(const char* path, bool isblocking);
+    bool Update(bool autoswap);
     bool CanSwapTextures() const;
     void SwapTextures();
-    void CopyFrom(AsyncImage*);
-    void CopyFrom(void*, int);
+    void CopyFrom(AsyncImage* image);
+    void CopyFrom(void* buffer, int size);
     void FreeLoadBuffer();
 
     static inline void TextureLoadComplete(void* buffer, unsigned long size, unsigned long userData)

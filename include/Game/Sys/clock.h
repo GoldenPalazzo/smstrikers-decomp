@@ -16,10 +16,10 @@ typedef void (*ClockCallback)(unsigned long, unsigned long);
 class Clock
 {
 public:
-    Clock(float, float, float, unsigned long, ClockCallback);
+    Clock(float param_1, float param_2, float param_3, unsigned long param_4, ClockCallback callback);
     virtual ~Clock();
     void Start();
-    void Reset(float, float, float);
+    void Reset(float param_1, float param_2, float param_3);
     void Stop();
 
     /* 0x04 */ float m_fTimeScale;
@@ -40,7 +40,7 @@ class ClockManager
 {
 public:
     static void Initialize();
-    static void Update(float dt);
+    static void Update(float fDeltaT);
 
     /* 0x00 */ static Clock* m_inactiveList;
     /* 0x04 */ static Clock* m_activeList;

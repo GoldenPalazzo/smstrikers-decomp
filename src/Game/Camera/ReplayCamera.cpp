@@ -60,37 +60,6 @@ static inline float GetSideDirection(int side)
     return side == 0 ? -1.0f : 1.0f;
 }
 
-// /**
-//  * Offset/Address/Size: 0x18 | 0x801ACB7C | size: 0x8
-//  */
-// void ReplayCamera::GetFOV() const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x10 | 0x801ACB74 | size: 0x8
-//  */
-// void ReplayCamera::GetCameraPosition() const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x8 | 0x801ACB6C | size: 0x8
-//  */
-// void ReplayCamera::GetTargetPosition() const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801ACB64 | size: 0x8
-//  */
-// void ReplayCamera::GetType()
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x0 | 0x801AC980 | size: 0x1E4
- */
 /**
  * Offset/Address/Size: 0x1C78 | 0x801AC97C | size: 0x4
  */
@@ -116,9 +85,9 @@ ReplayCamera::ReplayCamera()
     nlVec3Set(mLookAt, 0.0f, 0.0f, 1.0f);
 }
 
-// /**
-//  * Offset/Address/Size: 0x1B88 | 0x801AC88C | size: 0x40
-//  */
+/**
+ * Offset/Address/Size: 0x1B88 | 0x801AC88C | size: 0x40
+ */
 const nlMatrix4& ReplayCamera::GetViewMatrix() const
 {
     glMatrixLookAt(*(nlMatrix4*)&mViewMatrix, mPosition, mLookAt, mUpVector);
@@ -128,7 +97,7 @@ const nlMatrix4& ReplayCamera::GetViewMatrix() const
 /**
  * Offset/Address/Size: 0x1B84 | 0x801AC888 | size: 0x4
  */
-void ReplayCamera::Update(float)
+void ReplayCamera::Update(float fDeltaT)
 {
     // EMPTY
 }

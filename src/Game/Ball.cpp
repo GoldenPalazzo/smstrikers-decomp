@@ -1,6 +1,5 @@
 #include "Game/WorldManager.h"
 #include "NL/platqmath.h"
-#pragma pool_data off
 
 #include "Game/Ball.h"
 #include "Game/CharacterTriggers.h"
@@ -54,11 +53,6 @@ static const char szYoshiShootToScoreBallBlurTexture[] = "global/yoshishoottosco
 static const char szMysteryShootToScoreBallBlurTexture[] = "global/mysshoottoscorestreak";
 
 static nlMatrix3 m3Ident = { 1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f };
-// nlMatrix4 m4Ident = { 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f };
-
-// This is the first linked TU that instantiates EventData and PhysicsSphere.
-// MWCC emits their inline virtuals and vtables as weak COMDATs here; equivalent
-// copies in later TUs (including Powerups.cpp) are discarded by the linker.
 
 /**
  * Offset/Address/Size: 0x3908 | 0x8000D2DC | size: 0x260
@@ -95,7 +89,7 @@ cBall::cBall()
     m_pDrawableBall->m_uObjectFlags |= 0x10;
     m_pDrawableBall->m_uObjectFlags |= 0x100;
 
-    m_pPhysicsBall = new (nlMalloc(0x5c, 8, FALSE)) PhysicsAIBall(0.18f);
+    m_pPhysicsBall = new (nlMalloc(sizeof(PhysicsAIBall), 8, FALSE)) PhysicsAIBall(0.18f);
     m_pPhysicsBall->m_pAIBall = this;
 
     m_v3Position.x = 0.f;
@@ -126,7 +120,7 @@ cBall::cBall()
 
     nlVector3 rayDir = { 0.f, 0.f, -1.f };
 
-    m_pBallPosCollider = new (nlMalloc(0x2C, 8, FALSE)) RayCollider(1.f, m_v3Position, rayDir);
+    m_pBallPosCollider = new (nlMalloc(sizeof(RayCollider), 8, FALSE)) RayCollider(1.f, m_v3Position, rayDir);
 
     if (AudioLoader::IsInited())
     {
@@ -1838,7 +1832,7 @@ void cBall::SetAngularVelocity(const nlVector3& v3Velocity)
 /**
  * Offset/Address/Size: 0x37C | 0x80009D50 | size: 0x20
  */
-void cBall::SetPassTarget(cPlayer* passTargetPlayer, const nlVector3& pos, bool)
+void cBall::SetPassTarget(cPlayer* passTargetPlayer, const nlVector3& pos, bool bVolley)
 {
     m_pPassTarget = passTargetPlayer;
     m_v3PassIntercept = pos;

@@ -181,6 +181,9 @@ static int VISetRegs(void)
     return 0;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8025D4D8 | size: 0x274
+ */
 static void __VIRetraceHandler(__OSInterrupt unused, OSContext* context)
 {
     OSContext exceptionContext;
@@ -282,6 +285,9 @@ static void __VIRetraceHandler(__OSInterrupt unused, OSContext* context)
     OSSetCurrentContext(context);
 }
 
+/**
+ * Offset/Address/Size: 0x274 | 0x8025D74C | size: 0x44
+ */
 VIRetraceCallback VISetPreRetraceCallback(VIRetraceCallback cb)
 {
     BOOL enabled;
@@ -294,6 +300,9 @@ VIRetraceCallback VISetPreRetraceCallback(VIRetraceCallback cb)
     return oldcb;
 }
 
+/**
+ * Offset/Address/Size: 0x2B8 | 0x8025D790 | size: 0x44
+ */
 VIRetraceCallback VISetPostRetraceCallback(VIRetraceCallback cb)
 {
     BOOL enabled;
@@ -315,6 +324,9 @@ VITiming* __VISetExtraTiming(VITiming* t)
 }
 
 #pragma dont_inline on
+/**
+ * Offset/Address/Size: 0x2FC | 0x8025D7D4 | size: 0xA8
+ */
 static VITiming* getTiming(VITVMode mode)
 {
     switch (mode)
@@ -357,6 +369,9 @@ static VITiming* getTiming(VITVMode mode)
 }
 #pragma dont_inline reset
 
+/**
+ * Offset/Address/Size: 0x3A4 | 0x8025D87C | size: 0x204
+ */
 void __VIInit(VITVMode mode)
 {
     VITiming* tm;
@@ -467,6 +482,9 @@ static void ImportAdjustingValues(void)
     __OSUnlockSram(0);
 }
 
+/**
+ * Offset/Address/Size: 0x5A8 | 0x8025DA80 | size: 0x4B0
+ */
 void VIInit(void)
 {
     u16 dspCfg;
@@ -567,6 +585,9 @@ void VIInit(void)
     __OSUnmaskInterrupts(0x80);
 }
 
+/**
+ * Offset/Address/Size: 0xA58 | 0x8025DF30 | size: 0x54
+ */
 void VIWaitForRetrace(void)
 {
     BOOL enabled;
@@ -681,6 +702,9 @@ static void calcFbbs(u32 bufAddr, u16 panPosX, u16 panPosY, u8 wordPerLine, VIXF
     *bfbb &= 0x3FFFFFFF;
 }
 
+/**
+ * Offset/Address/Size: 0xAAC | 0x8025DF84 | size: 0x2D4
+ */
 static void setFbbRegs(SomeVIStruct* HorVer, u32* tfbb, u32* bfbb, u32* rtfbb, u32* rbfbb)
 {
     u32 shifted;
@@ -751,6 +775,9 @@ static void setHorizontalRegs(VITiming* tm, u16 dispPosX, u16 dispSizeX)
     MARK_CHANGED(4);
 }
 
+/**
+ * Offset/Address/Size: 0xD80 | 0x8025E258 | size: 0x1A0
+ */
 static void setVerticalRegs(u16 dispPosY, u16 dispSizeY, u8 equ, u16 acv, u16 prbOdd, u16 prbEven, u16 psbOdd, u16 psbEven, BOOL black)
 {
     u16 actualPrbOdd;
@@ -827,6 +854,9 @@ static void PrintDebugPalCaution(void)
     }
 }
 
+/**
+ * Offset/Address/Size: 0xF20 | 0x8025E3F8 | size: 0x808
+ */
 void VIConfigure(const GXRenderModeObj* rm)
 {
     VITiming* tm;
@@ -1001,6 +1031,9 @@ void VIConfigurePan(u16 xOrg, u16 yOrg, u16 width, u16 height)
     OSRestoreInterrupts(enabled);
 }
 
+/**
+ * Offset/Address/Size: 0x1728 | 0x8025EC00 | size: 0x130
+ */
 void VIFlush(void)
 {
     BOOL enabled;
@@ -1023,6 +1056,9 @@ void VIFlush(void)
     OSRestoreInterrupts(enabled);
 }
 
+/**
+ * Offset/Address/Size: 0x1858 | 0x8025ED30 | size: 0x6C
+ */
 void VISetNextFrameBuffer(void* fb)
 {
     BOOL enabled;
@@ -1057,6 +1093,9 @@ void VISetNextRightFrameBuffer(void* fb)
     OSRestoreInterrupts(enabled);
 }
 
+/**
+ * Offset/Address/Size: 0x18C4 | 0x8025ED9C | size: 0x7C
+ */
 void VISetBlack(BOOL black)
 {
     BOOL enabled;
@@ -1084,6 +1123,9 @@ void VISet3D(BOOL threeD)
     OSRestoreInterrupts(enabled);
 }
 
+/**
+ * Offset/Address/Size: 0x1940 | 0x8025EE18 | size: 0x8
+ */
 u32 VIGetRetraceCount(void)
 {
     return retraceCount;
@@ -1113,6 +1155,9 @@ static u32 getCurrentHalfLine(void)
     return ((vcount - 1) << 1) + ((hcount - 1) / CurrTiming->hlw);
 }
 
+/**
+ * Offset/Address/Size: 0x1948 | 0x8025EE20 | size: 0x68
+ */
 static u32 getCurrentFieldEvenOdd(void)
 {
     return (getCurrentHalfLine() < CurrTiming->nhlines) ? 1 : 0;
@@ -1132,6 +1177,9 @@ u32 VIGetNextField(void)
     return nextField ^ (HorVer.AdjustedDispPosY & 1);
 }
 
+/**
+ * Offset/Address/Size: 0x19B0 | 0x8025EE88 | size: 0x98
+ */
 u32 VIGetCurrentLine(void)
 {
     u32 halfLine;
@@ -1149,6 +1197,9 @@ u32 VIGetCurrentLine(void)
     return halfLine >> 1U;
 }
 
+/**
+ * Offset/Address/Size: 0x1A48 | 0x8025EF20 | size: 0x68
+ */
 u32 VIGetTvFormat(void)
 {
     u32 format;
@@ -1202,6 +1253,9 @@ u32 VIGetScanMode(void)
     return scanMode;
 }
 
+/**
+ * Offset/Address/Size: 0x1AB0 | 0x8025EF88 | size: 0x3C
+ */
 u32 VIGetDTVStatus(void)
 {
     u32 dtvStatus;
@@ -1242,7 +1296,6 @@ void __VIGetAdjustingValues(s16* x, s16* y)
     OSRestoreInterrupts(enabled);
 }
 
-// DEBUG NONMATCHING - wrong reg use, equivalent
 void __VIEnableRawPositionInterrupt(s16 x, s16 y, void (*callback)(s16, s16))
 {
     BOOL enabled;
@@ -1299,6 +1352,9 @@ void (*__VIDisableRawPositionInterrupt())(s16, s16)
     return old;
 }
 
+/**
+ * Offset/Address/Size: 0x1AEC | 0x8025EFC4 | size: 0x21C
+ */
 void __VIDisplayPositionToXY(u32 hct, u32 vct, s16* x, s16* y)
 {
     u32 halfLine = ((vct - 1) << 1) + ((hct - 1) / CurrTiming->hlw);
@@ -1395,6 +1451,9 @@ void __VIDisplayPositionToXY(u32 hct, u32 vct, s16* x, s16* y)
     *x = (s16)(hct - 1);
 }
 
+/**
+ * Offset/Address/Size: 0x1D08 | 0x8025F1E0 | size: 0x60
+ */
 void __VIGetCurrentPosition(s16* x, s16* y)
 {
     u32 hcount, vcount;

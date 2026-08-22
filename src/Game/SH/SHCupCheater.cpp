@@ -198,7 +198,6 @@ void CupCheaterScene::Update(float dt)
  */
 void CupCheaterScene::OnSelectGameplay()
 {
-    // TODO: Check if this is correct, could also be another interface
     CupCheaterScene* scene = (CupCheaterScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SUPER_LOADING, SCREEN_NOTHING, true);
     scene->m_SlideMenu = NULL;
 }
@@ -442,6 +441,9 @@ void CupCheaterScene::OnSelectHomeOTWin()
     }
 }
 
+/**
+ * Offset/Address/Size: 0x74C | 0x800E7E9C | size: 0x26C
+ */
 void CupCheaterScene::OnSelectAwayOTWin()
 {
     GameInfoManager* gameInfoManager = nlSingleton<GameInfoManager>::s_pInstance;

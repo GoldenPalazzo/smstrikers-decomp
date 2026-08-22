@@ -34,139 +34,6 @@ extern cTeam* g_pCurrentlyUpdatingTeam;
 
 cGame* g_pGame;
 
-// /**
-//  * Offset/Address/Size: 0xAC | 0x80040190 | size: 0x2C
-//  */
-// void nlListAddEnd<ListEntry<unsigned long> >(ListEntry<unsigned long>**, ListEntry<unsigned long>**, ListEntry<unsigned long>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x68 | 0x8004014C | size: 0x44
-//  */
-// void nlListRemoveStart<ListEntry<unsigned long> >(ListEntry<unsigned long>**, ListEntry<unsigned long>**)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800400E4 | size: 0x68
-//  */
-// void nlWalkList<ListEntry<unsigned long>, ListContainerBase<unsigned long, NewAdapter<ListEntry<unsigned long> > > >(ListEntry<unsigned long>*, ListContainerBase<unsigned long, NewAdapter<ListEntry<unsigned long> > >*, void (ListContainerBase<unsigned long, NewAdapter<ListEntry<unsigned long> > >::*)(ListEntry<unsigned long>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80040064 | size: 0x8
-//  */
-// void GoalScoredData::GetID()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8003FBA8 | size: 0x7C
-//  */
-// void operator== <char, Detail::TempStringAllocator>(const BasicString<char, Detail::TempStringAllocator>&, const char*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xA8 | 0x8003FB24 | size: 0x84
-//  */
-// void Config::TagValuePair::Get<BasicString<char, Detail::TempStringAllocator> >() const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8003FA7C | size: 0xA8
-//  */
-// void Config::Get<BasicString<char, Detail::TempStringAllocator> >(const char*, BasicString<char, Detail::TempStringAllocator>)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x8F0 | 0x8003F994 | size: 0xE8
-//  */
-// void AVLTreeBase<unsigned long, FuzzyVariant, BasicSlotPool<AVLTreeEntry<unsigned long, FuzzyVariant> >, DefaultKeyCompare<unsigned long> >::AllocateEntry(void*, void*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x8C4 | 0x8003F968 | size: 0x2C
-//  */
-// void AVLTreeBase<unsigned long, FuzzyVariant, BasicSlotPool<AVLTreeEntry<unsigned long, FuzzyVariant> >, DefaultKeyCompare<unsigned long> >::CompareKey(void*, AVLTreeNode*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x898 | 0x8003F93C | size: 0x2C
-//  */
-// void AVLTreeBase<unsigned long, FuzzyVariant, BasicSlotPool<AVLTreeEntry<unsigned long, FuzzyVariant> >, DefaultKeyCompare<unsigned long> >::CompareNodes(AVLTreeNode*, AVLTreeNode*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x890 | 0x8003F934 | size: 0x8
-//  */
-// void AVLTreeBase<unsigned long, FuzzyVariant, BasicSlotPool<AVLTreeEntry<unsigned long, FuzzyVariant> >, DefaultKeyCompare<unsigned long> >::CastUp(AVLTreeNode*) const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x138 | 0x8003F1DC | size: 0x758
-//  */
-// void AVLTreeBase<unsigned long, FuzzyVariant, BasicSlotPool<AVLTreeEntry<unsigned long, FuzzyVariant> >, DefaultKeyCompare<unsigned long> >::PostorderTraversal(AVLTreeEntry<unsigned long, FuzzyVariant>*, void (AVLTreeBase<unsigned long, FuzzyVariant, BasicSlotPool<AVLTreeEntry<unsigned long, FuzzyVariant> >, DefaultKeyCompare<unsigned long> >::*)(AVLTreeEntry<unsigned long, FuzzyVariant>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xD4 | 0x8003F178 | size: 0x64
-//  */
-// void AVLTreeBase<unsigned long, FuzzyVariant, BasicSlotPool<AVLTreeEntry<unsigned long, FuzzyVariant> >, DefaultKeyCompare<unsigned long> >::DestroyTree(void (AVLTreeBase<unsigned long, FuzzyVariant, BasicSlotPool<AVLTreeEntry<unsigned long, FuzzyVariant> >, DefaultKeyCompare<unsigned long> >::*)(AVLTreeEntry<unsigned long, FuzzyVariant>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x7C | 0x8003F120 | size: 0x58
-//  */
-// void AVLTreeBase<unsigned long, FuzzyVariant, BasicSlotPool<AVLTreeEntry<unsigned long, FuzzyVariant> >, DefaultKeyCompare<unsigned long> >::Clear()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8003F0A4 | size: 0x7C
-//  */
-// void AVLTreeBase<unsigned long, FuzzyVariant, BasicSlotPool<AVLTreeEntry<unsigned long, FuzzyVariant> >, DefaultKeyCompare<unsigned long> >::~AVLTreeBase()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x80 | 0x8003F004 | size: 0x60
-//  */
-// void nlAVLTreeSlotPool<unsigned long, FuzzyVariant, DefaultKeyCompare<unsigned long> >::~nlAVLTreeSlotPool()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8003EF4C | size: 0x38
-//  */
-// void nlSingleton<ScriptQuestionCache>::DestroyInstance()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8003EEEC | size: 0x60
-//  */
-// GameTweaks::~GameTweaks()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8003EEC8 | size: 0x24
-//  */
-// void ListContainerBase<unsigned long, NewAdapter<ListEntry<unsigned long> > >::DeleteEntry(ListEntry<unsigned long>*)
-// {
-// }
-
 static inline void ApplyDifficulty(eDifficultyID diff0, eDifficultyID diff1, eDifficultyID diff2)
 {
     if (diff0 != DIFF_DEFAULT)
@@ -250,8 +117,7 @@ static inline void DestroyPowerupsImpl(cGame* pGame)
 }
 
 /**
- * Offset/Address/Size: 0x1FC4 | 0x8003E7E8 | size: 0x6E0
- * TODO: 99.6% match - register allocation in team, ScriptQuestionCache, and default-string setup
+ * Offset/Address/Size: 0x2274 | 0x8003E7E8 | size: 0x6E0
  */
 void CreateGame()
 {
@@ -263,12 +129,12 @@ void CreateGame()
 
     if (nlSingleton<AISandbox>::s_pInstance == NULL)
     {
-        nlSingleton<AISandbox>::s_pInstance = new (nlMalloc(1, 8, false)) AISandbox();
+        nlSingleton<AISandbox>::s_pInstance = new (nlMalloc(sizeof(AISandbox), 8, false)) AISandbox();
     }
 
     if (nlSingleton<ScriptQuestionCache>::s_pInstance == NULL)
     {
-        nlSingleton<ScriptQuestionCache>::s_pInstance = new (nlMalloc(0x40, 8, false)) ScriptQuestionCache();
+        nlSingleton<ScriptQuestionCache>::s_pInstance = new (nlMalloc(sizeof(ScriptQuestionCache), 8, false)) ScriptQuestionCache();
     }
 
     if (nlSingleton<GameInfoManager>::s_pInstance->GetGameplayOptions().SkillLevel == 0)
@@ -506,7 +372,6 @@ void cGame::ResetGameClock()
 
 /**
  * Offset/Address/Size: 0x1720 | 0x8003DC94 | size: 0x3EC
- * TODO: local-static and anonymous constant relocation identities differ.
  */
 void cGame::ResetForKickOff()
 {
@@ -550,7 +415,7 @@ void cGame::ResetForKickOff()
 /**
  * Offset/Address/Size: 0x16DC | 0x8003DC50 | size: 0x44
  */
-void cGame::PostResetCallback(unsigned long, unsigned long)
+void cGame::PostResetCallback(unsigned long userData, unsigned long clockId)
 {
     g_pEventManager->CreateValidEvent(0xa, 0x14);
     GameplayCamera* pCamera = cCameraManager::GetCamera<GameplayCamera>(eCameraType_Gameplay);
@@ -801,9 +666,7 @@ void cGame::BlowUpPlayers(cFielder* pShooter, float fExplosionRadius)
                 {
                     if (pFielder->InitActionHitReact(
                             pShooter,
-                            (unsigned short)(10430.378f * nlATan2f(
-                                                         pFielder->m_v3Position.y - pShooter->m_v3Position.y,
-                                                         pFielder->m_v3Position.x - pShooter->m_v3Position.x)),
+                            (unsigned short)(10430.378f * nlATan2f(pFielder->m_v3Position.y - pShooter->m_v3Position.y, pFielder->m_v3Position.x - pShooter->m_v3Position.x)),
                             false))
                     {
                         pFielder->PlayAttackReactionSounds(100.0f);
@@ -947,7 +810,6 @@ void cGame::UpdatePowerUpObjects(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x5A4 | 0x8003CB18 | size: 0x47C
- * TODO: anonymous string relocation identity differs.
  */
 void cGame::Update(float deltaTime)
 {

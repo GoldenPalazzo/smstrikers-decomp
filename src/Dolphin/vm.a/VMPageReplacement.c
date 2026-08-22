@@ -17,6 +17,9 @@ u32 __VMPageReplacementLRU(void);
 u32 __VMPageReplacementRandom(void);
 u32 __VMPageReplacementFIFO(void);
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8025F528 | size: 0x44
+ */
 u32 __VMGetPageToReplace(void)
 {
     if (g_vmPageReplacementPolicy == 0)
@@ -30,6 +33,9 @@ u32 __VMGetPageToReplace(void)
     return __VMPageReplacementFIFO();
 }
 
+/**
+ * Offset/Address/Size: 0x44 | 0x8025F56C | size: 0x1D0
+ */
 u32 __VMPageReplacementLRU(void)
 {
     u32 startPage;
@@ -155,6 +161,9 @@ done_select:
     return selected;
 }
 
+/**
+ * Offset/Address/Size: 0x214 | 0x8025F73C | size: 0x94
+ */
 u32 __VMPageReplacementRandom(void)
 {
     u32 page;
@@ -189,6 +198,9 @@ u32 __VMPageReplacementRandom(void)
     return page;
 }
 
+/**
+ * Offset/Address/Size: 0x2A8 | 0x8025F7D0 | size: 0x6C
+ */
 u32 __VMPageReplacementFIFO(void)
 {
     while (TRUE)

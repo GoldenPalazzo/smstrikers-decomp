@@ -82,6 +82,9 @@ extern void __RAS_OSDisableInterrupts_end(void);
 
 #ifdef __GEKKO__
 // clang-format off
+/**
+ * Offset/Address/Size: 0x0 | 0x80256AF8 | size: 0x14
+ */
 asm BOOL OSDisableInterrupts(void) {
     nofralloc
 entry    __RAS_OSDisableInterrupts_begin
@@ -93,6 +96,9 @@ entry    __RAS_OSDisableInterrupts_end
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x14 | 0x80256B0C | size: 0x14
+ */
 asm BOOL OSEnableInterrupts(void) {
     nofralloc
 
@@ -103,6 +109,9 @@ asm BOOL OSEnableInterrupts(void) {
     blr
 }
 
+/**
+ * Offset/Address/Size: 0x28 | 0x80256B20 | size: 0x24
+ */
 asm BOOL OSRestoreInterrupts(register BOOL level) {
     nofralloc
 
@@ -121,6 +130,9 @@ _restore:
 // clang-format on
 #endif
 
+/**
+ * Offset/Address/Size: 0x4C | 0x80256B44 | size: 0x1C
+ */
 __OSInterruptHandler __OSSetInterruptHandler(__OSInterrupt interrupt, __OSInterruptHandler handler)
 {
     __OSInterruptHandler oldHandler;
@@ -133,6 +145,9 @@ __OSInterruptHandler __OSSetInterruptHandler(__OSInterrupt interrupt, __OSInterr
     return oldHandler;
 }
 
+/**
+ * Offset/Address/Size: 0x68 | 0x80256B60 | size: 0x14
+ */
 __OSInterruptHandler __OSGetInterruptHandler(__OSInterrupt interrupt)
 {
     ASSERTMSGLINE(433, InterruptHandlerTable, "__OSGetInterruptHandler(): OSInit() must be called in advance.");
@@ -140,6 +155,9 @@ __OSInterruptHandler __OSGetInterruptHandler(__OSInterrupt interrupt)
     return InterruptHandlerTable[interrupt];
 }
 
+/**
+ * Offset/Address/Size: 0x7C | 0x80256B74 | size: 0x74
+ */
 void __OSInterruptInit(void)
 {
     InterruptHandlerTable = (void*)OSPhysicalToCached(0x3040);
@@ -160,6 +178,9 @@ void __OSInterruptInit(void)
 #endif
 }
 
+/**
+ * Offset/Address/Size: 0xF0 | 0x80256BE8 | size: 0x2D8
+ */
 static u32 SetInterruptMask(OSInterruptMask mask, OSInterruptMask current)
 {
     u32 reg;
@@ -334,6 +355,9 @@ OSInterruptMask OSSetInterruptMask(OSInterruptMask local)
     return prev;
 }
 
+/**
+ * Offset/Address/Size: 0x3C8 | 0x80256EC0 | size: 0x88
+ */
 OSInterruptMask __OSMaskInterrupts(OSInterruptMask global)
 {
     BOOL enabled;
@@ -355,6 +379,9 @@ OSInterruptMask __OSMaskInterrupts(OSInterruptMask global)
     return prev;
 }
 
+/**
+ * Offset/Address/Size: 0x450 | 0x80256F48 | size: 0x88
+ */
 OSInterruptMask __OSUnmaskInterrupts(OSInterruptMask global)
 {
     BOOL enabled;
@@ -376,6 +403,9 @@ OSInterruptMask __OSUnmaskInterrupts(OSInterruptMask global)
     return prev;
 }
 
+/**
+ * Offset/Address/Size: 0x4D8 | 0x80256FD0 | size: 0x344
+ */
 void __OSDispatchInterrupt(__OSException exception, OSContext* context)
 {
     u32 intsr;
@@ -532,6 +562,9 @@ void __OSDispatchInterrupt(__OSException exception, OSContext* context)
 
 #ifdef __GEKKO__
 // clang-format off
+/**
+ * Offset/Address/Size: 0x81C | 0x80257314 | size: 0x50
+ */
 static asm void ExternalInterruptHandler(register __OSException exception,
                                          register OSContext* context) {
 #pragma unused(exception)

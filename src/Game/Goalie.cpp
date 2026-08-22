@@ -902,7 +902,7 @@ void Goalie::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
 /**
  * Offset/Address/Size: 0xA01C | 0x8004CB18 | size: 0x15C
  */
-bool Goalie::PreCollideWithBallCallback(const dContact&)
+bool Goalie::PreCollideWithBallCallback(const dContact& contact)
 {
     switch (mGoalieActionState)
     {
@@ -4028,9 +4028,9 @@ void Goalie::InitActionLooseBallSetup()
                             else
                             {
                                 mv3TargetPosition.y = v3BallPosition.y
-                                                      - (v3BallPosition.x - fLimitX)
-                                                            * (v3BallPosition.y - mv3TargetPosition.y)
-                                                            / (v3BallPosition.x - mv3TargetPosition.x);
+                                                    - (v3BallPosition.x - fLimitX)
+                                                          * (v3BallPosition.y - mv3TargetPosition.y)
+                                                          / (v3BallPosition.x - mv3TargetPosition.x);
 
                                 mv3TargetPosition.x = (v3NetBase.x > 0.0f) ? fLimitX : -fLimitX;
                             }
@@ -5053,7 +5053,7 @@ void Goalie::InitActionDiveRecover()
             mbNoUserControl = false;
             mbPickedUp = false;
 
-            ActionMove(0.0f); // TODO: ActionMove needs to be declared in Goalie.h
+            ActionMove(0.0f);
         }
         else
         {
@@ -5778,7 +5778,7 @@ void Goalie::DoPassRelease()
 /**
  * Offset/Address/Size: 0xAD0 | 0x800435CC | size: 0x460
  */
-void Goalie::EventHandler(Event* event, void*)
+void Goalie::EventHandler(Event* event, void* userData)
 {
     extern cCharacter* g_pCharacters[10];
 

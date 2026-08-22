@@ -1,4 +1,3 @@
-#pragma pool_data off
 
 #include "Game/Sys/debug.h"
 #include "Game/Sys/simpleparser.h"
@@ -40,7 +39,7 @@ bool abChannels[DC_NUM_CHANNELS] = { true, false, false, false, false, false, fa
 /**
  * Offset/Address/Size: 0x0 | 0x801D6770 | size: 0x54
  */
-int Print(eDEBUG_CHANNEL, const char*, ...)
+int Print(eDEBUG_CHANNEL channel, const char* format, ...)
 {
     return 0;
 }

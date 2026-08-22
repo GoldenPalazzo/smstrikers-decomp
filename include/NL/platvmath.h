@@ -3,18 +3,18 @@
 
 #include "NL/nlMath.h"
 
-void nlMakeScaleMatrix(nlMatrix4& result, float scaleX, float scaleY, float scaleZ);
-void nlMakeRotationMatrixEulerAngles(nlMatrix4& result, float pitch, float yaw, float roll);
-void nlMakeRotationMatrixZ(nlMatrix3& result, float angleZ);
-void nlMakeRotationMatrixZ(nlMatrix4& result, float angleZ);
-void nlMakeRotationMatrixY(nlMatrix4& result, float angleY);
-void nlMakeRotationMatrixX(nlMatrix4& result, float angleX);
+void nlMakeScaleMatrix(nlMatrix4& m, float sx, float sy, float sz);
+void nlMakeRotationMatrixEulerAngles(nlMatrix4& m, float pitch, float yaw, float roll);
+void nlMakeRotationMatrixZ(nlMatrix3& out, float theta);
+void nlMakeRotationMatrixZ(nlMatrix4& out, float theta);
+void nlMakeRotationMatrixY(nlMatrix4& out, float theta);
+void nlMakeRotationMatrixX(nlMatrix4& out, float theta);
 void nlMultDirVectorMatrix(nlVector3& result, const nlVector3& direction, const nlMatrix4& transformMatrix);
-void nlMultVectorMatrix(nlVector4& result, const nlVector4& inputVector, const nlMatrix4& transformMatrix);
-void nlMultPosVectorMatrix(nlVector3& result, const nlVector3& position, const nlMatrix4& transformMatrix);
-void nlMultVectorMatrix(nlVector2& result, const nlVector2& inputVector, const nlMatrix3& transformMatrix);
-void nlInvertMatrix(nlMatrix4& result, const nlMatrix4& inputMatrix);
-void nlTransposeMatrix(nlMatrix4& result, const nlMatrix4& inputMatrix);
-void nlMultMatrices(nlMatrix4& result, const nlMatrix4& matrixA, const nlMatrix4& matrixB);
+void nlMultVectorMatrix(nlVector4& out, const nlVector4& in, const nlMatrix4& m);
+void nlMultPosVectorMatrix(nlVector3& result, const nlVector3& pos, const nlMatrix4& transformMatrix);
+void nlMultVectorMatrix(nlVector2& v_out, const nlVector2& v_in, const nlMatrix3& m);
+void nlInvertMatrix(nlMatrix4& out, const nlMatrix4& in);
+void nlTransposeMatrix(nlMatrix4& out, const nlMatrix4& in);
+void nlMultMatrices(nlMatrix4& out, const nlMatrix4& a, const nlMatrix4& b);
 
 #endif // _PLATVMATH_H_

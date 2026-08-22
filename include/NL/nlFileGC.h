@@ -16,25 +16,24 @@ enum GCFileSystem
 
 class GCFile;
 
-void nlReadAsyncToVirtualMemory(nlFile*, void*, int, ReadAsyncCallback, unsigned long, unsigned long, void*);
-void nlAsyncLoadFileToVirtualMemory(nlFile*, int, void*, ReadAsyncCallback, unsigned long);
-// void nlCancelPendingAsyncReads(nlFile*, void (*)(nlFile*, void*, unsigned int, unsigned long, LoadAsyncCallback));
+void nlReadAsyncToVirtualMemory(nlFile* file, void* buffer, int size, ReadAsyncCallback callback, unsigned long param, unsigned long chunkSize, void* userData);
+void nlAsyncLoadFileToVirtualMemory(nlFile* file, int size, void* buffer, ReadAsyncCallback callback, unsigned long alignment);
 void nlCancelPendingAsyncReads(nlFile* pFile, void (*callback)(nlFile*, void*, unsigned int, unsigned long, void (*)(nlFile*, void*, unsigned int, unsigned long)));
-bool nlAsyncReadsPending(nlFile*);
-void* nlLoadEntireFileToVirtualMemory(const char*, int*, unsigned int, void*, eAllocType);
-void* nlReadToVirtualMemory(nlFile*, void*, unsigned int, unsigned int);
-u32 nlGetFilePosition(nlFile*);
-void nlSeek(nlFile*, unsigned int, unsigned long);
-void nlReadAsync(nlFile*, void*, unsigned int, ReadAsyncCallback, unsigned long);
+bool nlAsyncReadsPending(nlFile* file);
+void* nlLoadEntireFileToVirtualMemory(const char* fileName, int* size, unsigned int transferSize, void* target, eAllocType allocType);
+void* nlReadToVirtualMemory(nlFile* file, void* buffer, unsigned int size, unsigned int chunkSize);
+u32 nlGetFilePosition(nlFile* file);
+void nlSeek(nlFile* file, unsigned int offset, unsigned long origin);
+void nlReadAsync(nlFile* file, void* buffer, unsigned int size, ReadAsyncCallback callback, unsigned long uParam);
 void nlServiceFileSystem();
 void nlInitFileSystem();
-unsigned char GameCubeReadBlocking(GCFile*, void*, unsigned long);
-static unsigned char GameCubeReadAsync(GCFile*, ReadAsyncCallback, void*, unsigned long, unsigned long);
+unsigned char GameCubeReadBlocking(GCFile* pFile, void* pBuffer, unsigned long uSize);
+static unsigned char GameCubeReadAsync(GCFile* pFile, ReadAsyncCallback pFunc, void* pBuffer, unsigned long uSize, unsigned long uParam);
 void nlFlushFileCash();
-nlFile* nlOpen(const char*);
-void nlRegHandleDVDMessageCB(const Function<void(int)>&);
-void nlRegHandleDVDAllClearCB(const Function<void(int)>&);
-void nlRegCheckForResetFromFSCB(const Function<FnVoidVoid>&);
+nlFile* nlOpen(const char* fileName);
+void nlRegHandleDVDMessageCB(const Function<void(int)>& cb);
+void nlRegHandleDVDAllClearCB(const Function<void(int)>& cb);
+void nlRegCheckForResetFromFSCB(const Function<FnVoidVoid>& cb);
 
 class GCFile : public nlFile
 {
@@ -46,7 +45,7 @@ public:
     }
     virtual ~GCFile();
     virtual u32 FileSize(unsigned int*) = 0;
-    virtual void Read(void*, unsigned int);
+    virtual void Read(void* buffer, unsigned int size);
     virtual s32 GetReadStatus() = 0;
     virtual void ReadAsync(void*, unsigned long, unsigned long) = 0;
     virtual u32 GetDiscPosition() = 0;
@@ -96,7 +95,7 @@ public:
     }
 
     virtual s32 GetReadStatus();
-    virtual void ReadAsync(void*, unsigned long, unsigned long);
+    virtual void ReadAsync(void* buffer, unsigned long length, unsigned long offset);
 
     virtual u32 GetDiscPosition()
     {

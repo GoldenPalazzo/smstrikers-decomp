@@ -38,7 +38,7 @@ void ISidekickGridComponent::BuildMapMenu()
 {
     TLSlide* activeslide = mParentComponent->GetActiveSlide();
 
-    mInstanceTable = (TLInstance**)nlMalloc(0x10, 8, false);
+    mInstanceTable = (TLInstance**)nlMalloc(4 * sizeof(TLInstance*), 8, false);
 
     for (int i = 0; i < 4; i++)
     {

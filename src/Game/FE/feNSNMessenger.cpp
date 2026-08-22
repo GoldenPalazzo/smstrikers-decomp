@@ -249,7 +249,7 @@ void NSNMessengerScene::EnableScrolling(bool state)
         if (m_scrollText == NULL)
         {
             gl_ScreenInfo* screeninfo = glGetScreenInfo();
-            FEScrollText* scrolltext = new (nlMalloc(0x22C, 8, false)) FEScrollText(textinstance, 0, screeninfo->ScreenWidth);
+            FEScrollText* scrolltext = new (nlMalloc(sizeof(FEScrollText), 8, false)) FEScrollText(textinstance, 0, screeninfo->ScreenWidth);
             m_scrollText = scrolltext;
         }
         else

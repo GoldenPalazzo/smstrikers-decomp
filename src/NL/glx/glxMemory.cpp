@@ -3,6 +3,7 @@
 #include "NL/nlConfig.h"
 #include "NL/glx/glxMemory.h"
 #include "NL/glx/glxTexture.h"
+#include "NL/gc/gcSwizzler.h"
 #include "NL/gl/glMatrix.h"
 #include "NL/gl/glConstant.h"
 #include "NL/nlDebug.h"
@@ -10,12 +11,13 @@
 #include "dolphin/gx/GXGeometry.h"
 #include "dolphin/gx/GXTexture.h"
 #include "Game/Sys/debug.h"
+#include "../../Game/Sys/tweak.h"
 #include "Game/GL/GLInventory.h"
 
 static u8 glx_MemoryDump;
-static u32 ResourceMemSize;
-static u32 FrameMemSizeReal;
-static u32 FrameMemSizeVirt;
+static u32 ResourceMemSize = MB(12) - KB(12);
+static u32 FrameMemSizeReal = KB(896);
+static u32 FrameMemSizeVirt = KB(640);
 static u32 p_phys;
 static u32 n_phys;
 static int i_frame;
@@ -25,23 +27,13 @@ static int g_uResourceMarker;
 static u32 p_frame[2][2];
 static u32 n_frame[2][2];
 
-static u32 FrameMemSizes[2] = { 0x0, 0x0 };
-
-namespace
-{
-struct glxMemoryGlobalsInit
-{
-    glxMemoryGlobalsInit()
-    {
-        ResourceMemSize = 0xBFD000;
-        FrameMemSizeReal = 0xE0000;
-        FrameMemSizeVirt = 0xA0000;
-        FrameMemSizes[0] = FrameMemSizeReal;
-        FrameMemSizes[1] = FrameMemSizeVirt;
-    }
+Tweakable glx_memory_tweaks[] = {
+    { TWEAK_Title, NULL, "Engine", 1.0f, 0.0f, 0.0f, NULL },
+    { TWEAK_Title, NULL, "GLX Memory", 2.0f, 0.0f, 0.0f, NULL },
+    { TWEAK_Bool, &glx_MemoryDump, "glx_MemoryDump", 0.0f, 0.0f, 0.0f, NULL },
 };
-glxMemoryGlobalsInit s_glxMemoryGlobalsInit;
-} // namespace
+
+static u32 FrameMemSizes[2] = { FrameMemSizeReal, FrameMemSizeVirt };
 
 static GLXMemoryInfo g_uResourceAlloc[16];
 
@@ -55,21 +47,280 @@ static char* szMemoryNames[6] = {
 };
 
 /**
- * Offset/Address/Size: 0x0 | 0x801B6928 | size: 0x20
+ * Offset/Address/Size: 0x90C | 0x801B7234 | size: 0x24
  */
-void glplatSetMatrix(unsigned long addr, const nlMatrix4& matrix)
+GLXMemoryInfo::GLXMemoryInfo()
 {
-    GLMatrix* matrixPtr = (GLMatrix*)addr;
-    matrixPtr->Set(matrix);
+    for (int i = 0; i < GLM_Num; i++)
+    {
+        m_uBytes[i] = 0;
+    }
+    m_uTexBundle = 0;
 }
 
 /**
- * Offset/Address/Size: 0x20 | 0x801B6948 | size: 0x20
+ * Offset/Address/Size: 0x8FC | 0x801B7224 | size: 0x10
  */
-void glplatGetMatrix(unsigned long addr, nlMatrix4& matrix)
+u32 glx_GetFreeMemory()
 {
-    GLMatrix* matrixPtr = (GLMatrix*)addr;
-    matrixPtr->Get(matrix);
+    return ResourceMemSize - n_phys;
+}
+
+/**
+ * Offset/Address/Size: 0x8E8 | 0x801B7210 | size: 0x14
+ */
+void glx_FreeMemory0()
+{
+    glx_mem0 = ResourceMemSize - n_phys;
+}
+
+/**
+ * Offset/Address/Size: 0x8E4 | 0x801B720C | size: 0x4
+ */
+void glx_FreeMemory1(const char* filename)
+{
+}
+
+static u32 GetFromConfig(const char* szConfigString, u32 uDefault)
+{
+    if (Config::Global().Exists(szConfigString))
+    {
+        f32 fValue = GetConfigFloat(Config::Global(), szConfigString, 0.0f);
+        return (u32)(1024.0f * (1024.0f * fValue));
+    }
+    return uDefault;
+}
+
+/**
+ * Offset/Address/Size: 0x4F4 | 0x801B6E1C | size: 0x3F0
+ */
+bool glxInitMemory()
+{
+    bool bDeveloper = GetConfigBool(Config::Global(), "e3_build", false);
+    const char* szResourceKey = bDeveloper ? "e3 resource total memory" : "resource total memory";
+
+    ResourceMemSize = GetFromConfig(szResourceKey, ResourceMemSize);
+
+    u32 pMem = (u32)nlMalloc(ResourceMemSize, 32, false);
+    if (pMem == 0)
+        return false;
+    p_phys = pMem;
+
+    FrameMemSizeReal = GetFromConfig("frame vertex memory", FrameMemSizeReal);
+
+    pMem = (u32)nlMalloc(FrameMemSizeReal * 2, 32, false);
+    if (pMem == 0)
+        return false;
+    p_frame[0][0] = pMem;
+    p_frame[1][0] = pMem + FrameMemSizeReal;
+
+    FrameMemSizeVirt = GetFromConfig("frame header memory", FrameMemSizeVirt);
+
+    u32 pVirt = (u32)nlVirtualAlloc(FrameMemSizeVirt * 2, false);
+    if (pVirt == 0)
+        return false;
+
+    p_frame[0][1] = pVirt;
+    p_frame[1][1] = pVirt + FrameMemSizeVirt;
+    i_frame = 0;
+    n_phys = 0;
+    n_frame[1][0] = 0;
+    n_frame[0][0] = 0;
+    n_frame[1][1] = 0;
+    n_frame[0][1] = 0;
+    FrameMemSizes[0] = FrameMemSizeReal;
+    FrameMemSizes[1] = FrameMemSizeVirt;
+
+    return true;
+}
+
+inline void GLXMemoryInfo::Clear()
+{
+    for (int i = 0; i < GLM_Num; i++)
+    {
+        m_uBytes[i] = 0;
+    }
+    m_uTexBundle = 0;
+}
+
+inline u32 GLXMemoryInfo::GetTotal() const
+{
+    u32 total = 0;
+    for (u32 mem = 0; mem < GLM_Num; mem++)
+    {
+        total += m_uBytes[mem];
+    }
+    return total;
+}
+
+inline u32 GLXMemoryInfo::GetTexDiff() const
+{
+    return m_uBytes[GLM_TextureData] - m_uTexBundle;
+}
+
+inline void GLXMemoryInfo::Print(unsigned long level) const
+{
+    tDebugPrintManager::Print(DC_GLPLAT, "%u : [ ", level);
+    for (u32 mem = 0; mem < GLM_Num; mem++)
+    {
+        tDebugPrintManager::Print(DC_GLPLAT, "%s %uKB ", szMemoryNames[mem], m_uBytes[mem] >> 10);
+    }
+    tDebugPrintManager::Print(DC_GLPLAT, "]");
+    tDebugPrintManager::Print(DC_GLPLAT, ": ");
+    tDebugPrintManager::Print(DC_GLPLAT, "%uKB .. %uKB\n", GetTotal() >> 10, GetTexDiff() >> 10);
+}
+
+static bool glplatIsMemoryReadable(eGLMemory memType)
+{
+    return true;
+}
+
+static bool glplatIsMemoryWriteable(eGLMemory memType)
+{
+    return true;
+}
+
+static void glx_TrackTextureBundleAlloc(const GXTextureHeader* pHeader)
+{
+    int size = GCTextureSize(pHeader->format, pHeader->width, pHeader->height, pHeader->numLevels, -1);
+    g_uResourceAlloc[g_uResourceMarker].m_uTexBundle += size;
+}
+
+static void ResourceMarkerPrint(unsigned long level)
+{
+    g_uResourceAlloc[level].Print(level);
+}
+
+static void ResourceAllocTotal()
+{
+    u32 uTotal = 0;
+    u32 uTexDiff = uTotal;
+    u32 level;
+    for (level = 0; level <= (u32)g_uResourceMarker; level++)
+    {
+        u32 levelTotal = 0;
+        for (u32 mem = 0; mem < GLM_Num; mem++)
+        {
+            levelTotal += g_uResourceAlloc[level].m_uBytes[mem];
+        }
+        uTotal += levelTotal;
+        uTexDiff += g_uResourceAlloc[level].m_uBytes[GLM_TextureData] - g_uResourceAlloc[level].m_uTexBundle;
+    }
+
+    f32 fConst = 1.0f / 1024.0f;
+    f32 fMB = (f32)uTotal * fConst;
+    tDebugPrintManager::Print(DC_GLPLAT, "total : (%0.3fMB) %uKB .. %uKB dTex\n", fMB * fConst, uTotal >> 10, uTexDiff >> 10);
+}
+
+static void ResourceAllocMark()
+{
+    s32 level = g_uResourceMarker + 1;
+    g_uResourceMarker = level;
+    g_uResourceAlloc[level].Clear();
+    ResourceAllocTotal();
+}
+
+static void ResourceAllocRelease(int level)
+{
+    while ((s32)g_uResourceMarker != level)
+    {
+        g_uResourceMarker--;
+    }
+    ResourceAllocTotal();
+}
+
+/**
+ * Offset/Address/Size: 0x440 | 0x801B6D68 | size: 0xB4
+ */
+void* glplatResourceAlloc(unsigned long size, eGLMemory memType)
+{
+    u32 base = p_phys;
+    unsigned long aligned = (base + n_phys + 0x1F) & ~0x1FU;
+    n_phys = size + (aligned - base);
+    if (n_phys > ResourceMemSize)
+    {
+        OSReport("out of resource memory (%s)\n", szMemoryNames[memType]);
+        nlBreak();
+    }
+    g_uResourceAlloc[g_uResourceMarker].m_uBytes[memType] += size;
+    return (void*)aligned;
+}
+
+/**
+ * Offset/Address/Size: 0x310 | 0x801B6C38 | size: 0x130
+ */
+unsigned long long glplatResourceMark()
+{
+    unsigned long long marker = glx_GetTexMarkerLevel() | ((unsigned long long)n_phys << 32);
+
+    glx_AdvanceTexMarkerLevel();
+    gl_ConstantMarkerAdvance();
+    glInventory.ResourceMark();
+    ResourceAllocMark();
+
+    return marker;
+}
+
+/**
+ * Offset/Address/Size: 0x200 | 0x801B6B28 | size: 0x110
+ */
+void glplatResourceRelease(unsigned long long marker)
+{
+    int level = (int)(marker & 0xFFFFFFFF);
+
+    n_phys = (u32)(marker >> 32);
+
+    glx_BackupTexMarkerLevel(level);
+    gl_ConstantMarkerBackup(level);
+    glInventory.ResourceRelease(level);
+    ResourceAllocRelease(level);
+}
+
+inline u32 RealOrVirtual(eGLMemory memType)
+{
+    switch (memType)
+    {
+    case GLM_Header:
+    case GLM_Matrix:
+    case GLM_IndexData:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+inline u32 AlignUp(u32 value, u32 alignment)
+{
+    return (value + alignment - 1) & ~(alignment - 1);
+}
+
+void* glx_FrameAlloc(unsigned long size, eGLMemory memType, bool bCanReturnNULL)
+{
+    u32 isLow = RealOrVirtual(memType);
+    u32 newTop = AlignUp(p_frame[i_frame][isLow] + n_frame[i_frame][isLow], 32);
+    size += newTop - p_frame[i_frame][isLow];
+
+    if (size > FrameMemSizes[isLow])
+    {
+        if (bCanReturnNULL)
+        {
+            return NULL;
+        }
+        OSReport("out of frame memory (%s)\n", szMemoryNames[memType]);
+        nlBreak();
+        return NULL;
+    }
+
+    n_frame[i_frame][isLow] = size;
+    return (void*)newTop;
+}
+
+/**
+ * Offset/Address/Size: 0x140 | 0x801B6A68 | size: 0xC0
+ */
+void* glplatFrameAlloc(unsigned long size, eGLMemory memType)
+{
+    return glx_FrameAlloc(size, memType, false);
 }
 
 /**
@@ -96,273 +347,19 @@ void glplatFrameAllocNextFrame()
 }
 
 /**
- * Offset/Address/Size: 0x140 | 0x801B6A68 | size: 0xC0
+ * Offset/Address/Size: 0x20 | 0x801B6948 | size: 0x20
  */
-u32 glplatFrameAlloc(unsigned long size, eGLMemory mem)
+void glplatGetMatrix(unsigned long matrix, nlMatrix4& m)
 {
-    u32 isLow;
-    switch (mem)
-    {
-    case GLM_Header:
-    case GLM_Matrix:
-    case GLM_IndexData:
-        isLow = 1;
-        break;
-    default:
-        isLow = 0;
-        break;
-    }
-
-    u32 out;
-    u32 n = n_frame[i_frame][isLow];
-    u32 p = p_frame[i_frame][isLow];
-    u32 sum = p + n + 0x1F;
-    out = sum & ~0x1F;
-    u32 next = size + (out - p);
-
-    if (next > FrameMemSizes[isLow])
-    {
-        OSReport("out of frame memory (%s)\n", szMemoryNames[mem]);
-        nlBreak();
-        out = 0;
-    }
-    else
-    {
-        n_frame[i_frame][isLow] = next;
-    }
-
-    return out;
-}
-
-static inline void ResourceAllocMark()
-{
-    s32 level = g_uResourceMarker + 1;
-    g_uResourceMarker = level;
-
-    GLXMemoryInfo* entry = &g_uResourceAlloc[level];
-    entry->m_uBytes[0] = 0;
-    entry->m_uBytes[1] = 0;
-    entry->m_uBytes[2] = 0;
-    entry->m_uBytes[3] = 0;
-    entry->m_uBytes[4] = 0;
-    entry->m_uBytes[5] = 0;
-    entry->m_uTexBundle = 0;
-}
-
-static inline void ResourceAllocTotal(u32* pTotalAlloc, u32* pTotalTex)
-{
-    u32 e;
-    GLXMemoryInfo* p = g_uResourceAlloc;
-    u32 totalAlloc = 0;
-    u32 totalTex = totalAlloc;
-    u32 marker = g_uResourceMarker;
-    u32 i;
-    for (i = 0; i <= marker; i++)
-    {
-        u32 a = p->m_uBytes[0] + p->m_uBytes[1];
-        a = a + p->m_uBytes[2];
-        a = a + p->m_uBytes[3];
-        e = p->m_uBytes[4];
-        u32 g = p->m_uTexBundle;
-        a = a + e;
-        a = a + p->m_uBytes[5];
-        totalAlloc = totalAlloc + a;
-        totalTex = totalTex + (e - g);
-        p++;
-    }
-
-    *pTotalAlloc = totalAlloc;
-    *pTotalTex = totalTex;
+    GLMatrix* matrixPtr = (GLMatrix*)matrix;
+    matrixPtr->Get(m);
 }
 
 /**
- * Offset/Address/Size: 0x200 | 0x801B6B28 | size: 0x110
+ * Offset/Address/Size: 0x0 | 0x801B6928 | size: 0x20
  */
-#pragma optimize_for_size on
-void glplatResourceRelease(unsigned long long resourceId)
+void glplatSetMatrix(unsigned long matrix, const nlMatrix4& m)
 {
-    int level = (int)(resourceId & 0xFFFFFFFF);
-
-    n_phys = (u32)(resourceId >> 32);
-
-    glx_BackupTexMarkerLevel(level);
-    gl_ConstantMarkerBackup(level);
-    glInventory.ResourceRelease(level);
-
-    while ((s32)g_uResourceMarker != level)
-    {
-        g_uResourceMarker--;
-    }
-
-    u32 totalAlloc;
-    u32 totalTex;
-    ResourceAllocTotal(&totalAlloc, &totalTex);
-
-    f32 fConst = 1.0f / 1024.0f;
-    f32 fMB = (f32)totalAlloc * fConst;
-    tDebugPrintManager::Print(DC_GLPLAT, "total : (%0.3fMB) %uKB .. %uKB dTex\n", fMB * fConst, totalAlloc >> 10, totalTex >> 10);
-}
-#pragma optimize_for_size reset
-
-/**
- * Offset/Address/Size: 0x310 | 0x801B6C38 | size: 0x130
- */
-#pragma push
-#pragma optimize_for_size on
-#pragma use_lmw_stmw off
-unsigned long long glplatResourceMark()
-{
-    unsigned long long marker = glx_GetTexMarkerLevel() | ((unsigned long long)n_phys << 32);
-
-    glx_AdvanceTexMarkerLevel();
-    gl_ConstantMarkerAdvance();
-    glInventory.ResourceMark();
-
-    ResourceAllocMark();
-
-    u32 totalAlloc;
-    u32 totalTex;
-    ResourceAllocTotal(&totalAlloc, &totalTex);
-
-    f32 fConst = 1.0f / 1024.0f;
-    f32 fMB = (f32)totalAlloc * fConst;
-    tDebugPrintManager::Print(DC_GLPLAT, "total : (%0.3fMB) %uKB .. %uKB dTex\n", fMB * fConst, totalAlloc >> 10, totalTex >> 10);
-
-    return marker;
-}
-#pragma pop
-
-/**
- * Offset/Address/Size: 0x440 | 0x801B6D68 | size: 0xB4
- */
-unsigned long glplatResourceAlloc(unsigned long uSize, eGLMemory eMemory)
-{
-    u32 base = p_phys;
-    unsigned long aligned = (base + n_phys + 0x1F) & ~0x1FU;
-    n_phys = uSize + (aligned - base);
-    if (n_phys > ResourceMemSize)
-    {
-        OSReport("out of resource memory (%s)\n", szMemoryNames[eMemory]);
-        nlBreak();
-    }
-    g_uResourceAlloc[g_uResourceMarker].m_uBytes[eMemory] += uSize;
-    return aligned;
-}
-
-/**
- * Offset/Address/Size: 0x4F4 | 0x801B6E1C | size: 0x3F0
- */
-bool glxInitMemory()
-{
-    bool bDeveloper = GetConfigBool(Config::Global(), "e3_build", false);
-    const char* szResourceKey = bDeveloper ? "e3 resource total memory" : "resource total memory";
-
-    u32 resMemSize;
-    {
-        u32 oldSize = ResourceMemSize;
-        if (Config::Global().Exists(szResourceKey))
-        {
-            f32 fValue = GetConfigFloat(Config::Global(), szResourceKey, 0.0f);
-            resMemSize = (u32)(1024.0f * (1024.0f * fValue));
-        }
-        else
-        {
-            resMemSize = oldSize;
-        }
-    }
-    ResourceMemSize = resMemSize;
-
-    u32 pMem = (u32)nlMalloc(ResourceMemSize, 32, false);
-    if (pMem == 0)
-        return false;
-    p_phys = pMem;
-
-    u32 frameMemReal;
-    {
-        u32 oldSize = FrameMemSizeReal;
-        if (Config::Global().Exists("frame vertex memory"))
-        {
-            f32 fValue = GetConfigFloat(Config::Global(), "frame vertex memory", 0.0f);
-            frameMemReal = (u32)(1024.0f * (1024.0f * fValue));
-        }
-        else
-        {
-            frameMemReal = oldSize;
-        }
-    }
-    FrameMemSizeReal = frameMemReal;
-
-    pMem = (u32)nlMalloc(frameMemReal * 2, 32, false);
-    if (pMem == 0)
-        return false;
-    p_frame[0][0] = pMem;
-    p_frame[1][0] = pMem + FrameMemSizeReal;
-
-    u32 frameMemVirt;
-    {
-        u32 oldSize = FrameMemSizeVirt;
-        if (Config::Global().Exists("frame header memory"))
-        {
-            f32 fValue = GetConfigFloat(Config::Global(), "frame header memory", 0.0f);
-            frameMemVirt = (u32)(1024.0f * (1024.0f * fValue));
-        }
-        else
-        {
-            frameMemVirt = oldSize;
-        }
-    }
-    FrameMemSizeVirt = frameMemVirt;
-
-    u32 pVirt = (u32)nlVirtualAlloc(frameMemVirt * 2, false);
-    if (pVirt == 0)
-        return false;
-
-    p_frame[0][1] = pVirt;
-    p_frame[1][1] = pVirt + FrameMemSizeVirt;
-    i_frame = 0;
-    n_phys = 0;
-    n_frame[1][0] = 0;
-    n_frame[0][0] = 0;
-    n_frame[1][1] = 0;
-    n_frame[0][1] = 0;
-    FrameMemSizes[0] = FrameMemSizeReal;
-    FrameMemSizes[1] = FrameMemSizeVirt;
-
-    return true;
-}
-
-/**
- * Offset/Address/Size: 0x8E4 | 0x801B720C | size: 0x4
- */
-void glx_FreeMemory1(const char* filename)
-{
-    // EMPTY
-}
-
-/**
- * Offset/Address/Size: 0x8E8 | 0x801B7210 | size: 0x14
- */
-void glx_FreeMemory0()
-{
-    glx_mem0 = ResourceMemSize - n_phys;
-}
-
-/**
- * Offset/Address/Size: 0x8FC | 0x801B7224 | size: 0x10
- */
-u32 glx_GetFreeMemory()
-{
-    return ResourceMemSize - n_phys;
-}
-
-/**
- * Offset/Address/Size: 0x90C | 0x801B7234 | size: 0x24
- */
-GLXMemoryInfo::GLXMemoryInfo()
-{
-    for (int i = 0; i < 6; i++)
-    {
-        m_uBytes[i] = 0;
-    }
-    m_uTexBundle = 0;
+    GLMatrix* matrixPtr = (GLMatrix*)matrix;
+    matrixPtr->Set(m);
 }

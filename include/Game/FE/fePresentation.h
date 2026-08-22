@@ -28,14 +28,14 @@
 class FEPresentation
 {
 public:
-    void Update(float);
+    void Update(float deltaTime);
     TLSlide* GetActiveSlide()
     {
         return m_currentSlide;
     }
-    void SetActiveSlide(TLSlide*);
-    void SetActiveSlide(unsigned long);
-    void SetActiveSlide(const char*);
+    void SetActiveSlide(TLSlide* slide);
+    void SetActiveSlide(unsigned long hash);
+    void SetActiveSlide(const char* slideName);
 
     /* 0x0 */ TLSlide* m_slides;
     /* 0x4 */ TLSlide* m_currentSlide;

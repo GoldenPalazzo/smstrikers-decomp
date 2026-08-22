@@ -25,7 +25,7 @@ public:
 
     virtual void OpenMessenger();
     virtual void OpenMessengerNow();
-    virtual void SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>&);
+    virtual void SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>& theMessage);
     virtual void SetMessageFinishedCB(const Function<FnVoidVoid>& cb)
     {
         m_messageFinishedCB = cb;
@@ -35,14 +35,11 @@ public:
     virtual bool IsMessengerOpen() const;
 
     virtual void SceneCreated();
-    virtual void Update(float);
+    virtual void Update(float fDeltaT);
 
-    void EnableScrolling(bool);
-    void SetDisplayMessage(const char*);
+    void EnableScrolling(bool state);
+    void SetDisplayMessage(const char* locMessage);
     void ForceMessengerVisibleNow();
-
-    // void @4@SceneCreated();
-    // void @4@Update(float);
 
     /* 0x02C */ Function<FnVoidVoid> m_messageFinishedCB;
     /* 0x034 */ eMessengerState m_curState;
@@ -55,18 +52,12 @@ public:
 // class BaseSceneHandler
 // {
 // public:
-//     void SceneCreated();
 // };
 
 // class FEFinder<TLTextInstance, 3>
 // {
 // public:
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
 //     void _Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-//     long);
 // };
 
 #endif // _FENSNMESSENGER_H_

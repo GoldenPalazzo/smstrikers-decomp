@@ -9,9 +9,9 @@ s32 targetTextures[4];
 /**
  * Offset/Address/Size: 0x0 | 0x801DE3F8 | size: 0x20
  */
-void glGrabFrameBufferToTexture(unsigned long arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3, unsigned int arg4, unsigned int arg5, unsigned int arg6)
+void glGrabFrameBufferToTexture(unsigned long texture, unsigned int destWidth, unsigned int destHeight, unsigned int srcLeft, unsigned int srcTop, unsigned int srcWidth, unsigned int srcHeight)
 {
-    glPlatGrabFrameBufferToTexture(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+    glPlatGrabFrameBufferToTexture(texture, destWidth, destHeight, srcLeft, srcTop, srcWidth, srcHeight);
 }
 
 /**

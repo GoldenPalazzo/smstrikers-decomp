@@ -64,18 +64,10 @@ struct MOOD_DEFINITION
 
 // struct CROWD_STATE
 // {
-//     char pad[0x53];
-//     bool flag0 : 1;
-//     bool flag1 : 1;
-//     bool bFastTransition : 1;
 // };
 
-void PlayMoodDef(MOOD_DEFINITION&);
-void ChangeCrowdVolume(float);
-// void ___blank(const char*, ...);
-// void NDimDistance<4>(float*, float*);
-
-// void nlStrNCmp<char>(const char*, const char*, unsigned long);
+void PlayMoodDef(MOOD_DEFINITION& MoodDef);
+void ChangeCrowdVolume(float NewVolume);
 
 namespace CrowdMood // I suspect this is a namespace, not a class
 {
@@ -91,17 +83,17 @@ enum CROWD_MOOD
 };
 
 void RestartLoops();
-void EnableCrowdDecay(bool);
+void EnableCrowdDecay(bool enable);
 void UnlockStream();
 GCAudioStreaming::StereoAudioStream* LockStream();
-void SetLPF(unsigned short);
-void ActivateLPF(bool);
-void SetCrowdVolume(unsigned long, unsigned long);
+void SetLPF(unsigned short Frequency);
+void ActivateLPF(bool bOn);
+void SetCrowdVolume(unsigned long Volume, unsigned long FadeTime);
 void InitiateFastCrowdTransition();
-void SetMood(CrowdMood::CROWD_MOOD, unsigned long);
-void AdjustMood(CrowdMood::CROWD_MOOD, unsigned long);
-void Update(float);
-void Purge(bool);
+void SetMood(CrowdMood::CROWD_MOOD Mood, unsigned long Amount);
+void AdjustMood(CrowdMood::CROWD_MOOD Towards, unsigned long Amount);
+void Update(float dt);
+void Purge(bool bJustStopSFX);
 void Init();
 void ReadConfig();
 unsigned char IsStreamLocked();
@@ -149,30 +141,21 @@ extern CROWD_STATE g_CrowdState;
 // class PlayVocal(const CROWD_VOCAL_DEFINITION&, CROWD_STATE
 // {
 // public:
-//     void VOCALIZATION_STATE&, GCAudioStreaming::AudioStream*);
 // };
 
 // class WarmRandomStream<GCAudioStreaming
 // {
 // public:
-//     void MonoAudioStream>(const RANDOM_STREAMS&, GCAudioStreaming::MonoAudioStream*);
-//     void StereoAudioStream>(const RANDOM_STREAMS&, GCAudioStreaming::StereoAudioStream*);
 // };
 
 // class Increment<CrowdMood
 // {
 // public:
-//     void CROWD_MOOD>(CrowdMood::CROWD_MOOD&);
 // };
 
 // class GCAudioStreaming
 // {
 // public:
-//     void MonoAudioStream::SafeToPurge();
-//     void StereoAudioStream::SafeToPurge();
-//     void MonoAudioStream::~MonoAudioStream();
-//     void StereoAudioStream::Purge();
-//     void MonoAudioStream::Purge();
 // };
 
 #endif // _CROWDMOOD_H_

@@ -48,6 +48,9 @@ inline BOOL DBGEXISync()
     return TRUE;
 }
 
+/**
+ * Offset/Address/Size: 0x7E8 | 0x80260F9C | size: 0x298
+ */
 static BOOL DBGEXIImm(void* buffer, s32 bytecounter, u32 write)
 {
     u8* tempPointer;
@@ -60,8 +63,8 @@ static BOOL DBGEXIImm(void* buffer, s32 bytecounter, u32 write)
         writeOutValue = 0;
         for (i = 0; i < bytecounter; i++)
         {
-            u8* temp = ((u8*)buffer) + i;
-            writeOutValue |= *temp << ((3 - i) << 3);
+            u8* pByte = ((u8*)buffer) + i;
+            writeOutValue |= *pByte << ((3 - i) << 3);
         }
         __EXIRegs[14] = writeOutValue;
     }
@@ -100,6 +103,9 @@ inline BOOL DBGWriteMailbox(u32 p1)
     return IS_FALSE(total);
 }
 
+/**
+ * Offset/Address/Size: 0x73C | 0x80260EF0 | size: 0xAC
+ */
 static BOOL DBGReadMailbox(u32* p1)
 {
     BOOL total = FALSE;
@@ -122,7 +128,10 @@ static BOOL DBGReadMailbox(u32* p1)
     return IS_FALSE(total);
 }
 
-static BOOL DBGRead(u32 count, u32* buffer, s32 param3)
+/**
+ * Offset/Address/Size: 0x660 | 0x80260E14 | size: 0xDC
+ */
+static BOOL DBGRead(u32 count, u32* buffer, s32 length)
 {
     BOOL total = FALSE;
     u32* buf_p = (u32*)buffer;
@@ -138,17 +147,17 @@ static BOOL DBGRead(u32 count, u32* buffer, s32 param3)
     total |= IS_FALSE(DBGEXIImm(&v1, sizeof(v1), 1));
     total |= IS_FALSE(DBGEXISync());
 
-    while (param3)
+    while (length)
     {
         total |= IS_FALSE(DBGEXIImm(&v, sizeof(v), 0));
         total |= IS_FALSE(DBGEXISync());
 
         *buf_p++ = v;
 
-        param3 -= 4;
-        if (param3 < 0)
+        length -= 4;
+        if (length < 0)
         {
-            param3 = 0;
+            length = 0;
         }
     }
 
@@ -156,7 +165,10 @@ static BOOL DBGRead(u32 count, u32* buffer, s32 param3)
     return IS_FALSE(total);
 }
 
-static BOOL DBGWrite(u32 count, void* buffer, s32 param3)
+/**
+ * Offset/Address/Size: 0x584 | 0x80260D38 | size: 0xDC
+ */
+static BOOL DBGWrite(u32 count, void* buffer, s32 length)
 {
     BOOL total = FALSE;
     u32* buf_p = (u32*)buffer;
@@ -172,17 +184,17 @@ static BOOL DBGWrite(u32 count, void* buffer, s32 param3)
     total |= IS_FALSE(DBGEXIImm(&v1, sizeof(v1), 1));
     total |= IS_FALSE(DBGEXISync());
 
-    while (param3 != 0)
+    while (length != 0)
     {
         v = *buf_p++;
 
         total |= IS_FALSE(DBGEXIImm(&v, sizeof(v), 1));
         total |= IS_FALSE(DBGEXISync());
 
-        param3 -= 4;
-        if (param3 < 0)
+        length -= 4;
+        if (length < 0)
         {
-            param3 = 0;
+            length = 0;
         }
     }
 
@@ -190,6 +202,9 @@ static BOOL DBGWrite(u32 count, void* buffer, s32 param3)
     return IS_FALSE(total);
 }
 
+/**
+ * Offset/Address/Size: 0x4D8 | 0x80260C8C | size: 0xAC
+ */
 static BOOL DBGReadStatus(u32* p1)
 {
     BOOL total = FALSE;
@@ -212,6 +227,9 @@ static BOOL DBGReadStatus(u32* p1)
     return IS_FALSE(total);
 }
 
+/**
+ * Offset/Address/Size: 0x49C | 0x80260C50 | size: 0x3C
+ */
 static void MWCallback(u32 a, OSContext* b)
 {
     EXIInputFlag = TRUE;
@@ -221,6 +239,9 @@ static void MWCallback(u32 a, OSContext* b)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x45C | 0x80260C10 | size: 0x40
+ */
 static void DBGHandler(s16 a, OSContext* b)
 {
     *__PIRegs = 0x1000;
@@ -230,6 +251,9 @@ static void DBGHandler(s16 a, OSContext* b)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x3E4 | 0x80260B98 | size: 0x78
+ */
 void DBInitComm(u8** a, MTRCallbackType b)
 {
     BOOL interrupts = OSDisableInterrupts();
@@ -246,6 +270,9 @@ void DBInitComm(u8** a, MTRCallbackType b)
     OSRestoreInterrupts(interrupts);
 }
 
+/**
+ * Offset/Address/Size: 0x390 | 0x80260B44 | size: 0x54
+ */
 void DBInitInterrupts(void)
 {
     __OSMaskInterrupts(0x18000);
@@ -273,6 +300,9 @@ static inline void CheckMailBox(void)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x2F4 | 0x80260AA8 | size: 0x9C
+ */
 u32 DBQueryData(void)
 {
     BOOL interrupts;
@@ -286,6 +316,9 @@ u32 DBQueryData(void)
     return RecvDataLeng;
 }
 
+/**
+ * Offset/Address/Size: 0x268 | 0x80260A1C | size: 0x8C
+ */
 BOOL DBRead(u32* buffer, s32 count)
 {
     u32 interrupts = OSDisableInterrupts();
@@ -301,6 +334,9 @@ BOOL DBRead(u32* buffer, s32 count)
     return 0;
 }
 
+/**
+ * Offset/Address/Size: 0x8 | 0x802607BC | size: 0x260
+ */
 BOOL DBWrite(const void* src, u32 size)
 {
     u32 v;
@@ -340,11 +376,17 @@ BOOL DBWrite(const void* src, u32 size)
     return 0;
 }
 
+/**
+ * Offset/Address/Size: 0x4 | 0x802607B8 | size: 0x4
+ */
 void DBOpen(void)
 {
     return;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802607B4 | size: 0x4
+ */
 void DBClose(void)
 {
     return;

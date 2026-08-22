@@ -9,10 +9,10 @@
 class glPoly2
 {
 public:
-    bool Attach(eGLView, int, unsigned long*, unsigned long);
-    void FullCoverage(const nlColour&, float);
-    void SetupRectangle(float, float, float, float, float);
-    void SetupRotatedRectangle(float, float, float, float, float, float);
+    bool Attach(eGLView view, int layer, unsigned long* pMatrixHandle, unsigned long programHandle);
+    void FullCoverage(const nlColour& col, float z);
+    void SetupRectangle(float x, float y, float w, float h, float z);
+    void SetupRotatedRectangle(float cx, float cy, float w, float h, float angle, float z);
     void SetColour(const nlColour& col);
 
     /* 0x00 */ nlVector2 m_pos[4];
@@ -21,6 +21,6 @@ public:
     /* 0x50 */ float depth;
 }; // total size: 0x54
 
-bool glAttachPoly2(eGLView, unsigned long, glPoly2*, unsigned long*, const void*);
+bool glAttachPoly2(eGLView view, unsigned long numPolys, glPoly2* pPolys, unsigned long* pMatrixHandle, const void* pUserData);
 
 #endif // _GLDRAW2_H_

@@ -90,7 +90,6 @@ static void glx_SendViews();
 
 // No-fog colour passed via a void helper so the by-value arg copy is an
 // inline-expansion temporary that grabs the lowest stack slot (0x18),
-// pushing the fog-path build temp up to 0x1c to match the target layout.
 static inline void glx_SetFogNone()
 {
     GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, glx_FogColour);
@@ -99,17 +98,17 @@ static inline void glx_SetFogNone()
 /**
  * Offset/Address/Size: 0x0 | 0x801B45F4 | size: 0xB0
  */
-void glplatViewProjectPoint(eGLView view, const nlVector3& arg1, nlVector3& arg2)
+void glplatViewProjectPoint(eGLView view, const nlVector3& v3world, nlVector3& v3NDC)
 {
     nlVector3 v_out;
     nlMatrix4* temp_r31 = glViewGetViewMatrix(view);
     nlMatrix4* temp_r30 = glViewGetProjectionMatrix(view);
-    nlMultPosVectorMatrix(v_out, arg1, *temp_r31);
-    nlMultPosVectorMatrix(arg2, v_out, *temp_r30);
-    float temp_f1 = 1.f / -v_out.z;
-    arg2.x = arg2.x * temp_f1;
-    arg2.y = -arg2.y * temp_f1;
-    arg2.z = arg2.z * temp_f1;
+    nlMultPosVectorMatrix(v_out, v3world, *temp_r31);
+    nlMultPosVectorMatrix(v3NDC, v_out, *temp_r30);
+    float wc = 1.f / -v_out.z;
+    v3NDC.x = v3NDC.x * wc;
+    v3NDC.y = -v3NDC.y * wc;
+    v3NDC.z = v3NDC.z * wc;
 }
 
 /**
@@ -528,8 +527,7 @@ bool glplatPostStartup()
     return true;
 }
 
-// Forward declaration for virt_cb (defined later in this file)
-void virt_cb(unsigned long, unsigned long, unsigned long, unsigned long, int);
+void virt_cb(unsigned long faultAddr, unsigned long mainAddr, unsigned long pageIndex, unsigned long elapsed, int wroteBack);
 
 static inline void ClearXFBInline(void* cache)
 {
@@ -741,7 +739,6 @@ void glx_SetProgressiveMode()
  */
 u32 glx_GetResetCode()
 {
-    // return 0x17 & ((s32) (-(s32) glx_bProgressiveMode | glx_bProgressiveMode) >> 0x1F);
     return glx_bProgressiveMode ? 0x17 : 0;
 }
 
@@ -811,10 +808,10 @@ bool glplatPreStartup()
 /**
  * Offset/Address/Size: 0x119C | 0x801B5790 | size: 0x1C
  */
-void virt_cb(unsigned long arg0, unsigned long arg1, unsigned long arg2, unsigned long arg3, int arg4)
+void virt_cb(unsigned long faultAddr, unsigned long mainAddr, unsigned long pageIndex, unsigned long elapsed, int wroteBack)
 {
     glx_NumVirtMisses += 1;
-    glx_VirtLatency += arg3;
+    glx_VirtLatency += elapsed;
 }
 
 /**

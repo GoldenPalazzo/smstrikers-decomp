@@ -12,10 +12,10 @@ class TransitionLight
 {
 public:
     TransitionLight();
-    void ApplyLight(float);
-    void LoadFromParser(SimpleParser*);
-    void AttachToModel(glModel*);
-    void DetachFromModel(glModel*);
+    void ApplyLight(float t);
+    void LoadFromParser(SimpleParser* parser);
+    void AttachToModel(glModel* pModel);
+    void DetachFromModel(glModel* pModel);
 
     /* 0x0, */ float m_fStartScale;                          // size 0x4
     /* 0x4, */ float m_fEndScale;                            // size 0x4

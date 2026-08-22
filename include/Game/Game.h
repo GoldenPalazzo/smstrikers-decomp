@@ -44,25 +44,25 @@ public:
     void ResetCharacters();
     void ResetBall();
     void ResetGameClock();
-    static void PostResetCallback(unsigned long, unsigned long);
-    void BeginGame(bool, bool);
+    static void PostResetCallback(unsigned long userData, unsigned long clockId);
+    void BeginGame(bool bRematch, bool bStraightToKickoff);
     void CheckForGoal();
     static void EnterPostGame();
-    void BlowUpPowerups(const nlVector3&, float);
-    void BlowUpPlayers(cFielder*, float);
-    void ResetPowerups(bool);
+    void BlowUpPowerups(const nlVector3& v3ExplosionPosition, float fExplosionRadius);
+    void BlowUpPlayers(cFielder* pShooter, float fExplosionRadius);
+    void ResetPowerups(bool clearPowerUps);
     void ResetBowser();
-    void ResetBowserTimer(float);
-    void PreUpdate(float);
-    static void UpdatePowerUpObjects(float);
-    void Update(float);
+    void ResetBowserTimer(float seconds);
+    void PreUpdate(float deltaTime);
+    static void UpdatePowerUpObjects(float fDeltaT);
+    void Update(float deltaTime);
     void ResetScorerInfo();
-    void SetPotentialScorer(cPlayer*);
-    void ChangeGameState(eGameState);
-    void InitGameState(eGameState);
-    bool IsThoughtAllowed(unsigned long);
-    bool AbortPendingThought(unsigned long);
-    void SetDifficulty(eDifficultyID, eDifficultyID, eDifficultyID);
+    void SetPotentialScorer(cPlayer* pPlayer);
+    void ChangeGameState(eGameState state);
+    void InitGameState(eGameState state);
+    bool IsThoughtAllowed(unsigned long thought_id);
+    bool AbortPendingThought(unsigned long thoughtHash);
+    void SetDifficulty(eDifficultyID diff0, eDifficultyID diff1, eDifficultyID diff2);
 
     inline GameTweaks* GetGameTweaks() { return m_pGameTweaks; }
 

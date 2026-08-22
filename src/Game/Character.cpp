@@ -59,13 +59,6 @@ static inline AnimRetarget* GetCharacterAnimRetarget(const cCharacter* character
 static inline Blinker* MakeBlinker(eCharacterClass cc, unsigned long modelID);
 inline eVariantType VariantTypeOf(const nlVector3&);
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80012158 | size: 0x48
-//  */
-// GLSkinMesh::~GLSkinMesh()
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x26A0 | 0x800105EC | size: 0x1A58
  */
@@ -1180,27 +1173,6 @@ void AIEventHandler(Event* pEvent, void*)
     }
 }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80012044 | size: 0x6C
-//  */
-// cPN_SAnimController::~cPN_SAnimController()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800120B0 | size: 0x48
-//  */
-// cHeadTrack::~cHeadTrack()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x48 | 0x800120F8 | size: 0x60
-//  */
-// PhysicsCharacter::~PhysicsCharacter()
-// {
-// }
-
 static inline Blinker* MakeBlinker(eCharacterClass cc, unsigned long modelID)
 {
     char matsName[64];
@@ -1927,7 +1899,7 @@ void cCharacter::PoseSkinMesh(cPoseAccumulator* pPoseAccumulator)
 /**
  * Offset/Address/Size: 0x117C | 0x8000F0C8 | size: 0x68
  */
-void cCharacter::PrePhysicsUpdate(float)
+void cCharacter::PrePhysicsUpdate(float dt)
 {
     if ((m_eClassType != GOALIE) || ((m_v3Position.x * g_pBall->m_v3Position.x) > 0.0f))
     {
@@ -1940,7 +1912,7 @@ void cCharacter::PrePhysicsUpdate(float)
 /**
  * Offset/Address/Size: 0x1178 | 0x8000F0C4 | size: 0x4
  */
-void cCharacter::PreUpdate(float)
+void cCharacter::PreUpdate(float dt)
 {
 }
 

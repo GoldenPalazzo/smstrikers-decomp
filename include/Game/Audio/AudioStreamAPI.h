@@ -8,12 +8,12 @@ namespace Audio
 
 void InitStreaming();
 void StopStreaming();
-bool TrackMgrFileNameParamLookup(const char*, char*, unsigned long);
+bool TrackMgrFileNameParamLookup(const char* param, char* out, unsigned long size);
 void DestroyTrackMgr();
 void CreatePriorityStreams();
 void DestroyPriorityStreams();
 PriorityStream* GetPriorityStream();
-void ConfigureStreamBuffers(unsigned long);
+void ConfigureStreamBuffers(unsigned long count);
 
 } // namespace Audio
 

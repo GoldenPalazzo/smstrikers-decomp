@@ -38,7 +38,7 @@ public:
         }
     }
     /* 0x0C */ virtual void DoFunctionCall(unsigned int) = 0;
-    /* 0x10 */ virtual void TriggerFired(unsigned long) {}
+    /* 0x10 */ virtual void TriggerFired(unsigned long) { }
 
     static void AnimControllerCB(unsigned int ref)
     {
@@ -52,7 +52,7 @@ public:
         pScript->TriggerFired(pInfo->ScriptInfo.Trigger);
     }
 
-    u8 SetupAnimationTriggers(const char*, cInventory<cSAnim>*);
+    u8 SetupAnimationTriggers(const char* TriggerFileName, cInventory<cSAnim>* pAnimInventory);
 
     /* 0x24 */ SlotPool<AnimTagCBInfo> m_AnimTagSlotPool;
     /* 0x3C */ void* m_ppBytecode[32];

@@ -3,9 +3,9 @@
 /**
  * Offset/Address/Size: 0x0 | 0x801D8FBC | size: 0x20
  */
-void glResourceRelease(unsigned long long arg0)
+void glResourceRelease(unsigned long long marker)
 {
-    glplatResourceRelease(arg0);
+    glplatResourceRelease(marker);
 }
 
 /**
@@ -21,7 +21,7 @@ unsigned long long glResourceMark()
  */
 void* glFrameAlloc(unsigned long size, eGLMemory memType)
 {
-    return (void*)glplatFrameAlloc(size, memType);
+    return glplatFrameAlloc(size, memType);
 }
 
 /**
@@ -29,5 +29,5 @@ void* glFrameAlloc(unsigned long size, eGLMemory memType)
  */
 void* glResourceAlloc(unsigned long size, eGLMemory memType)
 {
-    return (void*)glplatResourceAlloc(size, memType);
+    return glplatResourceAlloc(size, memType);
 }

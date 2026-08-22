@@ -6,7 +6,7 @@
 class TweaksBase
 {
 public:
-    TweaksBase(const char*);
+    TweaksBase(const char* param_1);
     virtual ~TweaksBase();
     virtual void Init() = 0;
 

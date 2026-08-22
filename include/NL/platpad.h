@@ -5,9 +5,9 @@
 #include "NL/globalpad.h"
 
 void VBlankPadUpdate();
-void UpdatePlatPad(float);
+void UpdatePlatPad(float dt);
 void InitPlatPad();
-u32 GetButtonIndex(int);
+u32 GetButtonIndex(int button);
 void UseDefaultPad();
 void UseFixedUpdatePad();
 
@@ -32,7 +32,7 @@ public:
     /* 0x30 */ virtual f32 AnalogRightX();
     /* 0x34 */ virtual f32 AnalogRightY();
     /* 0x38 */ virtual bool RumbleActive();
-    /* 0x3C */ virtual void StartRumble(float, float, float);
+    /* 0x3C */ virtual void StartRumble(float fDuration, float fIntensity, float fFrequency);
     /* 0x40 */ virtual void StopRumble();
 };
 
@@ -61,7 +61,7 @@ public:
     static PADStatus* s_Current;
     static PADStatus* s_Next;
 
-    void Update(float);
+    void Update(float dt);
 
     /* 0x000 */ struct tGameCubePad m_GameCubePads[4]; // size 0x380
     /* 0x380 */ u16 m_justPressed[4];                  // size 0x8

@@ -255,72 +255,72 @@ void PhysicsObject::AddForceAtCentreOfMass(const nlVector3& force)
 /**
  * Offset/Address/Size: 0x644 | 0x80200340 | size: 0x1AC
  */
-void PhysicsObject::GetAngularVelocity(nlVector3* arg1) const
+void PhysicsObject::GetAngularVelocity(nlVector3* vel) const
 {
-    PhysicsObject* temp_r3;
-    PhysicsObject* temp_r3_2;
-    PhysicsObject* temp_r3_3;
-    PhysicsObject* temp_r5;
-    PhysicsObject* temp_r5_2;
-    PhysicsObject* temp_r5_3;
-    PhysicsObject* temp_r5_4;
+    PhysicsObject* parent2;
+    PhysicsObject* parent4;
+    PhysicsObject* parent6;
+    PhysicsObject* parent;
+    PhysicsObject* parent3;
+    PhysicsObject* parent5;
+    PhysicsObject* parent7;
 
-    temp_r5 = this->m_parentObject;
-    if (temp_r5 != NULL)
+    parent = this->m_parentObject;
+    if (parent != NULL)
     {
-        temp_r3 = temp_r5->m_parentObject;
-        if (temp_r3 != NULL)
+        parent2 = parent->m_parentObject;
+        if (parent2 != NULL)
         {
-            temp_r5_2 = temp_r3->m_parentObject;
-            if (temp_r5_2 != NULL)
+            parent3 = parent2->m_parentObject;
+            if (parent3 != NULL)
             {
-                temp_r3_2 = temp_r5_2->m_parentObject;
-                if (temp_r3_2 != NULL)
+                parent4 = parent3->m_parentObject;
+                if (parent4 != NULL)
                 {
-                    temp_r5_3 = temp_r3_2->m_parentObject;
-                    if (temp_r5_3 != NULL)
+                    parent5 = parent4->m_parentObject;
+                    if (parent5 != NULL)
                     {
-                        temp_r3_3 = temp_r5_3->m_parentObject;
-                        if (temp_r3_3 != NULL)
+                        parent6 = parent5->m_parentObject;
+                        if (parent6 != NULL)
                         {
-                            temp_r5_4 = temp_r3_3->m_parentObject;
-                            if (temp_r5_4 != NULL)
+                            parent7 = parent6->m_parentObject;
+                            if (parent7 != NULL)
                             {
-                                if (temp_r5_4->m_parentObject != NULL)
+                                if (parent7->m_parentObject != NULL)
                                 {
-                                    temp_r5_4->m_parentObject->GetAngularVelocity(arg1);
+                                    parent7->m_parentObject->GetAngularVelocity(vel);
                                     return;
                                 }
-                                const float* v = dBodyGetAngularVel(temp_r5_4->m_bodyID);
-                                arg1->Set(v[0], v[1], v[2]);
+                                const float* velFloats = dBodyGetAngularVel(parent7->m_bodyID);
+                                vel->Set(velFloats[0], velFloats[1], velFloats[2]);
                                 return;
                             }
-                            const float* v = dBodyGetAngularVel(temp_r3_3->m_bodyID);
-                            nlVec3Set(*arg1, v[0], v[1], v[2]);
+                            const float* velFloats = dBodyGetAngularVel(parent6->m_bodyID);
+                            nlVec3Set(*vel, velFloats[0], velFloats[1], velFloats[2]);
                             return;
                         }
-                        const float* v = dBodyGetAngularVel(temp_r5_3->m_bodyID);
-                        nlVec3Set(*arg1, v[0], v[1], v[2]);
+                        const float* velFloats = dBodyGetAngularVel(parent5->m_bodyID);
+                        nlVec3Set(*vel, velFloats[0], velFloats[1], velFloats[2]);
                         return;
                     }
-                    const float* v = dBodyGetAngularVel(temp_r3_2->m_bodyID);
-                    nlVec3Set(*arg1, v[0], v[1], v[2]);
+                    const float* velFloats = dBodyGetAngularVel(parent4->m_bodyID);
+                    nlVec3Set(*vel, velFloats[0], velFloats[1], velFloats[2]);
                     return;
                 }
-                const float* v = dBodyGetAngularVel(temp_r5_2->m_bodyID);
-                nlVec3Set(*arg1, v[0], v[1], v[2]);
+                const float* velFloats = dBodyGetAngularVel(parent3->m_bodyID);
+                nlVec3Set(*vel, velFloats[0], velFloats[1], velFloats[2]);
                 return;
             }
-            const float* v = dBodyGetAngularVel(temp_r3->m_bodyID);
-            nlVec3Set(*arg1, v[0], v[1], v[2]);
+            const float* velFloats = dBodyGetAngularVel(parent2->m_bodyID);
+            nlVec3Set(*vel, velFloats[0], velFloats[1], velFloats[2]);
             return;
         }
-        const float* v = dBodyGetAngularVel(temp_r5->m_bodyID);
-        nlVec3Set(*arg1, v[0], v[1], v[2]);
+        const float* velFloats = dBodyGetAngularVel(parent->m_bodyID);
+        nlVec3Set(*vel, velFloats[0], velFloats[1], velFloats[2]);
         return;
     }
-    const float* v = dBodyGetAngularVel(this->m_bodyID);
-    nlVec3Set(*arg1, v[0], v[1], v[2]);
+    const float* velFloats = dBodyGetAngularVel(this->m_bodyID);
+    nlVec3Set(*vel, velFloats[0], velFloats[1], velFloats[2]);
 }
 
 /**
@@ -343,73 +343,73 @@ nlVector3& PhysicsObject::GetLinearVelocity()
 /**
  * Offset/Address/Size: 0x854 | 0x80200550 | size: 0x1AC
  */
-void PhysicsObject::GetLinearVelocity(nlVector3* out) const
+void PhysicsObject::GetLinearVelocity(nlVector3* vel) const
 {
-    PhysicsObject* temp_r3;
-    PhysicsObject* temp_r3_2;
-    PhysicsObject* temp_r3_3;
+    PhysicsObject* parent2;
+    PhysicsObject* parent4;
+    PhysicsObject* parent6;
 
-    PhysicsObject* temp_r5;
-    PhysicsObject* temp_r5_2;
-    PhysicsObject* temp_r5_3;
-    PhysicsObject* temp_r5_4;
+    PhysicsObject* parent;
+    PhysicsObject* parent3;
+    PhysicsObject* parent5;
+    PhysicsObject* parent7;
 
-    temp_r5 = m_parentObject;
-    if (temp_r5 != NULL)
+    parent = m_parentObject;
+    if (parent != NULL)
     {
-        temp_r3 = temp_r5->m_parentObject;
-        if (temp_r3 != NULL)
+        parent2 = parent->m_parentObject;
+        if (parent2 != NULL)
         {
-            temp_r5_2 = temp_r3->m_parentObject;
-            if (temp_r5_2 != NULL)
+            parent3 = parent2->m_parentObject;
+            if (parent3 != NULL)
             {
-                temp_r3_2 = temp_r5_2->m_parentObject;
-                if (temp_r3_2 != NULL)
+                parent4 = parent3->m_parentObject;
+                if (parent4 != NULL)
                 {
-                    temp_r5_3 = temp_r3_2->m_parentObject;
-                    if (temp_r5_3 != NULL)
+                    parent5 = parent4->m_parentObject;
+                    if (parent5 != NULL)
                     {
-                        temp_r3_3 = temp_r5_3->m_parentObject;
-                        if (temp_r3_3 != NULL)
+                        parent6 = parent5->m_parentObject;
+                        if (parent6 != NULL)
                         {
-                            temp_r5_4 = temp_r3_3->m_parentObject;
-                            if (temp_r5_4 != NULL)
+                            parent7 = parent6->m_parentObject;
+                            if (parent7 != NULL)
                             {
-                                if ((u32)temp_r5_4->m_parentObject != 0U)
+                                if ((u32)parent7->m_parentObject != 0U)
                                 {
-                                    temp_r5_4->m_parentObject->GetLinearVelocity(out);
+                                    parent7->m_parentObject->GetLinearVelocity(vel);
                                     return;
                                 }
-                                float* v = (float*)dBodyGetLinearVel(temp_r5_4->m_bodyID);
-                                out->Set(v[0], v[1], v[2]);
+                                float* velFloats = (float*)dBodyGetLinearVel(parent7->m_bodyID);
+                                vel->Set(velFloats[0], velFloats[1], velFloats[2]);
                                 return;
                             }
-                            float* v = (float*)dBodyGetLinearVel(temp_r3_3->m_bodyID);
-                            nlVec3Set(*out, v[0], v[1], v[2]);
+                            float* velFloats = (float*)dBodyGetLinearVel(parent6->m_bodyID);
+                            nlVec3Set(*vel, velFloats[0], velFloats[1], velFloats[2]);
                             return;
                         }
-                        float* v = (float*)dBodyGetLinearVel(temp_r5_3->m_bodyID);
-                        nlVec3Set(*out, v[0], v[1], v[2]);
+                        float* velFloats = (float*)dBodyGetLinearVel(parent5->m_bodyID);
+                        nlVec3Set(*vel, velFloats[0], velFloats[1], velFloats[2]);
                         return;
                     }
-                    float* v = (float*)dBodyGetLinearVel(temp_r3_2->m_bodyID);
-                    nlVec3Set(*out, v[0], v[1], v[2]);
+                    float* velFloats = (float*)dBodyGetLinearVel(parent4->m_bodyID);
+                    nlVec3Set(*vel, velFloats[0], velFloats[1], velFloats[2]);
                     return;
                 }
-                float* v = (float*)dBodyGetLinearVel(temp_r5_2->m_bodyID);
-                nlVec3Set(*out, v[0], v[1], v[2]);
+                float* velFloats = (float*)dBodyGetLinearVel(parent3->m_bodyID);
+                nlVec3Set(*vel, velFloats[0], velFloats[1], velFloats[2]);
                 return;
             }
-            float* v = (float*)dBodyGetLinearVel(temp_r3->m_bodyID);
-            nlVec3Set(*out, v[0], v[1], v[2]);
+            float* velFloats = (float*)dBodyGetLinearVel(parent2->m_bodyID);
+            nlVec3Set(*vel, velFloats[0], velFloats[1], velFloats[2]);
             return;
         }
-        float* v = (float*)dBodyGetLinearVel(temp_r5->m_bodyID);
-        nlVec3Set(*out, v[0], v[1], v[2]);
+        float* velFloats = (float*)dBodyGetLinearVel(parent->m_bodyID);
+        nlVec3Set(*vel, velFloats[0], velFloats[1], velFloats[2]);
         return;
     }
-    float* v = (float*)dBodyGetLinearVel(m_bodyID);
-    nlVec3Set(*out, v[0], v[1], v[2]);
+    float* velFloats = (float*)dBodyGetLinearVel(m_bodyID);
+    nlVec3Set(*vel, velFloats[0], velFloats[1], velFloats[2]);
 }
 
 /**
@@ -652,23 +652,23 @@ void PhysicsObject::GetPosition(nlVector3* position) const
         parentRot.e2[1][3] = 0.f;
         parentRot.e2[2][3] = 0.f;
 
-        PhysicsObject* temp_r28_2 = parentObj->m_parentObject;
-        if (temp_r28_2 != NULL)
+        PhysicsObject* grandParent = parentObj->m_parentObject;
+        if (grandParent != NULL)
         {
-            if ((temp_r28_2->m_geomID == NULL) && (temp_r28_2->m_bodyID != NULL))
+            if ((grandParent->m_geomID == NULL) && (grandParent->m_bodyID != NULL))
             {
-                _retFloats = dBodyGetRotation(temp_r28_2->m_bodyID);
+                _retFloats = dBodyGetRotation(grandParent->m_bodyID);
             }
             else
             {
-                _retFloats = dGeomGetRotation(temp_r28_2->m_geomID);
+                _retFloats = dGeomGetRotation(grandParent->m_geomID);
             }
             ConvertDMat3ToNLMat4(_retFloats, &rot_2);
 
-            if (temp_r28_2->m_parentObject != NULL)
+            if (grandParent->m_parentObject != NULL)
             {
                 nlMatrix4 rot_tmp2;
-                temp_r28_2->m_parentObject->GetRotation(&rot_tmp2);
+                grandParent->m_parentObject->GetRotation(&rot_tmp2);
                 nlMultMatrices(rot_2, rot_2, rot_tmp2);
             }
             nlMultMatrices(parentRot, parentRot, rot_2);

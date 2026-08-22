@@ -18,7 +18,7 @@ void GXInitTexObjLOD(GXTexObj* obj, GXTexFilter min_filt, GXTexFilter mag_filt,
     f32 min_lod, f32 max_lod, f32 lod_bias, GXBool bias_clamp,
     GXBool do_edge_lod, GXAnisotropy max_aniso);
 void GXInitTexObjData(GXTexObj* obj, void* image_ptr);
-void GXInitTexObjWrapMode(GXTexObj* obj, GXTexWrapMode s, GXTexWrapMode t);
+void GXInitTexObjWrapMode(GXTexObj* obj, GXTexWrapMode sm, GXTexWrapMode tm);
 void GXInitTexObjTlut(GXTexObj* obj, u32 tlut_name);
 void GXInitTexObjUserData(GXTexObj* obj, void* user_data);
 void* GXGetTexObjUserData(const GXTexObj* obj);

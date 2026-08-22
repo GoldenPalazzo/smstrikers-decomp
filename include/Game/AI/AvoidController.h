@@ -23,24 +23,24 @@ enum eAvoidableThings
 class AvoidController
 {
 public:
-    AvoidController(cFielder*);
-    void SetThingsToAvoid(int);
-    void UseMinimumAvoidance(cPlayer*);
-    nlVector3& GetLastRepulsionVector(eAvoidableThings);
-    void Update(float);
-    bool CalcFielderRepulsionVector(nlVector3&);
+    AvoidController(cFielder* fielder);
+    void SetThingsToAvoid(int thingsToAvoid);
+    void UseMinimumAvoidance(cPlayer* player);
+    nlVector3& GetLastRepulsionVector(eAvoidableThings things);
+    void Update(float fDeltaT);
+    bool CalcFielderRepulsionVector(nlVector3& v3OutRepulsion);
 
 private:
-    bool CalcGoalieRepulsionVector(nlVector3&);
-    bool CalcBowserRepulsionVector(nlVector3&);
+    bool CalcGoalieRepulsionVector(nlVector3& v3OutRepulsion);
+    bool CalcBowserRepulsionVector(nlVector3& v3OutRepulsion);
 
 public:
-    bool CalcPowerupRepulsionVector(nlVector3&);
-    bool CalcDesiredVelocityToAvoidSideline(nlVector2&, const nlVector2&, const nlVector2&, const nlVector2&, const nlVector2&);
-    bool CalcDesiredVelocityToAvoidCorner(nlVector2&, const sCornerSegment&, const nlVector2&, const nlVector2&);
+    bool CalcPowerupRepulsionVector(nlVector3& v3OutRepulsion);
+    bool CalcDesiredVelocityToAvoidSideline(nlVector2& vNewDesiredVelDir, const nlVector2& vCurrentDesiredVelDir, const nlVector2& vCurrentVelDir, const nlVector2& vSidelinePos, const nlVector2& vSidelineNormal);
+    bool CalcDesiredVelocityToAvoidCorner(nlVector2& vNewDesiredVelDir, const sCornerSegment& corner, const nlVector2& vCurrentDesiredVelDir, const nlVector2& vCurrentVelDir);
     bool AvoidSidelines();
-    void CalcDesiredAndCurrentVelocities(nlVector2*, nlVector2*, bool);
-    void ApplyRepulsionVector(nlVector3);
+    void CalcDesiredAndCurrentVelocities(nlVector2* vOutDesiredVel, nlVector2* vOutCurrentVel, bool bNormalized);
+    void ApplyRepulsionVector(nlVector3 v3Repulsion);
 
     /* 0x00 */ cFielder* m_pFielder;
     /* 0x04 */ const FielderTweaks* m_pFTweaks;

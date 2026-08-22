@@ -30,11 +30,11 @@ public:
     bool IsVisible() const;
     FELibObject* GetLibRefObject() const;
 
-    void SetAssetColour(const nlColour&);
-    void SetAssetScale(float, float, float);
-    void SetAssetRotation(float, float, float);
-    void SetAssetPosition(float, float, float);
-    bool IsValidAtTime(float);
+    void SetAssetColour(const nlColour& color);
+    void SetAssetScale(float x, float y, float z);
+    void SetAssetRotation(float x, float y, float z);
+    void SetAssetPosition(float x, float y, float z);
+    bool IsValidAtTime(float fCurrentTime);
     nlColour& GetColour() const;
     feVector3& GetScale() const;
     feVector3& GetRotation() const;

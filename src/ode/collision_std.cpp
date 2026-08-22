@@ -93,6 +93,9 @@ dxSphere::dxSphere(dSpaceID space, dReal _radius)
     radius = _radius;
 }
 
+/**
+ * Offset/Address/Size: 0x42F8 | 0x8021B100 | size: 0xB0
+ */
 void dxSphere::computeAABB()
 {
     aabb[0] = pos[0] - radius;
@@ -103,11 +106,17 @@ void dxSphere::computeAABB()
     aabb[5] = pos[2] + radius;
 }
 
+/**
+ * Offset/Address/Size: 0x4894 | 0x8021B69C | size: 0x74
+ */
 dGeomID dCreateSphere(dSpaceID space, dReal radius)
 {
     return new dxSphere(space, radius);
 }
 
+/**
+ * Offset/Address/Size: 0x4870 | 0x8021B678 | size: 0x24
+ */
 void dGeomSphereSetRadius(dGeomID g, dReal radius)
 {
     dUASSERT(g && g->type == dSphereClass, "argument not a sphere");
@@ -117,6 +126,9 @@ void dGeomSphereSetRadius(dGeomID g, dReal radius)
     dGeomMoved(g);
 }
 
+/**
+ * Offset/Address/Size: 0x4868 | 0x8021B670 | size: 0x8
+ */
 dReal dGeomSphereGetRadius(dGeomID g)
 {
     dUASSERT(g && g->type == dSphereClass, "argument not a sphere");
@@ -144,6 +156,9 @@ dxBox::dxBox(dSpaceID space, dReal lx, dReal ly, dReal lz)
     side[2] = lz;
 }
 
+/**
+ * Offset/Address/Size: 0x4514 | 0x8021B31C | size: 0x44
+ */
 void dxBox::computeAABB()
 {
     dReal xrange = REAL(0.5) * (dFabs(R[0] * side[0]) + dFabs(R[1] * side[1]) + dFabs(R[2] * side[2]));
@@ -157,6 +172,9 @@ void dxBox::computeAABB()
     aabb[5] = pos[2] + zrange;
 }
 
+/**
+ * Offset/Address/Size: 0x46A8 | 0x8021B4B0 | size: 0x94
+ */
 dGeomID dCreateBox(dSpaceID space, dReal lx, dReal ly, dReal lz)
 {
     return new dxBox(space, lx, ly, lz);
@@ -173,6 +191,9 @@ void dGeomBoxSetLengths(dGeomID g, dReal lx, dReal ly, dReal lz)
     dGeomMoved(g);
 }
 
+/**
+ * Offset/Address/Size: 0x468C | 0x8021B494 | size: 0x1C
+ */
 void dGeomBoxGetLengths(dGeomID g, dVector3 result)
 {
     dUASSERT(g && g->type == dBoxClass, "argument not a box");
@@ -222,6 +243,9 @@ dxCCylinder::dxCCylinder(dSpaceID space, dReal _radius, dReal _length)
     lz = _length;
 }
 
+/**
+ * Offset/Address/Size: 0x45DC | 0x8021B3E4 | size: 0xB0
+ */
 void dxCCylinder::computeAABB()
 {
     dReal xrange = dFabs(R[2] * lz) * REAL(0.5) + radius;
@@ -235,6 +259,9 @@ void dxCCylinder::computeAABB()
     aabb[5] = pos[2] + zrange;
 }
 
+/**
+ * Offset/Address/Size: 0x4558 | 0x8021B360 | size: 0x84
+ */
 dGeomID dCreateCCylinder(dSpaceID space, dReal radius, dReal length)
 {
     return new dxCCylinder(space, radius, length);
@@ -313,6 +340,9 @@ dxPlane::dxPlane(dSpaceID space, dReal a, dReal b, dReal c, dReal d)
     make_sure_plane_normal_has_unit_length(this);
 }
 
+/**
+ * Offset/Address/Size: 0x473C | 0x8021B544 | size: 0x12C
+ */
 void dxPlane::computeAABB()
 {
     // @@@ planes that have normal vectors aligned along an axis can use a
@@ -325,6 +355,9 @@ void dxPlane::computeAABB()
     aabb[5] = dInfinity;
 }
 
+/**
+ * Offset/Address/Size: 0x43CC | 0x8021B1D4 | size: 0x148
+ */
 dGeomID dCreatePlane(dSpaceID space,
     dReal a, dReal b, dReal c, dReal d)
 {
@@ -343,6 +376,9 @@ void dGeomPlaneSetParams(dGeomID g, dReal a, dReal b, dReal c, dReal d)
     dGeomMoved(g);
 }
 
+/**
+ * Offset/Address/Size: 0x43A8 | 0x8021B1B0 | size: 0x24
+ */
 void dGeomPlaneGetParams(dGeomID g, dVector4 result)
 {
     dUASSERT(g && g->type == dPlaneClass, "argument not a plane");
@@ -370,6 +406,9 @@ dxRay::dxRay(dSpaceID space, dReal _length)
     length = _length;
 }
 
+/**
+ * Offset/Address/Size: 0x4908 | 0x8021B710 | size: 0x7C
+ */
 void dxRay::computeAABB()
 {
     dVector3 e;
@@ -411,6 +450,9 @@ void dxRay::computeAABB()
     }
 }
 
+/**
+ * Offset/Address/Size: 0x4284 | 0x8021B08C | size: 0x74
+ */
 dGeomID dCreateRay(dSpaceID space, dReal length)
 {
     return new dxRay(space, length);
@@ -431,6 +473,9 @@ dReal dGeomRayGetLength(dGeomID g)
     return r->length;
 }
 
+/**
+ * Offset/Address/Size: 0x420C | 0x8021B014 | size: 0x78
+ */
 void dGeomRaySet(dGeomID g, dReal px, dReal py, dReal pz,
     dReal dx, dReal dy, dReal dz)
 {
@@ -517,6 +562,9 @@ int dGeomRayGetClosestHit(dxGeom* g)
 // the number of intersection points is returned by the function (this will
 // be in the range 0 to 8).
 
+/**
+ * Offset/Address/Size: 0x4000 | 0x8021AE08 | size: 0x20C
+ */
 static int intersectRectQuad(dReal h[2], dReal p[8], dReal ret[16])
 {
     // q (and r) contain nq (and nr) coordinate points for the current (and
@@ -585,6 +633,9 @@ done:
 // n must be in the range [1..8]. m must be in the range [1..n]. i0 must be
 // in the range [0..n-1].
 
+/**
+ * Offset/Address/Size: 0x3C40 | 0x8021AA48 | size: 0x3C0
+ */
 void cullPoints(int n, dReal p[], int m, int i0, int iret[])
 {
     // compute the centroid of the polygon in cx,cy
@@ -686,6 +737,9 @@ static inline dReal dFabsInline(dReal x)
     return dFabs(x);
 }
 
+/**
+ * Offset/Address/Size: 0x2520 | 0x80219328 | size: 0x1720
+ */
 int dBoxBox(const dVector3 p1, const dMatrix3 R1,
     const dVector3 side1, const dVector3 p2,
     const dMatrix3 R2, const dVector3 side2,
@@ -1126,6 +1180,9 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1,
 //****************************************************************************
 // pairwise collision functions for standard geom types
 
+/**
+ * Offset/Address/Size: 0x24DC | 0x802192E4 | size: 0x44
+ */
 int dCollideSphereSphere(dxGeom* o1, dxGeom* o2, int flags,
     dContactGeom* contact, int skip)
 {
@@ -1141,6 +1198,9 @@ int dCollideSphereSphere(dxGeom* o1, dxGeom* o2, int flags,
     return dCollideSpheres(o1->pos, sphere1->radius, o2->pos, sphere2->radius, contact);
 }
 
+/**
+ * Offset/Address/Size: 0x20C8 | 0x80218ED0 | size: 0x414
+ */
 int dCollideSphereBox(dxGeom* o1, dxGeom* o2, int flags,
     dContactGeom* contact, int skip)
 {
@@ -1255,6 +1315,9 @@ int dCollideSphereBox(dxGeom* o1, dxGeom* o2, int flags,
     return 1;
 }
 
+/**
+ * Offset/Address/Size: 0x2008 | 0x80218E10 | size: 0xC0
+ */
 int dCollideSpherePlane(dxGeom* o1, dxGeom* o2, int flags,
     dContactGeom* contact, int skip)
 {
@@ -1283,6 +1346,9 @@ int dCollideSpherePlane(dxGeom* o1, dxGeom* o2, int flags,
         return 0;
 }
 
+/**
+ * Offset/Address/Size: 0x1D54 | 0x80218B5C | size: 0x2B4
+ */
 int dCollideBoxBox(dxGeom* o1, dxGeom* o2, int flags,
     dContactGeom* contact, int skip)
 {
@@ -1306,6 +1372,9 @@ int dCollideBoxBox(dxGeom* o1, dxGeom* o2, int flags,
     return num;
 }
 
+/**
+ * Offset/Address/Size: 0x15D4 | 0x802183DC | size: 0x780
+ */
 int dCollideBoxPlane(dxGeom* o1, dxGeom* o2,
     int flags, dContactGeom* contact, int skip)
 {
@@ -1475,6 +1544,9 @@ done:
     return ret;
 }
 
+/**
+ * Offset/Address/Size: 0x14F0 | 0x802182F8 | size: 0xE4
+ */
 int dCollideCCylinderSphere(dxGeom* o1, dxGeom* o2, int flags,
     dContactGeom* contact, int skip)
 {
@@ -1503,6 +1575,9 @@ int dCollideCCylinderSphere(dxGeom* o1, dxGeom* o2, int flags,
     return dCollideSpheres(p, ccyl->radius, o2->pos, sphere->radius, contact);
 }
 
+/**
+ * Offset/Address/Size: 0x1414 | 0x8021821C | size: 0xDC
+ */
 int dCollideCCylinderBox(dxGeom* o1, dxGeom* o2, int flags,
     dContactGeom* contact, int skip)
 {
@@ -1535,6 +1610,9 @@ int dCollideCCylinderBox(dxGeom* o1, dxGeom* o2, int flags,
     return dCollideSpheres(pl, radius, pb, REAL(0.0), contact);
 }
 
+/**
+ * Offset/Address/Size: 0xFC0 | 0x80217DC8 | size: 0x454
+ */
 int dCollideCCylinderCCylinder(dxGeom* o1, dxGeom* o2,
     int flags, dContactGeom* contact, int skip)
 {
@@ -1656,6 +1734,9 @@ int dCollideCCylinderCCylinder(dxGeom* o1, dxGeom* o2,
     return dCollideSpheres(sphere1, cyl1->radius, sphere2, cyl2->radius, contact);
 }
 
+/**
+ * Offset/Address/Size: 0xCBC | 0x80217AC4 | size: 0x304
+ */
 int dCollideCCylinderPlane(dxGeom* o1, dxGeom* o2, int flags,
     dContactGeom* contact, int skip)
 {
@@ -1718,6 +1799,9 @@ int dCollideCCylinderPlane(dxGeom* o1, dxGeom* o2, int flags,
 
 // if mode==1 then use the sphere exit contact, not the entry contact
 
+/**
+ * Offset/Address/Size: 0xAAC | 0x802178B4 | size: 0x210
+ */
 static int ray_sphere_helper(dxRay* ray, dVector3 sphere_pos, dReal radius,
     dContactGeom* contact, int mode)
 {
@@ -1764,6 +1848,9 @@ static int ray_sphere_helper(dxRay* ray, dVector3 sphere_pos, dReal radius,
     return 1;
 }
 
+/**
+ * Offset/Address/Size: 0xA70 | 0x80217878 | size: 0x3C
+ */
 int dCollideRaySphere(dxGeom* o1, dxGeom* o2, int flags,
     dContactGeom* contact, int skip)
 {
@@ -1777,6 +1864,9 @@ int dCollideRaySphere(dxGeom* o1, dxGeom* o2, int flags,
     return ray_sphere_helper(ray, sphere->pos, sphere->radius, contact, 0);
 }
 
+/**
+ * Offset/Address/Size: 0x60C | 0x80217414 | size: 0x464
+ */
 int dCollideRayBox(dxGeom* o1, dxGeom* o2, int flags,
     dContactGeom* contact, int skip)
 {
@@ -1880,6 +1970,9 @@ int dCollideRayBox(dxGeom* o1, dxGeom* o2, int flags,
     return 1;
 }
 
+/**
+ * Offset/Address/Size: 0x174 | 0x80216F7C | size: 0x498
+ */
 int dCollideRayCCylinder(dxGeom* o1, dxGeom* o2,
     int flags, dContactGeom* contact, int skip)
 {
@@ -2007,6 +2100,9 @@ int dCollideRayCCylinder(dxGeom* o1, dxGeom* o2,
     return ray_sphere_helper(ray, q, ccyl->radius, contact, inside_ccyl);
 }
 
+/**
+ * Offset/Address/Size: 0x64 | 0x80216E6C | size: 0x110
+ */
 int dCollideRayPlane(dxGeom* o1, dxGeom* o2, int flags,
     dContactGeom* contact, int skip)
 {

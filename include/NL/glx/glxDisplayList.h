@@ -11,10 +11,10 @@ struct DisplayList
     /* 0x0C */ unsigned short* indices;
 }; // total size: 0x10
 
-DisplayList* dlMakeDisplayList(const glModelPacket*, bool);
-u32 dlGetSize(unsigned long);
-void* dlGetDisplayList(unsigned long);
-bool dlIsDisplayList(unsigned long);
-DisplayList* dlGetStruct(unsigned long);
+DisplayList* dlMakeDisplayList(const glModelPacket* packet, bool permanent);
+u32 dlGetSize(unsigned long addr);
+void* dlGetDisplayList(unsigned long addr);
+bool dlIsDisplayList(unsigned long addr);
+DisplayList* dlGetStruct(unsigned long addr);
 
 #endif // _GLXDISPLAYLIST_H_

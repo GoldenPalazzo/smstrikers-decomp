@@ -8,11 +8,11 @@ class PowerupBase;
 class PhysicsShell : public PhysicsSphere
 {
 public:
-    PhysicsShell(float);
+    PhysicsShell(float radius);
     virtual int GetObjectType() const { return 0x13; };
     virtual bool SetContactInfo(dContact* contact, PhysicsObject* other, bool first);
     virtual void PostUpdate();
-    virtual ContactType Contact(PhysicsObject*, dContact*, int);
+    virtual ContactType Contact(PhysicsObject*obj, dContact*info, int numContacts);
 
     /* 0x2C */ void (*m_pTriggerCallbackFunc)(class PhysicsObject*, class PhysicsObject*, class nlVector3&, void*);
     /* 0x30 */ void* m_pCallbackParam;

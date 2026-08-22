@@ -31,11 +31,11 @@ public:
     /* 0x10 */ virtual void Read(void* buffer, unsigned int size) = 0;
 }; // total size: 0xC
 
-bool nlLoadEntireFileAsync(const char*, LoadAsyncCallback callback, void* userData, unsigned int size, eAllocType type);
-void nlLoadEntireFileAsyncCallback(nlFile*, void*, unsigned int, unsigned long);
-void* nlLoadEntireFile(const char* filename, unsigned long* fileSize, unsigned int alignment, eAllocType type);
-void nlClose(nlFile*);
-void nlRead(nlFile*, void*, unsigned int);
-unsigned int nlFileSize(nlFile*, unsigned int*);
+bool nlLoadEntireFileAsync(const char* filename, LoadAsyncCallback callback, void* user_data, unsigned int alignment, eAllocType type);
+void nlLoadEntireFileAsyncCallback(nlFile* file, void* pBuffer, unsigned int uSize, unsigned long uParam);
+void* nlLoadEntireFile(const char* filename, unsigned long* outSize, unsigned int alignment, eAllocType type);
+void nlClose(nlFile* file);
+void nlRead(nlFile* file, void* buffer, unsigned int size);
+unsigned int nlFileSize(nlFile* file, unsigned int* size);
 
 #endif // _NLFILE_H_

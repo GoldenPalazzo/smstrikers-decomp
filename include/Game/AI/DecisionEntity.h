@@ -34,16 +34,15 @@ public:
         , m_iNumDTFCalls(other.m_iNumDTFCalls)
     {
     }
-    // ~cDecisionEntity() { };
 
-    float CallDTF(cFielder*);
-    bool DoAbort(cFielder*);
+    float CallDTF(cFielder* pFielder);
+    bool DoAbort(cFielder* pFielder);
     sDesireParams& GetLastDesireParams();
     sPlayParams& GetLastPlayParams();
-    ScriptAction* QueueActionSetDesire(int, float, float, FuzzyVariant, FuzzyVariant);
-    ScriptAction* QueueActionSetPlay(int, float, float);
-    ScriptAction* FindDesireAction(int, FuzzyVariant, FuzzyVariant);
-    bool SelectAction(eScriptActionSelection, float);
+    ScriptAction* QueueActionSetDesire(int eDesireType, float fConfidence, float fDuration, FuzzyVariant param1, FuzzyVariant param2);
+    ScriptAction* QueueActionSetPlay(int ePlayType, float fConfidence, float fDuration);
+    ScriptAction* FindDesireAction(int eDesireType, FuzzyVariant param1, FuzzyVariant param2);
+    bool SelectAction(eScriptActionSelection actionSelection, float fDeltaT);
 
     /* 0x00 */ eDecisionEntity m_type;                         // offset 0x0, size 0x4
     /* 0x04 */ unsigned long m_id;                             // offset 0x4, size 0x4

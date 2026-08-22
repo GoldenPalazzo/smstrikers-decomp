@@ -125,6 +125,9 @@ void C_QUATScale(const Quaternion* q, Quaternion* r, f32 scale)
     r->w = q->w * scale;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80252FDC | size: 0x1C
+ */
 void PSQUATScale(const register Quaternion* q, register Quaternion* r, register f32 scale)
 {
     register f32 rxy, rzw;
@@ -147,6 +150,9 @@ f32 C_QUATDotProduct(const Quaternion* p, const Quaternion* q)
     return (q->x * p->x) + (q->y * p->y) + (q->z * p->z) + (q->w * p->w);
 }
 
+/**
+ * Offset/Address/Size: 0x1C | 0x80252FF8 | size: 0x20
+ */
 f32 PSQUATDotProduct(const register Quaternion* p, const register Quaternion* q)
 {
     register f32 pxy, pzw, qxy, qzw, dp;
@@ -445,6 +451,9 @@ void C_QUATLerp(const Quaternion* p, const Quaternion* q, Quaternion* r, f32 t)
 }
 
 #pragma fp_contract off
+/**
+ * Offset/Address/Size: 0x3C | 0x80253018 | size: 0x174
+ */
 void C_QUATSlerp(const Quaternion* p, const Quaternion* q, Quaternion* r, f32 t)
 {
     f32 theta, sin_th, cos_th;

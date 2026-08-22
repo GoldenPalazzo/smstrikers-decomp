@@ -34,8 +34,8 @@ PhysicsNet::PhysicsNet(CollisionSpace* space, bool positive_x)
     nlVector3 _v2;
     nlVector3 postPosition;
     nlMatrix4 rotation;
-    float temp_f31;
-    float temp_f30;
+    float netHeight;
+    float netWidth;
     float goalLineX_;
     float goalLineX;
     float goalPostRadius;
@@ -53,8 +53,8 @@ PhysicsNet::PhysicsNet(CollisionSpace* space, bool positive_x)
 
     errorCorrectionDepth = ballMaxMotionPerTick;
 
-    temp_f31 = cNet::m_fNetHeight;
-    temp_f30 = cNet::m_fNetWidth;
+    netHeight = cNet::m_fNetHeight;
+    netWidth = cNet::m_fNetWidth;
     goalLineX = cField::GetGoalLineX((unsigned int)1);
     goalPostRadius = cNet::m_fNetPostRadius;
 
@@ -201,18 +201,18 @@ PhysicsNet::PhysicsNet(CollisionSpace* space, bool positive_x)
         double f0 = 0.2;
         goalPostRadius = (float)(goalPostRadius + f0);
 
-        mpSideGoalPost1 = new (nlMalloc(sizeof(PhysicsCapsule), 8, false)) PhysicsCapsule(g_CollisionSpace, NULL, goalPostRadius, temp_f31);
-        mpSideGoalPost2 = new (nlMalloc(sizeof(PhysicsCapsule), 8, false)) PhysicsCapsule(g_CollisionSpace, NULL, goalPostRadius, temp_f31);
-        mpTopGoalPost = new (nlMalloc(sizeof(PhysicsCapsule), 8, false)) PhysicsCapsule(g_CollisionSpace, NULL, goalPostRadius, temp_f30);
+        mpSideGoalPost1 = new (nlMalloc(sizeof(PhysicsCapsule), 8, false)) PhysicsCapsule(g_CollisionSpace, NULL, goalPostRadius, netHeight);
+        mpSideGoalPost2 = new (nlMalloc(sizeof(PhysicsCapsule), 8, false)) PhysicsCapsule(g_CollisionSpace, NULL, goalPostRadius, netHeight);
+        mpTopGoalPost = new (nlMalloc(sizeof(PhysicsCapsule), 8, false)) PhysicsCapsule(g_CollisionSpace, NULL, goalPostRadius, netWidth);
 
-        nlVec3Set(postPosition, (positive_x) ? goalLineX : -goalLineX, 0.5f * temp_f30, 0.5f * temp_f31);
+        nlVec3Set(postPosition, (positive_x) ? goalLineX : -goalLineX, 0.5f * netWidth, 0.5f * netHeight);
         mpSideGoalPost1->SetPosition(postPosition, (PhysicsObject::CoordinateType)0);
 
-        postPosition.y = -0.5f * temp_f30;
+        postPosition.y = -0.5f * netWidth;
         mpSideGoalPost2->SetPosition(postPosition, (PhysicsObject::CoordinateType)0);
 
         postPosition.y = 0.0f;
-        postPosition.z = temp_f31;
+        postPosition.z = netHeight;
         mpTopGoalPost->SetPosition(postPosition, (PhysicsObject::CoordinateType)0);
 
         nlMakeRotationMatrixX(rotation, 1.5707964f);
@@ -454,7 +454,7 @@ bool PhysicsNet::SweepTestForBallContact(const nlVector3& startPos, const nlVect
 /**
  * Offset/Address/Size: 0x5C | 0x8013A44C | size: 0x74
  */
-void PhysicsNet::StaticInit(CollisionSpace*)
+void PhysicsNet::StaticInit(CollisionSpace* pCollisionSpace)
 {
     spPhysNetPositiveX = new (nlMalloc(sizeof(PhysicsNet), 8, false)) PhysicsNet(g_CollisionSpace, true);
     spPhysNetNegativeX = new (nlMalloc(sizeof(PhysicsNet), 8, false)) PhysicsNet(g_CollisionSpace, false);

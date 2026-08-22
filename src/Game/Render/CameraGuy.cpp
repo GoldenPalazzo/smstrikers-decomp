@@ -77,7 +77,7 @@ CameraGuy::CameraGuy(cSHierarchy& pHierarchy, int nModelID)
  */
 void CameraGuy::Init()
 {
-    mpPoseAccumulator->SetBuildNodeMatrixCallback(2, CameraGuyHeadTrackUpdateCallback, (unsigned int)this, 0); // TODO: check if this is correct
+    mpPoseAccumulator->SetBuildNodeMatrixCallback(2, CameraGuyHeadTrackUpdateCallback, (unsigned int)this, 0);
 }
 
 /**

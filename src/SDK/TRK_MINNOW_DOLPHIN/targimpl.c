@@ -158,9 +158,9 @@ DSError TRKValidMemory32(const void* addr, size_t length, ValidMemoryOptions rea
 DSError TRKTargetAccessMemory(void* data, u32 start, size_t* length, MemoryAccessOptions accessOptions, BOOL read)
 {
     DSError error;
-    u32 uVar5;
+    u32 msr;
     void* addr;
-    u32 param4;
+    u32 msrWithDR;
     TRKExceptionStatus tempExceptionStatus = gTRKExceptionStatus;
     gTRKExceptionStatus.exceptionDetected = FALSE;
 
@@ -173,16 +173,16 @@ DSError TRKTargetAccessMemory(void* data, u32 start, size_t* length, MemoryAcces
     }
     else
     {
-        uVar5 = __TRK_get_MSR();
-        param4 = uVar5 | gTRKCPUState.Extended1.MSR & 0x10;
+        msr = __TRK_get_MSR();
+        msrWithDR = msr | gTRKCPUState.Extended1.MSR & 0x10;
 
         if (read)
         {
-            TRK_ppc_memcpy(data, addr, *length, uVar5, param4);
+            TRK_ppc_memcpy(data, addr, *length, msr, msrWithDR);
         }
         else
         {
-            TRK_ppc_memcpy(addr, data, *length, param4, uVar5);
+            TRK_ppc_memcpy(addr, data, *length, msrWithDR, msr);
             TRK_flush_cache((u32)addr, *length);
             if ((void*)start != addr)
             {
@@ -256,7 +256,7 @@ DSError TRKTargetAccessDefault(u32 firstRegister, u32 lastRegister, TRKBuffer* b
 
 DSError TRKTargetAccessFP(u32 firstRegister, u32 lastRegister, TRKBuffer* b, size_t* registersLengthPtr, BOOL read)
 {
-    u64 temp;
+    u64 registerValue;
     DSError error;
     TRKExceptionStatus tempExceptionStatus;
     u32 current;
@@ -278,13 +278,13 @@ DSError TRKTargetAccessFP(u32 firstRegister, u32 lastRegister, TRKBuffer* b, siz
     {
         if (read)
         {
-            TRKPPCAccessFPRegister(&temp, current, read);
-            error = TRKAppendBuffer1_ui64(b, temp);
+            TRKPPCAccessFPRegister(&registerValue, current, read);
+            error = TRKAppendBuffer1_ui64(b, registerValue);
         }
         else
         {
-            TRKReadBuffer1_ui64(b, &temp);
-            error = TRKPPCAccessFPRegister(&temp, current, read);
+            TRKReadBuffer1_ui64(b, &registerValue);
+            error = TRKPPCAccessFPRegister(&registerValue, current, read);
         }
     }
 
@@ -475,7 +475,7 @@ DSError TRKTargetAddStopInfo(TRKBuffer* b)
     CommandReply reply;
     int t;
 
-    memset(&reply, 0, 0x40);
+    memset(&reply, 0, sizeof(reply));
     reply._00 = 0x40;
     reply.commandID.b = 0x90;
     reply.replyError.r = gTRKCPUState.Default.PC;
@@ -493,7 +493,7 @@ void TRKTargetAddExceptionInfo(TRKBuffer* b)
     u32 local_54;
     CommandReply reply;
 
-    memset(&reply, 0, 0x40);
+    memset(&reply, 0, sizeof(reply));
 
     reply._00 = 0x40;
     reply.commandID.b = 0x91;

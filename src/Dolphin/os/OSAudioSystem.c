@@ -9,6 +9,9 @@ static u8 DSPInitCode[128] = {
 
 #define __DSPWorkBuffer (void*)0x81000000
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80254718 | size: 0x1BC
+ */
 void __OSInitAudioSystem(void)
 {
     u8 errFlag;
@@ -88,6 +91,9 @@ void __OSInitAudioSystem(void)
     memcpy(__DSPWorkBuffer, (void*)((u32)OSGetArenaHi() - 0x80), sizeof(DSPInitCode));
 }
 
+/**
+ * Offset/Address/Size: 0x1BC | 0x802548D4 | size: 0xD8
+ */
 void __OSStopAudioSystem(void)
 {
     u16 reg16;

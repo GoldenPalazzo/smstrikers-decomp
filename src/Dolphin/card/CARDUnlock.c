@@ -411,6 +411,9 @@ static u32 exnor(u32 data, u32 lshift)
     return work;
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8023ECF8 | size: 0x16C
+ */
 static u32 bitrev(u32 data)
 {
     u32 wk;
@@ -446,6 +449,9 @@ static u32 bitrev(u32 data)
 #define SEC_AD3(x) ((u8)(((x) >> 19) & 0x03))
 #define SEC_BA(x)  ((u8)(((x) >> 12) & 0x7f))
 
+/**
+ * Offset/Address/Size: 0x16C | 0x8023EE64 | size: 0x144
+ */
 static s32 ReadArrayUnlock(s32 chan, u32 data, void* rbuf, s32 rlen, int mode)
 {
     CARDControl* card;
@@ -496,6 +502,9 @@ static u32 GetInitVal(void)
     return tmp;
 }
 
+/**
+ * Offset/Address/Size: 0x2B0 | 0x8023EFA8 | size: 0xC4
+ */
 static s32 DummyLen(void)
 {
     u32 tick;
@@ -531,6 +540,9 @@ static s32 DummyLen(void)
     return tmp;
 }
 
+/**
+ * Offset/Address/Size: 0x374 | 0x8023F06C | size: 0xB58
+ */
 s32 __CARDUnlock(s32 chan, u8 flashID[12])
 {
     u32 init_val;
@@ -655,6 +667,9 @@ s32 __CARDUnlock(s32 chan, u8 flashID[12])
     return CARD_RESULT_READY;
 }
 
+/**
+ * Offset/Address/Size: 0xECC | 0x8023FBC4 | size: 0x70
+ */
 static void InitCallback(void* _task)
 {
     s32 chan;
@@ -683,6 +698,9 @@ static void InitCallback(void* _task)
         ;
 }
 
+/**
+ * Offset/Address/Size: 0xF3C | 0x8023FC34 | size: 0x324
+ */
 static void DoneCallback(void* _task)
 {
     u8 rbuf[64];

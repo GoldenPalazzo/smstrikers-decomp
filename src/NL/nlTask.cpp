@@ -124,14 +124,12 @@ void nlTaskManager::AddTask(nlTask* task, unsigned int priority, unsigned int st
 /**
  * Offset/Address/Size: 0x22C | 0x801D2B28 | size: 0x74
  */
-void nlTaskManager::Startup(unsigned int arg0)
+void nlTaskManager::Startup(unsigned int initialState)
 {
-    void* pData = nlMalloc(0x1C, 8, 0);
-    pData = (pData) ? pData : pData; // just to produce "cmplwi r3, 0x0"
-    m_pInstance = (nlTaskManager*)pData;
-    m_pInstance->m_PrevState = arg0;
-    m_pInstance->m_CurrState = arg0; // m_previousState ?
-    m_pInstance->m_PendingState = arg0;
+    m_pInstance = new (8, false) nlTaskManager;
+    m_pInstance->m_PrevState = initialState;
+    m_pInstance->m_CurrState = initialState;
+    m_pInstance->m_PendingState = initialState;
     m_pInstance->m_lTaskList = nullptr; // Initialize task ring head to null
     m_pInstance->m_TimeDilation = 1.0f;
     m_pInstance->m_Locked = 0;

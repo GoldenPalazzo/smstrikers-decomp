@@ -63,7 +63,7 @@ bool nlLoadEntireFileAsync(const char* filename, LoadAsyncCallback callback, voi
             user_data = NULL;
         }
 
-        _asyncData = new (nlMalloc(0x14, 8, 1)) AsyncFileLoadData(file, alloc_data, datasize, callback, user_data);
+        _asyncData = new (nlMalloc(sizeof(AsyncFileLoadData), 8, 1)) AsyncFileLoadData(file, alloc_data, datasize, callback, user_data);
         nlReadAsync(file, alloc_data, datasize, nlLoadEntireFileAsyncCallback, (unsigned long)_asyncData);
     }
     return 1;
@@ -72,9 +72,9 @@ bool nlLoadEntireFileAsync(const char* filename, LoadAsyncCallback callback, voi
 /**
  * Offset/Address/Size: 0xF8 | 0x801CEB28 | size: 0x68
  */
-void nlLoadEntireFileAsyncCallback(nlFile* file, void* arg2, unsigned int arg3, unsigned long arg4)
+void nlLoadEntireFileAsyncCallback(nlFile* file, void* pBuffer, unsigned int uSize, unsigned long uParam)
 {
-    AsyncFileLoadData* p = (AsyncFileLoadData*)arg4;
+    AsyncFileLoadData* p = (AsyncFileLoadData*)uParam;
     p->callback(p->alloc_data, (unsigned long)p->datasize, p->user_data);
     delete p->file;
     delete (p);

@@ -119,6 +119,9 @@ enum scan_states
 
 unsigned long __wcstoul(int base, int max_width, wint_t (*wReadProc)(void*, wint_t, int), void* wReadProcArg, int* chars_scanned, int* negative, int* overflow);
 
+/**
+ * Offset/Address/Size: 0xB0 | 0x80236A64 | size: 0x3F0
+ */
 unsigned long __wcstoul(int base,
     int max_width,
     wint_t (*wReadProc)(void*, wint_t, int), /* mm 990311 */
@@ -428,6 +431,9 @@ unsigned long long __wcstoull(int base,
 }
 #endif /* __MSL_LONGLONG_SUPPORT__    */ /*mm 970110*/
 
+/**
+ * Offset/Address/Size: 0x0 | 0x802369B4 | size: 0xB0
+ */
 unsigned long wcstoul(const wchar_t* str, wchar_t** end, int base)
 {
     unsigned long value;

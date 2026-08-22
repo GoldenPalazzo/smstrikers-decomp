@@ -38,6 +38,9 @@ u32 OSGetConsoleSimulatedMemSize(void)
 #endif
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8025737C | size: 0x3C
+ */
 static BOOL OnReset(BOOL final)
 {
     if (final != FALSE)
@@ -50,6 +53,9 @@ static BOOL OnReset(BOOL final)
 
 void (*__OSErrorTable[])(u16, OSContext*, ...);
 
+/**
+ * Offset/Address/Size: 0x3C | 0x802573B8 | size: 0x6C
+ */
 static void MEMIntrruptHandler(__OSInterrupt interrupt, OSContext* context)
 {
     u32 addr;
@@ -113,6 +119,9 @@ void OSProtectRange(u32 chan, void* addr, u32 nBytes, u32 control)
 
 #ifdef __GEKKO__
 // clang-format off
+/**
+ * Offset/Address/Size: 0xA8 | 0x80257424 | size: 0x80
+ */
 static asm void Config24MB(void) {
     nofralloc
     li r7, 0x0
@@ -153,6 +162,9 @@ static asm void Config24MB(void) {
 
 #ifdef __GEKKO__
 // clang-format off
+/**
+ * Offset/Address/Size: 0x128 | 0x802574A4 | size: 0x80
+ */
 static asm void Config48MB(void) {
     nofralloc
     li r7, 0x0
@@ -193,6 +205,9 @@ static asm void Config48MB(void) {
 
 #ifdef __GEKKO__
 // clang-format off
+/**
+ * Offset/Address/Size: 0x1A8 | 0x80257524 | size: 0x18
+ */
 static asm void RealMode(register u32 addr) {
     nofralloc
     clrlwi addr, addr, 2
@@ -205,6 +220,9 @@ static asm void RealMode(register u32 addr) {
 // clang-format on
 #endif
 
+/**
+ * Offset/Address/Size: 0x1C0 | 0x8025753C | size: 0x118
+ */
 void __OSInitMemoryProtection(void)
 {
 #ifndef DEBUG

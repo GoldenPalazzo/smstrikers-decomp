@@ -4,7 +4,7 @@
 #include "ode/collision.h"
 
 dGeomID dCreateFinitePlane(dSpaceID space, dReal a, dReal b, dReal c, dReal d, bool flag, float param);
-int dCollideFinitePlaneSphere(dxGeom*, dxGeom*, int, dContactGeom*, int);
-void dFinitePlaneAABB(dxGeom*, float*);
+int dCollideFinitePlaneSphere(dxGeom* planeGeomID, dxGeom* sphereGeomID, int flags, dContactGeom* contact, int skip);
+void dFinitePlaneAABB(dxGeom* geomID, float* aabb);
 
 #endif // _DFINITEPLANE_H_

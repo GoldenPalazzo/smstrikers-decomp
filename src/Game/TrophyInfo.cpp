@@ -1,4 +1,3 @@
-#pragma pool_data off
 
 #include "Game/TrophyInfo.h"
 

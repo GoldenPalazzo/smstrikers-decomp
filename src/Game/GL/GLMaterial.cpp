@@ -25,7 +25,7 @@ GLMaterialList::~GLMaterialList()
 /**
  * Offset/Address/Size: 0x48 | 0x801E7EB8 | size: 0x84
  */
-void GLMaterialList::SetMaterials(int arg0, const GLMaterialEntry* arg1)
+void GLMaterialList::SetMaterials(int numMats, const GLMaterialEntry* pEntries)
 {
     u32 size;
 
@@ -34,10 +34,10 @@ void GLMaterialList::SetMaterials(int arg0, const GLMaterialEntry* arg1)
         delete[] m_pMaterials;
     }
 
-    size = arg0 * 0xC;
-    m_nNumMaterials = arg0;
+    size = numMats * 0xC;
+    m_nNumMaterials = numMats;
     m_pMaterials = (GLMaterialEntry*)nlMalloc(size, 8, 0);
-    memcpy(m_pMaterials, arg1, size);
+    memcpy(m_pMaterials, pEntries, size);
 }
 
 /**

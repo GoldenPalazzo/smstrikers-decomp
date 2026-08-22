@@ -27,6 +27,9 @@ static void __ARReadDMA(u32 mmem_addr, u32 aram_addr, u32 length);
 static void __ARChecksize(void);
 static void __ARClearArea(u32 start_addr, u32 length);
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8023B824 | size: 0x44
+ */
 ARQCallback ARRegisterDMACallback(ARQCallback callback)
 {
     ARQCallback old_callback;
@@ -39,6 +42,9 @@ ARQCallback ARRegisterDMACallback(ARQCallback callback)
     return old_callback;
 }
 
+/**
+ * Offset/Address/Size: 0x44 | 0x8023B868 | size: 0x3C
+ */
 u32 ARGetDMAStatus(void)
 {
     BOOL old;
@@ -50,6 +56,9 @@ u32 ARGetDMAStatus(void)
     return val;
 }
 
+/**
+ * Offset/Address/Size: 0x80 | 0x8023B8A4 | size: 0xF0
+ */
 void ARStartDMA(u32 type, u32 mainmem_addr, u32 aram_addr, u32 length)
 {
     BOOL old;
@@ -68,6 +77,9 @@ void ARStartDMA(u32 type, u32 mainmem_addr, u32 aram_addr, u32 length)
     OSRestoreInterrupts(old);
 }
 
+/**
+ * Offset/Address/Size: 0x170 | 0x8023B994 | size: 0x68
+ */
 u32 ARAlloc(u32 length)
 {
     u32 tmp;
@@ -87,6 +99,9 @@ u32 ARAlloc(u32 length)
     return tmp;
 }
 
+/**
+ * Offset/Address/Size: 0x1D8 | 0x8023B9FC | size: 0x74
+ */
 u32 ARFree(u32* length)
 {
     BOOL old;
@@ -108,6 +123,9 @@ BOOL ARCheckInit(void)
     return __AR_init_flag;
 }
 
+/**
+ * Offset/Address/Size: 0x24C | 0x8023BA70 | size: 0xC4
+ */
 u32 ARInit(u32* stack_index_addr, u32 num_entries)
 {
     BOOL old;
@@ -138,6 +156,9 @@ u32 ARInit(u32* stack_index_addr, u32 num_entries)
     return __AR_StackPointer;
 }
 
+/**
+ * Offset/Address/Size: 0x310 | 0x8023BB34 | size: 0xC
+ */
 void ARReset(void)
 {
     __AR_init_flag = FALSE;
@@ -150,11 +171,17 @@ void ARSetSize(void)
 #endif
 }
 
+/**
+ * Offset/Address/Size: 0x31C | 0x8023BB40 | size: 0x8
+ */
 u32 ARGetBaseAddress(void)
 {
     return 0x4000;
 }
 
+/**
+ * Offset/Address/Size: 0x324 | 0x8023BB48 | size: 0x8
+ */
 u32 ARGetSize(void)
 {
     return __AR_Size;
@@ -193,6 +220,9 @@ void ARClear(u32 flag)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x32C | 0x8023BB50 | size: 0x78
+ */
 static void __ARHandler(__OSInterrupt exception, OSContext* context)
 {
     OSContext exceptionContext;
@@ -211,6 +241,9 @@ static void __ARHandler(__OSInterrupt exception, OSContext* context)
     OSSetCurrentContext(context);
 }
 
+/**
+ * Offset/Address/Size: 0x3A4 | 0x8023BBC8 | size: 0x20
+ */
 void __ARClearInterrupt(void)
 {
     u16 tmp;
@@ -220,6 +253,9 @@ void __ARClearInterrupt(void)
     __DSPRegs[5] = (tmp);
 }
 
+/**
+ * Offset/Address/Size: 0x3C4 | 0x8023BBE8 | size: 0x10
+ */
 u16 __ARGetInterruptStatus(void)
 {
     return __DSPRegs[5] & 0x20;
@@ -271,6 +307,9 @@ static void __ARReadDMA(u32 mmem_addr, u32 aram_addr, u32 length)
     __ARClearInterrupt();
 }
 
+/**
+ * Offset/Address/Size: 0x3D4 | 0x8023BBF8 | size: 0x17F4
+ */
 static void __ARChecksize(void)
 {
     u8 test_data_pad[63];

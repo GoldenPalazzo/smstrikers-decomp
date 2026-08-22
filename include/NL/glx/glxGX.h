@@ -4,27 +4,27 @@
 #include "dolphin/gx/GXEnum.h"
 #include "NL/nlColour.h"
 
-bool gxSetCoPlanar(bool);
-nlColour gxSetChanAmbColour(int, const nlColour&);
-nlColour gxSetChanMatColour(int, const nlColour&);
-void gxSetTexCoordGen(int, _GXTexGenType, _GXTexGenSrc, unsigned long);
-void gxSetTevAlphaOp(int, _GXTevOp, _GXTevBias, _GXTevScale, bool, _GXTevRegID);
-void gxSetTevColourOp(int, _GXTevOp, _GXTevBias, _GXTevScale, bool, _GXTevRegID);
-u32 gxSetNumTexGens(unsigned long);
-u32 gxSetNumTevStages(unsigned long);
-u32 gxSetNumChans(unsigned long);
-_GXCullMode gxSetCullMode(_GXCullMode);
-void gxSetBlendMode(bool, _GXBlendFactor, _GXBlendFactor, bool);
+bool gxSetCoPlanar(bool coplanar);
+nlColour gxSetChanAmbColour(int chan, const nlColour& color);
+nlColour gxSetChanMatColour(int chan, const nlColour& color);
+void gxSetTexCoordGen(int dst_coord, _GXTexGenType func, _GXTexGenSrc src_param, unsigned long arg);
+void gxSetTevAlphaOp(int stage, _GXTevOp op, _GXTevBias bias, _GXTevScale scale, bool clamp, _GXTevRegID out_reg);
+void gxSetTevColourOp(int stage, _GXTevOp op, _GXTevBias bias, _GXTevScale scale, bool clamp, _GXTevRegID out_reg);
+u32 gxSetNumTexGens(unsigned long numGens);
+u32 gxSetNumTevStages(unsigned long numTEV);
+u32 gxSetNumChans(unsigned long numChans);
+_GXCullMode gxSetCullMode(_GXCullMode mode);
+void gxSetBlendMode(bool bBlend, _GXBlendFactor src_factor, _GXBlendFactor dst_factor, bool bSubtract);
 void gxSetAlphaCompare(_GXCompare func, unsigned char ref);
 void gxRestoreZMode();
 void gxSaveZMode();
-void gxSetZMode(bool, _GXCompare, bool);
-bool gxSetZCompLoc(bool);
-bool gxSetAlphaUpdate(bool);
-bool gxSetColourUpdate(bool);
-uint gxSetDither(bool);
-uint gxSetTevAlphaIn(int, int, _GXTevAlphaArg);
-void gxSetTevAlphaIn(int, _GXTevAlphaArg, _GXTevAlphaArg, _GXTevAlphaArg, _GXTevAlphaArg);
+void gxSetZMode(bool bTest, _GXCompare func, bool bWrite);
+bool gxSetZCompLoc(bool bBefore);
+bool gxSetAlphaUpdate(bool bOn);
+bool gxSetColourUpdate(bool bOn);
+uint gxSetDither(bool dither);
+uint gxSetTevAlphaIn(int stage, int component, _GXTevAlphaArg arg);
+void gxSetTevAlphaIn(int stage, _GXTevAlphaArg a, _GXTevAlphaArg b, _GXTevAlphaArg c, _GXTevAlphaArg d);
 void gxInit();
 
 #endif // _GLXGX_H_
