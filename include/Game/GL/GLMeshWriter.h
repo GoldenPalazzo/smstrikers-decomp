@@ -55,9 +55,11 @@ public:
     /* 0x0C*/ virtual bool Begin(int, eGLPrimitive, int, const eGLStream*, bool);
     /* 0x10*/ virtual bool End();
     /* 0x14*/ virtual void Colour(const nlColour&);
+    void Colour(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
     /* 0x18*/ virtual void ColourPlat(unsigned long);
     /* 0x1C*/ virtual void Normal(const nlVector3&) = 0;
     /* 0x20*/ virtual void Texcoord(const nlVector2&);
+    void Texcoord(float u, float v);
     /* 0x24*/ virtual void Vertex(const nlVector3&);
     /* 0x28*/ virtual void Vertex(const nlVector4&);
     void Position(const nlVector3&);

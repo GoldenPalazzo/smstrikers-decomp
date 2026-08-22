@@ -367,6 +367,16 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
     return 1;
 }
 
+void nlFont::Unload()
+{
+    ::operator delete[](m_pKernTable);
+    m_pKernTable = NULL;
+    if (m_pExtendedGlyphs != NULL)
+    {
+        ::operator delete[](m_pExtendedGlyphs);
+    }
+}
+
 /**
  * Offset/Address/Size: 0x17C | 0x80210AB8 | size: 0x6B4
  */
@@ -499,7 +509,12 @@ void nlFont::DrawString(eGLView View, const FontCharString& Text, const nlVector
                     break;
 
                 case ESC_NON_BREAKING_SPACE:
-                    CurrentX += (float)((int)m_GlyphLookup[0].Offset + (int)m_GlyphLookup[0].Advance);
+#if defined(VERSION_G4QJ01)
+                    if (!m_bIsJapanese)
+#endif
+                    {
+                        CurrentX += (float)((int)m_GlyphLookup[0].Offset + (int)m_GlyphLookup[0].Advance);
+                    }
                     break;
                 default:
                     break;
@@ -710,73 +725,3 @@ unsigned long nlFont::GetCharWidth(unsigned short FontChar, unsigned short PrevF
 
     return (unsigned long)(ret * m_Metrics.Spacing);
 }
-
-/**
- * Offset/Address/Size: 0x0 | 0x80211CA4 | size: 0x28
- */
-// nlQSort<nlFont::GlyphInfo>(nlFont::GlyphInfo*, int, int (*)(const nlFont::GlyphInfo*, const nlFont::GlyphInfo*))
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x28 | 0x80211CCC | size: 0x28
- */
-// nlQSort<nlFont::KernPair>(nlFont::KernPair*, int, int (*)(const nlFont::KernPair*, const nlFont::KernPair*))
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x50 | 0x80211CF4 | size: 0x8C
- */
-// nlBSearch<nlFont::KernPair, nlFont::KernPair>(const nlFont::KernPair&, nlFont::KernPair*, int)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x0 | 0x80211D80 | size: 0x68
- */
-// nlWalkList<ListEntry<nlFont::GlyphInfo>, ListContainerBase<nlFont::GlyphInfo,
-// BasicSlotPoolHigh<ListEntry<nlFont::GlyphInfo>>>>(ListEntry<nlFont::GlyphInfo>*, ListContainerBase<nlFont::GlyphInfo,
-// BasicSlotPoolHigh<ListEntry<nlFont::GlyphInfo>>>*, void (ListContainerBase<nlFont::GlyphInfo,
-// BasicSlotPoolHigh<ListEntry<nlFont::GlyphInfo>>>::*)(ListEntry<nlFont::GlyphInfo>*))
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x68 | 0x80211DE8 | size: 0x68
- */
-// nlWalkList<ListEntry<nlFont::KernPair>, ListContainerBase<nlFont::KernPair,
-// BasicSlotPoolHigh<ListEntry<nlFont::KernPair>>>>(ListEntry<nlFont::KernPair>*, ListContainerBase<nlFont::KernPair,
-// BasicSlotPoolHigh<ListEntry<nlFont::KernPair>>>*, void (ListContainerBase<nlFont::KernPair,
-// BasicSlotPoolHigh<ListEntry<nlFont::KernPair>>>::*)(ListEntry<nlFont::KernPair>*))
-// {
-// }
-
-/**
- * Offset/Address/Size: 0xD0 | 0x80211E50 | size: 0x44
- */
-// nlListRemoveStart<ListEntry<nlFont::GlyphInfo>>(ListEntry<nlFont::GlyphInfo>**, ListEntry<nlFont::GlyphInfo>**)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x114 | 0x80211E94 | size: 0x44
- */
-// nlListRemoveStart<ListEntry<nlFont::KernPair>>(ListEntry<nlFont::KernPair>**, ListEntry<nlFont::KernPair>**)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x158 | 0x80211ED8 | size: 0x28
- */
-// nlListAddStart<ListEntry<nlFont::KernPair>>(ListEntry<nlFont::KernPair>**, ListEntry<nlFont::KernPair>*, ListEntry<nlFont::KernPair>**)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x180 | 0x80211F00 | size: 0x28
- */
-// nlListAddStart<ListEntry<nlFont::GlyphInfo>>(ListEntry<nlFont::GlyphInfo>**, ListEntry<nlFont::GlyphInfo>*,
-// ListEntry<nlFont::GlyphInfo>**)
-// {
-// }

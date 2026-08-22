@@ -1,39 +1,15 @@
 #include "Game/OverlayHandlerGoal.h"
+#include "Game/FE/feHelpFuncs.h"
 #include "Game/FE/feFinder.h"
 #include "Game/FE/tlTextInstance.h"
 #include "Game/Game.h"
 #include "Game/GameInfo.h"
 #include "Game/Goalie.h"
 #include "Game/Team.h"
+#include "NL/nlAlgorithm.h"
 #include "NL/nlBundleFile.h"
 #include "NL/nlFormat.h"
-
-template <typename T, typename Key>
-T* nlBSearch(const Key&, T*, int);
-
-struct LOCHeader
-{
-    char Thumbprint[4];
-    unsigned long Version;
-    unsigned long Language;
-    unsigned long StringCount;
-    unsigned long Flags;
-};
-
-class nlLocalization
-{
-public:
-    struct StringLookup
-    {
-        unsigned long hash;
-        unsigned long StringOffset;
-    };
-
-    LOCHeader* m_pFile;
-    StringLookup* m_LookupTable;
-    unsigned short* m_FirstString;
-    int m_CurrentLanguage;
-};
+#include "NL/nlLocalization.h"
 
 template <>
 nlLocalization::StringLookup* nlBSearch<nlLocalization::StringLookup, unsigned long>(const unsigned long&, nlLocalization::StringLookup*, int);
@@ -42,11 +18,6 @@ extern nlLocalization* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
 extern cTeam* g_pTeams[];
-
-void MakeTextBoxReallyWide(TLTextInstance&);
-unsigned long GetLOCCharacterName(eTeamID, bool, bool);
-unsigned long GetLOCTrophyName(eTrophyType);
-unsigned long GetLOCTeamName(eTeamID);
 
 static inline const unsigned short* LookupLocHash(unsigned long key)
 {
@@ -68,55 +39,6 @@ extern "C" double ceil(double);
 extern "C" double floor(double);
 
 /**
- * Offset/Address/Size: 0x106C | 0x80104868 | size: 0xCF0
- */
-// void FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator>>::operator%<BasicString<unsigned short, Detail::TempStringAllocator>>(const BasicString<unsigned short, Detail::TempStringAllocator>&)
-//{
-// }
-
-/**
- * Offset/Address/Size: 0xF40 | 0x8010473C | size: 0x12C
- */
-// void Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[32], BasicString<unsigned short, Detail::TempStringAllocator>>(const BasicString<unsigned short, Detail::TempStringAllocator>&, const unsigned short(&)[32], const BasicString<unsigned short, Detail::TempStringAllocator>&)
-//{
-// }
-
-/**
- * Offset/Address/Size: 0xE1C | 0x80104618 | size: 0x124
- */
-// void Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[16], unsigned short[16]>(const BasicString<unsigned short, Detail::TempStringAllocator>&, const unsigned short(&)[16], const unsigned short(&)[16])
-//{
-// }
-
-/**
- * Offset/Address/Size: 0x12C | 0x80103928 | size: 0xCF0
- */
-// void FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator>>::operator%<const unsigned short*>(const unsigned short* const&)
-//{
-// }
-
-/**
- * Offset/Address/Size: 0x0 | 0x801037FC | size: 0x12C
- */
-// void Format<BasicString<unsigned short, Detail::TempStringAllocator>, const unsigned short*, unsigned short[32], unsigned short[32]>(const BasicString<unsigned short, Detail::TempStringAllocator>&, const unsigned short* const&, const unsigned short(&)[32], const unsigned short(&)[32])
-//{
-// }
-
-/**
- * Offset/Address/Size: 0xBC | 0x8010337C | size: 0x1E4
- */
-// void BasicString<char, Detail::TempStringAllocator>::AppendInPlace<Detail::TempStringAllocator>(const BasicString<char, Detail::TempStringAllocator>&)
-//{
-// }
-
-/**
- * Offset/Address/Size: 0x0 | 0x801032C0 | size: 0xBC
- */
-// void BasicString<char, Detail::TempStringAllocator>::Append<Detail::TempStringAllocator>(const BasicString<char, Detail::TempStringAllocator>&) const
-//{
-// }
-
-/**
  * Offset/Address/Size: 0x3150 | 0x801031C0 | size: 0x100
  */
 GoalOverlay::GoalOverlay()
@@ -128,13 +50,13 @@ GoalOverlay::GoalOverlay()
 
     mEventHandler = g_pEventManager->AddEventHandler(eventHandler, this, 1);
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->IsInFriendlyMode() || nlSingleton<GameInfoManager>::s_pInstance->IsInTournamentMode())
+    if (GameInfoManager::Instance()->IsInFriendlyMode() || GameInfoManager::Instance()->IsInTournamentMode())
     {
         mHasSniperCup = true;
     }
     else
     {
-        mHasSniperCup = nlSingleton<GameInfoManager>::s_pInstance->HasTrophy((eTrophyType)9);
+        mHasSniperCup = GameInfoManager::Instance()->HasTrophy(TROPHY_SNIPER_CUP);
     }
 
     mCaptainGoals[0] = 0;
@@ -166,9 +88,9 @@ void GoalOverlay::SceneCreated()
 /**
  * Offset/Address/Size: 0x305C | 0x801030CC | size: 0x50
  */
-void GoalOverlay::Update(float dt)
+void GoalOverlay::Update(float fDeltaT)
 {
-    BaseSceneHandler::Update(dt);
+    BaseSceneHandler::Update(fDeltaT);
 
     if (!mIsInOvertime)
     {
@@ -176,6 +98,20 @@ void GoalOverlay::Update(float dt)
         {
             mIsInOvertime = true;
         }
+    }
+}
+
+void GoalOverlay::CreateEventHandler()
+{
+    mEventHandler = g_pEventManager->AddEventHandler(eventHandler, this, 1);
+}
+
+void GoalOverlay::DestroyEventHandler()
+{
+    if (mEventHandler)
+    {
+        g_pEventManager->RemoveEventHandler(mEventHandler);
+        mEventHandler = NULL;
     }
 }
 
@@ -233,27 +169,34 @@ void GoalOverlay::eventHandler(Event* event, void* param)
     }
 }
 
+void GoalOverlay::Reset()
+{
+    mCaptainGoals[0] = 0;
+    mCaptainGoals[1] = 0;
+    mSidekickGoals[0] = 0;
+    mSidekickGoals[1] = 0;
+    mIsInOvertime = false;
+}
+
 /**
  * Offset/Address/Size: 0x19A8 | 0x80101A18 | size: 0x159C
  */
 void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2S, int numGoals)
 {
-    TLTextInstance* pText;
-    GameInfoManager* gameInfo;
-    bool isSuperTeam;
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
-    pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+    TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("Name")));
 
-    eTeamID team = (eTeamID)(gameInfo = nlSingleton<GameInfoManager>::s_pInstance)->GetTeam((short)homeAway);
-    nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0);
-    nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
+    GameInfoManager* const gameInfo = GameInfoManager::Instance();
+    eTeamID team = (eTeamID)gameInfo->GetTeam((short)homeAway);
+    GameInfoManager::Instance()->GetTeam(0);
+    GameInfoManager::Instance()->GetTeam(1);
 
     float time = g_pGame->GetGameTime();
-    StatsTracker* stats = nlSingleton<StatsTracker>::s_pInstance;
+    StatsTracker* stats = StatsTracker::Instance();
     if (!stats->mIsOvertime)
     {
         float fGameDuration = g_pGame->m_pGameTweaks->fGameDuration;
@@ -298,7 +241,7 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
         mCaptainGoals[1] + mSidekickGoals[1]
     };
 
-    isSuperTeam = (nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)homeAway) == 8);
+    bool isSuperTeam = (GameInfoManager::Instance()->GetTeam((short)homeAway) == TEAM_MYSTERY);
     if (isSuperTeam)
     {
         playerIndex = 0;
@@ -327,7 +270,7 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
     unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x04E76F8B));
     formatted = Format(unformatted, minutesWideString, secondsWideString);
 
-    memcpy(mClockBuffer, formatted.c_str(), 0x40);
+    memcpy(mClockBuffer, formatted.c_str(), sizeof(mClockBuffer));
 
     pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
@@ -356,7 +299,7 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
     }
     else
     {
-        if (!mHasSniperCup && gameInfo->HasTrophy((eTrophyType)9) == 1)
+        if (!mHasSniperCup && gameInfo->HasTrophy(TROPHY_SNIPER_CUP) == 1)
         {
             formatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x25801546));
             mHasSniperCup = true;
@@ -377,10 +320,21 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
         {
             unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x78446837));
 
-            unsigned long captainKey = GetLOCTeamName(team);
-            const unsigned short* captainString = LookupLocHash(captainKey);
-            BasicString<unsigned short, Detail::TempStringAllocator> captain(captainString);
-            formatted = Format(unformatted, captain);
+#if defined(VERSION_G4QJ01)
+            if (g_pLocalization->m_CurrentLanguage == nlLocalization::LangJapanese && isSuperTeam)
+            {
+                BasicString<unsigned short, Detail::TempStringAllocator> captain(
+                    LookupLocHash(GetLOCCharacterName(TEAM_MYSTERY, true, false)));
+                formatted = Format(unformatted, captain);
+            }
+            else
+#endif
+            {
+                unsigned long captainKey = GetLOCTeamName(team);
+                const unsigned short* captainString = LookupLocHash(captainKey);
+                BasicString<unsigned short, Detail::TempStringAllocator> captain(captainString);
+                formatted = Format(unformatted, captain);
+            }
         }
         else if (playerIndex == 0 && mCaptainGoals[homeAway] == 3 && !isSuperTeam)
         {
@@ -420,7 +374,7 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
         }
     }
 
-    memcpy(mDescriptionBuffer, formatted.c_str(), 0x100);
+    memcpy(mDescriptionBuffer, formatted.c_str(), sizeof(mDescriptionBuffer));
 
     pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
@@ -435,36 +389,36 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
 /**
  * Offset/Address/Size: 0x1590 | 0x80101600 | size: 0x418
  */
-void GoalOverlay::SetHighlightNumber(int highlightNumber)
+void GoalOverlay::SetHighlightNumber(int highlight)
 {
     SetWinnerTitle();
 
-    TLTextInstance* text = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+    TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         m_pFEPresentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("Description")));
 
-    MakeTextBoxReallyWide(*text);
+    MakeTextBoxReallyWide(*pText);
 
-    if (highlightNumber == 0)
+    if (highlight == 0)
     {
-        text->SetStringId("HIGHLIGHTS1");
+        pText->SetStringId("HIGHLIGHTS1");
         return;
     }
 
     BasicString<unsigned short, Detail::TempStringAllocator> unformatted(LookupLocHash(0xF3DDE99C));
 
     BasicString<char, Detail::TempStringAllocator> highlightString(
-        LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(highlightNumber + 1));
+        LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(highlight + 1));
     unsigned short highlightWideString[16];
     nlStrToWcs(highlightString.c_str(), highlightWideString, 16);
 
     BasicString<unsigned short, Detail::TempStringAllocator> formatted(
         Format(unformatted, highlightWideString));
 
-    memcpy(mDescriptionBuffer, formatted.c_str(), 0x100);
-    text->SetString(mDescriptionBuffer);
+    memcpy(mDescriptionBuffer, formatted.c_str(), sizeof(mDescriptionBuffer));
+    pText->SetString(mDescriptionBuffer);
 }
 
 /**
@@ -474,7 +428,7 @@ void GoalOverlay::DoMatchEndOverlay()
 {
     SetWinnerTitle();
 
-    GameInfoManager* const gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    GameInfoManager* const gameInfo = GameInfoManager::Instance();
     BasicString<unsigned short, Detail::TempStringAllocator> formatted;
     eTeamID winner = TEAM_INVALID;
     unsigned char isFinalGame = false;
@@ -516,10 +470,22 @@ void GoalOverlay::DoMatchEndOverlay()
 
     if (isFinalGame && (winner == gameInfo->GetTeam(0) || winner == gameInfo->GetTeam(1)))
     {
-        BasicString<unsigned short, Detail::TempStringAllocator> unformatted(LookupLocHash(0x736E7F17));
-        eTrophyType cup = nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode();
+#if defined(VERSION_G4QJ01)
+        if (g_pLocalization->m_CurrentLanguage == nlLocalization::LangJapanese && winner == TEAM_MYSTERY)
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> unformatted(LookupLocHash(0x736E7F17));
+            eTrophyType cup = GameInfoManager::Instance()->GetTrophyTypeByCurrentMode();
 
-        formatted = Format(unformatted, LookupLocHash(GetLOCTeamName(winner)), LookupLocHash(GetLOCTrophyName(cup)));
+            formatted = Format(unformatted, LookupLocHash(GetLOCCharacterName(TEAM_MYSTERY, true, false)), LookupLocHash(GetLOCTrophyName(cup)));
+        }
+        else
+#endif
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> unformatted(LookupLocHash(0x736E7F17));
+            eTrophyType cup = GameInfoManager::Instance()->GetTrophyTypeByCurrentMode();
+
+            formatted = Format(unformatted, LookupLocHash(GetLOCTeamName(winner)), LookupLocHash(GetLOCTrophyName(cup)));
+        }
     }
     else
     {
@@ -527,15 +493,23 @@ void GoalOverlay::DoMatchEndOverlay()
         scoreRight = g_pTeams[1]->m_nScore;
 
         eTeamID winnerID = scoreLeft > scoreRight
-                             ? nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)
-                             : nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
+                             ? GameInfoManager::Instance()->GetTeam(0)
+                             : GameInfoManager::Instance()->GetTeam(1);
         eTeamID loserID = scoreLeft < scoreRight
-                            ? nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)
-                            : nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
+                            ? GameInfoManager::Instance()->GetTeam(0)
+                            : GameInfoManager::Instance()->GetTeam(1);
 
         BasicString<unsigned short, Detail::TempStringAllocator> unformatted(LookupLocHash(0x09B4BC7C));
 
-        formatted = Format(unformatted, LookupLocHash(GetLOCCharacterName(winnerID, true, false)), LookupLocHash(GetLOCCharacterName(loserID, true, false)));
+        bool useShortSuperTeam = true;
+#if defined(VERSION_G4QJ01)
+        if (g_pLocalization->m_CurrentLanguage == nlLocalization::LangJapanese)
+        {
+            useShortSuperTeam = false;
+        }
+#endif
+
+        formatted = Format(unformatted, LookupLocHash(GetLOCCharacterName(winnerID, useShortSuperTeam, false)), LookupLocHash(GetLOCCharacterName(loserID, useShortSuperTeam, false)));
     }
 
     TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
@@ -546,7 +520,7 @@ void GoalOverlay::DoMatchEndOverlay()
 
     MakeTextBoxReallyWide(*pText);
 
-    memcpy(mDescriptionBuffer, formatted.c_str(), 0x100);
+    memcpy(mDescriptionBuffer, formatted.c_str(), sizeof(mDescriptionBuffer));
     mDescriptionBuffer[127] = 0;
     pText->SetString(mDescriptionBuffer);
 }
@@ -573,7 +547,7 @@ void GoalOverlay::SetWinnerTitle()
     BasicString<unsigned short, Detail::TempStringAllocator> unformatted(LookupLocHash(0x4543196B));
     BasicString<unsigned short, Detail::TempStringAllocator> formatted;
 
-    eTeamID winningTeam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((scoreLeft <= scoreRight) ? 1 : 0);
+    eTeamID winningTeam = GameInfoManager::Instance()->GetTeam((scoreLeft <= scoreRight) ? 1 : 0);
 
     if (scoreLeft > scoreRight)
     {
@@ -584,7 +558,7 @@ void GoalOverlay::SetWinnerTitle()
         formatted = Format(unformatted, LookupLocHash(GetLOCTeamName(winningTeam)), scoreRightWideString, scoreLeftWideString);
     }
 
-    memcpy(mScoresBuffer, formatted.c_str(), 0x100);
+    memcpy(mScoresBuffer, formatted.c_str(), sizeof(mScoresBuffer));
 
     TLTextInstance* pText;
 
@@ -610,13 +584,13 @@ void GoalOverlay::SetWinnerTitle()
  */
 void GoalOverlay::DoCupWinOverlay()
 {
-    eTeamID winners = (eTeamID)nlSingleton<GameInfoManager>::s_pInstance->GetUserSelectedCupTeam();
+    eTeamID winners = (eTeamID)GameInfoManager::Instance()->GetUserSelectedCupTeam();
 
     BasicString<unsigned short, Detail::TempStringAllocator> formatted(
         Format(BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0xB49CF8B5)),
             LookupLocHash(GetLOCCharacterName(winners, true, false))));
 
-    memcpy(mScoresBuffer, formatted.c_str(), 0x100);
+    memcpy(mScoresBuffer, formatted.c_str(), sizeof(mScoresBuffer));
 
     TLTextInstance* pText;
 
@@ -628,12 +602,12 @@ void GoalOverlay::DoCupWinOverlay()
 
     pText->SetString(mScoresBuffer);
 
-    eTrophyType cup = (eTrophyType)nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode();
+    eTrophyType cup = (eTrophyType)GameInfoManager::Instance()->GetTrophyTypeByCurrentMode();
 
     formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x4E704897)),
         LookupLocHash(GetLOCTrophyName(cup)));
 
-    memcpy(mDescriptionBuffer, formatted.c_str(), 0x100);
+    memcpy(mDescriptionBuffer, formatted.c_str(), sizeof(mDescriptionBuffer));
 
     pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         m_pFEPresentation,

@@ -1003,7 +1003,7 @@ config.libs = [
             Object(MatchingFor("G4QE01"), "Game/OverlayHandlerInGameText.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/OverlayHandlerSTSX2.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/OverlayHandlerDemo.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(MatchingFor("G4QE01"), "Game/OverlayHandlerGoal.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "Game/OverlayHandlerGoal.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             Object(MatchingFor("G4QE01"), "Game/FE/feTweenFuncs.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/FE/feOptionsSubMenus.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -1263,7 +1263,7 @@ config.libs = [
             Object(MatchingFor("G4QE01"), "Game/DB/CustomTournament.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Debug
-            Object(MatchingFor("G4QE01"), "Game/Debug/FrameCounter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "Game/Debug/FrameCounter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/Debug/ShapeRender.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "Game/Debug/TimeRegions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
@@ -1283,7 +1283,7 @@ config.libs = [
             Object(MatchingFor("G4QE01"), "NL/nlEndian.cpp", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "NL/nlFile.cpp", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "NL/nlFileGC.cpp", extra_cflags=["-inline deferred"]),
-            Object(MatchingFor("G4QE01"), "NL/nlFont.cpp", extra_cflags=["-inline deferred"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "NL/nlFont.cpp", extra_cflags=["-inline deferred"]),
             Object(MatchingFor("G4QE01"), "NL/nlLocalization.cpp", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "NL/nlMain.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "NL/nlMath.cpp", extra_cflags=["-inline auto"]),
@@ -1320,7 +1320,7 @@ config.libs = [
             Object(MatchingFor("G4QE01", "G4QJ01"), "NL/glx/glxMemory.cpp", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "NL/glx/glxTexture.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "NL/glx/glxSend.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(MatchingFor("G4QE01"), "NL/glx/glxLoadModel.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "NL/glx/glxLoadModel.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01"), "NL/glx/glxGX.cpp", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "NL/glx/glxDisplayList.cpp", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01"), "NL/glx/glxTarget.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

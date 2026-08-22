@@ -49,7 +49,7 @@ static const int gl_stream_stride[15] = {
     12, 3, 4, 4, 4, 4, 4, 4, 4, 12, 12, 12, 1, 16, 16
 };
 
-static inline void* NLVIRTUALALLOC(unsigned long size)
+static void* NLVIRTUALALLOC(unsigned long size)
 {
     if (nlVirtualLargestBlock() >= size + 0x100)
     {
@@ -133,7 +133,7 @@ GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
                 u32 boneID = *(u32*)data;
                 nlMatrix4 src;
                 nlMatrix4 inv;
-                memcpy(&src, data + 4, 0x40);
+                memcpy(&src, data + 4, sizeof(nlMatrix4));
                 data += 0x44;
                 nlInvertMatrix(inv, src);
                 mesh->SetBoneMatrix(boneID, &inv);
@@ -333,7 +333,7 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                         float start;
                         memcpy(&start, p32, sizeof(float));
                         p32++;
-                        GLTextureAnim* pAnim = new (nlMalloc(0x20, 8, false)) GLTextureAnim();
+                        GLTextureAnim* pAnim = new (nlMalloc(sizeof(GLTextureAnim), 8, false)) GLTextureAnim();
                         pAnim->m_unk_0x00 = (s32)canonID;
                         pAnim->SetNumTextures(num);
                         pAnim->m_mode = mode;
@@ -365,7 +365,7 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                     unsigned long numFrames = *p32++;
                     unsigned long numVerts = *p32++;
                     unsigned long fps = *p32++;
-                    GLVertexAnim* pAnim = new (nlMalloc(0x28, 8, false)) GLVertexAnim();
+                    GLVertexAnim* pAnim = new (nlMalloc(sizeof(GLVertexAnim), 8, false)) GLVertexAnim();
                     pAnim->m_uHashID = hashID;
                     pAnim->m_nNumFrames = numFrames;
                     pAnim->m_nNumVertices = numVerts;
@@ -385,7 +385,7 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                     unsigned long* p32 = (unsigned long*)chunkData;
                     unsigned long modelID = *p32++;
                     unsigned long numMats = *p32++;
-                    GLMaterialList* pList = new (nlMalloc(0x0C, 8, false)) GLMaterialList();
+                    GLMaterialList* pList = new (nlMalloc(sizeof(GLMaterialList), 8, false)) GLMaterialList();
                     pList->m_uHashID = modelID;
                     pList->SetMaterials(numMats, (const GLMaterialEntry*)p32);
                     glInventory.AddMaterialList(modelID, pList);
@@ -528,6 +528,48 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
 
     nlFree(data);
     return pModels;
+}
+
+static glModel* glxLoadModelFromDisk(const char* filename, unsigned long* pNumModels)
+{
+    unsigned int alignSize;
+    unsigned int fileSize;
+    char fullname[256];
+    glModel* retval;
+    nlFile* f;
+
+    glx_FreeMemory0();
+    nlStrNCat(fullname, "art/", filename, 256);
+
+    f = nlOpen(fullname);
+    if (f == NULL)
+    {
+        retval = NULL;
+    }
+    else
+    {
+        fileSize = nlFileSize(f, &alignSize);
+        nlClose(f);
+        if (fileSize == 0)
+        {
+            retval = NULL;
+        }
+        else
+        {
+            char* data = (char*)nlLoadEntireFileToVirtualMemory(fullname, (int*)&fileSize, 0x80000, NULL, AllocateEnd);
+            if (data == NULL)
+            {
+                retval = NULL;
+            }
+            else
+            {
+                retval = glxLoadModelFromMemory(data, fileSize, pNumModels, true);
+            }
+        }
+    }
+
+    glx_FreeMemory1(filename);
+    return retval;
 }
 
 /**

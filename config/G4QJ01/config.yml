@@ -18,11 +18,18 @@ write_asm: true
 ldscript_template: config/G4QJ01/ldscript.tpl
 
 # Suppress dtk false-positive relocations in LidOpenMessage image data. These
-# words are compressed-image bytes that happen to equal BuildFrameTable + 0x510,
-# not pointers into ParticleSystem.
+# words are compressed-image bytes, not code pointers.
 block_relocations:
+  # These words happen to equal BuildFrameTable + 0x510.
   - source: .rodata:0x8029302C
   - source: .rodata:0x80294104
+  # This word happens to equal DrawSmile + 0x350.
+  - source: .rodata:0x80298244
+  # The BMD skin chunk ID 0x8001B008 happens to equal
+  # UseTeamPowerup + 0xE8. These two instructions form the literal chunk ID,
+  # not a code pointer.
+  - source: .text:0x801C1F88
+  - source: .text:0x801C1F8C
   # The world physics chunk ID 0x8001D000 happens to equal
   # ShouldIStrafe + 0x174. These instructions form the literal chunk ID,
   # not a code pointer.

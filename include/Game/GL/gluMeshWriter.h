@@ -8,6 +8,8 @@
 class GLMeshWriter : public GLMeshWriterCore
 {
 public:
+    using GLMeshWriterCore::Texcoord;
+
     ~GLMeshWriter() { }
     virtual bool End();
     virtual void Normal(const nlVector3&);
@@ -15,6 +17,21 @@ public:
     void Texcoord(short, short);
 
 }; // total size: 0x70
+
+inline void GLMeshWriterCore::Colour(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+{
+    nlColour colour;
+    nlColourSet(colour, r, g, b, a);
+    Colour(colour);
+}
+
+inline void GLMeshWriterCore::Texcoord(float u, float v)
+{
+    nlVector2 uv;
+    uv.x = u;
+    uv.y = v;
+    Texcoord(uv);
+}
 
 inline void GLMeshWriterCore::Position(const nlVector3& v)
 {

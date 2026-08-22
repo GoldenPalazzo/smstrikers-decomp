@@ -9,10 +9,16 @@ class FrameCounter
 public:
     static int NUM_FRAMES_TO_AVERAGE_OVER;
 
-    FrameCounter(const char*, const char*);
-    void StartTimer(int);
+    FrameCounter(const char* first, const char* second);
+    void StartTimer(int timerNum);
+    unsigned int FinishCurrTimer();
+    void ResetFrameTimers();
     void FinishTiming();
-    void WriteFrameRateStatsToFile(const char*);
+    void DisplayFrameRate();
+    void DisplaySlowFrameRatio();
+    void DisplayContinuousFrameRate();
+    void DisplayFrameTicker();
+    void WriteFrameRateStatsToFile(const char* fileName);
     void DisplayFrameSmiler();
 
     /* 0x000 */ const char* m_FirstName;
@@ -22,13 +28,10 @@ public:
     /* 0x010 */ float m_CurrTimer[2];
     /* 0x018 */ float m_CurrFrame[2];
     /* 0x020 */ float m_LastFrame[2];
-    // /* 0x028 */ unsigned int m_Counter;
-    // /* 0x02C */ unsigned int m_NextHistoryPos;
-
-    /* 0x028 */ s32 unk28;
-    /* 0x02C */ f32 unk2C;
-    /* 0x030 */ u32 unk30;
-    /* 0x034 */ s32 unk34;
+    /* 0x028 */ s32 m_NumSlowFrames;
+    /* 0x02C */ f32 m_SlowFrameRatio;
+    /* 0x030 */ u32 m_Counter;
+    /* 0x034 */ s32 m_NextHistoryPos;
 
     /* 0x038 */ float m_FrameHistory[640];
     /* 0xA38 */ int m_ContinuousFrameHistoryIndex;
@@ -36,23 +39,5 @@ public:
 }; // total size: 0x107C
 
 extern FrameCounter g_FrameCounter;
-
-// class ListContainerBase<TimeRegion*, NewAdapter<ListEntry<TimeRegion*>>>
-// {
-// public:
-//     void DeleteEntry(ListEntry<TimeRegion*>*);
-// };
-
-// class nlListContainer<TimeRegion*>
-// {
-// public:
-//     void ~nlListContainer();
-// };
-
-// class nlWalkList<ListEntry<TimeRegion*>, ListContainerBase<TimeRegion*, NewAdapter<ListEntry<TimeRegion*>>>>(ListEntry<TimeRegion*>*, ListContainerBase<TimeRegion*, NewAdapter<ListEntry<TimeRegion*>>>*, void (ListContainerBase<TimeRegion*, NewAdapter<ListEntry<TimeRegion*>>>
-// {
-// public:
-//     void *)(ListEntry<TimeRegion*>*));
-// };
 
 #endif // _FRAMECOUNTER_H_
