@@ -74,12 +74,7 @@ public:
 
     void Set(float _x, float _y, float _z);
 
-    inline float CalculateDistanceSquared2D(const nlVector3& v)
-    {
-        float dx = x - v.x;
-        float dy = y - v.y;
-        return dx * dx + dy * dy;
-    }
+    float CalculateDistanceSquared2D(const nlVector3& v) const;
 
     inline float GetLengthSq2D() const
     {
@@ -159,6 +154,13 @@ inline void nlVec3Sub2D(nlVector3& result, const nlVector3& a, const nlVector3& 
 {
     result.x = a.x - b.x;
     result.y = a.y - b.y;
+}
+
+inline float nlVector3::CalculateDistanceSquared2D(const nlVector3& v) const
+{
+    nlVector3 v3Delta;
+    nlVec3Sub2D(v3Delta, *this, v);
+    return v3Delta.GetLengthSq2D();
 }
 
 inline float nlVec3DotProduct(const nlVector3& a, const nlVector3& b)

@@ -6,6 +6,8 @@
 
 #include "Game/Net.h"
 #include "Game/Player.h"
+#include "Game/Team.h"
+#include "Game/AI/Fuzzy.h"
 #include "Game/AI/Powerups.h"
 #include "Game/AI/ScriptAction.h"
 
@@ -242,6 +244,26 @@ public:
     bool IsMidField() const;
     bool IsDefense() const;
     bool IsFrozen() const;
+    inline float GetRunningDistance(float fTime) const
+    {
+        return fTime * m_pTweaks->fRunningSpeed;
+    }
+    inline float GetPowerupUsageRandomChance(int ePowerup) const
+    {
+        cTeam* pTeam = m_pTeam;
+        eSituation situation = pTeam->mpCurrentSituation;
+        SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(pTeam->m_nSide);
+        return RandomChance(pSkillTweaks->PowerupUsageChance[situation][ePowerup]);
+    }
+    inline unsigned char IsAttacking() const
+    {
+        unsigned char bAttacking = false;
+        if (m_eActionState == ACTION_SLIDE_ATTACK || m_eActionState == ACTION_HIT)
+        {
+            bAttacking = true;
+        }
+        return bAttacking;
+    }
     void SetFrozen(float seconds);
     float DoFindBestSlideAttackTarget(nlVector3& v3PositionOut, nlVector3& v3VelocityOut);
     bool CanBeBlownUp();

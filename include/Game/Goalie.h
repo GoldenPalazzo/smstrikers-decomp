@@ -260,6 +260,26 @@ public:
     void ActionSnapBall(float fDeltaT);
     void ActionGrabBall(float fDeltaT);
 
+    inline bool IsRecovering() const
+    {
+        return mGoalieActionState == GOALIEACTION_STS_RECOVER;
+    }
+
+    inline bool IsBusy() const
+    {
+        return HasBall() || (mGoalieActionState == GOALIEACTION_PASS) || (mGoalieActionState == GOALIEACTION_PASS_INTERCEPT) || (mGoalieActionState == GOALIEACTION_MOVE) || (mGoalieActionState == GOALIEACTION_MOVE_WB) || (mGoalieActionState == GOALIEACTION_PASS_INTERCEPT) || (mGoalieActionState == GOALIEACTION_PURSUE_BALL_CARRIER) || (mGoalieActionState == GOALIEACTION_PURSUE_BALL_POUNCE) || (mGoalieActionState == GOALIEACTION_LOOSEBALL_SETUP) || (mGoalieActionState == GOALIEACTION_LOOSEBALL_CATCH) || (mGoalieActionState == GOALIEACTION_LOOSEBALL_PICKUP) || (mGoalieActionState == GOALIEACTION_LOOSEBALL_PURSUE_BOUNCING) || (mGoalieActionState == GOALIEACTION_LOOSEBALL_PURSUE_ROLLING);
+    }
+
+    inline unsigned char IsAttacking() const
+    {
+        unsigned char bAttacking = false;
+        if (mGoalieActionState == GOALIEACTION_PURSUE_BALL_CARRIER || mGoalieActionState == GOALIEACTION_PURSUE_BALL_POUNCE)
+        {
+            bAttacking = true;
+        }
+        return bAttacking;
+    }
+
     inline bool IsPositionBeyondGoalLine() const
     {
         return (float)fabs(mv3TargetPosition.x) > cField::GetGoalLineX(1U);
