@@ -555,15 +555,7 @@ static bool PushNoCardMessage()
 {
     if (NoCardInSlot() || WasCardRemoved)
     {
-        BaseSceneHandler* handler;
-        if (nlSingleton<GameSceneManager>::Instance()->mCurrentStackDepth != 0)
-        {
-            handler = nlSingleton<GameSceneManager>::Instance()->mBaseSceneHandlerStack[nlSingleton<GameSceneManager>::Instance()->mCurrentStackDepth - 1];
-        }
-        else
-        {
-            handler = NULL;
-        }
+        BaseSceneHandler* handler = nlSingleton<GameSceneManager>::Instance()->GetCurrentScene();
 
         if (nlSingleton<GameSceneManager>::Instance()->GetSceneType(handler) == SCENE_POPUP_MENU)
         {
@@ -748,16 +740,8 @@ void SaveLoadScene::Update(float fDeltaT)
 
     if (!g_pFEInput->HasInputLock(this))
     {
-        BaseSceneHandler* handler;
-        if (nlSingleton<GameSceneManager>::Instance()->mCurrentStackDepth != 0)
-        {
-            handler = nlSingleton<GameSceneManager>::Instance()->mBaseSceneHandlerStack[nlSingleton<GameSceneManager>::Instance()->mCurrentStackDepth - 1];
-        }
-        else
-        {
-            handler = NULL;
-        }
-        if (nlSingleton<GameSceneManager>::Instance()->GetSceneType(handler) == SCENE_POPUP_MENU)
+        FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::Instance()->GetCurrentScene();
+        if (nlSingleton<GameSceneManager>::Instance()->GetSceneType(pPopup) == SCENE_POPUP_MENU)
         {
             PushNoCardMessage();
         }

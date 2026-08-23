@@ -439,15 +439,7 @@ bool AudioLoader::ActivateDPL2(bool bEnableDPL2, bool bLoadSampleFile)
     BaseGameSceneManager* mgr = (BaseGameSceneManager*)nlSingleton<GameSceneManager>::s_pInstance;
     if (mgr != NULL)
     {
-        BaseSceneHandler* handler;
-        if (mgr->mCurrentStackDepth != 0)
-        {
-            handler = mgr->mBaseSceneHandlerStack[mgr->mCurrentStackDepth - 1];
-        }
-        else
-        {
-            handler = NULL;
-        }
+        BaseSceneHandler* handler = mgr->GetCurrentScene();
 
         if (handler != NULL)
         {

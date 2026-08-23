@@ -17,19 +17,10 @@
 void StartMovieCB()
 {
     BaseSceneHandler* handler;
-    u32 sceneCount;
 
     if (GameSceneManager::Instance() != NULL)
     {
-        sceneCount = GameSceneManager::Instance()->mCurrentStackDepth;
-        if (sceneCount != 0)
-        {
-            handler = GameSceneManager::Instance()->mBaseSceneHandlerStack[sceneCount - 1];
-        }
-        else
-        {
-            handler = NULL;
-        }
+        handler = GameSceneManager::Instance()->GetCurrentScene();
         if ((handler != NULL) && (GameSceneManager::Instance()->GetSceneType(handler) == 2)
             && (handler->m_pFEScene->m_bValid != false))
         {
@@ -232,22 +223,13 @@ void TitleScene::StartIntroMovie()
         if (Audio::MasterVolume::GetVolume(Audio::MasterVolume::VG_Music) == 0.0f)
         {
             BaseSceneHandler* handler;
-            u32 sceneCount;
 
             if (GameSceneManager::Instance() == NULL)
             {
                 return;
             }
 
-            sceneCount = GameSceneManager::Instance()->mCurrentStackDepth;
-            if (sceneCount != 0)
-            {
-                handler = GameSceneManager::Instance()->mBaseSceneHandlerStack[sceneCount - 1];
-            }
-            else
-            {
-                handler = NULL;
-            }
+            handler = GameSceneManager::Instance()->GetCurrentScene();
 
             if ((handler != NULL) && (GameSceneManager::Instance()->GetSceneType(handler) == 2)
                 && (handler->m_pFEScene->m_bValid != false))

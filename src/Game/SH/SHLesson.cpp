@@ -106,14 +106,7 @@ void LessonScene::Update(float fDeltaT)
 
     BaseSceneHandler::Update(fDeltaT);
     this->mButtons.CentreButtons();
-    if (nlSingleton<OverlayManager>::Instance()->mCurrentStackDepth != 0)
-    {
-        scene = (MoviePlayerScene*)nlSingleton<OverlayManager>::Instance()->mBaseSceneHandlerStack[nlSingleton<OverlayManager>::Instance()->mCurrentStackDepth - 1];
-    }
-    else
-    {
-        scene = NULL;
-    }
+    scene = (MoviePlayerScene*)nlSingleton<OverlayManager>::Instance()->GetCurrentScene();
 
     if (scene == (MoviePlayerScene*)this)
     {

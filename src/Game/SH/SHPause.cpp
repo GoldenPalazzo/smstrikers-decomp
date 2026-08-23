@@ -498,7 +498,7 @@ void PauseMenuScene::Update(float fDeltaT)
                 if (!goToChooseSides)
                 {
                     OverlayManager* overlayManager = nlSingleton<OverlayManager>::s_pInstance;
-                    while (((overlayManager = nlSingleton<OverlayManager>::s_pInstance)->mCurrentStackDepth != 0 ? overlayManager->mBaseSceneHandlerStack[overlayManager->mCurrentStackDepth - 1] : NULL) != (BaseSceneHandler*)this)
+                    while ((overlayManager = nlSingleton<OverlayManager>::s_pInstance)->GetCurrentScene() != (BaseSceneHandler*)this)
                     {
                         overlayManager->Pop();
                         nlSingleton<FESceneManager>::Instance()->ForceImmediateStackProcessing();

@@ -633,7 +633,7 @@ Game/FE/feManager.cpp:
 	.sbss       start:0x80376E00 end:0x80376E20
 	.sdata2     start:0x80379020 end:0x80379040
 
-Game/BaseGameSceneManager.cpp:
+Game/FE/BaseGameSceneManager.cpp:
 	.text       start:0x800955C0 end:0x80096B9C
 	.text       start:0x80096B9C end:0x80096B9C
 	.text       start:0x80096B9C end:0x80096B9C

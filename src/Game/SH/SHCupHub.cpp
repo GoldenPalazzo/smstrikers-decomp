@@ -562,15 +562,7 @@ void CupHubScene::Update(float fDeltaT)
 
     mTickerManager.Update(fDeltaT);
 
-    BaseSceneHandler* handler;
-    if (nlSingleton<GameSceneManager>::Instance()->mCurrentStackDepth != 0)
-    {
-        handler = nlSingleton<GameSceneManager>::Instance()->mBaseSceneHandlerStack[nlSingleton<GameSceneManager>::Instance()->mCurrentStackDepth - 1];
-    }
-    else
-    {
-        handler = NULL;
-    }
+    BaseSceneHandler* handler = nlSingleton<GameSceneManager>::Instance()->GetCurrentScene();
 
     if (handler == this)
     {

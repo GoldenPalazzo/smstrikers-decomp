@@ -6,8 +6,6 @@
 #include "Game/BaseSceneHandler.h"
 #include "NL/nlBasicString.h"
 
-#define MAX_SCENE_COUNT 32
-
 enum SceneList
 {
     SCENE_INVALID = -2,
@@ -113,17 +111,18 @@ public:
     }
     virtual void Pop();
     void PopEntireStack();
-    int GetSceneType(BaseSceneHandler* handler);
+    SceneList GetSceneType(BaseSceneHandler* scene);
     bool IsOnStack(SceneList scene);
     BasicString<char, Detail::TempStringAllocator> GetFileName(SceneList scene);
-    void PushLoadingScene(bool clearStack);
+    void PushLoadingScene(bool popfirst);
     static bool GetVisible(SceneList sceneid);
     static void SetVisible(SceneList sceneid, bool visibility);
 
 public:
+    static const u32 MAX_SCENE_DEPTH = 32;
     /* 0x04 */ u32 mCurrentStackDepth;
-    /* 0x08 */ SceneList m_sceneStack[MAX_SCENE_COUNT];
-    /* 0x88 */ BaseSceneHandler* mBaseSceneHandlerStack[MAX_SCENE_COUNT];
+    /* 0x08 */ SceneList m_sceneStack[MAX_SCENE_DEPTH];
+    /* 0x88 */ BaseSceneHandler* mBaseSceneHandlerStack[MAX_SCENE_DEPTH];
 };
 
 #endif // _BASEGAMESCENEMANAGER_H_

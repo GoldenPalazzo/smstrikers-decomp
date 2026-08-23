@@ -53,91 +53,91 @@
 
 struct SceneEntry
 {
-    u32 sceneId;
-    const char* sceneName;
+    SceneList mSceneID;
+    const char* mFenFileName;
 };
 
 struct SceneEntry SceneEntryTable[] = {
-    { 0x00, "art/fe/background.fen" },
-    { 0x01, "art/fe/mariobg.fen" },
-    { 0x02, "art/fe/start_screen_v2.fen" },
-    { 0x03, "art/fe/main_menuv2.fen" },
-    { 0x04, "art/fe/choose_sides_v3.fen" },
-    { 0x05, "art/fe/choose_sides_v3.fen" },
-    { 0x06, "art/fe/choose_sides_v3.fen" },
-    { 0x07, "art/fe/choose_sides_v3.fen" },
-    { 0x08, "/art/fe/choose_captains_v3.fen" },
-    { 0x09, "art/fe/choose_stadiums_v2.fen" },
-    { 0x0A, "art/fe/cup_cheater.fen" },
-    { 0x0B, "art/fe/cup_background.fen" },
-    { 0x0C, "art/fe/super_cup_background.fen" },
-    { 0x0D, "art/fe/choose_cup_v2.fen" },
-    { 0x0E, "art/fe/choose_cup_v2.fen" },
-    { 0x0F, "art/fe/cup_choose_captains_v3.fen" },
-    { 0x10, "art/fe/cup_choose_captains_v3.fen" },
-    { 0x11, "art/fe/cup_standings_v2.fen" },
-    { 0x12, "art/fe/cup_standings_v2.fen" },
-    { 0x13, "art/fe/cup_standings_v2.fen" },
-    { 0x14, "art/fe/cup_standings_v2.fen" },
-    { 0x15, "art/fe/cup_standings_v2.fen" },
-    { 0x16, "art/fe/cup_standings_v2.fen" },
-    { 0x17, "art/fe/cup_standings_v2.fen" },
-    { 0x18, "art/fe/cup_standings_v2.fen" },
-    { 0x19, "art/fe/cup_standings_v2.fen" },
-    { 0x1A, "art/fe/super_team_reveal_v3.fen" },
-    { 0x1B, "art/fe/popup_menu.fen" },
-    { 0x1C, "art/fe/spoils_menu_v2.fen" },
-    { 0x1D, "art/fe/ticker.fen" },
-    { 0x1E, "art/fe/mainstart_background.fen" },
-    { 0x1F, "art/fe/saving_loading.fen" },
-    { 0x20, "art/fe/saving_loading.fen" },
-    { 0x21, "art/fe/saving_loading.fen" },
-    { 0x22, "art/fe/saving_loading.fen" },
-    { 0x23, "art/fe/saving_loading.fen" },
-    { 0x24, "art/fe/custom_tournament_options_v2.fen" },
-    { 0x25, "art/fe/custom_tournament_capt_chooser.fen" },
-    { 0x26, "art/fe/main_options_v2.fen" },
-    { 0x27, "art/fe/englegal.fen" },
-    { 0x28, "art/fe/main_options_v2.fen" },
-    { 0x29, "art/fe/main_options_v2.fen" },
-    { 0x2A, "art/fe/main_options_v2.fen" },
-    { 0x2B, "art/fe/loadingtest.fen" },
-    { 0x2C, "art/fe/spoils_battles_history_v2.fen" },
-    { 0x2D, "art/fe/spoils_milestone_history_v2.fen" },
-    { 0x2E, "art/fe/bragging_rights.fen" },
-    { 0x2F, "art/fe/player_awards_v3.fen" },
-    { 0x30, "art/fe/movieplayer.fen" },
-    { 0x31, "art/fe/main_options_v2.fen" },
-    { 0x32, "art/fe/vs_transition.fen" },
-    { 0x33, "art/fe/health_and_safety.fen" },
-    { 0x34, "art/fe/movieplayer.fen" },
-    { 0x35, "art/fe/movieplayer.fen" },
-    { 0x36, "art/fe/credits.fen" },
-    { 0x37, "art/fe/progressive_scan.fen" },
-    { 0x38, "art/fe/progressive_scan.fen" },
-    { 0x39, "art/fe/pausemenu_v3.fen" },
-    { 0x3A, "art/fe/choose_sides_v4.fen" },
-    { 0x3B, "art/fe/pause_options_v2.fen" },
-    { 0x3C, "art/fe/pause_options_v2.fen" },
-    { 0x3D, "art/fe/post_game_menu_v2.fen" },
-    { 0x3E, "art/fe/pausemenu101_v3.fen" },
-    { 0x3F, "art/fe/lesson.fen" },
-    { 0x40, "art/fe/strikers_101_lessons_v3.fen" },
-    { 0x41, "art/fe/lessonmovieplayer.fen" },
-    { 0x42, NULL },
-    { 0x43, "art/fe/hud.fen" },
-    { 0x44, "art/fe/ingame_text.fen" },
-    { 0x45, "art/fe/popup_menu.fen" },
-    { 0x46, "art/fe/summary.fen" },
-    { 0x47, "art/fe/summary.fen" },
-    { 0x48, "art/fe/goal_overlay.fen" },
-    { 0x49, "art/fe/player_awards_ig_v3.fen" },
-    { 0x4A, "art/fe/demo_overlay.fen" },
-    { 0x4B, "art/fe/winner.fen" },
-    { 0x4C, "art/fe/igticker.fen" },
-    { 0x4D, "art/fe/x2_sts.fen" },
-    { 0x4E, "art/fe/loading_screen.fen" },
-    { 0x4F, NULL }
+    { SCENE_FRIENDLY_BACKGROUND, "art/fe/background.fen" },
+    { SCENE_MARIO_BACKGROUND, "art/fe/mariobg.fen" },
+    { SCENE_TITLE, "art/fe/start_screen_v2.fen" },
+    { SCENE_MAIN_MENU, "art/fe/main_menuv2.fen" },
+    { SCENE_CHOOSE_SIDES_FRIENDLY, "art/fe/choose_sides_v3.fen" },
+    { SCENE_CHOOSE_SIDES_CUP, "art/fe/choose_sides_v3.fen" },
+    { SCENE_CHOOSE_SIDES_SUPER_CUP, "art/fe/choose_sides_v3.fen" },
+    { SCENE_CHOOSE_SIDES_TOURNAMENT, "art/fe/choose_sides_v3.fen" },
+    { SCENE_CHOOSE_CAPTAINS, "/art/fe/choose_captains_v3.fen" },
+    { SCENE_STADIUM_SELECT, "art/fe/choose_stadiums_v2.fen" },
+    { SCENE_CUP_CHEATER, "art/fe/cup_cheater.fen" },
+    { SCENE_CUP_BACKGROUND, "art/fe/cup_background.fen" },
+    { SCENE_SUPER_CUP_BACKGROUND, "art/fe/super_cup_background.fen" },
+    { SCENE_CUP_CHOOSE_CUP, "art/fe/choose_cup_v2.fen" },
+    { SCENE_SUPER_CUP_CHOOSE_CUP, "art/fe/choose_cup_v2.fen" },
+    { SCENE_CUP_CHOOSE_CAPTAIN, "art/fe/cup_choose_captains_v3.fen" },
+    { SCENE_SUPER_CUP_CHOOSE_CAPTAIN, "art/fe/cup_choose_captains_v3.fen" },
+    { SCENE_CUP_STANDINGS, "art/fe/cup_standings_v2.fen" },
+    { SCENE_CUP_STANDINGS_ANIM, "art/fe/cup_standings_v2.fen" },
+    { SCENE_CUP_STANDINGS_FINAL_ANIM, "art/fe/cup_standings_v2.fen" },
+    { SCENE_SUPER_CUP_STANDINGS, "art/fe/cup_standings_v2.fen" },
+    { SCENE_SUPER_CUP_STANDINGS_ANIM, "art/fe/cup_standings_v2.fen" },
+    { SCENE_SUPER_CUP_STANDINGS_FINAL_ANIM, "art/fe/cup_standings_v2.fen" },
+    { SCENE_TOURNAMENT_STANDINGS, "art/fe/cup_standings_v2.fen" },
+    { SCENE_TOURNAMENT_STANDINGS_ANIM, "art/fe/cup_standings_v2.fen" },
+    { SCENE_TOURNAMENT_STANDINGS_FINAL_ANIM, "art/fe/cup_standings_v2.fen" },
+    { SCENE_CUP_SUPER_TEAM, "art/fe/super_team_reveal_v3.fen" },
+    { SCENE_POPUP_MENU, "art/fe/popup_menu.fen" },
+    { SCENE_TROPHY_ROOM, "art/fe/spoils_menu_v2.fen" },
+    { SCENE_SCROLLING_TICKER, "art/fe/ticker.fen" },
+    { SCENE_MAIN_BACKGROUND, "art/fe/mainstart_background.fen" },
+    { SCENE_SAVE, "art/fe/saving_loading.fen" },
+    { SCENE_LOAD, "art/fe/saving_loading.fen" },
+    { SCENE_ASK_SAVE, "art/fe/saving_loading.fen" },
+    { SCENE_ASK_LOAD, "art/fe/saving_loading.fen" },
+    { SCENE_SHOULD_LOAD_OR_SAVE, "art/fe/saving_loading.fen" },
+    { SCENE_TOURN_SETPARAMS, "art/fe/custom_tournament_options_v2.fen" },
+    { SCENE_TOURN_SETTEAMS, "art/fe/custom_tournament_capt_chooser.fen" },
+    { SCENE_OPTIONS, "art/fe/main_options_v2.fen" },
+    { SCENE_LEGAL, "art/fe/englegal.fen" },
+    { SCENE_CUP_OPTIONS_INITIAL_CUP, "art/fe/main_options_v2.fen" },
+    { SCENE_CUP_OPTIONS_INITIAL_SUPER, "art/fe/main_options_v2.fen" },
+    { SCENE_CUP_OPTIONS_INITIAL_TOURN, "art/fe/main_options_v2.fen" },
+    { SCENE_SUPER_LOADING, "art/fe/loadingtest.fen" },
+    { SCENE_CUP_TROPHY, "art/fe/spoils_battles_history_v2.fen" },
+    { SCENE_MILESTONE_TROPHY, "art/fe/spoils_milestone_history_v2.fen" },
+    { SCENE_CUP_BRAG, "art/fe/bragging_rights.fen" },
+    { SCENE_TOURNEY_BRAG, "art/fe/player_awards_v3.fen" },
+    { SCENE_MOVIE_PLAYER, "art/fe/movieplayer.fen" },
+    { SCENE_QUICK_GAMEPLAY_OPTIONS, "art/fe/main_options_v2.fen" },
+    { SCENE_LOADING_TRANSITION, "art/fe/vs_transition.fen" },
+    { SCENE_HEALTH_WARNING, "art/fe/health_and_safety.fen" },
+    { SCENE_NLG_MOVIE, "art/fe/movieplayer.fen" },
+    { SCENE_INTRO_MOVIE, "art/fe/movieplayer.fen" },
+    { SCENE_CREDITS, "art/fe/credits.fen" },
+    { SCENE_PROGRESSIVE_SCAN, "art/fe/progressive_scan.fen" },
+    { SCENE_EURO_RGB60, "art/fe/progressive_scan.fen" },
+    { IGSCENE_PAUSE, "art/fe/pausemenu_v3.fen" },
+    { IGSCENE_CHOOSE_SIDES, "art/fe/choose_sides_v4.fen" },
+    { IGSCENE_PAUSE_AUDIO, "art/fe/pause_options_v2.fen" },
+    { IGSCENE_PAUSE_VISUAL, "art/fe/pause_options_v2.fen" },
+    { IGSCENE_PAUSE_POST_GAME, "art/fe/post_game_menu_v2.fen" },
+    { IGSCENE_STRIKERS_101_PAUSE, "art/fe/pausemenu101_v3.fen" },
+    { IGSCENE_LESSON, "art/fe/lesson.fen" },
+    { IGSCENE_LESSON_SELECT, "art/fe/strikers_101_lessons_v3.fen" },
+    { IGSCENE_LESSON_MOVIE_PLAYER, "art/fe/lessonmovieplayer.fen" },
+    { OVERLAY_START, NULL },
+    { OVERLAY_HUD, "art/fe/hud.fen" },
+    { OVERLAY_TEXT, "art/fe/ingame_text.fen" },
+    { OVERLAY_POPUP, "art/fe/popup_menu.fen" },
+    { OVERLAY_SUMMARY, "art/fe/summary.fen" },
+    { OVERLAY_SUMMARY_PAUSE, "art/fe/summary.fen" },
+    { OVERLAY_GOAL, "art/fe/goal_overlay.fen" },
+    { OVERLAY_BRAG, "art/fe/player_awards_ig_v3.fen" },
+    { OVERLAY_DEMO, "art/fe/demo_overlay.fen" },
+    { OVERLAY_WINNER, "art/fe/winner.fen" },
+    { OVERLAY_LESSON_TICKER, "art/fe/igticker.fen" },
+    { NUM_SCENES, "art/fe/x2_sts.fen" },
+    { (SceneList)0x4E, "art/fe/loading_screen.fen" },
+    { (SceneList)0x4F, NULL }
 };
 
 /**
@@ -146,7 +146,7 @@ struct SceneEntry SceneEntryTable[] = {
 BaseGameSceneManager::BaseGameSceneManager()
 {
     mCurrentStackDepth = 0;
-    for (int i = 0; i < MAX_SCENE_COUNT; ++i)
+    for (int i = 0; i < MAX_SCENE_DEPTH; ++i)
     {
         m_sceneStack[i] = SCENE_INVALID;
         mBaseSceneHandlerStack[i] = 0;
@@ -188,7 +188,7 @@ BaseSceneHandler* BaseGameSceneManager::Push(SceneList newscene, ScreenMovement 
 
     BaseSceneHandler* newHandler = NULL;
     const SceneEntry& entry = SceneEntryTable[newscene];
-    const char* filename = entry.sceneName;
+    const char* filename = entry.mFenFileName;
 
     GetConfigBool(Config::Global(), "fev2", false);
 
@@ -211,6 +211,71 @@ BaseSceneHandler* BaseGameSceneManager::Push(SceneList newscene, ScreenMovement 
             filename = "art/fe/choose_captains_vLeeptsig.fen";
         }
     }
+
+#if defined(VERSION_G4QJ01)
+    if (g_Language == 5)
+    {
+        switch (newscene)
+        {
+        case IGSCENE_LESSON:
+            filename = "art/fe/lesson_jp.fen";
+            break;
+        case SCENE_CUP_BRAG:
+            filename = "art/fe/bragging_rights_jp.fen";
+            break;
+        case SCENE_CHOOSE_CAPTAINS:
+            filename = "art/fe/choose_captains_v3_jp.fen";
+            break;
+        case SCENE_CHOOSE_SIDES_FRIENDLY:
+        case SCENE_CHOOSE_SIDES_CUP:
+        case SCENE_CHOOSE_SIDES_SUPER_CUP:
+        case SCENE_CHOOSE_SIDES_TOURNAMENT:
+            filename = "art/fe/choose_sides_v3_jp.fen";
+            break;
+        case IGSCENE_CHOOSE_SIDES:
+            filename = "art/fe/choose_sides_v4_jp.fen";
+            break;
+        case SCENE_CUP_TROPHY:
+            filename = "art/fe/spoils_battles_history_v2_jp.fen";
+            break;
+        case SCENE_CUP_CHOOSE_CAPTAIN:
+        case SCENE_SUPER_CUP_CHOOSE_CAPTAIN:
+            filename = "art/fe/cup_choose_captains_v3_jp.fen";
+            break;
+        case SCENE_CUP_STANDINGS:
+        case SCENE_CUP_STANDINGS_ANIM:
+        case SCENE_CUP_STANDINGS_FINAL_ANIM:
+        case SCENE_SUPER_CUP_STANDINGS:
+        case SCENE_SUPER_CUP_STANDINGS_ANIM:
+        case SCENE_SUPER_CUP_STANDINGS_FINAL_ANIM:
+        case SCENE_TOURNAMENT_STANDINGS:
+        case SCENE_TOURNAMENT_STANDINGS_ANIM:
+        case SCENE_TOURNAMENT_STANDINGS_FINAL_ANIM:
+            filename = "art/fe/cup_standings_v2_jp.fen";
+            break;
+        case SCENE_MILESTONE_TROPHY:
+            filename = "art/fe/spoils_milestone_history_v2_jp.fen";
+            break;
+        case SCENE_POPUP_MENU:
+        case OVERLAY_POPUP:
+            filename = "art/fe/popup_menu_jp.fen";
+            break;
+        case SCENE_SAVE:
+        case SCENE_LOAD:
+        case SCENE_ASK_SAVE:
+        case SCENE_ASK_LOAD:
+        case SCENE_SHOULD_LOAD_OR_SAVE:
+            filename = "art/fe/saving_loading_jp.fen";
+            break;
+        case SCENE_OPTIONS:
+            filename = "art/fe/main_options_v2_jp.fen";
+            break;
+        case SCENE_TOURN_SETTEAMS:
+            filename = "art/fe/custom_tournament_capt_chooser_jp.fen";
+            break;
+        }
+    }
+#endif
 
     switch (newscene)
     {
@@ -482,18 +547,18 @@ BaseSceneHandler* BaseGameSceneManager::Push(SceneList newscene, ScreenMovement 
  */
 BaseSceneHandler* BaseGameSceneManager::GetScene(SceneList scene)
 {
-    BaseSceneHandler* handler = NULL;
+    BaseSceneHandler* returnValue = NULL;
 
-    for (u32 i = 0; i < mCurrentStackDepth; ++i)
+    for (int i = 0; i < mCurrentStackDepth; ++i)
     {
         if (m_sceneStack[i] == scene)
         {
-            handler = mBaseSceneHandlerStack[i];
+            returnValue = mBaseSceneHandlerStack[i];
             break;
         }
     }
 
-    return handler;
+    return returnValue;
 }
 
 /**
@@ -519,7 +584,7 @@ void BaseGameSceneManager::PopEntireStack()
 
 void BaseGameSceneManager::SetVisible(SceneList sceneid, bool visibility)
 {
-    u32 uHashID = nlStringLowerHash(SceneEntryTable[sceneid].sceneName);
+    u32 uHashID = nlStringLowerHash(SceneEntryTable[sceneid].mFenFileName);
     BaseSceneHandler* sceneHandler = FESceneManager::Instance()->GetSceneHandler(uHashID);
     if (sceneHandler != NULL)
     {
@@ -529,7 +594,7 @@ void BaseGameSceneManager::SetVisible(SceneList sceneid, bool visibility)
 
 bool BaseGameSceneManager::GetVisible(SceneList sceneid)
 {
-    u32 uHashID = nlStringLowerHash(SceneEntryTable[sceneid].sceneName);
+    u32 uHashID = nlStringLowerHash(SceneEntryTable[sceneid].mFenFileName);
     BaseSceneHandler* sceneHandler = FESceneManager::Instance()->GetSceneHandler(uHashID);
     if (sceneHandler != NULL)
     {
@@ -541,16 +606,16 @@ bool BaseGameSceneManager::GetVisible(SceneList sceneid)
 /**
  * Offset/Address/Size: 0x1F4 | 0x800957B0 | size: 0x48
  */
-int BaseGameSceneManager::GetSceneType(BaseSceneHandler* handler)
+SceneList BaseGameSceneManager::GetSceneType(BaseSceneHandler* scene)
 {
-    for (u32 i = 0; i < mCurrentStackDepth; ++i)
+    for (int i = 0; i < mCurrentStackDepth; ++i)
     {
-        if (mBaseSceneHandlerStack[i] == handler)
+        if (mBaseSceneHandlerStack[i] == scene)
         {
             return m_sceneStack[i];
         }
     }
-    return -2;
+    return SCENE_INVALID;
 }
 
 /**
@@ -558,7 +623,7 @@ int BaseGameSceneManager::GetSceneType(BaseSceneHandler* handler)
  */
 bool BaseGameSceneManager::IsOnStack(SceneList scene)
 {
-    for (u32 i = 0; i < mCurrentStackDepth; ++i)
+    for (int i = 0; i < mCurrentStackDepth; ++i)
     {
         if (m_sceneStack[i] == scene)
             return true;
@@ -571,21 +636,21 @@ bool BaseGameSceneManager::IsOnStack(SceneList scene)
  */
 BasicString<char, Detail::TempStringAllocator> BaseGameSceneManager::GetFileName(SceneList scene)
 {
-    BasicString<char, Detail::TempStringAllocator> result(
-        SceneEntryTable[(u32)scene].sceneName);
-    return result;
+    BasicString<char, Detail::TempStringAllocator> retVal(
+        SceneEntryTable[scene].mFenFileName);
+    return retVal;
 }
 
 /**
  * Offset/Address/Size: 0x0 | 0x800955BC | size: 0x68
  */
-void BaseGameSceneManager::PushLoadingScene(bool clearStack)
+void BaseGameSceneManager::PushLoadingScene(bool popfirst)
 {
-    if (clearStack)
+    if (popfirst)
     {
         this->Pop();
     }
 
-    BackgroundScene* handler = (BackgroundScene*)Push((SceneList)0x2B, SCREEN_FORWARD, false);
-    handler->mPlayMode = PM_STOPPED;
+    SuperLoadingScene* scene = (SuperLoadingScene*)Push(SCENE_SUPER_LOADING, SCREEN_FORWARD, false);
+    scene->mType = SuperLoadingScene::TT_IN;
 }

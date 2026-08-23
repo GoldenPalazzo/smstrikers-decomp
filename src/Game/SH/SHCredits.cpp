@@ -435,15 +435,7 @@ void CreditScene::UpdateForNLGMovie(float fDeltaT)
     if (FESceneManager::GetInstance()->AreAllScenesValid())
     {
         GameSceneManager* pGameSceneMgr = GameSceneManager::GetInstance();
-        BaseSceneHandler* pCurrentScene;
-        if (pGameSceneMgr->mCurrentStackDepth != 0)
-        {
-            pCurrentScene = pGameSceneMgr->mBaseSceneHandlerStack[pGameSceneMgr->mCurrentStackDepth - 1];
-        }
-        else
-        {
-            pCurrentScene = NULL;
-        }
+        BaseSceneHandler* pCurrentScene = pGameSceneMgr->GetCurrentScene();
         if (pCurrentScene == this)
         {
             GotoNextPhase();

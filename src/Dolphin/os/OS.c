@@ -18,19 +18,19 @@ extern void __OSInitMemoryProtection(void);
 #define OS_EXCEPTIONTABLE_ADDR  0x3000
 #define OS_DBJUMPPOINT_ADDR     0x60
 
-// #if SDK_REVISION < 1
-// #define BUILD_DATE  "Apr  5 2004"
-// #define DBUILD_TIME "03:55:13"
-// #define RBUILD_TIME "04:13:58"
-// #elif SDK_REVISION < 2
+#if SDK_REVISION < 1
+#define BUILD_DATE  "Apr  5 2004"
+#define DBUILD_TIME "03:55:13"
+#define RBUILD_TIME "04:13:58"
+#elif SDK_REVISION < 2
 #define BUILD_DATE  "May 21 2004"
 #define DBUILD_TIME "09:15:32"
 #define RBUILD_TIME "09:28:09"
-// #else
-// #define BUILD_DATE  "Nov 10 2004"
-// #define DBUILD_TIME "06:08:19"
-// #define RBUILD_TIME "06:26:41"
-// #endif
+#else
+#define BUILD_DATE  "Nov 10 2004"
+#define DBUILD_TIME "06:08:19"
+#define RBUILD_TIME "06:26:41"
+#endif
 
 #ifdef DEBUG
 const char* __OSVersion = "<< Dolphin SDK - OS\tdebug build: " BUILD_DATE " " DBUILD_TIME " (0x2301) >>";
@@ -77,12 +77,10 @@ void __OSDBINTEND(void);
 void __OSDBJUMPSTART(void);
 void __OSDBJUMPEND(void);
 
-#if 0
 u32 __OSIsDebuggerPresent(void)
 {
     return *(u32*)OSPhysicalToCached(0x40);
 }
-#endif
 
 /* clang-format off */
 #ifdef __GEKKO__
@@ -176,7 +174,7 @@ skip_ps_init:
 }
 #endif
 
-static inline void DisableWriteGatherPipe(void)
+static void DisableWriteGatherPipe(void)
 {
     u32 hid2;
 
@@ -201,7 +199,7 @@ u32 OSGetConsoleType(void)
 #undef NULL
 #define NULL 0
 
-static inline void ClearArena(void)
+static void ClearArena(void)
 {
     if (!((OSGetResetCode() & 0x80000000) ? TRUE : FALSE))
     {
@@ -209,7 +207,7 @@ static inline void ClearArena(void)
         return;
     }
 
-    if (*(u32*)&__OSRebootParams.regionStart == 0)
+    if ((u32)__OSRebootParams.regionStart == 0)
     {
         memset(OSGetArenaLo(), 0, (u32)OSGetArenaHi() - (u32)OSGetArenaLo());
         return;
@@ -217,15 +215,15 @@ static inline void ClearArena(void)
 
     ASSERTLINE(683, __OSRebootParams.regionEnd != NULL);
 
-    if ((u32)OSGetArenaLo() < *(u32*)&__OSRebootParams.regionStart)
+    if ((u32)OSGetArenaLo() < (u32)__OSRebootParams.regionStart)
     {
-        if ((u32)OSGetArenaHi() <= *(u32*)&__OSRebootParams.regionStart)
+        if ((u32)OSGetArenaHi() <= (u32)__OSRebootParams.regionStart)
         {
             memset(OSGetArenaLo(), 0, (u32)OSGetArenaHi() - (u32)OSGetArenaLo());
             return;
         }
 
-        memset(OSGetArenaLo(), 0, *(u32*)&__OSRebootParams.regionStart - (u32)OSGetArenaLo());
+        memset(OSGetArenaLo(), 0, (u32)__OSRebootParams.regionStart - (u32)OSGetArenaLo());
 
         if ((u32)OSGetArenaHi() > (u32)__OSRebootParams.regionEnd)
         {
@@ -296,7 +294,6 @@ void OSInit(void)
 
         __DVDLongFileNameFlag = 1;
 
-        // OSSetArenaLo((!BootInfo->arenaLo) ? (u8*)((volatile u16 *)0x80388000) : BootInfo->arenaLo);
         OSSetArenaLo((!BootInfo->arenaLo) ? &__ArenaLo : BootInfo->arenaLo);
         if ((!BootInfo->arenaLo) && (BI2DebugFlag) && (*(u32*)BI2DebugFlag < 2))
         {

@@ -298,8 +298,7 @@ cflags_dolphin = [
     "-inline auto",
     f"-DVERSION={version_num}",
     "-D__GEKKO__",
-    "-DSDK_REVISION=2",
-    # "-DSDK_REVISION=1",
+    "-DSDK_REVISION=1",
 ]
 
 cflags_ode = [
@@ -996,7 +995,7 @@ config.libs = [
             # Frontend / Scenes
             Object(MatchingFor("G4QE01", "G4QJ01"), "Game/FE/GameSceneManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01", "G4QJ01"), "Game/FE/BaseSceneHandler.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(MatchingFor("G4QE01"), "Game/BaseGameSceneManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(MatchingFor("G4QE01", "G4QJ01"), "Game/FE/BaseGameSceneManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             Object(MatchingFor("G4QE01", "G4QJ01"), "Game/OverlayManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(MatchingFor("G4QE01", "G4QJ01"), "Game/FE/Overlay/OverlayHandlerHUD.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
