@@ -12,6 +12,8 @@
 .set TRKInterruptHandler, 0x80227424
 .elseif BUILD_VERSION == 1
 .set TRKInterruptHandler, 0x80229480
+.elseif BUILD_VERSION == 2
+.set TRKInterruptHandler, 0x80226BF4
 .else
 .error "__exception.s: no TRKInterruptHandler address for this BUILD_VERSION"
 .endif

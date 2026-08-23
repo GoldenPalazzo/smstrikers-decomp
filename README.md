@@ -32,8 +32,9 @@ This repository does **not** contain any game assets or assembly whatsoever. An 
 
 Supported versions:
 
-- ✅ `G4QE01`: Rev 0 (USA) — `main.dol` SHA-1: `376d699c99b6b0949abe1b4ceccefdef7828d2b5`
-- ✅ `G4QJ01`: Rev 0 (Japan) — `main.dol` SHA-1: `d116f02b778a4f69725fd1c00656012d16ebf94a`
+- ✅ `G4QE01`: Rev 0 (USA) — SHA-1: `376d699c99b6b0949abe1b4ceccefdef7828d2b5`
+- ✅ `G4QJ01`: Rev 0 (Japan) — SHA-1: `d116f02b778a4f69725fd1c00656012d16ebf94a`
+- ❌ `G4QP01`: Rev 0 (EU) — SHA-1: `6dc83dc91d0a5887f0056623498d4cbcd88bc463`
 
 The releases share nearly all game code; see [Version differences](docs/version_differences.md) for a short summary of the regional changes.
 

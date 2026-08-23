@@ -15,7 +15,11 @@ typedef struct XY
 
 static XY XYNTSC[12] = {
     { 0x00F6, 0x02 },
+#if defined(VERSION_G4QP01)
+    { 0x000F, 0x12 },
+#else
     { 0x000E, 0x13 },
+#endif
     { 0x001E, 0x09 },
     { 0x002C, 0x06 },
     { 0x0034, 0x05 },
