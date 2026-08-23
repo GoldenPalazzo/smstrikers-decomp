@@ -166,8 +166,9 @@ public:
 
     inline bool IsTurboingAnimID()
     {
+        int animID = m_eAnimID;
         bool result = false;
-        if (m_eAnimID == 0x1D || m_eAnimID == 0x1E || m_eAnimID == 0x1F || m_eAnimID == 0x20 || m_eAnimID == 0x21 || m_eAnimID == 0x22)
+        if (!(animID != 0x1D && animID != 0x1E && animID != 0x1F && animID != 0x20 && animID != 0x21 && animID != 0x22))
         {
             result = true;
         }
@@ -176,8 +177,9 @@ public:
 
     inline bool IsTurboingWithoutBallAnimID()
     {
+        int animID = m_eAnimID;
         bool result = false;
-        if (m_eAnimID == 0x10 || m_eAnimID == 0x0F || m_eAnimID == 0x11)
+        if (!(animID != 0x10 && animID != 0x0F && animID != 0x11))
         {
             result = true;
         }

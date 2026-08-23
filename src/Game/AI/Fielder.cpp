@@ -1127,53 +1127,21 @@ bool cFielder::IsTurboing()
 {
     if (m_pBall != nullptr)
     {
-        bool bResult = true;
-        bool bIsTurboing = false;
-        s32 animID = m_eAnimID;
-
-        if (animID == 0x1D)
-            goto setTrue1;
-        if (animID == 0x1E)
-            goto setTrue1;
-        if (animID == 0x1F)
-            goto setTrue1;
-        if (animID == 0x20)
-            goto setTrue1;
-        if (animID == 0x21)
-            goto setTrue1;
-        if (animID == 0x22)
-            goto setTrue1;
-        goto check1;
-    setTrue1:
-        bIsTurboing = true;
-    check1:
-        if (!bIsTurboing)
+        bool bTurboing = true;
+        if (!IsTurboingAnimID())
         {
-            bResult = false;
+            bTurboing = false;
         }
-        return bResult;
+        return bTurboing;
     }
     else
     {
-        bool bResult = true;
-        bool bIsTurboing = false;
-        s32 animID = m_eAnimID;
-
-        if (animID == 0x10)
-            goto setTrue2;
-        if (animID == 0x0F)
-            goto setTrue2;
-        if (animID == 0x11)
-            goto setTrue2;
-        goto check2;
-    setTrue2:
-        bIsTurboing = true;
-    check2:
-        if (!bIsTurboing)
+        bool bTurboing = true;
+        if (!IsTurboingWithoutBallAnimID())
         {
-            bResult = false;
+            bTurboing = false;
         }
-        return bResult;
+        return bTurboing;
     }
 }
 
