@@ -11,6 +11,7 @@
 #include "Game/SH/SHBackground.h"
 #include "Game/main.h"
 #include "NL/gl/glStruct.h"
+#include "NL/nlLocalization.h"
 #include "NL/nlPrint.h"
 
 #include "NL/nlBind.h"
@@ -21,7 +22,6 @@ typedef BindExp2<void, MainMenuMemFun_t, SHMainMenu*, Placeholder<0> > MainMenuB
 extern nlColour MenuHighliteColour;
 
 #if defined(VERSION_G4QJ01)
-extern nlLocalization* g_pLocalization;
 #endif
 
 bool SHMainMenu::mSnapMenuIntoPosition = false;

@@ -23,7 +23,6 @@ extern FEInput* g_pFEInput;
 extern nlColour MenuHighliteColour;
 
 #if defined(VERSION_G4QJ01)
-extern nlLocalization* g_pLocalization;
 #endif
 
 static char sPauseOutSlide[] = "out";

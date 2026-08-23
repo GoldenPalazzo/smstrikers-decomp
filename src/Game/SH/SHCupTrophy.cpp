@@ -68,10 +68,6 @@ static const nlColour SPOILS_COLOUR_HIGHLIGHT = { 0xFE, 0xEE, 0x00, 0xFF };
 static const nlColour SPOILS_COLOUR_NORMAL = { 0xFF, 0xFF, 0xFF, 0xFF };
 static const nlColour TROPHY_BLACK_CUP = { 0x00, 0x00, 0x00, 0xFF };
 
-extern nlLocalization* g_pLocalization;
-extern const unsigned short LocalizationTableNotFound[];
-extern const unsigned short MissingLocString[];
-
 static inline const unsigned short* LookupCupTrophyLoc(unsigned long key)
 {
     nlLocalization* loc = g_pLocalization;

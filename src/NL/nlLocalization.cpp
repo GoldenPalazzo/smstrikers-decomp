@@ -32,7 +32,7 @@ char* nlLocalization::LanguageName[] = {
 
 const char nlLocalization::Thumbprint[4] = { 'N', 'L', 'O', 'C' };
 
-void* g_pLocalization;
+nlLocalization* g_pLocalization;
 
 /**
  * Offset/Address/Size: 0x0 | 0x802107AC | size: 0x148

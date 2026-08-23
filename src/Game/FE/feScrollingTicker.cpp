@@ -3,10 +3,6 @@
 
 #include "NL/nlLocalization.h"
 
-extern void* g_pLocalization;
-extern const unsigned short LocalizationTableNotFound[];
-extern const unsigned short MissingLocString[];
-
 /**
  * Offset/Address/Size: 0xF9C | 0x800A0BF4 | size: 0xB0
  */
@@ -203,7 +199,7 @@ void ScrollingTickerScene::SetDisplayMessage(const BasicString<unsigned short, D
 static inline const unsigned short* LookupLocText(const char* locMessage)
 {
     unsigned long hash = nlStringLowerHash(locMessage);
-    nlLocalization* loc = (nlLocalization*)g_pLocalization;
+    nlLocalization* loc = g_pLocalization;
     if (loc->m_LookupTable == 0)
     {
         return LocalizationTableNotFound;

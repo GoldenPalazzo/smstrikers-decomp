@@ -17,7 +17,6 @@
 #include "NL/nlBind.h"
 
 #if defined(VERSION_G4QJ01)
-extern nlLocalization* g_pLocalization;
 #endif
 
 static const eMenuState MenuToMenuStateMap[] = {

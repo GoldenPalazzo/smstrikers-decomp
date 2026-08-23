@@ -14,9 +14,6 @@
 template <>
 nlLocalization::StringLookup* nlBSearch<nlLocalization::StringLookup, unsigned long>(const unsigned long&, nlLocalization::StringLookup*, int);
 
-extern nlLocalization* g_pLocalization;
-extern const unsigned short LocalizationTableNotFound[];
-extern const unsigned short MissingLocString[];
 extern cTeam* g_pTeams[];
 
 static inline const unsigned short* LookupLocHash(unsigned long key)

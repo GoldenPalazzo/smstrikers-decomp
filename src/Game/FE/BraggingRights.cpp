@@ -54,10 +54,6 @@ void OpenItem(TLComponentInstance*);
 void CloseItem(TLComponentInstance*);
 } // namespace SingleHighlite
 
-extern nlLocalization* g_pLocalization;
-extern const unsigned short LocalizationTableNotFound[];
-extern const unsigned short MissingLocString[];
-
 static inline const unsigned short* LookupLocHash(nlLocalization* loc, unsigned long hash)
 {
     if (loc->m_LookupTable == 0)

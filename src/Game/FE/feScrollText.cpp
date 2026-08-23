@@ -3,35 +3,7 @@
 #include "NL/gl/glStruct.h"
 #include "NL/nlTextEscape.h"
 #include "NL/nlAlgorithm.h"
-
-struct LOCHeader
-{
-    char Thumbprint[4];
-    unsigned long Version;
-    unsigned long Language;
-    unsigned long StringCount;
-    unsigned long Flags;
-};
-
-class nlLocalization
-{
-public:
-    struct StringLookup
-    {
-        unsigned long hash;
-        unsigned long StringOffset;
-
-        operator unsigned long() const { return hash; }
-    };
-
-    LOCHeader* m_pFile;
-    StringLookup* m_LookupTable;
-    unsigned short* m_FirstString;
-};
-
-extern void* g_pLocalization;
-extern const unsigned short LocalizationTableNotFound[];
-extern const unsigned short MissingLocString[];
+#include "NL/nlLocalization.h"
 
 /**
  * Offset/Address/Size: 0x0 | 0x800C89D4 | size: 0x38
@@ -109,7 +81,7 @@ static inline const unsigned short* LookupLocTextChar(nlLocalization* loc, unsig
  */
 void FEScrollText::SetDisplayMessage(const char* locMessage)
 {
-    nlLocalization* loc = (nlLocalization*)g_pLocalization;
+    nlLocalization* loc = g_pLocalization;
     unsigned long hash = nlStringLowerHash(locMessage);
     const unsigned short* text = LookupLocTextChar(loc, hash);
     SetDisplayMessage(BasicString<unsigned short, Detail::TempStringAllocator>(text));
@@ -117,7 +89,7 @@ void FEScrollText::SetDisplayMessage(const char* locMessage)
 
 static inline const unsigned short* LookupLocText(unsigned long hash)
 {
-    nlLocalization* loc = (nlLocalization*)g_pLocalization;
+    nlLocalization* loc = g_pLocalization;
     if (loc->m_LookupTable == 0)
     {
         return LocalizationTableNotFound;

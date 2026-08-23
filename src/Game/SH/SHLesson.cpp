@@ -15,10 +15,6 @@
 #include "NL/nlSingleton.h"
 #include "types.h"
 
-extern nlLocalization* g_pLocalization;
-extern const unsigned short LocalizationTableNotFound[];
-extern const unsigned short MissingLocString[];
-
 static inline const unsigned short* LookupLocString(const char* stringId)
 {
     nlLocalization* loc = g_pLocalization;

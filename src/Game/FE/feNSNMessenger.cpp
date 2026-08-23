@@ -5,10 +5,6 @@
 #include "NL/nlLocalization.h"
 #include "NL/nlTask.h"
 
-extern void* g_pLocalization;
-extern const unsigned short LocalizationTableNotFound[];
-extern const unsigned short MissingLocString[];
-
 static float MESSAGE_DISPLAY_TIME = 3.0f;
 
 /**
@@ -180,7 +176,7 @@ void NSNMessengerScene::SetDisplayMessage(const BasicString<unsigned short, Deta
 static inline const unsigned short* LookupLocText(const char* locMessage)
 {
     unsigned long hash = nlStringLowerHash(locMessage);
-    nlLocalization* loc = (nlLocalization*)g_pLocalization;
+    nlLocalization* loc = g_pLocalization;
     if (loc->m_LookupTable == 0)
     {
         return LocalizationTableNotFound;

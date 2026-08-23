@@ -49,10 +49,6 @@ StringType Format(const StringType&, const ValueType&);
 template <typename StringType, typename ValueType1, typename ValueType2>
 StringType Format(const StringType&, const ValueType1&, const ValueType2&);
 
-extern nlLocalization* g_pLocalization;
-extern const unsigned short LocalizationTableNotFound[];
-extern const unsigned short MissingLocString[];
-
 static inline const unsigned short* LookupWinnerLocHash(unsigned long key)
 {
     nlLocalization* loc = g_pLocalization;

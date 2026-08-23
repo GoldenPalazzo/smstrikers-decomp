@@ -8,8 +8,6 @@
 #include "Game/FE/feFinder.h"
 #include "NL/glx/glxTexture.h"
 
-extern nlLocalization* g_pLocalization;
-
 int ButtonComponent::GetRenderedStringLength(const unsigned short* pString, const nlFont* pFont)
 {
     int returnValue;

@@ -8,15 +8,11 @@
 #include "NL/nlLocalization.h"
 #include "NL/nlBind.h"
 
-extern void* g_pLocalization;
-extern const unsigned short LocalizationTableNotFound[];
-extern const unsigned short MissingLocString[];
-
 unsigned long GetLOCCharacterName(eTeamID, bool, bool);
 
 static inline const unsigned short* LookupLocString(const char* id)
 {
-    nlLocalization* loc = (nlLocalization*)g_pLocalization;
+    nlLocalization* loc = g_pLocalization;
     unsigned long hash = nlStringLowerHash(id);
     if (loc->m_LookupTable == 0)
     {
@@ -30,7 +26,7 @@ static inline const unsigned short* LookupLocString(const char* id)
 
 static inline const unsigned short* LookupLocHash(unsigned long hash)
 {
-    nlLocalization* loc = (nlLocalization*)g_pLocalization;
+    nlLocalization* loc = g_pLocalization;
     if (loc->m_LookupTable == 0)
     {
         return LocalizationTableNotFound;
@@ -704,7 +700,7 @@ void ChooseCupSceneV2::DisplayCup()
         BasicString<unsigned short, Detail::TempStringAllocator> firstHalf(
             LookupLocHash(CUP_EXPLANATIONS[(int)mCupToDisplay]));
 
-        if (((nlLocalization*)g_pLocalization)->m_CurrentLanguage != nlLocalization::LangJapanese)
+        if (g_pLocalization->m_CurrentLanguage != nlLocalization::LangJapanese)
         {
             firstHalf = firstHalf.Append((const unsigned short*)L" ");
         }

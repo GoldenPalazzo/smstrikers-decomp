@@ -37,10 +37,6 @@ struct BaseCupAccessor_CupTicker
     short mGameNumber;
 };
 
-extern nlLocalization* g_pLocalization;
-extern unsigned short LocalizationTableNotFound[];
-extern unsigned short MissingLocString[];
-
 /**
  * Offset/Address/Size: 0x1D90 | 0x800F3D58 | size: 0x10
  */

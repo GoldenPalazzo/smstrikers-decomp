@@ -5,10 +5,6 @@
 #include "NL/nlLocalization.h"
 #include "NL/nlTextBox.h"
 
-extern nlLocalization* g_pLocalization;
-extern const unsigned short LocalizationTableNotFound[];
-extern const unsigned short MissingLocString[];
-
 static inline const nlFont* GetFontFromComponent(TLComponent* comp)
 {
     struct FontResource

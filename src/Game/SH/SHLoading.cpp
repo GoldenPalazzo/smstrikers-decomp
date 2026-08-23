@@ -22,10 +22,7 @@
 #include "NL/gl/glState.h"
 #include "NL/gl/glTexture.h"
 
-extern nlLocalization* g_pLocalization;
 extern unsigned long CONTROLLER_TEXT[4];
-extern const unsigned short LocalizationTableNotFound[];
-extern const unsigned short MissingLocString[];
 
 /**
  * Offset/Address/Size: 0x19A4 | 0x800A8114 | size: 0x5C

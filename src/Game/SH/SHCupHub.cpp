@@ -60,8 +60,6 @@ static const nlColour CUP_NUMBER_COLOUR = { { 0xFF, 0xFF, 0xFF, 0xFF } };
 static const nlColour CUP_SEMI_COLOUR = { { 0xFE, 0xEE, 0x00, 0xFF } };
 static const nlColour CUP_FINAL_COLOUR = { { 0xFF, 0xFF, 0x00, 0xFF } };
 
-extern nlLocalization* g_pLocalization;
-
 namespace
 {
 unsigned char gHubLeagueMovementSoundIsPlaying;
@@ -139,9 +137,6 @@ void StartHubLeagueMovementSound()
     gHubLeagueMovementSoundIsPlaying = true;
 }
 } // namespace
-
-extern const unsigned short LocalizationTableNotFound[];
-extern const unsigned short MissingLocString[];
 
 static inline const unsigned short* LookupLocHash(unsigned long key)
 {

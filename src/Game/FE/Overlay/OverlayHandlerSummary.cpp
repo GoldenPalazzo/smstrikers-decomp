@@ -266,9 +266,6 @@ void SummaryOverlay::Update(float fDeltaT)
 
 static inline const unsigned short* LookupSummaryLocString(const char* stringId)
 {
-    extern nlLocalization* g_pLocalization;
-    extern const unsigned short LocalizationTableNotFound[];
-    extern const unsigned short MissingLocString[];
 
     nlLocalization* loc = g_pLocalization;
     unsigned long key = nlStringLowerHash(stringId);

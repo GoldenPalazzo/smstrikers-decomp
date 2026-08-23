@@ -7,10 +7,6 @@
 #include "NL/nlLocalization.h"
 #include "NL/nlAlgorithm.h"
 
-extern nlLocalization* g_pLocalization;
-extern unsigned short LocalizationTableNotFound[];
-extern unsigned short MissingLocString[];
-
 static inline const unsigned short* LookupCupCaptainLoc(unsigned long hash)
 {
     nlLocalization* loc = g_pLocalization;

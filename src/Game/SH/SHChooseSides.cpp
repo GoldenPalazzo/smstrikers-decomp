@@ -19,7 +19,6 @@
 #include "NL/gl/glStruct.h"
 
 extern bool g_e3_Build;
-extern nlLocalization* g_pLocalization;
 
 /**
  * Offset/Address/Size: 0x21C8 | 0x800C6D88 | size: 0x194

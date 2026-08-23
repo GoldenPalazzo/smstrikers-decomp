@@ -16,9 +16,6 @@ typedef BasicString<unsigned short, Detail::TempStringAllocator> WideBasicString
 typedef BasicString<char, Detail::TempStringAllocator> CharBasicString;
 
 extern unsigned long GetLOCTrophyName(eTrophyType);
-extern nlLocalization* g_pLocalization;
-extern const unsigned short LocalizationTableNotFound[];
-extern const unsigned short MissingLocString[];
 
 static const char* MILESTONE_TROPHY_TEXT_NAME = "CUP TITLE";
 static const char* MILESTONE_TROPHY_IMAGE_NAME = "TROPHY";

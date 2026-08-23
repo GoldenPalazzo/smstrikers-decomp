@@ -14,7 +14,6 @@
 #include "NL/nlPrint.h"
 
 #if defined(VERSION_G4QJ01)
-extern nlLocalization* g_pLocalization;
 #endif
 
 /**

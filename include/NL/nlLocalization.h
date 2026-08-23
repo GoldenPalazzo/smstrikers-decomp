@@ -49,4 +49,8 @@ public:
     static const char Thumbprint[4];
 };
 
+extern nlLocalization* g_pLocalization;
+extern const unsigned short LocalizationTableNotFound[];
+extern const unsigned short MissingLocString[];
+
 #endif // _NLLOCALIZATION_H_

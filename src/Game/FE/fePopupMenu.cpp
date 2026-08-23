@@ -21,10 +21,6 @@
 
 char* optionNames[4] = { "Option1", "Option2", "Option3", "Option4" };
 
-extern nlLocalization* g_pLocalization;
-extern const unsigned short LocalizationTableNotFound[];
-extern const unsigned short MissingLocString[];
-
 struct PopupEntry
 {
     int mMessageType;

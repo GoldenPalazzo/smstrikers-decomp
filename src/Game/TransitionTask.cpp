@@ -86,7 +86,6 @@ int nlSNPrintf(char*, unsigned long, const char*, ...);
 
 TransitionTask* TransitionTask::sm_pGlobalTask;
 bool g_bFrameStatsOnDisk;
-extern nlLocalization* g_pLocalization;
 static unsigned long long s_FontResourceMark = -1;
 extern unsigned char gSebringLoadPackageToVirtualMemory;
 extern PhysicsLoader ThePhysicsLoader;

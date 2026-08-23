@@ -15,10 +15,6 @@
 #include "NL/nlLocalization.h"
 #include "NL/nlPrint.h"
 
-extern nlLocalization* g_pLocalization;
-extern const unsigned short LocalizationTableNotFound[];
-extern const unsigned short MissingLocString[];
-
 static inline const unsigned short* LookupLocHash(unsigned long key)
 {
     nlLocalization* loc = g_pLocalization;

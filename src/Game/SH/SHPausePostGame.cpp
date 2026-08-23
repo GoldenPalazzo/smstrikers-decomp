@@ -22,10 +22,6 @@ typedef BindExp1<void, MemFunImpl_PausePostGame_t, PausePostGameScene*> BindExp1
 
 static int gPadThatQuit = 8;
 
-extern nlLocalization* g_pLocalization;
-extern const unsigned short LocalizationTableNotFound[];
-extern const unsigned short MissingLocString[];
-
 static inline const unsigned short* LookupLocHash(unsigned long hash)
 {
     nlLocalization* loc = g_pLocalization;
