@@ -32,8 +32,10 @@ This repository does **not** contain any game assets or assembly whatsoever. An 
 
 Supported versions:
 
-- ✅ `G4QE01`: Rev 0 (USA) — `main.dol` SHA-1: `376d699c99b6b0949abe1b4ceccefdef7828d2b5`
-- ❌ `G4QJ01`: Rev 0 (Japan) — In progress (94.72% code matched) — `main.dol` SHA-1: `d116f02b778a4f69725fd1c00656012d16ebf94a`
+- [x] `G4QE01`: Rev 0 (USA) — `main.dol` SHA-1: `376d699c99b6b0949abe1b4ceccefdef7828d2b5`
+- [x] `G4QJ01`: Rev 0 (Japan) — `main.dol` SHA-1: `d116f02b778a4f69725fd1c00656012d16ebf94a`
+
+The releases share nearly all game code; see [Version differences](docs/version_differences.md) for a short summary of the regional changes.
 
 Decompilation
 =============
@@ -161,11 +163,9 @@ switch versions, rerun `configure.py` with the other game ID; cleaning the build
 directory is not necessary. Add `--map` to the configure command to generate a
 linker map.
 
-The USA version builds entirely from matching source. The Japanese version is
-still in progress and currently uses extracted retail objects for the final
-link, while still verifying the resulting `main.dol` against its expected
-SHA-1. GitHub Actions and decomp.dev progress reporting currently remain on the
-completed USA version.
+Both versions are configured to build entirely from reconstructed source and
+are checked against their retail `main.dol` SHA-1. GitHub Actions and decomp.dev
+progress reporting currently default to the USA version.
 
 Diffing
 =======
