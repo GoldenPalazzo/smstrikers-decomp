@@ -674,35 +674,8 @@ void IChooseCaptain::SetupForLastPhase(eFEINPUT_PAD pad)
         return;
     }
 
-    int side;
-    if (mIsSinglePlayerInput)
-    {
-        if (mComponentState[0].mCurrentPhase < PHASE_READY)
-        {
-            side = 0;
-        }
-        else
-        {
-            side = 1;
-        }
-    }
-    else
-    {
-        int i = 0;
-        IChooseCaptain* p = this;
-        for (; i < mNumTotalPushedPlayers; i++)
-        {
-            if (p->mAllPushedPlayers[0] == pad)
-            {
-                side = mAllPushedPlayerSides[i];
-                goto found;
-            }
-            p = (IChooseCaptain*)((u8*)p + 4);
-        }
-        side = -1;
-    }
+    int side = GetSide(pad);
 
-found:
     if (side == -1)
     {
         mComponentState[1].GotoPreviousPhase();

@@ -735,27 +735,20 @@ nlVector3 GetClosestPointOnLineABFromPointC(const nlVector3& a, const nlVector3&
     f32 distASq = toA.GetLengthSq3D();
     f32 distA = nlSqrt(distASq, true);
 
-    if (distA > lineLen)
-        goto lbl_outside;
+    f32 lineLen2;
+    f32 distBSq;
+    f32 distB;
+    if (distA > lineLen || (lineLen2 = nlSqrt(fLenSq, true), distBSq = toB.GetLengthSq3D(), distB = nlSqrt(distBSq, true), distB > lineLen2))
     {
-        f32 lineLen2 = nlSqrt(fLenSq, true);
-        f32 distBSq = toB.GetLengthSq3D();
-        f32 distB = nlSqrt(distBSq, true);
-        if (!(distB > lineLen2))
-            goto lbl_return_proj;
+        f32 distBSq2 = toB.GetLengthSq3D();
+        f32 distB2 = nlSqrt(distBSq2, true);
+        f32 distA2 = nlSqrt(distASq, true);
+        if (distA2 < distB2)
+        {
+            return a;
+        }
+        return b;
     }
-lbl_outside:
-{
-    f32 distBSq2 = toB.GetLengthSq3D();
-    f32 distB2 = nlSqrt(distBSq2, true);
-    f32 distA2 = nlSqrt(distASq, true);
-    if (distA2 < distB2)
-    {
-        return a;
-    }
-    return b;
-}
-lbl_return_proj:
     return projected;
 }
 

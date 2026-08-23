@@ -405,7 +405,7 @@ float UserControlled(cFielder* fielder)
         return 0.0f;
     }
 
-    bool bHasGlobalPad = fielder->GetGlobalPad();
+    bool bHasGlobalPad = fielder->GetGlobalPad() != NULL;
     if (bHasGlobalPad)
     {
         return 1.0f;

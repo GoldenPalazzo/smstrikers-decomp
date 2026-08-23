@@ -172,47 +172,47 @@ ScriptAction* cDecisionEntity::QueueActionSetDesire(int eDesireType, float fConf
         if (cur == NULL)
         {
             nlListAddStart<ScriptAction>(&m_lQueuedActions.m_pStart, pNewAction, &m_lQueuedActions.m_pEnd);
-            goto done;
         }
-
-        for (; cur != NULL; prev = cur, cur = cur->next)
+        else
         {
-            float newConf = pNewAction->m_fConfidence;
-            float curConf = cur->m_fConfidence;
-            int cmp;
-            if (curConf == newConf)
-                cmp = 0;
-            else if (curConf > newConf)
-                cmp = -1;
-            else
-                cmp = 1;
-
-            if (cmp > 0)
+            for (; cur != NULL; prev = cur, cur = cur->next)
             {
-                if (prev == NULL)
-                {
-                    nlListAddStart<ScriptAction>(&m_lQueuedActions.m_pStart, pNewAction, &m_lQueuedActions.m_pEnd);
-                }
-                else if (prev == m_lQueuedActions.m_pEnd)
-                {
-                    nlListAddEnd<ScriptAction>(&m_lQueuedActions.m_pStart, &m_lQueuedActions.m_pEnd, pNewAction);
-                }
+                float newConf = pNewAction->m_fConfidence;
+                float curConf = cur->m_fConfidence;
+                int cmp;
+                if (curConf == newConf)
+                    cmp = 0;
+                else if (curConf > newConf)
+                    cmp = -1;
                 else
+                    cmp = 1;
+
+                if (cmp > 0)
                 {
-                    ScriptAction* next = prev->next;
-                    prev->next = pNewAction;
-                    pNewAction->next = next;
+                    if (prev == NULL)
+                    {
+                        nlListAddStart<ScriptAction>(&m_lQueuedActions.m_pStart, pNewAction, &m_lQueuedActions.m_pEnd);
+                    }
+                    else if (prev == m_lQueuedActions.m_pEnd)
+                    {
+                        nlListAddEnd<ScriptAction>(&m_lQueuedActions.m_pStart, &m_lQueuedActions.m_pEnd, pNewAction);
+                    }
+                    else
+                    {
+                        ScriptAction* next = prev->next;
+                        prev->next = pNewAction;
+                        pNewAction->next = next;
+                    }
+                    break;
                 }
-                break;
+            }
+
+            if (cur == NULL)
+            {
+                nlListAddEnd<ScriptAction>(&m_lQueuedActions.m_pStart, &m_lQueuedActions.m_pEnd, pNewAction);
             }
         }
 
-        if (cur == NULL)
-        {
-            nlListAddEnd<ScriptAction>(&m_lQueuedActions.m_pStart, &m_lQueuedActions.m_pEnd, pNewAction);
-        }
-
-    done:
         m_pLastQueuedAction = pNewAction;
     }
 
@@ -236,47 +236,47 @@ ScriptAction* cDecisionEntity::QueueActionSetPlay(int ePlayType, float fConfiden
     if (cur == NULL)
     {
         nlListAddStart<ScriptAction>(&m_lQueuedActions.m_pStart, action, &m_lQueuedActions.m_pEnd);
-        goto done;
     }
-
-    for (; cur != NULL; prev = cur, cur = cur->next)
+    else
     {
-        float newConf = action->m_fConfidence;
-        float curConf = cur->m_fConfidence;
-        int cmp;
-        if (curConf == newConf)
-            cmp = 0;
-        else if (curConf > newConf)
-            cmp = -1;
-        else
-            cmp = 1;
-
-        if (cmp > 0)
+        for (; cur != NULL; prev = cur, cur = cur->next)
         {
-            if (prev == NULL)
-            {
-                nlListAddStart<ScriptAction>(&m_lQueuedActions.m_pStart, action, &m_lQueuedActions.m_pEnd);
-            }
-            else if (prev == m_lQueuedActions.m_pEnd)
-            {
-                nlListAddEnd<ScriptAction>(&m_lQueuedActions.m_pStart, &m_lQueuedActions.m_pEnd, action);
-            }
+            float newConf = action->m_fConfidence;
+            float curConf = cur->m_fConfidence;
+            int cmp;
+            if (curConf == newConf)
+                cmp = 0;
+            else if (curConf > newConf)
+                cmp = -1;
             else
+                cmp = 1;
+
+            if (cmp > 0)
             {
-                ScriptAction* next = prev->next;
-                prev->next = action;
-                action->next = next;
+                if (prev == NULL)
+                {
+                    nlListAddStart<ScriptAction>(&m_lQueuedActions.m_pStart, action, &m_lQueuedActions.m_pEnd);
+                }
+                else if (prev == m_lQueuedActions.m_pEnd)
+                {
+                    nlListAddEnd<ScriptAction>(&m_lQueuedActions.m_pStart, &m_lQueuedActions.m_pEnd, action);
+                }
+                else
+                {
+                    ScriptAction* next = prev->next;
+                    prev->next = action;
+                    action->next = next;
+                }
+                break;
             }
-            break;
+        }
+
+        if (cur == NULL)
+        {
+            nlListAddEnd<ScriptAction>(&m_lQueuedActions.m_pStart, &m_lQueuedActions.m_pEnd, action);
         }
     }
 
-    if (cur == NULL)
-    {
-        nlListAddEnd<ScriptAction>(&m_lQueuedActions.m_pStart, &m_lQueuedActions.m_pEnd, action);
-    }
-
-done:
     m_pLastQueuedAction = action;
     return action;
 }

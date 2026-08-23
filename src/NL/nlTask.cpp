@@ -45,41 +45,41 @@ void nlTaskManager::RunAllTasks()
     {
         if ((u32)m_pInstance->m_CurrState != (u32)m_pInstance->m_PendingState)
         {
-        loop_2:
-            currentTask->StateTransition(m_pInstance->m_CurrState, m_pInstance->m_PendingState);
-            if (nlDLRingIsEnd<nlTask>(m_pInstance->m_lTaskList, currentTask) == 0)
+            for (;;)
             {
+                currentTask->StateTransition(m_pInstance->m_CurrState, m_pInstance->m_PendingState);
+                if (nlDLRingIsEnd<nlTask>(m_pInstance->m_lTaskList, currentTask) != 0)
+                    break;
                 currentTask = currentTask->m_next;
-                goto loop_2;
             }
             m_pInstance->m_PrevState = (u32)m_pInstance->m_CurrState;
             m_pInstance->m_CurrState = (u32)m_pInstance->m_PendingState;
         }
 
         taskIterator = nlDLRingGetStart<nlTask>(m_pInstance->m_lTaskList);
-    loop_6:
-        currentTicker = nlGetTicker();
-        tickerDifference = nlGetTickerDifference(taskIterator->nPrevTicker, currentTicker);
-        taskIterator->nPrevTicker = currentTicker;
-        if (taskIterator->statesActive & m_pInstance->m_CurrState)
+        for (;;)
         {
-            clampedDeltaTime = tickerDifference / 1000.f;
-            if (clampedDeltaTime < g_fTaskTimeLowerBound)
+            currentTicker = nlGetTicker();
+            tickerDifference = nlGetTickerDifference(taskIterator->nPrevTicker, currentTicker);
+            taskIterator->nPrevTicker = currentTicker;
+            if (taskIterator->statesActive & m_pInstance->m_CurrState)
             {
-                clampedDeltaTime = g_fTaskTimeLowerBound;
+                clampedDeltaTime = tickerDifference / 1000.f;
+                if (clampedDeltaTime < g_fTaskTimeLowerBound)
+                {
+                    clampedDeltaTime = g_fTaskTimeLowerBound;
+                }
+                else if (clampedDeltaTime > g_fTaskTimeUpperBound)
+                {
+                    clampedDeltaTime = g_fTaskTimeUpperBound;
+                }
+                deltaTime = clampedDeltaTime * m_pInstance->m_TimeDilation;
+                m_pInstance->m_fCurrentTimeDelta = deltaTime;
+                taskIterator->Run(deltaTime);
             }
-            else if (clampedDeltaTime > g_fTaskTimeUpperBound)
-            {
-                clampedDeltaTime = g_fTaskTimeUpperBound;
-            }
-            deltaTime = clampedDeltaTime * m_pInstance->m_TimeDilation;
-            m_pInstance->m_fCurrentTimeDelta = deltaTime;
-            taskIterator->Run(deltaTime);
-        }
-        if (taskIterator != m_pInstance->m_lTaskList)
-        {
+            if (taskIterator == m_pInstance->m_lTaskList)
+                break;
             taskIterator = taskIterator->m_next;
-            goto loop_6;
         }
     }
 }

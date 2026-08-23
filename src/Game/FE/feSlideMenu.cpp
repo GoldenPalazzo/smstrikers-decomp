@@ -112,14 +112,11 @@ bool FESlideMenu::ApplyFunction()
     }
 
     MenuItem* item = &m_menuItems[m_currentSlide];
-    if (!item->ItemCBFuncs[ON_APPLY])
+    if (item->ItemCBFuncs[ON_APPLY])
     {
-        goto noCallback;
+        runCallBack();
+        return true;
     }
-    runCallBack();
-    return true;
-
-noCallback:
     return false;
 }
 

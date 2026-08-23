@@ -1660,19 +1660,7 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
     {
         pGoalie->FindSTSStunData();
         GetWorldPoint(v3BallTarget, pGoalie->mpSaveData->mv3SavePos, *goaliePos, pGoalie->m_aActualFacingDirection);
-        if (!(fTime2Goalie < 0.03f))
-        {
-            float sdx;
-            float sdy;
-            float sdz;
-            sdy = v3InterceptPos.y - v3BallTarget.y;
-            sdx = v3InterceptPos.x - v3BallTarget.x;
-            sdz = v3InterceptPos.z - v3BallTarget.z;
-            if (!(sdx * sdx + sdy * sdy + sdz * sdz > 4.0f))
-            {
-                goto yellow_use_goalie_time;
-            }
-        }
+        if (fTime2Goalie < 0.03f || CalculateDistanceSquared(v3InterceptPos, v3BallTarget) > 4.0f)
         {
             cNet* pNet = pGoalie->m_pTeam->m_pNet;
             v3BallTarget.x = pNet->m_v3NetLocation.x;
@@ -1694,10 +1682,10 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
             v3InterceptPos.z = (1.0f - fPercent) * ballPos->z + fPercent * v3BallTarget.z;
             pGoalie->CalcBestSave(0.5f, *ballPos, v3InterceptPos, 0xFFFC, true);
         }
-        goto yellow_final;
-    yellow_use_goalie_time:
-        fDesiredTime = fTime2Goalie;
-    yellow_final:
+        else
+        {
+            fDesiredTime = fTime2Goalie;
+        }
         pGoalie->mbShouldMiss = false;
         g_pBall->ShootAtFast(v3BallVelocity, v3BallTarget, fDesiredTime);
         break;
@@ -1741,44 +1729,31 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
         }
         nlVector3 v3BlastPos;
         GetWorldPoint(v3BlastPos, pGoalie->mpSaveData->mv3SavePos, *goaliePos, aAngle);
-        if (!bSharpAngle)
+        if (!bSharpAngle && (fTime2Goalie < 0.1f || CalculateDistanceSquared(v3InterceptPos, v3BlastPos) > 9.0f))
         {
-            if (fTime2Goalie < 0.1f)
+            bool bDoSpin;
+            if (pGoalie->mv3LocalContactPosition.y > 0.0f)
             {
-                goto spin_data;
+                bDoSpin = true;
             }
-            float sdx;
-            float sdy;
-            float sdz;
-            sdy = v3InterceptPos.y - v3BlastPos.y;
-            sdx = v3InterceptPos.x - v3BlastPos.x;
-            sdz = v3InterceptPos.z - v3BlastPos.z;
-            if (sdx * sdx + sdy * sdy + sdz * sdz > 9.0f)
+            else
             {
-            spin_data:
-                bool bDoSpin;
-                if (pGoalie->mv3LocalContactPosition.y > 0.0f)
-                {
-                    bDoSpin = true;
-                }
-                else
-                {
-                    bDoSpin = false;
-                }
-                pGoalie->FindSTSSpinData(bDoSpin);
-                goto super_shot_final;
+                bDoSpin = false;
             }
-        }
-        v3BallTarget = v3BlastPos;
-        if (fTime2Goalie >= 0.1f)
-        {
-            fDesiredTime = fTime2Goalie;
+            pGoalie->FindSTSSpinData(bDoSpin);
         }
         else
         {
-            fDesiredTime = 0.1f;
+            v3BallTarget = v3BlastPos;
+            if (fTime2Goalie >= 0.1f)
+            {
+                fDesiredTime = fTime2Goalie;
+            }
+            else
+            {
+                fDesiredTime = 0.1f;
+            }
         }
-    super_shot_final:
         g_pBall->ShootAtFast(v3BallVelocity, v3BallTarget, fDesiredTime);
         break;
     }
@@ -4905,23 +4880,10 @@ u8 cFielder::ShouldIStrafe()
         shouldStrafe = true;
         bool isTurboing = false;
         s32 animID = m_eAnimID;
-
-        if (animID == 0x1D)
-            goto setTrue1;
-        if (animID == 0x1E)
-            goto setTrue1;
-        if (animID == 0x1F)
-            goto setTrue1;
-        if (animID == 0x20)
-            goto setTrue1;
-        if (animID == 0x21)
-            goto setTrue1;
-        if (animID == 0x22)
-            goto setTrue1;
-        goto check1;
-    setTrue1:
-        isTurboing = true;
-    check1:
+        if (!(animID != 0x1D && animID != 0x1E && animID != 0x1F && animID != 0x20 && animID != 0x21 && animID != 0x22))
+        {
+            isTurboing = true;
+        }
         if (!isTurboing)
         {
             shouldStrafe = false;
@@ -4932,17 +4894,10 @@ u8 cFielder::ShouldIStrafe()
         shouldStrafe = true;
         bool isTurboing = false;
         s32 animID = m_eAnimID;
-
-        if (animID == 0x10)
-            goto setTrue2;
-        if (animID == 0x0F)
-            goto setTrue2;
-        if (animID == 0x11)
-            goto setTrue2;
-        goto check2;
-    setTrue2:
-        isTurboing = true;
-    check2:
+        if (!(animID != 0x10 && animID != 0x0F && animID != 0x11))
+        {
+            isTurboing = true;
+        }
         if (!isTurboing)
         {
             shouldStrafe = false;
@@ -4964,16 +4919,10 @@ u8 cFielder::ShouldIStrafe()
 
         bool isStrafing = false;
         s32 strafeDir = mActionRunningVars.eLastStrafeDirection;
-        if (strafeDir == STRAFE_LEFT)
-            goto setStrafeTrue;
-        if (strafeDir == STRAFE_RIGHT)
-            goto setStrafeTrue;
-        if (strafeDir == STRAFE_BACK)
-            goto setStrafeTrue;
-        goto checkStrafe;
-    setStrafeTrue:
-        isStrafing = true;
-    checkStrafe:
+        if (!(strafeDir != STRAFE_LEFT && strafeDir != STRAFE_RIGHT && strafeDir != STRAFE_BACK))
+        {
+            isStrafing = true;
+        }
 
         float threshold;
         if (isStrafing)
