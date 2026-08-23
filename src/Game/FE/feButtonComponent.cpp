@@ -73,7 +73,7 @@ void ButtonComponent::CentreButtons()
         textPosition = mButtonLabels[i]->GetAssetPosition();
         mButtonLabels[i]->SetAssetPosition(totalLength, textPosition.f.y, textPosition.f.z);
 
-        const nlFont* pFont = ((FEFontResource*)mButtonLabels[i]->m_component->pChildren)->m_font;
+        const nlFont* pFont = ((FEFontResource*)mButtonLabels[i]->m_component->pChildren)->m_pFontReference;
 
         nlStrNCpy<unsigned short>(buffer, mButtonLabels[i]->GetString(), 0x80);
         buffer[127] = 0;

@@ -1,4 +1,6 @@
 #include "Game/FE/feChooseSideComponent.h"
+#include "Game/FE/feFinder.h"
+#include "Game/FE/tlComponentInstance.h"
 #include "Game/FE/feTweener.h"
 #include "Game/GameInfo.h"
 
@@ -37,26 +39,26 @@ IChooseSide::~IChooseSide()
 /**
  * Offset/Address/Size: 0x15D4 | 0x800C4A18 | size: 0x84
  */
-UpdateResult IChooseSide::Update(float dt, eFEINPUT_PAD* pad, int param)
+UpdateResult IChooseSide::Update(float fDeltaT, eFEINPUT_PAD* padresult, int disabledSide)
 {
     UpdateResult result;
     if (mContext == CONTEXT_FE)
     {
-        result = UpdateForFE(dt, pad);
+        result = UpdateForFE(fDeltaT, padresult);
     }
     else
     {
-        result = UpdateForPause(dt, pad);
+        result = UpdateForPause(fDeltaT, padresult);
     }
-    CheckControllers(param);
-    mTweenManager.Update(dt);
+    CheckControllers(disabledSide);
+    mTweenManager.Update(fDeltaT);
     return result;
 }
 
 /**
  * Offset/Address/Size: 0xFD4 | 0x800C4418 | size: 0x600
  */
-UpdateResult IChooseSide::UpdateForFE(float padresult, eFEINPUT_PAD* pad)
+UpdateResult IChooseSide::UpdateForFE(float fDeltaT, eFEINPUT_PAD* padresult)
 {
     for (int i = 0, offset = 0; i < 4; i++, offset += 4)
     {
@@ -106,9 +108,9 @@ UpdateResult IChooseSide::UpdateForFE(float padresult, eFEINPUT_PAD* pad)
             }
             else
             {
-                if (pad != NULL)
+                if (padresult != NULL)
                 {
-                    *pad = (eFEINPUT_PAD)i;
+                    *padresult = (eFEINPUT_PAD)i;
                 }
                 return UPDATE_GO_BACK;
             }
@@ -118,9 +120,9 @@ UpdateResult IChooseSide::UpdateForFE(float padresult, eFEINPUT_PAD* pad)
         {
             if (mPlayerReady[i])
             {
-                if (pad != NULL)
+                if (padresult != NULL)
                 {
-                    *pad = (eFEINPUT_PAD)i;
+                    *padresult = (eFEINPUT_PAD)i;
                 }
                 FEAudio::PlayAnimAudioEvent("sfx_accept_no_screen_change", false);
                 return UPDATE_GO_FORWARD;
@@ -138,9 +140,9 @@ UpdateResult IChooseSide::UpdateForFE(float padresult, eFEINPUT_PAD* pad)
                     else
                         ri3->m_bVisible = false;
                 }
-                if (pad != NULL)
+                if (padresult != NULL)
                 {
-                    *pad = (eFEINPUT_PAD)i;
+                    *padresult = (eFEINPUT_PAD)i;
                 }
                 FEAudio::PlayAnimAudioEvent("sfx_accept_no_screen_change", false);
                 if (AllPluggedInAreReady())
@@ -150,9 +152,9 @@ UpdateResult IChooseSide::UpdateForFE(float padresult, eFEINPUT_PAD* pad)
             }
             else
             {
-                if (pad != NULL)
+                if (padresult != NULL)
                 {
-                    *pad = (eFEINPUT_PAD)i;
+                    *padresult = (eFEINPUT_PAD)i;
                 }
                 if (AllControllersAreCentred())
                 {
@@ -169,19 +171,24 @@ UpdateResult IChooseSide::UpdateForFE(float padresult, eFEINPUT_PAD* pad)
 /**
  * Offset/Address/Size: 0xCDC | 0x800C4120 | size: 0x2F8
  */
-UpdateResult IChooseSide::UpdateForPause(float padresult, eFEINPUT_PAD* pad)
+UpdateResult IChooseSide::UpdateForPause(float fDeltaT, eFEINPUT_PAD* padresult)
 {
     for (int i = 0; i < 4; i++)
     {
-        TLInstance* inst = mInstanceTable[i];
+        TLInstance* instance = mInstanceTable[i];
+#if defined(VERSION_G4QJ01)
         if (g_pFEInput->IsConnected((eFEINPUT_PAD)i))
+#else
+        eFEINPUT_PAD inputpad = (eFEINPUT_PAD)i;
+        if (g_pFEInput->IsConnected(inputpad))
+#endif
         {
-            inst->m_bVisible = true;
+            instance->m_bVisible = true;
             PositionController(i, false, true);
         }
         else
         {
-            inst->m_bVisible = false;
+            instance->m_bVisible = false;
             mPlayingSides[i] = -1;
 
             if (mInstanceTable[i + 8] != NULL)
@@ -198,19 +205,22 @@ UpdateResult IChooseSide::UpdateForPause(float padresult, eFEINPUT_PAD* pad)
             SetReady(i, false);
         }
 
+#if defined(VERSION_G4QJ01)
         if (g_pFEInput->JustPressed((eFEINPUT_PAD)i, 0x200, false, NULL))
+#else
+        if (g_pFEInput->JustPressed(inputpad, 0x200, false, NULL))
+#endif
         {
             FEAudio::PlayAnimAudioEvent("sfx_back", false);
-            if (pad != NULL)
+            if (padresult != NULL)
             {
-                *pad = (eFEINPUT_PAD)i;
+#if defined(VERSION_G4QJ01)
+                *padresult = (eFEINPUT_PAD)i;
+#else
+                *padresult = inputpad;
+#endif
             }
-
-            for (int j = 0, *playingSide = mPlayingSides; j < 4; j++, playingSide++)
-            {
-                GameInfoManager::Instance()->SetPlayingSide((unsigned short)j, (short)*playingSide);
-            }
-
+            SaveChanges();
             return UPDATE_GO_BACK;
         }
     }
@@ -225,32 +235,21 @@ void IChooseSide::CheckControllers(int disabledSide)
 {
     for (int i = 0; i < 4; i++)
     {
+        eFEINPUT_PAD pad = (eFEINPUT_PAD)i;
         if (mPlayerReady[i])
         {
             continue;
         }
 
-        if (g_pFEInput->JustPressed((eFEINPUT_PAD)i, 11, true, NULL))
+        if (g_pFEInput->JustPressed(pad, 11, true, NULL))
         {
-            int side = mPlayingSides[i];
-
-            if (side == -1 && disabledSide == 0)
+            if (mPlayingSides[i] == -1 && disabledSide == 0)
             {
                 FEAudio::PlayAnimAudioEvent("sfx_deny", false);
                 continue;
             }
 
-            switch (side)
-            {
-            case 1:
-                mPlayingSides[i] = -1;
-                break;
-            case -1:
-                mPlayingSides[i] = 0;
-                break;
-            }
-
-            if (side != 0)
+            if (MoveSideLeft(i) != 0)
             {
                 FEAudio::PlayAnimAudioEvent("sfx_side_select_left", false);
             }
@@ -260,39 +259,17 @@ void IChooseSide::CheckControllers(int disabledSide)
             }
 
             PositionController(i, true, true);
-
-            TLInstance* readyIndicator = mInstanceTable[16];
-            if (readyIndicator != NULL)
-            {
-                if (AllPlayersReady())
-                    readyIndicator->m_bVisible = true;
-                else
-                    readyIndicator->m_bVisible = false;
-            }
+            UpdatePressAText();
         }
-        else if (g_pFEInput->JustPressed((eFEINPUT_PAD)i, 12, true, NULL))
+        else if (g_pFEInput->JustPressed(pad, 12, true, NULL))
         {
-            int side = mPlayingSides[i];
-
-            if (side == -1 && disabledSide == 1)
+            if (mPlayingSides[i] == -1 && disabledSide == 1)
             {
                 FEAudio::PlayAnimAudioEvent("sfx_deny", false);
                 continue;
             }
 
-            switch (side)
-            {
-            case 0:
-                mPlayingSides[i] = -1;
-                break;
-            case 1:
-                break;
-            case -1:
-                mPlayingSides[i] = 1;
-                break;
-            }
-
-            if (side != 1)
+            if (MoveSideRight(i) != 1)
             {
                 FEAudio::PlayAnimAudioEvent("sfx_side_select_right", false);
             }
@@ -302,15 +279,7 @@ void IChooseSide::CheckControllers(int disabledSide)
             }
 
             PositionController(i, true, true);
-
-            TLInstance* readyIndicator = mInstanceTable[16];
-            if (readyIndicator != NULL)
-            {
-                if (AllPlayersReady())
-                    readyIndicator->m_bVisible = true;
-                else
-                    readyIndicator->m_bVisible = false;
-            }
+            UpdatePressAText();
         }
     }
 }
@@ -322,17 +291,7 @@ void IChooseSide::ResetAndPositionControllers(bool reset)
 {
     for (int i = 0; i < 4; i++)
     {
-        mPlayerReady[i] = false;
-        mInstanceTable[i + 4]->m_bVisible = false;
-
-        TLInstance* readyIndicator = mInstanceTable[16];
-        if (readyIndicator != NULL)
-        {
-            if (AllPlayersReady())
-                readyIndicator->m_bVisible = true;
-            else
-                readyIndicator->m_bVisible = false;
-        }
+        SetReady(i, false);
 
         if (!g_pFEInput->IsConnected((eFEINPUT_PAD)i))
         {
@@ -365,21 +324,22 @@ void IChooseSide::ResetAndPositionControllers(bool reset)
 /**
  * Offset/Address/Size: 0x3DC | 0x800C3820 | size: 0xE4
  */
-void IChooseSide::SetReady(int controllerIdx, bool ready)
+void IChooseSide::SetReady(int padindex, bool isready)
 {
-    mPlayerReady[controllerIdx] = ready;
-    mInstanceTable[controllerIdx + 4]->m_bVisible = ready;
+    mPlayerReady[padindex] = isready;
+    mInstanceTable[padindex + 4]->m_bVisible = isready;
+    UpdatePressAText();
+}
 
-    TLInstance* readyIndicator = mInstanceTable[16];
-    if (readyIndicator == NULL)
+void IChooseSide::UpdatePressAText()
+{
+    if (mInstanceTable[16] != NULL)
     {
-        return;
+        if (AllPlayersReady())
+            mInstanceTable[16]->m_bVisible = true;
+        else
+            mInstanceTable[16]->m_bVisible = false;
     }
-
-    if (AllPlayersReady())
-        readyIndicator->m_bVisible = true;
-    else
-        readyIndicator->m_bVisible = false;
 }
 
 /**
@@ -387,53 +347,49 @@ void IChooseSide::SetReady(int controllerIdx, bool ready)
  */
 void IChooseSide::PositionController(int padindex, bool usetween, bool setvisibilities)
 {
-    int side = mPlayingSides[padindex];
-    int destPosIndex;
+    int playingside = mPlayingSides[padindex];
+    ControllerPos controllerpos = playingside == 0 ? CPOS_HOME : (playingside == 1 ? CPOS_AWAY : CPOS_NEUTRAL);
 
-    if (side == 0)
-    {
-        destPosIndex = 0;
-    }
-    else
-    {
-        int temp = 2;
-        if (side == 1)
-        {
-            temp = 1;
-        }
-        destPosIndex = temp;
-    }
+    TLInstance* instance = mInstanceTable[padindex];
+    feVector3 pos = instance->GetPosition();
 
-    TLInstance* inst = mInstanceTable[padindex];
-    feVector3 localPos = inst->GetPosition();
-
-    mTweenManager.clearTweensOnObj(inst);
+    mTweenManager.clearTweensOnObj(instance);
 
     if (usetween)
     {
-        FETweener* tweener = mTweenManager.createTween(
-            localPos.e,
-            &mControllerDestPos[destPosIndex],
+        FETweener* tween = mTweenManager.createTween(
+            pos.e,
+            &mControllerDestPos[controllerpos],
             0.075f,
             0.0f,
             1,
             TweenFunctions::linear,
-            inst,
+            instance,
             TweenSetPosCallback);
-        mTweenManager.startTween(tweener);
+        mTweenManager.startTween(tween);
     }
     else
     {
-        mInstanceTable[padindex]->SetAssetPosition(mControllerDestPos[destPosIndex], localPos.e[1], localPos.e[2]);
+        mInstanceTable[padindex]->SetAssetPosition(mControllerDestPos[controllerpos], pos.e[1], pos.e[2]);
     }
 
     if (setvisibilities)
     {
-        inst = mInstanceTable[padindex + 12];
-        inst->m_bVisible = (side == -1);
-        inst = mInstanceTable[padindex + 8];
-        inst->m_bVisible = (side != -1);
+        instance = mInstanceTable[padindex + 12];
+        instance->m_bVisible = (playingside == -1);
+        instance = mInstanceTable[padindex + 8];
+        instance->m_bVisible = (playingside != -1);
     }
+
+#if defined(VERSION_G4QJ01)
+    if (mInstanceTable[padindex + 17] != NULL)
+    {
+        if (!g_pFEInput->IsConnected((eFEINPUT_PAD)padindex))
+            mInstanceTable[padindex + 17]->m_bVisible = false;
+        else
+            mInstanceTable[padindex + 17]->m_bVisible = (playingside == -1);
+    }
+#endif
 }
 
 /**
@@ -479,6 +435,53 @@ bool IChooseSide::AllPluggedInAreReady() const
     return true;
 }
 
+int IChooseSide::MoveSideLeft(int padindex)
+{
+    int prevSide = mPlayingSides[padindex];
+
+    switch (mPlayingSides[padindex])
+    {
+    case 1:
+        MoveSideNone(padindex);
+        break;
+    case -1:
+        mPlayingSides[padindex] = 0;
+        break;
+    case 0:
+        break;
+    default:
+        break;
+    }
+
+    return prevSide;
+}
+
+int IChooseSide::MoveSideRight(int padindex)
+{
+    int prevSide = mPlayingSides[padindex];
+
+    switch (mPlayingSides[padindex])
+    {
+    case 0:
+        MoveSideNone(padindex);
+        break;
+    case -1:
+        mPlayingSides[padindex] = 1;
+        break;
+    case 1:
+        break;
+    default:
+        break;
+    }
+
+    return prevSide;
+}
+
+void IChooseSide::MoveSideNone(int padindex)
+{
+    mPlayingSides[padindex] = -1;
+}
+
 /**
  * Offset/Address/Size: 0x114 | 0x800C3558 | size: 0x58
  */
@@ -494,7 +497,6 @@ bool IChooseSide::AtLeastOnePlayerReady() const
 
 /**
  * Offset/Address/Size: 0xBC | 0x800C3500 | size: 0x58
- * TODO: lwzu instruction mismatch - original uses pointer update pattern
  */
 bool IChooseSide::AllControllersAreCentred() const
 {
@@ -511,9 +513,9 @@ bool IChooseSide::AllControllersAreCentred() const
  */
 void IChooseSide::TweenSetPosCallback(void* obj, const float* value)
 {
-    TLInstance* inst = (TLInstance*)obj;
-    feVector3 pos = inst->GetPosition();
-    inst->SetAssetPosition(*(const float*)value, pos.f.y, pos.f.z);
+    TLInstance* instance = (TLInstance*)obj;
+    feVector3 pos = instance->GetPosition();
+    instance->SetAssetPosition(*(const float*)value, pos.f.y, pos.f.z);
 }
 
 /**
@@ -524,5 +526,66 @@ void IChooseSide::SaveChanges()
     for (int i = 0; i < 4; i++)
     {
         GameInfoManager::Instance()->SetPlayingSide(i, mPlayingSides[i]);
+    }
+}
+
+void IChooseSide::SetArrowVisible(int instanceid, bool leftvisible, bool rightvisible)
+{
+    instanceid += 12;
+    TLComponentInstance* componentinstance = static_cast<TLComponentInstance*>(mInstanceTable[instanceid]);
+    if (componentinstance == NULL)
+    {
+        return;
+    }
+
+    TLImageInstance* imageinstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        componentinstance->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("p1arrows1")),
+        InlineHasher(nlStringLowerHash("arrow")));
+    if (imageinstance != NULL)
+    {
+        imageinstance->m_bVisible = leftvisible;
+    }
+
+    imageinstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        componentinstance->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("p1arrows1")),
+        InlineHasher(nlStringLowerHash("arrow2")));
+    if (imageinstance != NULL)
+    {
+        imageinstance->m_bVisible = rightvisible;
+    }
+}
+
+void IChooseSide::MakeArrowsFollowController()
+{
+    for (int i = 0; i < 4; i++)
+    {
+        if (mInstanceTable[i] == NULL || mInstanceTable[i + 12] == NULL)
+        {
+            continue;
+        }
+
+        const feVector3& controllerpos = mInstanceTable[i]->GetAssetPosition();
+        const feVector3& arrowpos = mInstanceTable[i + 12]->GetAssetPosition();
+        mInstanceTable[i + 12]->SetAssetPosition(controllerpos.f.x, arrowpos.f.y, arrowpos.f.z);
+        mInstanceTable[i + 12]->m_bVisible = mInstanceTable[i]->m_bVisible;
+
+        if (controllerpos.f.x == mControllerDestPos[0])
+        {
+            SetArrowVisible(i, false, true);
+        }
+        else if (controllerpos.f.x == mControllerDestPos[1])
+        {
+            SetArrowVisible(i, true, false);
+        }
+        else if (controllerpos.f.x == mControllerDestPos[2])
+        {
+            SetArrowVisible(i, true, true);
+        }
+        else
+        {
+            SetArrowVisible(i, false, false);
+        }
     }
 }

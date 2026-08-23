@@ -2,14 +2,14 @@
 #define _FEFONTRESOURCE_H_
 
 #include "NL/nlFont.h"
+#include "Game/FE/feResourceManager.h"
 
-class FEFontResource
+class FEFontResource : public FEResourceHandle
 {
 public:
-    void SetFontReference(nlFont* font);
+    void SetFontReference(nlFont* pFontReference);
 
-    /* 0x00 */ char pad0[0x14];
-    /* 0x14 */ nlFont* m_font;
+    /* 0x14 */ nlFont* m_pFontReference;
 };
 
 #endif // _FEFONTRESOURCE_H_

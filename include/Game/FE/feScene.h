@@ -18,6 +18,10 @@ public:
     bool LoadPackage(const char* szPackageFileName);
     void UnloadPackage();
     void Update(float dt);
+    FEPackage* GetPackage() const
+    {
+        return m_pFEPackage;
+    }
     eGLView GetRenderView() const
     {
         return (eGLView)m_uRenderView;

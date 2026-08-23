@@ -21,6 +21,12 @@
 
 char* optionNames[4] = { "Option1", "Option2", "Option3", "Option4" };
 
+#if defined(VERSION_G4QJ01)
+static const float POPUP_HIGHLIGHT_Y_OFFSET = -3.0f;
+#else
+static const float POPUP_HIGHLIGHT_Y_OFFSET = 0.0f;
+#endif
+
 struct PopupEntry
 {
     int mMessageType;
@@ -30,26 +36,26 @@ struct PopupEntry
 };
 
 static const PopupEntry PopupEntries[] = {
-    { 0, 0x53FF99B4, { 0x29793383, 0x56970FAF, 0, 0 }, 1 },          //  0 POPUP_END_CUP
-    { 2, 0xC5DF4FD6, { 0x56970FCC, 0, 0, 0 }, 0 },                   //  1 POPUP_FLOWER_CUP_LOCKED
-    { 2, 0x9FEC7DA1, { 0x56970FCC, 0, 0, 0 }, 0 },                   //  2 POPUP_STAR_CUP_LOCKED
-    { 2, 0xB49B9A79, { 0x56970FCC, 0, 0, 0 }, 0 },                   //  3 POPUP_BOWSER_CUP_LOCKED
-    { 2, 0xAF3B0976, { 0x56970FCC, 0, 0, 0 }, 0 },                   //  4 POPUP_SUPER_CUPS_LOCKED
-    { 0, 0x8C8DB4C5, { 0x29793383, 0x56970FAF, 0, 0 }, 1 },          //  5 POPUP_INGAME_FORFEIT_MATCH
-    { 1, 0xE3096A19, { 0x29793383, 0x56970FAF, 0, 0 }, 1 },          //  6 POPUP_INGAME_QUIT_MATCH
-    { 1, 0xAF2EF7BB, { 0x29793383, 0x56970FAF, 0, 0 }, 1 },          //  7 POPUP_INGAME_QUIT_STRIKERS_101
-    { 2, 0x83AEBE4A, { 0x56970FCC, 0, 0, 0 }, 0 },                   //  8 POPUP_NO_SIDES_CHOSEN
-    { 2, 0xBFAB9C0B, { 0x56970FCC, 0, 0, 0 }, 0 },                   //  9 POPUP_NO_HUMAN_TOURNAMENT
-    { 1, 0xE04E2367, { 0x93F834CC, 0x93F834CD, 0, 0 }, 0 },          // 10 POPUP_START_NEW_CUP
-    { 1, 0xE04E2367, { 0xE4FA843C, 0xE4FA843D, 0, 0 }, 0 },          // 11 POPUP_START_NEW_TOURNAMENT
-    { 2, 0x01D6E088, { 0x56970FCC, 0, 0, 0 }, 0 },                   // 12 POPUP_FILLALLSLOTS
-    { 1, 0x7401B743, { 0x29793383, 0x56970FAF, 0, 0 }, 1 },          // 13 POPUP_REVERT_OPTION_CHANGES
-    { 1, 0x00768290, { 0x29793383, 0x56970FAF, 0, 0 }, 1 },          // 14 POPUP_TOURNEY_OVER
-    { 0, 0x64886630, { 0x56970FCC, 0, 0, 0 }, 0 },                   // 15 POPUP_NO_FORFEIT
-    { 1, 0x4A4753B1, { 0x29793383, 0x56970FAF, 0, 0 }, 1 },          // 16 POPUP_REALLY_OVERWRITE
-    { 0, 0xC19ADE86, { 0, 0, 0, 0 }, 0 },                            // 17 POPUP_APPLYING_AUDIO
+    { 0, 0x53FF99B4, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, //  0 POPUP_END_CUP
+    { 2, 0xC5DF4FD6, { 0x56970FCC, 0, 0, 0 }, 0 },          //  1 POPUP_FLOWER_CUP_LOCKED
+    { 2, 0x9FEC7DA1, { 0x56970FCC, 0, 0, 0 }, 0 },          //  2 POPUP_STAR_CUP_LOCKED
+    { 2, 0xB49B9A79, { 0x56970FCC, 0, 0, 0 }, 0 },          //  3 POPUP_BOWSER_CUP_LOCKED
+    { 2, 0xAF3B0976, { 0x56970FCC, 0, 0, 0 }, 0 },          //  4 POPUP_SUPER_CUPS_LOCKED
+    { 0, 0x8C8DB4C5, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, //  5 POPUP_INGAME_FORFEIT_MATCH
+    { 1, 0xE3096A19, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, //  6 POPUP_INGAME_QUIT_MATCH
+    { 1, 0xAF2EF7BB, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, //  7 POPUP_INGAME_QUIT_STRIKERS_101
+    { 2, 0x83AEBE4A, { 0x56970FCC, 0, 0, 0 }, 0 },          //  8 POPUP_NO_SIDES_CHOSEN
+    { 2, 0xBFAB9C0B, { 0x56970FCC, 0, 0, 0 }, 0 },          //  9 POPUP_NO_HUMAN_TOURNAMENT
+    { 1, 0xE04E2367, { 0x93F834CC, 0x93F834CD, 0, 0 }, 0 }, // 10 POPUP_START_NEW_CUP
+    { 1, 0xE04E2367, { 0xE4FA843C, 0xE4FA843D, 0, 0 }, 0 }, // 11 POPUP_START_NEW_TOURNAMENT
+    { 2, 0x01D6E088, { 0x56970FCC, 0, 0, 0 }, 0 },          // 12 POPUP_FILLALLSLOTS
+    { 1, 0x7401B743, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, // 13 POPUP_REVERT_OPTION_CHANGES
+    { 1, 0x00768290, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, // 14 POPUP_TOURNEY_OVER
+    { 0, 0x64886630, { 0x56970FCC, 0, 0, 0 }, 0 },          // 15 POPUP_NO_FORFEIT
+    { 1, 0x4A4753B1, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, // 16 POPUP_REALLY_OVERWRITE
+    { 0, 0xC19ADE86, { 0, 0, 0, 0 }, 0 },                   // 17 POPUP_APPLYING_AUDIO
 #if defined(VERSION_G4QJ01)
-    { 2, 0x4100B632, { 0x56970FCC, 0, 0, 0 }, 0 },                   // 18 POPUP_NO_CHEATS_UNLOCKED
+    { 2, 0x4100B632, { 0x56970FCC, 0, 0, 0 }, 0 }, // 18 POPUP_NO_CHEATS_UNLOCKED
 #endif
     { 1, 0x657FEF59, { 0x6C158828, 0x265190F3, 0, 0 }, 0 },          // 18 POPUP_NO_MEMCARD
     { 1, 0x3BB17094, { 0x6C158828, 0x265190F3, 0xEEE94B74, 0 }, 0 }, // 19 POPUP_MEMCARD_CORRUPTED
@@ -588,10 +594,11 @@ void FEPopupMenu::Create(
         WStr optionName;
         eMenuState menuState = MS_INVALID;
         OptionsScene* optionsScene;
+        GameSceneManager* gameSceneManager = GameSceneManager::Instance();
 
-        if (GameSceneManager::s_pInstance != NULL)
+        if (gameSceneManager != NULL)
         {
-            optionsScene = (OptionsScene*)GameSceneManager::Instance()->GetScene(SCENE_OPTIONS);
+            optionsScene = (OptionsScene*)gameSceneManager->GetScene(SCENE_OPTIONS);
             menuState = optionsScene->m_curMenuState;
         }
         else if (OverlayManager::Instance()->GetScene(IGSCENE_PAUSE_AUDIO) != NULL)
@@ -679,7 +686,6 @@ void FEPopupMenu::SetPositions()
     TLTextInstance* pText;
     TLComponentInstance* pHighlight;
     feVector3 messagePosition;
-    nlTextBox::StringDrawInfo drawInfo;
     float messageHeight;
     float highlightScale;
     nlColour hiddenTextColour;
@@ -690,7 +696,6 @@ void FEPopupMenu::SetPositions()
     nlColour optionColour;
     feVector3 highlightPosition;
     TLImageInstance* pImage;
-    TLComponentInstance* pFinalHighlight;
 
     presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
@@ -707,12 +712,8 @@ void FEPopupMenu::SetPositions()
         InlineHasher(nlStringLowerHash("Message")));
 
     messagePosition = pText->GetAssetPosition();
-    const nlFont* pFont = ((const FEText*)pText->m_component)->m_pFeFontResource->m_font;
-    struct StringDrawInfoCopy
-    {
-        unsigned long words[22];
-    };
-    *(StringDrawInfoCopy*)&drawInfo = *(StringDrawInfoCopy*)&pText->m_DrawInfo;
+    const nlFont* pFont = ((const FEText*)pText->m_component)->m_pFeFontResource->m_pFontReference;
+    nlTextBox::StringDrawInfo drawInfo = nlTextBox::StringDrawInfo(pText->m_DrawInfo);
     messageHeight = (float)(drawInfo.RowCount * pFont->m_Metrics.Height);
     totalHeight += messageHeight;
     topOfMessage = messagePosition.e[1] + (messageHeight / 2.0f);
@@ -762,7 +763,7 @@ void FEPopupMenu::SetPositions()
         pText->SetAssetColour(optionColour);
 
         {
-            const nlFont* pFont = ((const FEText*)pText->m_component)->m_pFeFontResource->m_font;
+            pFont = ((const FEText*)pText->m_component)->m_pFeFontResource->m_pFontReference;
             nlTextBox::StringDrawInfo info = pText->m_DrawInfo;
             drawInfo = info;
             optionHeight = (float)(drawInfo.RowCount * pFont->m_Metrics.Height);
@@ -798,7 +799,7 @@ void FEPopupMenu::SetPositions()
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash(optionNames[mHighlightedOption])));
 
-    pFinalHighlight = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
+    TLComponentInstance* pFinalHighlight = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
@@ -816,7 +817,10 @@ void FEPopupMenu::SetPositions()
     CentrePopup(totalHeight, topOfMessage);
 
     optionPosition = pText->GetAssetPosition();
-    pFinalHighlight->SetAssetPosition(highlightPosition.e[0], optionPosition.e[1], highlightPosition.e[2]);
+    pFinalHighlight->SetAssetPosition(
+        highlightPosition.e[0],
+        optionPosition.e[1] + POPUP_HIGHLIGHT_Y_OFFSET,
+        highlightPosition.e[2]);
 
     pImage->SetAssetScale(mHighlightSize.e[0], mHighlightSize.e[1] * highlightScale, mHighlightSize.e[2]);
 
@@ -829,7 +833,6 @@ void FEPopupMenu::SetPositions()
  */
 void FEPopupMenu::CentrePopup(float totalHeight, float topOfMessageBox)
 {
-    FORCE_DONT_INLINE;
     float halfHeight;
     float verticalOffset;
     FEPresentation* presentation;
@@ -840,7 +843,7 @@ void FEPopupMenu::CentrePopup(float totalHeight, float topOfMessageBox)
     halfHeight = totalHeight;
     halfHeight *= 0.5f;
     verticalOffset = halfHeight - topOfMessageBox;
-    presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+    presentation = m_pFEScene->GetPackage()->GetPresentation();
 
     pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
@@ -900,7 +903,10 @@ void FEPopupMenu::ResizeHighlight()
 
     textPosition = pText->GetAssetPosition();
     highlightPosition = pHighlight->GetAssetPosition();
-    pHighlight->SetAssetPosition(highlightPosition.e[0], textPosition.e[1], highlightPosition.e[2]);
+    pHighlight->SetAssetPosition(
+        highlightPosition.e[0],
+        textPosition.e[1] + POPUP_HIGHLIGHT_Y_OFFSET,
+        highlightPosition.e[2]);
     pHighlight->SetActiveSlide(pHighlight->GetActiveSlide());
     pHighlight->Update(0.0f);
 
@@ -921,7 +927,6 @@ void FEPopupMenu::ResizeHighlight()
  */
 void FEPopupMenu::SetOptionTextColourOnCurrent(bool bHighlighted)
 {
-    FORCE_DONT_INLINE;
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
     FEFinder<TLTextInstance, 3>::Find<FEPresentation>(

@@ -174,7 +174,7 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
 
     if (m_textFont == NULL)
     {
-        m_textFont = ((FEFontResource*)m_controlText->m_component->pChildren)->m_font;
+        m_textFont = ((FEFontResource*)m_controlText->m_component->pChildren)->m_pFontReference;
     }
 
     if (m_textFont == NULL)

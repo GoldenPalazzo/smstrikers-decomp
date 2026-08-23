@@ -13,24 +13,38 @@ enum Context
     CONTEXT_PAUSE = 1,
 };
 
+enum ControllerPos
+{
+    CPOS_HOME = 0,
+    CPOS_AWAY = 1,
+    CPOS_NEUTRAL = 2,
+    CPOS_NUM = 3,
+};
+
 class IChooseSide
 {
 public:
     IChooseSide();
     ~IChooseSide();
-    UpdateResult Update(float dt, eFEINPUT_PAD* pad, int param);
-    UpdateResult UpdateForFE(float padresult, eFEINPUT_PAD* pad);
-    UpdateResult UpdateForPause(float padresult, eFEINPUT_PAD* pad);
+    UpdateResult Update(float fDeltaT, eFEINPUT_PAD* padresult, int disabledSide);
+    UpdateResult UpdateForFE(float fDeltaT, eFEINPUT_PAD* padresult);
+    UpdateResult UpdateForPause(float fDeltaT, eFEINPUT_PAD* padresult);
     void CheckControllers(int disabledSide);
     void ResetAndPositionControllers(bool reset);
-    void SetReady(int controllerIdx, bool ready);
+    void SetReady(int padindex, bool isready);
+    void UpdatePressAText();
     void PositionController(int padindex, bool usetween, bool setvisibilities);
     bool AllPlayersReady() const;
     bool AllPluggedInAreReady() const;
+    int MoveSideLeft(int padindex);
+    int MoveSideRight(int padindex);
+    void MoveSideNone(int padindex);
     bool AtLeastOnePlayerReady() const;
     bool AllControllersAreCentred() const;
     static void TweenSetPosCallback(void* obj, const float* value);
     void SaveChanges();
+    void SetArrowVisible(int instanceid, bool leftvisible, bool rightvisible);
+    void MakeArrowsFollowController();
 
     /* 0x00 */ int mPlayingSides[4]; // size 0x10
     /* 0x10 */ bool mPlayerReady[4]; // size 0x4

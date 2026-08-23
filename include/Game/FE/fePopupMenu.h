@@ -11,11 +11,6 @@
 
 typedef Function<FnVoidVoid> _FEPopupMenuCB;
 
-// void CastToSomeType<TLInstance>(TLInstance*, void*);
-// void CastToSomeType<TLSlide>(TLSlide*, void*);
-// void FindItemByHashID<TLInstance>(TLInstance*, unsigned long);
-// void FindItemByHashID<TLSlide>(TLSlide*, unsigned long);
-
 enum ePopupMenu
 {
     INVALID_TYPE = -1,
