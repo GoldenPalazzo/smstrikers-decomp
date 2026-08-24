@@ -613,26 +613,21 @@ void ChainChomp::Move(float fDeltaT)
     {
         fSeekSpeed = 180000.0f;
         mfDesiredSpeed = g_pGame->m_pGameTweaks->fChainChompSpeed;
-        goto after_speed;
     }
     else if (meChainChompState == CHAIN_STATE_RECOVER)
     {
         fSeekSpeed = 300000.0f;
-        goto after_speed;
     }
-    else if (meChainChompState != CHAIN_STATE_LEAVE)
+    else if (meChainChompState != CHAIN_STATE_LEAVE && AvoidSidelines())
     {
-        if (AvoidSidelines())
-        {
-            float fHalf = 0.5f;
-            fSeekSpeed = 180000.0f;
-            mfDesiredSpeed = g_pGame->m_pGameTweaks->fChainChompSpeed * fHalf;
-            goto after_speed;
-        }
+        float fHalf = 0.5f;
+        fSeekSpeed = 180000.0f;
+        mfDesiredSpeed = g_pGame->m_pGameTweaks->fChainChompSpeed * fHalf;
     }
-
-    mfDesiredSpeed = g_pGame->m_pGameTweaks->fChainChompSpeed;
-after_speed:
+    else
+    {
+        mfDesiredSpeed = g_pGame->m_pGameTweaks->fChainChompSpeed;
+    }
 
     nlCartesianToPolar(aChainSpeed, mv3Velocity);
 

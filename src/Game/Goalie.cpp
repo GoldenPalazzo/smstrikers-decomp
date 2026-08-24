@@ -1090,6 +1090,17 @@ void Goalie::ExecutePounce(cPlayer* pPlayer, bool bCheckHitDistance)
     }
 }
 
+unsigned char Goalie::IsTargetViable(cPlayer* pTarget)
+{
+    if ((float)fabs(pTarget->m_v3Position.x) > (float)fabs(static_cast<cPlayer*>(this)->m_v3Position.x)
+        && (float)fabs(pTarget->m_v3Position.y) < cField::GetPenaltyBoxY())
+    {
+        return false;
+    }
+
+    return true;
+}
+
 /**
  * Offset/Address/Size: 0x99F0 | 0x8004C4EC | size: 0x328
  */
@@ -1110,24 +1121,7 @@ void Goalie::InitActionPass(bool useTarget)
 
         mpPassTarget = pPassTarget;
 
-        if (mpPassTarget == NULL)
-        {
-            goto invalidPassTarget;
-        }
-
-        bool isValidPassTarget;
-
-        if ((float)fabs(mpPassTarget->m_v3Position.x) > (float)fabs(m_v3Position.x)
-            && (float)fabs(mpPassTarget->m_v3Position.y) < cField::GetPenaltyBoxY())
-        {
-            isValidPassTarget = false;
-        }
-        else
-        {
-            isValidPassTarget = true;
-        }
-
-        if (isValidPassTarget)
+        if (mpPassTarget != NULL && IsTargetViable(mpPassTarget))
         {
             GoalieTweaks* pTweaks = static_cast<GoalieTweaks*>(m_pTweaks);
 
@@ -1168,7 +1162,6 @@ void Goalie::InitActionPass(bool useTarget)
         }
         else
         {
-        invalidPassTarget:
             mpPassTarget = NULL;
         }
     }
@@ -1255,23 +1248,22 @@ void Goalie::InitActionPreCrouch(eGoalieCrouchType crouchType)
     mGoalieActionState = GOALIEACTION_PRE_CROUCH;
     mnSubstate = 0;
 
-    if (m_eAnimID == 0x2e)
+    do
     {
-        bool bShouldSetAnim = false;
-        if (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f)
+        if (m_eAnimID == 0x2e)
         {
-            bShouldSetAnim = true;
+            bool bShouldSetAnim = false;
+            if (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f)
+            {
+                bShouldSetAnim = true;
+            }
+
+            if (!bShouldSetAnim)
+                break;
         }
-        if (bShouldSetAnim)
-        {
-            goto check;
-        }
-    }
-    else
-    {
-    check:
+
         SetAnimState(0x2e, true, 0.2f, false, false);
-    }
+    } while (false);
 
     InitMovementFromAnim(0, v3Zero, 0.0f, false);
 }
@@ -2613,49 +2605,45 @@ float Goalie::CheckForDelflectAwayFromNet()
 
         float result = FakeBallWorld::GetPredictedPlaneIntersectTime(plane, v3TargetPosition, localVelocity);
 
-        if (!(result <= 0.0f))
+        if (result <= 0.0f || !IsInsideNetArea(v3TargetPosition))
         {
-            if (IsInsideNetArea(v3TargetPosition))
-                goto shotTarget;
+            CleanGoalieAction();
+
+            mPrevGoalieActionState = mGoalieActionState;
+            mGoalieActionState = GOALIEACTION_MOVE;
+            mnSubstate = 0;
+
+            SetAnimState(8, true, 0.2f, false, false);
+            InitMovementFromAnim(0, v3Zero, 1.0f, false);
+
+            mnSubstate = 1;
+            mMoveDirection = GOALIEDIR_IDLE;
+
+            m_pPhysicsCharacter->m_CanCollideWithBall = true;
+            mbShouldMiss = false;
+            mbDoNavigate = false;
+            m_pPhysicsCharacter->m_CanCollidedWithGoalLine = true;
+            m_pPhysicsCharacter->m_CanCollideWithWall = true;
+
+            CleanupStun();
+
+            mpShooter = NULL;
+            mUrgency = URGENCY_LOW;
+            mfSpeedScale = 1.0f;
+            mbPosGoalieNetCheck = false;
+            mbNegGoalieNetCheck = false;
+            mbDoHeadTrack = true;
+            mbBallImpacted = false;
+            mbNoUserControl = false;
+            mbPickedUp = false;
+
+            result = -1.0f;
+        }
+        else
+        {
+            g_pBall->m_v3ShotTarget = v3TargetPosition;
         }
 
-        CleanGoalieAction();
-
-        mPrevGoalieActionState = mGoalieActionState;
-        mGoalieActionState = GOALIEACTION_MOVE;
-        mnSubstate = 0;
-
-        SetAnimState(8, true, 0.2f, false, false);
-        InitMovementFromAnim(0, v3Zero, 1.0f, false);
-
-        mnSubstate = 1;
-        mMoveDirection = GOALIEDIR_IDLE;
-
-        m_pPhysicsCharacter->m_CanCollideWithBall = true;
-        mbShouldMiss = false;
-        mbDoNavigate = false;
-        m_pPhysicsCharacter->m_CanCollidedWithGoalLine = true;
-        m_pPhysicsCharacter->m_CanCollideWithWall = true;
-
-        CleanupStun();
-
-        mpShooter = NULL;
-        mUrgency = URGENCY_LOW;
-        mfSpeedScale = 1.0f;
-        mbPosGoalieNetCheck = false;
-        mbNegGoalieNetCheck = false;
-        mbDoHeadTrack = true;
-        mbBallImpacted = false;
-        mbNoUserControl = false;
-        mbPickedUp = false;
-
-        result = -1.0f;
-        goto done;
-
-    shotTarget:
-        g_pBall->m_v3ShotTarget = v3TargetPosition;
-
-    done:
         return result;
     }
 
@@ -5577,12 +5565,6 @@ void Goalie::ChooseSwatAnim(int nParam)
 
 /**
  * Offset/Address/Size: 0xF30 | 0x80043A2C | size: 0x8A4
- * The volatile read of m_v3Position.x in the pass-validity test below is
- * match-only scaffolding that is still load-bearing: it forces the reload retail
- * performs at +0x2c4, and removing it lets MWCC keep the member in f2 across the
- * clamp instead, costing 51 rows. The 100%-exact sibling InitActionPass runs the
- * identical fabs test with no volatile, because there it is the first read of
- * m_v3Position.x and has nothing to CSE with. See smstrikers-notes docs/0070.
  */
 void Goalie::DoPassRelease()
 {
@@ -5633,34 +5615,10 @@ void Goalie::DoPassRelease()
                 u16 aTarget = RadToAng16(nlATan2f(dy, dx));
                 s16 aDiff = (s16)(aTarget - GetClampedFacing());
 
-                if ((u16)abs_s16(aDiff) > 0x2AA8)
+                if ((u16)abs_s16(aDiff) > 0x2AA8 || !IsTargetViable(mpPassTarget))
                 {
-                    goto InvalidPassTarget;
+                    mpPassTarget = NULL;
                 }
-
-                {
-                    bool bValidPassTarget;
-                    if ((float)fabs(mpPassTarget->m_v3Position.x) > (float)fabs(*(volatile float*)&m_v3Position.x)
-                        && (float)fabs(mpPassTarget->m_v3Position.y) < cField::GetPenaltyBoxY())
-                    {
-                        bValidPassTarget = false;
-                    }
-                    else
-                    {
-                        bValidPassTarget = true;
-                    }
-
-                    if (!bValidPassTarget)
-                    {
-                        goto InvalidPassTarget;
-                    }
-                }
-
-                goto ValidPassTarget;
-
-            InvalidPassTarget:
-                mpPassTarget = NULL;
-            ValidPassTarget:;
             }
         }
     }

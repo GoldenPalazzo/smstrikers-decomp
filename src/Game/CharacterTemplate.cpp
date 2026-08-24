@@ -82,7 +82,7 @@ static tGoalieTemplateInfo g_GoalieTextureInfo[9] = {
     { "superteamgoalie", "characters/superteamgoalie/superteamgoalie.glt", 0 },
 };
 
-static inline u32 GetHashFromTextureFile(const char* szTextureFileName)
+static u32 GetHashFromTextureFile(const char* szTextureFileName)
 {
     char name[200];
     char* pDest = name;
@@ -100,17 +100,17 @@ static inline u32 GetHashFromTextureFile(const char* szTextureFileName)
 
     for (int k = 0; k < 100; k++)
     {
-        if (*pSrc == '\0')
-            goto copyDone;
-        if (*pSrc == '.')
-            goto copyDone;
-        *pDest = *(const volatile char*)pSrc; /* volatile: the original reloads here rather than reusing the guard's load */
-        pSrc++;
-        pDest++;
-        continue;
-    copyDone:
-        *pDest = '\0';
-        return nlStringLowerHash(name);
+        if (*pSrc != '\0' && *pSrc != '.')
+        {
+            __memcpy(pDest, pSrc, sizeof(*pDest));
+            pSrc++;
+            pDest++;
+        }
+        else
+        {
+            *pDest = '\0';
+            return nlStringLowerHash(name);
+        }
     }
     return 0;
 }

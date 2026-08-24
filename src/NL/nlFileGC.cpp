@@ -145,12 +145,12 @@ namespace
 {
 extern char asyncToVirMemBuffer[0x4000];
 extern AsyncToVirMemBufferLoad asyncToVirMemBufferLoad[4];
-}
+} // namespace
 
 /**
  * Offset/Address/Size: 0x1E74 | 0x801D0BC8 | size: 0xC
  */
-AsyncToVirMemBufferLoad::AsyncToVirMemBufferLoad()
+AsyncToVirMemBufferLoad ::AsyncToVirMemBufferLoad()
 {
     numChunksLeft = 0;
 }
@@ -253,7 +253,6 @@ nlFile* nlOpen(const char* fileName)
  */
 void nlFlushFileCash()
 {
-    // EMPTY
 }
 
 static inline void HandleGCIOErrors(GCFile* pFile)
@@ -308,7 +307,7 @@ static unsigned char UpdateReadState(AsyncEntry* pEntry)
 
     pFile = pEntry->m_pFile;
 
-    while (true)
+    do
     {
         switch (pEntry->Phase)
         {
@@ -323,7 +322,7 @@ static unsigned char UpdateReadState(AsyncEntry* pEntry)
             {
                 pEntry->Phase = eRS_ISSUE_TAIL_READ;
             }
-            break;
+            continue;
 
         case eRS_WAIT_HEAD_READ:
             nStatus = pFile->GetReadStatus();
@@ -341,8 +340,9 @@ static unsigned char UpdateReadState(AsyncEntry* pEntry)
 
             default:
                 HandleGCIOErrors(pFile);
-                goto return_false;
+                break;
             }
+            break;
 
         case eRS_ISSUE_TAIL_READ:
             readSize = pEntry->ReadNumBytes - (pEntry->ReadNumBytes & ~31);
@@ -355,7 +355,7 @@ static unsigned char UpdateReadState(AsyncEntry* pEntry)
             {
                 pEntry->Phase = eRS_READ_COMPLETE;
             }
-            break;
+            continue;
 
         case eRS_WAIT_TAIL_READ:
             nStatus = pFile->GetReadStatus();
@@ -374,18 +374,19 @@ static unsigned char UpdateReadState(AsyncEntry* pEntry)
 
             default:
                 HandleGCIOErrors(pFile);
-                goto return_false;
+                break;
             }
+            break;
 
         case eRS_READ_COMPLETE:
             return 1;
 
         default:
-            goto return_false;
+            break;
         }
-    }
+        break;
+    } while (true);
 
-return_false:
     return 0;
 }
 
@@ -393,7 +394,7 @@ namespace
 {
 char asyncToVirMemBuffer[0x4000] ATTRIBUTE_ALIGN(32);
 AsyncToVirMemBufferLoad asyncToVirMemBufferLoad[4];
-}
+} // namespace
 
 inline unsigned char AsyncManager::AddEntry(GCFile* pFile, ReadAsyncCallback pFunc, void* pBuffer, unsigned long uSize, unsigned long uParam)
 {
@@ -448,128 +449,16 @@ unsigned char GameCubeReadBlocking(GCFile* pFile, void* pBuffer, unsigned long u
 {
     GameCubeReadAsync(pFile, NULL, pBuffer, uSize, 0);
 
-    goto loop_check;
-
-loop_wait:
-    OSYieldThread();
-
-    if (g_CheckForResetCB)
+    while ((s_pAsyncManager->Service(), s_pAsyncManager->m_activeEntryList != NULL))
     {
-        g_CheckForResetCB();
-    }
+        OSYieldThread();
 
-loop_check:
-    AsyncManager* const manager = s_pAsyncManager;
-    AsyncEntry* entry = manager->m_activeEntryList;
-
-    if (entry != NULL)
-    {
-        entry = entry->m_next;
-
-        if ((OSGetConsoleType() & 0x20000000) != 0)
+        if (g_CheckForResetCB)
         {
-            OSYieldThread();
-        }
-
-        if (UpdateReadState(entry))
-        {
-            nlDLRingRemove<AsyncEntry>(&manager->m_activeEntryList, entry);
-            entry->m_pFile->PendingAsync.m_Count--;
-
-            if (entry->m_pFunc != NULL)
-            {
-                entry->m_pFunc(entry->m_pFile, entry->m_pBuffer, entry->m_uSize, entry->m_uParam);
-            }
-
-            nlDLRingAddEnd<AsyncEntry>(&manager->m_freeEntryList, entry);
-        }
-    }
-    else
-    {
-        s32 driveStatus;
-        u8 loadedSaveState = 0;
-
-        while (true)
-        {
-            driveStatus = DVDGetDriveStatus();
-
-            u32 statusPlusOne = (u32)(driveStatus + 1);
-            switch (statusPlusOne)
-            {
-            case DVD_STATE_FATAL_ERROR + 1:
-            case DVD_STATE_NO_DISK + 1:
-            case DVD_STATE_COVER_OPEN + 1:
-            case DVD_STATE_WRONG_DISK + 1:
-            case DVD_STATE_RETRY + 1:
-            {
-                if (!loadedSaveState)
-                {
-                    glxLoadSaveState();
-                }
-
-                g_HandleDVDMessageCallback(driveStatus);
-
-                loadedSaveState = 1;
-
-                while (driveStatus == DVDGetDriveStatus())
-                {
-                    OSYieldThread();
-
-                    if (g_CheckForResetCB)
-                    {
-                        g_CheckForResetCB();
-                    }
-                }
-                break;
-            }
-
-            case DVD_STATE_BUSY + 1:
-            {
-                if (loadedSaveState)
-                {
-                    if (g_HandleDVDRetryCB)
-                    {
-                        g_HandleDVDRetryCB(1);
-                    }
-
-                    while (DVDGetDriveStatus() == DVD_STATE_BUSY)
-                    {
-                        OSYieldThread();
-
-                        if (g_CheckForResetCB)
-                        {
-                            g_CheckForResetCB();
-                        }
-                    }
-                }
-                break;
-            }
-
-            default:
-                break;
-            }
-
-            if ((driveStatus == DVD_STATE_END) || (driveStatus == DVD_STATE_FATAL_ERROR))
-            {
-                break;
-            }
-        }
-
-        if (loadedSaveState)
-        {
-            glxLoadRestoreState();
-        }
-
-        if (loadedSaveState && g_HandleDVDAllClearCallback)
-        {
-            g_HandleDVDAllClearCallback(0);
+            g_CheckForResetCB();
         }
     }
 
-    if (s_pAsyncManager->m_activeEntryList != NULL)
-    {
-        goto loop_wait;
-    }
     return 1;
 }
 
@@ -892,41 +781,33 @@ void* nlLoadEntireFileToVirtualMemory(const char* fileName, int* size, unsigned 
         nlFileSize(pGCFile, &fileSize);
 
         unsigned int maxRequiredMemory = fileSize + 0x40;
-        if (target == NULL)
+        if ((target != NULL) || (maxRequiredMemory <= nlVirtualLargestBlock()))
         {
-            if (maxRequiredMemory > nlVirtualLargestBlock())
+            if (target == NULL)
             {
-                goto alloc_fallback;
-            }
-        }
-
-        if (target == NULL)
-        {
-            if (allocType == AllocateEnd)
-            {
-                buffer = nlVirtualAlloc(fileSize, true);
+                if (allocType == AllocateEnd)
+                {
+                    buffer = nlVirtualAlloc(fileSize, true);
+                }
+                else
+                {
+                    buffer = nlVirtualAlloc(fileSize, false);
+                }
             }
             else
             {
-                buffer = nlVirtualAlloc(fileSize, false);
+                buffer = target;
             }
+
+            nlReadToVirtualMemoryInline(pGCFile, buffer, fileSize, transferSize);
         }
         else
         {
-            buffer = target;
+            OSReport("VIRTUAL MEMORY WARNING ~ nlLoadEntireFileToVirtualMemory had to fall back to MRAM\n\tsize: %d file: %s\n\tLargest block: %d Total free: %d\n", fileSize, fileName, nlVirtualLargestBlock(), nlVirtualTotalFree());
+            buffer = nlMalloc(fileSize, 0x20, false);
+            nlRead(pGCFile, buffer, fileSize);
         }
 
-        nlReadToVirtualMemoryInline(pGCFile, buffer, fileSize, transferSize);
-        goto alloc_done;
-
-    alloc_fallback:
-    {
-        OSReport("VIRTUAL MEMORY WARNING ~ nlLoadEntireFileToVirtualMemory had to fall back to MRAM\n\tsize: %d file: %s\n\tLargest block: %d Total free: %d\n", fileSize, fileName, nlVirtualLargestBlock(), nlVirtualTotalFree());
-        buffer = nlMalloc(fileSize, 0x20, false);
-        nlRead(pGCFile, buffer, fileSize);
-    }
-
-    alloc_done:
         *size = fileSize;
         nlClose(pGCFile);
     }

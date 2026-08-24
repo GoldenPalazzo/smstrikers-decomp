@@ -236,7 +236,7 @@ bool Replay::LockReel(float numSeconds, int idx, int quality)
     head = mFree;
     frame = head->mNext;
     iter = frame;
-    do
+    for (;;)
     {
         if (iter->mTime >= beginTime)
         {
@@ -245,30 +245,32 @@ bool Replay::LockReel(float numSeconds, int idx, int quality)
                 if (mReels[iter->mReelIdx].mAge > quality)
                 {
                     valid = false;
-                    goto afterLoops;
+                    break;
                 }
             }
         }
 
         iter = iter->mNext;
-    } while (iter != head);
-
-    do
-    {
-        if (frame->mTime >= beginTime)
+        if (iter == head)
         {
-            if (frame->mReelIdx > 0)
+            do
             {
-                ReleaseReel(this, frame->mReelIdx);
-            }
+                if (frame->mTime >= beginTime)
+                {
+                    if (frame->mReelIdx > 0)
+                    {
+                        ReleaseReel(this, frame->mReelIdx);
+                    }
+                }
+
+                frame = frame->mNext;
+            } while (frame != mFree);
+
+            valid = true;
+            break;
         }
+    }
 
-        frame = frame->mNext;
-    } while (frame != mFree);
-
-    valid = true;
-
-afterLoops:
     if (!valid)
     {
         return false;

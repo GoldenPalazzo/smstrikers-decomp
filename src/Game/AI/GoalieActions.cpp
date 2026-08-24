@@ -130,97 +130,97 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
             InitActionMoveWB();
             return;
         }
-        if (pBall->m_pOwner != NULL)
-            goto handleOwner;
-        float fPickupTime = pInfo->mfPickupTime;
-        if (pAnim->m_fTime < fPickupTime)
+        if (pBall->m_pOwner == NULL)
         {
-            float fRatio = pAnim->m_fTime / fPickupTime;
-            float fPickupDuration = fPickupTime * pInfo->mfAnimDuration;
-            fDeltaT = fPickupDuration - pInfo->mfAnimDuration * pAnim->m_fTime;
-            float fGoalLineX = cField::GetGoalLineX(1U);
-            float fTimeScale = 0.25f * fDeltaT;
-            float fLimit = fGoalLineX - 0.2f;
+            float fPickupTime = pInfo->mfPickupTime;
+            if (pAnim->m_fTime < fPickupTime)
+            {
+                float fRatio = pAnim->m_fTime / fPickupTime;
+                float fPickupDuration = fPickupTime * pInfo->mfAnimDuration;
+                fDeltaT = fPickupDuration - pInfo->mfAnimDuration * pAnim->m_fTime;
+                float fGoalLineX = cField::GetGoalLineX(1U);
+                float fTimeScale = 0.25f * fDeltaT;
+                float fLimit = fGoalLineX - 0.2f;
 
-            nlVec3ScaleAdd(v3GuessBallPos, fTimeScale, g_pBall->m_v3Velocity, v3BallPosition);
-            if ((float)fabs(v3GuessBallPos.x) > fLimit)
-            {
-                float fClampedX;
-                if (v3GuessBallPos.x > 0.0f)
-                    fClampedX = fLimit;
-                else
-                    fClampedX = -fLimit;
-                if ((float)fabs(v3BallPosition.x) < fLimit)
+                nlVec3ScaleAdd(v3GuessBallPos, fTimeScale, g_pBall->m_v3Velocity, v3BallPosition);
+                if ((float)fabs(v3GuessBallPos.x) > fLimit)
                 {
-                    float fBallX = pBall->m_v3Position.x;
-                    float fBallY = pBall->m_v3Position.y;
-                    float fDX = fBallX - fClampedX;
-                    float fDY = fBallY - v3GuessBallPos.y;
-                    float fDXOrig = fBallX - v3GuessBallPos.x;
-                    float fNewY = fBallY - (fDX * fDY) / fDXOrig;
-                    v3GuessBallPos.y = fNewY;
+                    float fClampedX;
+                    if (v3GuessBallPos.x > 0.0f)
+                        fClampedX = fLimit;
+                    else
+                        fClampedX = -fLimit;
+                    if ((float)fabs(v3BallPosition.x) < fLimit)
+                    {
+                        float fBallX = pBall->m_v3Position.x;
+                        float fBallY = pBall->m_v3Position.y;
+                        float fDX = fBallX - fClampedX;
+                        float fDY = fBallY - v3GuessBallPos.y;
+                        float fDXOrig = fBallX - v3GuessBallPos.x;
+                        float fNewY = fBallY - (fDX * fDY) / fDXOrig;
+                        v3GuessBallPos.y = fNewY;
+                    }
+                    v3GuessBallPos.x = fClampedX;
                 }
-                v3GuessBallPos.x = fClampedX;
-            }
-            TrackTarget(v3GuessBallPos, fRatio);
-            const nlVector3& v3HeadPos = GetJointPosition(m_nHeadJointIndex);
-            v3HeadCopy = v3HeadPos;
-            float fDX2 = 0.0f;
-            fAbsX = std::fabsf(v3HeadCopy.x);
-            float fLimitH = cField::GetGoalLineX(1U) - 0.5f;
-            float fNetY = 0.5f * cNet::m_fNetWidth;
-            if (fAbsX > fLimitH)
-            {
-                if ((float)fabs(v3HeadCopy.y) > fNetY)
-                    fDX2 = fAbsX - fLimitH;
-            }
-            nlVector3 v3LHandCopy;
-            nlVector3 v3RHandCopy;
-            const nlVector3& v3RHandPos = GetJointPosition(m_nRightHandJointIndex);
-            v3RHandCopy = v3RHandPos;
-            fAbsX = std::fabsf(v3RHandCopy.x);
-            float fLimitR = cField::GetGoalLineX(1U) - 0.4f;
-            if (fAbsX > fLimitR)
-            {
-                if ((float)fabs(v3RHandCopy.y) > fNetY)
+                TrackTarget(v3GuessBallPos, fRatio);
+                const nlVector3& v3HeadPos = GetJointPosition(m_nHeadJointIndex);
+                v3HeadCopy = v3HeadPos;
+                float fDX2 = 0.0f;
+                fAbsX = std::fabsf(v3HeadCopy.x);
+                float fLimitH = cField::GetGoalLineX(1U) - 0.5f;
+                float fNetY = 0.5f * cNet::m_fNetWidth;
+                if (fAbsX > fLimitH)
                 {
-                    float fDiff = fAbsX - fLimitR;
-                    if (fDiff > fDX2)
-                        fDX2 = fDiff;
+                    if ((float)fabs(v3HeadCopy.y) > fNetY)
+                        fDX2 = fAbsX - fLimitH;
                 }
-            }
-            const nlVector3& v3LHandPos = GetJointPosition(m_nLeftHandJointIndex);
-            v3LHandCopy = v3LHandPos;
-            fAbsX = std::fabsf(v3LHandCopy.x);
-            if (fAbsX > fLimitR)
-            {
-                if ((float)fabs(v3LHandCopy.y) > fNetY)
+                nlVector3 v3LHandCopy;
+                nlVector3 v3RHandCopy;
+                const nlVector3& v3RHandPos = GetJointPosition(m_nRightHandJointIndex);
+                v3RHandCopy = v3RHandPos;
+                fAbsX = std::fabsf(v3RHandCopy.x);
+                float fLimitR = cField::GetGoalLineX(1U) - 0.4f;
+                if (fAbsX > fLimitR)
                 {
-                    float fDiff = fAbsX - fLimitR;
-                    if (fDiff > fDX2)
-                        fDX2 = fDiff;
+                    if ((float)fabs(v3RHandCopy.y) > fNetY)
+                    {
+                        float fDiff = fAbsX - fLimitR;
+                        if (fDiff > fDX2)
+                            fDX2 = fDiff;
+                    }
                 }
+                const nlVector3& v3LHandPos = GetJointPosition(m_nLeftHandJointIndex);
+                v3LHandCopy = v3LHandPos;
+                fAbsX = std::fabsf(v3LHandCopy.x);
+                if (fAbsX > fLimitR)
+                {
+                    if ((float)fabs(v3LHandCopy.y) > fNetY)
+                    {
+                        float fDiff = fAbsX - fLimitR;
+                        if (fDiff > fDX2)
+                            fDX2 = fDiff;
+                    }
+                }
+                if (fDX2 > 0.0f)
+                {
+                    v3AdjPos = m_v3Position;
+                    if (v3AdjPos.x > 0.0f)
+                        fDX2 *= -1.0f;
+                    v3AdjPos.x += fDX2;
+                    SetPosition(v3AdjPos);
+                }
+                return;
             }
-            if (fDX2 > 0.0f)
+            else
             {
-                v3AdjPos = m_v3Position;
-                if (v3AdjPos.x > 0.0f)
-                    fDX2 *= -1.0f;
-                v3AdjPos.x += fDX2;
-                SetPosition(v3AdjPos);
+                const nlVector3& v3BallJoint = GetJointPosition(m_nBallJointIndex);
+                if (CalculateDistanceSquared(pBall->m_v3Position, v3BallJoint) < 0.36f)
+                {
+                    InitiatePanicGrab(NULL);
+                }
+                return;
             }
-            return;
         }
-        else
-        {
-            const nlVector3& v3BallJoint = GetJointPosition(m_nBallJointIndex);
-            if (CalculateDistanceSquared(pBall->m_v3Position, v3BallJoint) < 0.36f)
-            {
-                InitiatePanicGrab(NULL);
-            }
-            return;
-        }
-    handleOwner:
         if (m_pBall != NULL)
             return;
         SetGoalieAction(GOALIEACTION_PURSUE_BALL_POUNCE, 0);
@@ -922,26 +922,14 @@ void Goalie::ActionMoveWB(float fDeltaT)
         }
     }
 
-    if (m_pController == NULL)
+    if (m_pController != NULL && mfWaitTime > 0.0f)
     {
-        goto no_pad;
-    }
+        if (m_pBall == NULL)
+        {
+            InitActionMove(false);
+            return;
+        }
 
-    if (mfWaitTime > 0.0f)
-    {
-    }
-    else
-    {
-        goto no_pad;
-    }
-
-    if (m_pBall == NULL)
-    {
-        InitActionMove(false);
-        return;
-    }
-
-    {
         mfWaitTime -= fDeltaT;
 
         float stickMag = m_pController->GetMovementStickMagnitude();
@@ -1155,7 +1143,6 @@ void Goalie::ActionMoveWB(float fDeltaT)
         return;
     }
 
-no_pad:
     mfWaitTime = 0.0f;
 
     switch (mnSubstate)
@@ -1463,16 +1450,8 @@ void Goalie::ActionSave(float fDeltaT)
 
                 float distSqL = CalculateDistanceSquared(g_pBall->m_v3Position, v3LHand);
 
-                if (distSqL < fDX)
+                if (distSqL < fDX || CalculateDistanceSquared(g_pBall->m_v3Position, v3RHand) < fDX)
                 {
-                    goto do_catch;
-                }
-
-                float distSqR = CalculateDistanceSquared(g_pBall->m_v3Position, v3RHand);
-
-                if (distSqR < fDX)
-                {
-                do_catch:
                     TacklePlayer(g_pBall->m_pOwner);
                     MakeSaveEvent(false);
 

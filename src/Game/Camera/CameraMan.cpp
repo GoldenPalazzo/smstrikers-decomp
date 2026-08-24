@@ -133,83 +133,79 @@ void cCameraManager::Update(float fDeltaT)
     if (pCamera->m_pFilter != NULL)
         pCamera->m_pFilter->Update(fDeltaT);
 
-    if (m_transition == eCT_NONE)
-        goto handle_none;
-    switch (m_transition)
+    if (m_transition != eCT_NONE)
     {
-    case eCT_EASE_IN:
-        goto handle_ease_in;
-    default:
-        goto handle_end;
-    }
-
-handle_ease_in:
-{
-    float fSimTick = g_fSimulationTick;
-    pCamera = nlDLRingGetStart<cBaseCamera>(m_cameraStack);
-    if (pCamera != NULL)
-    {
-        prevViewCopy = m_matPrevView;
-        nlMatrixToQuat(qPrev, prevViewCopy);
-
-        v3TransFrom = prevViewCopy.GetTranslation();
-
-        curViewCopy = PeekCamera()->GetViewMatrix();
-        if (PeekCamera()->m_pFilter != NULL)
+        switch (m_transition)
         {
-            PeekCamera()->m_pFilter->Filter(curViewCopy, filteredViewEase);
-            curViewCopy = filteredViewEase;
+        case eCT_EASE_IN:
+        {
+            float fSimTick = g_fSimulationTick;
+            pCamera = nlDLRingGetStart<cBaseCamera>(m_cameraStack);
+            if (pCamera != NULL)
+            {
+                prevViewCopy = m_matPrevView;
+                nlMatrixToQuat(qPrev, prevViewCopy);
+
+                v3TransFrom = prevViewCopy.GetTranslation();
+
+                curViewCopy = PeekCamera()->GetViewMatrix();
+                if (PeekCamera()->m_pFilter != NULL)
+                {
+                    PeekCamera()->m_pFilter->Filter(curViewCopy, filteredViewEase);
+                    curViewCopy = filteredViewEase;
+                }
+                nlMatrixToQuat(qCur, curViewCopy);
+
+                float oneMinusT;
+                float t = m_fTransitionTime;
+                float smoothT = t * t * t * (t * (6.0f * t + (-15.0f)) + 10.0f);
+                v3TransTo = curViewCopy.GetTranslation();
+                nlQuatSlerp(qSlerped, qPrev, qCur, smoothT);
+                oneMinusT = 1.0f - smoothT;
+
+                nlQuatToMatrix(m_matView, qSlerped);
+                m_matView.m41 = oneMinusT * v3TransFrom.x + smoothT * v3TransTo.x;
+                m_matView.m42 = oneMinusT * v3TransFrom.y + smoothT * v3TransTo.y;
+                m_matView.m43 = oneMinusT * v3TransFrom.z + smoothT * v3TransTo.z;
+                m_matView.m44 = 1.0f;
+
+                m_fFOV = Interpolate(m_fPrevFOV, pCamera->GetFOV(), smoothT);
+                if (m_fFOV < 1.0f)
+                    m_fFOV = 1.0f;
+
+                m_fTransitionTime = m_fTransitionTime + fSimTick * m_fTransitionSpeed;
+                if (m_fTransitionTime > 1.0f)
+                {
+                    m_transition = eCT_NONE;
+                    if (m_pCallback != NULL)
+                    {
+                        m_pCallback(eCM_COMPLETE);
+                        m_pCallback = NULL;
+                    }
+                }
+            }
+            nlInvertRotTransMatrix(cameraToWorldMatrix, m_matView);
+            m_cameraPosition = cameraToWorldMatrix.GetTranslation();
+            break;
         }
-        nlMatrixToQuat(qCur, curViewCopy);
-
-        float oneMinusT;
-        float t = m_fTransitionTime;
-        float smoothT = t * t * t * (t * (6.0f * t + (-15.0f)) + 10.0f);
-        v3TransTo = curViewCopy.GetTranslation();
-        nlQuatSlerp(qSlerped, qPrev, qCur, smoothT);
-        oneMinusT = 1.0f - smoothT;
-
-        nlQuatToMatrix(m_matView, qSlerped);
-        m_matView.m41 = oneMinusT * v3TransFrom.x + smoothT * v3TransTo.x;
-        m_matView.m42 = oneMinusT * v3TransFrom.y + smoothT * v3TransTo.y;
-        m_matView.m43 = oneMinusT * v3TransFrom.z + smoothT * v3TransTo.z;
-        m_matView.m44 = 1.0f;
-
-        m_fFOV = Interpolate(m_fPrevFOV, pCamera->GetFOV(), smoothT);
+        default:
+            break;
+        }
+    }
+    else
+    {
+        m_matView = pCamera->GetViewMatrix();
+        m_cameraPosition = pCamera->GetCameraPosition();
+        m_fFOV = pCamera->GetFOV();
         if (m_fFOV < 1.0f)
             m_fFOV = 1.0f;
-
-        m_fTransitionTime = m_fTransitionTime + fSimTick * m_fTransitionSpeed;
-        if (m_fTransitionTime > 1.0f)
+        if (PeekCamera()->m_pFilter != NULL)
         {
-            m_transition = eCT_NONE;
-            if (m_pCallback != NULL)
-            {
-                m_pCallback(eCM_COMPLETE);
-                m_pCallback = NULL;
-            }
+            PeekCamera()->m_pFilter->Filter(m_matView, filteredViewNone);
+            m_matView = filteredViewNone;
         }
     }
-    nlInvertRotTransMatrix(cameraToWorldMatrix, m_matView);
-    m_cameraPosition = cameraToWorldMatrix.GetTranslation();
-    goto handle_end;
-}
 
-handle_none:
-{
-    m_matView = pCamera->GetViewMatrix();
-    m_cameraPosition = pCamera->GetCameraPosition();
-    m_fFOV = pCamera->GetFOV();
-    if (m_fFOV < 1.0f)
-        m_fFOV = 1.0f;
-    if (PeekCamera()->m_pFilter != NULL)
-    {
-        PeekCamera()->m_pFilter->Filter(m_matView, filteredViewNone);
-        m_matView = filteredViewNone;
-    }
-}
-
-handle_end:
     m_aJoystickRemap = (u16)(int)(nlATan2f(m_matView.m23, m_matView.m13) * 10430.378f);
     m_aJoystickRemap += 0x8000;
 }

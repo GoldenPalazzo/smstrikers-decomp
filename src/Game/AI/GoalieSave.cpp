@@ -17,6 +17,7 @@
 #include "NL/nlString.h"
 #include "PowerPC_EABI_Support/Runtime/MWCPlusLib.h"
 
+float GoalieSave::mfCatchAllowDist;
 float GoalieSave::mfCatchAllowDistSq = 0.25f;
 
 SaveData* GoalieSave::mpSaveTable;
@@ -49,6 +50,14 @@ struct SaveInfo
     int mConnectedSaveID[4];
     char mszName[16];
 };
+
+float GoalieSave::SetCatchAllowDist(float fDist)
+{
+    float fOldDist = mfCatchAllowDist;
+    mfCatchAllowDist = fDist;
+    mfCatchAllowDistSq = fDist * fDist;
+    return fOldDist;
+}
 
 SaveData* GoalieSave::FindSaveData(int animID)
 {
@@ -598,85 +607,81 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
     {
         SaveData* pCur = iterator.Current();
 
-        if (!(uSaveType & pCur->muSaveType))
-            goto advance;
-
-        fSaveTime = pCur->mfMilestonePercent[2] * pCur->mfDuration;
+        if (uSaveType & pCur->muSaveType)
         {
-            float fMilestoneVal = pCur->mfMilestonePercent[milestone];
-
-            if (fMilestoneVal > 0.0f)
+            fSaveTime = pCur->mfMilestonePercent[2] * pCur->mfDuration;
             {
-                float fMilDur = fMilestoneVal * pCur->mfDuration;
-                fSaveTime = fSaveTime - fMilDur;
-                if (bFromTakeoff)
-                    nlVec3Add(v3AdjLocalPos, v3LocalPos, pCur->mv3TakeoffPos);
-                else
-                    v3AdjLocalPos = v3LocalPos;
-            }
-            else
-            {
-                float fScale = 1.0f - fDefaultMilestoneValues[milestone];
-                v3AdjLocalPos = v3LocalPos;
-                fSaveTime = fSaveTime * fScale;
-            }
-        }
+                float fMilestoneVal = pCur->mfMilestonePercent[milestone];
 
-        if (fSaveTime <= fTime)
-        {
-            pCur = GoalieSave::GetClosestBlendedPos(candidateBlendInfo, v3AdjLocalPos, pCur);
-
-            fSaveTime = candidateBlendInfo.mfMilestoneTime[2];
-            {
-                float fThisTime = candidateBlendInfo.mfMilestoneTime[milestone];
-
-                if (fThisTime > 0.0f)
+                if (fMilestoneVal > 0.0f)
                 {
-                    fSaveTime = fSaveTime - fThisTime;
+                    float fMilDur = fMilestoneVal * pCur->mfDuration;
+                    fSaveTime = fSaveTime - fMilDur;
                     if (bFromTakeoff)
                         nlVec3Add(v3AdjLocalPos, v3LocalPos, pCur->mv3TakeoffPos);
+                    else
+                        v3AdjLocalPos = v3LocalPos;
                 }
                 else
                 {
                     float fScale = 1.0f - fDefaultMilestoneValues[milestone];
+                    v3AdjLocalPos = v3LocalPos;
                     fSaveTime = fSaveTime * fScale;
                 }
             }
 
             if (fSaveTime <= fTime)
             {
-                float fDistY = v3AdjLocalPos.y - candidateBlendInfo.mv3BlendedSavePos.y;
-                float fDistSq = fDistY * fDistY
-                              + (v3AdjLocalPos.z - candidateBlendInfo.mv3BlendedSavePos.z)
-                                    * (v3AdjLocalPos.z - candidateBlendInfo.mv3BlendedSavePos.z);
+                pCur = GoalieSave::GetClosestBlendedPos(candidateBlendInfo, v3AdjLocalPos, pCur);
 
-                if (fDistSq < fClosest)
+                fSaveTime = candidateBlendInfo.mfMilestoneTime[2];
                 {
-                    if (fDistSq < mfCatchAllowDistSq)
-                        goto okUpdate;
-                    if (pCur->muSaveType & 3)
-                        goto advance;
-                okUpdate:
+                    float fThisTime = candidateBlendInfo.mfMilestoneTime[milestone];
 
-                    fClosest = fDistSq;
-                    pClosest = pCur;
-
-                    blendInfo = candidateBlendInfo;
-
-                    blendInfo.mfStartTime = (0.0f >= blendInfo.mfMilestoneTime[2] - fTime) ? 0.0f : blendInfo.mfMilestoneTime[2] - fTime;
-
-                    if (bFromTakeoff)
+                    if (fThisTime > 0.0f)
                     {
-                        nlVec3Sub(blendInfo.mv3BlendedSavePos, blendInfo.mv3BlendedSavePos, pCur->mv3TakeoffPos);
+                        fSaveTime = fSaveTime - fThisTime;
+                        if (bFromTakeoff)
+                            nlVec3Add(v3AdjLocalPos, v3LocalPos, pCur->mv3TakeoffPos);
                     }
+                    else
+                    {
+                        float fScale = 1.0f - fDefaultMilestoneValues[milestone];
+                        fSaveTime = fSaveTime * fScale;
+                    }
+                }
 
-                    if (fDistSq < 0.05f * 0.05f)
-                        break;
+                if (fSaveTime <= fTime)
+                {
+                    float fDistY = v3AdjLocalPos.y - candidateBlendInfo.mv3BlendedSavePos.y;
+                    float fDistSq = fDistY * fDistY
+                                  + (v3AdjLocalPos.z - candidateBlendInfo.mv3BlendedSavePos.z)
+                                        * (v3AdjLocalPos.z - candidateBlendInfo.mv3BlendedSavePos.z);
+
+                    if (fDistSq < fClosest)
+                    {
+                        if (fDistSq < mfCatchAllowDistSq || !(pCur->muSaveType & 3))
+                        {
+                            fClosest = fDistSq;
+                            pClosest = pCur;
+
+                            blendInfo = candidateBlendInfo;
+
+                            blendInfo.mfStartTime = (0.0f >= blendInfo.mfMilestoneTime[2] - fTime) ? 0.0f : blendInfo.mfMilestoneTime[2] - fTime;
+
+                            if (bFromTakeoff)
+                            {
+                                nlVec3Sub(blendInfo.mv3BlendedSavePos, blendInfo.mv3BlendedSavePos, pCur->mv3TakeoffPos);
+                            }
+
+                            if (fDistSq < 0.05f * 0.05f)
+                                break;
+                        }
+                    }
                 }
             }
         }
 
-    advance:
         iterator.Next();
     }
 

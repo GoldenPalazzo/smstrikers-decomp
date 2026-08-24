@@ -152,6 +152,7 @@ public:
     void FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3& focus, unsigned short& ang, const nlVector3* pThreatPos);
     bool ShouldReposition();
     cPlayer* FindOpenPassTarget();
+    unsigned char IsTargetViable(cPlayer* pTarget);
     unsigned short FindDumpDirection(unsigned short aDesired, bool bConstrain);
     void HandleSTSSwat();
     void HandleSTSContact(cBall* pBall);

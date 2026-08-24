@@ -2454,124 +2454,113 @@ void cFielder::InitActionRunningWBTurboTurn()
 void cFielder::ActionRunningWBTurbo(float fDeltaT)
 {
     cGlobalPad* pPad = GetGlobalPad();
-    if (pPad != NULL && m_pBall != NULL)
+    do
     {
-        if (m_pController->IsTurboPressed())
+        if (pPad != NULL && m_pBall != NULL)
         {
-            if (m_pController->GetMovementStickMagnitude() > 0.001f)
+            if (!(m_pController->IsTurboPressed()
+                    && m_pController->GetMovementStickMagnitude() > 0.001f
+                    && !ShotMeter::IsActive(m_pShotMeter->m_eShotMeterState)))
             {
-                bool bShotMeterActive = false;
-                eShotMeterState state = m_pShotMeter->m_eShotMeterState;
-                if (state == SHOT_METER_ACTIVE || state == SHOT_METER_STS_ACTIVE || state == SHOT_METER_STS_TRANSISTION)
-                {
-                    bShotMeterActive = true;
-                }
-
-                if (!bShotMeterActive)
-                    goto setTurboSpeed;
+                m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
+            }
+            else
+            {
+                m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1;
+            }
+        }
+        if (m_fDesiredSpeed > ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed + 0.15f)
+        {
+            switch (m_eAnimID)
+            {
+            case 0x1D:
+            default:
+                m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1;
+                break;
+            case 0x1E:
+                m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel2;
+                break;
+            case 0x1F:
+                m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel3;
+                break;
             }
         }
 
-        m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
-        goto afterSpeed;
-
-    setTurboSpeed:
-        m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1;
-    }
-
-afterSpeed:
-    if (m_fDesiredSpeed > ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed + 0.15f)
-    {
-        switch (m_eAnimID)
+        if (m_pCurrentAnimController->m_fTime > 0.975f || m_pCurrentAnimController->m_fTime < 0.075f)
         {
-        case 0x1D:
-        default:
-            m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1;
-            break;
-        case 0x1E:
-            m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel2;
-            break;
-        case 0x1F:
-            m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel3;
-            break;
-        }
-    }
-
-    if (m_pCurrentAnimController->m_fTime > 0.975f || m_pCurrentAnimController->m_fTime < 0.075f)
-    {
-        if (m_pBall != NULL)
-        {
-            u16 aNewFacingDirection = SeekDirection(
-                m_aActualFacingDirection,
-                m_aDesiredFacingDirection,
-                ((FielderTweaks*)m_pTweaks)->fRunningWBTurboDirectionSeekSpeed,
-                ((FielderTweaks*)m_pTweaks)->fRunningWBTurboDirectionSeekFalloff,
-                fDeltaT);
-
-            SetFacingDirection(aNewFacingDirection);
-            m_aActualMovementDirection = aNewFacingDirection;
-
-            s16 nFacingDelta = (s16)(m_aDesiredFacingDirection - m_aActualFacingDirection);
-
-            if (TestQueuedActions())
+            if (m_pBall != NULL)
             {
-                m_eLastPadAction = PAD_NONE;
-                goto done;
-            }
+                u16 aNewFacingDirection = SeekDirection(
+                    m_aActualFacingDirection,
+                    m_aDesiredFacingDirection,
+                    ((FielderTweaks*)m_pTweaks)->fRunningWBTurboDirectionSeekSpeed,
+                    ((FielderTweaks*)m_pTweaks)->fRunningWBTurboDirectionSeekFalloff,
+                    fDeltaT);
 
-            if (m_fDesiredSpeed < ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1 - 0.1f
-                || m_ePowerup == POWER_UP_MUSHROOM || m_ePowerup == POWER_UP_STAR)
-            {
-                SetAction(ACTION_RUNNING_WB);
-                mActionRunningWBVars.bWaitForAnimToFinish = false;
-                mActionRunningVars.eLastStrafeDirection = STRAFE_IDLE;
-                m_aActualMovementDirection = m_aActualFacingDirection;
-                goto done;
-            }
+                SetFacingDirection(aNewFacingDirection);
+                m_aActualMovementDirection = aNewFacingDirection;
 
-            if (m_pCurrentAnimController->m_fTime > 0.975f)
-            {
-                int absDelta = nFacingDelta;
-                if (nFacingDelta < 0)
-                    absDelta = -nFacingDelta;
+                s16 nFacingDelta = (s16)(m_aDesiredFacingDirection - m_aActualFacingDirection);
 
-                if ((u16)absDelta > 0x2000)
+                if (TestQueuedActions())
                 {
-                    InitActionRunningWBTurboTurn();
+                    m_eLastPadAction = PAD_NONE;
+                    break;
                 }
-                else
+
+                if (m_fDesiredSpeed < ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1 - 0.1f
+                    || m_ePowerup == POWER_UP_MUSHROOM || m_ePowerup == POWER_UP_STAR)
                 {
-                    switch (m_eAnimID)
+                    SetAction(ACTION_RUNNING_WB);
+                    mActionRunningWBVars.bWaitForAnimToFinish = false;
+                    mActionRunningVars.eLastStrafeDirection = STRAFE_IDLE;
+                    m_aActualMovementDirection = m_aActualFacingDirection;
+                    break;
+                }
+
+                if (m_pCurrentAnimController->m_fTime > 0.975f)
+                {
+                    int absDelta = nFacingDelta;
+                    if (nFacingDelta < 0)
+                        absDelta = -nFacingDelta;
+
+                    if ((u16)absDelta > 0x2000)
                     {
-                    case 0x1D:
-                        SetRunTurboAnimState(0x1E, mActionRunningWBTurboVars.bForcedMirrorSwap);
-                        break;
-                    case 0x1E:
-                        SetRunTurboAnimState(0x1F, mActionRunningWBTurboVars.bForcedMirrorSwap);
-                        break;
-                    case 0x1F:
-                        SetRunTurboAnimState(0x1F, mActionRunningWBTurboVars.bForcedMirrorSwap);
-                        break;
-                    default:
-                        SetRunTurboAnimState(0x1D, false);
-                        break;
+                        InitActionRunningWBTurboTurn();
+                    }
+                    else
+                    {
+                        switch (m_eAnimID)
+                        {
+                        case 0x1D:
+                            SetRunTurboAnimState(0x1E, mActionRunningWBTurboVars.bForcedMirrorSwap);
+                            break;
+                        case 0x1E:
+                            SetRunTurboAnimState(0x1F, mActionRunningWBTurboVars.bForcedMirrorSwap);
+                            break;
+                        case 0x1F:
+                            SetRunTurboAnimState(0x1F, mActionRunningWBTurboVars.bForcedMirrorSwap);
+                            break;
+                        default:
+                            SetRunTurboAnimState(0x1D, false);
+                            break;
+                        }
                     }
                 }
+
+                break;
             }
-
-            goto done;
         }
-    }
 
-    if (m_pBall == NULL)
-    {
-        if (ShouldStartCrossBlend(7))
+        if (m_pBall == NULL)
         {
-            SetAction(ACTION_NEED_ACTION);
+            if (ShouldStartCrossBlend(7))
+            {
+                SetAction(ACTION_NEED_ACTION);
+            }
         }
-    }
+    } while (false);
 
-done:
     switch (m_eAnimID)
     {
     case 0x1D:
@@ -2603,29 +2592,17 @@ void cFielder::ActionRunningWBTurboTurn(float fDeltaT)
     {
         if (GetGlobalPad() != nullptr)
         {
-            if (m_pController->IsTurboPressed())
+            if (!(m_pController->IsTurboPressed()
+                    && m_pController->GetMovementStickMagnitude() > 0.001f
+                    && !ShotMeter::IsActive(m_pShotMeter->m_eShotMeterState)))
             {
-                if (m_pController->GetMovementStickMagnitude() > 0.001f)
-                {
-                    bool bShotMeterActive = false;
-                    eShotMeterState state = m_pShotMeter->m_eShotMeterState;
-                    if (state == SHOT_METER_ACTIVE || state == SHOT_METER_STS_ACTIVE || state == SHOT_METER_STS_TRANSISTION)
-                    {
-                        bShotMeterActive = true;
-                    }
-
-                    if (!bShotMeterActive)
-                        goto setTurboSpeed;
-                }
+                m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
+            }
+            else
+            {
+                m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1;
             }
 
-            m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
-            goto testButtons;
-
-        setTurboSpeed:
-            m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1;
-
-        testButtons:
             TestButtonsToQueueActions(fDeltaT);
         }
 

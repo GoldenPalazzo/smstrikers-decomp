@@ -581,13 +581,28 @@ void StatsTracker::eventHandler(Event* event, void* userData)
     }
 }
 
+static unsigned char GetGlobalPadID(int homeaway, int playerindex, int& padid)
+{
+    cTeam* team = g_pTeams[homeaway];
+    if (team != NULL)
+    {
+        cGlobalPad* globalPad = team->GetPlayer(playerindex)->GetGlobalPad();
+        if (globalPad != NULL)
+        {
+            padid = globalPad->m_padIndex;
+            return true;
+        }
+    }
+
+    padid = -1;
+    return false;
+}
+
 /**
  * Offset/Address/Size: 0x3EF0 | 0x80185450 | size: 0x840
  */
 void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, int param0, int param1, int param2, int param3)
 {
-    cTeam* team;
-    cGlobalPad* pad;
     GameInfoManager* gameInfoManager;
     eTeamID teamID;
     int padIndex;
@@ -598,21 +613,7 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
     {
     case STATS_SHOTS_ON_GOAL:
         AddStat(STATS_SHOTS_ON_GOAL, homeaway, playerindex, 1);
-        team = g_pTeams[homeaway];
-        if (team != NULL)
-        {
-            pad = team->GetPlayer(playerindex)->GetGlobalPad();
-            if (pad != NULL)
-            {
-                padIndex = pad->m_padIndex;
-                hasPad = 1;
-                goto HavePad_SHOTS_ON_GOAL;
-            }
-        }
-        padIndex = -1;
-        hasPad = 0;
-
-    HavePad_SHOTS_ON_GOAL:
+        hasPad = GetGlobalPadID(homeaway, playerindex, padIndex);
         if (hasPad)
         {
             AddUserStatByPad(STATS_SHOTS_ON_GOAL, padIndex, 1);
@@ -639,21 +640,7 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
         AddStat(STATS_GOALS_AGAINST, homeaway, -1, param0);
         for (i = 0; i < 5; i++)
         {
-            team = g_pTeams[homeaway];
-            if (team != NULL)
-            {
-                pad = team->GetPlayer(i)->GetGlobalPad();
-                if (pad != NULL)
-                {
-                    padIndex = pad->m_padIndex;
-                    hasPad = 1;
-                    goto HavePad_GOALS_AGAINST;
-                }
-            }
-            padIndex = -1;
-            hasPad = 0;
-
-        HavePad_GOALS_AGAINST:
+            hasPad = GetGlobalPadID(homeaway, i, padIndex);
             if (hasPad)
             {
                 AddUserStatByPad(STATS_GOALS_AGAINST, padIndex, param0);
@@ -670,21 +657,7 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
         break;
     case STATS_ASSISTS:
         AddStat(STATS_ASSISTS, homeaway, playerindex, 1);
-        team = g_pTeams[homeaway];
-        if (team != NULL)
-        {
-            pad = team->GetPlayer(playerindex)->GetGlobalPad();
-            if (pad != NULL)
-            {
-                padIndex = pad->m_padIndex;
-                hasPad = 1;
-                goto HavePad_ASSISTS;
-            }
-        }
-        padIndex = -1;
-        hasPad = 0;
-
-    HavePad_ASSISTS:
+        hasPad = GetGlobalPadID(homeaway, playerindex, padIndex);
         if (hasPad)
         {
             AddUserStatByPad(STATS_ASSISTS, padIndex, 1);
@@ -692,21 +665,7 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
         break;
     case STATS_FOULS:
         AddStat(STATS_FOULS, homeaway, playerindex, 1);
-        team = g_pTeams[homeaway];
-        if (team != NULL)
-        {
-            pad = team->GetPlayer(playerindex)->GetGlobalPad();
-            if (pad != NULL)
-            {
-                padIndex = pad->m_padIndex;
-                hasPad = 1;
-                goto HavePad_FOULS;
-            }
-        }
-        padIndex = -1;
-        hasPad = 0;
-
-    HavePad_FOULS:
+        hasPad = GetGlobalPadID(homeaway, playerindex, padIndex);
         if (hasPad)
         {
             AddUserStatByPad(STATS_FOULS, padIndex, 1);
@@ -788,21 +747,7 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
         break;
     case STATS_POWERUPS_USED:
         AddStat(STATS_POWERUPS_USED, homeaway, playerindex, 1);
-        team = g_pTeams[homeaway];
-        if (team != NULL)
-        {
-            pad = team->GetPlayer(playerindex)->GetGlobalPad();
-            if (pad != NULL)
-            {
-                padIndex = pad->m_padIndex;
-                hasPad = 1;
-                goto HavePad_POWERUPS_USED;
-            }
-        }
-        padIndex = -1;
-        hasPad = 0;
-
-    HavePad_POWERUPS_USED:
+        hasPad = GetGlobalPadID(homeaway, playerindex, padIndex);
         if (hasPad)
         {
             AddUserStatByPad(STATS_POWERUPS_USED, padIndex, 1);
@@ -818,21 +763,7 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
         break;
     case STATS_PASSES_RECEIVED:
         AddStat(STATS_PASSES_RECEIVED, homeaway, playerindex, 1);
-        team = g_pTeams[homeaway];
-        if (team != NULL)
-        {
-            pad = team->GetPlayer(playerindex)->GetGlobalPad();
-            if (pad != NULL)
-            {
-                padIndex = pad->m_padIndex;
-                hasPad = 1;
-                goto HavePad_PASSES_RECEIVED;
-            }
-        }
-        padIndex = -1;
-        hasPad = 0;
-
-    HavePad_PASSES_RECEIVED:
+        hasPad = GetGlobalPadID(homeaway, playerindex, padIndex);
         if (hasPad)
         {
             AddUserStatByPad(STATS_PASSES_RECEIVED, padIndex, 1);
@@ -843,21 +774,7 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
         break;
     case STATS_POSSESION_TIME:
         AddStat(STATS_POSSESION_TIME, homeaway, playerindex, param0);
-        team = g_pTeams[homeaway];
-        if (team != NULL)
-        {
-            pad = team->GetPlayer(playerindex)->GetGlobalPad();
-            if (pad != NULL)
-            {
-                padIndex = pad->m_padIndex;
-                hasPad = 1;
-                goto HavePad_POSSESION_TIME;
-            }
-        }
-        padIndex = -1;
-        hasPad = 0;
-
-    HavePad_POSSESION_TIME:
+        hasPad = GetGlobalPadID(homeaway, playerindex, padIndex);
         if (hasPad)
         {
             AddUserStatByPad(STATS_POSSESION_TIME, padIndex, param0);
@@ -875,21 +792,7 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
         break;
     case STATS_HITS_MADE:
         AddStat(STATS_HITS_MADE, homeaway, playerindex, 1);
-        team = g_pTeams[homeaway];
-        if (team != NULL)
-        {
-            pad = team->GetPlayer(playerindex)->GetGlobalPad();
-            if (pad != NULL)
-            {
-                padIndex = pad->m_padIndex;
-                hasPad = 1;
-                goto HavePad_HITS_MADE;
-            }
-        }
-        padIndex = -1;
-        hasPad = 0;
-
-    HavePad_HITS_MADE:
+        hasPad = GetGlobalPadID(homeaway, playerindex, padIndex);
         if (hasPad)
         {
             AddUserStatByPad(STATS_HITS_MADE, padIndex, 1);
@@ -897,21 +800,7 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
         break;
     case STATS_STS_ATTEMPTS:
         AddStat(STATS_STS_ATTEMPTS, homeaway, playerindex, 1);
-        team = g_pTeams[homeaway];
-        if (team != NULL)
-        {
-            pad = team->GetPlayer(playerindex)->GetGlobalPad();
-            if (pad != NULL)
-            {
-                padIndex = pad->m_padIndex;
-                hasPad = 1;
-                goto HavePad_STS_ATTEMPTS;
-            }
-        }
-        padIndex = -1;
-        hasPad = 0;
-
-    HavePad_STS_ATTEMPTS:
+        hasPad = GetGlobalPadID(homeaway, playerindex, padIndex);
         if (hasPad)
         {
             AddUserStatByPad(STATS_STS_ATTEMPTS, padIndex, 1);

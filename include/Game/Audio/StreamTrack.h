@@ -66,7 +66,19 @@ public:
     typedef BasicSlotPool<StreamDeleteEntry> StreamDeleteAllocator;
     typedef DLListContainerBase<GCAudioStreaming::StereoAudioStream*, StreamDeleteAllocator> StreamDeleteList;
 
-    void AddDeleteEntry(StreamDeleteEntry*);
+    void AddDeleteStream(
+        GCAudioStreaming::StereoAudioStream* stream,
+        StreamDeleteEntry*& entry)
+    {
+        m_StreamDeleteList.m_Allocator.Allocate(entry);
+        if (entry != NULL)
+        {
+            entry->m_next = NULL;
+            entry->m_prev = NULL;
+            entry->entry = stream;
+        }
+        nlDLRingAddEnd(&m_StreamDeleteList.m_Head, entry);
+    }
 
     class FadeManager
     {
@@ -173,11 +185,6 @@ public:
     /* 0x50 */ nlDLListSlotPool<GCAudioStreaming::StereoAudioStream*> m_StreamDeleteList;
 }; // total size: 0x6C
 
-inline void TrackManagerBase::AddDeleteEntry(StreamDeleteEntry* entry)
-{
-    nlDLRingAddEnd(&m_StreamDeleteList.m_Head, entry);
-}
-
 inline TrackManagerBase::FadeManager::STREAM_FADE_CTRL*
 TrackManagerBase::FadeManager::FindFade(
     GCAudioStreaming::StereoAudioStream* stream)
@@ -276,6 +283,7 @@ public:
     void Stop(unsigned long Fadeout);
     void StopQStream(QUEUED_STREAM* pQueuedStream);
     void StopStream(GCAudioStreaming::StereoAudioStream* pStream, bool TrackOwns);
+    void ReleaseStream(GCAudioStreaming::StereoAudioStream*, bool);
     void FadeOutDone(QUEUED_STREAM* qs);
     void FadeOutDoneStartNext(QUEUED_STREAM* qs);
     void StartQStreamFadeout(QUEUED_STREAM* pQS, unsigned long Fadeout, const Function<FnVoidVoid>& callback);
@@ -296,6 +304,18 @@ public:
     /* 0x68 */ Audio::MasterVolume::VOLUME_GROUP m_VolumeGroup;
     /* 0x6C */ Function<FnVoidVoid> m_IdleCallback;
 }; // total size: 0x74
+
+inline void StreamTrack::ReleaseStream(
+    GCAudioStreaming::StereoAudioStream* stream, bool ownsStream)
+{
+    m_TrackMgr.m_FadeMgr.RemoveFade(stream);
+    if (ownsStream)
+    {
+        TrackManagerBase::StreamDeleteEntry* entry = NULL;
+        TrackManagerBase* delMgr = &m_TrackMgr;
+        delMgr->AddDeleteStream(stream, entry);
+    }
+}
 
 inline StreamTrack::StreamTrack(TrackManagerBase& mgr, Audio::MasterVolume::VOLUME_GROUP volumeGroup)
     : m_TrackMgr(mgr)

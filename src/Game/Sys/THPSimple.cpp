@@ -486,7 +486,7 @@ extern "C" int THPSimpleSetBuffer(unsigned char* buffer)
 
 static inline void update_read_idx()
 {
-    register s32 readIndex = SimpleControl.readIndex;
+    s32 readIndex = SimpleControl.readIndex;
     if (readIndex + 1 >= NumReadBuffers)
         readIndex = 0;
     else
@@ -687,108 +687,114 @@ extern "C" long THPSimpleDecode(long audioTrack)
     unsigned long* compSizePtr;
     unsigned long sample;
 
-    validBuffer = &((THPSimpleControlWork*)&SimpleControl)->readBuffer[0].mIsValid;
-
-    if (validBuffer[((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex * 3] == 0)
+    do
     {
-        goto ret2;
-    }
+        validBuffer = &((THPSimpleControlWork*)&SimpleControl)->readBuffer[0].mIsValid;
 
-    readBuffer = ((THPSimpleControlWork*)&SimpleControl)->readBuffer;
-    compSizePtr = (unsigned long*)(readBuffer[((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex].mPtr + 8);
-    ptr = readBuffer[((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex].mPtr + ((THPSimpleControlWork*)&SimpleControl)->compInfo.mNumComponents * 4 + 8;
-
-    if (((THPSimpleControlWork*)&SimpleControl)->audioExist != 0 && AudioSystem != 1)
-    {
-        if (audioTrack < 0 || (unsigned long)audioTrack >= ((THPSimpleControlWork*)&SimpleControl)->audioInfo.mSndNumTracks)
+        if (validBuffer[((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex * 3] == 0)
         {
-            return 4;
-        }
-
-        if (((THPSimpleControlWork*)&SimpleControl)->audioBuffer[((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex].mValidSample != 0)
-        {
-            goto ret3;
-        }
-
-        for (i = 0; i < ((THPSimpleControlWork*)&SimpleControl)->compInfo.mNumComponents; i++)
-        {
-            switch (((THPSimpleControlWork*)&SimpleControl)->compInfo.mFrameComp[i])
-            {
-            case 0:
-                if (!VideoDecode(ptr))
-                {
-                    return 1;
-                }
-                break;
-            case 1:
-                sample = THPAudioDecode(
-                    ((THPSimpleControlWork*)&SimpleControl)->audioBuffer[((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex].mBuffer,
-                    ptr + *compSizePtr * audioTrack,
-                    0);
-                old = OSDisableInterrupts();
-                ((THPSimpleControlWork*)&SimpleControl)->audioBuffer[((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex].mValidSample = sample;
-                ((THPSimpleControlWork*)&SimpleControl)->audioBuffer[((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex].mCurPtr = ((THPSimpleControlWork*)&SimpleControl)->audioBuffer[((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex].mBuffer;
-                OSRestoreInterrupts(old);
-                if (++((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex >= NumAudioBuffers)
-                {
-                    ((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex = 0;
-                }
-                break;
-            }
-            ptr += *compSizePtr;
-            compSizePtr++;
-        }
-        goto decoded;
-    ret3:
-        return 3;
-    }
-
-    for (i = 0; i < ((THPSimpleControlWork*)&SimpleControl)->compInfo.mNumComponents; i++)
-    {
-        switch (((THPSimpleControlWork*)&SimpleControl)->compInfo.mFrameComp[i])
-        {
-        case 0:
-            if (!VideoDecode(ptr))
-            {
-                return 1;
-            }
             break;
         }
-        ptr += *compSizePtr;
-        compSizePtr++;
-    }
 
-decoded:
-    validBuffer[((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex * 3] = 0;
-    ((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex = (((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex + 1 >= NumReadBuffers) ? 0 : ((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex + 1;
+        readBuffer = ((THPSimpleControlWork*)&SimpleControl)->readBuffer;
+        compSizePtr = (unsigned long*)(readBuffer[((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex].mPtr + 8);
+        ptr = readBuffer[((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex].mPtr + ((THPSimpleControlWork*)&SimpleControl)->compInfo.mNumComponents * 4 + 8;
 
-    old = OSDisableInterrupts();
-
-    if (validBuffer[((THPSimpleControlWork*)&SimpleControl)->readIndex * 3] == 0 && ((THPSimpleControlWork*)&SimpleControl)->readProgress == 0 && ((THPSimpleControlWork*)&SimpleControl)->dvdError == 0 && ((THPSimpleControlWork*)&SimpleControl)->preFetchState == 1)
-    {
-        if ((unsigned long)((THPSimpleControlWork*)&SimpleControl)->totalReadFrame > ((THPSimpleControlWork*)&SimpleControl)->numFrames - 1)
+        if (((THPSimpleControlWork*)&SimpleControl)->audioExist != 0 && AudioSystem != 1)
         {
-            if (((THPSimpleControlWork*)&SimpleControl)->loop != 1)
+            if (audioTrack < 0 || (unsigned long)audioTrack >= ((THPSimpleControlWork*)&SimpleControl)->audioInfo.mSndNumTracks)
             {
-                goto done;
+                return 4;
             }
-            ((THPSimpleControlWork*)&SimpleControl)->totalReadFrame = 0;
-            ((THPSimpleControlWork*)&SimpleControl)->curOffset = ((THPSimpleControlWork*)&SimpleControl)->movieDataOffsets;
-            ((THPSimpleControlWork*)&SimpleControl)->readSize = ((THPSimpleControlWork*)&SimpleControl)->firstFrameSize;
+
+            if (((THPSimpleControlWork*)&SimpleControl)->audioBuffer[((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex].mValidSample == 0)
+            {
+                for (i = 0; i < ((THPSimpleControlWork*)&SimpleControl)->compInfo.mNumComponents; i++)
+                {
+                    switch (((THPSimpleControlWork*)&SimpleControl)->compInfo.mFrameComp[i])
+                    {
+                    case 0:
+                        if (!VideoDecode(ptr))
+                        {
+                            return 1;
+                        }
+                        break;
+                    case 1:
+                        sample = THPAudioDecode(
+                            ((THPSimpleControlWork*)&SimpleControl)->audioBuffer[((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex].mBuffer,
+                            ptr + *compSizePtr * audioTrack,
+                            0);
+                        old = OSDisableInterrupts();
+                        ((THPSimpleControlWork*)&SimpleControl)->audioBuffer[((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex].mValidSample = sample;
+                        ((THPSimpleControlWork*)&SimpleControl)->audioBuffer[((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex].mCurPtr = ((THPSimpleControlWork*)&SimpleControl)->audioBuffer[((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex].mBuffer;
+                        OSRestoreInterrupts(old);
+                        if (++((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex >= NumAudioBuffers)
+                        {
+                            ((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex = 0;
+                        }
+                        break;
+                    }
+                    ptr += *compSizePtr;
+                    compSizePtr++;
+                }
+            }
+            else
+            {
+                return 3;
+            }
+        }
+        else
+        {
+            for (i = 0; i < ((THPSimpleControlWork*)&SimpleControl)->compInfo.mNumComponents; i++)
+            {
+                switch (((THPSimpleControlWork*)&SimpleControl)->compInfo.mFrameComp[i])
+                {
+                case 0:
+                    if (!VideoDecode(ptr))
+                    {
+                        return 1;
+                    }
+                    break;
+                }
+                ptr += *compSizePtr;
+                compSizePtr++;
+            }
         }
 
-        ((THPSimpleControlWork*)&SimpleControl)->readProgress = 1;
-        nlSeek(((THPSimpleControlWork*)&SimpleControl)->fileInfo, ((THPSimpleControlWork*)&SimpleControl)->curOffset, 0);
-        nlReadAsync(((THPSimpleControlWork*)&SimpleControl)->fileInfo,
-            readBuffer[((THPSimpleControlWork*)&SimpleControl)->readIndex].mPtr,
-            ((THPSimpleControlWork*)&SimpleControl)->readSize,
-            __THPSimpleDVDCallback,
-            0);
-    }
-done:
-    OSRestoreInterrupts(old);
-    return 0;
-ret2:
+        validBuffer[((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex * 3] = 0;
+        ((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex = (((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex + 1 >= NumReadBuffers) ? 0 : ((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex + 1;
+
+        old = OSDisableInterrupts();
+
+        do
+        {
+            if (validBuffer[((THPSimpleControlWork*)&SimpleControl)->readIndex * 3] == 0 && ((THPSimpleControlWork*)&SimpleControl)->readProgress == 0 && ((THPSimpleControlWork*)&SimpleControl)->dvdError == 0 && ((THPSimpleControlWork*)&SimpleControl)->preFetchState == 1)
+            {
+                if ((unsigned long)((THPSimpleControlWork*)&SimpleControl)->totalReadFrame > ((THPSimpleControlWork*)&SimpleControl)->numFrames - 1)
+                {
+                    if (((THPSimpleControlWork*)&SimpleControl)->loop != 1)
+                    {
+                        break;
+                    }
+                    ((THPSimpleControlWork*)&SimpleControl)->totalReadFrame = 0;
+                    ((THPSimpleControlWork*)&SimpleControl)->curOffset = ((THPSimpleControlWork*)&SimpleControl)->movieDataOffsets;
+                    ((THPSimpleControlWork*)&SimpleControl)->readSize = ((THPSimpleControlWork*)&SimpleControl)->firstFrameSize;
+                }
+
+                ((THPSimpleControlWork*)&SimpleControl)->readProgress = 1;
+                nlSeek(((THPSimpleControlWork*)&SimpleControl)->fileInfo, ((THPSimpleControlWork*)&SimpleControl)->curOffset, 0);
+                nlReadAsync(((THPSimpleControlWork*)&SimpleControl)->fileInfo,
+                    readBuffer[((THPSimpleControlWork*)&SimpleControl)->readIndex].mPtr,
+                    ((THPSimpleControlWork*)&SimpleControl)->readSize,
+                    __THPSimpleDVDCallback,
+                    0);
+            }
+        } while (false);
+
+        OSRestoreInterrupts(old);
+        return 0;
+    } while (false);
+
     return 2;
 }
 

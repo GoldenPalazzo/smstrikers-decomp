@@ -46,24 +46,26 @@ void gl_ConstantMarkerBackup(int arg)
     }
 }
 
-static inline void glConstantSet(unsigned long constantHash, const nlVector4& value)
+static inline nlVector4* glConstantFind(unsigned long constantHash)
 {
     nlVector4* foundValue;
-    unsigned long key = constantHash;
-    nlVector4* result;
 
     for (int i = level; i >= 0; i--)
     {
-        if (constants[i]->FindGet(key, &foundValue))
+        if (constants[i]->FindGet(constantHash, &foundValue))
         {
-            result = foundValue;
-            goto found;
+            return foundValue;
         }
     }
 
-    result = NULL;
+    return NULL;
+}
 
-found:
+static void glConstantSet(unsigned long constantHash, const nlVector4& value)
+{
+    unsigned long key = constantHash;
+    nlVector4* result = glConstantFind(key);
+
     if (result == NULL)
     {
         ConstantTree* tree = constants[level];
@@ -84,23 +86,10 @@ void glConstantSet(const char* constantName, const nlVector4& value)
     glConstantSet(nlStringHash(constantName), value);
 }
 
-static inline bool glConstantGet(unsigned long constantHash, nlVector4& result)
+static bool glConstantGet(unsigned long constantHash, nlVector4& result)
 {
-    nlVector4* foundValue;
-    nlVector4* out;
+    nlVector4* out = glConstantFind(constantHash);
 
-    for (int i = level; i >= 0; i--)
-    {
-        if (constants[i]->FindGet(constantHash, &foundValue))
-        {
-            out = foundValue;
-            goto found;
-        }
-    }
-
-    out = NULL;
-
-found:
     if (out == NULL)
     {
         return false;
@@ -118,29 +107,10 @@ bool glConstantGet(const char* constantName, nlVector4& result)
     return glConstantGet(nlStringHash(constantName), result);
 }
 
-static inline nlVector4 glConstantGet(unsigned long constantHash)
+static nlVector4 glConstantGet(unsigned long constantHash)
 {
-    nlVector4* foundValue;
-    nlVector4* result;
-
-    for (int i = level; i >= 0; i--)
-    {
-        if (constants[i]->FindGet(constantHash, &foundValue))
-        {
-            result = foundValue;
-            goto found;
-        }
-    }
-
-    result = NULL;
-
-found:
-    if (result == NULL)
-    {
-        result = &vZero;
-    }
-
-    return *result;
+    nlVector4* result = glConstantFind(constantHash);
+    return *(result == NULL ? &vZero : result);
 }
 
 /**

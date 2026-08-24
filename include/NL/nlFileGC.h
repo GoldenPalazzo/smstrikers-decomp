@@ -140,7 +140,9 @@ public:
     /* 0x10 */ CURRENT_READ m_CurrentRead;
 };
 
-inline GCFile::~GCFile() { }
+inline GCFile::~GCFile()
+{
+}
 
 class DolphinFile : public GCFile
 {

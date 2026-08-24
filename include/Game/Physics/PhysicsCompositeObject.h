@@ -14,6 +14,7 @@ public:
     virtual int GetObjectType() const { return 0x9; };
     void AdjustTransform(int i, nlMatrix4& m);
     int AddObject(PhysicsObject* object);
+    PhysicsTransform* GetComponent(unsigned int i);
 
     /* 0x2C */ nlDLListContainer<PhysicsTransform*> m_Components;
     /* 0x34 */ int numComponents;

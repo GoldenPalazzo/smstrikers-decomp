@@ -46,23 +46,29 @@ const glModel* glQuad3::GetModel(bool useDefaultProgram) const
     if (useDefaultProgram)
         prevProgram = glSetCurrentProgram(_defaultProgram);
 
-    if (glHasQuads())
+    do
     {
-        if (writer.Begin(4, (eGLPrimitive)3, 3, sStreams, false))
+        if (glHasQuads())
         {
+            if (!writer.Begin(4, (eGLPrimitive)3, 3, sStreams, false))
+            {
+                break;
+            }
+
             for (int i = 0; i < 4; ++i)
             {
                 writer.Colour(m_colour[i]);
                 writer.Texcoord(m_uv[i]);
                 writer.Vertex(m_pos[i]);
             }
-            goto block_export;
         }
-    }
-    else
-    {
-        if (writer.Begin(4, (eGLPrimitive)1, 3, sStreams, false))
+        else
         {
+            if (!writer.Begin(4, (eGLPrimitive)1, 3, sStreams, false))
+            {
+                break;
+            }
+
             int srcIndex;
             for (int i = 0; i < 4; ++i)
             {
@@ -71,12 +77,12 @@ const glModel* glQuad3::GetModel(bool useDefaultProgram) const
                 writer.Texcoord(m_uv[srcIndex]);
                 writer.Vertex(m_pos[srcIndex]);
             }
-
-        block_export:
-            if (writer.End())
-                newModel = writer.GetModel();
         }
-    }
+
+        if (writer.End())
+            newModel = writer.GetModel();
+    } while (false);
+
     if (useDefaultProgram)
         glSetCurrentProgram(prevProgram);
 

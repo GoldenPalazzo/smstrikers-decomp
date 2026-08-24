@@ -1387,45 +1387,43 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
             winner = g->mTeamIndex[1];
         }
 
-        if (winner != mCurrentCup->mUserSelectedTeam)
+        if (winner == mCurrentCup->mUserSelectedTeam)
         {
-            goto lbl_end;
-        }
+            g->mTeamIndex[0] = (eTeamID)3;
+            g->mTeamIndex[1] = (eTeamID)2;
+            g->mSidekickIndex[0] = (eSidekickID)0;
+            g->mSidekickIndex[1] = (eSidekickID)1;
+            g->mFinalScore[1] = 0;
+            g->mFinalScore[0] = 0;
+            g->mPadSides[0] = -1;
+            g->mPadSides[1] = -1;
+            g->mPadSides[2] = -1;
+            g->mPadSides[3] = -1;
+            g->mStadiumIndex = (eStadiumID)0;
 
-        g->mTeamIndex[0] = (eTeamID)3;
-        g->mTeamIndex[1] = (eTeamID)2;
-        g->mSidekickIndex[0] = (eSidekickID)0;
-        g->mSidekickIndex[1] = (eSidekickID)1;
-        g->mFinalScore[1] = 0;
-        g->mFinalScore[0] = 0;
-        g->mPadSides[0] = -1;
-        g->mPadSides[1] = -1;
-        g->mPadSides[2] = -1;
-        g->mPadSides[3] = -1;
-        g->mStadiumIndex = (eStadiumID)0;
+            g->mTeamIndex[0] = (eTeamID)8;
+            g->mSidekickIndex[1] = (eSidekickID)0;
+            g->mTeamIndex[1] = winner;
+            g->mSidekickIndex[1] = sidekicks[winner];
+            g->mStadiumIndex = PickStadium(true, STAD_INVALID);
+            returnValue = 1;
 
-        g->mTeamIndex[0] = (eTeamID)8;
-        g->mSidekickIndex[1] = (eSidekickID)0;
-        g->mTeamIndex[1] = winner;
-        g->mSidekickIndex[1] = sidekicks[winner];
-        g->mStadiumIndex = PickStadium(true, STAD_INVALID);
-        returnValue = 1;
-
-        for (int i = 0; i < GetNumPlayingTeams(); i++)
-        {
-            TeamStats* ts = pGetTeamStatsByIndex((u16)i);
-
-            if (ts->mTeamIndex == losingTeam)
+            for (int i = 0; i < GetNumPlayingTeams(); i++)
             {
-                memset(&ts->mPlayerTotalStats, 0, sizeof(PlayerStats));
-                ts->mPlayerTotalStats.mRecordType.mTeamID = (eTeamID)8;
-                ts->mPlayerTotalStats.mType = TYPE_TEAM;
-                ts->mTeamIndex = (eTeamID)8;
-                ts->mNumWins = 0;
-                ts->mNumLosses = 0;
-                ts->mNumOTLosses = 0;
-                ts->mNumPoints = 0;
-                goto lbl_end;
+                TeamStats* ts = pGetTeamStatsByIndex((u16)i);
+
+                if (ts->mTeamIndex == losingTeam)
+                {
+                    memset(&ts->mPlayerTotalStats, 0, sizeof(PlayerStats));
+                    ts->mPlayerTotalStats.mRecordType.mTeamID = (eTeamID)8;
+                    ts->mPlayerTotalStats.mType = TYPE_TEAM;
+                    ts->mTeamIndex = (eTeamID)8;
+                    ts->mNumWins = 0;
+                    ts->mNumLosses = 0;
+                    ts->mNumOTLosses = 0;
+                    ts->mNumPoints = 0;
+                    break;
+                }
             }
         }
     }
@@ -1480,7 +1478,6 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
         }
     }
 
-lbl_end:
     return returnValue;
 }
 

@@ -24,6 +24,15 @@ public:
     {
         return mfSShotAimValue;
     }
+    static bool IsActive(eShotMeterState state)
+    {
+        bool bShotMeterActive = false;
+        if (state == SHOT_METER_ACTIVE || state == SHOT_METER_STS_ACTIVE || state == SHOT_METER_STS_TRANSISTION)
+        {
+            bShotMeterActive = true;
+        }
+        return bShotMeterActive;
+    }
     void Reset();
     void ShotReleased(cFielder* pFielder);
 

@@ -80,9 +80,11 @@ public:
     static void AddChainToGrid(SaveData* pSaveData, bool bVertical);
     static void AddToGrid(SaveData* pSaveData);
     static void ClearGrid();
+    static float SetCatchAllowDist(float fDist);
     static float GridSectionWidth();
     static float GridSectionHeight();
 
+    static float mfCatchAllowDist;
     static float mfCatchAllowDistSq;
     static SaveData* mpSaveTable;
     static unsigned int muNumSaveEntries;

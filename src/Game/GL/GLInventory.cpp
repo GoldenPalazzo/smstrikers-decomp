@@ -1,13 +1,6 @@
 #include "Game/GL/GLInventory.h"
 #include "NL/glx/glxLoadModel.h"
 
-typedef ListContainerBase<void*, NewAdapter<ListEntry<void*> > > FileDataListBase;
-
-static inline void (FileDataListBase::* GetFileDataDeleteEntry())(ListEntry<void*>*)
-{
-    return &FileDataListBase::DeleteEntry;
-}
-
 inline GLInventory::GLInventory()
 {
     m_bCreated = false;
@@ -46,12 +39,7 @@ void GLInventory::Create()
 
     for (; i < 16; i++, current++)
     {
-        nlListContainer<void*>* fileData = (nlListContainer<void*>*)nlMalloc(sizeof(nlListContainer<void*>), 8, false);
-        if (fileData != NULL)
-        {
-            fileData->m_Head = NULL;
-            fileData->m_Tail = NULL;
-        }
+        nlListContainer<void*>* fileData = new (8, false) nlListContainer<void*>();
         *current = fileData;
 
         freeing_GLInventory<nlChunk>* pSkinData = (freeing_GLInventory<nlChunk>*)nlMalloc(sizeof(freeing_GLInventory<nlChunk>), 8, false);
@@ -120,28 +108,8 @@ void GLInventory::Delete()
         ReleaseLevel(i);
 
         fileData = *current;
-        if (fileData == NULL)
-        {
-            goto done_file_data;
-        }
+        delete fileData;
 
-        if (fileData == NULL)
-        {
-            goto free_file_data;
-        }
-
-        nlWalkList<ListEntry<void*>, ListContainerBase<void*, NewAdapter<ListEntry<void*> > > >(
-            fileData->m_Head,
-            fileData,
-            GetFileDataDeleteEntry());
-
-        fileData->m_Head = NULL;
-        fileData->m_Tail = NULL;
-
-    free_file_data:
-        operator delete(fileData);
-
-    done_file_data:
         delete ((freeing_GLInventory<nlChunk>**)current)[16];
         delete ((clearing_GLInventory<glModel>**)current)[32];
         delete ((deleting_GLInventory<GLShadowVolume>**)current)[48];
@@ -166,15 +134,7 @@ static inline void DeleteFileEntries(ListEntry<void*>* current)
 void GLInventory::ReleaseLevel(int nLevel)
 {
     DeleteFileEntries(m_pFileData[nLevel]->m_Head);
-
-    nlListContainer<void*>* fileData = m_pFileData[nLevel];
-    nlWalkList<ListEntry<void*>, ListContainerBase<void*, NewAdapter<ListEntry<void*> > > >(
-        fileData->m_Head,
-        fileData,
-        GetFileDataDeleteEntry());
-
-    fileData->m_Head = NULL;
-    fileData->m_Tail = NULL;
+    m_pFileData[nLevel]->Clear();
 
     m_pSkinData[nLevel]->Release();
     m_pModels[nLevel]->Release();
@@ -222,35 +182,8 @@ glModel* GLInventory::GetModel(unsigned long id)
 {
     for (int i = m_nLevel; i >= 0; i--)
     {
-        bool found;
         glModel** pResult;
-        AVLTreeEntry<unsigned long, glModel*>* node = m_pModels[i]->m_pItems->m_Root;
-
-        while (node != nullptr)
-        {
-            DefaultKeyCompare<unsigned long> compare;
-            int cmpResult = compare(node->key, id);
-
-            if (cmpResult == 0)
-            {
-                if (&pResult != nullptr)
-                {
-                    pResult = &node->value;
-                }
-                found = true;
-                goto check_found;
-            }
-            else if (cmpResult < 0)
-            {
-                node = (AVLTreeEntry<unsigned long, glModel*>*)node->node.left;
-            }
-            else
-            {
-                node = (AVLTreeEntry<unsigned long, glModel*>*)node->node.right;
-            }
-        }
-        found = false;
-    check_found:
+        bool found = m_pModels[i]->m_pItems->FindGet(id, &pResult);
         glModel* result;
         if (found)
         {
@@ -275,46 +208,8 @@ GLShadowVolume* GLInventory::GetShadowVolume(unsigned long id)
 {
     for (int i = m_nLevel; i >= 0; i--)
     {
-        bool found;
         GLShadowVolume** pResult;
-        AVLTreeEntry<unsigned long, GLShadowVolume*>* node = m_pShadowVolumes[i]->m_pItems->m_Root;
-
-        while (node != nullptr)
-        {
-            int cmpResult;
-            if (id == node->key)
-            {
-                cmpResult = 0;
-            }
-            else if (id < node->key)
-            {
-                cmpResult = -1;
-            }
-            else
-            {
-                cmpResult = 1;
-            }
-
-            if (cmpResult == 0)
-            {
-                if (&pResult != nullptr)
-                {
-                    pResult = &node->value;
-                }
-                found = true;
-                goto check_found;
-            }
-            else if (cmpResult < 0)
-            {
-                node = (AVLTreeEntry<unsigned long, GLShadowVolume*>*)node->node.left;
-            }
-            else
-            {
-                node = (AVLTreeEntry<unsigned long, GLShadowVolume*>*)node->node.right;
-            }
-        }
-        found = false;
-    check_found:
+        bool found = m_pShadowVolumes[i]->m_pItems->FindGet(id, &pResult);
         GLShadowVolume* result;
         if (found)
         {
@@ -421,46 +316,8 @@ GLVertexAnim* GLInventory::GetVertexAnim(unsigned long id)
 {
     for (int i = m_nLevel; i >= 0; i--)
     {
-        bool found;
         GLVertexAnim** pResult;
-        AVLTreeEntry<unsigned long, GLVertexAnim*>* node = m_pVertexAnims[i]->m_pItems->m_Root;
-
-        while (node != nullptr)
-        {
-            int cmpResult;
-            if (id == node->key)
-            {
-                cmpResult = 0;
-            }
-            else if (id < node->key)
-            {
-                cmpResult = -1;
-            }
-            else
-            {
-                cmpResult = 1;
-            }
-
-            if (cmpResult == 0)
-            {
-                if (&pResult != nullptr)
-                {
-                    pResult = &node->value;
-                }
-                found = true;
-                goto check_found;
-            }
-            else if (cmpResult < 0)
-            {
-                node = (AVLTreeEntry<unsigned long, GLVertexAnim*>*)node->node.left;
-            }
-            else
-            {
-                node = (AVLTreeEntry<unsigned long, GLVertexAnim*>*)node->node.right;
-            }
-        }
-        found = false;
-    check_found:
+        bool found = m_pVertexAnims[i]->m_pItems->FindGet(id, &pResult);
         GLVertexAnim* result;
         if (found)
         {
@@ -497,46 +354,8 @@ GLMaterialList* GLInventory::GetMaterialList(unsigned long id)
 {
     for (int i = m_nLevel; i >= 0; i--)
     {
-        bool found;
         GLMaterialList** pResult;
-        AVLTreeEntry<unsigned long, GLMaterialList*>* node = m_pMaterialLists[i]->m_pItems->m_Root;
-
-        while (node != nullptr)
-        {
-            int cmpResult;
-            if (id == node->key)
-            {
-                cmpResult = 0;
-            }
-            else if (id < node->key)
-            {
-                cmpResult = -1;
-            }
-            else
-            {
-                cmpResult = 1;
-            }
-
-            if (cmpResult == 0)
-            {
-                if (&pResult != nullptr)
-                {
-                    pResult = &node->value;
-                }
-                found = true;
-                goto check_found;
-            }
-            else if (cmpResult < 0)
-            {
-                node = (AVLTreeEntry<unsigned long, GLMaterialList*>*)node->node.left;
-            }
-            else
-            {
-                node = (AVLTreeEntry<unsigned long, GLMaterialList*>*)node->node.right;
-            }
-        }
-        found = false;
-    check_found:
+        bool found = m_pMaterialLists[i]->m_pItems->FindGet(id, &pResult);
         GLMaterialList* result;
         if (found)
         {
@@ -583,48 +402,8 @@ GLSkinMesh* GLInventory::MakeSkinMesh(unsigned long hashID)
         {
             for (int i = self->m_nLevel; i >= 0; i--)
             {
-                bool found;
                 nlChunk** pResult;
-                AVLTreeEntry<unsigned long, nlChunk*>* node = self->m_pSkinData[i]->m_pItems->m_Root;
-
-                while (node != nullptr)
-                {
-                    int cmpResult;
-
-                    if (id == node->key)
-                    {
-                        cmpResult = 0;
-                    }
-                    else if (id < node->key)
-                    {
-                        cmpResult = -1;
-                    }
-                    else
-                    {
-                        cmpResult = 1;
-                    }
-
-                    if (cmpResult == 0)
-                    {
-                        if (&pResult != nullptr)
-                        {
-                            pResult = &node->value;
-                        }
-                        found = true;
-                        goto check_found;
-                    }
-                    else if (cmpResult < 0)
-                    {
-                        node = (AVLTreeEntry<unsigned long, nlChunk*>*)node->node.left;
-                    }
-                    else
-                    {
-                        node = (AVLTreeEntry<unsigned long, nlChunk*>*)node->node.right;
-                    }
-                }
-
-                found = false;
-            check_found:
+                bool found = self->m_pSkinData[i]->m_pItems->FindGet(id, &pResult);
                 nlChunk* result = found ? *pResult : nullptr;
 
                 if (result != nullptr)
@@ -643,48 +422,8 @@ GLSkinMesh* GLInventory::MakeSkinMesh(unsigned long hashID)
         {
             for (int i = self->m_nLevel; i >= 0; i--)
             {
-                bool found;
                 glModel** pResult;
-                AVLTreeEntry<unsigned long, glModel*>* node = self->m_pModels[i]->m_pItems->m_Root;
-
-                while (node != nullptr)
-                {
-                    int cmpResult;
-
-                    if (id == node->key)
-                    {
-                        cmpResult = 0;
-                    }
-                    else if (id < node->key)
-                    {
-                        cmpResult = -1;
-                    }
-                    else
-                    {
-                        cmpResult = 1;
-                    }
-
-                    if (cmpResult == 0)
-                    {
-                        if (&pResult != nullptr)
-                        {
-                            pResult = &node->value;
-                        }
-                        found = true;
-                        goto check_found;
-                    }
-                    else if (cmpResult < 0)
-                    {
-                        node = (AVLTreeEntry<unsigned long, glModel*>*)node->node.left;
-                    }
-                    else
-                    {
-                        node = (AVLTreeEntry<unsigned long, glModel*>*)node->node.right;
-                    }
-                }
-
-                found = false;
-            check_found:
+                bool found = self->m_pModels[i]->m_pItems->FindGet(id, &pResult);
                 glModel* result = found ? *pResult : nullptr;
 
                 if (result != nullptr)

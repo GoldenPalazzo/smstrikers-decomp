@@ -1440,87 +1440,89 @@ void PowerupBase::CollisionCallback(PhysicsObject* pObjA, PhysicsObject* pObjB, 
         break;
     }
 
-    if (pCharacter == NULL)
-        goto check_event;
-    if (pCharacter->m_eClassType == GOALIE)
+    if (pCharacter != NULL)
     {
-        pObj->m_bShouldDestroy = true;
-        goto check_event;
-    }
-    pPlayerTarget = (cPlayer*)pCharacter;
-    if (((cFielder*)pCharacter)->mbWasHitByPowerupThisFrame)
-        return;
-    ((cFielder*)pCharacter)->mbWasHitByPowerupThisFrame = true;
-
-    {
-        ePowerUpType eType = pObj->m_eType;
-        if (eType == POWER_UP_BANANA)
+        if (pCharacter->m_eClassType == GOALIE)
         {
-            Event* pEvent = g_pEventManager->CreateValidEvent(0x2B, 0x30);
-            CollisionPlayerBananaData* pData = new ((u8*)pEvent + 0x10) CollisionPlayerBananaData();
-            pData->pPlayer = (cFielder*)pCharacter;
-            pData->pThrower = pObj->m_pThrower;
-            pData->nThrowerPadID = pObj->m_nThrowerPadID;
-            pData->v3CollisionLocation = v3Pos;
             pObj->m_bShouldDestroy = true;
-        }
-        else if (eType != POWER_UP_BOBOMB)
-        {
-            if (eType != POWER_UP_FREEZE_SHELL)
-            {
-                Event* pEvent = g_pEventManager->CreateValidEvent(0x29, 0x40);
-                CollisionPlayerShellData* pData = new ((u8*)pEvent + 0x10) CollisionPlayerShellData();
-                pData->pPlayer = (cFielder*)pCharacter;
-                pData->eSize = (int)pObj->meSize;
-                pData->pThrower = pObj->m_pThrower;
-                pData->nThrowerPadID = (u8)pObj->m_nThrowerPadID;
-                if (pObj->mbExploder)
-                {
-                    pData->bIsExploder = true;
-                }
-                else
-                {
-                    pData->bIsExploder = false;
-                }
-                pData->v3CollisionLocation = v3Pos;
-                pData->v3CollisionVelocity = pObj->m_v3Velocity;
-            }
-            else
-            {
-                Event* pEvent = g_pEventManager->CreateValidEvent(0x2A, 0x28);
-                CollisionPlayerFreezeData* pData = new ((u8*)pEvent + 0x10) CollisionPlayerFreezeData();
-                pData->pPlayer = (cFielder*)pCharacter;
-                pData->eSize = (int)pObj->meSize;
-                pData->pThrower = pObj->m_pThrower;
-                pData->nThrowerPadID = pObj->m_nThrowerPadID;
-            }
-            if (pObj->meSize != POWERUPSIZE_LARGE)
-            {
-                pObj->m_bShouldDestroy = true;
-            }
-            else
-            {
-                nlVector3 v3NewVelocity = pObj->m_v3Velocity;
-                nlPolar aSpeedOut;
-                nlCartesianToPolar(aSpeedOut, v3NewVelocity.x, v3NewVelocity.y);
-                v3NewVelocity.z = 0.5f * aSpeedOut.r;
-                pObj->m_v3Velocity = v3NewVelocity;
-                pObj->m_pPhysicsObject->SetLinearVelocity(v3NewVelocity);
-                pObj->m_pTarget = NULL;
-            }
         }
         else
         {
-            pObj->m_bShouldDestroy = true;
+            pPlayerTarget = (cPlayer*)pCharacter;
+            if (((cFielder*)pCharacter)->mbWasHitByPowerupThisFrame)
+                return;
+            ((cFielder*)pCharacter)->mbWasHitByPowerupThisFrame = true;
+
+            {
+                ePowerUpType eType = pObj->m_eType;
+                if (eType == POWER_UP_BANANA)
+                {
+                    Event* pEvent = g_pEventManager->CreateValidEvent(0x2B, 0x30);
+                    CollisionPlayerBananaData* pData = new ((u8*)pEvent + 0x10) CollisionPlayerBananaData();
+                    pData->pPlayer = (cFielder*)pCharacter;
+                    pData->pThrower = pObj->m_pThrower;
+                    pData->nThrowerPadID = pObj->m_nThrowerPadID;
+                    pData->v3CollisionLocation = v3Pos;
+                    pObj->m_bShouldDestroy = true;
+                }
+                else if (eType != POWER_UP_BOBOMB)
+                {
+                    if (eType != POWER_UP_FREEZE_SHELL)
+                    {
+                        Event* pEvent = g_pEventManager->CreateValidEvent(0x29, 0x40);
+                        CollisionPlayerShellData* pData = new ((u8*)pEvent + 0x10) CollisionPlayerShellData();
+                        pData->pPlayer = (cFielder*)pCharacter;
+                        pData->eSize = (int)pObj->meSize;
+                        pData->pThrower = pObj->m_pThrower;
+                        pData->nThrowerPadID = (u8)pObj->m_nThrowerPadID;
+                        if (pObj->mbExploder)
+                        {
+                            pData->bIsExploder = true;
+                        }
+                        else
+                        {
+                            pData->bIsExploder = false;
+                        }
+                        pData->v3CollisionLocation = v3Pos;
+                        pData->v3CollisionVelocity = pObj->m_v3Velocity;
+                    }
+                    else
+                    {
+                        Event* pEvent = g_pEventManager->CreateValidEvent(0x2A, 0x28);
+                        CollisionPlayerFreezeData* pData = new ((u8*)pEvent + 0x10) CollisionPlayerFreezeData();
+                        pData->pPlayer = (cFielder*)pCharacter;
+                        pData->eSize = (int)pObj->meSize;
+                        pData->pThrower = pObj->m_pThrower;
+                        pData->nThrowerPadID = pObj->m_nThrowerPadID;
+                    }
+                    if (pObj->meSize != POWERUPSIZE_LARGE)
+                    {
+                        pObj->m_bShouldDestroy = true;
+                    }
+                    else
+                    {
+                        nlVector3 v3NewVelocity = pObj->m_v3Velocity;
+                        nlPolar aSpeedOut;
+                        nlCartesianToPolar(aSpeedOut, v3NewVelocity.x, v3NewVelocity.y);
+                        v3NewVelocity.z = 0.5f * aSpeedOut.r;
+                        pObj->m_v3Velocity = v3NewVelocity;
+                        pObj->m_pPhysicsObject->SetLinearVelocity(v3NewVelocity);
+                        pObj->m_pTarget = NULL;
+                    }
+                }
+                else
+                {
+                    pObj->m_bShouldDestroy = true;
+                }
+            }
+
+            if (pObj->m_eType == POWER_UP_SPINY_SHELL)
+                pObj->m_bShouldDestroy = false;
+            if (((cFielder*)pCharacter)->IsInvincible())
+                pObj->m_bShouldDestroy = true;
         }
     }
 
-    if (pObj->m_eType == POWER_UP_SPINY_SHELL)
-        pObj->m_bShouldDestroy = false;
-    if (((cFielder*)pCharacter)->IsInvincible())
-        pObj->m_bShouldDestroy = true;
-
-check_event:
     if (pPlayerTarget != NULL)
     {
         Event* pEvent = g_pEventManager->CreateValidEvent(0x1E, 0x24);
@@ -1743,6 +1745,20 @@ void PowerupBase::DecrementTimers(float fDeltaT)
     mtNoHitTimer.Countdown(fDeltaT, 0.0f);
 }
 
+static inline void UnregisterPowerup(unsigned long hashID)
+{
+    for (int i = 0; i < 25; i++)
+    {
+        if (hashID == powerupRegistry.registry[i].hashId)
+        {
+            powerupRegistry.registry[i].hashId = 0;
+            return;
+        }
+    }
+
+    nlBreak();
+}
+
 /**
  * Offset/Address/Size: 0x28DC | 0x8005D1C8 | size: 0xA98
  */
@@ -1762,267 +1778,262 @@ void PowerupBase::Destroy(bool bSilent)
     EffectsGroup* pExplosionGroup;
     EffectsGroup* pGroundGroup;
 
-    if (!bSilent)
+    if (!bSilent && (m_eType == POWER_UP_BOBOMB || mbExploder))
     {
-        if (m_eType == POWER_UP_BOBOMB || mbExploder)
+        if (!g_pGame->mbCaptainShotToScoreOn)
         {
-            if (!g_pGame->mbCaptainShotToScoreOn)
+            PowerupSound bobombExplosions[2] = { PWRUP_SOUND_HIT, PWRUP_SOUND_EXPLODE };
+            switch (meSize)
             {
-                PowerupSound bobombExplosions[2] = { PWRUP_SOUND_HIT, PWRUP_SOUND_EXPLODE };
-                switch (meSize)
+            case POWERUPSIZE_LARGE:
+            {
+                pExplosionGroup = fxGetGroup("bobomb_explode_big");
+                pGroundGroup = fxGetGroup("bobomb_explode_ground_big");
+                if (bSilent)
+                    break;
+
+                PowerupSound pwrSnd;
+                unsigned long sndType;
+                PhysicsObject* pPhysObj = m_pPhysicsObject;
+                float fVol = g_pGame->m_pGameTweaks->fPowerupLargeSizeVolCoeff;
+                pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
+
+                if (!Audio::IsInited())
                 {
-                case POWERUPSIZE_LARGE:
+                    Audio::GetSndIDError();
+                }
+                else
                 {
-                    pExplosionGroup = fxGetGroup("bobomb_explode_big");
-                    pGroundGroup = fxGetGroup("bobomb_explode_ground_big");
-                    if (bSilent)
+                    Audio::SoundAttributes attrs;
+                    attrs.Init();
+
+                    switch (pwrSnd)
+                    {
+                    case PWRUP_SOUND_ACQUIRE:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndAcquire;
                         break;
-
-                    PowerupSound pwrSnd;
-                    unsigned long sndType;
-                    PhysicsObject* pPhysObj = m_pPhysicsObject;
-                    float fVol = g_pGame->m_pGameTweaks->fPowerupLargeSizeVolCoeff;
-                    pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
-
-                    if (!Audio::IsInited())
-                    {
-                        Audio::GetSndIDError();
+                    case PWRUP_SOUND_ACTIVATE:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndActivate;
+                        break;
+                    case PWRUP_SOUND_IN_EFFECT:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndInEffect;
+                        break;
+                    case PWRUP_SOUND_HIT:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndHit;
+                        break;
+                    case PWRUP_SOUND_BOUNCE_WALL:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndBounceWall;
+                        break;
+                    case PWRUP_SOUND_BOUNCE_GROUND:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndBounceGround;
+                        break;
+                    case PWRUP_SOUND_EXPLODE:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndExplode;
+                        break;
+                    case PWRUP_SOUND_END:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndEnd;
+                        break;
                     }
-                    else
+
+                    if (sndType != 0xFFFFFFFF)
                     {
-                        Audio::SoundAttributes attrs;
-                        attrs.Init();
-
-                        switch (pwrSnd)
+                        if (pwrSnd == PWRUP_SOUND_ACQUIRE)
                         {
-                        case PWRUP_SOUND_ACQUIRE:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndAcquire;
-                            break;
-                        case PWRUP_SOUND_ACTIVATE:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndActivate;
-                            break;
-                        case PWRUP_SOUND_IN_EFFECT:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndInEffect;
-                            break;
-                        case PWRUP_SOUND_HIT:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndHit;
-                            break;
-                        case PWRUP_SOUND_BOUNCE_WALL:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndBounceWall;
-                            break;
-                        case PWRUP_SOUND_BOUNCE_GROUND:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndBounceGround;
-                            break;
-                        case PWRUP_SOUND_EXPLODE:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndExplode;
-                            break;
-                        case PWRUP_SOUND_END:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndEnd;
-                            break;
+                            attrs.SetSoundType(sndType, false);
                         }
-
-                        if (sndType != 0xFFFFFFFF)
+                        else
                         {
-                            if (pwrSnd == PWRUP_SOUND_ACQUIRE)
+                            attrs.SetSoundType(sndType, true);
+                            if ((pwrSnd == PWRUP_SOUND_IN_EFFECT) || (pwrSnd == PWRUP_SOUND_ACTIVATE))
                             {
-                                attrs.SetSoundType(sndType, false);
+                                attrs.UsePhysObj(pPhysObj);
+                                attrs.mf_ReturnEmitterOnPlay = true;
                             }
                             else
                             {
-                                attrs.SetSoundType(sndType, true);
-                                if ((pwrSnd == PWRUP_SOUND_IN_EFFECT) || (pwrSnd == PWRUP_SOUND_ACTIVATE))
-                                {
-                                    attrs.UsePhysObj(pPhysObj);
-                                    attrs.mf_ReturnEmitterOnPlay = true;
-                                }
-                                else
-                                {
-                                    attrs.UseStationaryPosVector(pPhysObj->GetPosition());
-                                }
+                                attrs.UseStationaryPosVector(pPhysObj->GetPosition());
                             }
-
-                            ApplyPowerupVolume(attrs, sndType, fVol);
-                            Audio::gPowerupSFX.Play(attrs);
                         }
+
+                        ApplyPowerupVolume(attrs, sndType, fVol);
+                        Audio::gPowerupSFX.Play(attrs);
                     }
-                    break;
                 }
-                case POWERUPSIZE_MEDIUM:
+                break;
+            }
+            case POWERUPSIZE_MEDIUM:
+            {
+                pExplosionGroup = fxGetGroup("bobomb_explode_med");
+                pGroundGroup = fxGetGroup("bobomb_explode_ground_med");
+                if (bSilent)
+                    break;
+
+                PhysicsObject* pPhysObj = m_pPhysicsObject;
+                unsigned long sndType;
+                float fVol = g_pGame->m_pGameTweaks->fPowerupMedSizeVolCoeff;
+                PowerupSound pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
+
+                if (!Audio::IsInited())
                 {
-                    pExplosionGroup = fxGetGroup("bobomb_explode_med");
-                    pGroundGroup = fxGetGroup("bobomb_explode_ground_med");
-                    if (bSilent)
+                    Audio::GetSndIDError();
+                }
+                else
+                {
+                    Audio::SoundAttributes attrs;
+                    attrs.Init();
+
+                    switch (pwrSnd)
+                    {
+                    case PWRUP_SOUND_ACQUIRE:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndAcquire;
                         break;
-
-                    PhysicsObject* pPhysObj = m_pPhysicsObject;
-                    unsigned long sndType;
-                    float fVol = g_pGame->m_pGameTweaks->fPowerupMedSizeVolCoeff;
-                    PowerupSound pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
-
-                    if (!Audio::IsInited())
-                    {
-                        Audio::GetSndIDError();
+                    case PWRUP_SOUND_ACTIVATE:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndActivate;
+                        break;
+                    case PWRUP_SOUND_IN_EFFECT:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndInEffect;
+                        break;
+                    case PWRUP_SOUND_HIT:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndHit;
+                        break;
+                    case PWRUP_SOUND_BOUNCE_WALL:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndBounceWall;
+                        break;
+                    case PWRUP_SOUND_BOUNCE_GROUND:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndBounceGround;
+                        break;
+                    case PWRUP_SOUND_EXPLODE:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndExplode;
+                        break;
+                    case PWRUP_SOUND_END:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndEnd;
+                        break;
                     }
-                    else
+
+                    if (sndType != 0xFFFFFFFF)
                     {
-                        Audio::SoundAttributes attrs;
-                        attrs.Init();
-
-                        switch (pwrSnd)
+                        if (pwrSnd == PWRUP_SOUND_ACQUIRE)
                         {
-                        case PWRUP_SOUND_ACQUIRE:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndAcquire;
-                            break;
-                        case PWRUP_SOUND_ACTIVATE:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndActivate;
-                            break;
-                        case PWRUP_SOUND_IN_EFFECT:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndInEffect;
-                            break;
-                        case PWRUP_SOUND_HIT:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndHit;
-                            break;
-                        case PWRUP_SOUND_BOUNCE_WALL:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndBounceWall;
-                            break;
-                        case PWRUP_SOUND_BOUNCE_GROUND:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndBounceGround;
-                            break;
-                        case PWRUP_SOUND_EXPLODE:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndExplode;
-                            break;
-                        case PWRUP_SOUND_END:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndEnd;
-                            break;
+                            attrs.SetSoundType(sndType, false);
                         }
-
-                        if (sndType != 0xFFFFFFFF)
+                        else
                         {
-                            if (pwrSnd == PWRUP_SOUND_ACQUIRE)
+                            attrs.SetSoundType(sndType, true);
+                            if ((pwrSnd == PWRUP_SOUND_IN_EFFECT) || (pwrSnd == PWRUP_SOUND_ACTIVATE))
                             {
-                                attrs.SetSoundType(sndType, false);
+                                attrs.UsePhysObj(pPhysObj);
+                                attrs.mf_ReturnEmitterOnPlay = true;
                             }
                             else
                             {
-                                attrs.SetSoundType(sndType, true);
-                                if ((pwrSnd == PWRUP_SOUND_IN_EFFECT) || (pwrSnd == PWRUP_SOUND_ACTIVATE))
-                                {
-                                    attrs.UsePhysObj(pPhysObj);
-                                    attrs.mf_ReturnEmitterOnPlay = true;
-                                }
-                                else
-                                {
-                                    attrs.UseStationaryPosVector(pPhysObj->GetPosition());
-                                }
+                                attrs.UseStationaryPosVector(pPhysObj->GetPosition());
                             }
-
-                            ApplyPowerupVolume(attrs, sndType, fVol);
-                            Audio::gPowerupSFX.Play(attrs);
                         }
+
+                        ApplyPowerupVolume(attrs, sndType, fVol);
+                        Audio::gPowerupSFX.Play(attrs);
                     }
-                    break;
                 }
-                case POWERUPSIZE_SMALL:
+                break;
+            }
+            case POWERUPSIZE_SMALL:
+            {
+                pExplosionGroup = fxGetGroup("bobomb_explode_small");
+                pGroundGroup = fxGetGroup("bobomb_explode_ground_small");
+                if (bSilent)
+                    break;
+
+                PhysicsObject* pPhysObj = m_pPhysicsObject;
+                unsigned long sndType;
+                float fVol = g_pGame->m_pGameTweaks->fPowerupSmallSizeVolCoeff;
+                PowerupSound pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
+
+                if (!Audio::IsInited())
                 {
-                    pExplosionGroup = fxGetGroup("bobomb_explode_small");
-                    pGroundGroup = fxGetGroup("bobomb_explode_ground_small");
-                    if (bSilent)
+                    Audio::GetSndIDError();
+                }
+                else
+                {
+                    Audio::SoundAttributes attrs;
+                    attrs.Init();
+
+                    switch (pwrSnd)
+                    {
+                    case PWRUP_SOUND_ACQUIRE:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndAcquire;
                         break;
-
-                    PhysicsObject* pPhysObj = m_pPhysicsObject;
-                    unsigned long sndType;
-                    float fVol = g_pGame->m_pGameTweaks->fPowerupSmallSizeVolCoeff;
-                    PowerupSound pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
-
-                    if (!Audio::IsInited())
-                    {
-                        Audio::GetSndIDError();
+                    case PWRUP_SOUND_ACTIVATE:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndActivate;
+                        break;
+                    case PWRUP_SOUND_IN_EFFECT:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndInEffect;
+                        break;
+                    case PWRUP_SOUND_HIT:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndHit;
+                        break;
+                    case PWRUP_SOUND_BOUNCE_WALL:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndBounceWall;
+                        break;
+                    case PWRUP_SOUND_BOUNCE_GROUND:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndBounceGround;
+                        break;
+                    case PWRUP_SOUND_EXPLODE:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndExplode;
+                        break;
+                    case PWRUP_SOUND_END:
+                        sndType = powerupSounds[POWER_UP_BOBOMB].sndEnd;
+                        break;
                     }
-                    else
+
+                    if (sndType != 0xFFFFFFFF)
                     {
-                        Audio::SoundAttributes attrs;
-                        attrs.Init();
-
-                        switch (pwrSnd)
+                        if (pwrSnd == PWRUP_SOUND_ACQUIRE)
                         {
-                        case PWRUP_SOUND_ACQUIRE:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndAcquire;
-                            break;
-                        case PWRUP_SOUND_ACTIVATE:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndActivate;
-                            break;
-                        case PWRUP_SOUND_IN_EFFECT:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndInEffect;
-                            break;
-                        case PWRUP_SOUND_HIT:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndHit;
-                            break;
-                        case PWRUP_SOUND_BOUNCE_WALL:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndBounceWall;
-                            break;
-                        case PWRUP_SOUND_BOUNCE_GROUND:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndBounceGround;
-                            break;
-                        case PWRUP_SOUND_EXPLODE:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndExplode;
-                            break;
-                        case PWRUP_SOUND_END:
-                            sndType = powerupSounds[POWER_UP_BOBOMB].sndEnd;
-                            break;
+                            attrs.SetSoundType(sndType, false);
                         }
-
-                        if (sndType != 0xFFFFFFFF)
+                        else
                         {
-                            if (pwrSnd == PWRUP_SOUND_ACQUIRE)
+                            attrs.SetSoundType(sndType, true);
+                            if ((pwrSnd == PWRUP_SOUND_IN_EFFECT) || (pwrSnd == PWRUP_SOUND_ACTIVATE))
                             {
-                                attrs.SetSoundType(sndType, false);
+                                attrs.UsePhysObj(pPhysObj);
+                                attrs.mf_ReturnEmitterOnPlay = true;
                             }
                             else
                             {
-                                attrs.SetSoundType(sndType, true);
-                                if ((pwrSnd == PWRUP_SOUND_IN_EFFECT) || (pwrSnd == PWRUP_SOUND_ACTIVATE))
-                                {
-                                    attrs.UsePhysObj(pPhysObj);
-                                    attrs.mf_ReturnEmitterOnPlay = true;
-                                }
-                                else
-                                {
-                                    attrs.UseStationaryPosVector(pPhysObj->GetPosition());
-                                }
+                                attrs.UseStationaryPosVector(pPhysObj->GetPosition());
                             }
-
-                            ApplyPowerupVolume(attrs, sndType, fVol);
-                            Audio::gPowerupSFX.Play(attrs);
                         }
-                    }
-                    break;
-                }
-                }
 
-                Audio::gStadGenSFX.Play((Audio::eWorldSFX)0xCE, 100.0f, -1.0f, true, 100.0f);
-                EmissionController* pControl = EmissionManager::Create(pExplosionGroup, 0);
-                pControl->SetPosition(m_pPhysicsObject->GetPosition());
-                if ((m_v3Position.z - ((PhysicsSphere*)m_pPhysicsObject)->GetRadius()) < 1.0f)
-                {
-                    EmissionController* pControl = EmissionManager::Create(pGroundGroup, 0);
-                    pControl->SetPosition(m_pPhysicsObject->GetPosition());
+                        ApplyPowerupVolume(attrs, sndType, fVol);
+                        Audio::gPowerupSFX.Play(attrs);
+                    }
                 }
-                FireCameraRumbleFilter(0.0f, 0.2f);
+                break;
+            }
             }
 
-            Event* pEvent = g_pEventManager->CreateValidEvent(0x2C, 0x34);
-            CollisionBobombDataLayout* pEventData = (CollisionBobombDataLayout*)new ((u8*)pEvent + 0x10) CollisionBobombData();
-            pEventData->v3ExplosionLocation = m_v3Position;
-            pEventData->fExplosionRadius = g_pGame->GetGameTweaks()->fPowerupExplosionRadius * (float)meSize
-                                         + g_pGame->GetGameTweaks()->fPowerupExplosionRadius;
-            pEventData->pThrower = m_pThrower;
-            pEventData->nThrowerPadID = m_nThrowerPadID;
-            pEventData->bIsFreezeBomb = (m_eType == POWER_UP_FREEZE_SHELL);
-            goto cleanup;
+            Audio::gStadGenSFX.Play((Audio::eWorldSFX)0xCE, 100.0f, -1.0f, true, 100.0f);
+            EmissionController* pControl = EmissionManager::Create(pExplosionGroup, 0);
+            pControl->SetPosition(m_pPhysicsObject->GetPosition());
+            if ((m_v3Position.z - ((PhysicsSphere*)m_pPhysicsObject)->GetRadius()) < 1.0f)
+            {
+                EmissionController* pControl = EmissionManager::Create(pGroundGroup, 0);
+                pControl->SetPosition(m_pPhysicsObject->GetPosition());
+            }
+            FireCameraRumbleFilter(0.0f, 0.2f);
         }
-    }
 
-    if (!bSilent)
+        Event* pEvent = g_pEventManager->CreateValidEvent(0x2C, 0x34);
+        CollisionBobombDataLayout* pEventData = (CollisionBobombDataLayout*)new ((u8*)pEvent + 0x10) CollisionBobombData();
+        pEventData->v3ExplosionLocation = m_v3Position;
+        pEventData->fExplosionRadius = g_pGame->GetGameTweaks()->fPowerupExplosionRadius * (float)meSize
+                                     + g_pGame->GetGameTweaks()->fPowerupExplosionRadius;
+        pEventData->pThrower = m_pThrower;
+        pEventData->nThrowerPadID = m_nThrowerPadID;
+        pEventData->bIsFreezeBomb = (m_eType == POWER_UP_FREEZE_SHELL);
+    }
+    else if (!bSilent)
     {
         switch (meSize)
         {
@@ -2144,11 +2155,10 @@ void PowerupBase::Destroy(bool bSilent)
             break;
         }
         default:
-            goto cleanup;
+            break;
         }
     }
 
-cleanup:
     u32 voiceID = m_uVoiceID;
     if (voiceID != 0)
     {
@@ -2168,20 +2178,8 @@ cleanup:
         m_pBlurHandler = NULL;
     }
 
-    int i;
-    unsigned long hashID = m_pDrawableObj->GetHashID();
-    for (i = 0; i < 25; i++)
-    {
-        if (hashID == powerupRegistry.registry[i].hashId)
-        {
-            powerupRegistry.registry[i].hashId = 0;
-            goto found;
-        }
-    }
+    UnregisterPowerup(m_pDrawableObj->GetHashID());
 
-    nlBreak();
-
-found:
     delete this;
 }
 /**
@@ -2333,28 +2331,26 @@ static inline void RegisterPowerup(unsigned long hashID, PowerupBase* powerup)
     nlBreak();
 }
 
+static inline DrawableObject* AcquirePowerupModel(int type)
+{
+    for (int i = 0; i < 25; i++)
+    {
+        if (powerupModelPool.mFree[type][i])
+        {
+            powerupModelPool.mFree[type][i] = false;
+            return powerupModelPool.mObjs[type][i];
+        }
+    }
+
+    return NULL;
+}
+
 /**
  * Offset/Address/Size: 0x2360 | 0x8005CC4C | size: 0x16C
  */
 void PowerupBase::Init(cFielder* pFielder, Bowser* pBowser)
 {
-    int i;
-    DrawableObject* pObj;
-    int type = m_eType;
-
-    for (i = 0; i < 25; i++)
-    {
-        if (powerupModelPool.mFree[type][i])
-        {
-            powerupModelPool.mFree[type][i] = false;
-            pObj = powerupModelPool.mObjs[type][i];
-            goto found1;
-        }
-    }
-    pObj = NULL;
-
-found1:
-    m_pDrawableObj = pObj;
+    m_pDrawableObj = AcquirePowerupModel(m_eType);
 
     {
         DrawableObject* pD = m_pDrawableObj;
@@ -3168,17 +3164,9 @@ void Bobomb::Update(float dt)
  */
 void Bobomb::ThrowAt(cFielder* pThrower, Bowser* pBowser)
 {
-    if (gBobombAnticipationVoiceID == -1)
-    {
-        if (Audio::IsSFXPlaying(gBobombAnticipationVoiceID))
-        {
-            goto skip_anticipation;
-        }
-    }
+    if (gBobombAnticipationVoiceID != -1 || !Audio::IsSFXPlaying(gBobombAnticipationVoiceID))
+        gBobombAnticipationVoiceID = Audio::gCrowdSFX.Play((Audio::eWorldSFX)0x9E, 100.0f, -1.0f, true, 100.0f);
 
-    gBobombAnticipationVoiceID = Audio::gCrowdSFX.Play((Audio::eWorldSFX)0x9E, 100.0f, -1.0f, true, 100.0f);
-
-skip_anticipation:
     if (m_pTarget->m_pTeam == g_pTeams[1])
     {
         Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_YEAH_SMALL, 100.0f, -1.0f, 0, 0.0f);

@@ -622,58 +622,7 @@ void AudioStreamTrack::StreamTrack::StopQStream(QUEUED_STREAM* pQueuedStream)
 void AudioStreamTrack::StreamTrack::StopStream(GCAudioStreaming::StereoAudioStream* pStream, bool TrackOwns)
 {
     pStream->Stop();
-
-    typedef TrackManagerBase::FadeManager::STREAM_FADE_CTRL FadeCtrl;
-    typedef DLListEntry<FadeCtrl> FadeEntry;
-    typedef DLListEntry<GCAudioStreaming::StereoAudioStream*> StreamEntry;
-
-    TrackManagerBase* delMgr;
-    StreamEntry* entry;
-    TrackManagerBase& mgr = m_TrackMgr;
-    FadeEntry* fadeEntry;
-    FadeEntry* fadeHead;
-    FadeEntry* fadeIter = nlDLRingGetStart(mgr.m_FadeMgr.m_Fades.m_Head);
-    fadeHead = mgr.m_FadeMgr.m_Fades.m_Head;
-    FadeCtrl* fadeCtrl;
-
-    while (fadeIter != NULL)
-    {
-        if (fadeIter->entry.pStream == pStream)
-        {
-            fadeCtrl = &fadeIter->entry;
-            goto fade_found;
-        }
-
-        if (nlDLRingIsEnd(fadeHead, fadeIter) || fadeIter == NULL)
-            fadeIter = NULL;
-        else
-            fadeIter = fadeIter->m_next;
-    }
-    fadeCtrl = NULL;
-fade_found:
-
-    if (fadeCtrl != NULL)
-    {
-        fadeEntry = (FadeEntry*)((char*)fadeCtrl - 8);
-        nlDLRingIsEnd(mgr.m_FadeMgr.m_Fades.m_Head, fadeEntry);
-        nlDLRingRemove(&mgr.m_FadeMgr.m_Fades.m_Head, fadeEntry);
-
-        mgr.m_FadeMgr.m_Fades.DeleteEntry(fadeEntry);
-    }
-
-    if (TrackOwns)
-    {
-        delMgr = &m_TrackMgr;
-        entry = NULL;
-        delMgr->m_StreamDeleteList.m_Allocator.Allocate(entry);
-        if (entry != NULL)
-        {
-            entry->m_next = NULL;
-            entry->m_prev = NULL;
-            entry->entry = pStream;
-        }
-        delMgr->AddDeleteEntry(entry);
-    }
+    ReleaseStream(pStream, TrackOwns);
 }
 
 /**

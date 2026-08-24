@@ -11,6 +11,10 @@ public:
     char* NextToken(bool bToLower);
     char* NextTokenOnLine(bool bToLower);
     bool AdvanceLine();
+    bool SkipToEOL();
+    bool AdvanceEnd();
+    bool NextChar();
+    bool IsWhitespace(char nCharacter);
 
     /* 0x000 */ char m_TokenBuffer[5][256];
     /* 0x500 */ char* m_CurrPos;

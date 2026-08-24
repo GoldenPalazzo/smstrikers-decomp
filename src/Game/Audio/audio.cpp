@@ -147,7 +147,7 @@ bool g_bHomeTeamHasJustScored = false;
 /**
  * Offset/Address/Size: 0x4C18 | 0x8014112C | size: 0x100
  */
-void SoundAttributes::Init()
+void Audio::SoundAttributes::Init()
 {
     me_ClassType = 0;
     mu_Type = -1;
@@ -204,7 +204,7 @@ void SoundAttributes::Init()
 /**
  * Offset/Address/Size: 0x4C0C | 0x80141120 | size: 0xC
  */
-void SoundAttributes::SetSoundType(unsigned long soundType, bool bIs3D)
+void Audio::SoundAttributes::SetSoundType(unsigned long soundType, bool bIs3D)
 {
     mu_Type = soundType;
     mb_Is3D = bIs3D;
@@ -213,7 +213,7 @@ void SoundAttributes::SetSoundType(unsigned long soundType, bool bIs3D)
 /**
  * Offset/Address/Size: 0x4BF8 | 0x8014110C | size: 0x14
  */
-void SoundAttributes::UsePhysObj(PhysicsObject* obj)
+void Audio::SoundAttributes::UsePhysObj(PhysicsObject* obj)
 {
     mp_PhysObj = obj;
     posUpdateMethod = PHYSOBJ;
@@ -223,10 +223,8 @@ void SoundAttributes::UsePhysObj(PhysicsObject* obj)
 /**
  * Offset/Address/Size: 0x4BDC | 0x801410F0 | size: 0x1C
  */
-void SoundAttributes::UseVectorPtrs(const nlVector3* v1, const nlVector3* v2)
+void Audio::SoundAttributes::UseVectorPtrs(const nlVector3* v1, const nlVector3* v2)
 {
-    // *(const nlVector3**)&m_unk_0x44 = v1;
-    // *(const nlVector3**)&m_unk_0x50 = v2;
     pos.pvPos = v1;
     dir.pvDir = v2;
     posUpdateMethod = PTRS_TO_VECTORS;
@@ -236,7 +234,7 @@ void SoundAttributes::UseVectorPtrs(const nlVector3* v1, const nlVector3* v2)
 /**
  * Offset/Address/Size: 0x4B98 | 0x801410AC | size: 0x44
  */
-void SoundAttributes::UseVectors(const nlVector3& p, const nlVector3& d)
+void Audio::SoundAttributes::UseVectors(const nlVector3& p, const nlVector3& d)
 {
     pos.vPos = p;
     dir.vDir = d;
@@ -247,7 +245,7 @@ void SoundAttributes::UseVectors(const nlVector3& p, const nlVector3& d)
 /**
  * Offset/Address/Size: 0x4B6C | 0x80141080 | size: 0x2C
  */
-void SoundAttributes::UseStationaryPosVector(const nlVector3& position)
+void Audio::SoundAttributes::UseStationaryPosVector(const nlVector3& position)
 {
     pos.vPos = position;
     posUpdateMethod = VECTORS;
@@ -1837,9 +1835,7 @@ int AddDelayedSFX(const SoundAttributes& sfxData, unsigned long uSFXID, float vo
         return -1;
     }
 
-    if (uSFXID == (unsigned long)-1)
-        goto error;
-
+    if (uSFXID != (unsigned long)-1)
     {
         int slot = -1;
         for (int i = 0; i < 15; i++)
@@ -1868,35 +1864,34 @@ int AddDelayedSFX(const SoundAttributes& sfxData, unsigned long uSFXID, float vo
             slot = minIndex;
         }
 
-        if (slot < 0)
-            goto error;
-
-        gDelayedSFX[slot].Init();
-        gDelayedSFX[slot] = sfxData;
-
-        if (pOwnerSFX != NULL)
+        if (slot >= 0)
         {
-            gDelayedSFX[slot].mp_OwnerSFX = pOwnerSFX;
-        }
+            gDelayedSFX[slot].Init();
+            gDelayedSFX[slot] = sfxData;
 
-        if (sfxData.mf_CutoffTime >= 0.0f)
-        {
-            gDelayedSFX[slot].mb_HasCutoff = true;
-        }
+            if (pOwnerSFX != NULL)
+            {
+                gDelayedSFX[slot].mp_OwnerSFX = pOwnerSFX;
+            }
 
-        if (g_pGame != NULL)
-        {
-            gDelayedSFX[slot].mf_DebugTimer = g_pGame->GetGameTime();
-        }
-        else
-        {
-            gDelayedSFX[slot].mf_DebugTimer = g_fAudioTimer;
-        }
+            if (sfxData.mf_CutoffTime >= 0.0f)
+            {
+                gDelayedSFX[slot].mb_HasCutoff = true;
+            }
 
-        return uSFXID;
+            if (g_pGame != NULL)
+            {
+                gDelayedSFX[slot].mf_DebugTimer = g_pGame->GetGameTime();
+            }
+            else
+            {
+                gDelayedSFX[slot].mf_DebugTimer = g_fAudioTimer;
+            }
+
+            return uSFXID;
+        }
     }
 
-error:
     return -1;
 }
 
@@ -2217,7 +2212,7 @@ static inline void Update3DSFXListenerPos();
 /**
  * Offset/Address/Size: 0x1FD0 | 0x8013E4E4 | size: 0x354
  */
-void Update(float fDeltaT)
+void Audio::Update(float fDeltaT)
 {
     if (::g_bAudioInitialized == false)
     {
@@ -3358,35 +3353,33 @@ void FadeFilter(float currentVal, float fadeToVal, float fadeDuration, float fad
     if (fadeDuration <= 0.0f)
     {
         stepSize = volDiff;
-        if (0.0f != fadeTimeStart)
+        if (0.0f == fadeTimeStart)
         {
-            goto createFade;
-        }
-        if (0.0f == fadeToVal)
-        {
-            if (!gbFilterOn)
+            if (0.0f == fadeToVal)
             {
-                return;
+                if (!gbFilterOn)
+                {
+                    return;
+                }
+                ActivateFilterOnAllCurrentSFXInl(false);
+                SetFilterFreqOnAllCurrentSFXInl(0);
             }
-            ActivateFilterOnAllCurrentSFXInl(false);
-            SetFilterFreqOnAllCurrentSFXInl(0);
-        }
-        else
-        {
-            if (gbFilterOn)
+            else
             {
-                return;
+                if (gbFilterOn)
+                {
+                    return;
+                }
+                ActivateFilterOnAllCurrentSFXInl(true);
+                SetFilterFreqOnAllCurrentSFXInl(0x3FFF);
             }
-            ActivateFilterOnAllCurrentSFXInl(true);
-            SetFilterFreqOnAllCurrentSFXInl(0x3FFF);
+            return;
         }
-        return;
     }
     else
     {
         stepSize = volDiff / fadeDuration;
     }
-createFade:
     AddFilterFadeData(currentVal, stepSize, fadeDuration, fadeToVal, fadeTimeStart);
 }
 
@@ -3505,46 +3498,44 @@ void PitchBend(float currentVal, float fadeToVal, float fadeDuration, float fade
     if (fadeDuration <= 0.0f)
     {
         fadePerFrame = diff;
-        if (0.0f != fadeTimeStart)
+        if (0.0f == fadeTimeStart)
         {
-            goto createFade;
-        }
-        if (1.0f == fadeToVal)
-        {
-            if (!gbPitchBent)
+            if (1.0f == fadeToVal)
             {
-                return;
-            }
-            if (g_pGame != NULL)
-            {
-                SetPitchBendOnAllDialogueSFXInl(0x2000);
-            }
-            gbPitchBent = false;
-        }
-        else
-        {
-            if (gbPitchBent)
-            {
-                return;
-            }
-            cGame* pGame = g_pGame;
-            int pitchBend = ApplyDialoguePitchFromTweaks(pGame);
-            if ((unsigned short)pitchBend != 0x2000)
-            {
-                gbPitchBent = true;
+                if (!gbPitchBent)
+                {
+                    return;
+                }
+                if (g_pGame != NULL)
+                {
+                    SetPitchBendOnAllDialogueSFXInl(0x2000);
+                }
+                gbPitchBent = false;
             }
             else
             {
-                gbPitchBent = false;
+                if (gbPitchBent)
+                {
+                    return;
+                }
+                cGame* pGame = g_pGame;
+                int pitchBend = ApplyDialoguePitchFromTweaks(pGame);
+                if ((unsigned short)pitchBend != 0x2000)
+                {
+                    gbPitchBent = true;
+                }
+                else
+                {
+                    gbPitchBent = false;
+                }
             }
+            return;
         }
-        return;
     }
     else
     {
         fadePerFrame = diff / fadeDuration;
     }
-createFade:
     AddPitchBendFadeData(currentVal, fadePerFrame, fadeDuration, fadeToVal, fadeTimeStart);
 }
 
@@ -3701,7 +3692,7 @@ static void AddFilterFadeData(float currentVal, float fadeStepSize, float fadeDu
 /**
  * Offset/Address/Size: 0x22C | 0x8013C740 | size: 0x14
  */
-float MasterVolume::GetVolume(MasterVolume::VOLUME_GROUP group)
+float Audio::MasterVolume::GetVolume(MasterVolume::VOLUME_GROUP group)
 {
     return gfVolumeGroups[group];
 }
@@ -3709,7 +3700,7 @@ float MasterVolume::GetVolume(MasterVolume::VOLUME_GROUP group)
 /**
  * Offset/Address/Size: 0x218 | 0x8013C72C | size: 0x14
  */
-void MasterVolume::SetVolume(MasterVolume::VOLUME_GROUP group, float volume)
+void Audio::MasterVolume::SetVolume(MasterVolume::VOLUME_GROUP group, float volume)
 {
     gfVolumeGroups[group] = volume;
 }
@@ -3717,7 +3708,7 @@ void MasterVolume::SetVolume(MasterVolume::VOLUME_GROUP group, float volume)
 /**
  * Offset/Address/Size: 0x10 | 0x8013C524 | size: 0x208
  */
-void MasterVolume::SetVoiceVolume(float volume, int time)
+void Audio::MasterVolume::SetVoiceVolume(float volume, int time)
 {
     Audio::SetVolGroupVolume(5, volume * gfVolumeGroups[8], time);
     Audio::SetVolGroupVolume(6, volume * gfVolumeGroups[9], time);
@@ -3741,7 +3732,7 @@ void MasterVolume::SetVoiceVolume(float volume, int time)
 /**
  * Offset/Address/Size: 0x0 | 0x8013C514 | size: 0x10
  */
-float MasterVolume::GetVoiceVolume()
+float Audio::MasterVolume::GetVoiceVolume()
 {
     return gfVolumeGroups[3];
 }

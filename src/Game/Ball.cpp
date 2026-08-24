@@ -979,54 +979,56 @@ bool cBall::GetInNet(int& nSide)
 {
     cPlayer* goalie;
 
-    if (m_pOwner != NULL)
+    do
     {
-        if (m_pOwner->m_eClassType != GOALIE)
+        if (m_pOwner != NULL)
         {
-            goto false_exit;
-        }
-        if (m_pOwner != NULL && m_pOwner->m_eClassType == GOALIE)
-        {
-            goalie = m_pOwner;
-        }
-        else
-        {
-            goalie = NULL;
-        }
-        if (goalie->m_pPhysicsCharacter->m_CanCollidedWithGoalLine)
-        {
-            goto false_exit;
-        }
-    }
-
-    if (!m_pPhysicsBall->mbIsInsideNet)
-    {
-        goto false_exit;
-    }
-
-    nSide = -1;
-    {
-        cTeam** pTeams = g_pTeams;
-        int i;
-        for (i = 0; i < 2; i++)
-        {
-            if (m_v3Position.x * pTeams[i]->m_pNet->m_fDirection > 1.0f)
+            if (m_pOwner->m_eClassType != GOALIE)
             {
-                nSide = i;
+                break;
+            }
+            if (m_pOwner != NULL && m_pOwner->m_eClassType == GOALIE)
+            {
+                goalie = m_pOwner;
+            }
+            else
+            {
+                goalie = NULL;
+            }
+            if (goalie->m_pPhysicsCharacter->m_CanCollidedWithGoalLine)
+            {
+                break;
             }
         }
-    }
 
-    if (m_pOwner != NULL && m_uGoalType != 2 && m_uGoalType != 6)
-    {
-        m_uGoalType = 5;
-    }
+        if (!m_pPhysicsBall->mbIsInsideNet)
+        {
+            break;
+        }
 
-    m_unk_0xA6 = false;
-    mpDamageTarget = NULL;
-    return true;
+        nSide = -1;
+        {
+            cTeam** pTeams = g_pTeams;
+            int i;
+            for (i = 0; i < 2; i++)
+            {
+                if (m_v3Position.x * pTeams[i]->m_pNet->m_fDirection > 1.0f)
+                {
+                    nSide = i;
+                }
+            }
+        }
 
-false_exit:
+        if (m_pOwner != NULL && m_uGoalType != 2 && m_uGoalType != 6)
+        {
+            m_uGoalType = 5;
+        }
+
+        m_unk_0xA6 = false;
+        mpDamageTarget = NULL;
+        return true;
+    } while (false);
+
     return false;
 }
 

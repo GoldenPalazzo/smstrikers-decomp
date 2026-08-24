@@ -405,8 +405,7 @@ u8 cPlayer::SwapController()
 
                     if (pCandidate != this)
                     {
-                        cGlobalPad* pCandidatePad =
-                            (pCandidate->m_pController != NULL) ? pCandidate->m_pController->m_pGlobalPad : NULL;
+                        cGlobalPad* pCandidatePad = (pCandidate->m_pController != NULL) ? pCandidate->m_pController->m_pGlobalPad : NULL;
                         if (pCandidatePad == NULL && fDist < fBestDist)
                         {
                             pSwapPlayer = pCandidate;
@@ -646,8 +645,7 @@ void cPlayer::PickupBall(cBall* pBall)
                 for (s32 i = 0; i < 4; i++)
                 {
                     cPlayer* player = m_pTeam->GetPlayer(i);
-                    cGlobalPad* playerPad =
-                        (player->m_pController != NULL) ? player->m_pController->m_pGlobalPad : NULL;
+                    cGlobalPad* playerPad = (player->m_pController != NULL) ? player->m_pController->m_pGlobalPad : NULL;
                     if (playerPad == NULL)
                         continue;
 
@@ -822,20 +820,14 @@ void cPlayer::SetAIPad(cAIPad* pPad)
         if (state == SHOT_METER_ACTIVE || state == SHOT_METER_STS_ACTIVE || state == SHOT_METER_STS_TRANSISTION)
             bShotInProgress = 1;
 
-        if (!bShotInProgress)
+        if (bShotInProgress || (pFielder->m_eActionState != ACTION_SHOT && pMeter->m_eShotMeterState == SHOT_METER_RELEASED))
         {
-            if (pFielder->m_eActionState == ACTION_SHOT)
-                goto pad;
-            if (pMeter->m_eShotMeterState != SHOT_METER_RELEASED)
-                goto pad;
+            pMeter->ShotReleased(pFielder);
+            pFielder->InitActionShot(false);
+            return;
         }
-
-        pMeter->ShotReleased(pFielder);
-        pFielder->InitActionShot(false);
-        return;
     }
 
-pad:
     if (m_pController != NULL && pFielder->m_eFielderDesireState < FIELDERDESIRE_USER_CONTROLLED)
     {
         if (g_pGame->IsGameplayOrOvertime() && pFielder->m_eActionState == ACTION_SHOOT_TO_SCORE)

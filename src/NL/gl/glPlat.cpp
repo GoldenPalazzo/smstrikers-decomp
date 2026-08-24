@@ -362,50 +362,47 @@ static void glx_SendViews()
         }
 
         fenceMetricPending = 0;
-        if (glx_bFog)
+        do
         {
-            switch (view)
+            if (glx_bFog)
             {
-            case 3:
-            case 6:
-            case 7:
-            case 11:
-                useFog = true;
-                break;
-            case 2:
-                useFog = glx_bFogSky;
-                break;
-            default:
-                useFog = false;
-                break;
-            }
-
-            if (!useFog)
-            {
-                goto no_fog;
-            }
-
-            {
-                GXSetFog((GXFogType)fogtype[glx_FogType], glx_FogStart, glx_FogEnd, 0.25f, 130.0f, glx_GetFogColour());
-
-                if (glx_bFogAdjust)
+                switch (view)
                 {
-                    glViewGetProjectionMatrix((eGLView)view, projection);
-                    GXInitFogAdjTable(&fogAdjTable, 0x280, projection.e2);
-                    GXSetFogRangeAdj(1, 0x140, &fogAdjTable);
+                case 3:
+                case 6:
+                case 7:
+                case 11:
+                    useFog = true;
+                    break;
+                case 2:
+                    useFog = glx_bFogSky;
+                    break;
+                default:
+                    useFog = false;
+                    break;
                 }
-                else
+
+                if (useFog)
                 {
-                    GXSetFogRangeAdj(0, 0, 0);
+                    GXSetFog((GXFogType)fogtype[glx_FogType], glx_FogStart, glx_FogEnd, 0.25f, 130.0f, glx_GetFogColour());
+
+                    if (glx_bFogAdjust)
+                    {
+                        glViewGetProjectionMatrix((eGLView)view, projection);
+                        GXInitFogAdjTable(&fogAdjTable, 0x280, projection.e2);
+                        GXSetFogRangeAdj(1, 0x140, &fogAdjTable);
+                    }
+                    else
+                    {
+                        GXSetFogRangeAdj(0, 0, 0);
+                    }
+                    break;
                 }
             }
-            goto fog_done;
-        }
 
-    no_fog:
-        glx_SetFogNone();
+            glx_SetFogNone();
+        } while (false);
 
-    fog_done:
         if (view == glx_ViewFence)
         {
             gld_ViewName((eGLView)view);
