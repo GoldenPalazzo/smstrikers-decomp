@@ -145,6 +145,8 @@ const int* GetRegion()
 {
 #if defined(VERSION_G4QJ01)
     static const int g_Region = 2;
+#elif defined(VERSION_G4QP01)
+    static const int g_Region = 1;
 #else
     static const int g_Region = 0;
 #endif

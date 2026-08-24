@@ -91,7 +91,11 @@ public:
     static bool IsInited();
     static unsigned char IsSoundGroupLoaded(int, unsigned long);
     static bool Initialize();
+#if defined(VERSION_G4QP01)
+    static bool ActivateDPL2(bool bEnableDPL2);
+#else
     static bool ActivateDPL2(bool bEnableDPL2, bool bLoadSampleFile);
+#endif
     static void SetupSoundGroups();
     static void DeleteStrToIDTables();
     static unsigned long GetWorldSFXTypeFromStr(const char* str);

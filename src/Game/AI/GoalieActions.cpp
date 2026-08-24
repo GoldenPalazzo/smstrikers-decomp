@@ -2613,6 +2613,7 @@ void Goalie::ActionSnapBall(float fDeltaT)
  */
 void Goalie::ActionGrabBall(float fDeltaT)
 {
+#if !defined(VERSION_G4QP01)
     bool bShouldInitMove = false;
     if (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f)
     {
@@ -2629,6 +2630,7 @@ void Goalie::ActionGrabBall(float fDeltaT)
         InitActionMoveWB();
         return;
     }
+#endif
 
     if (g_pBall->m_pOwner != this)
     {
@@ -2659,4 +2661,25 @@ void Goalie::ActionGrabBall(float fDeltaT)
             }
         }
     }
+#if defined(VERSION_G4QP01)
+    else
+    {
+        bool bShouldInitMove = false;
+        if (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f)
+        {
+            bShouldInitMove = true;
+        }
+
+        if (bShouldInitMove)
+        {
+            if (m_pBall == NULL)
+            {
+                InitActionMove(true);
+                return;
+            }
+            InitActionMoveWB();
+            return;
+        }
+    }
+#endif
 }

@@ -101,7 +101,9 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
     MC_FILE* pNewFile = m_OpenFiles.AddEntry(hash);
 
     m_pFileCB = pNewFile;
+#if !defined(VERSION_G4QP01)
     m_pFileCB->FileInfo.fileNo = -1;
+#endif
 
     pFile = m_pFileCB;
 
@@ -175,7 +177,9 @@ long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned 
     MC_FILE* pNewFile = m_OpenFiles.AddEntry(hash);
 
     pFile = pNewFile;
+#if !defined(VERSION_G4QP01)
     pFile->FileInfo.fileNo = -1;
+#endif
     memset(&pFile->IconCfg.IconSpeeds[0], 0, 8);
 
     result = CARDOpen(m_Slot, FileName, (CARDFileInfo*)pFile);
@@ -630,7 +634,9 @@ void MemCard::CreateFileDone(long result)
         {
             m_OpenFiles.DeleteEntry(pFile);
         }
+#if !defined(VERSION_G4QP01)
         m_pFileCB = NULL;
+#endif
     }
 
     m_State = IS_MOUNTED;

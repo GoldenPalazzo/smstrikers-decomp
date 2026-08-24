@@ -786,7 +786,11 @@ void OptionsAudioMenuV2::Save()
     }
     mSettings.Mode = (eAudioMode)val;
 
+#if defined(VERSION_G4QP01)
+    mSettings.ApplySettings(mbUpdateMode);
+#else
     mSettings.ApplySettings(mbUpdateMode, false);
+#endif
     if (mbUpdateMode)
     {
         AudioLoader::PlayFEMenuMusic();
@@ -800,7 +804,11 @@ void OptionsAudioMenuV2::Save()
 void OptionsAudioMenuV2::Revert()
 {
     memcpy(&mSettings, &mBackupSettings, sizeof(AudioSettings));
+#if defined(VERSION_G4QP01)
+    mSettings.ForceApplySettings();
+#else
     mSettings.ForceApplySettings(false);
+#endif
 }
 
 /**

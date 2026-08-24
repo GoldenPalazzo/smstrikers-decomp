@@ -648,10 +648,12 @@ void Presentation::Update(float deltaT)
             mUseInterruptWipe = mInterruptWipe;
             mInterruptWipe = 0;
 
+#if !defined(VERSION_G4QP01)
             if (DuringEndOfGamePresentation())
             {
                 mTimeInFunction = 0.0f;
             }
+#endif
         }
 
         if (IsFinished())

@@ -23,7 +23,9 @@ public:
     static bool s_AudioInInit;
     static bool s_ResetPressed;
     static bool s_resetPaused;
+#if !defined(VERSION_G4QP01)
     static bool s_checkCardRemoved;
+#endif
 
     void FSCheckForReset() { Run(1.0f / 60.0f); };
 };

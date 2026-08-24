@@ -69,7 +69,11 @@ void AudioSettings::InitializeDefaults()
 /**
  * Offset/Address/Size: 0xB20 | 0x8019022C | size: 0x90
  */
+#if defined(VERSION_G4QP01)
+void AudioSettings::ForceApplySettings()
+#else
 void AudioSettings::ForceApplySettings(bool bUpdateMode)
+#endif
 {
     if (AudioLoader::gbDisableAudio == false)
     {
@@ -93,14 +97,22 @@ void AudioSettings::ForceApplySettings(bool bUpdateMode)
         DefaultVoiceVolume = -1;
         DefaultMode = INVALID;
 
+#if defined(VERSION_G4QP01)
+        ApplySettings(true);
+#else
         ApplySettings(true, bUpdateMode);
+#endif
     }
 }
 
 /**
  * Offset/Address/Size: 0x7D0 | 0x8018FEDC | size: 0x350
  */
+#if defined(VERSION_G4QP01)
+void AudioSettings::ApplySettings(bool bApplyMode)
+#else
 void AudioSettings::ApplySettings(bool bApplyMode, bool bUpdateMode)
+#endif
 {
     if (AudioLoader::gbDisableAudio == false)
     {
@@ -137,15 +149,27 @@ void AudioSettings::ApplySettings(bool bApplyMode, bool bUpdateMode)
             switch (Mode)
             {
             case MONO:
+#if defined(VERSION_G4QP01)
+                AudioLoader::ActivateDPL2(false);
+#else
                 AudioLoader::ActivateDPL2(false, bUpdateMode);
+#endif
                 Audio::SetOutputMode((MusyXOutputType)0);
                 break;
             case STEREO:
+#if defined(VERSION_G4QP01)
+                AudioLoader::ActivateDPL2(false);
+#else
                 AudioLoader::ActivateDPL2(false, bUpdateMode);
+#endif
                 Audio::SetOutputMode((MusyXOutputType)1);
                 break;
             case DOLBY:
+#if defined(VERSION_G4QP01)
+                AudioLoader::ActivateDPL2(true);
+#else
                 AudioLoader::ActivateDPL2(true, bUpdateMode);
+#endif
                 break;
             default:
                 break;

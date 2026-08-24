@@ -272,10 +272,15 @@ void CrossFaderScene::Update(float fDeltaT)
             switch (mCurrentImage)
             {
             case 2:
+#if !defined(VERSION_G4QP01)
                 nlSingleton<GameInfoManager>::Instance()->mUserInfo.mAudioOptions.ForceApplySettings(true);
+#endif
                 break;
             case 0:
             {
+#if defined(VERSION_G4QP01)
+                nlSingleton<GameInfoManager>::Instance()->mUserInfo.mAudioOptions.ForceApplySettings();
+#endif
                 AudioLoader::LoadNintendoDialogueGroup(true);
                 const char* nintendoSounds[] = {
                     "sfx_nintendo_mario", "sfx_nintendo_wario", "sfx_nintendo_luigi", "sfx_nintendo_waluigi", "sfx_nintendo_peach", "sfx_nintendo_daisy", NULL, NULL, "sfx_nintendo_toad", NULL, NULL, NULL, NULL

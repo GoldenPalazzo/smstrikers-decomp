@@ -30,11 +30,13 @@ A work-in-progress decompilation of Super Mario Strikers for GameCube.
 
 This repository does **not** contain any game assets or assembly whatsoever. An existing copy of the game is required.
 
-Supported versions:
+Supported versions, in release order:
 
-- ✅ `G4QE01`: Rev 0 (USA) — SHA-1: `376d699c99b6b0949abe1b4ceccefdef7828d2b5`
-- ✅ `G4QJ01`: Rev 0 (Japan) — SHA-1: `d116f02b778a4f69725fd1c00656012d16ebf94a`
-- ❌ `G4QP01`: Rev 0 (EU) — SHA-1: `6dc83dc91d0a5887f0056623498d4cbcd88bc463`
+| Version | Region and title | Release date | Revision | `main.dol` SHA-1 |
+| --- | --- | --- | --- | --- |
+| `G4QP01` | Europe — *Mario Smash Football* | November 18, 2005 | Rev 0 | `6dc83dc91d0a5887f0056623498d4cbcd88bc463` |
+| `G4QE01` | North America — *Super Mario Strikers* | December 5, 2005 | Rev 0 | `376d699c99b6b0949abe1b4ceccefdef7828d2b5` |
+| `G4QJ01` | Japan — *Super Mario Strikers* | January 19, 2006 | Rev 0 | `d116f02b778a4f69725fd1c00656012d16ebf94a` |
 
 The releases share nearly all game code; see [Version differences](docs/version_differences.md) for a short summary of the regional changes.
 
@@ -125,8 +127,8 @@ Building
   git pull --recurse-submodules
   ```
 
-- Copy your game's disc image to `orig/<version>` (for example, `orig/G4QE01`
-  or `orig/G4QJ01`).
+- Copy your game's disc image to `orig/<version>` (for example, `orig/G4QP01`,
+  `orig/G4QE01`, or `orig/G4QJ01`).
   - Supported formats: ISO (GCM), RVZ, WIA, WBFS, CISO, NFS, GCZ, TGC
   - After the initial build, the disc image can be deleted to save space.
 
@@ -150,6 +152,10 @@ Building
 ID to `configure.py`:
 
 ```sh
+# Europe
+python configure.py --version G4QP01
+ninja
+
 # USA (default)
 python configure.py
 ninja
@@ -159,14 +165,14 @@ python configure.py --version G4QJ01
 ninja
 ```
 
-Build outputs are kept separately in `build/G4QE01` and `build/G4QJ01`. To
-switch versions, rerun `configure.py` with the other game ID; cleaning the build
-directory is not necessary. Add `--map` to the configure command to generate a
-linker map.
+Build outputs are kept separately in `build/G4QP01`, `build/G4QE01`, and
+`build/G4QJ01`. To switch versions, rerun `configure.py` with the other game
+ID; cleaning the build directory is not necessary. Add `--map` to the configure
+command to generate a linker map.
 
-Both versions are configured to build entirely from reconstructed source and
-are checked against their retail `main.dol` SHA-1. GitHub Actions and decomp.dev
-progress reporting currently default to the USA version.
+All three versions are configured to build entirely from reconstructed source
+and are checked against their retail `main.dol` SHA-1. GitHub Actions and
+decomp.dev progress reporting currently default to the USA version.
 
 Diffing
 =======
@@ -176,6 +182,13 @@ Once the initial build succeeds, an `objdiff.json` should exist in the project r
 Download the latest release from [encounter/objdiff](https://github.com/encounter/objdiff). Under project settings, set `Project directory`. The configuration should be loaded automatically.
 
 Select an object from the left sidebar to begin diffing. Changes to the project will rebuild automatically: changes to source files, headers, `configure.py`, `splits.txt` or `symbols.txt`.
+
+Related project
+===============
+
+[mscharged-decomp](https://github.com/yannicksuter/mscharged-decomp) is the
+work-in-progress matching decompilation of *Mario Strikers Charged*, the
+Nintendo Wii successor to *Super Mario Strikers*.
 
 Acknowledgements
 ================

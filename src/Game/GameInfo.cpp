@@ -2330,7 +2330,11 @@ void GameInfoManager::OnPreGameState()
 void GameInfoManager::OnPostGameState()
 {
     mUseCurGameSettings = false;
+#if defined(VERSION_G4QP01)
+    mUserInfo.mAudioOptions.ApplySettings(true);
+#else
     mUserInfo.mAudioOptions.ApplySettings(true, false);
+#endif
 }
 
 /**

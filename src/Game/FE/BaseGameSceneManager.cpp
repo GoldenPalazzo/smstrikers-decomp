@@ -198,10 +198,12 @@ BaseSceneHandler* BaseGameSceneManager::Push(SceneList newscene, ScreenMovement 
         {
             filename = "art/fe/start_screen_v2_german.fen";
         }
+#if !defined(VERSION_G4QP01)
         else if (g_Language == 5)
         {
             filename = "art/fe/start_screen_jpn.fen";
         }
+#endif
     }
 
     if (newscene == SCENE_CHOOSE_CAPTAINS)

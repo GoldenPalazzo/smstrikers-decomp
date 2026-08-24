@@ -102,12 +102,21 @@ void CrowdManager::Replay(LoadFrame& frame)
         switch (m_State)
         {
         case Crowd_Idle:
+#if defined(VERSION_G4QP01)
+            m_fAnimScale = 1.0f;
+#endif
             szBundle = "idle";
             break;
         case Crowd_Happy:
+#if defined(VERSION_G4QP01)
+            m_fAnimScale = 1.625f;
+#endif
             szBundle = "idle";
             break;
         case Crowd_Excited:
+#if defined(VERSION_G4QP01)
+            m_fAnimScale = 1.0f;
+#endif
             szBundle = "happy";
             break;
         default:
@@ -149,6 +158,7 @@ static void CrowdBundleLoad_cb(void*, unsigned long, void*)
     if (!glTextureLoad(glGetTexture("idle/idle")))
         return;
 
+#if !defined(VERSION_G4QP01)
     f32 animScale;
     switch (CrowdManager::instance.m_State)
     {
@@ -160,6 +170,7 @@ static void CrowdBundleLoad_cb(void*, unsigned long, void*)
         break;
     }
     CrowdManager::instance.m_fAnimScale = animScale;
+#endif
 }
 /**
  * Offset/Address/Size: 0x5A0 | 0x8016441C | size: 0x16C
@@ -178,12 +189,21 @@ void CrowdManager::SetState(eCrowdState state, bool force)
     switch (m_State)
     {
     case Crowd_Idle:
+#if defined(VERSION_G4QP01)
+        m_fAnimScale = 1.0f;
+#endif
         szBundle = "idle";
         break;
     case Crowd_Happy:
+#if defined(VERSION_G4QP01)
+        m_fAnimScale = 1.625f;
+#endif
         szBundle = "idle";
         break;
     case Crowd_Excited:
+#if defined(VERSION_G4QP01)
+        m_fAnimScale = 1.0f;
+#endif
         szBundle = "happy";
         break;
     default:

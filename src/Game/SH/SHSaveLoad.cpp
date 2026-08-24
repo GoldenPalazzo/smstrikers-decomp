@@ -24,8 +24,10 @@ extern bool g_e3_Build;
 
 bool SaveLoadScene::mLastSaveLoadSuccess;
 bool SaveLoadScene::mUltimateGoalIsToSave;
+#if !defined(VERSION_G4QP01)
 static u8 WasCardRemoved;
 static bool PreviousNoCardInSlotState;
+#endif
 SaveLoadScene* SaveLoadScene::mInstance;
 static int gSceneTypeStackDepth;
 static float gSceneTime;
@@ -77,9 +79,15 @@ static void PopSceneType()
 {
     int stackIndex = --gSceneTypeStackDepth;
     gSaveLoadStarted = false;
+#if !defined(VERSION_G4QP01)
     SaveLoadScene::eSaveLoad prevScene = gSceneTypeStack[stackIndex];
+#endif
     gSaveLoadFinished = false;
+#if defined(VERSION_G4QP01)
+    if (gSceneTypeStack[stackIndex] == SaveLoadScene::ST_SAVE)
+#else
     if (prevScene == 0)
+#endif
     {
         ResetTask::s_resetPaused = true;
     }
@@ -553,7 +561,11 @@ static bool NoCardInSlot()
  */
 static bool PushNoCardMessage()
 {
+#if defined(VERSION_G4QP01)
+    if (NoCardInSlot())
+#else
     if (NoCardInSlot() || WasCardRemoved)
+#endif
     {
         BaseSceneHandler* handler = nlSingleton<GameSceneManager>::Instance()->GetCurrentScene();
 
@@ -561,7 +573,9 @@ static bool PushNoCardMessage()
         {
             if (((FEPopupMenu*)handler)->mType == POPUP_NO_MEMCARD)
             {
+#if !defined(VERSION_G4QP01)
                 WasCardRemoved = 0;
+#endif
                 return false;
             }
 
@@ -723,10 +737,12 @@ void SaveLoadScene::UpdateText()
             break;
         case SaveLoadScene::ST_ABOUT_AUTOSAVE:
             break;
+#if !defined(VERSION_G4QP01)
         case (SaveLoadScene::eSaveLoad)11:
             text->m_LocStrId = 0xF501447B;
             text->m_OverloadFlags |= 0x8;
             break;
+#endif
         }
     }
 }
@@ -736,7 +752,9 @@ void SaveLoadScene::UpdateText()
  */
 void SaveLoadScene::Update(float fDeltaT)
 {
+#if !defined(VERSION_G4QP01)
     PreviousNoCardInSlotState = NoCardInSlot();
+#endif
 
     if (!g_pFEInput->HasInputLock(this))
     {
@@ -751,6 +769,7 @@ void SaveLoadScene::Update(float fDeltaT)
     BaseSceneHandler::Update(fDeltaT);
     gSceneTime += fDeltaT;
 
+#if !defined(VERSION_G4QP01)
     if (mIsAutoSaving)
     {
         SaveLoadScene::eSaveLoad sceneType = GetSceneType();
@@ -777,6 +796,7 @@ void SaveLoadScene::Update(float fDeltaT)
             }
         }
     }
+#endif
 
     UpdateText();
 
@@ -790,6 +810,9 @@ void SaveLoadScene::Update(float fDeltaT)
 
     if (!gIgnoreMinWait)
     {
+#if defined(VERSION_G4QP01)
+        if (gSceneTime <= 1.75f)
+#else
         float minTime;
         if (GetSceneType() == (SaveLoadScene::eSaveLoad)11)
         {
@@ -800,6 +823,7 @@ void SaveLoadScene::Update(float fDeltaT)
             minTime = 1.75f;
         }
         if (gSceneTime <= minTime)
+#endif
         {
             gRetryTimerDelay -= fDeltaT;
             if (gRetryTimerDelay <= 0.0f)
@@ -811,7 +835,11 @@ void SaveLoadScene::Update(float fDeltaT)
     }
 
     SaveLoadScene::eSaveLoad sceneType = GetSceneType();
+#if defined(VERSION_G4QP01)
+    if (sceneType == SaveLoadScene::ST_CHECKING)
+#else
     if (sceneType == SaveLoadScene::ST_CHECKING || sceneType == (SaveLoadScene::eSaveLoad)11)
+#endif
     {
         gSaveLoadStarted = true;
         gCallbackMade = false;
@@ -954,12 +982,20 @@ void SaveLoadScene::UpdateForAboutToSaveSlide()
  */
 void SaveLoadScene::HandleSaveLoadFinishedResult()
 {
+#if defined(VERSION_G4QP01)
+    switch (GetSceneType())
+#else
     SaveLoadScene::eSaveLoad sceneType = GetSceneType();
 
     switch (sceneType)
+#endif
     {
     case SaveLoadScene::ST_DELETE:
     case SaveLoadScene::ST_FORMAT:
+#if defined(VERSION_G4QP01)
+        PopSceneType();
+        break;
+#else
     {
         if (sceneType == SaveLoadScene::ST_FORMAT)
         {
@@ -976,6 +1012,7 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
     case (SaveLoadScene::eSaveLoad)11:
         PopSceneType();
         break;
+#endif
 
     case SaveLoadScene::ST_GAMESAVEIDTEST:
         PopSceneType();
@@ -997,6 +1034,9 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
                 SaveLoadScene::mLastSaveLoadSuccess = false;
                 if (mNextScene == SCENE_OPTIONS)
                 {
+#if defined(VERSION_G4QP01)
+                    gSaveLoadEnabled = true;
+#else
                     if (sceneType != SaveLoadScene::ST_FORMAT)
                     {
                         if (gResult != -8 && gResult != -9)
@@ -1004,6 +1044,7 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
                             gSaveLoadEnabled = true;
                         }
                     }
+#endif
                 }
             }
             else
@@ -1032,7 +1073,11 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
                     {
                         playMusic = true;
                     }
+#if defined(VERSION_G4QP01)
+                    nlSingleton<GameInfoManager>::Instance()->mUserInfo.mAudioOptions.ForceApplySettings();
+#else
                     nlSingleton<GameInfoManager>::Instance()->mUserInfo.mAudioOptions.ForceApplySettings(false);
+#endif
                     if (playMusic)
                     {
                         AudioLoader::PlayFEMenuMusic();
@@ -1074,7 +1119,9 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
         if (gResult == 0)
         {
             PopSceneType();
+#if !defined(VERSION_G4QP01)
             gSaveLoadFinished = false;
+#endif
             PushSceneType(SaveLoadScene::ST_LOAD);
         }
         else
@@ -1131,6 +1178,7 @@ bool SaveLoadScene::IsOnAboutAutoSaveSlide()
 /**
  * Offset/Address/Size: 0x0 | 0x800B0588 | size: 0xB0
  */
+#if !defined(VERSION_G4QP01)
 void SaveLoadScene::UpdateCardRemovedFlag()
 {
     if (!MemCard::s_InitDone)
@@ -1147,3 +1195,4 @@ void SaveLoadScene::UpdateCardRemovedFlag()
         }
     }
 }
+#endif

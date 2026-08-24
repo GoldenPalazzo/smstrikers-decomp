@@ -77,6 +77,7 @@ void FrontEnd::UpdateForGame(float fDeltaT)
         }
     }
 
+#if !defined(VERSION_G4QP01)
     if (Presentation::Instance().DuringEndOfGamePresentation())
     {
         DontCheckForControllerRemovalHack = 1;
@@ -84,6 +85,7 @@ void FrontEnd::UpdateForGame(float fDeltaT)
 
     if (DontCheckForControllerRemovalHack)
         return;
+#endif
 
     if (m_bInPauseMenuState)
         return;
@@ -314,29 +316,19 @@ void FrontEnd::EnterMenuState(FrontEnd::MenuEnterType menuType)
     g_pFEInput->EnableAnalogToDPadMapping(FE_ALL_PADS, true);
 }
 
-// Helper class to work around MWCC codegen for virtual destructor calls
-class CameraDeleter
-{
-public:
-    virtual void DestroyWith(int);
-};
-
 /**
  * Offset/Address/Size: 0x738 | 0x800953BC | size: 0x70
  */
 void FrontEnd::ExitWinnerScreen()
 {
-    CameraDeleter* cam;
     cCameraManager::PopCameraWithTransition(1.0f, eCT_EASE_IN, 0);
-    cam = (CameraDeleter*)m_pPauseMenuCamera;
-    if (cam)
-    {
-        cam->DestroyWith(1);
-    }
+    delete m_pPauseMenuCamera;
     m_pPauseMenuCamera = 0;
     g_AllActorsHidden = 0.5f;
     g_JaapAndJacksNastyHackBecauseWeDoNotKnowDifferenceBetweenPausePauseAndPostGamePause = 1;
+#if !defined(VERSION_G4QP01)
     DontCheckForControllerRemovalHack = 0;
+#endif
     nlTaskManager::SetNextState(2);
 }
 
@@ -389,7 +381,9 @@ bool FrontEnd::Initialize()
     m_fDemoTimeElapsed = 0.0f;
     m_pauseDelay = 1.5f;
     AlreadyStartedStrikers101Menu = 0;
+#if !defined(VERSION_G4QP01)
     DontCheckForControllerRemovalHack = 0;
+#endif
     return true;
 }
 

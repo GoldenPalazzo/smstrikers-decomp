@@ -3360,15 +3360,19 @@ void cFielder::ActionShootToScore(float fDeltaT)
         }
 
         GameTweaks* pGameTweaks = g_pGame->m_pGameTweaks;
-        fMultiplier = fMultiplier * pGameTweaks->fShootToScorePerfectDistanceTimeMax;
+        float fMaxGreenRegionWidth = fMultiplier * pGameTweaks->fShootToScorePerfectDistanceTimeMax;
 
+#if defined(VERSION_G4QP01)
+        if (fAbsSweetSpotPercent > mActionShootToScoreVars.fCaptainYellowWidth)
+#else
         if (fAbsSweetSpotPercent >= pGameTweaks->fShootToScorePerfectDistanceTimeMin)
+#endif
         {
             mActionShootToScoreVars.fGreenRegionWidth = pGameTweaks->fShootToScorePerfectDistanceTimeMin;
         }
         else
         {
-            float fNewWidth = InterpolateRangeClamped(pGameTweaks->fShootToScorePerfectDistanceTimeMin, fMultiplier, mActionShootToScoreVars.fCaptainYellowWidth, pGameTweaks->fShootToScorePerfectDistanceTimeMin, fAbsSweetSpotPercent);
+            float fNewWidth = InterpolateRangeClamped(pGameTweaks->fShootToScorePerfectDistanceTimeMin, fMaxGreenRegionWidth, mActionShootToScoreVars.fCaptainYellowWidth, pGameTweaks->fShootToScorePerfectDistanceTimeMin, fAbsSweetSpotPercent);
             float fMinOverMax = g_pGame->m_pGameTweaks->fShootToScorePerfectDistanceTimeMin / g_pGame->m_pGameTweaks->fShootToScorePerfectDistanceTimeMax;
             FindSTSDistanceAffectedPercentage(this, 1.0f, fMinOverMax);
 

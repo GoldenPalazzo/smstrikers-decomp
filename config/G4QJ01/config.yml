@@ -17,9 +17,53 @@ fill_gaps: false # Alignments known
 write_asm: true
 ldscript_template: config/G4QJ01/ldscript.tpl
 
-# Suppress dtk false-positive relocations in LidOpenMessage image data. These
-# words are compressed-image bytes, not code pointers.
+# Suppress dtk false-positive data relocations in LidOpenMessage image data.
+# These 43 words inside HEADER_*::g_ImageData arrays coincidentally hold values
+# matching code-symbol addresses (UpdateDesireState, cCharacter dtor, FormatImpl,
+# DisplayMatchSummary, etc.); they are raw compressed-image bytes, not pointers.
+# Blocking lets the target object store the literal bytes so the C source
+# byte-matches, and stops dtk renaming the referenced locals to <name>_<ADDR>.
 block_relocations:
+  - source: .rodata:0x80290CC0
+  - source: .rodata:0x802916FC
+  - source: .rodata:0x80291AEC
+  - source: .rodata:0x802923AC
+  - source: .rodata:0x802923B4
+  - source: .rodata:0x8029243C
+  - source: .rodata:0x8029256C
+  - source: .rodata:0x802925B8
+  - source: .rodata:0x80292720
+  - source: .rodata:0x80292770
+  - source: .rodata:0x80292B6C
+  - source: .rodata:0x80292FD4
+  - source: .rodata:0x80292FE8
+  - source: .rodata:0x802932E4
+  - source: .rodata:0x8029352C
+  - source: .rodata:0x8029367C
+  - source: .rodata:0x80293BBC
+  - source: .rodata:0x80293BF4
+  - source: .rodata:0x80293CD0
+  - source: .rodata:0x802940AC
+  - source: .rodata:0x802940C0
+  - source: .rodata:0x80294218
+  - source: .rodata:0x802943EC
+  - source: .rodata:0x80294430
+  - source: .rodata:0x80294B0C
+  - source: .rodata:0x802956F8
+  - source: .rodata:0x80295710
+  - source: .rodata:0x80295C90
+  - source: .rodata:0x80296850
+  - source: .rodata:0x802968E4
+  - source: .rodata:0x802973C4
+  - source: .rodata:0x802973C8
+  - source: .rodata:0x802973CC
+  - source: .rodata:0x802973F0
+  - source: .rodata:0x802982C4
+  - source: .rodata:0x80298348
+  - source: .rodata:0x80298C98
+  - source: .rodata:0x80298DF8
+  - source: .rodata:0x8029BE58
+  - source: .rodata:0x8029D154
   # These words happen to equal BuildFrameTable + 0x510.
   - source: .rodata:0x8029302C
   - source: .rodata:0x80294104

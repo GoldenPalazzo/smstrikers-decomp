@@ -596,7 +596,9 @@ unsigned long SaveCallbacks::CreateFileCB(unsigned long Slot, long Result, void*
 
     if (Result != 0)
     {
+#if !defined(VERSION_G4QP01)
         m_pSaveFile = NULL;
+#endif
         HandleError(Slot, Result);
         return -1;
     }

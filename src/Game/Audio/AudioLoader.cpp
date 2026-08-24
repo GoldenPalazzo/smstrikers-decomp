@@ -373,7 +373,11 @@ void AudioLoader::SetupSoundGroups()
 /**
  * Offset/Address/Size: 0x35EC | 0x801473B8 | size: 0x408
  */
+#if defined(VERSION_G4QP01)
+bool AudioLoader::ActivateDPL2(bool bEnableDPL2)
+#else
 bool AudioLoader::ActivateDPL2(bool bEnableDPL2, bool bLoadSampleFile)
+#endif
 {
     bool dpl2Result;
 
@@ -392,6 +396,10 @@ bool AudioLoader::ActivateDPL2(bool bEnableDPL2, bool bLoadSampleFile)
             }
         }
 
+#if defined(VERSION_G4QP01)
+        Audio::Silence();
+        Audio::UnloadWorldSFX();
+#endif
         g_pTrackManager->StopAllTracks(0);
 
         AudioStreamTrack::TrackManagerBase* pTM = g_pTrackManager;
@@ -402,8 +410,10 @@ bool AudioLoader::ActivateDPL2(bool bEnableDPL2, bool bLoadSampleFile)
         pTM->m_StreamPool.FreeBlocks();
         pTM->m_StreamDeleteList.m_Allocator.FreeBlocks();
         PlatAudio::ShutdownStreaming();
+#if !defined(VERSION_G4QP01)
         Audio::Silence();
         Audio::UnloadWorldSFX();
+#endif
         PlatAudio::UnloadAllSoundGroups(sebringAudioFileData);
     }
     else
@@ -435,6 +445,9 @@ bool AudioLoader::ActivateDPL2(bool bEnableDPL2, bool bLoadSampleFile)
         PlatAudio::SetupSoundBuffers(sebringAudioFileData, true);
     }
 
+#if defined(VERSION_G4QP01)
+    LoadPermanentSoundGroups(false);
+#else
     bool onScene = false;
     BaseGameSceneManager* mgr = (BaseGameSceneManager*)nlSingleton<GameSceneManager>::s_pInstance;
     if (mgr != NULL)
@@ -483,6 +496,7 @@ bool AudioLoader::ActivateDPL2(bool bEnableDPL2, bool bLoadSampleFile)
     {
         LoadPermanentSoundGroups(bLoadSampleFile);
     }
+#endif
 
     bool bAlreadyLoaded = false;
     if (sebringAudioGroups[0].uLoadOrder > -1 && sebringAudioGroups[0].stackEnum > -1)
@@ -506,7 +520,11 @@ bool AudioLoader::ActivateDPL2(bool bEnableDPL2, bool bLoadSampleFile)
 
             if (isInited)
             {
+#if defined(VERSION_G4QP01)
+                PlatAudio::LoadSoundGroup(sebringAudioFileData, 0, 1, true);
+#else
                 PlatAudio::LoadSoundGroup(sebringAudioFileData, 0, 1, !bLoadSampleFile);
+#endif
             }
         }
     }
@@ -533,7 +551,11 @@ bool AudioLoader::ActivateDPL2(bool bEnableDPL2, bool bLoadSampleFile)
 
             if (isInited)
             {
+#if defined(VERSION_G4QP01)
+                PlatAudio::LoadSoundGroup(sebringAudioFileData, 1, 1, true);
+#else
                 PlatAudio::LoadSoundGroup(sebringAudioFileData, 1, 1, !bLoadSampleFile);
+#endif
             }
         }
     }

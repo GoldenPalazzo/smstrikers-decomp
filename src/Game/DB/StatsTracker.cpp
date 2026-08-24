@@ -270,12 +270,16 @@ void StatsTracker::eventHandler(Event* event, void* userData)
             float gameDuration = g_pGame->m_fGameDuration;
             if (g_pGame->GetGameTime() >= gameDuration)
             {
+#if defined(VERSION_G4QP01)
+                Instance()->TrackWinner(-1);
+#else
                 TeamStats awayStats = Instance()->mCurrentTeamStats[0];
                 TeamStats homeStats = Instance()->mCurrentTeamStats[1];
                 if ((int)awayStats.mPlayerTotalStats.mNumGoalsFor != (int)homeStats.mPlayerTotalStats.mNumGoalsFor)
                 {
                     Instance()->TrackWinner(-1);
                 }
+#endif
             }
         }
         break;

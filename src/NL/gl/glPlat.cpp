@@ -45,7 +45,9 @@ static GXRenderModeObj glx_rmode;
 
 // Declaration order below mirrors the original TU: the .sdata (initialised)
 // and .sbss (zero) symbols are interleaved exactly as MWCC laid them out.
+#if !defined(VERSION_G4QP01)
 static bool glx_bProgressiveMode = false;
+#endif
 static bool glx_Virt;
 static bool glx_Perf;
 static bool glx_PerfSync;
@@ -600,6 +602,7 @@ bool glplatStartup(gl_ScreenInfo* screenInfo)
         break;
     }
 
+#if !defined(VERSION_G4QP01)
     if (((OSGetResetCode() >> 0x1F) != 0) && (OSGetResetCode() == 0x17) && (VIGetDTVStatus() != 0))
     {
         rmode = &GXNtsc480Prog;
@@ -609,6 +612,7 @@ bool glplatStartup(gl_ScreenInfo* screenInfo)
     {
         glx_bProgressiveMode = false;
     }
+#endif
 
     GXAdjustForOverscan(rmode, &glx_rmode, 0, 16);
 
@@ -719,11 +723,13 @@ void glx_SetRGB60Mode()
 /**
  * Offset/Address/Size: 0xF84 | 0x801B5578 | size: 0x34
  */
+#if !defined(VERSION_G4QP01)
 void glx_SetInterlacedMode()
 {
     glx_SwitchVideoMode(&GXNtsc480IntDf, VideoMode_NTSC);
     glx_bProgressiveMode = 0;
 }
+#endif
 
 /**
  * Offset/Address/Size: 0xFB8 | 0x801B55AC | size: 0x34
@@ -731,16 +737,20 @@ void glx_SetInterlacedMode()
 void glx_SetProgressiveMode()
 {
     glx_SwitchVideoMode(&GXNtsc480Prog, VideoMode_NTSC);
+#if !defined(VERSION_G4QP01)
     glx_bProgressiveMode = 1;
+#endif
 }
 
 /**
  * Offset/Address/Size: 0xFEC | 0x801B55E0 | size: 0x1C
  */
+#if !defined(VERSION_G4QP01)
 u32 glx_GetResetCode()
 {
     return glx_bProgressiveMode ? 0x17 : 0;
 }
+#endif
 
 static inline void glx_SetVIWidth(const s32 currentWidth, const s32 maxWidth)
 {

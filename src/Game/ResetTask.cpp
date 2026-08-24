@@ -14,7 +14,9 @@ RESET_STATE ResetTask::s_ResetState = RS_RUNNING;
 bool ResetTask::s_AudioInInit = false;
 bool ResetTask::s_ResetPressed = false;
 bool ResetTask::s_resetPaused = false;
+#if !defined(VERSION_G4QP01)
 bool ResetTask::s_checkCardRemoved = false;
+#endif
 
 u32 softResetTime[4] = { 0, 0, 0, 0 };
 
@@ -45,11 +47,13 @@ void ResetTask::Run(float dt)
         }
     }
 
+#if !defined(VERSION_G4QP01)
     if (s_checkCardRemoved)
     {
         SaveLoadScene::UpdateCardRemovedFlag();
     }
 
+#endif
     if (s_ResetState != RS_STARTRESET)
     {
         if (s_ResetState < RS_STARTRESET)
@@ -75,7 +79,11 @@ void ResetTask::Run(float dt)
         VIFlush();
         VIWaitForRetrace();
 
+#if defined(VERSION_G4QP01)
+        OSResetSystem(s_ResetMode, 0, (s_ResetMode == 1) ? true : false);
+#else
         OSResetSystem(s_ResetMode, glx_GetResetCode(), (s_ResetMode == 1) ? true : false);
+#endif
 
         for (;;)
         {

@@ -108,8 +108,13 @@ class AudioSettings
 public:
     AudioSettings();
     void InitializeDefaults();
+#if defined(VERSION_G4QP01)
+    void ForceApplySettings();
+    void ApplySettings(bool bApplyMode);
+#else
     void ForceApplySettings(bool bUpdateMode);
     void ApplySettings(bool bApplyMode, bool bUpdateMode);
+#endif
 
     /* 0x00 */ int MusicVolume;
     /* 0x04 */ int SFXVolume;

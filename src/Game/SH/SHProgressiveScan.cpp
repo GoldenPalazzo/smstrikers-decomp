@@ -37,7 +37,11 @@ ProgressiveScanScene::ProgressiveScanScene(bool doRGB60Instead)
     }
     else
     {
+#if defined(VERSION_G4QP01)
+        mUseProgressiveMode = OSGetProgressiveMode() != 0;
+#else
         mUseProgressiveMode = true;
+#endif
     }
 }
 
@@ -181,7 +185,9 @@ void ProgressiveScanScene::Update(float fDeltaT)
             if (!mDoRGB60Instead)
             {
                 OSSetProgressiveMode(0);
+#if !defined(VERSION_G4QP01)
                 glx_SetInterlacedMode();
+#endif
             }
             else
             {

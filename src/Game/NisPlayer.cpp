@@ -260,6 +260,7 @@ void NisPlayer::Update(float deltaT)
 {
     HandleAsyncs();
 
+#if !defined(VERSION_G4QP01)
     for (int i = 0; i < 4; i++)
     {
         if (mLoadQueue[i] != NULL)
@@ -267,6 +268,7 @@ void NisPlayer::Update(float deltaT)
             mLoadQueue[i]->mTime += deltaT;
         }
     }
+#endif
 
     if (nlTaskManager::m_pInstance->m_CurrState == 0x100)
     {
@@ -340,6 +342,9 @@ bool NisPlayer::Play()
     {
         if (mLoadQueue[i] != NULL)
         {
+#if defined(VERSION_G4QP01)
+            return false;
+#else
             if (mLoadQueue[i]->mTime > 10.0f)
             {
                 mLoadQueue[i] = NULL;
@@ -348,6 +353,7 @@ bool NisPlayer::Play()
             {
                 return false;
             }
+#endif
         }
     }
 
@@ -457,9 +463,11 @@ void NisPlayer::Load(char* buffer, unsigned int size, NisHeader& nisHeader)
             }
         }
 
+#if !defined(VERSION_G4QP01)
         if (j >= 4)
             continue;
 
+#endif
         Nis* nis = new (nlMalloc(sizeof(Nis), 8, false)) Nis(nisHeader, buffer, size);
         mLoaded[i] = nis;
         LoadTriggers(*mLoaded[i]);
@@ -738,7 +746,9 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
 
         nisHeader.target = target;
         nisHeader.winnerType = winnerType;
+#if !defined(VERSION_G4QP01)
         nisHeader.mTime = 0.0f;
+#endif
         mLoadQueue[i] = &nisHeader;
 
         if (useStadiumOffset == NIS_NO_STADIUM_OFFSET)
