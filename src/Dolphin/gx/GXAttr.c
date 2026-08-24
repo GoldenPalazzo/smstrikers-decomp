@@ -519,6 +519,21 @@ void GXSetVtxAttrFmtv(GXVtxFmt vtxfmt, const GXVtxAttrFmtList* list)
  */
 void __GXSetVAT(void)
 {
+#if defined(VERSION_G4QP01)
+    u8 i;
+
+    for (i = 0; i < 8; i++)
+    {
+        if (__GXData->dirtyVAT & (1 << (u8)i))
+        {
+            GX_CP_LOAD_REG(GX_CP_REG_VAT_GRP0 | i, __GXData->vatA[i]);
+            GX_CP_LOAD_REG(GX_CP_REG_VAT_GRP1 | i, __GXData->vatB[i]);
+            GX_CP_LOAD_REG(GX_CP_REG_VAT_GRP2 | i, __GXData->vatC[i]);
+        }
+    }
+
+    __GXData->dirtyVAT = 0;
+#else
     s32 i;
     u32 dirty = __GXData->dirtyVAT;
 
@@ -537,6 +552,7 @@ void __GXSetVAT(void)
     } while (dirty != 0);
 
     __GXData->dirtyVAT = 0;
+#endif
 }
 
 static inline u8 GetFracForNrm(GXCompType type)
@@ -671,6 +687,35 @@ void GXGetVtxAttrFmtv(GXVtxFmt fmt, GXVtxAttrFmtList* vat)
  */
 void GXSetArray(GXAttr attr, void* base_ptr, u8 stride)
 {
+#if defined(VERSION_G4QP01)
+    s32 idx;
+    s32 newAttr;
+    s32 attrReg;
+
+    newAttr = attr;
+    if (newAttr == GX_VA_NBT)
+    {
+        newAttr = GX_VA_NRM;
+    }
+
+    attrReg = newAttr - GX_VA_POS;
+
+    GX_CP_LOAD_REG(0xA0 | attrReg, (u32)base_ptr & ~0xC0000000);
+
+    idx = attrReg - 12;
+    if (idx >= 0 && idx < 4)
+    {
+        __GXData->indexBase[idx] = (u32)base_ptr & ~0xC0000000;
+    }
+
+    GX_CP_LOAD_REG(0xB0 | attrReg, stride);
+
+    idx = attrReg - 12;
+    if (idx >= 0 && idx < 4)
+    {
+        __GXData->indexStride[idx] = stride;
+    }
+#else
     GXAttr cpAttr;
     u32 phyAddr;
 
@@ -686,6 +731,7 @@ void GXSetArray(GXAttr attr, void* base_ptr, u8 stride)
 
     GX_WRITE_SOME_REG2(8, cpAttr | 0xA0, phyAddr, cpAttr - 12);
     GX_WRITE_SOME_REG3(8, cpAttr | 0xB0, stride, cpAttr - 12);
+#endif
 }
 
 /**

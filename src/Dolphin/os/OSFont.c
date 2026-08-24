@@ -366,6 +366,30 @@ static u32 GetFontSize(u8* buf)
  */
 u16 OSGetFontEncode(void)
 {
+#if defined(VERSION_G4QP01)
+    static u16 fontEncode = 0xFFFF;
+
+    if (fontEncode <= OS_FONT_ENCODE_SJIS)
+    {
+        return fontEncode;
+    }
+
+    switch (__OSTVMode)
+    {
+    case VI_NTSC:
+        fontEncode = (__VIRegs[VI_DTV_STAT] & 2) ? OS_FONT_ENCODE_SJIS : OS_FONT_ENCODE_ANSI;
+        break;
+    case VI_PAL:
+    case VI_MPAL:
+    case VI_DEBUG:
+    case VI_DEBUG_PAL:
+    case VI_EURGB60:
+    default:
+        fontEncode = OS_FONT_ENCODE_ANSI;
+    }
+
+    return fontEncode;
+#else
     if (FontEncode != 0xFFFF)
     {
         return FontEncode;
@@ -387,6 +411,7 @@ u16 OSGetFontEncode(void)
 
     ParseString = (ParseStringCallback)ParseStringS;
     return FontEncode;
+#endif
 }
 
 u16 OSSetFontEncode(u16 encode)

@@ -18,7 +18,11 @@ extern void __OSInitMemoryProtection(void);
 #define OS_EXCEPTIONTABLE_ADDR  0x3000
 #define OS_DBJUMPPOINT_ADDR     0x60
 
-#if SDK_REVISION < 1
+#if defined(VERSION_G4QP01)
+#define BUILD_DATE  "Nov 26 2003"
+#define DBUILD_TIME "05:00:00"
+#define RBUILD_TIME "05:18:37"
+#elif SDK_REVISION < 1
 #define BUILD_DATE  "Apr  5 2004"
 #define DBUILD_TIME "03:55:13"
 #define RBUILD_TIME "04:13:58"
@@ -38,9 +42,12 @@ const char* __OSVersion = "<< Dolphin SDK - OS\tdebug build: " BUILD_DATE " " DB
 const char* __OSVersion = "<< Dolphin SDK - OS\trelease build: " BUILD_DATE " " RBUILD_TIME " (0x2301) >>";
 #endif
 
+#if !defined(VERSION_G4QP01)
+OSExecParams __OSRebootParams;
+#endif
+
 static DVDDriveInfo DriveInfo ATTRIBUTE_ALIGN(32);
 static DVDCommandBlock DriveBlock;
-OSExecParams __OSRebootParams;
 
 extern u32 __DVDLongFileNameFlag;
 extern u32 __PADSpec;
@@ -49,11 +56,26 @@ extern u32 __PADSpec;
 extern u8 __ArenaLo[];
 extern char _stack_addr[];
 extern u8 __ArenaHi[];
+#if defined(VERSION_G4QP01)
+extern u32 BOOT_REGION_START AT_ADDRESS(0x812FDFF0);
+extern u32 BOOT_REGION_END AT_ADDRESS(0x812FDFEC);
+#endif
 
 static OSBootInfo* BootInfo;
 static u32* BI2DebugFlag;
 static u32 BI2DebugFlagHolder;
 
+#if defined(VERSION_G4QP01)
+BOOL __OSIsGcam = FALSE;
+static f64 ZeroF;
+static f32 ZeroPS[2];
+static BOOL AreWeInitialized;
+static void (**OSExceptionTable)(u8, OSContext*);
+OSTime __OSStartTime;
+BOOL __OSInIPL;
+void* __OSSavedRegionStart;
+void* __OSSavedRegionEnd;
+#else
 OSTime __OSStartTime;
 BOOL __OSInIPL;
 void (**OSExceptionTable)(u8, OSContext*);
@@ -61,6 +83,7 @@ BOOL AreWeInitialized;
 f32 ZeroPS[2];
 f64 ZeroF;
 BOOL __OSIsGcam;
+#endif
 
 // prototypes
 static void __OSInitFPRs(void);
@@ -201,6 +224,38 @@ u32 OSGetConsoleType(void)
 
 static void ClearArena(void)
 {
+#if defined(VERSION_G4QP01)
+    if ((u32)(OSGetResetCode() + 0x80000000) != 0U)
+    {
+        __OSSavedRegionStart = 0U;
+        __OSSavedRegionEnd = 0U;
+        memset(OSGetArenaLo(), 0U, (u32)OSGetArenaHi() - (u32)OSGetArenaLo());
+        return;
+    }
+
+    __OSSavedRegionStart = (void*)BOOT_REGION_START;
+    __OSSavedRegionEnd = (void*)BOOT_REGION_END;
+    if (BOOT_REGION_START == 0U)
+    {
+        memset(OSGetArenaLo(), 0U, (u32)OSGetArenaHi() - (u32)OSGetArenaLo());
+        return;
+    }
+
+    if ((u32)OSGetArenaLo() < (u32)__OSSavedRegionStart)
+    {
+        if ((u32)OSGetArenaHi() <= (u32)__OSSavedRegionStart)
+        {
+            memset(OSGetArenaLo(), 0U, (u32)OSGetArenaHi() - (u32)OSGetArenaLo());
+            return;
+        }
+
+        memset(OSGetArenaLo(), 0U, (u32)__OSSavedRegionStart - (u32)OSGetArenaLo());
+        if ((u32)OSGetArenaHi() > (u32)__OSSavedRegionEnd)
+        {
+            memset(__OSSavedRegionEnd, 0, (u32)OSGetArenaHi() - (u32)__OSSavedRegionEnd);
+        }
+    }
+#else
     if (!((OSGetResetCode() & 0x80000000) ? TRUE : FALSE))
     {
         memset(OSGetArenaLo(), 0, (u32)OSGetArenaHi() - (u32)OSGetArenaLo());
@@ -230,6 +285,7 @@ static void ClearArena(void)
             memset(__OSRebootParams.regionEnd, 0, (u32)OSGetArenaHi() - (u32)__OSRebootParams.regionEnd);
         }
     }
+#endif
 }
 
 /**
@@ -253,6 +309,147 @@ static void InquiryCallback(s32, DVDCommandBlock* block)
  */
 void OSInit(void)
 {
+#if defined(VERSION_G4QP01)
+    u32* debugInfo;
+    void* debugArenaLo;
+    u32 inputConsoleType;
+    u32 tdev;
+
+    if ((BOOL)AreWeInitialized == FALSE)
+    {
+        AreWeInitialized = TRUE;
+
+        __OSStartTime = __OSGetSystemTime();
+        OSDisableInterrupts();
+
+        PPCMtmmcr0(0);
+        PPCMtmmcr1(0);
+        PPCMtpmc1(0);
+        PPCMtpmc2(0);
+        PPCMtpmc3(0);
+        PPCMtpmc4(0);
+        PPCDisableSpeculation();
+        PPCSetFpNonIEEEMode();
+
+        BI2DebugFlag = 0;
+        BootInfo = (OSBootInfo*)OSPhysicalToCached(0);
+        __DVDLongFileNameFlag = 0;
+
+        debugInfo = (u32*)*(u32*)OSPhysicalToCached(0xF4);
+        if (debugInfo != NULL)
+        {
+            BI2DebugFlag = &debugInfo[3];
+            __PADSpec = debugInfo[9];
+            *(u8*)OSPhysicalToCached(0x30E8) = (u8)*BI2DebugFlag;
+            *(u8*)OSPhysicalToCached(0x30E9) = (u8)__PADSpec;
+        }
+        else if (BootInfo->arenaHi)
+        {
+            BI2DebugFlagHolder = *(u8*)OSPhysicalToCached(0x30E8);
+            BI2DebugFlag = &BI2DebugFlagHolder;
+            __PADSpec = *(u8*)OSPhysicalToCached(0x30E9);
+        }
+
+        __DVDLongFileNameFlag = 1;
+
+        OSSetArenaLo((BootInfo->arenaLo == NULL) ? __ArenaLo : BootInfo->arenaLo);
+        if ((BootInfo->arenaLo == NULL) && (BI2DebugFlag != 0) && (*BI2DebugFlag < 2))
+        {
+            debugArenaLo = (char*)(((u32)_stack_addr + 0x1F) & ~0x1F);
+            OSSetArenaLo(debugArenaLo);
+        }
+
+        OSSetArenaHi((BootInfo->arenaHi == NULL) ? __ArenaHi : BootInfo->arenaHi);
+
+        OSExceptionInit();
+        __OSInitSystemCall();
+        OSInitAlarm();
+        __OSModuleInit();
+        __OSInterruptInit();
+        __OSSetInterruptHandler(0x16, &__OSResetSWInterruptHandler);
+        __OSContextInit();
+        __OSCacheInit();
+        EXIInit();
+        SIInit();
+        __OSInitSram();
+        __OSThreadInit();
+        __OSInitAudioSystem();
+        PPCMthid2(PPCMfhid2() & 0xBFFFFFFF);
+        if ((BOOL)__OSInIPL == FALSE)
+        {
+            __OSInitMemoryProtection();
+        }
+
+        OSReport("\nDolphin OS\n");
+        OSReport("Kernel built : %s %s\n", BUILD_DATE, RBUILD_TIME);
+        OSReport("Console Type : ");
+
+        if (BootInfo == NULL || (inputConsoleType = BootInfo->consoleType) == 0)
+        {
+            inputConsoleType = OS_CONSOLE_ARTHUR;
+        }
+        else
+        {
+            inputConsoleType = BootInfo->consoleType;
+        }
+
+        switch (inputConsoleType & 0xF0000000)
+        {
+        case OS_CONSOLE_RETAIL:
+            OSReport("Retail %d\n", inputConsoleType);
+            break;
+        case OS_CONSOLE_DEVELOPMENT:
+        case OS_CONSOLE_TDEV:
+            switch (inputConsoleType & 0x0FFFFFFF)
+            {
+            case OS_CONSOLE_EMULATOR:
+                OSReport("Mac Emulator\n");
+                break;
+            case OS_CONSOLE_PC_EMULATOR:
+                OSReport("PC Emulator\n");
+                break;
+            case OS_CONSOLE_ARTHUR:
+                OSReport("EPPC Arthur\n");
+                break;
+            case OS_CONSOLE_MINNOW:
+                OSReport("EPPC Minnow\n");
+                break;
+            default:
+                tdev = (u32)inputConsoleType & 0x0FFFFFFF;
+                OSReport("Development HW%d (%08x)\n", tdev - 3, inputConsoleType);
+                break;
+            }
+            break;
+        default:
+            OSReport("%08x\n", inputConsoleType);
+            break;
+        }
+
+        OSReport("Memory %d MB\n", (u32)BootInfo->memorySize >> 0x14U);
+        OSReport("Arena : 0x%x - 0x%x\n", OSGetArenaLo(), OSGetArenaHi());
+        OSRegisterVersion(__OSVersion);
+
+        if (BI2DebugFlag && (*BI2DebugFlag >= 2))
+        {
+            EnableMetroTRKInterrupts();
+        }
+
+        ClearArena();
+        OSEnableInterrupts();
+
+        if ((BOOL)__OSInIPL == FALSE)
+        {
+            DVDInit();
+            if ((BOOL)__OSIsGcam)
+            {
+                __OSDeviceCode = 0x9000;
+                return;
+            }
+            DCInvalidateRange(&DriveInfo, sizeof(DriveInfo));
+            DVDInquiryAsync(&DriveBlock, &DriveInfo, InquiryCallback);
+        }
+    }
+#else
     u32 consoleType;
     void* bi2StartAddr;
 
@@ -389,6 +586,7 @@ void OSInit(void)
             DVDInquiryAsync(&DriveBlock, &DriveInfo, InquiryCallback);
         }
     }
+#endif
 }
 
 static u32 __OSExceptionLocations[] = {

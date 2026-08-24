@@ -1,17 +1,23 @@
 #include "__card.h"
 
-#if DEBUG
+#if defined(VERSION_G4QP01)
+const char* __CARDVersion = "<< Dolphin SDK - CARD\trelease build: Apr 17 2003 12:34:19 (0x2301) >>";
+#elif DEBUG
 const char* __CARDVersion = "<< Dolphin SDK - CARD\tdebug build: Apr  5 2004 03:56:53 (0x2301) >>";
 #else
 const char* __CARDVersion = "<< Dolphin SDK - CARD\trelease build: Apr  5 2004 04:15:35 (0x2301) >>";
 #endif
 
+#if !defined(VERSION_G4QP01)
 u32 __CARDFreq = EXI_FREQ_16M;
+#endif
 
 CARDControl __CARDBlock[2];
 
 static u16 __CARDEncode;
+#if !defined(VERSION_G4QP01)
 static u16 __CARDFastMode;
+#endif
 
 DVDDiskID __CARDDiskNone;
 
@@ -358,11 +364,13 @@ static void SetupTimeoutAlarm(CARDControl* card)
     case 0xF3:
         break;
     case 0xF4:
+#if !defined(VERSION_G4QP01)
         if (card->pageSize > 0x80)
         {
             OSSetAlarm(&card->alarm, OSSecondsToTicks((OSTime)2) * (card->cBlock / 0x40), TimeoutHandler);
             break;
         }
+#endif
     case 0xF1:
         OSSetAlarm(&card->alarm, OSSecondsToTicks((OSTime)2) * (card->sectorSize / 0x2000), TimeoutHandler);
         break;
@@ -408,7 +416,11 @@ static s32 Retry(s32 chan)
         return CARD_RESULT_READY;
     }
 
+#if defined(VERSION_G4QP01)
+    if (!EXIDma(chan, card->buffer, (s32)((card->cmd[0] == 0x52) ? 512 : CARD_PAGE_SIZE), card->mode, __CARDTxHandler))
+#else
     if (!EXIDma(chan, card->buffer, (s32)((card->cmd[0] == 0x52) ? 512 : card->pageSize), card->mode, __CARDTxHandler))
+#endif
     {
         EXIDeselect(chan);
         EXIUnlock(chan);
@@ -596,11 +608,13 @@ s32 __CARDWritePage(s32 chan, CARDCallback callback)
     ASSERTLINE(906, card->addr < (u32)card->size * 1024 * 1024 / 8);
     card->cmd[0] = 0xF2;
 
-    if (card->pageSize > 0x80)
+#if !defined(VERSION_G4QP01)
+    if (card->pageSize > CARD_PAGE_SIZE)
     {
         card->cmd[1] = AD1(card->addr) | 0x80;
     }
     else
+#endif
     {
         card->cmd[1] = AD1(card->addr);
     }
@@ -619,7 +633,12 @@ s32 __CARDWritePage(s32 chan, CARDCallback callback)
     }
     else if (result >= 0)
     {
-        if (!EXIImmEx(chan, card->cmd, card->cmdlen, EXI_WRITE) || !EXIDma(chan, card->buffer, card->pageSize, card->mode, __CARDTxHandler))
+        if (!EXIImmEx(chan, card->cmd, card->cmdlen, EXI_WRITE)
+#if defined(VERSION_G4QP01)
+            || !EXIDma(chan, card->buffer, CARD_PAGE_SIZE, card->mode, __CARDTxHandler))
+#else
+            || !EXIDma(chan, card->buffer, card->pageSize, card->mode, __CARDTxHandler))
+#endif
         {
             card->exiCallback = 0;
             EXIDeselect(chan);
@@ -687,7 +706,8 @@ s32 __CARDEraseSector(s32 chan, u32 addr, CARDCallback callback)
     ASSERTLINE(1012, addr % card->sectorSize == 0);
     ASSERTLINE(1013, addr < (u32)card->size * 1024 * 1024 / 8);
 
-    if (card->pageSize > 0x80)
+#if !defined(VERSION_G4QP01)
+    if (card->pageSize > CARD_PAGE_SIZE)
     {
         if (callback)
         {
@@ -695,6 +715,7 @@ s32 __CARDEraseSector(s32 chan, u32 addr, CARDCallback callback)
         }
         return 0;
     }
+#endif
 
     card->cmd[0] = 0xF1;
     card->cmd[1] = AD1(addr);
@@ -1018,6 +1039,7 @@ static BOOL OnReset(BOOL final)
     return TRUE;
 }
 
+#if !defined(VERSION_G4QP01)
 BOOL CARDSetFastMode(BOOL enable)
 {
     u16 prev = __CARDFastMode;
@@ -1033,6 +1055,7 @@ BOOL CARDGetFastMode(void)
 {
     return __CARDFastMode ? TRUE : FALSE;
 }
+#endif
 
 s32 CARDGetCurrentMode(s32 chan, u32* mode)
 {

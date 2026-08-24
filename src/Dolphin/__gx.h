@@ -175,6 +175,32 @@ do { \
 
 #define GET_REG_FIELD(reg, size, shift) ((int)((reg) >> (shift)) & ((1 << (size)) - 1))
 
+#define GX_SET_REG(reg, value, start, end) \
+    ((reg) = __rlwimi((reg), (value), 31 - (end), (start), (end)))
+
+#define GX_SET_TRUNC(reg, value, start, end) \
+    __rlwimi((reg), (value), 0, (start), (end))
+
+#define GX_BP_LOAD_REG(value) \
+do { \
+    GX_WRITE_U8(0x61); \
+    GX_WRITE_U32(value); \
+} while (0)
+
+#define GX_CP_LOAD_REG(addr, value) \
+do { \
+    GX_WRITE_U8(0x08); \
+    GX_WRITE_U8(addr); \
+    GX_WRITE_U32(value); \
+} while (0)
+
+#define GX_XF_LOAD_REG(addr, value) \
+do { \
+    GX_WRITE_U8(0x10); \
+    GX_WRITE_U32(addr); \
+    GX_WRITE_U32(value); \
+} while (0)
+
 // TODO: reconcile reg macro differences
 // this one is needed to match non GX libs
 #define OLD_SET_REG_FIELD(line, reg, size, shift, val) \

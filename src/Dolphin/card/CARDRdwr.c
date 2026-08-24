@@ -70,6 +70,43 @@ s32 __CARDRead(s32 chan, u32 addr, s32 length, void* dst, CARDCallback callback)
  */
 static void BlockWriteCallback(s32 chan, s32 result)
 {
+#if defined(VERSION_G4QP01)
+    CARDControl* card;
+    CARDCallback callback;
+
+    card = &__CARDBlock[chan];
+    if (result < 0)
+    {
+        goto error;
+    }
+
+    card->xferred += CARD_PAGE_SIZE;
+    card->addr += CARD_PAGE_SIZE;
+    (u8*)card->buffer += CARD_PAGE_SIZE;
+    if (--card->repeat <= 0)
+    {
+        goto error;
+    }
+
+    result = __CARDWritePage(chan, BlockWriteCallback);
+    if (result < 0)
+    {
+        goto error;
+    }
+    return;
+
+error:
+    if (card->apiCallback == NULL)
+    {
+        __CARDPutControlBlock(card, result);
+    }
+    callback = card->xferCallback;
+    if (callback)
+    {
+        card->xferCallback = NULL;
+        callback(chan, result);
+    }
+#else
     CARDControl* card;
     CARDCallback callback;
 
@@ -101,6 +138,7 @@ static void BlockWriteCallback(s32 chan, s32 result)
         card->xferCallback = NULL;
         callback(chan, result);
     }
+#endif
 }
 
 /**
@@ -111,6 +149,16 @@ s32 __CARDWrite(s32 chan, u32 addr, s32 length, void* dst, CARDCallback callback
     CARDControl* card;
     card = &__CARDBlock[chan];
 
+#if defined(VERSION_G4QP01)
+    if (!card->attached)
+    {
+        return CARD_RESULT_NOCARD;
+    }
+    card->xferCallback = callback;
+    card->repeat = (int)(length / CARD_PAGE_SIZE);
+    card->addr = addr;
+    card->buffer = dst;
+#else
     ASSERTLINE(153, 0 < length && length % card->pageSize == 0);
     ASSERTLINE(154, 0 <= chan && chan < 2);
 
@@ -122,6 +170,7 @@ s32 __CARDWrite(s32 chan, u32 addr, s32 length, void* dst, CARDCallback callback
     card->repeat = (length / card->pageSize);
     card->addr = addr;
     card->buffer = dst;
+#endif
     return __CARDWritePage(chan, BlockWriteCallback);
 }
 

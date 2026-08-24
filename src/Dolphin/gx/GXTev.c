@@ -245,6 +245,25 @@ void GXSetTevAlphaOp(GXTevStageID stage, GXTevOp op, GXTevBias bias, GXTevScale 
  */
 void GXSetTevColor(GXTevRegID id, GXColor color)
 {
+#if defined(VERSION_G4QP01)
+    u32 ra = 0;
+    u32 bg = 0;
+
+    GX_SET_REG(ra, color.r, 21, 31);
+    GX_SET_REG(ra, color.a, 9, 19);
+    GX_SET_REG(bg, color.b, 21, 31);
+    GX_SET_REG(bg, color.g, 9, 19);
+
+    GX_SET_REG(ra, 0xE0 + id * 2, 0, 7);
+    GX_SET_REG(bg, 0xE1 + id * 2, 0, 7);
+
+    GX_BP_LOAD_REG(ra);
+    GX_BP_LOAD_REG(bg);
+    GX_BP_LOAD_REG(bg);
+    GX_BP_LOAD_REG(bg);
+
+    __GXData->bpSentNot = GX_FALSE;
+#else
     u32 rgba;
     u32 regRA;
     u32 regBG;
@@ -266,6 +285,7 @@ void GXSetTevColor(GXTevRegID id, GXColor color)
     GX_WRITE_RAS_REG(regBG);
 
     __GXData->bpSentNot = 0;
+#endif
 }
 
 /**
@@ -273,6 +293,27 @@ void GXSetTevColor(GXTevRegID id, GXColor color)
  */
 void GXSetTevColorS10(GXTevRegID id, GXColorS10 color)
 {
+#if defined(VERSION_G4QP01)
+    u32 ra;
+    u32 bg;
+
+    ra = 0;
+    GX_SET_REG(ra, color.r & 0x7ff, 21, 31);
+    GX_SET_REG(ra, color.a & 0x7ff, 9, 19);
+    GX_SET_REG(ra, 0xE0 + id * 2, 0, 7);
+
+    bg = 0;
+    GX_SET_REG(bg, color.b & 0x7ff, 21, 31);
+    GX_SET_REG(bg, color.g & 0x7ff, 9, 19);
+    GX_SET_REG(bg, 0xE1 + id * 2, 0, 7);
+
+    GX_BP_LOAD_REG(ra);
+    GX_BP_LOAD_REG(bg);
+    GX_BP_LOAD_REG(bg);
+    GX_BP_LOAD_REG(bg);
+
+    __GXData->bpSentNot = GX_FALSE;
+#else
     u32 sRG;
     u32 sBA;
     u32 regRA;
@@ -301,6 +342,7 @@ void GXSetTevColorS10(GXTevRegID id, GXColorS10 color)
     GX_WRITE_RAS_REG(regBG);
 
     __GXData->bpSentNot = 0;
+#endif
 }
 
 /**
@@ -308,6 +350,27 @@ void GXSetTevColorS10(GXTevRegID id, GXColorS10 color)
  */
 void GXSetTevKColor(GXTevKColorID id, GXColor color)
 {
+#if defined(VERSION_G4QP01)
+    u32 ra;
+    u32 bg;
+
+    ra = 0;
+    GX_SET_REG(ra, color.r, 24, 31);
+    GX_SET_REG(ra, color.a, 12, 19);
+    GX_SET_REG(ra, 8, 8, 11);
+    GX_SET_REG(ra, 0xE0 + id * 2, 0, 7);
+
+    bg = 0;
+    GX_SET_REG(bg, color.b, 24, 31);
+    GX_SET_REG(bg, color.g, 12, 19);
+    GX_SET_REG(bg, 8, 8, 11);
+    GX_SET_REG(bg, 0xE1 + id * 2, 0, 7);
+
+    GX_BP_LOAD_REG(ra);
+    GX_BP_LOAD_REG(bg);
+
+    __GXData->bpSentNot = GX_FALSE;
+#else
     u32 rgba;
     u32 regRA;
     u32 regBG;
@@ -329,6 +392,7 @@ void GXSetTevKColor(GXTevKColorID id, GXColor color)
     GX_WRITE_RAS_REG(regBG);
 
     __GXData->bpSentNot = 0;
+#endif
 }
 
 /**

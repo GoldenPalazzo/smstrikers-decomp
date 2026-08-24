@@ -1384,14 +1384,14 @@ config.libs = [
         "Dolfin SDK",
         [
             # Dolphin/OS
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/exi/EXIBios.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/exi/EXIBios.c", extra_cflags=["-inline auto"]),
         ]
     ),
     DolphinLib(
         "Dolfin SDK",
         [
             # Dolphin/OS
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/os/OS.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/os/OS.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/os/OSAlarm.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/os/OSAlloc.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/os/OSArena.c", extra_cflags=["-inline auto"]),
@@ -1400,13 +1400,13 @@ config.libs = [
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/os/OSContext.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/os/OSError.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/os/OSExec.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/os/OSFont.c", extra_cflags=["-inline auto", "-char unsigned"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/os/OSFont.c", extra_cflags=["-inline auto", "-char unsigned"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/os/OSInterrupt.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/os/OSLink.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/os/OSMemory.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/os/OSMutex.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/os/OSReboot.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/os/OSReset.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/os/OSReboot.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/os/OSReset.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/os/OSResetSW.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/os/OSRtc.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/os/OSSync.c", extra_cflags=["-inline auto"]),
@@ -1416,23 +1416,23 @@ config.libs = [
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/os/__ppc_eabi_init.cpp", extra_cflags=["-inline auto"]),
 
             # Dolfin/AI
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/ai/ai.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/ai/ai.c", extra_cflags=["-inline auto"]),
             
             # Dolfin/AR
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/ar/ar.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/ar/ar.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/ar/arq.c", extra_cflags=["-inline auto"]),
 
             # Dolphin/BASE
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/base/PPCArch.c", extra_cflags=["-inline auto"]),
 
             # Dolphin/CARD
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/card/CARDBios.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/card/CARDBios.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/card/CARDUnlock.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/card/CARDRdwr.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/card/CARDRdwr.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/card/CARDBlock.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/card/CARDDir.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/card/CARDCheck.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/card/CARDMount.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/card/CARDMount.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/card/CARDFormat.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/card/CARDOpen.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/card/CARDCreate.c", extra_cflags=["-inline auto"]),
@@ -1446,14 +1446,19 @@ config.libs = [
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/db/db.c", extra_cflags=["-inline auto"]),
 
             # Dolfin/DSP
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/dsp/dsp.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/dsp/dsp.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/dsp/dsp_debug.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/dsp/dsp_task.c", extra_cflags=["-inline auto"]),
 
             # Dolphin/DVD
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/dvd/dvdlow.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/dvd/dvdfs.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/dvd/dvd.c", extra_cflags=["-inline auto"]),
+            Object(
+                MatchingFor("G4QE01", "G4QJ01", "G4QP01"),
+                "Dolphin/dvd/dvd.c",
+                source="Dolphin/dvd_2003/dvd.c" if config.version == "G4QP01" else "Dolphin/dvd/dvd.c",
+                extra_cflags=["-inline auto"],
+            ),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/dvd/dvdqueue.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/dvd/dvderror.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/dvd/dvdidutils.c", extra_cflags=["-inline auto"]),
@@ -1461,20 +1466,20 @@ config.libs = [
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/dvd/fstload.c", extra_cflags=["-inline auto"]),
 
             # Dolphin/EXI
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/exi/EXIUart.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/exi/EXIUart.c", extra_cflags=["-inline auto"]),
 
             # Dolphin/GX
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/gx/GXInit.c", extra_cflags=["-inline auto", "-opt nopeephole"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/gx/GXInit.c", extra_cflags=["-inline auto", "-opt nopeephole"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/gx/GXFifo.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/gx/GXAttr.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/gx/GXAttr.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/gx/GXMisc.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/gx/GXGeometry.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/gx/GXGeometry.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/gx/GXFrameBuf.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/gx/GXLight.c", extra_cflags=["-inline auto", "-fp_contract off"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/gx/GXLight.c", extra_cflags=["-inline auto", "-fp_contract off"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/gx/GXTexture.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/gx/GXBump.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/gx/GXTev.c", extra_cflags=["-inline auto"]),
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/gx/GXPixel.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/gx/GXTev.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/gx/GXPixel.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/gx/GXDisplayList.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/gx/GXTransform.c", extra_cflags=["-inline auto", "-fp_contract off"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/gx/GXPerf.c", extra_cflags=["-inline auto"]),
@@ -1489,11 +1494,16 @@ config.libs = [
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/pad/Pad.c", extra_cflags=["-inline auto"]),
 
             # Dolphin/SI
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/si/SIBios.c", extra_cflags=["-inline auto"]),
+            Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/si/SIBios.c", extra_cflags=["-inline auto"]),
             Object(MatchingFor("G4QE01", "G4QJ01", "G4QP01"), "Dolphin/si/SISamplingRate.c", extra_cflags=["-inline auto"]),
 
             # Dolphin/VI
-            Object(MatchingFor("G4QE01", "G4QJ01"), "Dolphin/vi/vi.c", extra_cflags=["-inline auto"]),
+            Object(
+                MatchingFor("G4QE01", "G4QJ01", "G4QP01"),
+                "Dolphin/vi/vi.c",
+                source="Dolphin/vi_2003/vi.c" if config.version == "G4QP01" else "Dolphin/vi/vi.c",
+                extra_cflags=["-inline auto"],
+            ),
         ],
     ),
 

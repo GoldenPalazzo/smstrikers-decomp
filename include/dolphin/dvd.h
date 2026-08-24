@@ -144,7 +144,9 @@ int DVDReadAbsAsyncForBS(DVDCommandBlock* block, void* addr, s32 length, s32 off
 int DVDReadDiskID(DVDCommandBlock* block, DVDDiskID* diskID, DVDCBCallback callback);
 int DVDPrepareStreamAbsAsync(DVDCommandBlock* block, u32 length, u32 offset, DVDCBCallback callback);
 int DVDCancelStreamAsync(DVDCommandBlock* block, DVDCBCallback callback);
+#if !defined(VERSION_G4QP01)
 s32 DVDCancelStream(DVDCommandBlock* block);
+#endif
 int DVDStopStreamAtEndAsync(DVDCommandBlock* block, DVDCBCallback callback);
 s32 DVDStopStreamAtEnd(DVDCommandBlock* block);
 int DVDGetStreamErrorStatusAsync(DVDCommandBlock* block, DVDCBCallback callback);
@@ -170,7 +172,11 @@ BOOL DVDSetAutoInvalidation(BOOL autoInval);
 void DVDPause(void);
 void DVDResume(void);
 int DVDCancelAsync(DVDCommandBlock* block, DVDCBCallback callback);
+#if defined(VERSION_G4QP01)
+s32 DVDCancel(DVDCommandBlock* block);
+#else
 s32 DVDCancel(volatile DVDCommandBlock* block);
+#endif
 int DVDCancelAllAsync(DVDCBCallback callback);
 s32 DVDCancelAll(void);
 DVDDiskID* DVDGetCurrentDiskID(void);

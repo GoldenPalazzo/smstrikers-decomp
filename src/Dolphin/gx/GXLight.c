@@ -486,6 +486,49 @@ void GXLoadLightObjIndx(u32 lt_obj_indx, GXLightID light)
  */
 void GXSetChanAmbColor(GXChannelID chan, GXColor amb_color)
 {
+#if defined(VERSION_G4QP01)
+    u32 reg;
+    u32 rgb;
+    u32 colorID;
+
+    switch (chan)
+    {
+    case GX_COLOR0:
+        rgb = __GXData->ambColor[GX_COLOR0];
+        reg = GX_SET_TRUNC(GXCOLOR_AS_U32(amb_color) & ~0xff, rgb, 24, 31);
+        colorID = GX_COLOR0;
+        break;
+    case GX_COLOR1:
+        rgb = __GXData->ambColor[GX_COLOR1];
+        reg = GX_SET_TRUNC(GXCOLOR_AS_U32(amb_color) & ~0xff, rgb, 24, 31);
+        colorID = GX_COLOR1;
+        break;
+    case GX_ALPHA0:
+        reg = __GXData->ambColor[GX_COLOR0];
+        reg = GX_SET_TRUNC(reg, amb_color.a, 24, 31);
+        colorID = GX_COLOR0;
+        break;
+    case GX_ALPHA1:
+        reg = __GXData->ambColor[GX_COLOR1];
+        reg = GX_SET_TRUNC(reg, amb_color.a, 24, 31);
+        colorID = GX_COLOR1;
+        break;
+    case GX_COLOR0A0:
+        reg = GXCOLOR_AS_U32(amb_color);
+        colorID = GX_COLOR0;
+        break;
+    case GX_COLOR1A1:
+        reg = GXCOLOR_AS_U32(amb_color);
+        colorID = GX_COLOR1;
+        break;
+    default:
+        return;
+    }
+
+    GX_XF_LOAD_REG(0x100A + colorID, reg);
+    __GXData->bpSentNot = GX_TRUE;
+    __GXData->ambColor[colorID] = reg;
+#else
     u32 reg;
     u32 rgb;
     u32 colIdx;
@@ -532,6 +575,7 @@ void GXSetChanAmbColor(GXChannelID chan, GXColor amb_color)
     GX_WRITE_XF_REG(colIdx + 10, reg);
     __GXData->bpSentNot = 1;
     __GXData->ambColor[colIdx] = reg;
+#endif
 }
 
 /**
@@ -539,6 +583,49 @@ void GXSetChanAmbColor(GXChannelID chan, GXColor amb_color)
  */
 void GXSetChanMatColor(GXChannelID chan, GXColor mat_color)
 {
+#if defined(VERSION_G4QP01)
+    u32 reg = 0;
+    u32 rgb;
+    GXChannelID colorID;
+
+    switch (chan)
+    {
+    case GX_COLOR0:
+        rgb = __GXData->matColor[GX_COLOR0];
+        reg = GX_SET_TRUNC(GXCOLOR_AS_U32(mat_color) & ~0xff, rgb, 24, 31);
+        colorID = GX_COLOR0;
+        break;
+    case GX_COLOR1:
+        rgb = __GXData->matColor[GX_COLOR1];
+        reg = GX_SET_TRUNC(GXCOLOR_AS_U32(mat_color) & ~0xff, rgb, 24, 31);
+        colorID = GX_COLOR1;
+        break;
+    case GX_ALPHA0:
+        reg = __GXData->matColor[GX_COLOR0];
+        reg = GX_SET_TRUNC(reg, mat_color.a, 24, 31);
+        colorID = GX_COLOR0;
+        break;
+    case GX_ALPHA1:
+        reg = __GXData->matColor[GX_COLOR1];
+        reg = GX_SET_TRUNC(reg, mat_color.a, 24, 31);
+        colorID = GX_COLOR1;
+        break;
+    case GX_COLOR0A0:
+        reg = GXCOLOR_AS_U32(mat_color);
+        colorID = GX_COLOR0;
+        break;
+    case GX_COLOR1A1:
+        reg = GXCOLOR_AS_U32(mat_color);
+        colorID = GX_COLOR1;
+        break;
+    default:
+        return;
+    }
+
+    GX_XF_LOAD_REG(0x100C + colorID, reg);
+    __GXData->bpSentNot = GX_TRUE;
+    __GXData->matColor[colorID] = reg;
+#else
     u32 reg;
     u32 rgb;
     u32 colIdx;
@@ -585,6 +672,7 @@ void GXSetChanMatColor(GXChannelID chan, GXColor mat_color)
     GX_WRITE_XF_REG(colIdx + 12, reg);
     __GXData->bpSentNot = 1;
     __GXData->matColor[colIdx] = reg;
+#endif
 }
 
 /**
@@ -606,6 +694,33 @@ void GXSetNumChans(u8 nChans)
 void GXSetChanCtrl(GXChannelID chan, GXBool enable, GXColorSrc amb_src, GXColorSrc mat_src, u32 light_mask, GXDiffuseFn diff_fn,
     GXAttnFn attn_fn)
 {
+#if defined(VERSION_G4QP01)
+    const u32 colorID = (u32)chan & 0x3;
+    u32 reg = 0;
+
+    GX_SET_REG(reg, enable, 30, 30);
+    GX_SET_REG(reg, mat_src, 31, 31);
+    GX_SET_REG(reg, amb_src, 25, 25);
+    GX_SET_REG(reg, (attn_fn == GX_AF_SPEC ? GX_DF_NONE : diff_fn), 23, 24);
+    GX_SET_REG(reg, (attn_fn != GX_AF_NONE), 22, 22);
+    GX_SET_REG(reg, (attn_fn != GX_AF_SPEC), 21, 21);
+
+    reg = (reg & ~(0xf << 2)) | ((light_mask & 0xf) << 2);
+    reg = (reg & ~(0xf << 11)) | (((light_mask >> 4) & 0xf) << 11);
+
+    GX_XF_LOAD_REG(0x100E + colorID, reg);
+
+    if (chan == GX_COLOR0A0)
+    {
+        GX_XF_LOAD_REG(0x1010, reg);
+    }
+    else if (chan == GX_COLOR1A1)
+    {
+        GX_XF_LOAD_REG(0x1011, reg);
+    }
+
+    __GXData->bpSentNot = GX_TRUE;
+#else
     u32 reg;
     u32 idx;
 
@@ -648,4 +763,5 @@ void GXSetChanCtrl(GXChannelID chan, GXBool enable, GXColorSrc amb_src, GXColorS
     }
 
     __GXData->bpSentNot = 1;
+#endif
 }

@@ -159,6 +159,82 @@ static int QueueLength(void)
  */
 int WriteUARTN(void* buf, u32 len)
 {
+#if defined(VERSION_G4QP01)
+    u32 cmd;
+    BOOL interrupt;
+    int qLen;
+    s32 xLen;
+    char* ptr;
+    BOOL locked;
+    u32 error;
+
+    if (Enabled != 0xA5FF005A)
+    {
+        return 2;
+    }
+
+    interrupt = OSDisableInterrupts();
+
+    locked = EXILock(Chan, Dev, 0);
+    if (!locked)
+    {
+        OSRestoreInterrupts(interrupt);
+        return 0;
+    }
+
+    for (ptr = (char*)buf; ptr - (char*)buf < len; ptr++)
+    {
+        if (*ptr == '\n')
+        {
+            *ptr = '\r';
+        }
+    }
+
+    error = 0;
+    cmd = 0xA0010000;
+    while (len)
+    {
+        qLen = QueueLength();
+        if (qLen < 0)
+        {
+            error = 3;
+            break;
+        }
+
+        if (qLen < 12 && qLen < len)
+        {
+            continue;
+        }
+
+        if (!EXISelect(Chan, Dev, EXI_FREQ_8M))
+        {
+            error = 3;
+            break;
+        }
+
+        EXIImm(Chan, &cmd, 4, EXI_WRITE, NULL);
+        EXISync(Chan);
+
+        while (qLen && len)
+        {
+            if (qLen < 4 && qLen < len)
+            {
+                break;
+            }
+            xLen = (len < 4) ? (s32)len : 4;
+            EXIImm(Chan, buf, xLen, EXI_WRITE, NULL);
+            (u8*)buf += xLen;
+            len -= xLen;
+            qLen -= xLen;
+            EXISync(Chan);
+        }
+        EXIDeselect(Chan);
+    }
+
+    EXIUnlock(Chan);
+    OSRestoreInterrupts(interrupt);
+    return error;
+#else
     u32 cmd;
     s32 xLen;
     int qLen;
@@ -233,4 +309,5 @@ int WriteUARTN(void* buf, u32 len)
 
     EXIUnlock(Chan);
     return error;
+#endif
 }

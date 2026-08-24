@@ -145,6 +145,20 @@ void GXEnableTexOffsets(GXTexCoordID coord, u8 line_enable, u8 point_enable)
  */
 void GXSetCullMode(GXCullMode mode)
 {
+#if defined(VERSION_G4QP01)
+    switch (mode)
+    {
+    case GX_CULL_FRONT:
+        mode = GX_CULL_BACK;
+        break;
+    case GX_CULL_BACK:
+        mode = GX_CULL_FRONT;
+        break;
+    }
+
+    GX_SET_REG(__GXData->genMode, mode, 16, 17);
+    __GXData->dirtyState |= 4;
+#else
     GXCullMode hwMode;
 
     CHECK_GXBEGIN(557, "GXSetCullMode");
@@ -168,6 +182,7 @@ void GXSetCullMode(GXCullMode mode)
 
     SET_REG_FIELD(570, __GXData->genMode, 2, 14, hwMode);
     __GXData->dirtyState |= 4;
+#endif
 }
 
 void GXGetCullMode(GXCullMode* mode)

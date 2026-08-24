@@ -9,6 +9,105 @@
  */
 void GXSetFog(GXFogType type, f32 startz, f32 endz, f32 nearz, f32 farz, GXColor color)
 {
+#if defined(VERSION_G4QP01)
+    f32 a;
+    f32 c;
+    u32 a_bits;
+    u32 c_bits;
+    u32 fogColorReg = 0;
+    u32 fogParamReg0 = 0;
+    u32 fogParamReg1 = 0;
+    u32 fogParamReg2 = 0;
+    u32 fogParamReg3 = 0;
+    u32 fsel = type & 7;
+    BOOL isOrtho = (type >> 3) & 1;
+
+    if (isOrtho)
+    {
+        if (farz == nearz || endz == startz)
+        {
+            a = 0.0f;
+            c = 0.0f;
+        }
+        else
+        {
+            a = (1.0f / (endz - startz)) * (farz - nearz);
+            c = (1.0f / (endz - startz)) * (startz - nearz);
+        }
+    }
+    else
+    {
+        f32 tmpA;
+        f32 tmpB;
+        f32 tmpC;
+        u32 expB;
+        u32 magB;
+        u32 shiftB;
+
+        if (farz == nearz || endz == startz)
+        {
+            tmpA = 0.0f;
+            tmpB = 0.5f;
+            tmpC = 0.0f;
+        }
+        else
+        {
+            tmpA = (farz * nearz) / ((farz - nearz) * (endz - startz));
+            tmpB = farz / (farz - nearz);
+            tmpC = startz / (endz - startz);
+        }
+
+        expB = 0;
+        while (tmpB > 1.0)
+        {
+            tmpB /= 2.0f;
+            expB++;
+        }
+        while (tmpB > 0.0f && tmpB < 0.5)
+        {
+            tmpB *= 2.0f;
+            expB--;
+        }
+
+        a = tmpA / (1 << expB + 1);
+        magB = 8388638.0f * tmpB;
+        shiftB = expB + 1;
+        c = tmpC;
+
+        GX_SET_REG(fogParamReg1, magB, 8, 31);
+        GX_SET_REG(fogParamReg2, shiftB, 27, 31);
+        GX_SET_REG(fogParamReg1, 0xEF, 0, 7);
+        GX_SET_REG(fogParamReg2, 0xF0, 0, 7);
+    }
+
+    a_bits = *(u32*)&a;
+    c_bits = *(u32*)&c;
+
+    GX_SET_REG(fogParamReg0, a_bits >> 12, 21, 31);
+    GX_SET_REG(fogParamReg0, a_bits >> 23, 13, 20);
+    GX_SET_REG(fogParamReg0, a_bits >> 31, 12, 12);
+    GX_SET_REG(fogParamReg0, 0xEE, 0, 7);
+
+    GX_SET_REG(fogParamReg3, c_bits >> 12, 21, 31);
+    GX_SET_REG(fogParamReg3, c_bits >> 23, 13, 20);
+    GX_SET_REG(fogParamReg3, c_bits >> 31, 12, 12);
+    GX_SET_REG(fogParamReg3, isOrtho, 11, 11);
+    GX_SET_REG(fogParamReg3, fsel, 8, 10);
+    GX_SET_REG(fogParamReg3, 0xF1, 0, 7);
+
+    GX_SET_REG(fogColorReg, color.b, 24, 31);
+    GX_SET_REG(fogColorReg, color.g, 16, 23);
+    GX_SET_REG(fogColorReg, color.r, 8, 15);
+    GX_SET_REG(fogColorReg, 0xF2, 0, 7);
+
+    GX_BP_LOAD_REG(fogParamReg0);
+    GX_BP_LOAD_REG(fogParamReg1);
+    GX_BP_LOAD_REG(fogParamReg2);
+    GX_BP_LOAD_REG(fogParamReg3);
+    GX_BP_LOAD_REG(fogColorReg);
+
+    __GXData->bpSentNot = GX_FALSE;
+#else
     u32 fogclr;
     u32 fog0;
     u32 fog1;
@@ -124,6 +223,7 @@ void GXSetFog(GXFogType type, f32 startz, f32 endz, f32 nearz, f32 farz, GXColor
     GX_WRITE_RAS_REG(fogclr);
 
     __GXData->bpSentNot = 0;
+#endif
 }
 
 void GXSetFogColor(GXColor color)

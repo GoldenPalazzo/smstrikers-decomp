@@ -20,7 +20,9 @@
 #define RBUILD_TIME "06:27:12"
 #endif
 
-#ifdef DEBUG
+#if defined(VERSION_G4QP01)
+const char* __GXVersion = "<< Dolphin SDK - GX\trelease build: Nov 26 2003 05:19:07 (0x2301) >>";
+#elif defined(DEBUG)
 const char* __GXVersion = "<< Dolphin SDK - GX\tdebug build: " BUILD_DATE " " DBUILD_TIME " (0x2301) >>";
 #else
 const char* __GXVersion = "<< Dolphin SDK - GX\trelease build: " BUILD_DATE " " RBUILD_TIME " (0x2301) >>";
@@ -31,16 +33,25 @@ static GXFifoObj FifoObj;
 static GXData gxData;
 GXData* const __GXData = &gxData;
 
-// these are supposed to be in-function static, but it messed up sbss order
+#if !defined(VERSION_G4QP01)
+// These are function statics in earlier SDK revisions.
 u32 resetFuncRegistered;
 u32 calledOnce;
 OSTime time;
 u32 peCount;
+#endif
 
+#if defined(VERSION_G4QP01)
+void* __piReg = NULL;
+void* __cpReg = NULL;
+void* __peReg = NULL;
+void* __memReg = NULL;
+#else
 void* __memReg;
 void* __peReg;
 void* __cpReg;
 void* __piReg;
+#endif
 
 #if DEBUG
 GXBool __GXinBegin;
@@ -222,6 +233,11 @@ static void __GXDefaultVerifyCallback(GXWarningLevel level, u32 id, const char* 
  */
 static int __GXShutdown(BOOL final)
 {
+#if defined(VERSION_G4QP01)
+    static u32 peCount;
+    static OSTime time;
+    static u32 calledOnce = 0;
+#endif
     u32 reg;
     u32 peCountNew;
     OSTime timeNew;
@@ -342,6 +358,191 @@ void __GXInitRevisionBits(void)
  */
 GXFifoObj* GXInit(void* base, u32 size)
 {
+#if defined(VERSION_G4QP01)
+    static u32 resetFuncRegistered = 0;
+    u32 i;
+    u32 reg;
+    u32 freqBase;
+
+    OSRegisterVersion(__GXVersion);
+    __GXData->inDispList = GX_FALSE;
+    __GXData->dlSaveContext = GX_TRUE;
+    __GXData->abtWaitPECopy = GX_TRUE;
+
+    __GXData->tcsManEnab = 0;
+    __GXData->tevTcEnab = 0;
+
+    GXSetMisc(GX_MT_XF_FLUSH, 0);
+
+    __piReg = (void*)OSPhysicalToUncached(0x0C003000);
+    __cpReg = (void*)OSPhysicalToUncached(0x0C000000);
+    __peReg = (void*)OSPhysicalToUncached(0x0C001000);
+    __memReg = (void*)OSPhysicalToUncached(0x0C004000);
+
+    __GXFifoInit();
+
+    GXInitFifoBase(&FifoObj, base, size);
+    GXSetCPUFifo(&FifoObj);
+    GXSetGPFifo(&FifoObj);
+
+    if (!resetFuncRegistered)
+    {
+        OSRegisterResetFunction(&GXResetFuncInfo);
+        resetFuncRegistered = 1;
+    }
+
+    __GXPEInit();
+    EnableWriteGatherPipe();
+
+    __GXData->genMode = 0;
+    GX_SET_REG(__GXData->genMode, 0, 0, 7);
+
+    __GXData->bpMask = 255;
+    GX_SET_REG(__GXData->bpMask, 0xF, 0, 7);
+
+    __GXData->lpSize = 0;
+    GX_SET_REG(__GXData->lpSize, 34, 0, 7);
+
+    for (i = 0; i < 16; i++)
+    {
+        __GXData->tevc[i] = 0;
+        __GXData->teva[i] = 0;
+        __GXData->tref[i / 2] = 0;
+        __GXData->texmapId[i] = GX_TEXMAP_NULL;
+
+        GX_SET_REG(__GXData->tevc[i], 0xC0 + i * 2, 0, 7);
+        GX_SET_REG(__GXData->teva[i], 0xC1 + i * 2, 0, 7);
+        GX_SET_REG(__GXData->tevKsel[i / 2], 0xF6 + i / 2, 0, 7);
+        GX_SET_REG(__GXData->tref[i / 2], 0x28 + i / 2, 0, 7);
+    }
+
+    __GXData->iref = 0;
+    GX_SET_REG(__GXData->iref, 0x27, 0, 7);
+
+    for (i = 0; i < 8; i++)
+    {
+        __GXData->suTs0[i] = 0;
+        __GXData->suTs1[i] = 0;
+
+        GX_SET_REG(__GXData->suTs0[i], 0x30 + i * 2, 0, 7);
+        GX_SET_REG(__GXData->suTs1[i], 0x31 + i * 2, 0, 7);
+    }
+
+    GX_SET_REG(__GXData->suScis0, 0x20, 0, 7);
+    GX_SET_REG(__GXData->suScis1, 0x21, 0, 7);
+
+    GX_SET_REG(__GXData->cmode0, 0x41, 0, 7);
+    GX_SET_REG(__GXData->cmode1, 0x42, 0, 7);
+
+    GX_SET_REG(__GXData->zmode, 0x40, 0, 7);
+    GX_SET_REG(__GXData->peCtrl, 0x43, 0, 7);
+
+    GX_SET_REG(__GXData->cpTex, 0, 23, 24);
+
+    __GXData->zScale = 1.6777216E7f;
+    __GXData->zOffset = 0.0f;
+
+    __GXData->dirtyState = 0;
+    __GXData->dirtyVAT = 0;
+
+    freqBase = OS_BUS_CLOCK / 500;
+
+    __GXFlushTextureState();
+
+    reg = (freqBase / 2048) | 0x69000400;
+    GX_BP_LOAD_REG(reg);
+
+    __GXFlushTextureState();
+
+    reg = (freqBase / 4224) | 0x46000200;
+    GX_BP_LOAD_REG(reg);
+
+    for (i = 0; i < 8; i++)
+    {
+        u32 regAddr;
+
+        GX_SET_REG(__GXData->vatA[i], 1, 1, 1);
+        GX_SET_REG(__GXData->vatB[i], 1, 0, 0);
+
+        regAddr = i | 0x80;
+        GX_CP_LOAD_REG(regAddr, __GXData->vatB[i]);
+    }
+
+    {
+        u32 reg1 = 0;
+        u32 reg2 = 0;
+
+        GX_SET_REG(reg1, 1, 31, 31);
+        GX_SET_REG(reg1, 1, 30, 30);
+        GX_SET_REG(reg1, 1, 29, 29);
+        GX_SET_REG(reg1, 1, 28, 28);
+        GX_SET_REG(reg1, 1, 27, 27);
+        GX_SET_REG(reg1, 1, 26, 26);
+
+        GX_XF_LOAD_REG(0x1000, reg1);
+
+        GX_SET_REG(reg2, 1, 31, 31);
+        GX_XF_LOAD_REG(0x1012, reg2);
+    }
+
+    {
+        u32 reg = 0;
+        GX_SET_REG(reg, 1, 31, 31);
+        GX_SET_REG(reg, 1, 30, 30);
+        GX_SET_REG(reg, 1, 29, 29);
+        GX_SET_REG(reg, 1, 28, 28);
+        GX_SET_REG(reg, 0x58, 0, 7);
+
+        GX_BP_LOAD_REG(reg);
+    }
+
+    for (i = 0; i < 8; i++)
+    {
+        GXInitTexCacheRegion(&__GXData->TexRegions0[i], GX_FALSE, GXTexRegionAddrTable[i], GX_TEXCACHE_32K,
+            GXTexRegionAddrTable[i + 8], GX_TEXCACHE_32K);
+        GXInitTexCacheRegion(&__GXData->TexRegions1[i], GX_FALSE, GXTexRegionAddrTable[i + 16], GX_TEXCACHE_32K,
+            GXTexRegionAddrTable[i + 24], GX_TEXCACHE_32K);
+        GXInitTexCacheRegion(&__GXData->TexRegions2[i], GX_TRUE, GXTexRegionAddrTable[i + 32], GX_TEXCACHE_32K,
+            GXTexRegionAddrTable[i + 40], GX_TEXCACHE_32K);
+    }
+
+    for (i = 0; i < 16; i++)
+    {
+        GXInitTlutRegion(&__GXData->TlutRegions[i], 0xC0000 + 0x2000 * i, GX_TLUT_256);
+    }
+
+    for (i = 0; i < 4; i++)
+    {
+        GXInitTlutRegion(&__GXData->TlutRegions[i + 16], 0xE0000 + 0x8000 * i, GX_TLUT_1K);
+    }
+
+    {
+        u32 reg = 0;
+
+        GX_SET_CP_REG(3, reg);
+
+        GX_SET_REG(__GXData->perfSel, 0, 24, 27);
+        GX_CP_LOAD_REG(0x20, __GXData->perfSel);
+
+        reg = 0;
+        GX_XF_LOAD_REG(0x1006, reg);
+
+        reg = 0x23000000;
+        GX_BP_LOAD_REG(reg);
+
+        reg = 0x24000000;
+        GX_BP_LOAD_REG(reg);
+
+        reg = 0x67000000;
+        GX_BP_LOAD_REG(reg);
+    }
+
+    __GXSetIndirectMask(0);
+    __GXSetTmemConfig(2);
+    __GXInitGX();
+
+    return &FifoObj;
+#else
     u32 i;
     u32 reg;
     u32 freqBase;
@@ -494,6 +695,7 @@ GXFifoObj* GXInit(void* base, u32 size)
     __GXInitGX();
 
     return &FifoObj;
+#endif
 }
 
 /**

@@ -103,6 +103,22 @@ void OSUnregisterResetFunction(OSResetFunctionInfo* info)
  */
 int __OSCallResetFunctions(BOOL final)
 {
+#if defined(VERSION_G4QP01)
+    OSResetFunctionInfo* info;
+    BOOL result = FALSE;
+
+    for (info = ResetFunctionQueue.head; info != NULL && result == FALSE; info = info->next)
+    {
+        result |= !info->func(final);
+    }
+
+    result |= !__OSSyncSram();
+    if (result)
+    {
+        return FALSE;
+    }
+    return TRUE;
+#else
     OSResetFunctionInfo* info;
     int err;
     u32 priority;
@@ -125,6 +141,7 @@ int __OSCallResetFunctions(BOOL final)
         return 0;
     }
     return 1;
+#endif
 }
 
 #ifdef __GEKKO__
@@ -247,6 +264,68 @@ void __OSShutdownDevices(BOOL doRecal)
  */
 void OSResetSystem(BOOL reset, u32 resetCode, BOOL forceMenu)
 {
+#if defined(VERSION_G4QP01)
+    struct ResetState
+    {
+        BOOL rc;
+        BOOL disableRecalibration;
+    } state;
+
+    OSDisableScheduler();
+    __OSStopAudioSystem();
+
+    if (reset == OS_RESET_SHUTDOWN || (reset == OS_RESET_RESTART && bootThisDol != 0))
+    {
+        state.disableRecalibration = __PADDisableRecalibration(TRUE);
+    }
+
+    while (!__OSCallResetFunctions(FALSE))
+    {
+    }
+
+    if (reset == OS_RESET_HOTRESET && forceMenu)
+    {
+        OSSram* sram;
+
+        sram = __OSLockSram();
+        sram->flags |= 0x40;
+        __OSUnlockSram(TRUE);
+
+        while (!__OSSyncSram())
+        {
+        }
+        resetCode = 0;
+    }
+
+    OSDisableInterrupts();
+    state.rc = __OSCallResetFunctions(TRUE);
+    ASSERTLINE(0x117, state.rc);
+    LCDisable();
+    if (reset == OS_RESET_HOTRESET)
+    {
+        __OSDoHotReset(resetCode);
+    }
+    else if (reset == OS_RESET_RESTART)
+    {
+        if ((*(u32*)OSPhysicalToCached(0x30EC) = bootThisDol) != 0)
+        {
+            __PADDisableRecalibration(state.disableRecalibration);
+        }
+        KillThreads();
+        OSEnableScheduler();
+        __OSReboot(resetCode, forceMenu);
+    }
+
+    KillThreads();
+    memset(OSPhysicalToCached(0x40), 0, 0xCC - 0x40);
+    memset(OSPhysicalToCached(0xD4), 0, 0xE8 - 0xD4);
+    memset(OSPhysicalToCached(0xF4), 0, 0xF8 - 0xF4);
+    memset(OSPhysicalToCached(0x3000), 0, 0xC0);
+    memset(OSPhysicalToCached(0x30C8), 0, 0xD4 - 0xC8);
+    memset(OSPhysicalToCached(0x30E2), 0, 1);
+
+    __PADDisableRecalibration(state.disableRecalibration);
+#else
     OSSram* sram;
 
     OSDisableScheduler();
@@ -289,6 +368,7 @@ void OSResetSystem(BOOL reset, u32 resetCode, BOOL forceMenu)
     memset(OSPhysicalToCached(0x3000), 0, 0xc0);
     memset(OSPhysicalToCached(0x30c8), 0, 0xd4 - 0xc8);
     memset(OSPhysicalToCached(0x30e2), 0, 1);
+#endif
 }
 
 /**
@@ -296,6 +376,14 @@ void OSResetSystem(BOOL reset, u32 resetCode, BOOL forceMenu)
  */
 u32 OSGetResetCode()
 {
+#if defined(VERSION_G4QP01)
+    if (*(u8*)OSPhysicalToCached(0x30E2) != 0)
+    {
+        return *(u32*)OSPhysicalToCached(0x30F0) | 0x80000000;
+    }
+
+    return ((__PIRegs[9] & ~7) >> 3);
+#else
     u32 resetCode;
     if (__OSRebootParams.valid)
         resetCode = 0x80000000 | __OSRebootParams.restartCode;
@@ -303,6 +391,7 @@ u32 OSGetResetCode()
         resetCode = (__PIRegs[9] & 0xFFFFFFF8) / 8;
 
     return resetCode;
+#endif
 }
 
 u32 OSSetBootDol(u32 dolOffset)

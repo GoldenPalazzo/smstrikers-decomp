@@ -209,6 +209,7 @@ static s32 DoMount(s32 chan)
 
         card->latency = LatencyTable[(id & 0x00000700) >> 8];
 
+#if !defined(VERSION_G4QP01)
         result = __CARDReadVendorID(chan, &card->vendorID);
         if (result < 0)
             goto error;
@@ -221,6 +222,7 @@ static s32 DoMount(s32 chan)
         {
             card->pageSize = 128;
         }
+#endif
 
         result = __CARDClearStatus(chan);
         if (result < 0)
