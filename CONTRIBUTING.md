@@ -19,6 +19,7 @@ Whether you're an experienced decomp veteran or just curious about reverse engin
 - [Header and module reorganisation](#header-and-module-reorganisation)
 - [Use of AI tools](#use-of-ai-tools)
 - [Helpful tooling](#helpful-tooling)
+- [Licensing and provenance of contributions](#licensing-and-provenance-of-contributions)
 - [Code of conduct](#code-of-conduct)
 
 ## Where the project stands
@@ -138,6 +139,43 @@ In short: AI is welcome as a tool, not as an author.
   ```
 
   The script writes `dwarf.txt` to the project root. Run `python configure.py && ninja` at least once beforehand so that `build/tools/dtk` is available.
+
+## Licensing and provenance of contributions
+
+By submitting a contribution, you confirm that you have the right to submit
+it and agree that your original contribution is offered under CC0 1.0, except
+where maintainers explicitly accept another license that is clearly identified
+in the contribution. CC0 applies only to rights you hold and does not change
+the status of third-party material.
+
+Do not submit:
+
+- leaked, stolen, confidential, or improperly obtained source code;
+- game assets, disc images, SDK files, proprietary compiler files, or other
+  material that the repository is not authorized to distribute;
+- code copied from an unrelated proprietary source release; or
+- third-party code with a license incompatible with its proposed use here.
+
+When a contribution is based on publicly available third-party source,
+identify its origin and license in the pull request. Preserve existing
+copyright, authorship, and license notices.
+
+For ODE-related contributions:
+
+- state whether the change is based on historical upstream ODE source, retail
+  binary analysis, or original project work;
+- identify the relevant upstream ODE file where possible;
+- preserve ODE copyright, authorship, and license headers;
+- do not describe game-developer modifications as CC0 unless reliable
+  evidence establishes that the relevant rightsholder released them under
+  CC0; and
+- follow the classifications in
+  [`docs/ode-provenance.md`](docs/ode-provenance.md).
+
+A matching or byte-identical build does not by itself establish that all
+reconstructed expression is owned by the contributor or available under CC0.
+Maintainers may request additional provenance information or decline material
+whose origin or licensing cannot be documented adequately.
 
 ## Code of conduct
 

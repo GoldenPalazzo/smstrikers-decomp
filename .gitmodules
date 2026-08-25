@@ -5,6 +5,3 @@
 [submodule "extern/dolphin"]
 	path = extern/dolphin
 	url = https://github.com/doldecomp/dolsdk2001.git
-[submodule "extern/ode"]
-	path = extern/ode
-	url = https://github.com/thomasmarsh/ODE.git

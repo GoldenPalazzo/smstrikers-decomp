@@ -30,6 +30,34 @@ A work-in-progress decompilation of Super Mario Strikers for GameCube.
 
 This repository does **not** contain any game assets or assembly whatsoever. An existing copy of the game is required.
 
+## Legal status and licensing
+
+This is an independently produced source reconstruction, not an official
+source-code release. The project is not affiliated with, authorized by,
+sponsored by, or endorsed by Nintendo or Next Level Games.
+
+The repository contains material with different origins and does **not** use a
+single license for every file:
+
+- original contributions authored specifically for this project are offered
+  under CC0 1.0, except where otherwise indicated and only to the extent that
+  contributors own the relevant rights;
+- upstream Open Dynamics Engine portions are redistributed under ODE's
+  historical BSD-style license alternative;
+- other third-party files and submodules remain subject to their own notices
+  and licenses; and
+- reconstructed game-derived material and modifications originally made by
+  the game's developer may remain subject to third-party rights and are not
+  purportedly relicensed under CC0 by this project.
+
+See [`LICENSE`](LICENSE), [`LICENSE-CC0.txt`](LICENSE-CC0.txt),
+[`LICENSE-BSD.TXT`](LICENSE-BSD.TXT), and
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for details.
+
+This repository does not grant permission to distribute game assets, disc
+images, trademarks, or complete retail-equivalent build outputs. A lawfully
+obtained copy of the game is required for the build process.
+
 Supported versions, in release order:
 
 | Version | Region and title | Release date | Revision | `main.dol` SHA-1 |

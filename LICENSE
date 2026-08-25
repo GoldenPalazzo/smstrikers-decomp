@@ -1,116 +1,110 @@
-CC0 1.0 Universal
+LICENSING AND RIGHTS NOTICE
 
-Statement of Purpose
+This repository contains material with different origins and legal statuses.
+No single license applies to every file. File- and directory-specific notices
+take precedence over this summary.
 
-The laws of most jurisdictions throughout the world automatically confer
-exclusive Copyright and Related Rights (defined below) upon the creator and
-subsequent owner(s) (each and all, an "owner") of an original work of
-authorship and/or a database (each, a "Work").
+This notice does not grant rights in third-party material beyond the rights,
+permissions, licenses, or exceptions supplied by the applicable rightsholder
+or by law. It is a practical description of the repository and is not legal
+advice.
 
-Certain owners wish to permanently relinquish those rights to a Work for the
-purpose of contributing to a commons of creative, cultural and scientific
-works ("Commons") that the public can reliably and without fear of later
-claims of infringement build upon, modify, incorporate in other works, reuse
-and redistribute as freely as possible in any form whatsoever and for any
-purposes, including without limitation commercial purposes. These owners may
-contribute to the Commons to promote the ideal of a free culture and the
-further production of creative, cultural and scientific works, or to gain
-reputation or greater distribution for their Work in part through the use and
-efforts of others.
+1. PROJECT-ORIGINAL CONTRIBUTIONS
 
-For these and/or other purposes and motivations, and without any expectation
-of additional consideration or compensation, the person associating CC0 with a
-Work (the "Affirmer"), to the extent that he or she is an owner of Copyright
-and Related Rights in the Work, voluntarily elects to apply CC0 to the Work
-and publicly distribute the Work under its terms, with knowledge of his or her
-Copyright and Related Rights in the Work and the meaning and intended legal
-effect of CC0 on those rights.
+Except where a file or directory states otherwise, original material authored
+specifically for this project by its contributors is offered under the CC0
+1.0 Universal Public Domain Dedication, but only to the extent that the
+applicable contributor owns the relevant rights and has authority to make the
+dedication. The CC0 text previously used as this repository's root license is
+preserved byte-for-byte in LICENSE-CC0.txt. The canonical CC0 1.0 legal code
+is available at https://creativecommons.org/publicdomain/zero/1.0/legalcode.
 
-1. Copyright and Related Rights. A Work made available under CC0 may be
-protected by copyright and related or neighboring rights ("Copyright and
-Related Rights"). Copyright and Related Rights include, but are not limited
-to, the following:
+This clarification is not intended to revoke any CC0 dedication that was
+validly made. It clarifies that a contributor cannot dedicate rights that the
+contributor does not own or control.
 
-  i. the right to reproduce, adapt, distribute, perform, display, communicate,
-  and translate a Work;
+CC0 does not waive, license, or otherwise affect copyrights, trademarks,
+patents, or other rights belonging to Nintendo, Next Level Games, Open
+Dynamics Engine contributors, or any other third party. Third-party material
+does not become CC0 merely because it is included in, combined with, or
+modified by a project contribution.
 
-  ii. moral rights retained by the original author(s) and/or performer(s);
+2. OPEN DYNAMICS ENGINE
 
-  iii. publicity and privacy rights pertaining to a person's image or likeness
-  depicted in a Work;
+Files under src/ode/, include/ode/, and related locations contain material
+corresponding to Open Dynamics Engine (ODE) version 0.5. Historical ODE 0.5
+source offered a choice of licenses that included the BSD-style license used
+for redistribution of the upstream ODE portions in this repository.
 
-  iv. rights protecting against unfair competition in regards to a Work,
-  subject to the limitations in paragraph 4(a), below;
+The historical BSD text is reproduced verbatim from the ODE 0.5 release in
+LICENSE-BSD.TXT. Existing ODE copyright, authorship, and licensing notices
+must be preserved. Redistribution of upstream ODE portions must comply with
+the conditions in LICENSE-BSD.TXT, including retention of the notice,
+conditions, and disclaimer for source redistribution and reproduction of
+them in accompanying documentation and/or other materials for binary
+redistribution. The names of ODE's copyright owner and contributors may not
+be used to imply endorsement without specific prior written permission.
 
-  v. rights protecting the extraction, dissemination, use and reuse of data in
-  a Work;
+Some ODE-related files may include changes or additions authored by the
+game's developer or another third party. The ODE BSD license applies to the
+upstream ODE material; it does not, by itself, establish the licensing status
+of independently copyrightable third-party changes or additions.
 
-  vi. database rights (such as those arising under Directive 96/9/EC of the
-  European Parliament and of the Council of 11 March 1996 on the legal
-  protection of databases, and under any national implementation thereof,
-  including any amended or successor version of such directive); and
+See THIRD_PARTY_NOTICES.md and docs/ode-provenance.md for details.
 
-  vii. other similar, equivalent or corresponding rights throughout the world
-  based on applicable law or treaty, and any national implementations thereof.
+3. OTHER THIRD-PARTY MATERIAL
 
-2. Waiver. To the greatest extent permitted by, but not in contravention of,
-applicable law, Affirmer hereby overtly, fully, permanently, irrevocably and
-unconditionally waives, abandons, and surrenders all of Affirmer's Copyright
-and Related Rights and associated claims and causes of action, whether now
-known or unknown (including existing as well as future claims and causes of
-action), in the Work (i) in all territories worldwide, (ii) for the maximum
-duration provided by applicable law or treaty (including future time
-extensions), (iii) in any current or future medium and for any number of
-copies, and (iv) for any purpose whatsoever, including without limitation
-commercial, advertising or promotional purposes (the "Waiver"). Affirmer makes
-the Waiver for the benefit of each member of the public at large and to the
-detriment of Affirmer's heirs and successors, fully intending that such Waiver
-shall not be subject to revocation, rescission, cancellation, termination, or
-any other legal or equitable action to disrupt the quiet enjoyment of the Work
-by the public as contemplated by Affirmer's express Statement of Purpose.
+The repository also contains files carrying other notices, including an
+Apache-2.0-licensed Ninja helper, eCos-derived code carrying GPL terms and a
+file-level linking exception, Sun fdlibm notices, reconstructed proprietary
+runtime or SDK material, and separately governed Git submodules. Their
+applicable file-level notices and component licenses control; none of that
+material is relicensed under CC0 by this repository.
 
-3. Public License Fallback. Should any part of the Waiver for any reason be
-judged legally invalid or ineffective under applicable law, then the Waiver
-shall be preserved to the maximum extent permitted taking into account
-Affirmer's express Statement of Purpose. In addition, to the extent the Waiver
-is so judged Affirmer hereby grants to each affected person a royalty-free,
-non transferable, non sublicensable, non exclusive, irrevocable and
-unconditional license to exercise Affirmer's Copyright and Related Rights in
-the Work (i) in all territories worldwide, (ii) for the maximum duration
-provided by applicable law or treaty (including future time extensions), (iii)
-in any current or future medium and for any number of copies, and (iv) for any
-purpose whatsoever, including without limitation commercial, advertising or
-promotional purposes (the "License"). The License shall be deemed effective as
-of the date CC0 was applied by Affirmer to the Work. Should any part of the
-License for any reason be judged legally invalid or ineffective under
-applicable law, such partial invalidity or ineffectiveness shall not
-invalidate the remainder of the License, and in such case Affirmer hereby
-affirms that he or she will not (i) exercise any of his or her remaining
-Copyright and Related Rights in the Work or (ii) assert any associated claims
-and causes of action with respect to the Work, in either case contrary to
-Affirmer's express Statement of Purpose.
+See THIRD_PARTY_NOTICES.md, LICENSE-APACHE-2.0.txt, and LICENSE-GPL-2.0.txt.
 
-4. Limitations and Disclaimers.
+4. GAME-DERIVED AND RECONSTRUCTED MATERIAL
 
-  a. No trademark or patent rights held by Affirmer are waived, abandoned,
-  surrendered, licensed or otherwise affected by this document.
+This repository is an independently produced source reconstruction based on
+analysis of retail versions of the game. It is not an official source-code
+release.
 
-  b. Affirmer offers the Work as-is and makes no representations or warranties
-  of any kind concerning the Work, express, implied, statutory or otherwise,
-  including without limitation warranties of title, merchantability, fitness
-  for a particular purpose, non infringement, or the absence of latent or
-  other defects, accuracy, or the present or absence of errors, whether or not
-  discoverable, all to the greatest extent permissible under applicable law.
+Some files reconstruct code, organization, interfaces, constants, names,
+behavior, or modifications present in the retail game. Such material may be
+subject to third-party rights. Project contributors do not claim ownership of
+third-party material and cannot grant permission for rights they do not own.
 
-  c. Affirmer disclaims responsibility for clearing rights of other persons
-  that may apply to the Work or any use thereof, including without limitation
-  any person's Copyright and Related Rights in the Work. Further, Affirmer
-  disclaims responsibility for obtaining any necessary consents, permissions
-  or other rights required for any use of the Work.
+In particular, the CC0 dedication in LICENSE-CC0.txt does not apply to
+copyrightable expression owned by Nintendo, Next Level Games, or another
+third party. Inclusion in this repository is not a representation that such
+material is in the public domain or that every use or redistribution is
+authorized in every jurisdiction.
 
-  d. Affirmer understands and acknowledges that Creative Commons is not a
-  party to this document and has no duty or obligation with respect to this
-  CC0 or use of the Work.
+5. ASSETS, RETAIL COPIES, AND BUILD OUTPUTS
 
-For more information, please see
-<http://creativecommons.org/publicdomain/zero/1.0/>
+This repository does not grant permission to copy or distribute game assets,
+disc images, trademarks, or other third-party content. Users must provide
+their own lawfully obtained copy of the game where required by the build
+process.
+
+A build produced from this repository may reproduce or contain third-party
+copyrighted material. CC0-covered project contributions and permissively
+licensed components do not, by themselves, grant permission to redistribute
+a complete retail-equivalent executable, disc image, or other build output.
+
+6. TRADEMARKS AND AFFILIATION
+
+Nintendo, Super Mario Strikers, Mario Smash Football, GameCube, and related
+names and marks are the property of their respective owners. Names associated
+with ODE may also be protected names or marks.
+
+This project is not affiliated with, authorized by, sponsored by, or endorsed
+by Nintendo, Next Level Games, Russell L. Smith, the Open Dynamics Engine
+project, or their respective owners or contributors.
+
+7. NO WARRANTY
+
+Project-original material is offered as-is, without warranties or conditions
+of any kind, to the greatest extent permitted by applicable law. Third-party
+components remain subject to their applicable notices and disclaimers,
+including the ODE disclaimer in LICENSE-BSD.TXT.

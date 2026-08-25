@@ -50,6 +50,7 @@ compile_commands.json
 
 # Miscellaneous
 /*.txt
+!/LICENSE-*.txt
 *.exe
 .DS_Store
 src/SDK/__TRK_MINNOW_DOLPHIN/

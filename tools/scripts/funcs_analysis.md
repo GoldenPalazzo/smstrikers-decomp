@@ -179,4 +179,8 @@ This script is designed to integrate seamlessly with the decompilation workflow:
 
 ## License
 
-This script is part of the Super Mario Strikers decompilation project and follows the same license terms as the main project.
+Project-original portions of this script and documentation are offered under
+CC0 1.0 to the extent their contributors own the relevant rights. Third-party
+material remains subject to its own terms. See the repository's root
+[`LICENSE`](../../LICENSE) and
+[`THIRD_PARTY_NOTICES.md`](../../THIRD_PARTY_NOTICES.md).
