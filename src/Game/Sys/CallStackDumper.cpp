@@ -3426,7 +3426,7 @@ static void ProcessBackground()
     {
         for (j = 0; j < 0x280; j++)
         {
-            unsigned long color;
+            u32 color;
             unsigned char b;
 
             GXPeekARGB((unsigned short)j, (unsigned short)i, &color);

@@ -70,7 +70,7 @@ s32 MemCard::BeginCardAccess(const MemCardFunctor& Callback)
 /**
  * Offset/Address/Size: 0xF28 | 0x801CA698 | size: 0x3B4
  */
-long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::ICON_CONFIG* pIconConfig, MemCard::MC_FILE*& pFile, const MemCardFunctor& Callback)
+s32 MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::ICON_CONFIG* pIconConfig, MemCard::MC_FILE*& pFile, const MemCardFunctor& Callback)
 {
     if (m_State != IS_MOUNTED)
     {
@@ -164,7 +164,7 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
 /**
  * Offset/Address/Size: 0xBE8 | 0x801CA358 | size: 0x340
  */
-long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned long* pFileLength)
+s32 MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned long* pFileLength)
 {
     long result;
 
@@ -280,7 +280,7 @@ s32 MemCard::FormatCard(const MemCardFunctor& Callback)
 /**
  * Offset/Address/Size: 0x930 | 0x801CA0A0 | size: 0x1F8
  */
-long MemCard::DeleteFile(const char* FileName, const MemCardFunctor& Callback)
+s32 MemCard::DeleteFile(const char* FileName, const MemCardFunctor& Callback)
 {
     if (m_State != IS_MOUNTED)
     {
@@ -334,7 +334,7 @@ long MemCard::DeleteFile(const char* FileName, const MemCardFunctor& Callback)
 /**
  * Offset/Address/Size: 0x860 | 0x801C9FD0 | size: 0xD0
  */
-long MemCard::InternalReadFile(MC_FILE* pFile, void* Buffer, unsigned long Length, unsigned long StartAt, const MemCardFunctor& Callback)
+s32 MemCard::InternalReadFile(MC_FILE* pFile, void* Buffer, unsigned long Length, unsigned long StartAt, const MemCardFunctor& Callback)
 {
     if (m_State != IS_MOUNTED)
     {
@@ -362,7 +362,7 @@ long MemCard::InternalReadFile(MC_FILE* pFile, void* Buffer, unsigned long Lengt
 /**
  * Offset/Address/Size: 0x740 | 0x801C9EB0 | size: 0x120
  */
-long MemCard::InternalWriteFile(MC_FILE* pFile, void* Buffer, unsigned long Length, unsigned long StartAt, const MemCardFunctor& Callback, bool ResetTransfer)
+s32 MemCard::InternalWriteFile(MC_FILE* pFile, void* Buffer, unsigned long Length, unsigned long StartAt, const MemCardFunctor& Callback, bool ResetTransfer)
 {
     unsigned long LengthMisalign;
     long Result;
@@ -431,7 +431,7 @@ s32 MemCard::FileExists(const char* fileName)
 /**
  * Offset/Address/Size: 0x204 | 0x801C9974 | size: 0x3D8
  */
-long MemCard::WriteFileIconData(MemCard::MC_FILE* pFile, void* pData, const MemCardFunctor& functor)
+s32 MemCard::WriteFileIconData(MemCard::MC_FILE* pFile, void* pData, const MemCardFunctor& functor)
 {
     CARDStat stat;
     ICON_DATA_INFO DataInfo;
@@ -720,7 +720,7 @@ void MemCard::CardRemoved(long result)
 /**
  * Offset/Address/Size: 0x10 | 0x801C9780 | size: 0x14
  */
-unsigned long MemCard::AlignBytesToSectorSize(unsigned long bytes)
+u32 MemCard::AlignBytesToSectorSize(unsigned long bytes)
 {
     unsigned long sectorSize = m_CardInfo.SectorSize;
     unsigned long mask = sectorSize - 1;

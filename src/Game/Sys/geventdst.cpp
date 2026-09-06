@@ -7,10 +7,10 @@ void EventManager::SetupDestArray()
 {
     AllocateDestArray(0x6A, (unsigned long)-1);
 
-    unsigned long* d = m_dest;
-    unsigned long one = 1;    // r4
-    unsigned long v23 = 0x17; // r3
-    unsigned long v22 = 0x16; // r0
+    u32* d = m_dest;
+    u32 one = 1;    // r4
+    u32 v23 = 0x17; // r3
+    u32 v22 = 0x16; // r0
 
     // Offsets / indices are written in the exact order from the asm.
     d[39] = one; // +0x9C
