@@ -1,3 +1,4 @@
+#ifndef _STDIO_H
 #ifndef _MSL_COMMON_FILE_POS_H
 #define _MSL_COMMON_FILE_POS_H
 
@@ -17,3 +18,4 @@ extern "C"
 #endif
 
 #endif /* _MSL_COMMON_FILE_POS_H */
+#endif
