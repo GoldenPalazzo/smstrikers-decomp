@@ -560,7 +560,9 @@ bool AudioLoader::ActivateDPL2(bool bEnableDPL2, bool bLoadSampleFile)
         }
     }
 
+#ifndef GOLDEN_DISABLE_AUDIO
     ARQSetChunkSize(0x1000);
+#endif
     Audio::InitStreaming();
     PlatAudio::ConfigureStreamBuffers(4);
 
@@ -1015,7 +1017,9 @@ void AudioLoader::LoadFE(bool bLoadSampleFile)
             }
         }
 
+#ifndef GOLDEN_DISABLE_AUDIO
         ARQSetChunkSize(0x1000);
+#endif
         PlatAudio::PurgeSampleFileBuffer();
         gbAsyncLoadEntireSampleFileIntoMemRequestMade = false;
     }
@@ -1108,7 +1112,9 @@ void AudioLoader::LoadFEAudioData(bool bAsync)
         }
     }
 
+#ifndef GOLDEN_DISABLE_AUDIO
     ARQSetChunkSize(0x1000);
+#endif
 }
 
 /**
@@ -1314,7 +1320,9 @@ void AudioLoader::LoadPermanentSoundGroups(bool bLoadEntireSampleFileIntoMem)
     LoadOnePermanentGroup(43, bUseReadFromDiscCallback);
     LoadOnePermanentGroup(44, bUseReadFromDiscCallback);
 
+#ifndef GOLDEN_DISABLE_AUDIO
     ARQSetChunkSize(0x1000);
+#endif
     PlatAudio::PurgeSampleFileBuffer();
     gbAsyncLoadEntireSampleFileIntoMemRequestMade = false;
 }
@@ -1370,7 +1378,9 @@ void AudioLoader::LoadInGame()
 
     LoadInGameAudioData();
     Audio::LoadWorldSFX();
+#ifndef GOLDEN_DISABLE_AUDIO
     ARQSetChunkSize(0x1000);
+#endif
     SoundEventScript::CreateInstance();
 }
 

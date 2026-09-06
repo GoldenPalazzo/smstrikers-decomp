@@ -74,7 +74,11 @@ bool MovieStart(const char* szFilename, bool bSound, bool bLoopMovie)
     if (bIntroMovie)
         size = 6;
 
+#ifdef GOLDEN_DISABLE_AUDIO
+    THPSimpleInit(1);
+#else
     THPSimpleInit(bSound ? 3 : 1);
+#endif
 
     if (!THPSimpleOpen(fileName))
     {
