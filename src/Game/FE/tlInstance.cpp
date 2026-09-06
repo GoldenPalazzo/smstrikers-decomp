@@ -164,7 +164,7 @@ feVector3& TLInstance::GetAssetPosition() const
     return const_cast<feVector3&>(m_overloadedAttributes.v3Position);
 }
 
-// eTimeLineAssetType TLInstance::GetType() const
-// {
-//     return m_type;
-// }
+eTimeLineAssetType TLInstance::GetType() const
+{
+    return m_type;
+}
