@@ -1,6 +1,7 @@
 #ifndef MSL_UTILITY_H_
 #define MSL_UTILITY_H_
 
+#ifndef _STL_PAIR_H
 namespace std
 {
 template <class T1, class T2>
@@ -21,6 +22,7 @@ struct pair
     }
 };
 } // namespace std
+#endif
 
 namespace Metrowerks
 {
