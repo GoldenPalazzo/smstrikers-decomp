@@ -503,7 +503,7 @@ bool EmissionController::Update(float dt)
 /**
  * Offset/Address/Size: 0x288 | 0x801F7B78 | size: 0xA4
  */
-void* fxLoadEntireFileHigh(const char* filename, unsigned long* fileSize)
+void* fxLoadEntireFileHigh(const char* filename, u32* fileSize)
 {
     void* buffer = nullptr;
     u32 datasize = 0;

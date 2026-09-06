@@ -13,7 +13,7 @@ class cPoseAccumulator;
 class EmissionController;
 typedef void FnEmissionController(EmissionController&);
 
-void* fxLoadEntireFileHigh(const char* filename, unsigned long* fileSize);
+void* fxLoadEntireFileHigh(const char* filename, u32* fileSize);
 
 class EmissionController : public efNode
 {
