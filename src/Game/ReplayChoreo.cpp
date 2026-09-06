@@ -73,7 +73,7 @@ void ReplayChoreo::LoadScript()
         nlFree(mByteCode);
     }
 
-    unsigned long fileSize = 0;
+    u32 fileSize = 0;
     mByteCode = nlLoadEntireFile("art/presentation/replay_choreo.byte_code", &fileSize, 0x20, (eAllocType)0);
     LoadByteCode(mByteCode);
 
