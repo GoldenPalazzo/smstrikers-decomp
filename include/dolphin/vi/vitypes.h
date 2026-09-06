@@ -1,3 +1,4 @@
+#ifndef DOLPHIN_GXSTRUCT_H // aurora guard
 #ifndef _DOLPHIN_VITYPES_H_
 #define _DOLPHIN_VITYPES_H_
 
@@ -38,4 +39,7 @@ typedef enum {
 
 typedef void (*VIRetraceCallback)(u32 retraceCount);
 
+#endif
+#else
+#include <dolphin/vi.h>
 #endif
