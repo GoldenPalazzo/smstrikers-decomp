@@ -101,7 +101,7 @@ bool IsSFXPlaying(unsigned long uVoiceID)
 /**
  * Offset/Address/Size: 0x38 | 0x801C4834 | size: 0xC0
  */
-void PlatAudio::InitEmitter(unsigned long index)
+void InitEmitter(unsigned long index)
 {
     gEmitters[index].bKeepTrack = true;
     gEmitters[index].soundType = (unsigned long)-1;
@@ -1096,9 +1096,9 @@ bool LoadSoundGroup(AudioFileData& fileData, unsigned long groupEnum, unsigned l
  */
 void SetupSoundBuffers(AudioFileData& fileData, bool bStream)
 {
-    unsigned long uPoolReadLength;
-    unsigned long uProjReadLength;
-    unsigned long uSdirReadLength;
+    u32 uPoolReadLength;
+    u32 uProjReadLength;
+    u32 uSdirReadLength;
     char* szFileName;
     unsigned char* pBuffer;
 

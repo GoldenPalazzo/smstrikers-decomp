@@ -79,7 +79,7 @@ void VBlankPadUpdate()
             {
                 if (fabsf(normalizedX) >= 0.6f)
                 {
-                    asm { b doneNormalizedX }
+                    goto doneNormalizedX;
                 }
                 else
                 {
