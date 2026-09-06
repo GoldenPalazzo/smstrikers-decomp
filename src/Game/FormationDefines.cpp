@@ -3,9 +3,9 @@
 #include "NL/nlLexicalCast.h"
 #include "NL/nlPrint.h"
 
-template <>
-BasicString<char, Detail::TempStringAllocator>
-LexicalCast<BasicString<char, Detail::TempStringAllocator>, const char*>(const char* const& value);
+// template <>
+// BasicString<char, Detail::TempStringAllocator>
+// LexicalCast<BasicString<char, Detail::TempStringAllocator>, const char*>(const char* const& value);
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 

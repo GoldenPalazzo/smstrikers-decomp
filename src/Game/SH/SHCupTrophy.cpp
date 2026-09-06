@@ -23,9 +23,9 @@
 
 // Declared, never defined: retail references this specialization instead of
 // emitting it (SHLoading.o owns the weak definition in both trees).
-template <>
-WideBasicString Format<WideBasicString, unsigned short[16]>(
-    const WideBasicString& string, const unsigned short (&t0)[16]);
+// template <>
+// WideBasicString Format<WideBasicString, unsigned short[16]>(
+//     const WideBasicString& string, const unsigned short (&t0)[16]);
 
 /**
  * Offset/Address/Size: 0x27B0 | 0x800CBE64 | size: 0xD4
