@@ -3,11 +3,13 @@
 #include "NL/nlMemory.h"
 #include "NL/nlSortedSlot.h"
 
+#ifndef GOLDEN_DISABLE_AUDIO
 extern "C"
 {
-    void sndStreamMixParameterEx(unsigned long stid, unsigned char vol, unsigned char pan, unsigned char span, unsigned char auxa, unsigned char auxb);
-    void sndStreamDeactivate(unsigned long stid);
+    void sndStreamMixParameterEx(SND_STREAMID stid, unsigned char vol, unsigned char pan, unsigned char span, unsigned char auxa, unsigned char auxb);
+    void sndStreamDeactivate(SND_STREAMID stid);
 }
+#endif
 
 GCAudioStreaming::AudioBufferMgr g_BufferMgr;
 
@@ -121,8 +123,10 @@ void PlatAudio::StopAllStreams()
             while (buffer != NULL)
             {
                 buffer->m_Volume = 0;
+#ifndef GOLDEN_DISABLE_AUDIO
                 sndStreamMixParameterEx(buffer->m_StreamId, buffer->m_Volume, buffer->m_Pan, buffer->m_SurroundPan, 0, 0);
                 sndStreamDeactivate(buffer->m_StreamId);
+#endif
 
                 stream->m_State = SS_Warm;
                 {
