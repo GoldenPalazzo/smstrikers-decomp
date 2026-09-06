@@ -91,7 +91,7 @@ void EventManager::Create(unsigned long uEventCount, unsigned long uEventSize)
 #pragma scheduling off
 EventHandler* EventManager::AddEventHandler(EventCallback pEventHandlerFunc, void* pParam, unsigned long uDestinationMask)
 {
-    EventHandler* eventHandler = (EventHandler*)nlMalloc(0x14, 8, 0);
+    EventHandler* eventHandler = (EventHandler*)nlMalloc(sizeof(EventHandler), 8, 0);
     EventHandler** head = &m_handlers;
 
     eventHandler->m_pCBFunction = pEventHandlerFunc;

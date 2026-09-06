@@ -107,7 +107,8 @@ void glxInitTex()
     currentMarkerLevel = -1;
     for (int level = 0; level < 16; level++)
     {
-        textures[level] = new (nlMalloc(0x14, 8, 0)) nlAVLTree<unsigned long, PlatTexture*, DefaultKeyCompare<unsigned long> >();
+        textures[level] = new (nlMalloc(sizeof(nlAVLTree<unsigned long, PlatTexture*, DefaultKeyCompare<unsigned long>>), 8, 0))
+                            nlAVLTree<unsigned long, PlatTexture*, DefaultKeyCompare<unsigned long>>();
     }
     currentMarkerLevel += 1;
 }
