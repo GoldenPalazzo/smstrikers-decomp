@@ -55,7 +55,7 @@ ProgressiveScanScene::~ProgressiveScanScene()
     delete mConfirmationImage;
 }
 
-extern unsigned long nlStringLowerHash(const char*);
+extern u32 nlStringLowerHash(const char*);
 extern int nlSNPrintf(char*, unsigned long, const char*, ...);
 
 /**
