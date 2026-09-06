@@ -48,7 +48,10 @@ public:
     void BeginBlendIn(float duration);
     void BeginBlendOut(float duration);
 
-    inline void operator delete(void* ptr);
+    inline void operator delete(void* ptr)
+    {
+        m_FeatherSlotPool.Free(static_cast<cPN_Feather*>(ptr));
+    }
 
     /* 0x14 */ float* m_pFeatherWeights;
     /* 0x18 */ float m_fBlendTime;

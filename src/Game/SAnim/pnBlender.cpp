@@ -6,11 +6,6 @@ static f32 CANT_COLLIDE = *(f32*)__float_max;
 
 SlotPool<cPN_Blender> cPN_Blender::m_BlenderSlotPool(0x10, 0x10);
 
-void cPN_Blender::operator delete(void* ptr)
-{
-    m_BlenderSlotPool.Free((cPN_Blender*)ptr);
-}
-
 /**
  * Offset/Address/Size: 0x440 | 0x801EEB60 | size: 0x98
  */

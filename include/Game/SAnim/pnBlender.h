@@ -30,7 +30,10 @@ public:
         Replayable<0>(frame, FloatCompressor<0, 1, 7>(m_fBlendTime));
     }
 
-    inline void operator delete(void* ptr);
+    inline void operator delete(void* ptr)
+    {
+        m_BlenderSlotPool.Free(static_cast<cPN_Blender*>(ptr));
+    }
 
     /* 0x14 */ float m_fBlendTime;
     /* 0x18 */ float m_fBlendDuration;
