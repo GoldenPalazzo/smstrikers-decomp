@@ -75,6 +75,7 @@ typedef u16 wchar_t;
 #undef FALSE
 #define FALSE (0)
 
+#ifndef NULL
 #if !defined(__cplusplus)
 #undef NULL
 #define NULL ((void*)0)
@@ -87,6 +88,7 @@ typedef u16 wchar_t;
 #define NULL 0
 #undef nullptr
 #define nullptr 0
+#endif
 #endif
 
 // Random and useful macros
