@@ -56,30 +56,6 @@ void* nlMalloc(unsigned long size)
 }
 
 /**
- * Offset/Address/Size: 0xF0 | 0x801D1FD4 | size: 0x4C
- */
-void* operator new(unsigned long size)
-{
-    return nlMalloc(size);
-}
-
-/**
- * Offset/Address/Size: 0x13C | 0x801D2020 | size: 0x40
- */
-void operator delete[](void* ptr)
-{
-    nlFree(ptr);
-}
-
-/**
- * Offset/Address/Size: 0x17C | 0x801D2060 | size: 0x40
- */
-void operator delete(void* ptr)
-{
-    nlFree(ptr);
-}
-
-/**
  * Offset/Address/Size: 0x1BC | 0x801D20A0 | size: 0x24
  */
 unsigned int nlVirtualTotalFree()
