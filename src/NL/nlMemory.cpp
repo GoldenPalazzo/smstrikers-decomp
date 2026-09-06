@@ -10,6 +10,7 @@
 #include "dolphin/vi/vifuncs.h"
 
 static u8 s_MemoryInitialized = 0;
+// extern "C" bool g_EngineArenaReady;
 
 MemoryAllocator StandardAllocator;
 MemoryAllocator VirtualAllocator;
@@ -19,14 +20,7 @@ MemoryAllocator VirtualAllocator;
  */
 void nlFree(void* ptr)
 {
-    if (((uint)ptr & 0x80000000) == 0)
-    {
-        VirtualAllocator.Free(ptr);
-    }
-    else
-    {
-        StandardAllocator.Free(ptr);
-    }
+    free(ptr);
 }
 
 /**
@@ -34,6 +28,10 @@ void nlFree(void* ptr)
  */
 void* nlMalloc(unsigned long size, unsigned int alignment, bool atEnd)
 {
+    // if (!g_EngineArenaReady)
+    // {
+    //     return malloc(size);
+    // }
     if (s_MemoryInitialized == 0)
     {
         nlInitMemory();
@@ -46,6 +44,10 @@ void* nlMalloc(unsigned long size, unsigned int alignment, bool atEnd)
  */
 void* nlMalloc(unsigned long size)
 {
+    // if (!g_EngineArenaReady)
+    // {
+    //     return malloc(size);
+    // }
     if (s_MemoryInitialized == 0)
     {
         nlInitMemory();
@@ -122,29 +124,6 @@ void nlInitMemory()
         DVDInit();
         VIInit();
         PADInit();
-
-        void* arenaLo = OSGetArenaLo();
-        void* arenaHi = OSGetArenaHi();
-        arenaLo = OSInitAlloc(arenaLo, arenaHi, 1);
-        OSSetArenaLo(arenaLo);
-
-        u32 alignedLo = ((u32)arenaLo + 0x1F) & ~0x1F;
-        arenaLo = (void*)((u32)arenaHi & ~0x1F);
-        u32 heapSize = (u32)arenaLo - alignedLo;
-
-        s32 heap = OSCreateHeap((void*)alignedLo, arenaLo);
-        OSSetCurrentHeap(heap);
-        OSSetArenaLo(arenaLo);
-
-        void* ptr = OSAllocFromHeap(__OSCurrHeap, heapSize - 0x40000);
-        u32 i;
-        for (i = 0; i < heapSize - 0x40000; i++)
-        {
-            ((s8*)ptr)[i] = -0x33;
-        }
-
-        StandardAllocator.Initialize(ptr, heapSize - 0x40000);
-        VirtualAllocator.Initialize((void*)0x7E000000, 0x900000);
         OSReport("After nlInitMemory\n");
         OSReport("Free Memory: %u\n", StandardAllocator.TotalFreeMemory());
         OSReport("Largest Free Block: %u\n", StandardAllocator.LargestFreeBlock());
