@@ -635,7 +635,9 @@ void ModeledScreenTransition::Load(const char* szName)
         glSetIgnoreDuplicateModels(true);
 
         nlSNPrintf(buf, 128, "transitions/%s.glg", szName);
-        m_pModels = glLoadModel(buf, &m_nModels);
+        unsigned long tempModels;
+        m_pModels = glLoadModel(buf, &tempModels);
+        m_nModels = (u32)tempModels;
 
         glSetIgnoreDuplicateModels(false);
 
