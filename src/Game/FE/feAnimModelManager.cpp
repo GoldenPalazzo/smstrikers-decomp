@@ -40,6 +40,7 @@ public:
     /* 0x48 */ unsigned long mSwapTextureID;
 }; // total size: 0x4C
 
+template<>
 FEAnimModelManager* nlSingleton<FEAnimModelManager>::s_pInstance = NULL;
 
 /**
