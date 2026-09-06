@@ -21,11 +21,11 @@
 #include "NL/nlLocalization.h"
 #include "NL/nlString.h"
 
-template <>
-NLString LexicalCast<NLString, int>(const int& value);
-template <>
-WideBasicString LexicalCast<WideBasicString, const unsigned short*>(
-    const unsigned short* const& value);
+// template <>
+// NLString LexicalCast<NLString, int>(const int& value);
+// template <>
+// WideBasicString LexicalCast<WideBasicString, const unsigned short*>(
+//     const unsigned short* const& value);
 
 static char* TEXT_NAMES[] = { "PLAYER", "PLAYER2", "PLAYER3", "PLAYER4", "PLAYER5" };
 

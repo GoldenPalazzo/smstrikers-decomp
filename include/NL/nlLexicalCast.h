@@ -283,4 +283,27 @@ inline WideBasicString LexicalCast<WideBasicString, const unsigned short*>(
     return Detail::LexicalCastImpl<WideBasicString, const unsigned short*>::Do(from);
 }
 
+namespace Detail
+{
+
+template <typename To, unsigned long N>
+struct LexicalCastImpl<To, char[N]> {
+    static To Do(const char* s) { return LexicalCastImpl<To, const char*>::Do(s); }
+};
+template <typename To, unsigned long N>
+struct LexicalCastImpl<To, const char[N]> {
+    static To Do(const char* s) { return LexicalCastImpl<To, const char*>::Do(s); }
+};
+
+// Supporto per qualsiasi array di unsigned short (Wide String)
+template <typename To, unsigned long N>
+struct LexicalCastImpl<To, unsigned short[N]> {
+    static To Do(const unsigned short* s) { return LexicalCastImpl<To, const unsigned short*>::Do(s); }
+};
+template <typename To, unsigned long N>
+struct LexicalCastImpl<To, const unsigned short[N]> {
+    static To Do(const unsigned short* s) { return LexicalCastImpl<To, const unsigned short*>::Do(s); }
+};
+}
+
 #endif // _NLLEXICALCAST_H_
