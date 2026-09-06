@@ -11,8 +11,8 @@
 #include "NL/nlFormat.h"
 #include "NL/nlLocalization.h"
 
-template <>
-nlLocalization::StringLookup* nlBSearch<nlLocalization::StringLookup, unsigned long>(const unsigned long&, nlLocalization::StringLookup*, int);
+// template <>
+// nlLocalization::StringLookup* nlBSearch<nlLocalization::StringLookup, unsigned long>(const unsigned long&, nlLocalization::StringLookup*, int);
 
 extern cTeam* g_pTeams[];
 
