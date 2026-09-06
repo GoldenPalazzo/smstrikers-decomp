@@ -32,12 +32,12 @@ public:
     void RestartMatch();
     void RunTillGameEnd();
     void RunTillGameTime(float);
-    virtual void Run(float);
+    virtual void Run(float) {};
     void Initialize();
     void Stop();
     void Start();
-    virtual const char* GetName();
-    virtual void DoFunctionCall(unsigned int);
+    virtual const char* GetName() {return "Stats Gatherer";};
+    virtual void DoFunctionCall(unsigned int) {};
 
     /* 0x3C */ BasicString<char, Detail::TempStringAllocator> m_testName;
     /* 0x40 */ void* m_pByteCode;
