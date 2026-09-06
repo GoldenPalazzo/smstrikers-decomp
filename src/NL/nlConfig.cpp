@@ -119,7 +119,7 @@ BasicString<char, Detail::TempStringAllocator> Config::LoadFileAsString(const ch
     tDebugPrintManager::Print(DC_CONFIG_SYSTEM, "reading config file: %s\n", filename);
     nlFlushFileCash();
 
-    unsigned long fileSize = 0;
+    u32 fileSize = 0;
     char* buffer = (char*)nlLoadEntireFile(filename, &fileSize, 0x20, AllocateEnd);
     if (buffer != 0)
     {

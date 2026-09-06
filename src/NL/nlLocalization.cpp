@@ -56,7 +56,7 @@ unsigned char nlLocalization::Load(nlLanguage Language, bool ingameloc)
         nlSNPrintf(Filename, 64, "art/fe/%s.loc", LanguageName[Language]);
     }
 
-    unsigned long FileSize;
+    u32 FileSize;
     m_pFile = (LOCHeader*)nlLoadEntireFile(Filename, &FileSize, 32, AllocateStart);
 
     if (m_pFile == 0)
