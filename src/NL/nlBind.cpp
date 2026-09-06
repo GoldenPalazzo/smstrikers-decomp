@@ -1,3 +1,3 @@
 #include "NL/nlBind.h"
 
-__declspec(section ".sdata2") Placeholder<0> placeholder0 = { };
+__attribute__((section(".sdata2"))) Placeholder<0> placeholder0 = { };
