@@ -28,7 +28,7 @@
 #include "NL/nlString.h"
 #include "NL/nlTask.h"
 
-extern "C" int nlPrintf(const char*, ...);
+// extern "C" int nlPrintf(const char*, ...);
 
 namespace PlatAudio
 {
