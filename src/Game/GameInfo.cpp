@@ -3082,9 +3082,9 @@ void GameInfoManager::DetermineNextCupScreen()
         else
         {
             // Match target's shared false-path branch instead of duplicating the assignment.
-            asm { b notSuperCup }
+            goto notSuperCup;
         }
-        asm { b superCupDone }
+        goto superCupDone;
     }
     else
     {

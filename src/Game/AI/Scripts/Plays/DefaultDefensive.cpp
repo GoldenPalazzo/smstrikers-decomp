@@ -863,7 +863,7 @@ FuzzyVariant Fuzzy::AttackBallOwner(float fConfidence, cDecisionEntity* pEntity)
 
         if (fTrueConfidence2 <= fNotFacingSideline)
         {
-            asm { b _abo_keep2 }
+            goto _abo_keep2;
         }
         else
         {
@@ -900,7 +900,7 @@ FuzzyVariant Fuzzy::AttackBallOwner(float fConfidence, cDecisionEntity* pEntity)
 
         if (fTrueConfidence3 <= fNotSeparating)
         {
-            asm { b _abo_keep3 }
+            goto _abo_keep3;
         }
         else
         {
