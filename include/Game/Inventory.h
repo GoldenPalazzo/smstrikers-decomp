@@ -41,7 +41,7 @@ public:
 
     void AddFile(char* filename)
     {
-        unsigned long length;
+        u32 length;
         char* memory = (char*)nlLoadEntireFile(filename, &length, 0x20, AllocateStart);
         m_lMemList.AddStart(memory);
         ParseChunks((nlChunk*)memory, (nlChunk*)(memory + length));
