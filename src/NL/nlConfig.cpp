@@ -305,10 +305,9 @@ static inline TagValuePair& FindTvpFloat(Config* config, const char* tag)
     u32 idx = ConfigHashFloat(tag) & 0x3FF;
     while (true)
     {
-        u32 offset = idx * 12;
         if (config->mTvpHash[idx].tag == NULL || nlStrICmp(config->mTvpHash[idx].tag, tag) == 0)
         {
-            return *(TagValuePair*)((char*)config->mTvpHash + offset);
+            return config->mTvpHash[idx];
         }
         idx++;
         idx &= 0x3FF;
@@ -357,7 +356,7 @@ static inline TagValuePair& FindTvpChar(Config* config, const char* tag)
         u32 offset = i * 12;
         if (config->mTvpHash[i].tag == NULL || nlStrICmp(config->mTvpHash[i].tag, tag) == 0)
         {
-            return *(TagValuePair*)((char*)config->mTvpHash + offset);
+            return config->mTvpHash[i];
         }
         i++;
         i &= 0x3FF;
@@ -417,7 +416,7 @@ TagValuePair& Config::FindTvp(const char* tag)
         u32 offset = i * 12;
         if (mTvpHash[i].tag == NULL || nlStrICmp(mTvpHash[i].tag, tag) == 0)
         {
-            return *(TagValuePair*)((char*)mTvpHash + offset);
+            return mTvpHash[i];
         }
         i++;
         i &= 0x3FF;
@@ -517,17 +516,14 @@ void Config::LoadFromFile(const char* filename)
  */
 Config::Config(Config::AllocateWhere allocateWhere)
 {
-#pragma defer_codegen on
-    if (allocateWhere == ALLOCATE_LOW)
+    unsigned int alignment = (allocateWhere == ALLOCATE_LOW) ? 8 : 0x20;
+    bool atEnd = (allocateWhere != ALLOCATE_LOW);
+    mTvpHash = (TagValuePair*)nlMalloc(sizeof(TagValuePair) * 1024, alignment, atEnd);
+    for (int i = 0; i < 1024; i++)
     {
-        mTvpHash = new (nlMalloc(sizeof(TagValuePair) * 1024 + 0x10, 8, false)) TagValuePair[1024];
-        mStringMemory = (char*)nlMalloc(0x2800, 8, false);
+        new (&mTvpHash[i]) TagValuePair();
     }
-    else
-    {
-        mTvpHash = new (nlMalloc(sizeof(TagValuePair) * 1024 + 0x10, 0x20, true)) TagValuePair[1024];
-        mStringMemory = (char*)nlMalloc(0x2800, 0x20, true);
-    }
+    mStringMemory = (char*)nlMalloc(0x2800, alignment, atEnd);
     mStringEnd = mStringMemory;
     mStringMemory[0x27FF] = '\0';
 }
@@ -539,10 +535,14 @@ Config::~Config()
 {
     if (mTvpHash != NULL)
     {
-        ::operator delete[]((char*)mTvpHash - 0x10);
+        for (int i = 0; i < 1024; i++)
+        {
+            mTvpHash[i].~TagValuePair();
+        }
+        nlFree(mTvpHash);
     }
 
-    ::operator delete[](mStringMemory);
+    nlFree(mStringMemory);
 }
 
 /**
