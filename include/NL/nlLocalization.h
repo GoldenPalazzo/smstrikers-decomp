@@ -44,7 +44,7 @@ public:
     unsigned short* m_FirstString;
     nlLanguage m_CurrentLanguage;
 
-    static char* LanguageName[];
+    static const char* LanguageName[];
     static const unsigned long LanguageId[];
     static const char Thumbprint[4];
 };

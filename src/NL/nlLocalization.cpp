@@ -3,8 +3,13 @@
 #include "NL/nlFile.h"
 #include "NL/nlPrint.h"
 
-extern const unsigned short LocalizationTableNotFound[] = L"Localization Table Not Found";
-extern const unsigned short MissingLocString[] = L"missing loc string";
+extern const unsigned short LocalizationTableNotFound[] = {
+    'L','o','c','a','l','i','z','a','t','i','o','n',' ','T','a','b','l','e',' ',
+    'N','o','t',' ','F','o','u','n','d', 0
+};
+extern const unsigned short MissingLocString[] = {
+    'm','i','s','s','i','n','g',' ','l','o','c',' ','s','t','r','i','n','g', 0
+};
 
 const unsigned long nlLocalization::LanguageId[] = {
     0x7A947B29,
@@ -18,7 +23,7 @@ const unsigned long nlLocalization::LanguageId[] = {
     0x00012332,
 };
 
-char* nlLocalization::LanguageName[] = {
+const char* nlLocalization::LanguageName[] = {
     "English",
     "French",
     "German",
