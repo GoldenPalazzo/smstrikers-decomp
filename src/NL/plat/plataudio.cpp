@@ -10,6 +10,66 @@
 #include "types.h"
 #include <dolphin/ar.h>
 
+#ifdef GOLDEN_DISABLE_AUDIO
+void PrintSoundStackInfo() {}
+void musyXFree(void* addr) { free(addr); }
+void* musyXAlloc(u32 size) { return malloc(size); }
+namespace PlatAudio
+{
+
+bool gUsingDolbyProLogic2 = false;
+
+// Retail mangles these as `__9PlatAudio`, which MWCC produces identically for a namespace and for
+// a class, so a namespace reproduces the symbols exactly. Note that means `static` here would give
+// internal linkage rather than the static-member linkage the original had - InitEmitter is called
+// from audio.cpp and AudioEventHandler.cpp and must stay externally visible.
+u32 GetSndIDError() {return 0;}
+bool IsSFXPlaying(unsigned long uVoiceID) {return 0;}
+void InitEmitter(unsigned long index) {}
+bool RemoveEmitter(SFXEmitter* pSFXEmitter) {return 1;}
+bool RemoveEmitter(unsigned long index) {return 1;}
+SFXEmitter* GetSFXEmitter(unsigned long index) {return 0;}
+SFXEmitter* GetFreeEmitter(unsigned long& index) {return 0;}
+SND_VOICEID GetEmitterVoiceID(SFXEmitter* pSFXEmitter) {return 0;}
+bool IsEmitterActive(SFXEmitter* pSFXEmitter) {return 0;}
+void Update3DSFXEmitter(SFXEmitter* pSFXEmitter, const nlVector3& position, const nlVector3& direction, float maxVol) {}
+unsigned long Add3DSFXEmitter(const EmitterStartInfo& info) {return 0;}
+void Remove3DSFXListener(SND_LISTENER* pListener) {}
+void Update3DSFXListener(SND_LISTENER* pListener, const nlVector3& position, const nlVector3& direction, const nlVector3& heading, const nlVector3& up, float overallEmitterVol) {}
+void Add3DSFXListener(SND_LISTENER* pListener, const nlVector3& position, const nlVector3& direction, const nlVector3& heading, const nlVector3& up, float frontAudibleDist, float backAudibleDist, float overallEmitterVol, float volPosOffset,
+    bool bUseDoppler, float fSpeedOfSound) {}
+bool SetPitchBendOnSFX(SND_VOICEID uVoiceID, u16 pitch) {return 0;}
+bool SetFilterFreqOnSFX(SND_VOICEID uVoiceID, u16 value) {return 0;}
+bool SetMIDIControllerVal14Bit(SND_VOICEID uVoiceID, u8 ctrl, u16 value) {return 0;}
+void SetVolGroupVolume(u8 volGroup, float fVol, u16 fadeTime) {}
+bool SetSFXVolumeGroup(u32 uSFXID, u8 volGroup) {return 0;}
+bool SetSFXReverbVol(unsigned long uVoiceID, float fVol) {return 0;}
+void SetSFXVolume(unsigned long uVoiceID, float fVolume) {}
+bool StopSFX(unsigned long uVoiceID) {return 0;}
+unsigned long PlaySFX(const SFXStartInfo& info) {return 1;}
+bool UnloadAllSoundGroupsOnStack(AudioFileData& fileData, unsigned long stackEnum) {return 1;}
+bool UnloadAllSoundGroups(AudioFileData& fileData) {return 1;}
+bool UnloadSoundGroup(AudioFileData& fileData, unsigned long groupEnum) {return 1;}
+bool LoadSoundGroup(AudioFileData& fileData, unsigned long groupEnum, unsigned long stackEnum, bool bUseARAMStreamCallback) {return 1;}
+void SetupSoundBuffers(AudioFileData& fileData, bool bStream) {}
+void StopAllSound() {}
+void Shutdown() {}
+bool Initialize(bool bUseDPL2) {return 1;}
+void PurgeSampleFileBuffer() {}
+bool IsEntireSampleFileInMem() {return 1;}
+unsigned char ReadEntireSampleFileIntoMemSync(const char* sampleFile) {return 1;}
+unsigned char ReadEntireSampleFileIntoMem(const char* sampleFile) {return 1;}
+bool UpdateAuxEffectA(MusyXEffectType type, void* auxEffectSettings) {return 1;}
+bool AddAuxEffectA(MusyXEffectType type, void* auxEffectSettings, unsigned char studio) {return 1;}
+bool ShutdownAuxEffectA() {return 1;}
+bool DeactivateDPL2() {return 1;}
+bool ActivateDPL2() {return 1;}
+void SetOutputMode(MusyXOutputType output) {}
+} // namespace PlatAudio
+
+
+
+#else
 extern "C" u32 sndStackGetAvailableSampleMemory(unsigned long id);
 extern "C" u32 sndStackSetCurrent(u32 id);
 extern "C" u32 sndStackGetSize(void);
@@ -1886,3 +1946,4 @@ ARAMTransferHelperLoadEntireFile* ARAMTransferHelperLoadEntireFile::m_pARAMHelpe
 const char* ARAMTransferHelperLoadEntireFile::m_szFileName;
 u32 ARAMTransferHelperLoadEntireFile::m_uFileSize;
 nlFile* ARAMTransferHelperLoadEntireFile::s_pFile;
+#endif

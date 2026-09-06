@@ -5,13 +5,17 @@
 #include "NL/nlWare.h"
 #include "NL/nlFile.h"
 #include "NL/nlFileGC.h"
+#ifndef GOLDEN_DISABLE_AUDIO
 #include "musyx/musyx.h"
+#endif
 #include "dolphin/os.h"
 
 // Declarations needed by the inline (weak) AudioStream methods defined below,
 // so this header compiles standalone in every includer.
 void nlServiceFileSystem();
+#ifndef GOLDEN_DISABLE_AUDIO
 extern "C" void sndStreamLPFParameter(unsigned long, bool, unsigned long);
+#endif
 
 struct sDSPADPCM
 {
@@ -64,7 +68,9 @@ public:
     {
         if (on != m_bLPFOn)
         {
+#ifndef GOLDEN_DISABLE_AUDIO
             sndStreamLPFParameter(m_StreamId, on, m_LPFFreq);
+#endif
             m_bLPFOn = on;
         }
     }
@@ -72,7 +78,9 @@ public:
     {
         if (m_bLPFOn)
         {
+#ifndef GOLDEN_DISABLE_AUDIO
             sndStreamLPFParameter(m_StreamId, m_bLPFOn, frequency);
+#endif
         }
         m_LPFFreq = frequency;
     }
@@ -257,7 +265,9 @@ public:
             while (buffer != NULL)
             {
                 buffer->m_Volume = (u8)clampedVolume;
+#ifndef GOLDEN_DISABLE_AUDIO
                 sndStreamMixParameterEx(buffer->m_StreamId, buffer->m_Volume, buffer->m_Pan, buffer->m_SurroundPan, 0, 0);
+#endif
                 ((unsigned long&)bufferIndex)++;
                 buffer = GetBuffer((unsigned long)bufferIndex);
             }
@@ -323,7 +333,9 @@ public:
 
             while (buffer != NULL)
             {
+#ifndef GOLDEN_DISABLE_AUDIO
                 sndStreamActivate(buffer->m_StreamId);
+#endif
                 ((unsigned long&)bufferIndex)++;
                 buffer = GetBuffer((unsigned long)bufferIndex);
             }
@@ -358,6 +370,7 @@ public:
             while (pBuffer != NULL)
             {
                 pBuffer->m_Volume = 0;
+#ifndef GOLDEN_DISABLE_AUDIO
                 sndStreamMixParameterEx(
                     pBuffer->m_StreamId,
                     pBuffer->m_Volume,
@@ -366,6 +379,7 @@ public:
                     0,
                     0);
                 sndStreamDeactivate(pBuffer->m_StreamId);
+#endif
                 m_State = SS_Warm;
 
                 cursor.Advance();
@@ -394,7 +408,9 @@ public:
 
         while (buffer != NULL)
         {
+#ifndef GOLDEN_DISABLE_AUDIO
             sndStreamActivate(buffer->m_StreamId);
+#endif
             cursor.Advance();
             buffer = cursor.GetBuffer();
         }
@@ -443,6 +459,7 @@ public:
             while (pBuffer != NULL)
             {
                 pBuffer->m_Volume = 0;
+#ifndef GOLDEN_DISABLE_AUDIO
                 sndStreamMixParameterEx(
                     pBuffer->m_StreamId,
                     pBuffer->m_Volume,
@@ -451,6 +468,7 @@ public:
                     0,
                     0);
                 sndStreamDeactivate(pBuffer->m_StreamId);
+#endif
                 m_State = SS_Warm;
 
                 ((unsigned long&)bufferIndex)++;

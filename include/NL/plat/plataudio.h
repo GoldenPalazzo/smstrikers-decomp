@@ -3,7 +3,9 @@
 
 #include "types.h"
 #include "NL/nlMath.h"
+#ifndef GOLDEN_DISABLE_AUDIO
 #include "musyx/musyx.h"
+#endif
 
 // Forward declarations
 class PhysicsObject;
