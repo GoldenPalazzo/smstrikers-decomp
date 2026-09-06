@@ -20,7 +20,7 @@ struct AnimTagCBInfo
     /* 0x4 */ AnimTagInfo ScriptInfo;
 }; // total size: 0xC
 
-class AnimTagScriptInterpreter : private InterpreterCore
+class AnimTagScriptInterpreter : public InterpreterCore
 {
 public:
     AnimTagScriptInterpreter(unsigned int stackSize)
