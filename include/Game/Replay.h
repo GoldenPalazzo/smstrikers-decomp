@@ -16,6 +16,11 @@ class DrawableNetMesh;
 class RenderSnapshot;
 class cPoseNode;
 class LoadFrame;
+class SaveFrame;
+template <int N>
+void Replayable(LoadFrame& frame, char typeId, cPoseNode*& poseNode);
+template <int N>
+void Replayable(SaveFrame& frame, char typeId, cPoseNode*& poseNode);
 
 template <typename T>
 struct ReplayFrameTraits
