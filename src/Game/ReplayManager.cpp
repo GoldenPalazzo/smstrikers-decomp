@@ -14,14 +14,6 @@ extern float g_fSimulationTick;
 extern float g_fFixedUpdateTick;
 extern bool g_bEnableGamecubePadMonkey;
 
-template <>
-bool LexicalCast<bool, bool>(const bool& value);
-template <>
-bool LexicalCast<bool, int>(const int& value);
-template <>
-bool LexicalCast<bool, float>(const float& value);
-template <>
-bool LexicalCast<bool, const char*>(const char* const& value);
 
 static f32 CANT_COLLIDE = HUGE_VALF;
 

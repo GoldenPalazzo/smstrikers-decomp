@@ -10,35 +10,6 @@
 #include "Game/World/WorldLoader.h"
 #include "Game/main.h"
 
-template <>
-bool LexicalCast<bool, bool>(const bool& value);
-template <>
-bool LexicalCast<bool, int>(const int& value);
-template <>
-bool LexicalCast<bool, float>(const float& value);
-template <>
-bool LexicalCast<bool, const char*>(const char* const& value);
-template <>
-int LexicalCast<int, bool>(const bool& value);
-template <>
-int LexicalCast<int, int>(const int& value);
-template <>
-int LexicalCast<int, float>(const float& value);
-template <>
-int LexicalCast<int, const char*>(const char* const& value);
-template <>
-BasicString<char, Detail::TempStringAllocator>
-LexicalCast<BasicString<char, Detail::TempStringAllocator>, bool>(const bool& value);
-template <>
-BasicString<char, Detail::TempStringAllocator>
-LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(const int& value);
-template <>
-BasicString<char, Detail::TempStringAllocator>
-LexicalCast<BasicString<char, Detail::TempStringAllocator>, float>(const float& value);
-template <>
-BasicString<char, Detail::TempStringAllocator>
-LexicalCast<BasicString<char, Detail::TempStringAllocator>, const char*>(const char* const& value);
-
 static bool isKongaUnlocked = false;
 static bool isYoshiUnlocked = false;
 static bool isForbiddenUnlocked = false;
