@@ -3,6 +3,8 @@
 #include "NL/nlDebug.h"
 #include "NL/nlMemory.h"
 
+#include "compat_shims/endian.h"
+
 /**
  * Offset/Address/Size: 0x68C | 0x802137D4 | size: 0x4C
  */
@@ -25,11 +27,20 @@ InterpreterCore::~InterpreterCore()
  */
 void InterpreterCore::LoadByteCode(void* data)
 {
-    m_Header = (ByteCodeHeader*)data;
-    m_Header->m_FunctionTable = (FunctionEntryPoint*)(m_Header + 1);
+    ByteCodeHeaderOnDisk* diskHeader = (ByteCodeHeaderOnDisk*)data;
+    m_Header = (ByteCodeHeader*)nlMalloc(sizeof(ByteCodeHeader), 8 ,false);
+    m_Header->signature = bswap(diskHeader->signature);
+    m_Header->numFunctions = bswap(diskHeader->numFunctions);
+    m_Header->dataSegmentSize = bswap(diskHeader->dataSegmentSize);
+    m_Header->codeSegmentSize = bswap(diskHeader->codeSegmentSize); 
+    m_Header->stringSegmentSize = bswap(diskHeader->stringSegmentSize);
+    m_Header->m_FunctionTable = (FunctionEntryPoint*)((u8*)data + sizeof(ByteCodeHeaderOnDisk));
     m_Header->m_DataSegment = (u32*)(m_Header->m_FunctionTable + m_Header->numFunctions);
     m_Header->m_CodeSegment = (u16*)((u8*)m_Header->m_DataSegment + m_Header->dataSegmentSize);
     m_Header->m_StringSegment = (u8*)m_Header->m_CodeSegment + m_Header->codeSegmentSize;
+    fprintf(stderr, "[DEBUG] numFunctions=%u m_FunctionTable=%p first_hash=0x%x\n",
+        m_Header->numFunctions, (void*)m_Header->m_FunctionTable,
+        m_Header->numFunctions > 0 ? m_Header->m_FunctionTable[0].hash : 0);
 
     m_SP = m_StackSegment;
     m_SavedSP = m_SP;

@@ -12,6 +12,15 @@ struct FunctionEntryPoint
     operator unsigned long() const { return hash; }
 }; // total size: 0x8
 
+struct ByteCodeHeaderOnDisk
+{
+    /* 0x00 */ u32 signature;
+    /* 0x04 */ u32 numFunctions;
+    /* 0x08 */ u32 dataSegmentSize;
+    /* 0x0C */ u32 codeSegmentSize;
+    /* 0x10 */ u32 stringSegmentSize;
+}; // total size: 0x14 (needed in InterpreterCore.cpp)
+
 struct ByteCodeHeader
 {
     /* 0x00 */ u32 signature;
