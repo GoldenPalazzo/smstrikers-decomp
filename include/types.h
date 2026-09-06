@@ -4,7 +4,10 @@
 
 // #include "global.h"
 // Custom types
+#ifndef _PORTING_BOOL_TYPE_DEFINED
+#define _PORTING_BOOL_TYPE_DEFINED
 typedef int BOOL;
+#endif
 typedef unsigned int uint;
 typedef unsigned long size_t;
 

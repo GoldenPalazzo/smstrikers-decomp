@@ -41,7 +41,10 @@ typedef volatile f64 vf64;
 
 #if defined(TARGET_PC) && !defined(_WIN32)
 #include <stdbool.h>
+#ifndef _PORTING_BOOL_TYPE_DEFINED
+#define _PORTING_BOOL_TYPE_DEFINED
 typedef bool BOOL;
+#endif
 #ifndef FALSE
 #define FALSE false
 #endif
