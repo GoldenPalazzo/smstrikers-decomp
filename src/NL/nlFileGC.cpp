@@ -528,14 +528,14 @@ void nlInitFileSystem()
         if (pManager != NULL)
         {
             s32 i;
-            AsyncEntry* pEntry = (AsyncEntry*)pManager;
+            AsyncEntry* pEntry = pManager->m_asyncEntries;
 
-            pManager->m_activeEntryList = pManager->m_freeEntryList = (AsyncEntry*)(i = 0);
+            pManager->m_activeEntryList = pManager->m_freeEntryList = NULL;
 
-            for (; i < 64; i++)
+            for (i = 0; i < 64; i++)
             {
                 nlDLRingAddStart<AsyncEntry>(&pManager->m_freeEntryList, pEntry);
-                pEntry = (AsyncEntry*)((u8*)pEntry + 0x28);
+                pEntry = pManager->m_asyncEntries + i + 1;
             }
         }
 

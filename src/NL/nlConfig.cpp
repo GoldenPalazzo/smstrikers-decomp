@@ -222,10 +222,9 @@ static inline TagValuePair* FindConfigTvp(Config* config, const char* tag)
     u32 idx = config->Hash(tag) & 0x3FF;
     while (true)
     {
-        u32 offset = idx * 12;
         if (config->mTvpHash[idx].tag == NULL || nlStrICmp(config->mTvpHash[idx].tag, tag) == 0)
         {
-            return (TagValuePair*)((char*)config->mTvpHash + offset);
+            return &config->mTvpHash[idx];
         }
         idx++;
         idx &= 0x3FF;
