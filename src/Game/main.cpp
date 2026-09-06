@@ -460,7 +460,7 @@ static void DoMemCheck()
 /**
  * Offset/Address/Size: 0x0 | 0x80173510 | size: 0x224
  */
-int main()
+int game_main()
 {
     if (g_DoStackWatermarkTests)
     {
