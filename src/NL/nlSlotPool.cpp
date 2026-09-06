@@ -22,7 +22,7 @@ void SlotPoolBase::BaseAddNewBlock(SlotPoolBase* slotPool, unsigned int slotSize
         }
 
         totalSlotMemory = slotSize * numSlots;
-        memoryBlock = slotPool->m_AllocFn(totalSlotMemory + 4);
+        memoryBlock = slotPool->m_AllocFn(totalSlotMemory + sizeof(SlotPoolBlock));
         nlListAddStart<SlotPoolBlock>(&slotPool->m_BlockList, (SlotPoolBlock*)((u8*)memoryBlock + totalSlotMemory), 0);
 
         for (u32 i = 0; i < numSlots; i++)
