@@ -1,3 +1,4 @@
+#include <cstdint>
 #ifndef _TYPES_H
 #define _TYPES_H
 
@@ -10,12 +11,12 @@ typedef unsigned long size_t;
 // Standard types
 typedef signed char s8;
 typedef signed short s16;
-typedef signed long s32;
-typedef signed long long s64;
+typedef int32_t s32;
+typedef int64_t s64;
 typedef unsigned char u8;
 typedef unsigned short u16;
-typedef unsigned long u32;
-typedef unsigned long long u64;
+typedef uint32_t u32;
+typedef uint64_t u64;
 
 // Volatile types
 typedef volatile u8 vu8;

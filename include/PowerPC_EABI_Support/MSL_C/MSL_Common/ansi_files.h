@@ -1,3 +1,7 @@
+#ifdef _STDIO_H
+#define _ANSI_FILES_H_SKIP
+#endif
+#ifndef _ANSI_FILES_H_SKIP
 #ifndef _MSL_COMMON_ANSI_FILES_H
 #define _MSL_COMMON_ANSI_FILES_H
 
@@ -137,3 +141,4 @@ void __close_all(void);
 #endif
 
 #endif /* _MSL_COMMON_ANSI_FILES_H */
+#endif // _ANSI_FILES_H_SKIP

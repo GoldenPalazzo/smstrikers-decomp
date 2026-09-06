@@ -1,3 +1,5 @@
+#pragma once
+#ifndef _GLIBCXX_CMATH
 #ifndef STD_CMATH_H_
 #define STD_CMATH_H_
 
@@ -47,4 +49,5 @@ inline float floor(float num)
 }
 } // namespace std
 
+#endif
 #endif

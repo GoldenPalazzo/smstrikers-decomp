@@ -14,16 +14,6 @@ inline unsigned long MB(unsigned long size)
     return KB(KB(size));
 }
 
-inline void* operator new(unsigned long, void* p)
-{
-    return p;
-}
-
-inline void* operator new[](unsigned long, void* p)
-{
-    return p;
-}
-
 /*
 this code snippets are from Cuyler / discord commuity - no yet integrating it, as I would need to refactors different
 files to use it instead of the current new/malloc implementation.
@@ -54,8 +44,6 @@ inline void* operator new[](unsigned long size, unsigned int alignment, bool atE
 {
     return nlMalloc(size, alignment, atEnd);
 }
-void operator delete[](void* ptr);
-void operator delete(void* ptr);
 unsigned int nlVirtualTotalFree();
 unsigned int nlVirtualLargestBlock();
 void nlVirtualFree(void* ptr);
@@ -65,20 +53,6 @@ void nlInitMemory();
 #ifdef __cplusplus
 extern "C"
 {
-#endif
-
-// TODO: a bit messy include structure
-#ifndef memcpy
-    void* memcpy(void* dest, const void* src, size_t num);
-#endif
-#ifndef memmove
-    void* memmove(void* dest, const void* src, size_t num);
-#endif
-#ifndef memset
-    void* memset(void* dest, int ch, size_t count);
-#endif
-#ifndef memcmp
-    int memcmp(const void* ptr1, const void* ptr2, size_t num);
 #endif
 
 #ifdef __cplusplus

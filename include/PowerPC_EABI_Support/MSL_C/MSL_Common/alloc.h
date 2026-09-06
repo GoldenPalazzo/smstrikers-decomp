@@ -6,7 +6,6 @@
 extern "C" {
 #endif
 
-void free(void* ptr);
 
 #ifdef __cplusplus
 }
