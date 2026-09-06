@@ -24,7 +24,7 @@ public:
     template <typename T>
     static void Delete(T* ptr)
     {
-        delete[] ptr;
+        nlFree(ptr);
     }
 
     static void* Alloc(int size)

@@ -156,7 +156,8 @@ public:
     {
         if (mTag == FUNCTOR)
         {
-            delete mFunctor;
+            mFunctor->~FunctorBase();
+            nlFree(mFunctor);
         }
         mTag = EMPTY;
     }
