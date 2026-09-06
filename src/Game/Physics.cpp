@@ -17,9 +17,9 @@
 
 typedef ListContainerBase<char*, NewAdapter<ListEntry<char*> > > PhysicsCharListBase;
 
-template <>
-void nlWalkList<ListEntry<char*>, PhysicsCharListBase>(
-    ListEntry<char*>*, PhysicsCharListBase*, void (PhysicsCharListBase::*)(ListEntry<char*>*));
+// template <>
+// void nlWalkList<ListEntry<char*>, PhysicsCharListBase>(
+//     ListEntry<char*>*, PhysicsCharListBase*, void (PhysicsCharListBase::*)(ListEntry<char*>*));
 
 static bool sbDisableCollisionDetection;
 static bool sbNonMovingAABBsInitialized;
