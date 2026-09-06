@@ -181,7 +181,7 @@ void gl_ViewStartup()
 {
     s32 i;
     eGLView view;
-    u32 identity;
+    uintptr_t identity;
     u32 screenWidth;
     u32 screenHeight;
     glView* pView;

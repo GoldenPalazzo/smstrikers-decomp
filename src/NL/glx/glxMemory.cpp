@@ -18,14 +18,14 @@ static u8 glx_MemoryDump;
 static u32 ResourceMemSize = MB(12) - KB(12);
 static u32 FrameMemSizeReal = KB(896);
 static u32 FrameMemSizeVirt = KB(640);
-static u32 p_phys;
+static uintptr_t p_phys;
 static u32 n_phys;
 static int i_frame;
 static u32 glx_mem0;
 static int g_uResourceMarker;
 
-static u32 p_frame[2][2];
-static u32 n_frame[2][2];
+static uintptr_t p_frame[2][2];
+static uintptr_t n_frame[2][2];
 
 Tweakable glx_memory_tweaks[] = {
     { TWEAK_Title, NULL, "Engine", 1.0f, 0.0f, 0.0f, NULL },
@@ -101,14 +101,14 @@ bool glxInitMemory()
 
     ResourceMemSize = GetFromConfig(szResourceKey, ResourceMemSize);
 
-    u32 pMem = (u32)nlMalloc(ResourceMemSize, 32, false);
+    uintptr_t pMem = (uintptr_t)nlMalloc(ResourceMemSize, 32, false);
     if (pMem == 0)
         return false;
     p_phys = pMem;
 
     FrameMemSizeReal = GetFromConfig("frame vertex memory", FrameMemSizeReal);
 
-    pMem = (u32)nlMalloc(FrameMemSizeReal * 2, 32, false);
+    pMem = (uintptr_t)nlMalloc(FrameMemSizeReal * 2, 32, false);
     if (pMem == 0)
         return false;
     p_frame[0][0] = pMem;
@@ -116,7 +116,7 @@ bool glxInitMemory()
 
     FrameMemSizeVirt = GetFromConfig("frame header memory", FrameMemSizeVirt);
 
-    u32 pVirt = (u32)nlVirtualAlloc(FrameMemSizeVirt * 2, false);
+    uintptr_t pVirt = (uintptr_t)nlVirtualAlloc(FrameMemSizeVirt * 2, false);
     if (pVirt == 0)
         return false;
 
@@ -234,8 +234,8 @@ static void ResourceAllocRelease(int level)
  */
 void* glplatResourceAlloc(unsigned long size, eGLMemory memType)
 {
-    u32 base = p_phys;
-    unsigned long aligned = (base + n_phys + 0x1F) & ~0x1FU;
+    uintptr_t base = p_phys;
+    unsigned long aligned = (base + n_phys + 0x1F) & ~(uintptr_t)0x1F;
     n_phys = size + (aligned - base);
     if (n_phys > ResourceMemSize)
     {
@@ -289,7 +289,7 @@ inline u32 RealOrVirtual(eGLMemory memType)
     }
 }
 
-inline u32 AlignUp(u32 value, u32 alignment)
+inline uintptr_t AlignUp(uintptr_t value, uintptr_t alignment)
 {
     return (value + alignment - 1) & ~(alignment - 1);
 }
@@ -297,7 +297,7 @@ inline u32 AlignUp(u32 value, u32 alignment)
 void* glx_FrameAlloc(unsigned long size, eGLMemory memType, bool bCanReturnNULL)
 {
     u32 isLow = RealOrVirtual(memType);
-    u32 newTop = AlignUp(p_frame[i_frame][isLow] + n_frame[i_frame][isLow], 32);
+    uintptr_t newTop = AlignUp(p_frame[i_frame][isLow] + n_frame[i_frame][isLow], 32);
     size += newTop - p_frame[i_frame][isLow];
 
     if (size > FrameMemSizes[isLow])
