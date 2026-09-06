@@ -65903,19 +65903,7 @@ static int OpenCloseRefCount;
 static u8 ResetWasPaused;
 static bool CanGetResetPauseState = true;
 
-extern "C"
-{
-    void GXDrawDone(void);
-    void GXFlush(void);
-    void GXCopyDisp(void*, unsigned char);
-    void GXPokeColorUpdate(unsigned char);
-    void GXPokeBlendMode(int, int, int, int);
-    void GXPokeARGB(unsigned short, unsigned short, unsigned long);
-    void VIWaitForRetrace(void);
-    void VISetBlack(unsigned char);
-    void VIFlush(void);
-    void VISetNextFrameBuffer(void*);
-}
+
 
 void* glxGetDisplayedBuffer();
 void* glxGetBackBuffer();
