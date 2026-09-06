@@ -51,7 +51,7 @@ public:
     nlStaticArrayAllocator()
     {
         this->m_pFree = 0;
-        Init(reinterpret_cast<T*>(m_Memory), N);
+        this->Init(reinterpret_cast<T*>(m_Memory), N);
     }
 
     /* 0x4 */ unsigned char m_Memory[sizeof(T) * N]; // offset 0x4
