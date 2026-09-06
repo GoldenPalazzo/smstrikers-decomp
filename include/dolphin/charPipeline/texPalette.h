@@ -6,9 +6,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+#ifndef DOLPHIN_TYPES_H
 typedef void* Ptr;
-
+#endif
 typedef struct {
     u16 numEntries;
     u8 unpacked;
