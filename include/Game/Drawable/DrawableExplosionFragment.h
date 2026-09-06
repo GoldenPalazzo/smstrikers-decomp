@@ -29,17 +29,17 @@ void DrawableExplosionFragment::Replay(T& frame)
     Replayable<3, T, bool>(frame, mVisible);
     if (mVisible)
     {
-        Replayable<3, T, unsigned long>(frame, mFragmentModelHash);
+        Replayable<3, T, u32>(frame, mFragmentModelHash);
         Replayable<3, T, nlVector3>(frame, mPosition);
         Replayable<3, T, nlQuaternion>(frame, mOrientation);
         Replayable<3, T, float>(frame, mOpacity);
     }
 }
 
-template <>
-void DrawableExplosionFragment::Replay<SaveFrame>(SaveFrame&);
-
-template <>
-void DrawableExplosionFragment::Replay<LoadFrame>(LoadFrame&);
+// template <>
+// void DrawableExplosionFragment::Replay<SaveFrame>(SaveFrame&);
+//
+// template <>
+// void DrawableExplosionFragment::Replay<LoadFrame>(LoadFrame&);
 
 #endif // _DRAWABLEEXPLOSIONFRAGMENT_H_

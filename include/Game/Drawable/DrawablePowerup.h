@@ -39,10 +39,10 @@ void DrawablePowerup::Replay(T& frame)
     }
 }
 
-template <>
-void DrawablePowerup::Replay<SaveFrame>(SaveFrame&);
-
-template <>
-void DrawablePowerup::Replay<LoadFrame>(LoadFrame&);
+// template <>
+// void DrawablePowerup::Replay<SaveFrame>(SaveFrame&);
+//
+// template <>
+// void DrawablePowerup::Replay<LoadFrame>(LoadFrame&);
 
 #endif // _DRAWABLEPOWERUP_H_

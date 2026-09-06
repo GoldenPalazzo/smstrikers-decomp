@@ -167,10 +167,10 @@ void RenderSnapshot::Replay(T& frame)
     mValid = true;
 }
 
-template <>
-void RenderSnapshot::Replay<SaveFrame>(SaveFrame&);
-
-template <>
-void RenderSnapshot::Replay<LoadFrame>(LoadFrame&);
+// template <>
+// void RenderSnapshot::Replay<SaveFrame>(SaveFrame&);
+//
+// template <>
+// void RenderSnapshot::Replay<LoadFrame>(LoadFrame&);
 
 #endif // _RENDERSNAPSHOT_H_
