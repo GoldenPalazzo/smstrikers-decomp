@@ -8,6 +8,19 @@
 #include "Game/Effects/EffectsGroup.h"
 #include "Game/Effects/efList.h"
 
+template <int MIN, int MAX, int BITS> class FloatCompressor;
+
+template <typename T>
+struct ReplayFrameTraits;
+
+class LoadFrame;
+
+template <int N, typename FrameType, typename T>
+void Replayable(FrameType& frame, T& current);
+
+template <int N, typename FrameType, typename T>
+void Replayable(FrameType& frame, const T& proxy);
+
 class cPN_SAnimController;
 class cPoseAccumulator;
 class EmissionController;
