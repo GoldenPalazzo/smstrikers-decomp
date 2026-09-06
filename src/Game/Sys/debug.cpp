@@ -6,7 +6,7 @@
 #include "NL/nlFileGC.h"
 // #include "NL/nlPrint.h"
 
-extern void nlPrintf(const char*, ...);
+extern int nlPrintf(const char*, ...);
 
 namespace tDebugPrintManager
 {
