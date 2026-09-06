@@ -3398,7 +3398,7 @@ char CallstackDumpFont[0x5E][0x24] = {
     0x00,
 };
 
-static inline void DimBackgroundColor(unsigned long& color, unsigned char b)
+static inline void DimBackgroundColor(u32& color, unsigned char b)
 {
     unsigned long r;
     unsigned long g;
