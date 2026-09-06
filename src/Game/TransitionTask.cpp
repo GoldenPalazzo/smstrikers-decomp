@@ -98,7 +98,7 @@ void glResourceRelease(unsigned long long);
 
 extern unsigned char g_JaapAndJacksNastyHackBecauseWeDoNotKnowDifferenceBetweenPausePauseAndPostGamePause;
 
-void PrintAvailableARAMMemory();
+void PrintAvailableARAMMemory() {}
 void InitializeGameObjectLighting();
 void AIEventHandler(Event*, void*);
 void InitializeElectricFence();
