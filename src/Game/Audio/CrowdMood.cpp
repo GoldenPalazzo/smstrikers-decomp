@@ -51,8 +51,8 @@ void Increment(T& Value)
     Value = (T)(Value + 1);
 }
 
-static const MOOD_DEFINITION g_MoodDefs[5] = { };
-static const CROWD_SETTINGS g_Settings = { };
+static MOOD_DEFINITION g_MoodDefs[5] = { };
+static CROWD_SETTINGS g_Settings = { };
 
 CROWD_AUDIO_INIT g_CrowdAudio;
 CROWD_STATE g_CrowdState;
@@ -74,8 +74,8 @@ struct RANDOM_STREAMS
     char Files[32][256];
 };
 
-static const RANDOM_STREAMS g_RandomChants = { };
-static const RANDOM_STREAMS g_RandomHeckles = { };
+static RANDOM_STREAMS g_RandomChants = { };
+static RANDOM_STREAMS g_RandomHeckles = { };
 
 template <int N>
 /**
