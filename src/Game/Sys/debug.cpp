@@ -102,7 +102,7 @@ bool ParseDebugChannelFile(const char* path)
         }
     }
 
-    delete[] pData;
+    nlFree(pData);
     return true;
 }
 
