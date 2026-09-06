@@ -1,3 +1,4 @@
+#include "Game/Camera/animcam.h"
 #include "Game/Render/ChainChomp.h"
 #include "NL/vmath.h"
 
@@ -16,7 +17,6 @@
 #include "NL/gl/glState.h"
 #include "NL/glx/glxTexture.h"
 #include "NL/nlString.h"
-#include "Game/Camera/animcam.h"
 
 namespace Audio
 {
