@@ -73,7 +73,7 @@ ShaderSkinMesh::~ShaderSkinMesh()
 /**
  * Offset/Address/Size: 0xB74 | 0x801E11B8 | size: 0x70
  */
-void ShaderSkinMesh::SetMorphIDs(const unsigned long* ids)
+void ShaderSkinMesh::SetMorphIDs(const u32* ids)
 {
     if (morphIDs != nullptr)
     {
@@ -428,7 +428,7 @@ void ShaderSkinMesh::Pose(cPoseAccumulator* pPoseAccumulator)
 /**
  * Offset/Address/Size: 0x98 | 0x801E06DC | size: 0x70
  */
-void ShaderSkinMesh::SetMorphNumDeltas(const unsigned long* numDeltas)
+void ShaderSkinMesh::SetMorphNumDeltas(const u32* numDeltas)
 {
     if (morphNumDeltas != nullptr)
     {
