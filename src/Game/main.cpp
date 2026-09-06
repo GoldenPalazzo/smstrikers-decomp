@@ -218,6 +218,7 @@ static void Initialize()
 
     CrowdMood::ReadConfig();
 
+#ifndef GOLDEN_DISABLE_AUDIO
     if (!AudioLoader::gbDisableAudio)
     {
         AudioLoader::Initialize();
@@ -225,6 +226,7 @@ static void Initialize()
         AudioLoader::LoadFEButtonSoundGroup();
         Audio::InitStreaming();
     }
+#endif
 
     g_pEventManager->AddEventHandler(ReplayManager::EventHandler, ReplayManager::Instance(), (u32)-1);
     g_pEventManager->AddEventHandler(ReplayChoreo::EventHandler, &ReplayChoreo::Instance(), (u32)-1);
