@@ -210,7 +210,12 @@ static void Initialize()
     tDebugPrintManager::Initialize();
     ClockManager::Initialize();
 
-    AudioLoader::gbDisableAudio = GetConfigBool(Config::Global(), "no_audio", false);
+    AudioLoader::gbDisableAudio = 
+#ifndef GOLDEN_DISABLE_AUDIO
+        GetConfigBool(Config::Global(), "no_audio", false);
+#else
+    true;
+#endif
     AudioLoader::gbStream = !GetConfigBool(Config::Global(), "no_stream", false);
     AudioLoader::g_BGM_Off = GetConfigBool(Config::Global(), "no_bgm", false);
     AudioLoader::gbDisableCrowd = GetConfigBool(Config::Global(), "no_crowd", false);
@@ -218,7 +223,6 @@ static void Initialize()
 
     CrowdMood::ReadConfig();
 
-#ifndef GOLDEN_DISABLE_AUDIO
     if (!AudioLoader::gbDisableAudio)
     {
         AudioLoader::Initialize();
@@ -226,7 +230,6 @@ static void Initialize()
         AudioLoader::LoadFEButtonSoundGroup();
         Audio::InitStreaming();
     }
-#endif
 
     g_pEventManager->AddEventHandler(ReplayManager::EventHandler, ReplayManager::Instance(), (u32)-1);
     g_pEventManager->AddEventHandler(ReplayChoreo::EventHandler, &ReplayChoreo::Instance(), (u32)-1);
