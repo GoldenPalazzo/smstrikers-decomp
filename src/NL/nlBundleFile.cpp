@@ -126,15 +126,15 @@ bool BundleFile::GetFileInfo(const char* filename, BundleFileDirectoryEntry* ent
  */
 void BundleFile::Close()
 {
-    if ((u32)m_pFile != NULL)
+    if (m_pFile != NULL)
     {
         nlClose(m_pFile);
         m_pFile = NULL;
     }
 
-    if ((u32)m_pDirectory != NULL)
+    if (m_pDirectory != NULL)
     {
-        delete[] m_pDirectory;
+        nlFree(m_pDirectory);
         m_pDirectory = NULL;
     }
 }
@@ -169,11 +169,11 @@ BundleFile::~BundleFile()
 
     if (m_pDirectory != 0U)
     {
-        delete[] m_pDirectory;
+        nlFree(m_pDirectory);
         m_pDirectory = NULL;
     }
 
-    delete m_pHeader;
+    nlFree(m_pHeader);
     m_pHeader = NULL;
 }
 

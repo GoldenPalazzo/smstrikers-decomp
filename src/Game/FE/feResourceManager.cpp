@@ -124,7 +124,8 @@ void FEResourceManager::LoadPermanentResourceBundle(const char* szBundleFileName
     LoadPermanentTextures();
 
     s_pPermanentBundle->Close();
-    delete s_pPermanentBundle;
+    s_pPermanentBundle->~BundleFile();
+    nlFree(s_pPermanentBundle);
     s_pPermanentBundle = NULL;
 }
 
@@ -275,7 +276,7 @@ void FEResourceManager::TextureResourceLoadComplete(void* buffer, unsigned long 
 
     glTextureAdd(pHandle->m_hashID, s_pResourceLoadBuffer, uReadSize);
 
-    delete[] s_pResourceLoadBuffer;
+    nlFree(s_pResourceLoadBuffer);
     s_pResourceLoadBuffer = NULL;
 
     ((FETextureResource*)pHandle)->m_glTextureHandle = pHandle->m_hashID;
