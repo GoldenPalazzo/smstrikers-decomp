@@ -46,7 +46,7 @@ bool g_ForceDoubleBallTransition;
 
 static inline void SkipLine(const char*& data)
 {
-    while (*data != '\n')
+    while (*data != '\n' && *data != '\0')
         data++;
     while (*data == '\n')
         data++;
@@ -82,6 +82,12 @@ NisPlayer::NisPlayer()
     char* data = (char*)nlLoadEntireFile("art/nis/nis_dict.txt", &size, 0x20, AllocateStart);
     if (data != NULL)
     {
+        char* nullTerminated = (char*)nlMalloc(size + 1, 8, false);
+        memcpy(nullTerminated, data, size);
+        nullTerminated[size] = '\0';
+        nlFree(data);
+        data = nullTerminated;
+
         mDictSize = 0;
         const char* dictionaryCursor = data;
         while (mDictSize < 256)
