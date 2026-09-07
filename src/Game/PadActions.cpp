@@ -28,7 +28,9 @@ void InitPads()
     {
         for (int i = 0; i < 4; i++)
         {
-            cPadManager::m_aPads[i] = new (nlMalloc(0x1C, 8, false)) cPlatPad(i);
+            // Golden TODO: ask Anosch about the legitimacy of this sizeof
+            // instead of the hardcoded 0x1C
+            cPadManager::m_aPads[i] = new (nlMalloc(sizeof(cPlatPad), 8, false)) cPlatPad(i);
         }
     }
     else

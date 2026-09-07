@@ -26,7 +26,7 @@ public:
 
         if (ScreenTransitionManager::s_pInstance == NULL)
         {
-            ScreenTransitionManager::s_pInstance = new (nlMalloc(0x40, 8, 0)) ScreenTransitionManager();
+            ScreenTransitionManager::s_pInstance = new (nlMalloc(sizeof(ScreenTransitionManager), 8, 0)) ScreenTransitionManager();
         }
         glLoadTextureBundle("transitions/transitions.glt");
         fileSize = 0;
