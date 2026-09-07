@@ -164,17 +164,17 @@ glModel* GLMeshWriterCore::GetModel()
  */
 void GLMeshWriterCore::Colour(const nlColour& c)
 {
-    unsigned long* p = (unsigned long*)stream[GLStream_Colour].address;
-    p[currentIndex] = *(const unsigned long*)&c;
+    u32* p = (u32*)stream[GLStream_Colour].address;
+    p[currentIndex] = *(const u32*)&c;
     elementCount += 1;
 }
 
 /**
  * Offset/Address/Size: 0xD0 | 0x801E0070 | size: 0x20
  */
-void GLMeshWriterCore::ColourPlat(unsigned long rgba)
+void GLMeshWriterCore::ColourPlat(u32 rgba)
 {
-    unsigned long* p = (unsigned long*)stream[GLStream_Colour].address;
+    u32* p = (u32*)stream[GLStream_Colour].address;
     p[currentIndex] = rgba;
     elementCount += 1;
 }
