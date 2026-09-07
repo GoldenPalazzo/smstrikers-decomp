@@ -80,10 +80,10 @@ enum eGLTextureFormatType
 
 struct BundleEntry
 {
-    /* 0x0 */ unsigned long hash;
-    /* 0x4 */ unsigned long offset;
-    /* 0x8 */ unsigned long fileSize;
-    /* 0xC */ unsigned long pad;
+    /* 0x0 */ u32 hash;
+    /* 0x4 */ u32 offset;
+    /* 0x8 */ u32 fileSize;
+    /* 0xC */ u32 pad;
 }; // total size: 0x10
 
 struct glTexBundleDict : public BundleEntry
@@ -92,27 +92,27 @@ struct glTexBundleDict : public BundleEntry
 
 struct BundleHeader
 {
-    /* 0x0 */ unsigned long magic;
-    /* 0x4 */ unsigned long numTextures;
-    /* 0x8 */ unsigned long pad1;
-    /* 0xC */ unsigned long pad2;
+    /* 0x0 */ u32 magic;
+    /* 0x4 */ u32 numTextures;
+    /* 0x8 */ u32 pad1;
+    /* 0xC */ u32 pad2;
 }; // total size: 0x10
 
 struct glTexBundleHeader : public BundleHeader
 {
-    /* 0x10 */ unsigned long pad[4]; // size 0x10
+    /* 0x10 */ u32 pad[4]; // size 0x10
 }; // total size: 0x20
 
 struct GXTextureHeader
 {
-    /* 0x00 */ unsigned long numLevels;
+    /* 0x00 */ u32 numLevels;
     /* 0x04 */ eGXTextureFormat format;
     /* 0x08 */ unsigned char numBits[4];
     /* 0x0C */ unsigned char missingTexture;
     /* 0x0E */ unsigned short width;
     /* 0x10 */ unsigned short height;
-    /* 0x14 */ unsigned long numEntries;
-    /* 0x18 */ unsigned long pad[2];
+    /* 0x14 */ u32 numEntries;
+    /* 0x18 */ u32 pad[2];
 }; // total size: 0x20
 
 class PlatTexture

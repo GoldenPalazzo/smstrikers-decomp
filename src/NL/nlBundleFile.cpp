@@ -2,6 +2,7 @@
 #include "NL/nlMemory.h"
 #include "NL/nlString.h"
 #include <string.h>
+#include "compat_shims/endian.h"
 
 /**
  * Offset/Address/Size: 0x0 | 0x801E85CC | size: 0xD4
@@ -150,9 +151,19 @@ bool BundleFile::Open(const char* filename)
         return 0;
     }
     nlRead(m_pFile, m_pHeader, 0x10);
+    m_pHeader->nSectorSize = bswap(m_pHeader->nSectorSize);
+    m_pHeader->nNumFiles = bswap(m_pHeader->nNumFiles);
+    m_pHeader->nDirectoryOffsetInSectors = bswap(m_pHeader->nDirectoryOffsetInSectors);
+    m_pHeader->nDataOffsetInSectors = bswap(m_pHeader->nDataOffsetInSectors);
     nlSeek(m_pFile, m_pHeader->nDirectoryOffsetInSectors * m_pHeader->nSectorSize, 0);
     m_pDirectory = (BundleFileDirectoryEntry*)nlMalloc(m_pHeader->nNumFiles * 0xC, 0x20, 0);
     nlRead(m_pFile, m_pDirectory, m_pHeader->nNumFiles * 0xC);
+    for (u32 i = 0; i < m_pHeader->nNumFiles; i++)
+    {
+        m_pDirectory[i].m_hash = bswap(m_pDirectory[i].m_hash);
+        m_pDirectory[i].m_blockNumber = bswap(m_pDirectory[i].m_blockNumber);
+        m_pDirectory[i].m_length = bswap(m_pDirectory[i].m_length);
+    }
     return 1;
 }
 
