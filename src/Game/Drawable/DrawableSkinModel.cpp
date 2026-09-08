@@ -16,7 +16,7 @@ const unsigned long LightTexture = glGetTexture("global/lightramp");
 const unsigned long BlackTexture = glGetTexture("global/black");
 const unsigned long WhiteTexture = glGetTexture("global/white");
 
-u32 glAllocMatrix();
+uintptr_t glAllocMatrix();
 // void glSetMatrix(u32 matrix, const nlMatrix4& m);
 
 static inline void ApplySkinModelTextureLighting(glModelPacket* pDup)
@@ -67,12 +67,12 @@ void DrawableSkinModel::Draw()
         pModel = m_pAnimController->GetUpdatedModel(UnlitProgram, NULL);
     }
 
-    u32 matrixHandle;
+    uintptr_t matrixHandle;
     if (m_pAnimController->m_bIsGanged)
     {
         const nlMatrix4& worldMat = GetWorldMatrix();
         matrixHandle = glAllocMatrix();
-        if (matrixHandle + 0x10000 != 0xFFFF)
+        if (matrixHandle != -1)
         {
             glSetMatrix(matrixHandle, worldMat);
         }

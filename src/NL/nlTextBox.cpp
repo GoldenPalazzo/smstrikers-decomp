@@ -54,7 +54,7 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
         if (pMatrix)
         {
             unsigned long h = glAllocMatrix();
-            if (h + 0x10000 != 0xFFFF)
+            if (h != -1)
             {
                 glSetMatrix(h, *pMatrix);
             }

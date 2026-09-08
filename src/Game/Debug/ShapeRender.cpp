@@ -322,7 +322,7 @@ void ShapeRender::DrawSpherePrimitive(const nlMatrix4& mat_world, float radius, 
 
     {
         unsigned long matrix = glAllocMatrix();
-        if (matrix + 0x10000 != 0xFFFF)
+        if (matrix != -1)
         {
             glSetMatrix(matrix, mat_hemiTop);
         }
@@ -373,7 +373,7 @@ void ShapeRender::DrawSpherePrimitive(const nlMatrix4& mat_world, float radius, 
 
     {
         unsigned long matrix = glAllocMatrix();
-        if (matrix + 0x10000 != 0xFFFF)
+        if (matrix != -1)
         {
             glSetMatrix(matrix, mat_hemiBottom);
         }
@@ -436,7 +436,7 @@ void ShapeRender::DrawBoxPrimitive(const nlMatrix4& mat_world, float fX, float f
 
     {
         unsigned long matrix = glAllocMatrix();
-        if (matrix + 0x10000 != 0xFFFF)
+        if (matrix != -1)
         {
             glSetMatrix(matrix, mat_out);
         }

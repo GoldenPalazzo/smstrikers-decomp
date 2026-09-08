@@ -494,7 +494,7 @@ void DrawableModel::DrawModel(const nlMatrix4& worldMatrix)
     }
 
     unsigned long matHandle = glAllocMatrix();
-    if (matHandle + 0x10000 != 0xFFFF)
+    if (matHandle != -1)
     {
         glSetMatrix(matHandle, worldMatrix);
     }
@@ -778,10 +778,10 @@ void DrawableShadow::Draw()
 {
     if (g_bShadowVolumes)
     {
-        u32 mtx;
+        uintptr_t mtx;
         nlMatrix4& worldMtx = GetWorldMatrix();
         mtx = glAllocMatrix();
-        if (mtx + 0x10000 != 0xFFFF)
+        if (mtx != -1)
         {
             glSetMatrix(mtx, worldMtx);
         }
@@ -1029,13 +1029,13 @@ void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float 
         }
 
         unsigned long shadowMatrix = glAllocMatrix();
-        if (shadowMatrix + 0x10000 != 0xFFFF)
+        if (shadowMatrix != -1)
         {
             glSetMatrix(shadowMatrix, packetShadowMatrix);
         }
 
         pPacket->state.matrix = shadowMatrix;
-        pPacket->state.texture[0] = (u32)ResolvedBlackTexture;
+        pPacket->state.texture[0] = (uintptr_t)ResolvedBlackTexture;
         pPacket->state.program = UnlitProgram;
 
         glUserAttach(pTransData, pPacket, false);

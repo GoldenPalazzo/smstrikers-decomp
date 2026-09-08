@@ -245,10 +245,10 @@ void ModeledScreenTransition::Update(float deltaTime)
     }
 }
 
-static inline u32 glAllocSetMatrix(const nlMatrix4& matrix)
+static inline uintptr_t glAllocSetMatrix(const nlMatrix4& matrix)
 {
-    u32 handle = glAllocMatrix();
-    if (handle != 0xFFFFFFFF)
+    uintptr_t handle = glAllocMatrix();
+    if (handle != -1)
     {
         glSetMatrix(handle, matrix);
     }

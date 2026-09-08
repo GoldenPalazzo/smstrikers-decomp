@@ -156,7 +156,7 @@ void ShaderSkinMesh::AttachSkinData(unsigned long program, const nlMatrix4* pRef
     else
     {
         matrix = glAllocMatrix();
-        if (matrix != 0xFFFFFFFF)
+        if (matrix != -1)
         {
             glSetMatrix(matrix, *pReflect);
         }

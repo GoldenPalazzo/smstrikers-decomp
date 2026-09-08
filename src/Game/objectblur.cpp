@@ -138,7 +138,7 @@ void BlurHandler::RenderMesh(unsigned long uTexID)
 {
     u32 count;
     u32 uPointIndex;
-    u32 matHandle;
+    uintptr_t matHandle;
     f32 nonAdditiveAlpha;
     BlurPointEntry* BPEntry;
 
@@ -172,7 +172,7 @@ void BlurHandler::RenderMesh(unsigned long uTexID)
     matWorld.m43 += fFlimmerOffset;
 
     matHandle = glAllocMatrix();
-    if (matHandle != (u32)-1)
+    if (matHandle != -1)
     {
         glSetMatrix(matHandle, matWorld);
     }

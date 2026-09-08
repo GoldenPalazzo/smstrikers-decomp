@@ -58,12 +58,12 @@ void glGetMatrix(unsigned long matrix, nlMatrix4& m)
 /**
  * Offset/Address/Size: 0xC0 | 0x801D8B34 | size: 0x34
  */
-u32 glAllocMatrix()
+uintptr_t glAllocMatrix()
 {
-    u32 p = (u32)glplatFrameAlloc(sizeof(nlMatrix4), GLM_Matrix);
-    if (p == 0U)
+    uintptr_t p = (uintptr_t)glplatFrameAlloc(sizeof(nlMatrix4), GLM_Matrix);
+    if (p == 0)
     {
-        p = -1U;
+        p = -1;
     }
     return p;
 }

@@ -847,8 +847,8 @@ void ParticleSystem::RenderAllParticles(eGLView view)
                 *pColour = ret.c;
             }
 
-            u32 hMatrix = glAllocMatrix();
-            if (hMatrix != 0xFFFFFFFF)
+            uintptr_t hMatrix = glAllocMatrix();
+            if (hMatrix != -1)
             {
                 glSetMatrix(hMatrix, m);
             }

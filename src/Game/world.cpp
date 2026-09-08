@@ -1539,8 +1539,8 @@ static void RenderBoundingSphere(const nlMatrix4& matWorld, f32 fRadius)
     while (pPacket < (glModelPacket*)((u8*)pNewModel->packets + pNewModel->numPackets * 0x4A))
     {
         glSetRasterState(pPacket->state.raster, (eGLState)5, 1);
-        u32 matID = glAllocMatrix();
-        if ((matID + 0x10000) != 0xFFFF)
+        uintptr_t matID = glAllocMatrix();
+        if (matID != -1)
             glSetMatrix(matID, m);
         pPacket->state.matrix = matID;
         pPacket->state.texture[0] = WhiteTexture;

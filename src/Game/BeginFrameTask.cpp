@@ -98,16 +98,16 @@ void SetupMatrices()
 {
     nlMatrix4 ortho;
     glMatrixOrthographicCentered(ortho, 640.0f, 480.0f, 0.0f, 5000.0f);
-    u32 hOrtho = glAllocMatrix();
-    if (hOrtho != 0xFFFFFFFF)
+    uintptr_t hOrtho = glAllocMatrix();
+    if (hOrtho != -1)
     {
         glSetMatrix(hOrtho, ortho);
     }
     glViewSetProjectionMatrix(GLV_Anark, hOrtho);
 
     glMatrixOrthographic(ortho, 640.0f, 480.0f);
-    u32 hFlat = glAllocMatrix();
-    if (hFlat != 0xFFFFFFFF)
+    uintptr_t hFlat = glAllocMatrix();
+    if (hFlat != -1)
     {
         glSetMatrix(hFlat, ortho);
     }
@@ -125,8 +125,8 @@ void SetupMatrices()
 
     nlMatrix4 proj;
     glMatrixPerspective(proj, 0.4712389f, fAspect, 0.25f, 1024.0f);
-    u32 hPersp = glAllocMatrix();
-    if (hPersp != 0xFFFFFFFF)
+    uintptr_t hPersp = glAllocMatrix();
+    if (hPersp != -1)
     {
         glSetMatrix(hPersp, proj);
     }
@@ -139,8 +139,8 @@ void SetupMatrices()
     nlVector3 up = { 0.0f, 1.0f, 0.0f };
     nlMatrix4 view;
     glMatrixLookAt(view, at, to, up);
-    u32 hView1 = glAllocMatrix();
-    if (hView1 != 0xFFFFFFFF)
+    uintptr_t hView1 = glAllocMatrix();
+    if (hView1 != -1)
     {
         glSetMatrix(hView1, view);
     }
@@ -151,8 +151,8 @@ void SetupMatrices()
     nlVector3 up2 = { 0.0f, 0.0f, 1.0f };
     nlMatrix4 view2;
     glMatrixLookAt(view2, at2, to2, up2);
-    u32 hView2 = glAllocMatrix();
-    if (hView2 != 0xFFFFFFFF)
+    uintptr_t hView2 = glAllocMatrix();
+    if (hView2 != -1)
     {
         glSetMatrix(hView2, view2);
     }
@@ -161,8 +161,8 @@ void SetupMatrices()
 
     float fFOV = 3.1415927f * cCameraManager::m_fFOV / 180.0f;
     glMatrixPerspective(proj, fFOV, fAspect, 0.25f, 1024.0f);
-    u32 hCamProj = glAllocMatrix();
-    if (hCamProj != 0xFFFFFFFF)
+    uintptr_t hCamProj = glAllocMatrix();
+    if (hCamProj != -1)
     {
         glSetMatrix(hCamProj, proj);
     }
@@ -183,8 +183,8 @@ void SetupMatrices()
     glViewSetProjectionMatrix(GLV_CoPlanar0, hCamProj);
     glViewSetProjectionMatrix(GLV_CoPlanar, hCamProj);
 
-    u32 hCamView = glAllocMatrix();
-    if (hCamView != 0xFFFFFFFF)
+    uintptr_t hCamView = glAllocMatrix();
+    if (hCamView != -1)
     {
         glSetMatrix(hCamView, cCameraManager::m_matView);
     }

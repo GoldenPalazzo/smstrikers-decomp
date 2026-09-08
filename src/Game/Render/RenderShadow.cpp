@@ -244,14 +244,14 @@ void RenderCharacterIntoTexture(const ProjectedShadowParams& params)
     glMatrixPerspective(projection, fovY, 1.0f, nearPlane, farPlane);
     glMatrixLookAt(view, eyePos, targetPos, up);
 
-    u32 viewMatrix = glAllocMatrix();
-    if (viewMatrix != 0xFFFFFFFF)
+    uintptr_t viewMatrix = glAllocMatrix();
+    if (viewMatrix != -1)
     {
         glSetMatrix(viewMatrix, view);
     }
 
-    u32 projectionMatrix = glAllocMatrix();
-    if (projectionMatrix != 0xFFFFFFFF)
+    uintptr_t projectionMatrix = glAllocMatrix();
+    if (projectionMatrix != -1)
     {
         glSetMatrix(projectionMatrix, projection);
     }

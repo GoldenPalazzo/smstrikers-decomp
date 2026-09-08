@@ -401,7 +401,7 @@ static void DrawSphere(const nlVector3& vCentre, float fRadius, const nlColour& 
     sphereWorldMatrix.m33 = fRadius;
 
     unsigned long matrix = glAllocMatrix();
-    if (matrix != 0xFFFFFFFF)
+    if (matrix != -1)
     {
         glSetMatrix(matrix, sphereWorldMatrix);
     }
@@ -538,7 +538,7 @@ static inline void RenderCharacterBoundingSphere(nlMatrix4& sphereWorldMatrix, c
     sphereWorldMatrix.m33 = sphereRadius;
 
     unsigned long matrix = glAllocMatrix();
-    if (matrix != 0xFFFFFFFF)
+    if (matrix != -1)
     {
         glSetMatrix(matrix, sphereWorldMatrix);
     }
