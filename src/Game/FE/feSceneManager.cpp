@@ -260,7 +260,7 @@ void FESceneManager::LoadScene(
     BaseSceneHandler* pHandler)
 {
     FESceneManager* pSceneManager = FESceneManager::Instance();
-    FEScene* pFEScene = new (nlMalloc(0x70, 8, false)) FEScene();
+    FEScene* pFEScene = new (nlMalloc(sizeof(FEScene), 8, false)) FEScene();
     pFEScene->m_uHashID = nlStringLowerHash(szFilename);
 
     if (!pFEScene->LoadPackage(szFilename))
