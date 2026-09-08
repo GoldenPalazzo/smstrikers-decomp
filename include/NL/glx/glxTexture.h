@@ -7,6 +7,8 @@
 
 #include "NL/nlMemory.h"
 
+#include "compat_shims/endian.h"
+
 typedef unsigned long (*glxTextureLoadCallback_t)(unsigned long);
 
 enum eGXTextureFormat
@@ -80,9 +82,9 @@ enum eGLTextureFormatType
 
 struct BundleEntry
 {
-    /* 0x0 */ u32 hash;
-    /* 0x4 */ u32 offset;
-    /* 0x8 */ u32 fileSize;
+    /* 0x0 */ port::be<u32> hash;
+    /* 0x4 */ port::be<u32> offset;
+    /* 0x8 */ port::be<u32> fileSize;
     /* 0xC */ u32 pad;
 }; // total size: 0x10
 
@@ -92,8 +94,8 @@ struct glTexBundleDict : public BundleEntry
 
 struct BundleHeader
 {
-    /* 0x0 */ u32 magic;
-    /* 0x4 */ u32 numTextures;
+    /* 0x0 */ port::be<u32> magic;
+    /* 0x4 */ port::be<u32> numTextures;
     /* 0x8 */ u32 pad1;
     /* 0xC */ u32 pad2;
 }; // total size: 0x10
@@ -105,15 +107,18 @@ struct glTexBundleHeader : public BundleHeader
 
 struct GXTextureHeader
 {
-    /* 0x00 */ u32 numLevels;
-    /* 0x04 */ eGXTextureFormat format;
-    /* 0x08 */ unsigned char numBits[4];
-    /* 0x0C */ unsigned char missingTexture;
-    /* 0x0E */ unsigned short width;
-    /* 0x10 */ unsigned short height;
-    /* 0x14 */ u32 numEntries;
-    /* 0x18 */ u32 pad[2];
+    /* 0x00 */ port::be<u32> numLevels;
+    /* 0x04 */ port::be<eGXTextureFormat> format;
+    /* 0x08 */ u8 numBits[4];
+    /* 0x0C */ u8 missingTexture;
+               u8 pad0;
+    /* 0x0E */ port::be<u16> width;
+    /* 0x10 */ port::be<u16> height;
+               u8 pad1[2];
+    /* 0x14 */ port::be<u32> numEntries;
+    /* 0x18 */ u32 pad2[2];
 }; // total size: 0x20
+static_assert(sizeof(GXTextureHeader) == 0x20);
 
 class PlatTexture
 {

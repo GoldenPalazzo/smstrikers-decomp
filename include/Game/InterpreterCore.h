@@ -3,23 +3,25 @@
 
 #include "types.h"
 #include "NL/nlAlgorithm.h"
+#include "compat_shims/endian.h"
 
 struct FunctionEntryPoint
 {
-    /* 0x0 */ u32 hash;
-    /* 0x4 */ u32 offset;
+    /* 0x0 */ port::be<u32> hash;
+    /* 0x4 */ port::be<u32> offset;
 
     operator unsigned long() const { return hash; }
 }; // total size: 0x8
 
 struct ByteCodeHeaderOnDisk
 {
-    /* 0x00 */ u32 signature;
-    /* 0x04 */ u32 numFunctions;
-    /* 0x08 */ u32 dataSegmentSize;
-    /* 0x0C */ u32 codeSegmentSize;
-    /* 0x10 */ u32 stringSegmentSize;
+    /* 0x00 */ port::be<u32> signature;
+    /* 0x04 */ port::be<u32> numFunctions;
+    /* 0x08 */ port::be<u32> dataSegmentSize;
+    /* 0x0C */ port::be<u32> codeSegmentSize;
+    /* 0x10 */ port::be<u32> stringSegmentSize;
 }; // total size: 0x14 (needed in InterpreterCore.cpp)
+static_assert(sizeof(ByteCodeHeaderOnDisk) == 0x14);
 
 struct ByteCodeHeader
 {

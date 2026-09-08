@@ -27,14 +27,17 @@ InterpreterCore::~InterpreterCore()
  */
 void InterpreterCore::LoadByteCode(void* data)
 {
+    // golden TODO: potential memory leak, check later if the original data
+    // gets cleaned
     ByteCodeHeaderOnDisk* diskHeader = (ByteCodeHeaderOnDisk*)data;
     m_Header = (ByteCodeHeader*)nlMalloc(sizeof(ByteCodeHeader), 8 ,false);
-    m_Header->signature = bswap(diskHeader->signature);
-    m_Header->numFunctions = bswap(diskHeader->numFunctions);
-    m_Header->dataSegmentSize = bswap(diskHeader->dataSegmentSize);
-    m_Header->codeSegmentSize = bswap(diskHeader->codeSegmentSize); 
-    m_Header->stringSegmentSize = bswap(diskHeader->stringSegmentSize);
-    m_Header->m_FunctionTable = (FunctionEntryPoint*)((u8*)data + sizeof(ByteCodeHeaderOnDisk));
+    m_Header->signature = diskHeader->signature;
+    m_Header->numFunctions = diskHeader->numFunctions;
+    m_Header->dataSegmentSize = diskHeader->dataSegmentSize;
+    m_Header->codeSegmentSize = diskHeader->codeSegmentSize; 
+    m_Header->stringSegmentSize = diskHeader->stringSegmentSize;
+    // golden TODO: original was ByteCodeHeader+1, check if offset is correct
+    m_Header->m_FunctionTable = (FunctionEntryPoint*)((u8*)data + 0x24);
     m_Header->m_DataSegment = (u32*)(m_Header->m_FunctionTable + m_Header->numFunctions);
     m_Header->m_CodeSegment = (u16*)((u8*)m_Header->m_DataSegment + m_Header->dataSegmentSize);
     m_Header->m_StringSegment = (u8*)m_Header->m_CodeSegment + m_Header->codeSegmentSize;

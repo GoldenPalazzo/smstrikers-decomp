@@ -400,8 +400,6 @@ bool glplatLoadTextureBundle(const char* filename)
 
     pHeader = (glTexBundleHeader*)nlMalloc(0x20, 0x20, 1);
     nlRead(pFile, pHeader, 0x20);
-    pHeader->magic = bswap(pHeader->magic);
-    pHeader->numTextures = bswap(pHeader->numTextures);
 
     uNumFiles = pHeader->numTextures;
     uSize = uNumFiles * sizeof(glTexBundleDict);
@@ -410,12 +408,6 @@ bool glplatLoadTextureBundle(const char* filename)
 
     pDictionary = (glTexBundleDict*)nlMalloc((uBaseOffset = dictionarySize), 0x20, 1);
     nlRead(pFile, pDictionary, dictionarySize);
-    for (unsigned long i = 0; i < uNumFiles; i++)
-    {
-        pDictionary[i].hash = bswap(pDictionary[i].hash);
-        pDictionary[i].offset = bswap(pDictionary[i].offset);
-        pDictionary[i].fileSize = bswap(pDictionary[i].fileSize);
-    }
 
     pData = (unsigned char*)nlMalloc(0x40800, 0x20, 1);
     nlQSort<glTexBundleDict>(pDictionary, uNumFiles, BundleSortProc);
@@ -766,7 +758,6 @@ void PlatTexture::Prepare()
 void glplatTextureAdd(unsigned long handle, const void* textureData, unsigned long size)
 {
     unsigned long handleCopy;
-    SwapGXTextureHeader((GXTextureHeader*)textureData);
     PlatTexture* pTex = glx_MakeTexture((GXTextureHeader*)textureData, handle);
     nlAVLTree<unsigned long, PlatTexture*, DefaultKeyCompare<unsigned long> >* textureTree;
     handleCopy = handle;
@@ -786,7 +777,6 @@ void glplatTextureAdd(unsigned long handle, const void* textureData, unsigned lo
  */
 void glplatTextureReplace(unsigned long handle, const void* textureData, unsigned long size)
 {
-    SwapGXTextureHeader((GXTextureHeader*)textureData);
     const GXTextureHeader* pHeader = (GXTextureHeader*)textureData;
     PlatTexture* pTex = glx_GetTex(handle, false, false);
 
