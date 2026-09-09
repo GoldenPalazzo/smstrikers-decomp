@@ -1,19 +1,22 @@
 #include "Game/FE/feScene.h"
 
+#include "Game/FE/feLibObject.h"
+#include "Game/FE/feResourceManager.h"
 #include "NL/nlDebug.h"
 #include "NL/nlFileGC.h"
 #include "NL/nlMemory.h"
 #include "NL/gl/glMatrix.h"
 #include "NL/nlDLRing.h"
+#include "compat_shims/endian.h"
 
 bool gSebringLoadPackageToVirtualMemory = false;
 
 struct FE_FILE_HEADER
 {
-    char Thumbprint[4];
-    unsigned int Version;
-    unsigned int DataLength;
-    unsigned int PointerTableLength;
+    u8 Thumbprint[4];
+    port::be<u32> Version;
+    port::be<u32> DataLength;
+    port::be<u32> PointerTableLength;
 };
 
 class QueueResourceLoadCallback
@@ -73,13 +76,10 @@ void UnloadResourceCallback::Callback(FEResourceHandle* handle)
     m_resourceManager->UnloadResource(handle);
 }
 
-static inline void RelocatePointer(unsigned long* pPointer, void* pData)
+// it doesn't relocate anymore, just byteswaps the offset
+static inline void RelocatePointer(u32* pPointer, void* /*pData*/)
 {
-    unsigned long value = *pPointer;
-    unsigned long mask = ~((value + 1) | ((unsigned long)-1 - value));
-    unsigned long sum = value + (unsigned long)pData;
-    mask = (unsigned long)((long)mask >> 31);
-    *pPointer = sum & ~mask;
+    *pPointer = bswap(*pPointer);
 }
 
 /**
@@ -90,10 +90,10 @@ bool FEScene::LoadPackage(const char* szPackageFileName)
     nlFile* file;
     FE_FILE_HEADER FenHdr ATTRIBUTE_ALIGN(32);
     void* pData;
-    unsigned long* pPointerLocation;
-    unsigned long* pLastPointer;
-    unsigned long* pCurrentPointer;
-    unsigned long* pPointer;
+    u32* pPointerLocation;
+    u32* pLastPointer;
+    u32* pCurrentPointer;
+    u32* pPointer;
 
     file = nlOpen(szPackageFileName);
     nlRead(file, &FenHdr, 0x10);
@@ -113,21 +113,92 @@ bool FEScene::LoadPackage(const char* szPackageFileName)
         nlRead(file, pData, FenHdr.DataLength);
     }
 
-    pPointerLocation = (unsigned long*)nlMalloc(FenHdr.PointerTableLength, 0x20, true);
+    pPointerLocation = (u32*)nlMalloc(FenHdr.PointerTableLength, 0x20, true);
     nlRead(file, pPointerLocation, FenHdr.PointerTableLength);
     nlClose(file);
 
-    m_pFEPackage = (FEPackage*)pData;
+    unsigned long numPointerEntries = FenHdr.PointerTableLength / sizeof(u32);
+    for (unsigned long i = 0; i < numPointerEntries; i++)
+    {
+        pPointerLocation[i] = bswap(pPointerLocation[i]);
+    }
 
-    pLastPointer = (unsigned long*)((unsigned char*)pPointerLocation + (FenHdr.PointerTableLength & ~3));
+    pLastPointer = (u32*)((unsigned char*)pPointerLocation + (FenHdr.PointerTableLength & ~3));
     for (pCurrentPointer = pPointerLocation; pCurrentPointer < pLastPointer; pCurrentPointer++)
     {
-        pPointer = (unsigned long*)((unsigned char*)pData + *pCurrentPointer);
+        pPointer = (u32*)((unsigned char*)pData + *pCurrentPointer);
         RelocatePointer(pPointer, pData);
     }
 
+    u8* pkgBase = (u8*)pData;
+    u32 offsetComponentList = *(u32*)(pkgBase+0x00);
+    u32 offsetFEPresentation = *(u32*)(pkgBase+0x04);
+    u32 offsetResourceList = *(u32*)(pkgBase+0x08);
+    u32 offsetFEObjectLibrary = *(u32*)(pkgBase+0x0C);
+    u32 uUniqueID = bswap(*(u32*)(pkgBase+0x10));
+    u32 uResourceCount = bswap(*(u32*)(pkgBase+0x14));
+
+    TLComponent* pComponentList = (offsetComponentList != 0xFFFFFFFFu) ? (TLComponent*)(pkgBase + offsetComponentList) : nullptr;
+    FEPresentation* pFEPresentation = (offsetFEPresentation != 0xFFFFFFFFu) ? (FEPresentation*)(pkgBase + offsetFEPresentation) : nullptr;
+    FEResourceHandle* pResourceListHead = (offsetResourceList != 0xFFFFFFFFu) ? (FEResourceHandle*)(pkgBase + offsetResourceList) : nullptr;
+    FELibObject* pFEObjectLibrary = (offsetFEObjectLibrary != 0xFFFFFFFFu) ? (FELibObject*)(pkgBase + offsetFEObjectLibrary) : nullptr;
+
+#define OFFSETOF_M_NEXT_ON_DISK 0x00
+#define OFFSETOF_M_PREV_ON_DISK 0x04
+#define OFFSETOF_M_TYPE_ON_DISK 0x08
+#define OFFSETOF_M_HASHID_ON_DISK 0x0C
+#define OFFSETOF_M_BVALID_ON_DISK 0x10
+    FEResourceHandle* head = nullptr;
+    FEResourceHandle* tail = nullptr;
+    u32 startOffset = offsetResourceList;
+    u32 curOffset = startOffset;
+
+    if (curOffset != 0xFFFFFFFFu)
+    {
+        do
+        {
+            u8* fileNode = pkgBase + curOffset;
+            u32 nextOffset = *(u32*)(fileNode + OFFSETOF_M_NEXT_ON_DISK);
+
+            eFEResourceType type = (eFEResourceType)bswap(*(u32*)(fileNode + OFFSETOF_M_TYPE_ON_DISK));
+            unsigned long hashID = bswap(*(u32*)(fileNode + OFFSETOF_M_HASHID_ON_DISK));
+            bool bValid = *(fileNode + OFFSETOF_M_BVALID_ON_DISK) != 0;
+
+            FEResourceHandle* newNode = (FEResourceHandle*)nlMalloc(sizeof(FEResourceHandle), 8, false);
+            newNode->m_next = nullptr;
+            newNode->m_prev = nullptr;
+            newNode->m_type = type;
+            newNode->m_hashID = hashID;
+            newNode->m_bValid = bValid;
+
+            if (tail)
+            {
+                tail->m_next = newNode;
+                newNode->m_prev = tail;
+            }
+            else
+                head = newNode;
+            tail = newNode;
+            curOffset = nextOffset;
+        } while (curOffset != 0xFFFFFFFFu && curOffset != startOffset);
+
+        if (tail && head)
+        {
+            tail->m_next = head;
+            head->m_prev = tail;
+        }
+    }
+
+
     nlFree(pPointerLocation);
 
+    m_pFEPackage = (FEPackage*)nlMalloc(sizeof(FEPackage), 8, false);
+    m_pFEPackage->m_pComponentList = pComponentList;
+    m_pFEPackage->m_pFEPresentation = pFEPresentation;
+    m_pFEPackage->m_pResourceList = tail;
+    m_pFEPackage->m_pFEObjectLibrary = pFEObjectLibrary;
+    m_pFEPackage->m_uUniqueID = uUniqueID;
+    m_pFEPackage->m_uResourceCount = uResourceCount;
     file = (nlFile*)m_pFEPackage;
     QueueResourceLoadCallback cb;
 
