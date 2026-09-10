@@ -3,7 +3,7 @@
 
 #include "types.h"
 #include "NL/nlAlgorithm.h"
-#include "compat_shims/endian.h"
+#include "port/endian.h"
 
 struct FunctionEntryPoint
 {

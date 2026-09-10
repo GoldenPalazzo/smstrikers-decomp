@@ -7,7 +7,6 @@
 #include "NL/nlMemory.h"
 #include "NL/gl/glMatrix.h"
 #include "NL/nlDLRing.h"
-#include "compat_shims/endian.h"
 
 bool gSebringLoadPackageToVirtualMemory = false;
 

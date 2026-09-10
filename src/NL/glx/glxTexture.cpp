@@ -17,7 +17,6 @@
 #include "Game/GL/GLInventory.h"
 #include "Game/Sys/debug.h"
 
-#include "compat_shims/endian.h"
 
 static_assert(sizeof(eGXTextureFormat) == 4, "check enum size");
 static_assert(offsetof(GXTextureHeader, format) == 4, "check format offset");

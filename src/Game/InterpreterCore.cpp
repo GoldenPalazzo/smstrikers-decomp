@@ -3,7 +3,6 @@
 #include "NL/nlDebug.h"
 #include "NL/nlMemory.h"
 
-#include "compat_shims/endian.h"
 
 /**
  * Offset/Address/Size: 0x68C | 0x802137D4 | size: 0x4C
