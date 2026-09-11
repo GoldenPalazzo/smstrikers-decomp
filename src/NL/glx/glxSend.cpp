@@ -96,7 +96,7 @@ static Mtx44 gx_proj;
 static Mtx gx_modelview;
 static GXTexObj glx_texobj[6];
 static GXTlutObj glx_tlutobj[6];
-static u32 glx_texture[6];
+static uintptr_t glx_texture[6];
 
 struct GLScissorUserData
 {
@@ -1111,7 +1111,7 @@ static inline void glx_SwitchTexture(const glModelPacket* p)
                 memcpy(&glx_tlutobj[texnum], &pTex->m_TlutObj, sizeof(GXTlutObj));
             }
 
-            glx_texture[texnum] = (u32)pTex;
+            glx_texture[texnum] = (uintptr_t)pTex;
             glx_texdirty |= 1 << texnum;
             texnum++;
         }
@@ -2161,7 +2161,7 @@ static const u32 ColourTargetTexture = glGetTexture("target/colour");
 static inline void force_LoadTexture(int stage, unsigned long handle)
 {
     PlatTexture* pTex = glx_GetTex(handle, true, true);
-    glx_texture[stage] = (u32)pTex;
+    glx_texture[stage] = (uintptr_t)pTex;
     memcpy(&glx_texobj[stage], &pTex->m_TexObj, sizeof(GXTexObj));
     GXInitTexObjWrapMode(&glx_texobj[stage], (GXTexWrapMode)0, (GXTexWrapMode)0);
     GXInitTexObjFilter(&glx_texobj[stage], (GXTexFilter)1, (GXTexFilter)1);
@@ -2296,9 +2296,12 @@ static void glx_DrawPacket(const glModelPacket* packet)
         {
             for (j = 0; j < glx_NumIndices; j++)
             {
-                GXWGFifo.u16 = (u16)i;
+                GXPosition1x16((u16)i);
+                // GXWGFifo.u16 = (u16)i;
             }
         }
+
+        GXEnd();
     }
     else
     {
@@ -2343,7 +2346,8 @@ static void glx_DrawPacket(const glModelPacket* packet)
                             ptr8 += 3;
                             ptr = (u16*)ptr8;
                         }
-                        GXWGFifo.u16 = *ptr;
+                        GXPosition1x16(*ptr);
+                        // GXWGFifo.u16 = *ptr;
                     }
                 }
             }
@@ -2355,10 +2359,12 @@ static void glx_DrawPacket(const glModelPacket* packet)
                 {
                     for (j = 0; j < glx_NumIndices; j++)
                     {
-                        GXWGFifo.u16 = idxPtr[i];
+                        GXPosition1x16(idxPtr[i]);
+                        // GXWGFifo.u16 = idxPtr[i];
                     }
                 }
             }
+            GXEnd();
         }
     }
 
