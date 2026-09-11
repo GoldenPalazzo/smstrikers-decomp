@@ -6,10 +6,12 @@
 #include "Game/FE/tlInstance.h"
 #include "Game/FE/feTextureResource.h"
 
+#include "port/endian.h"
+
 class TLImageInstance : public TLInstance
 {
 public:
-    /* 0x80 */ FETextureResource* m_pTextureResource;
+    /* 0x80 */ port::SelfRelPtr32<FETextureResource> m_pTextureResource;
 }; // total size: 0x84
 
 enum LoadState
