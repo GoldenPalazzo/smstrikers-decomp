@@ -105,3 +105,92 @@ void nlInitMemory()
         OSReport("Largest Free Block: %u\n", StandardAllocator.LargestFreeBlock());
     }
 }
+
+// ---------------------------------------------------------------------
+// Global operator new/delete overrides — see nlMemory.h for rationale.
+// ---------------------------------------------------------------------
+
+void* operator new(unsigned long size)
+{
+    return nlMalloc(size);
+}
+void* operator new[](unsigned long size)
+{
+    return nlMalloc(size);
+}
+void operator delete(void* ptr) noexcept
+{
+    nlFree(ptr);
+}
+void operator delete[](void* ptr) noexcept
+{
+    nlFree(ptr);
+}
+void operator delete(void* ptr, unsigned long /*size*/) noexcept
+{
+    nlFree(ptr);
+}
+void operator delete[](void* ptr, unsigned long /*size*/) noexcept
+{
+    nlFree(ptr);
+}
+
+void* operator new(unsigned long size, const std::nothrow_t&) noexcept
+{
+    return nlMalloc(size);
+}
+void* operator new[](unsigned long size, const std::nothrow_t&) noexcept
+{
+    return nlMalloc(size);
+}
+void operator delete(void* ptr, const std::nothrow_t&) noexcept
+{
+    nlFree(ptr);
+}
+void operator delete[](void* ptr, const std::nothrow_t&) noexcept
+{
+    nlFree(ptr);
+}
+
+void* operator new(unsigned long size, std::align_val_t align)
+{
+    return nlMalloc(size, static_cast<unsigned int>(align), false);
+}
+void* operator new[](unsigned long size, std::align_val_t align)
+{
+    return nlMalloc(size, static_cast<unsigned int>(align), false);
+}
+void operator delete(void* ptr, std::align_val_t /*align*/) noexcept
+{
+    nlFree(ptr);
+}
+void operator delete[](void* ptr, std::align_val_t /*align*/) noexcept
+{
+    nlFree(ptr);
+}
+
+void operator delete(void* ptr, unsigned long /*size*/, std::align_val_t /*align*/) noexcept
+{
+    nlFree(ptr);
+}
+void operator delete[](void* ptr, unsigned long /*size*/, std::align_val_t /*align*/) noexcept
+{
+    nlFree(ptr);
+}
+
+void* operator new(unsigned long size, std::align_val_t align, const std::nothrow_t&) noexcept
+{
+    return nlMalloc(size, static_cast<unsigned int>(align), false);
+}
+void* operator new[](unsigned long size, std::align_val_t align, const std::nothrow_t&) noexcept
+{
+    return nlMalloc(size, static_cast<unsigned int>(align), false);
+}
+void operator delete(void* ptr, std::align_val_t /*align*/, const std::nothrow_t&) noexcept
+{
+    nlFree(ptr);
+}
+void operator delete[](void* ptr, std::align_val_t /*align*/, const std::nothrow_t&) noexcept
+{
+    nlFree(ptr);
+}
