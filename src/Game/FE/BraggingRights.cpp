@@ -624,14 +624,14 @@ void BraggingRightsScene::SceneCreated()
     }
 
     TLTextInstance* pTitleText = FEFinder<TLTextInstance, 3>::Find(
-        presentation->m_currentSlide,
+        presentation->m_currentSlide.get(),
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("Title")));
     pTitleText->m_LocStrId = 0xB1829C7A;
     pTitleText->m_OverloadFlags |= 0x8;
 
     TLComponentInstance* buttonComponent = FEFinder<TLComponentInstance, 4>::Find(
-        presentation->m_currentSlide,
+        presentation->m_currentSlide.get(),
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("buttons")));
     mButtons.mButtonInstance = buttonComponent;
@@ -640,13 +640,13 @@ void BraggingRightsScene::SceneCreated()
     for (i = 0; i < 5; i++)
     {
         TLTextInstance* pLabelText = FEFinder<TLTextInstance, 3>::Find(
-            presentation->m_currentSlide,
+            presentation->m_currentSlide.get(),
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(CUP_BRAG_TEXT[i][0])));
         pLabelText->SetStringId(CUP_BRAG_TEXT[i][1]);
 
         TLTextInstance* pStatText = FEFinder<TLTextInstance, 3>::Find(
-            presentation->m_currentSlide,
+            presentation->m_currentSlide.get(),
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(CUP_BRAG_TEXT[i][3])));
 
@@ -678,7 +678,7 @@ void BraggingRightsScene::SceneCreated()
         }
 
         pText = FEFinder<TLTextInstance, 3>::Find(
-            presentation->m_currentSlide,
+            presentation->m_currentSlide.get(),
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(CUP_BRAG_TEXT[i][2])));
 

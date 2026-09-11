@@ -7,6 +7,8 @@
 #include "Game/FE/tlComponent.h"
 #include "Game/FE/FEAudio.h"
 
+#include "port/endian.h"
+
 enum eTimeLineAssetType
 {
     TLAT_UNKNOWN = -1,
@@ -44,18 +46,18 @@ public:
     feVector3& GetAssetRotation() const;
     feVector3& GetAssetPosition() const;
 
-    /* 0x00 */ TLInstance* m_next;
-    /* 0x04 */ TLInstance* m_prev;
-    /* 0x08 */ TLInstance* pChildren;
-    /* 0x0C */ TLComponent* m_component;
-    /* 0x10 */ f32 m_fStartTime;
-    /* 0x14 */ f32 m_fDuration;
+    /* 0x00 */ port::SelfRelPtr32<TLInstance> m_next;
+    /* 0x04 */ port::SelfRelPtr32<TLInstance> m_prev;
+    /* 0x08 */ port::SelfRelPtr32<TLInstance> pChildren;
+    /* 0x0C */ port::SelfRelPtr32<TLComponent> m_component;
+    /* 0x10 */ port::be<f32> m_fStartTime;
+    /* 0x14 */ port::be<f32> m_fDuration;
     /* 0x18 */ char m_szName[32];
-    /* 0x38 */ unsigned long m_hash;
+    /* 0x38 */ port::be<u32> m_hash;
     /* 0x3C */ FELibObjectAttributes m_overloadedAttributes;
-    /* 0x74 */ unsigned long m_overloadFlags;
-    /* 0x78 */ eTimeLineAssetType m_type;
-    /* 0x7C */ unsigned short m_priority;
+    /* 0x74 */ port::be<u32> m_overloadFlags;
+    /* 0x78 */ port::be<eTimeLineAssetType> m_type;
+    /* 0x7C */ port::be<u16> m_priority;
     /* 0x7E */ bool m_bVisible;
 }; // total size: 0x80
 

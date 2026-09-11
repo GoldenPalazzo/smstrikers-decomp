@@ -4,12 +4,14 @@
 #include "Game/FE/feLibObject.h"
 #include "Game/FE/tlInstance.h"
 
+#include "port/endian.h"
+
 class FETextureResource;
 
 class FEImage : public FELibObject
 {
 public:
-    /* 0x68 */ FETextureResource* m_pFeTextureResource;
+    /* 0x68 */ port::SelfRelPtr32<FETextureResource> m_pFeTextureResource;
 }; // total size: 0x6C
 
 // TLInstance's accessor bodies are visible only to this TU chain: retail

@@ -5,6 +5,8 @@
 
 #include "Game/FE/tlSlide.h"
 
+#include "port/endian.h"
+
 // class TLInstance;
 // class FEAnimation;
 
@@ -37,9 +39,9 @@ public:
     void SetActiveSlide(unsigned long hash);
     void SetActiveSlide(const char* slideName);
 
-    /* 0x0 */ TLSlide* m_slides;
-    /* 0x4 */ TLSlide* m_currentSlide;
-    /* 0x8 */ f32 m_fadeDuration;
+    /* 0x0 */ port::SelfRelPtr32<TLSlide> m_slides;
+    /* 0x4 */ port::SelfRelPtr32<TLSlide> m_currentSlide;
+    /* 0x8 */ port::be<f32> m_fadeDuration;
 };
 
 #endif // _FEPRESENTATION_H_

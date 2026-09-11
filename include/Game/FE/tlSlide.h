@@ -22,16 +22,16 @@ public:
     void Update(float time);
     void UpdateAsset(TLInstance* instance, float time);
 
-    /* 0x00 */ TLSlide* m_next;
+    /* 0x00 */ port::SelfRelPtr32<TLSlide> m_next;
     /* 0x04 */ char pad0[0x4];
-    /* 0x08 */ TLInstance* m_instances;
-    /* 0x0C */ FEAnimation* m_animations;
-    /* 0x10 */ f32 m_start;
-    /* 0x14 */ f32 m_duration;
-    /* 0x18 */ f32 m_time;
-    /* 0x1C */ eTimeLinePlayMode m_uPlayMode;
+    /* 0x08 */ port::SelfRelPtr32<TLInstance> m_instances;
+    /* 0x0C */ port::SelfRelPtr32<FEAnimation> m_animations;
+    /* 0x10 */ port::be<f32> m_start;
+    /* 0x14 */ port::be<f32> m_duration;
+    /* 0x18 */ port::be<f32> m_time;
+    /* 0x1C */ port::be<eTimeLinePlayMode> m_uPlayMode;
     /* 0x20 */ char m_szName[32];
-    /* 0x40 */ u32 m_hash;
+    /* 0x40 */ port::be<u32> m_hash;
 };
 
 #endif // _TLSLIDE_H_

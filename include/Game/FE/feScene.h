@@ -8,6 +8,8 @@
 #include "Game/FE/feResourceManager.h"
 #include "Game/FE/feSceneResource.h"
 
+// FE NOTE: this class never gets read from a file, it's created at runtime
+// with a malloc in feSceneManager.cpp. It doesn't need selfrelptrs or bswaps
 class FEScene
 {
 public:
@@ -32,10 +34,10 @@ public:
     }
 
     /* 0x00 */ FEPackage* m_pFEPackage;
-    /* 0x04 */ unsigned long m_uHashID;
+    /* 0x04 */ u32 m_uHashID;
     /* 0x08 */ bool m_bValid;
     /* 0x0C */ nlMatrix4 m_matView;
-    /* 0x4C */ unsigned long m_uRenderView;
+    /* 0x4C */ u32 m_uRenderView;
     /* 0x50 */ FESceneResource m_feSceneResourceHandle; // size 0x20
 }; // total size: 0x70
 

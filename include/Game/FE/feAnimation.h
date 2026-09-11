@@ -6,6 +6,8 @@
 #include "Game/FE/tlInstance.h"
 #include "NL/nlDLRing.h"
 
+#include "port/endian.h"
+
 enum AnimType
 {
     eAnimUnknown = 0,
@@ -29,8 +31,8 @@ public:
 typedef struct fAnimationKeyframe
 {
     /* 0x00 */ FEAnimationKeyframe pKeyFrameData;
-    /* 0x10 */ fAnimationKeyframe* m_next;
-    /* 0x14 */ fAnimationKeyframe* m_prev;
+    /* 0x10 */ port::SelfRelPtr32<fAnimationKeyframe> m_next;
+    /* 0x14 */ port::SelfRelPtr32<fAnimationKeyframe> m_prev;
 } fAnimationKeyframe; /* size: 0x18 */
 
 typedef struct v3AnimationKeyframe
@@ -45,18 +47,19 @@ typedef struct v3AnimationKeyframe
 class FEAnimation /* size >= 0x1C */
 {
 public:
-    virtual ~FEAnimation() { }
+    ~FEAnimation() { }
 
     void Update(float fCurrentTime);
     void AnimateTargetAtTimeWithVector3(float fCurrentTime);
 
-    /* 0x04 */ FEAnimation* m_next;
-    /* 0x08 */ FEAnimation* m_prev;
-    /* 0x0C */ TLInstance* m_pTLInstanceTarget;
-    /* 0x10 */ u16 m_cast_type;
+    /* 0x00 */ port::SelfRelPtr32<void> m_vtablePlaceholder;
+    /* 0x04 */ port::SelfRelPtr32<FEAnimation> m_next;
+    /* 0x08 */ port::SelfRelPtr32<FEAnimation> m_prev;
+    /* 0x0C */ port::SelfRelPtr32<TLInstance> m_pTLInstanceTarget;
+    /* 0x10 */ port::be<u16> m_cast_type;
     /* 0x12 */ char pad12[2];
-    /* 0x14 */ AnimType m_type;
-    /* 0x18 */ void* m_DLRingHead;
+    /* 0x14 */ port::be<AnimType> m_type;
+    /* 0x18 */ port::SelfRelPtr32<void> m_DLRingHead;
 };
 
 #endif // _FEANIMATION_H_

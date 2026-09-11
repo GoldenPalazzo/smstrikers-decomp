@@ -42,7 +42,7 @@ void InterpreterCore::LoadByteCode(void* data)
     m_Header->m_StringSegment = (u8*)m_Header->m_CodeSegment + m_Header->codeSegmentSize;
     fprintf(stderr, "[DEBUG] numFunctions=%u m_FunctionTable=%p first_hash=0x%x\n",
         m_Header->numFunctions, (void*)m_Header->m_FunctionTable,
-        m_Header->numFunctions > 0 ? m_Header->m_FunctionTable[0].hash : 0);
+        m_Header->numFunctions > 0 ? static_cast<u32>(m_Header->m_FunctionTable[0].hash) : 0);
 
     m_SP = m_StackSegment;
     m_SavedSP = m_SP;

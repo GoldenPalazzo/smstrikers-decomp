@@ -6,6 +6,8 @@
 #include "NL/nlSingleton.h"
 #include "NL/nlBundleFile.h"
 
+#include "port/endian.h"
+
 enum eFEResourceType
 {
     FERT_UNKNOWN = -1,
@@ -21,11 +23,11 @@ public:
     FEResourceHandle() { };
     ~FEResourceHandle() { };
 
-    /* 0x00 */ FEResourceHandle* m_next;
-    /* 0x04 */ FEResourceHandle* m_prev;
+    /* 0x00 */ port::SelfRelPtr32<FEResourceHandle> m_next;
+    /* 0x04 */ port::SelfRelPtr32<FEResourceHandle> m_prev;
 
-    /* 0x08 */ eFEResourceType m_type;
-    /* 0x0C */ unsigned long m_hashID;
+    /* 0x08 */ port::be<eFEResourceType> m_type;
+    /* 0x0C */ port::be<u32> m_hashID;
     bool IsValid() const
     {
         return m_bValid;

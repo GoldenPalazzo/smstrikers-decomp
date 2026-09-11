@@ -554,7 +554,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
     }
 
     TLComponentInstance* pComp = FEFinder<TLComponentInstance, 4>::Find(
-        presentation->m_currentSlide, nlStringLowerHash("Layer"), nlStringLowerHash("ARROWS2"));
+        presentation->m_currentSlide.get(), nlStringLowerHash("Layer"), nlStringLowerHash("ARROWS2"));
 
     int currentRecord = mRow + mScrollOffset;
 

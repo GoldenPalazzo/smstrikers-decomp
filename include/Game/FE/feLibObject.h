@@ -6,6 +6,8 @@
 #include "NL/nlColour.h"
 #include "NL/nlMath.h"
 
+#include "port/endian.h"
+
 class feVector3
 {
 public:
@@ -45,7 +47,7 @@ struct FELibObjectAttributes
     /* 0x0C */ feVector3 v3Rotation; // offset 0xC, size 0xC
     /* 0x18 */ feVector3 v3Scale;    // offset 0x18, size 0xC
     /* 0x24 */ feVector3 v3Pivot;    // offset 0x24, size 0xC
-    /* 0x30 */ bool bVisible;        // offset 0x30, size 0x1
+    /* 0x30 */ u8 bVisible;        // offset 0x30, size 0x1
     /* 0x31 */ nlColour colour;      // offset 0x31, size 0x4
 }; // total size: 0x38
 
@@ -57,12 +59,12 @@ public:
     feVector3& GetPosition() const;
     nlColour& GetColour() const;
 
-    /* 0x00 */ FELibObject* next;
-    /* 0x04 */ FELibObject* prev;
+    /* 0x00 */ port::SelfRelPtr32<FELibObject> next;
+    /* 0x04 */ port::SelfRelPtr32<FELibObject> prev;
     /* 0x08 */ FELibObjectAttributes m_attributes; // offset 0x8, size 0x38
-    /* 0x40 */ unsigned long m_hashID;
+    /* 0x40 */ port::be<u32> m_hashID;
     /* 0x44 */ char m_szName[32];
-    /* 0x64 */ eFELibObjectType m_type;
+    /* 0x64 */ port::be<eFELibObjectType> m_type;
 }; // total size: 0x68
 
 #endif // _FELIBOBJECT_H_

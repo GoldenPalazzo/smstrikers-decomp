@@ -310,7 +310,7 @@ void TournTeamSetupSceneV2::Update(float fDeltaT)
 
     if (mCurrentState == STATE_SCROLLING)
     {
-        presentation->SetActiveSlide(presentation->m_currentSlide);
+        presentation->SetActiveSlide(presentation->m_currentSlide.get());
         presentation->Update(0.0f);
 
         if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
